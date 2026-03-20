@@ -16,10 +16,16 @@ jobs:
       - name: 📂 Sync files to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
+          - name: 📂 Sync files to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: /public_html/
+          port: 21            # Fix port megadása
+          protocol: ftp       # Protokoll kényszerítése
+          timeout: 60000      # Időtúllépés növelése (ms)
           exclude: |
             **/.git*
             **/.github*
