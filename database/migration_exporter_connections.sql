@@ -1,0 +1,13 @@
+-- Exporter: mentett adatbázis kapcsolatok
+
+CREATE TABLE IF NOT EXISTS exporter_connections (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    név VARCHAR(200) NOT NULL,
+    host VARCHAR(255) NOT NULL DEFAULT 'localhost',
+    port SMALLINT UNSIGNED NOT NULL DEFAULT 3306,
+    dbname VARCHAR(255) NOT NULL,
+    felhasználó VARCHAR(255) NOT NULL DEFAULT '',
+    jelszó_titkosított TEXT NULL,
+    létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
+    módosítva DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

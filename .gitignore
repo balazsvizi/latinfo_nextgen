@@ -1,0 +1,46 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Cursor / local agent artifacts
+.cursor/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# App config (keep templates/example files in git)
+/config/*.local.php
+/config/*secret*.php
+/config/*private*.php
+
+# PHP dependencies
+/vendor/
+/composer.phar
+
+# Node dependencies (if used for tooling)
+/node_modules/
+
+# Logs and runtime files
+*.log
+*.tmp
+*.cache
+/tmp/
+/cache/
+
+# Database artifacts (keep schema + migrations in git)
+*.sql.gz
+*.sql.zip
+*.dump
+/database/backups/
+/database/dumps/
+
+# Uploaded files (keep folder structure placeholder)
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/szamlak/
+/uploads/szamlak/*
+!/uploads/szamlak/.gitkeep

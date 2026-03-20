@@ -1,0 +1,11 @@
+{
+    "name": "latinfo/backoffice",
+    "description": "Latinfo.hu Backoffice",
+    "require": {
+        "php": ">=7.4",
+        "phpmailer/phpmailer": "^6.8"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
