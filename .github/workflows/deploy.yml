@@ -22,7 +22,11 @@ jobs:
           server-dir: /public_html/
           port: 21
           protocol: ftp
-          timeout: 60000
+          # A legfontosabb extra beállítások a stabilitáshoz:
+          timeout: 90000
+          log-level: verbose
+          # Néha a szerver nem szereti a párhuzamos feltöltést:
+          dangerous-clean-slate: false
           exclude: |
             **/.git*
             **/.github*
