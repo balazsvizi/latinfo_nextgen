@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../partials/header.php';
 
 $db = getDb();
 
-// Címzett: mindig a bejelentkezett admin e-mailje (DB, különben session)
+// Alapértelmezett címzett: bejelentkezett admin e-mailje (DB, különben session) – az űrlapon szerkeszthető
 $admin_email = '';
 $admin_id = (int) ($_SESSION['admin_id'] ?? 0);
 if ($admin_id > 0) {
@@ -41,13 +41,13 @@ if (!$kivalasztott_id && !empty($fiokok)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $config_id = (int) ($_POST['config_id'] ?? 0);
-    $cim = $admin_email;
+    $cim = trim($_POST['cim'] ?? '');
     if ($config_id <= 0) {
         $hiba = 'Válassz SMTP fiókot.';
     } elseif ($cim === '') {
-        $hiba = 'Nincs e-mail cím a fiókodhoz. Add meg az Adminok szerkesztésénél, majd jelentkezz be újra.';
+        $hiba = 'Adjon meg egy címzett e-mail címet.';
     } elseif (!filter_var($cim, FILTER_VALIDATE_EMAIL)) {
-        $hiba = 'Érvénytelen e-mail a profilodon. Javítsd az Adminok szerkesztésénél.';
+        $hiba = 'Érvénytelen címzett e-mail.';
     } else {
         $targy = '[' . SITE_NAME . '] E-mail teszt';
         $szoveg = '<p>Ez egy teszt e-mail a backoffice rendszerből (SMTP).</p>'
@@ -55,17 +55,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             . '<p>Ha megkaptad, az SMTP küldés működik.</p>';
         $eredmeny = email_kuld($cim, $targy, $szoveg, ['config_id' => $config_id, 'html' => true]);
         if ($eredmeny['ok']) {
-            $siker = 'A teszt e-mail elküldve a fiókod e-mail címére (' . $cim . ').';
+            $siker = 'A teszt e-mail elküldve ide: ' . $cim . '.';
         } else {
             $hiba = 'Küldés sikertelen: ' . h($eredmeny['hiba']);
         }
     }
     $kivalasztott_id = $config_id ?: $kivalasztott_id;
 }
+
+$cimzett_ertek = ($_SERVER['REQUEST_METHOD'] === 'POST')
+    ? trim($_POST['cim'] ?? '')
+    : $admin_email;
 ?>
 <div class="card card-narrow">
     <h2>Teszt e-mail küldése</h2>
-    <p class="text-muted">A kiválasztott SMTP fiók nevében kiküld egy teszt levelet a <strong>bejelentkezett fiókod e-mail címére</strong>.</p>
+    <p class="text-muted">A kiválasztott SMTP fiók nevében kiküld egy teszt levelet. A címzett mező <strong>előre kitöltve</strong> a bejelentkezett fiók e-mail címével, de <strong>szabadon módosítható</strong>.</p>
     <p class="email-teszt-laragon-hint text-muted" style="font-size:0.875rem; margin-top:0.5rem;">
         Ha <strong>lokálisan</strong> (pl. Laragon) tesztelsz és „Could not connect to SMTP host” hibát kapsz: a tárhely SMTP szervere gyakran csak a szerver IP-jéről fogad kapcsolatot, vagy a Windows tűzfal blokkolja a 587/465 portot. <strong>Éles környezetben</strong> a teszt általában rendben működik.
     </p>
@@ -86,16 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </select>
         </div>
         <div class="form-group">
-            <label>Címzett</label>
-            <?php if ($admin_email !== ''): ?>
-                <p class="email-teszt-cimzett" style="margin:0; font-weight:600;"><?= h($admin_email) ?></p>
-                <p class="text-muted" style="margin:0.35rem 0 0; font-size:0.875rem;">Más címre küldéshez módosítsd az e-mailt az <a href="<?= h(BASE_URL) ?>/admin/adminok/szerkeszt.php?id=<?= (int) $admin_id ?>">admin profilodon</a>, majd jelentkezz be újra.</p>
-            <?php else: ?>
-                <p class="alert alert-error" style="margin:0;">Nincs e-mail megadva ehhez a fiókhoz. <a href="<?= h(BASE_URL) ?>/admin/adminok/szerkeszt.php?id=<?= (int) $admin_id ?>">Admin szerkesztése</a></p>
+            <label for="email-teszt-cim">Címzett e-mail *</label>
+            <input type="email" id="email-teszt-cim" name="cim" value="<?= h($cimzett_ertek) ?>" required placeholder="pelda@email.hu" autocomplete="email">
+            <?php if ($admin_email === '' && $admin_id > 0): ?>
+                <p class="text-muted" style="margin:0.35rem 0 0; font-size:0.875rem;">Nincs e-mail a profilodon – írj be címet, vagy <a href="<?= h(BASE_URL) ?>/admin/adminok/szerkeszt.php?id=<?= (int) $admin_id ?>">add meg az admin adatlapodon</a> a későbbi előtöltéshez.</p>
             <?php endif; ?>
         </div>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="email-teszt-btn" <?= $admin_email === '' ? 'disabled' : '' ?>>Teszt e-mail küldése</button>
+            <button type="submit" class="btn btn-primary" id="email-teszt-btn">Teszt e-mail küldése</button>
             <a href="<?= h(BASE_URL) ?>/admin/email/" class="btn btn-secondary">Vissza</a>
         </div>
         <p id="email-teszt-ujratoltes" class="text-muted" style="margin-top:0.75rem;display:none;">Ha a küldés lefutott vagy timeoutolt, <a href="<?= h(BASE_URL) ?>/admin/email/teszt.php">kattints ide</a> az oldal frissítéséhez.</p>
