@@ -1,11 +1,26 @@
-
-name: Test workflow
+name: Deploy to cPanel
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  test:
+  web-deploy:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "OK"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /public_html/
+          local-dir: ./
+          port: 21
+          protocol: ftp
+          dangerous-clean-slate: true
