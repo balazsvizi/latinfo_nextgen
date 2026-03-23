@@ -84,61 +84,84 @@ $tipusok = $stmt->fetchAll();
 
 $get_params = array_filter(['kereso' => $kereso]);
 ?>
-<div class="card">
+<div class="card card-kontakt-tipusok">
     <h2>Kontakt típusok</h2>
-    <p>Kapcsolattípusok (számlázás, naptár, vezető, egyéb stb.), amelyeket a kontaktoknál lehet beállítani.</p>
+    <p class="card-lead">Kapcsolattípusok (számlázás, naptár, vezető, egyéb), amelyeket a kontaktoknál lehet beállítani. A leírás a típus választónál jelenik meg.</p>
     <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
-    <form method="post" style="margin-bottom:1rem;">
-        <div class="form-group" style="max-width:300px;">
-            <label for="uj_tipus">Új kontakt típus neve</label>
-            <input type="text" id="uj_tipus" name="uj_tipus_nev" placeholder="Pl. számlázás" required>
-        </div>
-        <div class="form-group" style="max-width:400px;">
-            <label for="uj_tipus_leiras">Leírás (látszik a kontakt típus választónál)</label>
-            <input type="text" id="uj_tipus_leiras" name="uj_tipus_leiras" placeholder="Opcionális rövid leírás">
-        </div>
-        <button type="submit" class="btn btn-primary">Felvétel</button>
-    </form>
+    <section class="config-section config-section-uj" aria-labelledby="kontakt-tipus-uj-cim">
+        <h3 id="kontakt-tipus-uj-cim" class="config-section-title">Új típus</h3>
+        <form method="post" class="kontakt-tipus-form-uj">
+            <div class="kontakt-tipus-uj-grid">
+                <div class="form-group kontakt-tipus-uj-nev">
+                    <label for="uj_tipus">Név *</label>
+                    <input type="text" id="uj_tipus" name="uj_tipus_nev" placeholder="Pl. számlázás" required autocomplete="off">
+                </div>
+                <div class="form-group kontakt-tipus-uj-leiras">
+                    <label for="uj_tipus_leiras">Leírás</label>
+                    <input type="text" id="uj_tipus_leiras" name="uj_tipus_leiras" placeholder="Rövid magyarázat a választóhoz">
+                </div>
+                <div class="form-group kontakt-tipus-uj-gomb">
+                    <label class="visually-hidden" for="uj_tipus_submit">Felvétel</label>
+                    <button type="submit" id="uj_tipus_submit" class="btn btn-primary">Felvétel</button>
+                </div>
+            </div>
+        </form>
+    </section>
 
-    <form method="get" class="toolbar">
-        <input type="search" name="kereso" placeholder="Kontakt típus neve..." value="<?= h($kereso) ?>">
-        <button type="submit" class="btn btn-primary">Keresés</button>
-    </form>
+    <section class="config-section" aria-labelledby="kontakt-tipus-lista-cim">
+        <div class="config-section-head">
+            <h3 id="kontakt-tipus-lista-cim" class="config-section-title">Lista</h3>
+            <form method="get" class="toolbar toolbar-inline kontakt-tipus-toolbar">
+                <input type="search" name="kereso" placeholder="Keresés név szerint…" value="<?= h($kereso) ?>" aria-label="Keresés">
+                <button type="submit" class="btn btn-primary">Keresés</button>
+                <?php if ($kereso !== ''): ?>
+                    <a href="<?= h(BASE_URL) ?>/config/kontakt_tipusok.php" class="btn btn-secondary">Összes</a>
+                <?php endif; ?>
+            </form>
+        </div>
 
-    <div class="table-wrap">
-        <table class="sortable-table">
-            <thead>
-                <tr>
-                    <th><?= sort_th('Név', 'név', $order, $dir_param, $get_params) ?></th>
-                    <th><?= sort_th('Létrehozva', 'létrehozva', $order, $dir_param, $get_params) ?></th>
-                    <th>Műveletek</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($tipusok as $t): ?>
-                <tr>
-                    <td>
-                        <form method="post" class="inline-form inline-form-tipus">
-                            <input type="hidden" name="szerkeszt_id" value="<?= (int)$t['id'] ?>">
-                            <input type="text" name="uj_nev" value="<?= h($t['név']) ?>" placeholder="Név" style="max-width:160px;">
-                            <input type="text" name="uj_leiras" value="<?= h($t['leírás'] ?? '') ?>" placeholder="Leírás" style="max-width:220px;">
-                            <button type="submit" class="btn btn-sm btn-secondary">Mentés</button>
-                        </form>
-                    </td>
-                    <td><?= h($t['létrehozva']) ?></td>
-                    <td>
-                        <form method="post" onsubmit="return confirm('Biztosan törlöd ezt a típust?');">
-                            <input type="hidden" name="torol_id" value="<?= (int)$t['id'] ?>">
-                            <button type="submit" class="btn btn-sm btn-secondary">Törlés</button>
-                        </form>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+        <div class="table-wrap table-wrap-kontakt-tipusok">
+            <table class="sortable-table kontakt-tipusok-table">
+                <thead>
+                    <tr>
+                        <th class="th-nev"><?= sort_th('Név', 'név', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-leiras">Leírás</th>
+                        <th class="th-datum"><?= sort_th('Létrehozva', 'létrehozva', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-actions">Műveletek</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($tipusok as $t): ?>
+                    <?php $fid = 'kontakt-tipus-szerkeszt-' . (int) $t['id']; ?>
+                    <tr>
+                        <td data-label="Név">
+                            <form method="post" id="<?= h($fid) ?>" class="kontakt-tipus-row-form">
+                                <input type="hidden" name="szerkeszt_id" value="<?= (int)$t['id'] ?>">
+                                <input type="text" name="uj_nev" value="<?= h($t['név']) ?>" class="input-block" required aria-label="Név">
+                            </form>
+                        </td>
+                        <td data-label="Leírás">
+                            <input type="text" name="uj_leiras" value="<?= h($t['leírás'] ?? '') ?>" form="<?= h($fid) ?>" class="input-block" placeholder="Leírás" aria-label="Leírás">
+                        </td>
+                        <td data-label="Létrehozva" class="td-muted"><?= h($t['létrehozva']) ?></td>
+                        <td class="td-actions">
+                            <button type="submit" form="<?= h($fid) ?>" class="btn btn-sm btn-primary">Mentés</button>
+                            <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törlöd ezt a típust?');">
+                                <input type="hidden" name="torol_id" value="<?= (int)$t['id'] ?>">
+                                <button type="submit" class="btn btn-sm btn-secondary">Törlés</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php if (count($tipusok) === 0): ?>
+            <p class="text-muted kontakt-tipusok-ures"><?= $kereso !== '' ? 'Nincs találat.' : 'Még nincs kontakt típus.' ?></p>
+        <?php endif; ?>
+    </section>
 </div>
 <p><a href="<?= h(BASE_URL) ?>/contacts/">← Vissza a kontaktokhoz</a></p>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

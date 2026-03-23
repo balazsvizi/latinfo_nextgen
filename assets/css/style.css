@@ -431,6 +431,125 @@ a.header-user:hover {
 }
 @media (min-width: 640px) { .card { padding: 1.75rem; } }
 
+/* Kontakt típusok (config) – letisztult szekciók + tábla */
+.card-kontakt-tipusok .card-lead {
+    margin: -0.25rem 0 1.25rem;
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    max-width: 52rem;
+}
+.card-kontakt-tipusok .config-section {
+    margin: 0;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+.card-kontakt-tipusok .config-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.config-section-title {
+    margin: 0 0 0.875rem 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.01em;
+}
+.config-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.config-section-head .config-section-title {
+    margin-bottom: 0;
+}
+.config-section-head .toolbar.toolbar-inline {
+    margin-bottom: 0;
+}
+.kontakt-tipus-form-uj .kontakt-tipus-uj-grid .form-group {
+    margin-bottom: 0;
+}
+.kontakt-tipus-form-uj .kontakt-tipus-uj-grid .form-group input {
+    max-width: none;
+    width: 100%;
+}
+.kontakt-tipus-uj-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) minmax(180px, 2fr) auto;
+    gap: 1rem 1.25rem;
+    align-items: end;
+}
+.kontakt-tipus-uj-gomb .btn {
+    min-height: 2.75rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+@media (max-width: 720px) {
+    .kontakt-tipus-uj-grid {
+        grid-template-columns: 1fr;
+    }
+    .kontakt-tipus-uj-gomb .btn {
+        width: 100%;
+    }
+}
+.kontakt-tipus-toolbar input[type="search"] {
+    max-width: min(100%, 280px);
+    min-width: 160px;
+}
+.table-wrap-kontakt-tipusok {
+    background: var(--bg);
+}
+.kontakt-tipusok-table .th-actions,
+.kontakt-tipusok-table .td-actions {
+    width: 1%;
+    white-space: nowrap;
+}
+.kontakt-tipusok-table .th-datum,
+.kontakt-tipusok-table .td-muted {
+    white-space: nowrap;
+}
+.kontakt-tipus-row-form {
+    margin: 0;
+    display: block;
+}
+.kontakt-tipusok-table .input-block {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    font-family: inherit;
+    background: var(--bg-elevated);
+    color: var(--text);
+    box-sizing: border-box;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.kontakt-tipusok-table .input-block:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+.kontakt-tipusok-table .td-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    vertical-align: middle;
+}
+.kontakt-tipusok-table .td-actions .inline-form {
+    display: inline-flex;
+}
+.kontakt-tipusok-ures {
+    margin: 0.75rem 0 0;
+}
+
 /* ========== Tables ========== */
 .table-wrap {
     overflow-x: auto;
@@ -486,10 +605,6 @@ tr:hover td { background: var(--bg); }
 }
 .inline-form .btn-sm {
     padding-inline: 0.65rem;
-}
-.inline-form-tipus {
-    flex-wrap: wrap;
-    gap: 0.35rem;
 }
 
 /* Számla letöltés ikon a listán */
