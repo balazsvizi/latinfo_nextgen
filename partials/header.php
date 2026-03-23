@@ -35,12 +35,17 @@ requireLogin();
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
-                        <a href="<?= h(BASE_URL) ?>/finance/szamlazando/" class="nav-parent-link">Számlázás</a>
-                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="szamlazas" aria-label="Almenü">▾</button>
+                        <a href="<?= h(BASE_URL) ?>/finance/szamlazando/" class="nav-parent-link">Finance</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="finance" aria-label="Almenü">▾</button>
                     </span>
-                    <ul class="nav-submenu" id="submenu-szamlazas" role="menu">
+                    <ul class="nav-submenu" id="submenu-finance" role="menu">
                         <li role="none"><a href="<?= h(BASE_URL) ?>/finance/szamlazando/" role="menuitem">Számlázandó</a></li>
                         <li role="none"><a href="<?= h(BASE_URL) ?>/finance/szamlak/" role="menuitem">Számlák</a></li>
+                        <?php if (isSuperadmin()): ?>
+                        <li role="none"><a href="<?= h(BASE_URL) ?>/admin/email/" role="menuitem">E-mail</a></li>
+                        <li role="none"><a href="<?= h(BASE_URL) ?>/admin/exporter/" role="menuitem">Exporter</a></li>
+                        <li role="none"><a href="<?= h(BASE_URL) ?>/admin/exporter/connections.php" role="menuitem">Exporter kapcsolatok</a></li>
+                        <?php endif; ?>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu">
@@ -63,9 +68,6 @@ requireLogin();
                     <ul class="nav-submenu" id="submenu-admin" role="menu">
                         <li role="none"><a href="<?= h(BASE_URL) ?>/admin/adminok/" role="menuitem">Adminok</a></li>
                         <li role="none"><a href="<?= h(BASE_URL) ?>/admin/log.php" role="menuitem">Logok</a></li>
-                        <li role="none"><a href="<?= h(BASE_URL) ?>/admin/email/" role="menuitem">E-mail</a></li>
-                        <li role="none"><a href="<?= h(BASE_URL) ?>/admin/exporter/" role="menuitem">Exporter</a></li>
-                        <li role="none"><a href="<?= h(BASE_URL) ?>/admin/exporter/connections.php" role="menuitem">Exporter kapcsolatok</a></li>
                     </ul>
                 </li>
                 <?php endif; ?>
