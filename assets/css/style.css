@@ -80,6 +80,19 @@ body {
     transition: color var(--transition);
 }
 .logo:hover { color: var(--primary-hover); }
+.logo .logo-site { font-weight: 700; }
+.logo .logo-area {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.95em;
+}
+.logo:hover .logo-area { color: var(--primary-hover); }
+
+.login-brand .logo-area {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.92em;
+}
 
 .header-user {
     color: var(--text-muted);

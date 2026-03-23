@@ -60,6 +60,28 @@ function h(?string $s): string {
 }
 
 /**
+ * Backoffice UI terület a kérés útvonala alapján (nem a SITE_NAME része).
+ * Alapértelmezés: Finance (szervezők, pénzügy, kontaktok, kezdőlap, jelszó, belépés).
+ */
+function app_backoffice_area(): string {
+    $s = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (strpos($s, '/config/') !== false) {
+        return 'Config';
+    }
+    if (strpos($s, '/admin/') !== false) {
+        return 'Admin';
+    }
+    return 'Finance';
+}
+
+/**
+ * Logó / böngésző cím előtagja: SITE_NAME + szóköz + terület (Finance|Admin|Config).
+ */
+function app_backoffice_brand_line(): string {
+    return trim(SITE_NAME . ' ' . app_backoffice_area());
+}
+
+/**
  * Hex szín normalizálása (#RRGGBB), fallbackkel.
  */
 function normalize_hex_color(?string $value, string $default = '#64748B'): string {

@@ -29,12 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bejelentkezés – <?= h(SITE_NAME) ?></title>
+    <title>Bejelentkezés – <?= h(app_backoffice_brand_line()) ?></title>
     <link rel="stylesheet" href="<?= h(BASE_URL) ?>/assets/css/style.css">
 </head>
 <body class="login-page">
     <div class="login-box">
-        <h1><?= h(SITE_NAME) ?></h1>
+        <h1 class="login-brand"><span class="logo-site"><?= h(SITE_NAME) ?></span> <span class="logo-area"><?= h(app_backoffice_area()) ?></span></h1>
         <p class="login-sub">Bejelentkezés</p>
         <?php if ($hiba): ?>
             <p class="error"><?= h($hiba) ?></p>

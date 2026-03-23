@@ -36,7 +36,7 @@ define('DB_USER', (string) cfg_get('DB_USER', 'root', $localConfig));
 define('DB_PASS', (string) cfg_get('DB_PASS', '', $localConfig));
 define('DB_CHARSET', (string) cfg_get('DB_CHARSET', 'utf8mb4', $localConfig));
 
-define('SITE_NAME', (string) cfg_get('SITE_NAME', 'Latinfo.hu Pénzügy', $localConfig));
+define('SITE_NAME', (string) cfg_get('SITE_NAME', 'Latinfo.hu', $localConfig));
 define('BASE_PATH', dirname(__DIR__));
 define('BASE_URL', rtrim((string) cfg_get('BASE_URL', '', $localConfig), '/'));
 define('UPLOAD_PATH', (string) cfg_get('UPLOAD_PATH', BASE_PATH . '/uploads/szamlak', $localConfig));

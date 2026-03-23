@@ -17,7 +17,7 @@ return [
     // 'UPLOAD_PATH' => __DIR__ . '/../uploads/szamlak',
     // 'UPLOAD_URL' => '/uploads/szamlak',
 
-    'SITE_NAME' => 'Latinfo.hu Pénzügy',
+    'SITE_NAME' => 'Latinfo.hu',
     'APP_TIMEZONE' => 'Europe/Budapest',
     'APP_DISPLAY_ERRORS' => '1',
 

@@ -10,13 +10,13 @@ requireLogin();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= h(SITE_NAME) ?><?= isset($pageTitle) ? ' – ' . h($pageTitle) : '' ?></title>
+    <title><?= h(app_backoffice_brand_line()) ?><?= isset($pageTitle) ? ' – ' . h($pageTitle) : '' ?></title>
     <link rel="stylesheet" href="<?= h(BASE_URL) ?>/assets/css/style.css">
 </head>
 <body>
 <header class="main-header">
     <div class="header-inner">
-        <a href="<?= h(BASE_URL) ?>/index.php" class="logo"><?= h(SITE_NAME) ?></a>
+        <a href="<?= h(BASE_URL) ?>/index.php" class="logo" title="<?= h(app_backoffice_brand_line()) ?>"><span class="logo-site"><?= h(SITE_NAME) ?></span><span class="logo-area-sep" aria-hidden="true"> </span><span class="logo-area"><?= h(app_backoffice_area()) ?></span></a>
         <?php if (isLoggedIn()): ?><a href="<?= h(BASE_URL) ?>/jelszo.php" class="header-user"><?= h($_SESSION['admin_nev']) ?></a><?php endif; ?>
         <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Menü" aria-expanded="false">
             <span class="icon">☰</span>

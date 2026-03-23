@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!filter_var($cim, FILTER_VALIDATE_EMAIL)) {
         $hiba = 'Érvénytelen címzett e-mail.';
     } else {
-        $targy = '[' . SITE_NAME . '] E-mail teszt';
+        $targy = '[' . app_backoffice_brand_line() . '] E-mail teszt';
         $szoveg = '<p>Ez egy teszt e-mail a backoffice rendszerből (SMTP).</p>'
             . '<p>Időpont: ' . date('Y-m-d H:i:s') . '</p>'
             . '<p>Ha megkaptad, az SMTP küldés működik.</p>';
