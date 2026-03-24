@@ -201,6 +201,17 @@ a.header-user:hover {
     display: block;
 }
 .nav-submenu li { margin: 0; }
+.nav-submenu li.nav-submenu-heading {
+    padding: 0.5rem 1rem 0.2rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+.nav-submenu li.nav-submenu-heading span { display: block; }
+.nav-submenu li.nav-submenu-heading:first-child { padding-top: 0.35rem; }
 .nav-submenu a {
     display: block;
     padding: 0.5rem 1rem;
@@ -373,6 +384,16 @@ a.header-user:hover {
     border-radius: var(--radius-sm);
     font-size: 0.9375rem;
 }
+.login-back-home {
+    margin: 1.25rem 0 0;
+    text-align: center;
+    font-size: 0.875rem;
+}
+.login-back-home a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+.login-back-home a:hover { color: var(--primary); text-decoration: underline; }
 
 /* ========== Buttons ========== */
 .btn {
@@ -1374,3 +1395,15 @@ table select:focus {
 .btn-link.btn-danger:hover { background: #fef2f2; color: var(--danger-hover); }
 .inline-form { display: inline; }
 .inline-form button { vertical-align: middle; }
+
+/* La nueva landing – admin lista */
+.card-landing-visszajelzesek .landing-visszajelzesek-meta { margin-top: 1rem; }
+.card-landing-visszajelzesek .landing-visszajelzesek-table .landing-tartalom {
+    max-width: 36rem;
+    vertical-align: top;
+    word-break: break-word;
+}
+.card-landing-visszajelzesek .landing-blob { margin-top: 0.65rem; line-height: 1.5; }
+.card-landing-visszajelzesek .landing-blob:first-child { margin-top: 0; }
+.card-landing-visszajelzesek .landing-ts { white-space: nowrap; }
+.card-landing-visszajelzesek .landing-ua { max-width: 12rem; font-size: 0.875rem; color: var(--text-muted); }

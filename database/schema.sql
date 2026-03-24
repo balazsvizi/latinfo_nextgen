@@ -223,6 +223,17 @@ CREATE TABLE IF NOT EXISTS rendszer_log (
     FOREIGN KEY (admin_id) REFERENCES adminok(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- NextGen landing (visszajelzés, értesítés)
+CREATE TABLE IF NOT EXISTS landingpage (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ilyen_legyen TEXT NULL,
+    ilyen_ne_legyen TEXT NULL,
+    email VARCHAR(255) NULL,
+    ip VARCHAR(45) NULL,
+    user_agent VARCHAR(512) NULL,
+    létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Alapértelmezett admin: felhasználónév = admin, jelszó = password, szint = superadmin
 INSERT IGNORE INTO adminok (id, név, felhasználónév, jelszó_hash, szint, aktív) VALUES
 (1, 'Főadmin', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'superadmin', 1);

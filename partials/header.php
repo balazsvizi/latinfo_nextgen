@@ -46,9 +46,12 @@ requireLogin();
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
                         <a href="<?= h(BASE_URL) ?>/config/cimkek.php" class="nav-parent-link">Config</a>
-                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="config" aria-label="Almenü">▾</button>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="config" aria-label="Config almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-config" role="menu">
+                        <li class="nav-submenu-heading" role="presentation"><span>Új táblázatok</span></li>
+                        <li role="none"><a href="<?= h(BASE_URL) ?>/config/landing_visszajelzesek.php" role="menuitem">Visszajelzések és értesítések</a></li>
+                        <li class="nav-submenu-heading" role="presentation"><span>Általános</span></li>
                         <li role="none"><a href="<?= h(BASE_URL) ?>/config/cimkek.php" role="menuitem">Címkék</a></li>
                         <li role="none"><a href="<?= h(BASE_URL) ?>/config/kontakt_tipusok.php" role="menuitem">Kontakt típusok</a></li>
                         <li role="none"><a href="<?= h(BASE_URL) ?>/config/levelsablonok/" role="menuitem">Levélsablonok</a></li>

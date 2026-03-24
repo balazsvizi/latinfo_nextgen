@@ -17,7 +17,7 @@ require_once __DIR__ . '/functions.php';
 function requireLogin(): void {
     if (!isLoggedIn()) {
         $_SESSION['_redirect_after_login'] = $_SERVER['REQUEST_URI'] ?? '';
-        redirect(BASE_URL . '/belepes');
+        redirect((BASE_URL !== '' ? rtrim(BASE_URL, '/') : '') . '/nextgen/');
     }
 }
 

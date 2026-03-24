@@ -23,7 +23,7 @@ Táncosoknak szóló weboldal backoffice része. PHP + MySQL.
    - A `config/config.php` maradjon közös, környezetfüggetlen alapkonfig.
 
 3. **Belépés**
-   - Belépési oldal: **/belepes** (pl. `https://latinfo.hu/belepes`)
+   - Belépési oldal: **/nextgen/** (pl. `https://latinfo.hu/nextgen/`) – a régi **/belepes** ugyanazt a lapot tölti be.
    - Alapértelmezett bejelentkezés: **felhasználónév:** `admin`, **jelszó:** `password`
    - Az első belépés után érdemes új admint létrehozni és a defaultot letiltani, vagy jelszót módosítani (jelen verzióban nincs jelszó módosítás, csak új admin).
 
@@ -57,8 +57,9 @@ Latinfo.hu/
 ├── adminok/         # admin lista, újonnan felvétel, letiltás/engedélyezés
 ├── uploads/szamlak/ # számla mellékletek (automatikusan létrejön)
 ├── index.php        # dashboard
-├── belepes/index.php   # Belépés (URL: /belepes)
-├── login.php           # Átirányít /belepes-re
+├── nextgen/index.php   # Belépés (URL: /nextgen/)
+├── belepes/index.php   # Régi URL – ugyanaz a belépés
+├── login.php           # Átirányít /nextgen/-re
 ├── logout.php
 ├── log.php          # rendszer log
 ├── cimkek.php       # címkék kezelése
