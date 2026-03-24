@@ -12,7 +12,11 @@ return [
 
     // Ha a projekt alkönyvtárban fut: pl. '/Alatinfo' (vezető perjel, domain nélkül).
     // Üresen hagyva a rendszer megpróbálja kitalálni a SCRIPT_NAME / REQUEST_URI alapján (/nextgen/ vagy /lanueva/ előtti rész).
+    // Ne állítsd '/nextgen'-re, ha a La nueva a /lanueva/ alatt van (testvér mappa) – ilyenkor BASE_URL maradjon '' vagy a közös szülő útvonal.
     'BASE_URL' => '',
+
+    // Backoffice URL szegmens (alap: nextgen). Ha a BASE_URL már .../nextgen-re végződik, automatikusan nem duplázódik.
+    // 'NEXTGEN_WEB' => '/nextgen',
 
     // Opcionális: ha máshova szeretnéd az uploadokat (alapértelmezés: nextgen/core/config.php)
     // 'UPLOAD_PATH' => __DIR__ . '/../uploads/szamlak',

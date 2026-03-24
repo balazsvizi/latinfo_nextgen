@@ -60,9 +60,18 @@ if ($baseUrlResolved === '' && PHP_SAPI !== 'cli') {
     }
 }
 define('BASE_URL', $baseUrlResolved);
-/** Webes útvonal a backoffice gyökéréhez (pl. /nextgen) */
+
+/** Webes útvonal a backoffice mappához (pl. /nextgen). Üres, ha a PHP már a /nextgen URL alatt fut. */
+$nextgenWebCfg = trim((string) cfg_get('NEXTGEN_WEB', '/nextgen', $localConfig), '/');
+$nextgenWeb = $nextgenWebCfg === '' ? '' : '/' . $nextgenWebCfg;
+$bTrim = rtrim($baseUrlResolved, '/');
+if ($nextgenWeb !== '' && $bTrim !== '' && strlen($nextgenWeb) <= strlen($bTrim)
+    && substr($bTrim, -strlen($nextgenWeb)) === $nextgenWeb) {
+    // pl. BASE_URL=/nextgen + NEXTGEN_WEB=/nextgen → ne legyen /nextgen/nextgen/login.php
+    $nextgenWeb = '';
+}
 if (!defined('NEXTGEN_WEB')) {
-    define('NEXTGEN_WEB', '/nextgen');
+    define('NEXTGEN_WEB', $nextgenWeb);
 }
 
 if (!function_exists('site_url')) {
@@ -84,11 +93,20 @@ if (!function_exists('nextgen_url')) {
     function nextgen_url(string $path = ''): string {
         $path = ltrim($path, '/');
         $base = (BASE_URL !== '' ? rtrim(BASE_URL, '/') : '');
-        return $base . NEXTGEN_WEB . ($path !== '' ? '/' . $path : '');
+        $ng = NEXTGEN_WEB;
+        $mid = ($ng !== '' ? $ng : '');
+        $suffix = ($path !== '' ? '/' . $path : '');
+        if ($mid === '' && $base !== '' && $suffix !== '') {
+            return $base . $suffix;
+        }
+        if ($mid === '' && $base !== '' && $suffix === '') {
+            return $base;
+        }
+        return $base . $mid . $suffix;
     }
 }
 define('UPLOAD_PATH', (string) cfg_get('UPLOAD_PATH', BASE_PATH . '/nextgen/uploads/szamlak', $localConfig));
-define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', site_url('nextgen/uploads/szamlak'), $localConfig));
+define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', nextgen_url('uploads/szamlak'), $localConfig));
 
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra
