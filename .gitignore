@@ -13,9 +13,9 @@ Thumbs.db
 !.env.example
 
 # App config (keep templates/example files in git)
-/config/*.local.php
-/config/*secret*.php
-/config/*private*.php
+/nextgen/core/config.local.php
+/nextgen/core/*secret*.php
+/nextgen/core/*private*.php
 
 # PHP dependencies
 /vendor/
@@ -35,12 +35,12 @@ Thumbs.db
 *.sql.gz
 *.sql.zip
 *.dump
-/database/backups/
-/database/dumps/
+/nextgen/database/backups/
+/nextgen/database/dumps/
 
 # Uploaded files (keep folder structure placeholder)
-/uploads/*
-!/uploads/.gitkeep
-!/uploads/szamlak/
-/uploads/szamlak/*
-!/uploads/szamlak/.gitkeep
+/nextgen/uploads/*
+!/nextgen/uploads/.gitkeep
+!/nextgen/uploads/szamlak/
+/nextgen/uploads/szamlak/*
+!/nextgen/uploads/szamlak/.gitkeep

@@ -1,0 +1,2 @@
+# Gyökér URL (/): a backoffice kezdőlap (vendég → La nueva, belépve → dashboard)
+DirectoryIndex nextgen/index.php

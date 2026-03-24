@@ -6,6 +6,7 @@ Táncosoknak szóló weboldal backoffice része. PHP + MySQL.
 
 - PHP 7.4+ (PDO, session, password_hash)
 - MySQL 5.7+ / MariaDB 10.2+
+- **Apache:** a gyökér `.htaccess` a `/` kérést a `nextgen/index.php`-re irányítja (`DirectoryIndex`). **Nginx** esetén állíts be ehhez hasonló index / `try_files` szabályt, vagy használd közvetlenül a `/nextgen/index.php` URL-t kezdőlapnak.
 
 ## Telepítés
 
@@ -13,17 +14,17 @@ Táncosoknak szóló weboldal backoffice része. PHP + MySQL.
    - MySQL-ben hozz létre egy `alatinfo` adatbázist (utf8mb4).
    - Importáld a sémát:
      ```bash
-     mysql -u root -p alatinfo < database/schema.sql
+     mysql -u root -p alatinfo < nextgen/database/schema.sql
      ```
-   - Laragon: Hegyezd be a MySQL-t, majd phpMyAdmin-ban hozd létre az `alatinfo` adatbázist és futtasd a `database/schema.sql` tartalmát.
+   - Laragon: Hegyezd be a MySQL-t, majd phpMyAdmin-ban hozd létre az `alatinfo` adatbázist és futtasd a `nextgen/database/schema.sql` tartalmát.
 
 2. **Konfiguráció**
-   - A szerverfüggő beállításokat a `config/config.local.php` fájlban add meg (mintát ad: `config/config.local.example.php`).
+   - A szerverfüggő beállításokat a `nextgen/core/config.local.php` fájlban add meg (mintát ad: `nextgen/core/config.local.example.php`).
    - Alternatíva: környezeti változók (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `BASE_URL`, `EMAIL_ENCRYPT_KEY`, stb.).
-   - A `config/config.php` maradjon közös, környezetfüggetlen alapkonfig.
+   - A `nextgen/core/config.php` maradjon közös, környezetfüggetlen alapkonfig.
 
 3. **Belépés**
-   - Belépési oldal: **/nextgen/** (pl. `https://latinfo.hu/nextgen/`) – a régi **/belepes** ugyanazt a lapot tölti be.
+   - Belépési oldal: **/nextgen/login.php** (pl. `https://latinfo.hu/nextgen/login.php`) – a régi **/belepes** ugyanazt a lapot tölti be.
    - Alapértelmezett bejelentkezés: **felhasználónév:** `admin`, **jelszó:** `password`
    - Az első belépés után érdemes új admint létrehozni és a defaultot letiltani, vagy jelszót módosítani (jelen verzióban nincs jelszó módosítás, csak új admin).
 
@@ -38,32 +39,24 @@ Táncosoknak szóló weboldal backoffice része. PHP + MySQL.
 - **Rendszer log**: minden entitás létrehozás/módosítás rögzítése
 
 **Meglévő telepítés:** ha már fut az adatbázis, futtasd egyszer a migrációt (admin szint oszlop + minden meglévő user superadmin):  
-`mysql -u root -p alatinfo < database/migration_admin_szint.sql`
+`mysql -u root -p alatinfo < nextgen/database/migration_admin_szint.sql`
 
 ## Mappa struktúra
 
+A projekt gyökérben két fő mappa: **`nextgen/`** (backoffice, adatbázis-sémák, core config) és **`lanueva/`** (nyilvános La nueva landing + statikus assetek).
+
 ```
-Latinfo.hu/
-├── config/          # config.php, database.php
-├── database/        # schema.sql
-├── includes/        # auth.php, functions.php
-├── partials/        # header.php, footer.php
-├── assets/css/      # style.css
-├── szervezok/       # lista, megtekint, szerkeszt, letrehoz, kontakt hozzáadás/levétel
-├── kontaktok/       # lista, megtekint, szerkeszt, letrehoz
-├── cimek/           # számlázási címek (letrehoz, szerkeszt)
-├── szamlak/         # számlák (letrehoz, megtekint, fájl letöltés)
-├── szamlazando/     # számlázandó (letrehoz, szerkeszt)
-├── adminok/         # admin lista, újonnan felvétel, letiltás/engedélyezés
-├── uploads/szamlak/ # számla mellékletek (automatikusan létrejön)
-├── index.php        # dashboard
-├── nextgen/index.php   # Belépés (URL: /nextgen/)
-├── belepes/index.php   # Régi URL – ugyanaz a belépés
-├── login.php           # Átirányít /nextgen/-re
-├── logout.php
-├── log.php          # rendszer log
-├── cimkek.php       # címkék kezelése
-└── README.md
+├── nextgen/              # Backoffice, core, migrációk, feltöltések
+│   ├── core/             # config.php, database.php, config.local.example
+│   ├── database/         # schema.sql, migrációk
+│   ├── config/           # címkék, levélsablonok, La nueva admin lista
+│   ├── includes/, partials/, admin/, contacts/, …
+│   └── login.php, logout.php, index.php   # belépés, kijelentkezés, dashboard
+├── lanueva/              # Nyilvános landing (/lanueva/)
+│   ├── landing_public.php
+│   └── assets/           # landing.css, képek (OG)
+├── .htaccess             # Apache: DirectoryIndex → nextgen/index.php (a / címhez)
+└── composer.json
 ```
 
 ## Nyelv

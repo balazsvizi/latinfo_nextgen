@@ -2,12 +2,12 @@
 /**
  * Nyilvános NextGen landing – URL: /lanueva/
  */
-require_once dirname(__DIR__) . '/config/config.php';
-require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/nextgen/core/config.php';
+require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
 
 if (isLoggedIn()) {
-    redirect(BASE_URL . '/index.php');
+    redirect(nextgen_url('index.php'));
     exit;
 }
 
-require_once dirname(__DIR__) . '/landing_public.php';
+require_once __DIR__ . '/landing_public.php';
