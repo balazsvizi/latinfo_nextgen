@@ -1,0 +1,7 @@
+# Apache / Laragon: DocumentRoot = a projekt gyökér könyvtára (ahol a nextgen/ és lanueva/ mappák vannak).
+# Mivel a gyökérben nincs .htaccess, ezeket a direktívákat a VirtualHost blokkba vagy egy Include fájlba tedd.
+
+DirectoryIndex nextgen/index.php
+
+RewriteEngine On
+RewriteRule ^lanueva$ lanueva/ [R=301,L]

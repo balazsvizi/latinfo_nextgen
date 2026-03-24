@@ -1,0 +1,38 @@
+# OS / editor (a repo gyökere üres fájl nélkül; IDE a gyökérben: ~/.config/git/ignore vagy git config core.excludesFile)
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# App config (keep templates/example files in git)
+core/config.local.php
+core/*secret*.php
+core/*private*.php
+
+# PHP dependencies
+vendor/
+composer.phar
+
+node_modules/
+
+*.log
+*.tmp
+*.cache
+
+*.sql.gz
+*.sql.zip
+*.dump
+database/backups/
+database/dumps/
+
+uploads/*
+!uploads/.gitkeep
+!uploads/szamlak/
+uploads/szamlak/*
+!uploads/szamlak/.gitkeep

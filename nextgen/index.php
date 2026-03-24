@@ -1,14 +1,9 @@
 <?php
 /**
- * Dashboard – URL: /nextgen/index.php (Apache: a gyökér / is ezt használja – lásd .htaccess).
- * Vendég: átirányítás a La nueva landingre (nem a belépőlapra).
+ * Dashboard – URL: /nextgen/index.php (Apache: DocumentRoot szabályok – lásd nextgen/apache-document-root.example.txt).
+ * Vendég: a header requireLogin() → /nextgen/login.php.
  */
 require_once __DIR__ . '/init.php';
-if (!isLoggedIn()) {
-    $base = (BASE_URL !== '' ? rtrim(BASE_URL, '/') : '');
-    redirect($base . '/lanueva/');
-    exit;
-}
 
 $pageTitle = 'Dashboard';
 require_once __DIR__ . '/partials/header.php';

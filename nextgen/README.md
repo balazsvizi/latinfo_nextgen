@@ -2,11 +2,14 @@
 
 Táncosoknak szóló weboldal backoffice része. PHP + MySQL.
 
+A **projekt gyökerében** (ahol ez a `nextgen/` és a `lanueva/` mappa van) szándékosan **nincs fájl** – csak ezek a mappák, a `.git`, illetve opcionálisan a `.github/`.
+
 ## Követelmények
 
 - PHP 7.4+ (PDO, session, password_hash)
 - MySQL 5.7+ / MariaDB 10.2+
-- **Apache:** a gyökér `.htaccess` a `/` kérést a `nextgen/index.php`-re irányítja (`DirectoryIndex`). **Nginx** esetén állíts be ehhez hasonló index / `try_files` szabályt, vagy használd közvetlenül a `/nextgen/index.php` URL-t kezdőlapnak.
+- **Apache:** mivel nincs gyökér `.htaccess`, a **DocumentRoot** mellett add meg a szabályokat (lásd **`apache-document-root.example.txt`**). A `lanueva/.htaccess` a landing mappában marad (`DirectoryIndex`). **Nginx:** hasonló `index` / `try_files` / redirect, vagy közvetlenül `/nextgen/index.php` és `/lanueva/`.
+- **Composer:** függőségek a **`nextgen/`** mappában: `composer install`
 
 ## Telepítés
 
@@ -18,13 +21,19 @@ Táncosoknak szóló weboldal backoffice része. PHP + MySQL.
      ```
    - Laragon: Hegyezd be a MySQL-t, majd phpMyAdmin-ban hozd létre az `alatinfo` adatbázist és futtasd a `nextgen/database/schema.sql` tartalmát.
 
-2. **Konfiguráció**
+2. **Composer (PHPMailer)**
+   ```bash
+   cd nextgen
+   composer install
+   ```
+
+3. **Konfiguráció**
    - A szerverfüggő beállításokat a `nextgen/core/config.local.php` fájlban add meg (mintát ad: `nextgen/core/config.local.example.php`).
    - Alternatíva: környezeti változók (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `BASE_URL`, `EMAIL_ENCRYPT_KEY`, stb.).
    - A `nextgen/core/config.php` maradjon közös, környezetfüggetlen alapkonfig.
 
-3. **Belépés**
-   - Belépési oldal: **/nextgen/login.php** (pl. `https://latinfo.hu/nextgen/login.php`) – a régi **/belepes** ugyanazt a lapot tölti be.
+4. **Belépés**
+   - Belépési oldal: **/nextgen/login.php** (pl. `https://latinfo.hu/nextgen/login.php`) – a **/nextgen/belepes** ugyanazt a lapot tölti be.
    - Alapértelmezett bejelentkezés: **felhasználónév:** `admin`, **jelszó:** `password`
    - Az első belépés után érdemes új admint létrehozni és a defaultot letiltani, vagy jelszót módosítani (jelen verzióban nincs jelszó módosítás, csak új admin).
 
@@ -43,20 +52,23 @@ Táncosoknak szóló weboldal backoffice része. PHP + MySQL.
 
 ## Mappa struktúra
 
-A projekt gyökérben két fő mappa: **`nextgen/`** (backoffice, adatbázis-sémák, core config) és **`lanueva/`** (nyilvános La nueva landing + statikus assetek).
+A **git / fájlrendszer gyökere** csak a két alkönyvtár (és rejtett `.git` / `.github`):
 
 ```
-├── nextgen/              # Backoffice, core, migrációk, feltöltések
-│   ├── core/             # config.php, database.php, config.local.example
-│   ├── database/         # schema.sql, migrációk
-│   ├── config/           # címkék, levélsablonok, La nueva admin lista
+├── nextgen/              # Backoffice, core, migrációk, feltöltések, composer.json, README
+│   ├── .gitignore
+│   ├── apache-document-root.example.txt
+│   ├── composer.json
+│   ├── core/
+│   ├── database/
+│   ├── config/
 │   ├── includes/, partials/, admin/, contacts/, …
-│   └── login.php, logout.php, index.php   # belépés, kijelentkezés, dashboard
-├── lanueva/              # Nyilvános landing (/lanueva/)
+│   └── login.php, logout.php, index.php
+├── lanueva/              # Nyilvános landing (/lanueva, /lanueva/)
+│   ├── .htaccess
 │   ├── landing_public.php
-│   └── assets/           # landing.css, képek (OG)
-├── .htaccess             # Apache: DirectoryIndex → nextgen/index.php (a / címhez)
-└── composer.json
+│   └── assets/
+└── .github/              # CI (opcionális)
 ```
 
 ## Nyelv

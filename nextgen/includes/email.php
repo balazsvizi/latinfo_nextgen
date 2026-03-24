@@ -87,8 +87,8 @@ function email_kuld($cimzett, string $targy, string $szoveg, array $opciok = [])
     }
 
     $phpmailer_loaded = false;
-    if (is_file(BASE_PATH . '/vendor/autoload.php')) {
-        require_once BASE_PATH . '/vendor/autoload.php';
+    if (is_file(BASE_PATH . '/nextgen/vendor/autoload.php')) {
+        require_once BASE_PATH . '/nextgen/vendor/autoload.php';
         $phpmailer_loaded = true;
     }
     $pmDir = __DIR__ . '/phpmailer';
