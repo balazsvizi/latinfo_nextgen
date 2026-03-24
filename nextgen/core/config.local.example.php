@@ -10,7 +10,8 @@ return [
     'DB_PASS' => 'jelszo',
     'DB_CHARSET' => 'utf8mb4',
 
-    // Ha a projekt alkönyvtárban fut: pl. '/Alatinfo'
+    // Ha a projekt alkönyvtárban fut: pl. '/Alatinfo' (vezető perjel, domain nélkül).
+    // Üresen hagyva a rendszer megpróbálja kitalálni a SCRIPT_NAME / REQUEST_URI alapján (/nextgen/ vagy /lanueva/ előtti rész).
     'BASE_URL' => '',
 
     // Opcionális: ha máshova szeretnéd az uploadokat (alapértelmezés: nextgen/core/config.php)

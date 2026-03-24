@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
             $ua,
         ]);
         flash('landing_ok_feedback', 'Köszönjük a visszajelzést!');
-        redirect((BASE_URL !== '' ? rtrim(BASE_URL, '/') : '') . '/lanueva/');
+        redirect(site_url('lanueva/'));
     }
 }
 
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_notify'])) {
         $stmt = $db->prepare('INSERT INTO landingpage (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (NULL, NULL, ?, ?, ?)');
         $stmt->execute([$email, $ip, $ua]);
         flash('landing_ok_notify', 'Köszönjük! Az e-mail címed elmentve – induláskor értesítünk.');
-        redirect((BASE_URL !== '' ? rtrim(BASE_URL, '/') : '') . '/lanueva/');
+        redirect(site_url('lanueva/'));
     }
 }
 
@@ -67,21 +67,16 @@ $siker_notify = (string) (flash('landing_ok_notify') ?? '');
 $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
 $scheme = $https ? 'https' : 'http';
 $httpHost = $_SERVER['HTTP_HOST'] ?? '';
-$ogOrigin = (BASE_URL !== '') ? rtrim(BASE_URL, '/') : (($httpHost !== '') ? $scheme . '://' . $httpHost : '');
-$landingPublicUrl = (BASE_URL !== '' ? rtrim(BASE_URL, '/') : '') . '/lanueva/';
-if (BASE_URL !== '') {
-    $ogCanonical = $landingPublicUrl;
-} elseif ($ogOrigin !== '') {
-    $path = strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?') ?: '/lanueva/';
-    $ogCanonical = $ogOrigin . $path;
-} else {
-    $ogCanonical = '';
-}
+$publicOrigin = ($httpHost !== '') ? $scheme . '://' . $httpHost : '';
+$landingPublicPath = site_url('lanueva/');
+$ogCanonical = $publicOrigin !== '' ? ($publicOrigin . $landingPublicPath) : '';
 $ogHasSharePng = is_file(__DIR__ . '/assets/images/og/nextgen-share.png');
-$ogImageRel = $ogHasSharePng
-    ? '/lanueva/assets/images/og/nextgen-share.png'
-    : '/lanueva/assets/images/logo/logo.jpg';
-$ogImage = ($ogOrigin !== '') ? $ogOrigin . $ogImageRel : '';
+$ogImagePath = site_url(
+    $ogHasSharePng
+        ? 'lanueva/assets/images/og/nextgen-share.png'
+        : 'lanueva/assets/images/logo/logo.jpg'
+);
+$ogImage = $publicOrigin !== '' ? ($publicOrigin . $ogImagePath) : '';
 $ogTitle = SITE_NAME . ' – La nueva';
 $ogDescription = 'Megújul a Latinfo.hu! Oszd meg az ötleteidet, vagy iratkozz fel induláskori értesítésre.';
 ?>
@@ -124,7 +119,7 @@ $ogDescription = 'Megújul a Latinfo.hu! Oszd meg az ötleteidet, vagy iratkozz 
     <?php endif; ?>
 
     <meta name="theme-color" content="#050816">
-    <link rel="stylesheet" href="<?= h(BASE_URL) ?>/lanueva/assets/css/landing.css">
+    <link rel="stylesheet" href="<?= h(site_url('lanueva/assets/css/landing.css')) ?>">
 </head>
 <body class="landing-nextgen">
     <div class="landing-bg-grid" aria-hidden="true"></div>

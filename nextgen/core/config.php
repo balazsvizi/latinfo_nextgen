@@ -38,10 +38,43 @@ define('DB_CHARSET', (string) cfg_get('DB_CHARSET', 'utf8mb4', $localConfig));
 
 define('SITE_NAME', (string) cfg_get('SITE_NAME', 'Latinfo.hu', $localConfig));
 define('BASE_PATH', dirname(__DIR__, 2));
-define('BASE_URL', rtrim((string) cfg_get('BASE_URL', '', $localConfig), '/'));
+
+$baseUrlConfigured = rtrim((string) cfg_get('BASE_URL', '', $localConfig), '/');
+$baseUrlResolved = $baseUrlConfigured;
+if ($baseUrlResolved === '' && PHP_SAPI !== 'cli') {
+    $candidates = [
+        (string) ($_SERVER['SCRIPT_NAME'] ?? ''),
+        (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?'),
+    ];
+    foreach ($candidates as $src) {
+        if ($src === '') {
+            continue;
+        }
+        foreach (['/nextgen/', '/lanueva/'] as $needle) {
+            $p = strpos($src, $needle);
+            if ($p > 0) {
+                $baseUrlResolved = substr($src, 0, $p);
+                break 2;
+            }
+        }
+    }
+}
+define('BASE_URL', $baseUrlResolved);
 /** Webes útvonal a backoffice gyökéréhez (pl. /nextgen) */
 if (!defined('NEXTGEN_WEB')) {
     define('NEXTGEN_WEB', '/nextgen');
+}
+
+if (!function_exists('site_url')) {
+    /**
+     * Webes útvonal a domain gyökérétől, BASE_URL előtaggal (alkönyvtárban futó telepítés).
+     * @param string $path pl. "lanueva/assets/css/landing.css" vagy "/lanueva/"
+     */
+    function site_url(string $path): string {
+        $path = '/' . ltrim($path, '/');
+        $base = rtrim(BASE_URL, '/');
+        return $base === '' ? $path : $base . $path;
+    }
 }
 
 if (!function_exists('nextgen_url')) {
@@ -55,7 +88,7 @@ if (!function_exists('nextgen_url')) {
     }
 }
 define('UPLOAD_PATH', (string) cfg_get('UPLOAD_PATH', BASE_PATH . '/nextgen/uploads/szamlak', $localConfig));
-define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', (BASE_URL !== '' ? BASE_URL : '') . '/nextgen/uploads/szamlak', $localConfig));
+define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', site_url('nextgen/uploads/szamlak'), $localConfig));
 
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra

@@ -51,7 +51,7 @@ $loginBrand = trim(SITE_NAME . ' NextGen');
             <input type="password" name="jelszo" required>
             <button type="submit">Bejelentkezés</button>
         </form>
-        <p class="login-back-home"><a href="<?= h(BASE_URL !== '' ? rtrim(BASE_URL, '/') : '') ?>/lanueva/">← La nueva</a></p>
+        <p class="login-back-home"><a href="<?= h(site_url('lanueva/')) ?>">← La nueva</a></p>
     </div>
 </body>
 </html>
