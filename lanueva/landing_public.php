@@ -72,6 +72,7 @@ $landingPublicPath = site_url('lanueva/');
 $ogCanonical = $publicOrigin !== '' ? ($publicOrigin . $landingPublicPath) : '';
 
 $ogCandidates = [
+    __DIR__ . '/assets/images/og/lanueva-fb2.png',
     __DIR__ . '/assets/images/og/lanueva-fb.png',
     __DIR__ . '/assets/images/og/nextgen-share.png',
     __DIR__ . '/assets/images/logo/latinfo_black.png',
@@ -96,7 +97,7 @@ $ogImageW = is_array($ogImageDims) ? (int) $ogImageDims[0] : 0;
 $ogImageH = is_array($ogImageDims) ? (int) $ogImageDims[1] : 0;
 
 $ogTitle = SITE_NAME . ' – La nueva';
-$ogDescription = 'Megújul a Latinfo.hu! Mond el, milyen legyen a weboldalunk – segíts te is alakítani!';
+$ogDescription = 'Megújul a Latinfo.hu! Mondd el, milyen legyen a weboldalunk – segíts te is alakítani!';
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -156,7 +157,7 @@ $ogDescription = 'Megújul a Latinfo.hu! Mond el, milyen legyen a weboldalunk �
                 <span class="ln-title-word-1">Megújul</span>
                 <span class="ln-title-word-2">a Latinfo.hu!</span>
             </h1>
-            <p class="ln-hero-subtitle">Mond el, milyen legyen a weboldalunk – segíts te is alakítani!</p>
+            <p class="ln-hero-subtitle">Mondd el, milyen legyen a weboldalunk – segíts te is alakítani!</p>
         </section>
 
         <div class="ln-cards">
@@ -201,7 +202,7 @@ $ogDescription = 'Megújul a Latinfo.hu! Mond el, milyen legyen a weboldalunk �
         </div>
 
         <section class="ln-hero-image-section">
-            <img src="<?= h(site_url('lanueva/assets/images/og/lanueva-fb.png')) ?>" alt="Salsa – Latin energia" loading="lazy">
+            <img src="<?= h(site_url('lanueva/assets/images/og/lanueva-fb2.png')) ?>" alt="Salsa – Latin energia" loading="lazy">
         </section>
     </main>
 
