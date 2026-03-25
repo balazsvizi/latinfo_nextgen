@@ -96,7 +96,7 @@ $ogImageW = is_array($ogImageDims) ? (int) $ogImageDims[0] : 0;
 $ogImageH = is_array($ogImageDims) ? (int) $ogImageDims[1] : 0;
 
 $ogTitle = SITE_NAME . ' – La nueva';
-$ogDescription = 'Megújul a Latinfo.hu! Mond el, milyen legyen a weboldalunk – segíts te is alakítani.';
+$ogDescription = 'Megújul a Latinfo.hu! Mond el, milyen legyen a weboldalunk – segíts te is alakítani!';
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -156,7 +156,7 @@ $ogDescription = 'Megújul a Latinfo.hu! Mond el, milyen legyen a weboldalunk �
                 <span class="ln-title-word-1">Megújul</span>
                 <span class="ln-title-word-2">a Latinfo.hu!</span>
             </h1>
-            <p class="ln-hero-subtitle">Mond el, milyen legyen a weboldalunk – segíts te is alakítani.</p>
+            <p class="ln-hero-subtitle">Mond el, milyen legyen a weboldalunk – segíts te is alakítani!</p>
         </section>
 
         <div class="ln-cards">
