@@ -70,28 +70,47 @@ $httpHost = $_SERVER['HTTP_HOST'] ?? '';
 $publicOrigin = ($httpHost !== '') ? $scheme . '://' . $httpHost : '';
 $landingPublicPath = site_url('lanueva/');
 $ogCanonical = $publicOrigin !== '' ? ($publicOrigin . $landingPublicPath) : '';
-$ogHasSharePng = is_file(__DIR__ . '/assets/images/og/nextgen-share.png');
-$ogImagePath = site_url(
-    $ogHasSharePng
-        ? 'lanueva/assets/images/og/nextgen-share.png'
-        : 'lanueva/assets/images/logo/logo.jpg'
-);
-$ogImage = $publicOrigin !== '' ? ($publicOrigin . $ogImagePath) : '';
+
+$ogCandidates = [
+    __DIR__ . '/assets/images/og/lanueva-fb.png',
+    __DIR__ . '/assets/images/og/nextgen-share.png',
+    __DIR__ . '/assets/images/logo/latinfo_black.png',
+    __DIR__ . '/assets/images/logo/logo.jpg',
+];
+$ogImageFs = '';
+foreach ($ogCandidates as $candidate) {
+    if (is_file($candidate)) {
+        $ogImageFs = $candidate;
+        break;
+    }
+}
+$ogImageRel = '';
+if ($ogImageFs !== '') {
+    $fromLanueva = substr($ogImageFs, strlen(rtrim(__DIR__, '/\\')) + 1);
+    $ogImageRel = 'lanueva/' . str_replace('\\', '/', $fromLanueva);
+}
+$ogImagePath = $ogImageRel !== '' ? site_url($ogImageRel) : '';
+$ogImage = $publicOrigin !== '' && $ogImagePath !== '' ? ($publicOrigin . $ogImagePath) : '';
+$ogImageDims = ($ogImageFs !== '' && is_readable($ogImageFs)) ? @getimagesize($ogImageFs) : false;
+$ogImageW = is_array($ogImageDims) ? (int) $ogImageDims[0] : 0;
+$ogImageH = is_array($ogImageDims) ? (int) $ogImageDims[1] : 0;
+
 $ogTitle = SITE_NAME . ' – La nueva';
-$ogDescription = 'Megújul a Latinfo.hu! Oszd meg az ötleteidet, vagy iratkozz fel induláskori értesítésre.';
+$ogDescription = 'Megújul a Latinfo.hu! Mond el, milyen legyen a weboldalunk – segíts te is alakítani.';
 ?>
 <!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= h($ogTitle) ?></title>
     <meta name="description" content="<?= h($ogDescription) ?>">
     <?php if ($ogCanonical !== ''): ?>
     <link rel="canonical" href="<?= h($ogCanonical) ?>">
     <?php endif; ?>
 
-    <!-- Open Graph (Facebook, LinkedIn, stb.) -->
+    <meta name="theme-color" content="#ff1654">
+
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="<?= h(SITE_NAME) ?>">
     <meta property="og:title" content="<?= h($ogTitle) ?>">
@@ -102,15 +121,14 @@ $ogDescription = 'Megújul a Latinfo.hu! Oszd meg az ötleteidet, vagy iratkozz 
     <?php if ($ogImage !== ''): ?>
     <meta property="og:image" content="<?= h($ogImage) ?>">
     <meta property="og:image:secure_url" content="<?= h($ogImage) ?>">
-    <?php if ($ogHasSharePng): ?>
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
+    <?php if ($ogImageW > 0 && $ogImageH > 0): ?>
+    <meta property="og:image:width" content="<?= (int) $ogImageW ?>">
+    <meta property="og:image:height" content="<?= (int) $ogImageH ?>">
     <?php endif; ?>
     <meta property="og:image:alt" content="<?= h(SITE_NAME) ?> – La nueva, visszajelzés">
     <?php endif; ?>
     <meta property="og:locale" content="hu_HU">
 
-    <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<?= h($ogTitle) ?>">
     <meta name="twitter:description" content="<?= h($ogDescription) ?>">
@@ -118,89 +136,76 @@ $ogDescription = 'Megújul a Latinfo.hu! Oszd meg az ötleteidet, vagy iratkozz 
     <meta name="twitter:image" content="<?= h($ogImage) ?>">
     <?php endif; ?>
 
-    <meta name="theme-color" content="#050816">
+    <?php require __DIR__ . '/../nextgen/includes/favicon_head.php'; ?>
     <link rel="stylesheet" href="<?= h(site_url('lanueva/assets/css/landing.css')) ?>">
 </head>
-<body class="landing-nextgen">
-    <div class="landing-bg-grid" aria-hidden="true"></div>
-    <div class="landing-glow landing-glow-a" aria-hidden="true"></div>
-    <div class="landing-glow landing-glow-b" aria-hidden="true"></div>
+<body class="ln-modern">
+    <div class="ln-glow ln-glow-1" aria-hidden="true"></div>
+    <div class="ln-glow ln-glow-2" aria-hidden="true"></div>
 
-    <main class="landing-main">
-        <section class="landing-hero">
-            <h1 class="landing-title">Megújul a Latinfo.hu!</h1>
-            <p class="landing-lead">Oszd meg, milyen legyen (és ne legyen) a weboldalunk – segíts te is alakítani.</p>
+    <header class="ln-header">
+        <div class="ln-header-logo">
+            <span class="ln-logo-text"><?= h(SITE_NAME) ?></span>
+            <span class="ln-logo-sub">La nueva</span>
+        </div>
+    </header>
+
+    <main class="ln-container">
+        <section class="ln-hero">
+            <h1 class="ln-hero-title">
+                <span class="ln-title-word-1">Megújul</span>
+                <span class="ln-title-word-2">a Latinfo.hu!</span>
+            </h1>
+            <p class="ln-hero-subtitle">Mond el, milyen legyen a weboldalunk – segíts te is alakítani.</p>
         </section>
 
-        <div class="landing-stack">
-            <!-- Visszajelzés -->
-            <article class="landing-panel landing-panel-feedback">
-                <div class="landing-panel-head">
-                    <span class="landing-panel-icon" aria-hidden="true">◆</span>
-                    <div>
-                        <h2 class="landing-panel-title">Visszajelzés</h2>
-                        <p class="landing-panel-sub">Mit látnál szívesen, és mit hagynál el?</p>
-                    </div>
-                </div>
+        <div class="ln-cards">
+            <article class="ln-card ln-card-feedback">
+                <div class="ln-card-icon">🎺</div>
+                <h2 class="ln-card-title">Visszajelzés</h2>
+                <p class="ln-card-desc">Mit látnál szívesen, és mit hagynál el?</p>
 
                 <?php if ($siker_feedback !== ''): ?>
-                    <div class="landing-toast landing-toast-success" role="status"><?= h($siker_feedback) ?></div>
+                    <div class="ln-toast ln-toast-success" role="status"><?= h($siker_feedback) ?></div>
                 <?php endif; ?>
                 <?php if ($hiba_feedback): ?>
-                    <div class="landing-toast landing-toast-error" role="alert"><?= h($hiba_feedback) ?></div>
+                    <div class="ln-toast ln-toast-error" role="alert"><?= h($hiba_feedback) ?></div>
                 <?php endif; ?>
 
-                <form method="post" class="landing-form" action="" novalidate>
+                <form method="post" action="" novalidate class="ln-form">
                     <input type="hidden" name="landing_feedback" value="1">
-
-                    <div class="landing-field">
-                        <label for="ilyen_legyen">Ilyen legyen az új Latinfo.hu</label>
-                        <textarea id="ilyen_legyen" name="ilyen_legyen" rows="4" placeholder="Funkciók, kinézet, ötletek…"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
-                    </div>
-
-                    <div class="landing-field">
-                        <label for="ilyen_ne_legyen">Ilyen ne legyen az új Latinfo.hu</label>
-                        <textarea id="ilyen_ne_legyen" name="ilyen_ne_legyen" rows="4" placeholder="Ami zavar vagy felesleges…"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
-                    </div>
-
-                    <div class="landing-form-actions">
-                        <button type="submit" class="landing-btn landing-btn-primary">Elküldöm</button>
-                    </div>
+                    <textarea name="ilyen_legyen" placeholder="Funkciók, kinézet, ötletek…" rows="4"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
+                    <textarea name="ilyen_ne_legyen" placeholder="Ami zavar vagy felesleges…" rows="4"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
+                    <button type="submit" class="ln-btn ln-btn-primary">Elküldöm</button>
                 </form>
             </article>
 
-            <!-- Értesítés – vizuálisan elkülönítve -->
-            <article class="landing-panel landing-panel-notify">
-                <div class="landing-panel-head landing-panel-head-notify">
-                    <span class="landing-panel-icon landing-panel-icon-mail" aria-hidden="true">✉</span>
-                    <div>
-                        <h2 class="landing-panel-title">Értesítés induláskor</h2>
-                        <p class="landing-panel-lead-notify">Add meg az e-mail címed, és értesítünk az új szolgáltatás indulásáról.</p>
-                    </div>
-                </div>
+            <article class="ln-card ln-card-notify">
+                <div class="ln-card-icon">✉</div>
+                <h2 class="ln-card-title">Értesítés induláskor</h2>
+                <p class="ln-card-desc">Add meg az e-mail címed, és értesítünk az új szolgáltatás indulásáról.</p>
 
                 <?php if ($siker_notify !== ''): ?>
-                    <div class="landing-toast landing-toast-success" role="status"><?= h($siker_notify) ?></div>
+                    <div class="ln-toast ln-toast-success" role="status"><?= h($siker_notify) ?></div>
                 <?php endif; ?>
                 <?php if ($hiba_notify): ?>
-                    <div class="landing-toast landing-toast-error" role="alert"><?= h($hiba_notify) ?></div>
+                    <div class="ln-toast ln-toast-error" role="alert"><?= h($hiba_notify) ?></div>
                 <?php endif; ?>
 
-                <form method="post" class="landing-form landing-form-notify" action="" novalidate>
+                <form method="post" action="" novalidate class="ln-form">
                     <input type="hidden" name="landing_notify" value="1">
-                    <div class="landing-field landing-field-notify-email">
-                        <label for="notify_email">E-mail</label>
-                        <input type="email" id="notify_email" name="notify_email" autocomplete="email" inputmode="email" placeholder="pelda@email.hu" value="<?= h($_POST['notify_email'] ?? '') ?>">
-                    </div>
-                    <div class="landing-form-actions">
-                        <button type="submit" class="landing-btn landing-btn-notify">Feliratkozom az értesítésre</button>
-                    </div>
+                    <input type="email" name="notify_email" placeholder="pelda@email.hu" value="<?= h($_POST['notify_email'] ?? '') ?>">
+                    <button type="submit" class="ln-btn ln-btn-secondary">Feliratkozom</button>
                 </form>
             </article>
         </div>
+
+        <section class="ln-hero-image-section">
+            <img src="<?= h(site_url('lanueva/assets/images/og/lanueva-fb.png')) ?>" alt="Salsa – Latin energia" loading="lazy">
+        </section>
     </main>
 
-    <footer class="landing-footer">
+    <footer class="ln-footer">
         <p>&copy; <?= (int) date('Y') ?> <?= h(SITE_NAME) ?></p>
     </footer>
 </body>

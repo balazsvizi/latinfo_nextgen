@@ -1,0 +1,5 @@
+# Gyökér .htaccess – útvonal a lanueva mappához
+DirectoryIndex nextgen/index.php
+
+RewriteEngine On
+RewriteRule ^lanueva$ lanueva/ [R=301,L]

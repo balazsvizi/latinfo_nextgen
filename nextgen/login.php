@@ -35,6 +35,7 @@ $loginBrand = trim(SITE_NAME . ' NextGen');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bejelentkezés – <?= h($loginBrand) ?></title>
+    <?php require __DIR__ . '/includes/favicon_head.php'; ?>
     <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>">
 </head>
 <body class="login-page">
