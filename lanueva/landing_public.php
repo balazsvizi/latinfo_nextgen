@@ -64,7 +64,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_notify'])) {
 $siker_feedback = (string) (flash('landing_ok_feedback') ?? '');
 $siker_notify = (string) (flash('landing_ok_notify') ?? '');
 
-$https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+if (!$https) {
+    $xfp = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+    if ($xfp !== '') {
+        $https = str_contains($xfp, 'https');
+    } elseif (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443) {
+        $https = true;
+    }
+}
 $scheme = $https ? 'https' : 'http';
 $httpHost = $_SERVER['HTTP_HOST'] ?? '';
 $publicOrigin = ($httpHost !== '') ? $scheme . '://' . $httpHost : '';
