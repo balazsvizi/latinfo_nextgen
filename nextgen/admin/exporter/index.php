@@ -14,19 +14,21 @@ $db = getDb();
 $connections = $db->query('SELECT id, név FROM exporter_connections ORDER BY név ASC')->fetchAll();
 
 // Mentett lekérdezések betöltése
-$saved = $db->query('SELECT id, név, query_sql, módosítva FROM exporter_queries ORDER BY módosítva DESC')->fetchAll();
+$saved = $db->query('SELECT id, név, query_sql, megjegyzés, módosítva FROM exporter_queries ORDER BY módosítva DESC')->fetchAll();
 
 $selectedId = isset($_GET['id']) ? (int) $_GET['id'] : null;
 $currentSql = '';
 $currentName = '';
+$currentMegjegyzes = '';
 $currentConnectionId = null; // '' = alapértelmezett
 if ($selectedId) {
-    $stmt = $db->prepare('SELECT név, query_sql, connection_id FROM exporter_queries WHERE id = ?');
+    $stmt = $db->prepare('SELECT név, query_sql, megjegyzés, connection_id FROM exporter_queries WHERE id = ?');
     $stmt->execute([$selectedId]);
     $row = $stmt->fetch();
     if ($row) {
         $currentName = $row['név'];
         $currentSql = $row['query_sql'];
+        $currentMegjegyzes = (string) ($row['megjegyzés'] ?? '');
         $currentConnectionId = isset($row['connection_id']) && (int) $row['connection_id'] > 0 ? (int) $row['connection_id'] : '';
     }
 }
@@ -56,7 +58,8 @@ $flashError = flash('error');
             <ul class="exporter-list">
                 <?php foreach ($saved as $q): ?>
                     <li class="<?= $selectedId === (int)$q['id'] ? 'active' : '' ?>">
-                        <a href="?id=<?= (int)$q['id'] ?>"><?= h($q['név']) ?></a>
+                        <?php $qMeg = trim((string) ($q['megjegyzés'] ?? '')); ?>
+                        <a href="?id=<?= (int)$q['id'] ?>"<?= $qMeg !== '' ? ' title="' . h($qMeg) . '"' : '' ?>><?= h($q['név']) ?></a>
                         <form method="post" action="delete.php" class="inline-form" onsubmit="return confirm('Törlöd ezt a lekérdezést?');">
                             <input type="hidden" name="id" value="<?= (int)$q['id'] ?>">
                             <button type="submit" class="btn-link btn-danger" title="Törlés">✕</button>
@@ -83,6 +86,10 @@ $flashError = flash('error');
                 <div class="form-group">
                     <label for="nev">Lekérdezés neve (opcionális, mentéshez)</label>
                     <input type="text" id="nev" name="nev" class="form-control" placeholder="pl. Szervezők lista" value="<?= h($currentName) ?>">
+                </div>
+                <div class="form-group">
+                    <label for="megjegyzes">Megjegyzés <span class="muted">(opcionális)</span></label>
+                    <textarea id="megjegyzes" name="megjegyzes" class="form-control" rows="3" placeholder="pl. mire való, figyelmeztetés, forrás tábla…"><?= h($currentMegjegyzes) ?></textarea>
                 </div>
                 <div class="form-group">
                     <label for="query_sql">SQL lekérdezés <em>(csak SELECT)</em></label>

@@ -12,8 +12,10 @@ requireSuperadmin();
 
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 $nev = trim($_POST['nev'] ?? '');
+$megjegyzés = trim($_POST['megjegyzes'] ?? '');
 $query_sql = trim($_POST['query_sql'] ?? '');
 $connection_id = isset($_POST['connection_id']) && $_POST['connection_id'] !== '' ? (int) $_POST['connection_id'] : null;
+$megjegyzés = $megjegyzés === '' ? null : mb_substr($megjegyzés, 0, 65535);
 
 if ($query_sql === '') {
     flash('error', 'A lekérdezés szövege kötelező.');
@@ -30,12 +32,12 @@ if (preg_match('/^\s*SELECT\s+/i', $t) !== 1 || strpos($t, ';') !== false) {
 
 $db = getDb();
 if ($id > 0) {
-    $stmt = $db->prepare('UPDATE exporter_queries SET név = ?, query_sql = ?, connection_id = ? WHERE id = ?');
-    $stmt->execute([$nev ?: 'Lekérdezés #' . $id, $query_sql, $connection_id, $id]);
+    $stmt = $db->prepare('UPDATE exporter_queries SET név = ?, query_sql = ?, megjegyzés = ?, connection_id = ? WHERE id = ?');
+    $stmt->execute([$nev ?: 'Lekérdezés #' . $id, $query_sql, $megjegyzés, $connection_id, $id]);
     flash('success', 'Lekérdezés frissítve.');
 } else {
-    $stmt = $db->prepare('INSERT INTO exporter_queries (név, query_sql, connection_id) VALUES (?, ?, ?)');
-    $stmt->execute([$nev ?: 'Új lekérdezés', $query_sql, $connection_id]);
+    $stmt = $db->prepare('INSERT INTO exporter_queries (név, query_sql, megjegyzés, connection_id) VALUES (?, ?, ?, ?)');
+    $stmt->execute([$nev ?: 'Új lekérdezés', $query_sql, $megjegyzés, $connection_id]);
     flash('success', 'Lekérdezés mentve.');
 }
 redirect(nextgen_url('admin/exporter/'));
