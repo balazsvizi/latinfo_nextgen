@@ -200,7 +200,7 @@ $ogDescription = 'Megújul a Latinfo.hu! Mondd el, milyen legyen a weboldalunk �
             <article class="ln-card ln-card-notify">
                 <div class="ln-card-icon">✉</div>
                 <h2 class="ln-card-title">Értesítés induláskor</h2>
-                <p class="ln-card-desc">Add meg az e-mail címed, és értesítünk az új szolgáltatás indulásáról.</p>
+                <p class="ln-card-desc">Add meg az e-mail címed, és értesítünk a latinfo.hu új szolgáltatásairól, fejlesztéseiről.</p>
 
                 <?php if ($siker_notify !== ''): ?>
                     <div class="ln-toast ln-toast-success" role="status"><?= h($siker_notify) ?></div>
