@@ -137,6 +137,14 @@ $ogDescription = 'Meg√∫jul a Latinfo.hu! Mondd el, milyen legyen a weboldalunk ‚
     <meta name="twitter:image" content="<?= h($ogImage) ?>">
     <?php endif; ?>
 
+    <!-- Google Analytics 4 (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RCTY9NEJRJ"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-RCTY9NEJRJ');
+    </script>
     <?php require __DIR__ . '/../nextgen/includes/favicon_head.php'; ?>
     <link rel="stylesheet" href="<?= h(site_url('lanueva/assets/css/landing.css')) ?>">
 </head>
