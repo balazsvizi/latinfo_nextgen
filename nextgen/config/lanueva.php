@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'La nueva – visszajelzések és értesítések';
+$pageTitle = 'LaNueva';
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../includes/landingpage_table.php';
 
@@ -51,7 +51,7 @@ $export_query = http_build_query(array_filter([
 ], function ($v) {
     return $v !== '' && $v !== null;
 }));
-$export_href = nextgen_url('config/landing_visszajelzesek_export.php') . ($export_query !== '' ? '?' . $export_query : '');
+$export_href = nextgen_url('config/lanueva_export.php') . ($export_query !== '' ? '?' . $export_query : '');
 
 function landing_lista_tipus(array $r): string {
     if (isset($r['email']) && trim((string) $r['email']) !== '') {
@@ -77,10 +77,10 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
 }
 ?>
 <div class="card card-landing-visszajelzesek">
-    <h2>La nueva – visszajelzések és értesítések</h2>
+    <h2>LaNueva</h2>
     <p class="card-lead">A nyilvános landingről érkezett szöveges visszajelzések és induláskori e-mail feliratkozások. Az időbélyeg a szerver szerinti mentés ideje (<?= h(date_default_timezone_get()) ?>).</p>
 
-    <form method="get" class="toolbar toolbar-inline" action="<?= h(nextgen_url('config/landing_visszajelzesek.php')) ?>">
+    <form method="get" class="toolbar toolbar-inline" action="<?= h(nextgen_url('config/lanueva.php')) ?>">
         <label for="landing-tipus-szuro">Típus</label>
         <select name="tipus" id="landing-tipus-szuro">
             <option value="" <?= $tipus === '' ? 'selected' : '' ?>>Mind</option>
@@ -146,7 +146,7 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
             'order' => $order,
             'dir' => $dir_param,
         ], function ($v) { return $v !== '' && $v !== null; }));
-        $base = nextgen_url('config/landing_visszajelzesek.php?') . $q . ($q ? '&' : '');
+        $base = nextgen_url('config/lanueva.php?') . $q . ($q ? '&' : '');
     ?>
     <div class="pagination">
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>

@@ -48,7 +48,7 @@ requireLogin();
                     </span>
                     <ul class="nav-submenu" id="submenu-config" role="menu">
                         <li class="nav-submenu-heading" role="presentation"><span>Új táblázatok</span></li>
-                        <li role="none"><a href="<?= h(nextgen_url('config/landing_visszajelzesek.php')) ?>" role="menuitem">La nueva – visszajelzések</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('config/lanueva.php')) ?>" role="menuitem">LaNueva</a></li>
                         <li class="nav-submenu-heading" role="presentation"><span>Általános</span></li>
                         <li role="none"><a href="<?= h(nextgen_url('config/cimkek.php')) ?>" role="menuitem">Címkék</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('config/kontakt_tipusok.php')) ?>" role="menuitem">Kontakt típusok</a></li>

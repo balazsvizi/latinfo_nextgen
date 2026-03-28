@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 /**
- * La nueva landing – visszajelzések / értesítések export (Excel által megnyitható .xls, SpreadsheetML).
+ * LaNueva – visszajelzések / értesítések export (Excel által megnyitható .xls, SpreadsheetML).
  */
 require_once __DIR__ . '/../init.php';
 requireLogin();
@@ -46,7 +46,7 @@ function landing_export_xml_cell(string $value): string {
 }
 
 $suffix = $tipus === '' ? 'mind' : $tipus;
-$filename = 'lanueva-landing-' . $suffix . '-' . date('Y-m-d') . '.xls';
+$filename = 'lanueva-' . $suffix . '-' . date('Y-m-d') . '.xls';
 $filenameSafe = preg_replace('/[^a-zA-Z0-9._-]+/', '_', $filename) ?: 'export.xls';
 
 header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
@@ -61,7 +61,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
  xmlns:x="urn:schemas-microsoft-com:office:excel"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
  xmlns:html="http://www.w3.org/TR/REC-html40">
-<Worksheet ss:Name="La nueva">
+<Worksheet ss:Name="LaNueva">
 <Table>
 <Row>
 <?php
