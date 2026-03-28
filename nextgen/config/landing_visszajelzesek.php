@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'La nueva – visszajelzések';
+$pageTitle = 'La nueva – visszajelzések és értesítések';
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../includes/landingpage_table.php';
 
@@ -43,7 +43,15 @@ $sorok = $stmt->fetchAll();
 
 $get_params = array_filter([
     'tipus' => $tipus,
+    'order' => $order,
+    'dir' => $dir_param,
 ]);
+$export_query = http_build_query(array_filter([
+    'tipus' => $tipus,
+], function ($v) {
+    return $v !== '' && $v !== null;
+}));
+$export_href = nextgen_url('config/landing_visszajelzesek_export.php') . ($export_query !== '' ? '?' . $export_query : '');
 
 function landing_lista_tipus(array $r): string {
     if (isset($r['email']) && trim((string) $r['email']) !== '') {
@@ -76,10 +84,11 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
         <label for="landing-tipus-szuro">Típus</label>
         <select name="tipus" id="landing-tipus-szuro">
             <option value="" <?= $tipus === '' ? 'selected' : '' ?>>Mind</option>
-            <option value="visszajelzes" <?= $tipus === 'visszajelzes' ? 'selected' : '' ?>>Visszajelzés</option>
+            <option value="visszajelzes" <?= $tipus === 'visszajelzes' ? 'selected' : '' ?>>Visszajelzés (La nueva)</option>
             <option value="ertesites" <?= $tipus === 'ertesites' ? 'selected' : '' ?>>Értesítés (e-mail)</option>
         </select>
         <button type="submit" class="btn btn-primary">Szűrés</button>
+        <a href="<?= h($export_href) ?>" class="btn btn-secondary">Letöltés Excelbe</a>
     </form>
 
     <div class="table-wrap">
