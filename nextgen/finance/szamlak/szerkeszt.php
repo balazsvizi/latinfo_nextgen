@@ -194,8 +194,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action']
         'attachments' => $attachments,
     ]);
     if ($res['ok']) {
+        $db->prepare('UPDATE számlák SET státusz = ? WHERE id = ? AND (COALESCE(törölve,0) = 0)')
+            ->execute(['kiküldve', $id]);
         rendszer_log('számla', $id, 'Számla e-mail küldve', 'Címzettek: ' . implode(', ', $cimzettek));
-        flash('success', 'Számla e-mail elküldve.');
+        flash('success', 'Számla e-mail elküldve, státusz: Kiküldve.');
     } else {
         flash('error', 'Küldési hiba: ' . $res['hiba']);
     }
