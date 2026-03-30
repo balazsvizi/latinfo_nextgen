@@ -5,6 +5,10 @@ require_once __DIR__ . '/../../../nextgen/includes/functions.php';
 requireLogin();
 
 $db = getDb();
+$hasCimkeSzin = cimkek_has_szin($db);
+$cimkeConcatExpr = $hasCimkeSzin
+    ? "GROUP_CONCAT(CONCAT(c.név, '|', COALESCE(c.szín, '#6366F1')) ORDER BY c.név SEPARATOR '||')"
+    : "GROUP_CONCAT(CONCAT(c.név, '|', '#6366F1') ORDER BY c.név SEPARATOR '||')";
 
 // Státusz módosítás a táblázatból (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_id'], $_POST['státusz'])) {
@@ -37,6 +41,7 @@ $where_sql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 $where_gen = $where_sql ? $where_sql . " AND s.státusz = 'generált' AND (COALESCE(s.törölve,0) = 0)" : "WHERE s.státusz = 'generált' AND (COALESCE(s.törölve,0) = 0)";
 $stmt_gen = $db->prepare("
     SELECT s.id, s.szervező_id, s.számla_szám, s.összeg, s.belső_megjegyzés, s.státusz, sz.név AS szervezo_nev,
+           (SELECT $cimkeConcatExpr FROM szervező_címkék sc JOIN címkék c ON c.id = sc.címke_id WHERE sc.szervező_id = s.szervező_id) AS címkék,
            (SELECT id FROM számla_fájlok WHERE számla_id = s.id ORDER BY id LIMIT 1) AS elso_fajl_id,
            (SELECT GROUP_CONCAT(DISTINCT CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) SEPARATOR ', ')
             FROM számlázandó sz2
@@ -61,6 +66,7 @@ $order_sql = $order === 'id' ? 's.id' : ($order === 'szervezo_nev' ? 'sz.név' :
 
 $stmt = $db->prepare("
     SELECT s.id, s.szervező_id, s.számla_szám, s.összeg, s.belső_megjegyzés, s.státusz, sz.név AS szervezo_nev,
+           (SELECT $cimkeConcatExpr FROM szervező_címkék sc JOIN címkék c ON c.id = sc.címke_id WHERE sc.szervező_id = s.szervező_id) AS címkék,
            (SELECT id FROM számla_fájlok WHERE számla_id = s.id ORDER BY id LIMIT 1) AS elso_fajl_id,
            (SELECT GROUP_CONCAT(DISTINCT CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) SEPARATOR ', ')
             FROM számlázandó sz2
@@ -100,7 +106,25 @@ require_once __DIR__ . '/../../partials/header.php';
                 <?php foreach ($szamlak_generalt as $s): ?>
                 <tr>
                     <td><?= (int)$s['id'] ?></td>
-                    <td><a href="<?= h(nextgen_url('organizers/megtekint.php?id=')) ?><?= (int)$s['szervező_id'] ?>"><?= h($s['szervezo_nev']) ?></a></td>
+                    <td>
+                        <a href="<?= h(nextgen_url('organizers/megtekint.php?id=')) ?><?= (int)$s['szervező_id'] ?>"><?= h($s['szervezo_nev']) ?></a>
+                        <?php if (!empty($s['címkék'])): ?>
+                            <br>
+                            <span class="cimke-badge-list">
+                                <?php foreach (explode('||', $s['címkék']) as $rawTag): ?>
+                                    <?php
+                                        $tagParts = explode('|', $rawTag, 2);
+                                        $tagNev = trim($tagParts[0] ?? '');
+                                        $tagSzin = normalize_hex_color($tagParts[1] ?? '#6366F1', '#6366F1');
+                                        $tagTextColor = contrast_text_color($tagSzin);
+                                    ?>
+                                    <?php if ($tagNev !== ''): ?>
+                                        <span class="cimke-badge" style="--badge-bg: <?= h($tagSzin) ?>; --badge-text: <?= h($tagTextColor) ?>;"><?= h($tagNev) ?></span>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <a href="<?= h(nextgen_url('finance/szamlak/szerkeszt.php?id=')) ?><?= (int)$s['id'] ?>"><?= h($s['számla_szám']) ?></a>
                         <?php if (!empty($s['elso_fajl_id'])): ?>
@@ -162,7 +186,25 @@ require_once __DIR__ . '/../../partials/header.php';
                 <?php foreach ($szamlak as $s): ?>
                 <tr>
                     <td><?= (int)$s['id'] ?></td>
-                    <td><a href="<?= h(nextgen_url('organizers/megtekint.php?id=')) ?><?= (int)$s['szervező_id'] ?>"><?= h($s['szervezo_nev']) ?></a></td>
+                    <td>
+                        <a href="<?= h(nextgen_url('organizers/megtekint.php?id=')) ?><?= (int)$s['szervező_id'] ?>"><?= h($s['szervezo_nev']) ?></a>
+                        <?php if (!empty($s['címkék'])): ?>
+                            <br>
+                            <span class="cimke-badge-list">
+                                <?php foreach (explode('||', $s['címkék']) as $rawTag): ?>
+                                    <?php
+                                        $tagParts = explode('|', $rawTag, 2);
+                                        $tagNev = trim($tagParts[0] ?? '');
+                                        $tagSzin = normalize_hex_color($tagParts[1] ?? '#6366F1', '#6366F1');
+                                        $tagTextColor = contrast_text_color($tagSzin);
+                                    ?>
+                                    <?php if ($tagNev !== ''): ?>
+                                        <span class="cimke-badge" style="--badge-bg: <?= h($tagSzin) ?>; --badge-text: <?= h($tagTextColor) ?>;"><?= h($tagNev) ?></span>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <a href="<?= h(nextgen_url('finance/szamlak/szerkeszt.php?id=')) ?><?= (int)$s['id'] ?>"><?= h($s['számla_szám']) ?></a>
                         <?php if (!empty($s['elso_fajl_id'])): ?>
