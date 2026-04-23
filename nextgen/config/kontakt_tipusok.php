@@ -5,13 +5,38 @@ require_once __DIR__ . '/../partials/header.php';
 $db = getDb();
 $hiba = '';
 
+// Kompatibilitás: eltérő telepítéseken más lehet a táblaelnevezés
+// (finance_*, nextgen_* vagy régi magyar nevek).
+$tableExists = static function (PDO $db, string $table): bool {
+    try {
+        $stmt = $db->prepare('SHOW TABLES LIKE ?');
+        $stmt->execute([$table]);
+        return (bool) $stmt->fetchColumn();
+    } catch (Throwable $e) {
+        return false;
+    }
+};
+
+$resolveTable = static function (PDO $db, array $candidates, string $default) use ($tableExists): string {
+    foreach ($candidates as $candidate) {
+        if ($tableExists($db, $candidate)) {
+            return $candidate;
+        }
+    }
+    return $default;
+};
+
+$contactTypesTable = $resolveTable($db, ['finance_contact_types', 'nextgen_contact_types', 'kontakt_típusok'], 'finance_contact_types');
+$contactTypeLinksTable = $resolveTable($db, ['finance_contact_type_links', 'nextgen_contact_type_links', 'kontakt_típus_kapcsolat'], 'finance_contact_type_links');
+$contactsTable = $resolveTable($db, ['finance_contacts', 'nextgen_contacts', 'kontaktok'], 'finance_contacts');
+
 // Új típus felvétele
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['uj_tipus_nev'])) {
     $nev = trim($_POST['uj_tipus_nev']);
     $leiras = trim($_POST['uj_tipus_leiras'] ?? '');
     if ($nev !== '') {
         try {
-            $db->prepare('INSERT INTO finance_contact_types (név, leírás) VALUES (?, ?)')->execute([$nev, $leiras ?: null]);
+            $db->prepare("INSERT INTO {$contactTypesTable} (név, leírás) VALUES (?, ?)")->execute([$nev, $leiras ?: null]);
             rendszer_log('kontakt_típus', (int)$db->lastInsertId(), 'Létrehozva', 'Név: ' . $nev);
             flash('success', 'Kontakt típus felvéve.');
             redirect(nextgen_url('config/kontakt_tipusok.php'));
@@ -29,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szerkeszt_id'], $_POS
     $leiras = trim($_POST['uj_leiras'] ?? '');
     if ($tid && $nev !== '') {
         try {
-            $db->prepare('UPDATE finance_contact_types SET név = ?, leírás = ? WHERE id = ?')->execute([$nev, $leiras ?: null, $tid]);
+            $db->prepare("UPDATE {$contactTypesTable} SET név = ?, leírás = ? WHERE id = ?")->execute([$nev, $leiras ?: null, $tid]);
             rendszer_log('kontakt_típus', $tid, 'Módosítva', 'Új név: ' . $nev);
             flash('success', 'Kontakt típus módosítva.');
             redirect(nextgen_url('config/kontakt_tipusok.php'));
@@ -44,20 +69,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szerkeszt_id'], $_POS
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_id'])) {
     $tid = (int) $_POST['torol_id'];
     if ($tid) {
-        $hasznalat = $db->prepare('
+        $hasznalat = $db->prepare("
             SELECT k.id, k.név
-            FROM finance_contact_type_links kt
-            JOIN finance_contacts k ON k.id = kt.kontakt_id
+            FROM {$contactTypeLinksTable} kt
+            JOIN {$contactsTable} k ON k.id = kt.kontakt_id
             WHERE kt.típus_id = ?
             ORDER BY k.név
-        ');
+        ");
         $hasznalat->execute([$tid]);
         $hasznalatban_kontaktok = $hasznalat->fetchAll();
         if (!empty($hasznalatban_kontaktok)) {
             $nevek = array_map(function ($r) { return $r['név']; }, $hasznalatban_kontaktok);
             $hiba = 'A típus még használatban van, ezért nem törölhető. Kontaktok: ' . implode(', ', $nevek);
         } else {
-            $db->prepare('DELETE FROM finance_contact_types WHERE id = ?')->execute([$tid]);
+            $db->prepare("DELETE FROM {$contactTypesTable} WHERE id = ?")->execute([$tid]);
             rendszer_log('kontakt_típus', $tid, 'Törölve', null);
             flash('success', 'Kontakt típus törölve.');
             redirect(nextgen_url('config/kontakt_tipusok.php'));
@@ -76,7 +101,7 @@ if ($kereso !== '') {
     $where = 'WHERE név LIKE ?';
     $params = ['%' . $kereso . '%'];
 }
-$stmt = $db->prepare("SELECT * FROM finance_contact_types $where ORDER BY $order $dir");
+$stmt = $db->prepare("SELECT * FROM {$contactTypesTable} $where ORDER BY $order $dir");
 $stmt->execute($params);
 $tipusok = $stmt->fetchAll();
 
