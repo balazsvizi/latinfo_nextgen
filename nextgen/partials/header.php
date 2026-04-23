@@ -2,12 +2,10 @@
 require_once __DIR__ . '/../init.php';
 requireLogin();
 
-$scriptPath = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-$eventsAdminHome = (strpos($scriptPath, '/events/') !== false);
-$appsHome = (strpos($scriptPath, '/nextgen/apps.php') !== false || str_ends_with($scriptPath, '/apps.php'));
-if ($eventsAdminHome) {
+$navZone = ng_nav_app_zone();
+if ($navZone === 'events') {
     $logoHomeUrl = site_url('events/events_admin.php');
-} elseif ($appsHome) {
+} elseif ($navZone === 'nextgen') {
     $logoHomeUrl = nextgen_url('apps.php');
 } else {
     $logoHomeUrl = nextgen_url('index.php');
@@ -32,9 +30,17 @@ if ($eventsAdminHome) {
         </button>
         <nav class="main-nav" id="main-nav" aria-label="Főmenü">
             <ul class="nav-list">
-                <li class="nav-item">
-                    <a href="<?= h(nextgen_url('apps.php')) ?>" class="nav-parent-link">Alkalmazások</a>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('apps.php')) ?>" class="nav-parent-link">Alkalmazások</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="apps-switcher" aria-label="Alkalmazások almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-apps-switcher" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance</a></li>
+                        <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
+                    </ul>
                 </li>
+                <?php if ($navZone === 'finance'): ?>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('index.php')) ?>" class="nav-parent-link">Finance</a>
@@ -51,9 +57,23 @@ if ($eventsAdminHome) {
                         <li role="none"><a href="<?= h(nextgen_url('finance/szamlak/')) ?>" role="menuitem">Számlák</a></li>
                     </ul>
                 </li>
-                <li class="nav-item">
-                    <a href="<?= h(site_url('events/events_admin.php')) ?>" class="nav-parent-link">Event Admin</a>
+                <?php elseif ($navZone === 'events'): ?>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(site_url('events/events_admin.php')) ?>" class="nav-parent-link">Események</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-app" aria-label="Események almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-events-app" role="menu">
+                        <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
+                        <li role="none"><a href="<?= h(site_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
+                        <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
+                    </ul>
                 </li>
+                <li class="nav-item">
+                    <a href="<?= h(site_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>
+                </li>
+                <?php endif; ?>
+                <?php if ($navZone === 'nextgen'): ?>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="nav-parent-link">Config</a>
@@ -82,6 +102,7 @@ if ($eventsAdminHome) {
                         <li role="none"><a href="<?= h(nextgen_url('admin/exporter/connections.php')) ?>" role="menuitem">Exporter kapcsolatok</a></li>
                     </ul>
                 </li>
+                <?php endif; ?>
                 <?php endif; ?>
                 <?php if (isLoggedIn()): ?>
                 <li class="nav-item"><a href="<?= h(nextgen_url('logout.php')) ?>" class="nav-link-logout">Kijelentkezés</a></li>

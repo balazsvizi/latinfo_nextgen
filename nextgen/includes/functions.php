@@ -65,8 +65,28 @@ function h(?string $s): string {
 }
 
 /**
+ * Backoffice navigációs zóna: nextgen (hub, config, admin, jelszó), finance (CRM), events.
+ */
+function ng_nav_app_zone(): string {
+    $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (strpos($s, '/events/') !== false) {
+        return 'events';
+    }
+    if (strpos($s, '/nextgen/config/') !== false || strpos($s, '/nextgen/admin/') !== false) {
+        return 'nextgen';
+    }
+    if (preg_match('#/nextgen/(apps|jelszo)\.php$#', $s)) {
+        return 'nextgen';
+    }
+    if (strpos($s, '/nextgen/') !== false) {
+        return 'finance';
+    }
+    return 'finance';
+}
+
+/**
  * Backoffice UI terület a kérés útvonala alapján (nem a SITE_NAME része).
- * Alapértelmezés: Finance (szervezők, pénzügy, kontaktok, kezdőlap, jelszó, belépés).
+ * Alapértelmezés: Finance (szervezők, pénzügy, kontaktok, kezdőlap).
  */
 function app_backoffice_area(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
@@ -81,6 +101,9 @@ function app_backoffice_area(): string {
     }
     if (strpos($s, '/admin/') !== false) {
         return 'Admin';
+    }
+    if (preg_match('#/nextgen/jelszo\.php$#', $s)) {
+        return 'Jelszó';
     }
     return 'Finance';
 }
