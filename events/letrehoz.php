@@ -14,10 +14,8 @@ $defaults = [
     'event_slug' => '',
     'event_content' => '',
     'event_status' => events_default_post_status(),
-    'event_start_date' => null,
-    'event_start_time' => null,
-    'event_end_date' => null,
-    'event_end_time' => null,
+    'event_start' => null,
+    'event_end' => null,
     'event_allday' => 0,
     'event_cost_from' => null,
     'event_cost_to' => null,
@@ -40,20 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $db->prepare('
                 INSERT INTO `events_calendar_events` (
                     event_name, event_slug, event_content, event_status,
-                    event_start_date, event_start_time, event_end_date, event_end_time, event_allday,
+                    event_start, event_end, event_allday,
                     event_cost_from, event_cost_to, event_url, event_latinfohu_partner,
                     organizer_id, venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
                 $row['event_slug'],
                 $row['event_content'],
                 $row['event_status'],
-                $row['event_start_date'],
-                $row['event_start_time'],
-                $row['event_end_date'],
-                $row['event_end_time'],
+                $row['event_start'],
+                $row['event_end'],
                 $row['event_allday'],
                 $row['event_cost_from'],
                 $row['event_cost_to'],

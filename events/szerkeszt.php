@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upd = $db->prepare('
                 UPDATE `events_calendar_events` SET
                     event_name = ?, event_slug = ?, event_content = ?, event_status = ?,
-                    event_start_date = ?, event_start_time = ?, event_end_date = ?, event_end_time = ?, event_allday = ?,
+                    event_start = ?, event_end = ?, event_allday = ?,
                     event_cost_from = ?, event_cost_to = ?, event_url = ?, event_latinfohu_partner = ?,
                     organizer_id = ?, venue_id = ?
                 WHERE id = ?
@@ -45,10 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_slug'],
                 $row['event_content'],
                 $row['event_status'],
-                $row['event_start_date'],
-                $row['event_start_time'],
-                $row['event_end_date'],
-                $row['event_end_time'],
+                $row['event_start'],
+                $row['event_end'],
                 $row['event_allday'],
                 $row['event_cost_from'],
                 $row['event_cost_to'],

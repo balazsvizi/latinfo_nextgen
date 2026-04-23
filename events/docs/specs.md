@@ -124,10 +124,8 @@ Modern naprakész, felhasználóbarát naptár alkalmazás.
 - created
 - modified
 - event_status
-- event_start_date (éééé.hh.nn.)
-- event_start_time (óó:pp)
-- event_end_date (éééé.hh.nn.)
-- event_end_time (óó:pp)
+- event_start (DATETIME)
+- event_end (DATETIME)
 - event_allday
 - event_cost_from 
 - event_cost_to

@@ -38,7 +38,7 @@ $sql = "
     FROM `events_calendar_events` e
     LEFT JOIN events_organizers o ON o.id = e.organizer_id
     $whereSql
-    ORDER BY e.event_start_date IS NULL, e.event_start_date DESC, e.id DESC
+    ORDER BY e.event_start IS NULL, e.event_start DESC, e.id DESC
 ";
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
@@ -92,7 +92,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <td><?= (int) $r['id'] ?></td>
                     <td><?= h($r['event_name']) ?></td>
                     <td><code><?= h($r['event_slug']) ?></code></td>
-                    <td><?= h($r['event_start_date'] ?? '–') ?><?= !empty($r['event_start_time']) ? ' ' . h((string) $r['event_start_time']) : '' ?></td>
+                    <td><?= !empty($r['event_start']) ? h(date('Y-m-d H:i', strtotime((string) $r['event_start']))) : '–' ?></td>
                     <td><?= h(events_post_status_label((string) $r['event_status'])) ?></td>
                     <td><?= h($r['organizer_name'] ?? '') ?: '–' ?></td>
                     <td class="text-center"><?= (int) $r['megtekintesek'] ?></td>

@@ -58,15 +58,17 @@ header('Content-Type: text/html; charset=UTF-8');
     <header>
         <h1><?= h($event['event_name']) ?></h1>
         <p>
-            <?php if (!empty($event['event_start_date'])): ?>
-                <time datetime="<?= h($event['event_start_date']) ?>"><?= h($event['event_start_date']) ?></time>
-                <?php if (!empty($event['event_start_time']) && empty($event['event_allday'])): ?>
-                    <?= h(substr((string) $event['event_start_time'], 0, 5)) ?>
+            <?php if (!empty($event['event_start'])): ?>
+                <?php $startTs = strtotime((string) $event['event_start']); ?>
+                <time datetime="<?= h((string) $event['event_start']) ?>"><?= $startTs ? h(date('Y-m-d', $startTs)) : h((string) $event['event_start']) ?></time>
+                <?php if ($startTs && empty($event['event_allday'])): ?>
+                    <?= h(date('H:i', $startTs)) ?>
                 <?php endif; ?>
-                <?php if (!empty($event['event_end_date'])): ?>
-                    – <time datetime="<?= h($event['event_end_date']) ?>"><?= h($event['event_end_date']) ?></time>
-                    <?php if (!empty($event['event_end_time']) && empty($event['event_allday'])): ?>
-                        <?= h(substr((string) $event['event_end_time'], 0, 5)) ?>
+                <?php if (!empty($event['event_end'])): ?>
+                    <?php $endTs = strtotime((string) $event['event_end']); ?>
+                    – <time datetime="<?= h((string) $event['event_end']) ?>"><?= $endTs ? h(date('Y-m-d', $endTs)) : h((string) $event['event_end']) ?></time>
+                    <?php if ($endTs && empty($event['event_allday'])): ?>
+                        <?= h(date('H:i', $endTs)) ?>
                     <?php endif; ?>
                 <?php endif; ?>
             <?php endif; ?>

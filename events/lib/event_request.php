@@ -32,10 +32,8 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $stt = trim((string) ($_POST['event_start_time'] ?? ''));
     $ed = trim((string) ($_POST['event_end_date'] ?? ''));
     $ett = trim((string) ($_POST['event_end_time'] ?? ''));
-    $row['event_start_date'] = $sd === '' ? null : $sd;
-    $row['event_start_time'] = $stt === '' ? null : $stt;
-    $row['event_end_date'] = $ed === '' ? null : $ed;
-    $row['event_end_time'] = $ett === '' ? null : $ett;
+    $row['event_start'] = events_build_event_datetime($sd, $stt);
+    $row['event_end'] = events_build_event_datetime($ed, $ett);
     $row['event_allday'] = isset($_POST['event_allday']) ? 1 : 0;
 
     $cf = trim((string) ($_POST['event_cost_from'] ?? ''));
@@ -68,9 +66,11 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
  */
 function events_row_for_form(array $row): array {
     $e = $row;
-    foreach (['event_start_date', 'event_start_time', 'event_end_date', 'event_end_time', 'event_url'] as $k) {
+    foreach (['event_start', 'event_end', 'event_url'] as $k) {
         $e[$k] = $e[$k] !== null ? (string) $e[$k] : '';
     }
+    [$e['event_start_date'], $e['event_start_time']] = events_split_event_datetime($e['event_start']);
+    [$e['event_end_date'], $e['event_end_time']] = events_split_event_datetime($e['event_end']);
     foreach (['event_start_time', 'event_end_time'] as $tk) {
         if ($e[$tk] !== '' && strlen($e[$tk]) > 5) {
             $e[$tk] = substr($e[$tk], 0, 5);
@@ -92,4 +92,27 @@ function events_row_for_form(array $row): array {
         $e['event_status'] = events_default_post_status();
     }
     return $e;
+}
+
+function events_build_event_datetime(string $date, string $time): ?string {
+    if ($date === '') {
+        return null;
+    }
+    $tm = $time !== '' ? $time : '00:00';
+    $dt = date_create($date . ' ' . $tm);
+    return $dt ? $dt->format('Y-m-d H:i:s') : null;
+}
+
+/**
+ * @return array{0: string, 1: string}
+ */
+function events_split_event_datetime(?string $datetime): array {
+    if ($datetime === null || $datetime === '') {
+        return ['', ''];
+    }
+    $dt = date_create($datetime);
+    if (!$dt) {
+        return ['', ''];
+    }
+    return [$dt->format('Y-m-d'), $dt->format('H:i')];
 }

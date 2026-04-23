@@ -23,10 +23,8 @@ CREATE TABLE IF NOT EXISTS `events_calendar_events` (
     `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `event_status` VARCHAR(20) NOT NULL DEFAULT 'draft' COMMENT 'wp_posts.post_status (publish, draft, …)',
-    `event_start_date` DATE NULL,
-    `event_start_time` TIME NULL,
-    `event_end_date` DATE NULL,
-    `event_end_time` TIME NULL,
+    `event_start` DATETIME NULL,
+    `event_end` DATETIME NULL,
     `event_allday` TINYINT(1) NOT NULL DEFAULT 0,
     `event_cost_from` DECIMAL(10,2) NULL,
     `event_cost_to` DECIMAL(10,2) NULL,
@@ -37,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `events_calendar_events` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_event_slug` (`event_slug`),
     KEY `idx_event_status` (`event_status`),
-    KEY `idx_event_start_date` (`event_start_date`),
+    KEY `idx_event_start` (`event_start`),
     KEY `idx_organizer_id` (`organizer_id`),
     CONSTRAINT `fk_events_calendar_event_organizer` FOREIGN KEY (`organizer_id`) REFERENCES `events_organizers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
