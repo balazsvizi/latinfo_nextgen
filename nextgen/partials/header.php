@@ -23,23 +23,25 @@ if ($navZone === 'events') {
 <body>
 <header class="main-header">
     <div class="header-inner">
-        <a href="<?= h($logoHomeUrl) ?>" class="logo" title="<?= h(app_backoffice_brand_line()) ?>"><span class="logo-site"><?= h(SITE_NAME) ?></span><span class="logo-area-sep" aria-hidden="true"> </span><span class="logo-area"><?= h(app_backoffice_area()) ?></span></a>
-        <?php if (isLoggedIn()): ?><a href="<?= h(nextgen_url('jelszo.php')) ?>" class="header-user"><?= h($_SESSION['admin_nev']) ?></a><?php endif; ?>
-        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Menü" aria-expanded="false">
-            <span class="icon">☰</span>
-        </button>
+        <div class="header-leading">
+            <a href="<?= h($logoHomeUrl) ?>" class="logo" title="<?= h(app_backoffice_brand_line()) ?>"><span class="logo-site"><?= h(SITE_NAME) ?></span><span class="logo-area-sep" aria-hidden="true"> </span><span class="logo-area"><?= h(app_backoffice_area()) ?></span></a>
+            <div class="header-app-launcher nav-item has-submenu">
+                <span class="nav-parent-wrap">
+                    <a href="<?= h(nextgen_url('apps.php')) ?>" class="nav-parent-link nav-parent-link--with-icon">
+                        <span class="nav-apps-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+                        <span>Alkalmazások</span>
+                    </a>
+                    <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="apps-switcher" aria-label="Alkalmazások almenü">▾</button>
+                </span>
+                <ul class="nav-submenu" id="submenu-apps-switcher" role="menu">
+                    <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance</a></li>
+                    <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="header-trailing">
         <nav class="main-nav" id="main-nav" aria-label="Főmenü">
             <ul class="nav-list">
-                <li class="nav-item has-submenu">
-                    <span class="nav-parent-wrap">
-                        <a href="<?= h(nextgen_url('apps.php')) ?>" class="nav-parent-link">Alkalmazások</a>
-                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="apps-switcher" aria-label="Alkalmazások almenü">▾</button>
-                    </span>
-                    <ul class="nav-submenu" id="submenu-apps-switcher" role="menu">
-                        <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
-                    </ul>
-                </li>
                 <?php if ($navZone === 'finance'): ?>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
@@ -109,6 +111,11 @@ if ($navZone === 'events') {
                 <?php endif; ?>
             </ul>
         </nav>
+        <?php if (isLoggedIn()): ?><a href="<?= h(nextgen_url('jelszo.php')) ?>" class="header-user"><?= h($_SESSION['admin_nev']) ?></a><?php endif; ?>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Menü" aria-expanded="false">
+            <span class="icon">☰</span>
+        </button>
+        </div>
     </div>
 </header>
 <main class="main-content">
