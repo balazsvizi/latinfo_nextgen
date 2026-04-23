@@ -118,4 +118,4 @@ if ($navZone === 'events') {
         </div>
     </div>
 </header>
-<main class="main-content">
+<main class="<?= h($mainContentClass ?? 'main-content') ?>">

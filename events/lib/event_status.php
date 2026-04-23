@@ -32,3 +32,11 @@ function events_post_status_label(string $s): string {
         default => $s,
     };
 }
+
+/**
+ * CSS osztály a státusz badge-hez (events-admin táblázat).
+ */
+function events_post_status_badge_class(string $s): string {
+    $slug = preg_replace('/[^a-z0-9-]/', '', strtolower($s));
+    return $slug !== '' ? 'event-status-badge--' . $slug : 'event-status-badge--draft';
+}
