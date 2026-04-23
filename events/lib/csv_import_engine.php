@@ -5,7 +5,7 @@ require_once __DIR__ . '/csv_import_schema.php';
 require_once __DIR__ . '/slug.php';
 
 /**
- * @return array{headers: list<string>, rows: list<array<string,string>>}
+ * @return array{headers: list<string>, rows: list<array<string,string>>, file_skipped: list<string>}
  */
 function events_csv_read_file(string $path, string $delimiter): array {
     $fh = fopen($path, 'rb');
@@ -31,11 +31,16 @@ function events_csv_read_file(string $path, string $delimiter): array {
         $headers[] = $key;
     }
     $rows = [];
+    $fileSkipped = [];
+    $physicalLine = 1;
     while (($data = fgetcsv($fh, 0, $del)) !== false) {
+        $physicalLine++;
         if ($data === [null] || $data === false) {
+            $fileSkipped[] = "Fájl sor {$physicalLine}: kihagyva – üres CSV-sor.";
             continue;
         }
         if (count($data) === 1 && trim((string) ($data[0] ?? '')) === '') {
+            $fileSkipped[] = "Fájl sor {$physicalLine}: kihagyva – egyetlen üres cella.";
             continue;
         }
         $assoc = [];
@@ -46,12 +51,13 @@ function events_csv_read_file(string $path, string $delimiter): array {
             $assoc[$hn] = isset($data[$i]) ? (string) $data[$i] : '';
         }
         if ($assoc === [] || events_csv_row_all_empty($assoc)) {
+            $fileSkipped[] = "Fájl sor {$physicalLine}: kihagyva – minden cella üres (a fejlécnek megfelelő oszlopokban nincs adat).";
             continue;
         }
         $rows[] = $assoc;
     }
     fclose($fh);
-    return ['headers' => $headers, 'rows' => $rows];
+    return ['headers' => $headers, 'rows' => $rows, 'file_skipped' => $fileSkipped];
 }
 
 function events_csv_row_all_empty(array $assoc): bool {
@@ -265,6 +271,17 @@ function events_csv_build_row_values(
         }
     }
 
+    if ($table === 'events_calendar_event_organizers') {
+        $ev = (int) ($values['event_id'] ?? 0);
+        $org = (int) ($values['organizer_id'] ?? 0);
+        if ($ev <= 0 || $org <= 0) {
+            return [[], 'event_id és organizer_id kötelező minden sorhoz.'];
+        }
+        if (!array_key_exists('sort_order', $values) || $values['sort_order'] === null) {
+            $values['sort_order'] = 0;
+        }
+    }
+
     return [$values, null];
 }
 
@@ -307,7 +324,47 @@ function events_csv_do_insert(PDO $db, string $table, array $values): void {
 /**
  * @param array<string,mixed> $values
  */
-function events_csv_do_update(PDO $db, string $table, int $id, array $values): void {
+function events_csv_event_organizer_link_exists(PDO $db, int $eventId, int $organizerId): bool {
+    $st = $db->prepare('SELECT 1 FROM `events_calendar_event_organizers` WHERE `event_id` = ? AND `organizer_id` = ? LIMIT 1');
+    $st->execute([$eventId, $organizerId]);
+    return (bool) $st->fetchColumn();
+}
+
+/**
+ * @param array<string,mixed> $values event_id, organizer_id, sort_order
+ * @return 'inserted'|'updated'
+ */
+function events_csv_upsert_event_organizer_link(PDO $db, array $values): string {
+    $eventId = (int) ($values['event_id'] ?? 0);
+    $organizerId = (int) ($values['organizer_id'] ?? 0);
+    $sortOrder = (int) ($values['sort_order'] ?? 0);
+    if ($eventId <= 0 || $organizerId <= 0) {
+        throw new RuntimeException('event_id és organizer_id kötelező.');
+    }
+    $chkEv = $db->prepare('SELECT 1 FROM `events_calendar_events` WHERE `id` = ? LIMIT 1');
+    $chkEv->execute([$eventId]);
+    if (!$chkEv->fetchColumn()) {
+        throw new RuntimeException('Nem létezik esemény ezzel az ID-val: ' . $eventId);
+    }
+    $chkOr = $db->prepare('SELECT 1 FROM `events_organizers` WHERE `id` = ? LIMIT 1');
+    $chkOr->execute([$organizerId]);
+    if (!$chkOr->fetchColumn()) {
+        throw new RuntimeException('Nem létezik szervező ezzel az ID-val: ' . $organizerId);
+    }
+    if (events_csv_event_organizer_link_exists($db, $eventId, $organizerId)) {
+        $db->prepare('UPDATE `events_calendar_event_organizers` SET `sort_order` = ? WHERE `event_id` = ? AND `organizer_id` = ?')
+            ->execute([$sortOrder, $eventId, $organizerId]);
+        return 'updated';
+    }
+    $db->prepare('INSERT INTO `events_calendar_event_organizers` (`event_id`, `organizer_id`, `sort_order`) VALUES (?,?,?)')
+        ->execute([$eventId, $organizerId, $sortOrder]);
+    return 'inserted';
+}
+
+/**
+ * @return bool True, ha futott UPDATE; false, ha nem volt egyetlen frissítendő mező sem (kihagyás).
+ */
+function events_csv_do_update(PDO $db, string $table, int $id, array $values): bool {
     $allowed = array_keys(events_csv_import_schema()[$table]['columns']);
     unset($values['id']);
     $sets = [];
@@ -320,16 +377,17 @@ function events_csv_do_update(PDO $db, string $table, int $id, array $values): v
         $params[] = $v;
     }
     if ($sets === []) {
-        return;
+        return false;
     }
     $params[] = $id;
     $sql = 'UPDATE ' . events_csv_quote_table($table) . ' SET ' . implode(',', $sets) . ' WHERE id = ?';
     $db->prepare($sql)->execute($params);
+    return true;
 }
 
 /**
  * @param array<string,string> $map
- * @return array{inserted: int, updated: int, errors: list<string>}
+ * @return array{inserted: int, updated: int, errors: list<string>, skipped: list<string>}
  */
 function events_csv_import_run(
     PDO $db,
@@ -340,34 +398,65 @@ function events_csv_import_run(
     string $uploadOriginalName,
     array $map,
 ): array {
+    $emptyResult = static fn (array $err, array $skip = []): array => [
+        'inserted' => 0,
+        'updated' => 0,
+        'errors' => $err,
+        'skipped' => $skip,
+    ];
+
     $schemaAll = events_csv_import_schema();
     if (!isset($schemaAll[$table])) {
-        return ['inserted' => 0, 'updated' => 0, 'errors' => ['Ismeretlen tábla.']];
+        return $emptyResult(['Ismeretlen tábla.']);
     }
     $tableSchema = $schemaAll[$table];
     $map = events_csv_filter_map($map);
 
     $basename = basename(str_replace('\\', '/', $uploadOriginalName));
     if ($requiredFilenameSubstring !== '' && mb_strpos($basename, $requiredFilenameSubstring, 0, 'UTF-8') === false) {
-        return ['inserted' => 0, 'updated' => 0, 'errors' => [
+        return $emptyResult([
             'A fájlnévnek tartalmaznia kell ezt a szövegrészletet: "' . $requiredFilenameSubstring . '". Feltöltött név: ' . $basename,
-        ]];
+        ]);
     }
 
     try {
         $parsed = events_csv_read_file($tmpPath, $delimiter);
     } catch (Throwable $e) {
-        return ['inserted' => 0, 'updated' => 0, 'errors' => [$e->getMessage()]];
+        return $emptyResult([$e->getMessage()]);
     }
 
     if ($map === []) {
-        return ['inserted' => 0, 'updated' => 0, 'errors' => ['Legalább egy oszlop mapping szükséges.']];
+        return $emptyResult(['Legalább egy oszlop mapping szükséges.']);
     }
 
     $inserted = 0;
     $updated = 0;
     $errors = [];
+    $skipped = array_merge([], $parsed['file_skipped'] ?? []);
     $lineNo = 1;
+
+    if (!empty($tableSchema['composite_key'])) {
+        foreach ($parsed['rows'] as $csvRow) {
+            $lineNo++;
+            [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false);
+            if ($err !== null) {
+                $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                continue;
+            }
+            try {
+                $op = events_csv_upsert_event_organizer_link($db, $vals);
+                if ($op === 'updated') {
+                    $updated++;
+                } else {
+                    $inserted++;
+                }
+            } catch (Throwable $e) {
+                $skipped[] = 'Adatsor ' . $lineNo . ' (import): kihagyva – ' . $e->getMessage();
+            }
+        }
+
+        return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors, 'skipped' => $skipped];
+    }
 
     foreach ($parsed['rows'] as $csvRow) {
         $lineNo++;
@@ -379,7 +468,7 @@ function events_csv_import_run(
                 if ($trim !== '' && ctype_digit($trim)) {
                     $idVal = (int) $trim;
                     if ($idVal > $tableSchema['id_max_import']) {
-                        $errors[] = "Sor {$lineNo}: az ID nem lehet nagyobb, mint {$tableSchema['id_max_import']} ({$idVal}).";
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az ID nem lehet nagyobb, mint {$tableSchema['id_max_import']} (kapott érték: {$idVal}).";
                         continue;
                     }
                 }
@@ -392,15 +481,19 @@ function events_csv_import_run(
                 if ($exists) {
                     [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true);
                     if ($err !== null) {
-                        $errors[] = "Sor {$lineNo}: {$err}";
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                         continue;
                     }
-                    events_csv_do_update($db, $table, $idVal, $vals);
-                    $updated++;
+                    $didUpdate = events_csv_do_update($db, $table, $idVal, $vals);
+                    if ($didUpdate) {
+                        $updated++;
+                    } else {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező rekord (id={$idVal}), de nincs frissítendő mező: a mapolt oszlopok CSV értékei üresek, vagy csak `created` / tiltott mezők változnának.";
+                    }
                 } else {
                     [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false);
                     if ($err !== null) {
-                        $errors[] = "Sor {$lineNo}: {$err}";
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                         continue;
                     }
                     $vals['id'] = $idVal;
@@ -410,16 +503,16 @@ function events_csv_import_run(
             } else {
                 [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false);
                 if ($err !== null) {
-                    $errors[] = "Sor {$lineNo}: {$err}";
+                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                     continue;
                 }
                 events_csv_do_insert($db, $table, $vals);
                 $inserted++;
             }
         } catch (Throwable $e) {
-            $errors[] = 'Sor ' . $lineNo . ': ' . $e->getMessage();
+            $skipped[] = 'Adatsor ' . $lineNo . ' (import): kihagyva – ' . $e->getMessage();
         }
     }
 
-    return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors];
+    return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors, 'skipped' => $skipped];
 }

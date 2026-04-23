@@ -2,16 +2,23 @@
 declare(strict_types=1);
 /** @var array $e aktuális mezőértékek */
 /** @var array $organizers id => név */
+$selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_map('intval', $e['organizer_ids']) : [];
 ?>
-<div class="form-group">
-    <label for="organizer_id">Szervező</label>
-    <select id="organizer_id" name="organizer_id">
-        <option value="">—</option>
+<fieldset class="form-group events-organizers-fieldset">
+    <legend>Szervezők</legend>
+    <p class="help">Több szervező is kijelölhető; a lista sorrendje a megjelenített névsorrend (felülről lefelé).</p>
+    <div class="events-organizer-checks">
         <?php foreach ($organizers as $oid => $onev): ?>
-            <option value="<?= (int) $oid ?>" <?= (int) ($e['organizer_id'] ?? 0) === (int) $oid ? 'selected' : '' ?>><?= h($onev) ?></option>
+            <label class="events-organizer-check">
+                <input type="checkbox" name="organizer_ids[]" value="<?= (int) $oid ?>" <?= in_array((int) $oid, $selOrg, true) ? 'checked' : '' ?>>
+                <span><?= h($onev) ?> <span class="events-organizer-id">(#<?= (int) $oid ?>)</span></span>
+            </label>
         <?php endforeach; ?>
-    </select>
-</div>
+    </div>
+    <?php if ($organizers === []): ?>
+        <p class="help">Nincs szervező rögzítve. Előbb <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_organizers">CSV importtal</a> vagy az adatbázisban vegyél fel szervezőket.</p>
+    <?php endif; ?>
+</fieldset>
 <div class="form-group">
     <label for="venue_id">Helyszín ID (későbbi modul)</label>
     <input type="number" id="venue_id" name="venue_id" min="0" step="1" value="<?= h($e['venue_id']) ?>">

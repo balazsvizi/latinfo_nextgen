@@ -89,7 +89,11 @@ $where = [];
 $params = [];
 
 if ($f_organizer !== '') {
-    $where[] = 'o.name LIKE ?';
+    $where[] = 'EXISTS (
+        SELECT 1 FROM `events_calendar_event_organizers` eo2
+        INNER JOIN `events_organizers` o2 ON o2.id = eo2.organizer_id
+        WHERE eo2.event_id = e.id AND o2.name LIKE ?
+    )';
     $params[] = '%' . $f_organizer . '%';
 }
 if ($f_name !== '') {
@@ -127,7 +131,7 @@ $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
     'id' => "e.id $dirSql",
-    'organizer' => "(o.name IS NULL) ASC, o.name $dirSql",
+    'organizer' => "( (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) IS NULL) ASC, (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) $dirSql",
     'name' => "e.event_name $dirSql",
     'start' => "e.event_start IS NULL, e.event_start $dirSql",
     'end' => "e.event_end IS NULL, e.event_end $dirSql",
@@ -137,10 +141,13 @@ $orderSql = match ($order) {
 };
 
 $sql = "
-    SELECT e.*, o.name AS organizer_name,
+    SELECT e.*,
+        (SELECT GROUP_CONCAT(o.name ORDER BY eo.sort_order ASC, o.name ASC SEPARATOR ', ')
+         FROM `events_calendar_event_organizers` eo
+         INNER JOIN `events_organizers` o ON o.id = eo.organizer_id
+         WHERE eo.event_id = e.id) AS organizer_name,
         (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id) AS megtekintesek
     FROM `events_calendar_events` e
-    LEFT JOIN events_organizers o ON o.id = e.organizer_id
     $whereSql
     ORDER BY $orderSql
 ";
@@ -190,7 +197,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         <div class="events-list-head">
             <h2 class="events-list-title">Események</h2>
             <div class="events-list-actions">
-                <button type="submit" class="btn btn-primary">Szűrés alkalmazása</button>
                 <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Szűrők törlése</a>
                 <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary">Új esemény</a>
                 <a href="<?= h(events_url('import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
@@ -232,15 +238,14 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 </div>
 
                 <div class="events-filter-field events-filter-field--full">
-                    <div class="events-filter-datespan-head">
-                        <label class="events-filter-label events-filter-label--inline" for="ev-range-from">Kezdés dátuma</label>
-                        <span class="events-filter-hint">Csúszkával vagy dátummezővel állítható · tengely: <?= h($axisMinStr) ?> – <?= h($axisMaxStr) ?></span>
-                    </div>
-                    <div class="events-date-range-visual">
-                        <div class="events-date-range-track-bg" aria-hidden="true"></div>
-                        <div class="events-date-range-fill" id="ev-date-range-fill" aria-hidden="true"></div>
-                        <input type="range" class="events-range events-range-from" id="ev-range-from" min="0" max="<?= (int) $daysSpan ?>" value="<?= (int) $idxFrom ?>" step="1" aria-valuemin="0" aria-valuemax="<?= (int) $daysSpan ?>" aria-label="Kezdő nap a tengelyen">
-                        <input type="range" class="events-range events-range-to" id="ev-range-to" min="0" max="<?= (int) $daysSpan ?>" value="<?= (int) $idxTo ?>" step="1" aria-label="Záró nap a tengelyen">
+                    <div class="events-date-slider-row">
+                        <div class="events-date-range-visual">
+                            <div class="events-date-range-track-bg" aria-hidden="true"></div>
+                            <div class="events-date-range-fill" id="ev-date-range-fill" aria-hidden="true"></div>
+                            <input type="range" class="events-range events-range-from" id="ev-range-from" min="0" max="<?= (int) $daysSpan ?>" value="<?= (int) $idxFrom ?>" step="1" aria-valuemin="0" aria-valuemax="<?= (int) $daysSpan ?>" aria-label="Kezdő nap a tengelyen">
+                            <input type="range" class="events-range events-range-to" id="ev-range-to" min="0" max="<?= (int) $daysSpan ?>" value="<?= (int) $idxTo ?>" step="1" aria-label="Záró nap a tengelyen">
+                        </div>
+                        <button type="submit" class="btn btn-primary events-filter-submit-inline">Szűrés alkalmazása</button>
                     </div>
                     <div class="events-date-range-readouts">
                         <div class="events-date-readout">
@@ -260,12 +265,12 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
             <table class="sortable-table events-admin-table">
                 <thead>
                     <tr>
+                        <th class="events-th-actions" scope="col"><span class="visually-hidden">Műveletek</span></th>
                         <th><?= sort_th('Szervező', 'organizer', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Dátum', 'start', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
                         <th class="th-center"><?= sort_th('Megtekintés', 'views', $order, $dir_param, $get_params) ?></th>
-                        <th>Műveletek</th>
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                     </tr>
                 </thead>
@@ -278,6 +283,18 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         $badgeClass = events_post_status_badge_class($st);
                         ?>
                         <tr>
+                            <td class="events-td-actions">
+                                <div class="events-action-icons">
+                                    <a href="<?= h($edit) ?>" class="events-icon-action" title="Szerkesztés" aria-label="Szerkesztés">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </a>
+                                    <?php if (($r['event_status'] ?? '') === events_public_post_status()): ?>
+                                        <a href="<?= h(events_megjelenit_url((string) $r['event_slug'])) ?>" class="events-icon-action" title="Nyilvános megtekintés (új lap)" aria-label="Nyilvános megtekintés új lapon" target="_blank" rel="noopener">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= ($r['organizer_name'] ?? '') !== '' ? h((string) $r['organizer_name']) : '–' ?></a></td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
@@ -287,12 +304,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                 </a>
                             </td>
                             <td class="text-center"><a class="events-cell-edit" href="<?= h($edit) ?>"><?= (int) $r['megtekintesek'] ?></a></td>
-                            <td class="actions">
-                                <?php if (($r['event_status'] ?? '') === events_public_post_status()): ?>
-                                    <a href="<?= h(events_megjelenit_url((string) $r['event_slug'])) ?>" class="btn btn-sm btn-secondary" target="_blank" rel="noopener">Nyilvános</a>
-                                <?php endif; ?>
-                                <a href="<?= h($edit) ?>" class="btn btn-sm btn-secondary">Szerkeszt</a>
-                            </td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= $eid ?></a></td>
                         </tr>
                     <?php endforeach; ?>

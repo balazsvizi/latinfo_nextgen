@@ -21,7 +21,7 @@ $defaults = [
     'event_cost_to' => null,
     'event_url' => null,
     'event_latinfohu_partner' => 0,
-    'organizer_id' => null,
+    'organizer_ids' => [],
     'venue_id' => null,
 ];
 
@@ -29,19 +29,21 @@ $hiba = '';
 $e = events_row_for_form($defaults);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    [$row, $err] = events_row_from_request($db, $defaults, null);
+    [$row, $err, $organizerIds] = events_row_from_request($db, $defaults, null);
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
+        $e['organizer_ids'] = $organizerIds;
     } else {
         try {
+            $db->beginTransaction();
             $stmt = $db->prepare('
                 INSERT INTO `events_calendar_events` (
                     event_name, event_slug, event_content, event_status,
                     event_start, event_end, event_allday,
                     event_cost_from, event_cost_to, event_url, event_latinfohu_partner,
-                    organizer_id, venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    venue_id
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
@@ -55,16 +57,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_cost_to'],
                 $row['event_url'],
                 $row['event_latinfohu_partner'],
-                $row['organizer_id'],
                 $row['venue_id'],
             ]);
             $newId = (int) $db->lastInsertId();
+            events_save_event_organizers($db, $newId, $organizerIds);
+            $db->commit();
             rendszer_log('esemény', $newId, 'Létrehozva', $row['event_name']);
             flash('success', 'Esemény létrehozva.');
             redirect(events_url('events_admin.php'));
         } catch (Throwable $ex) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             $hiba = 'Mentési hiba: ' . $ex->getMessage();
             $e = events_row_for_form($row);
+            $e['organizer_ids'] = $organizerIds;
         }
     }
 }

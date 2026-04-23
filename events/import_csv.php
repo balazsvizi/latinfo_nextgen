@@ -75,8 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ins = (int) ($eredmeny['inserted'] ?? 0);
                     $upd = (int) ($eredmeny['updated'] ?? 0);
                     $errs = $eredmeny['errors'] ?? [];
-                    if ($ins + $upd > 0) {
-                        rendszer_log('csv_import', null, 'CSV import', $table . ': +' . $ins . ' / ~' . $upd . ' sor, hibák: ' . count($errs));
+                    $skipped = $eredmeny['skipped'] ?? [];
+                    if ($ins + $upd > 0 || $skipped !== [] || $errs !== []) {
+                        rendszer_log('csv_import', null, 'CSV import', $table . ': +' . $ins . ' / ~' . $upd . ' sor, kihagyva: ' . count($skipped) . ', hibák: ' . count($errs));
                     }
                 }
             }
@@ -107,10 +108,11 @@ if ($presetsJson === false) {
 }
 ?>
 <div class="card">
-    <h2>CSV import (események / events szervezők)</h2>
+    <h2>CSV import (események, esemény–szervező, szervezők)</h2>
     <p class="card-lead">
         Alapértelmezett elválasztó: <strong>pontosvessző (;)</strong>. A mentett mapping és egyéb beállítások <strong>cél táblánként</strong> tárolódnak – válaszd a táblát, állítsd be, majd „Beállítások mentése”.
-        Tölts fel UTF‑8 CSV-t. Ha a sorban van ID (≤ <?= (int) ($schema['events_calendar_events']['id_max_import'] ?? 100000) ?>) és már létezik a sor → UPDATE, egyébként INSERT.
+        Tölts fel UTF‑8 CSV-t. <strong>Események / szervezők táblánál:</strong> ha a sorban van ID (≤ <?= (int) ($schema['events_calendar_events']['id_max_import'] ?? 100000) ?>) és már létezik a sor → UPDATE, egyébként INSERT.
+        <strong>Esemény–szervező táblánál:</strong> minden sor <code>event_id</code> + <code>organizer_id</code> (mindkettő létező ID); ha a pár már létezik → <code>sort_order</code> frissül, egyébként új kapcsolat.
     </p>
     <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
@@ -118,15 +120,29 @@ if ($presetsJson === false) {
     <?php if ($eredmeny !== null): ?>
         <div class="alert alert-success">
             <p><strong>Kész.</strong> Beszúrva: <?= (int) ($eredmeny['inserted'] ?? 0) ?>, frissítve: <?= (int) ($eredmeny['updated'] ?? 0) ?>.</p>
-            <?php $errs = $eredmeny['errors'] ?? []; ?>
+            <?php
+            $errs = $eredmeny['errors'] ?? [];
+            $skipped = $eredmeny['skipped'] ?? [];
+            ?>
+            <?php if ($skipped !== []): ?>
+                <p><strong>Kihagyott tételek (<?= count($skipped) ?>)</strong> – a sor nem került be / nem módosult; ok:</p>
+                <ul class="csv-import-report-list" style="max-height:18rem;overflow:auto;">
+                    <?php foreach (array_slice($skipped, 0, 500) as $s): ?>
+                        <li><?= h($s) ?></li>
+                    <?php endforeach; ?>
+                    <?php if (count($skipped) > 500): ?>
+                        <li>… további <?= count($skipped) - 500 ?> tétel.</li>
+                    <?php endif; ?>
+                </ul>
+            <?php endif; ?>
             <?php if ($errs !== []): ?>
-                <p><strong>Hibák / figyelmeztetések (<?= count($errs) ?>):</strong></p>
-                <ul style="max-height:16rem;overflow:auto;">
+                <p><strong>Hibák (<?= count($errs) ?>)</strong> – az importot megállító vagy globális probléma:</p>
+                <ul class="csv-import-report-list" style="max-height:12rem;overflow:auto;">
                     <?php foreach (array_slice($errs, 0, 200) as $e): ?>
                         <li><?= h($e) ?></li>
                     <?php endforeach; ?>
                     <?php if (count($errs) > 200): ?>
-                        <li>… további <?= count($errs) - 200 ?> sor.</li>
+                        <li>… további <?= count($errs) - 200 ?> üzenet.</li>
                     <?php endif; ?>
                 </ul>
             <?php endif; ?>

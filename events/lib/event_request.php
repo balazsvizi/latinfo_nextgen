@@ -11,10 +11,60 @@ function events_load_organizer_options(PDO $db): array {
 }
 
 /**
+ * @return list<int>
+ */
+function events_organizer_ids_from_post(): array {
+    $raw = $_POST['organizer_ids'] ?? [];
+    if (!is_array($raw)) {
+        return [];
+    }
+    $ids = [];
+    foreach ($raw as $v) {
+        $i = (int) $v;
+        if ($i > 0 && !in_array($i, $ids, true)) {
+            $ids[] = $i;
+        }
+    }
+    return $ids;
+}
+
+/**
+ * @param list<int> $organizerIds
+ */
+function events_save_event_organizers(PDO $db, int $eventId, array $organizerIds): void {
+    $db->prepare('DELETE FROM `events_calendar_event_organizers` WHERE `event_id` = ?')->execute([$eventId]);
+    if ($organizerIds === []) {
+        return;
+    }
+    $ins = $db->prepare('INSERT INTO `events_calendar_event_organizers` (`event_id`, `organizer_id`, `sort_order`) VALUES (?,?,?)');
+    $ord = 0;
+    foreach ($organizerIds as $oid) {
+        if ($oid <= 0) {
+            continue;
+        }
+        $ins->execute([$eventId, $oid, $ord]);
+        $ord++;
+    }
+}
+
+/**
+ * @return list<int>
+ */
+function events_load_event_organizer_ids(PDO $db, int $eventId): array {
+    $st = $db->prepare('
+        SELECT `organizer_id` FROM `events_calendar_event_organizers`
+        WHERE `event_id` = ?
+        ORDER BY `sort_order` ASC, `organizer_id` ASC
+    ');
+    $st->execute([$eventId]);
+    return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN, 0));
+}
+
+/**
  * Űrlap → adatbázis mezők + slug egyediség.
  *
  * @param array<string,mixed> $defaults Alapértelmezett értékek (pl. DB sor szerkesztésnél)
- * @return array{0: array<string,mixed>, 1: ?string} [row, hibaüzenet vagy null]
+ * @return array{0: array<string,mixed>, 1: ?string, 2: list<int>} [row, hibaüzenet vagy null, szervező ID-k]
  */
 function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlug): array {
     $row = $defaults;
@@ -46,19 +96,19 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     }
     $row['event_latinfohu_partner'] = isset($_POST['event_latinfohu_partner']) ? 1 : 0;
 
-    $oid = trim((string) ($_POST['organizer_id'] ?? ''));
-    $row['organizer_id'] = $oid === '' ? null : (int) $oid;
     $vid = trim((string) ($_POST['venue_id'] ?? ''));
     $row['venue_id'] = $vid === '' ? null : (int) $vid;
 
+    $organizerIds = events_organizer_ids_from_post();
+
     if ($row['event_name'] === '') {
-        return [$row, 'Az esemény neve kötelező.'];
+        return [$row, 'Az esemény neve kötelező.', $organizerIds];
     }
 
     $baseSlug = $row['event_slug'] !== '' ? $row['event_slug'] : events_slugify($row['event_name']);
     $row['event_slug'] = events_ensure_unique_slug($db, $baseSlug, $excludeIdForSlug);
 
-    return [$row, null];
+    return [$row, null, $organizerIds];
 }
 
 /**
@@ -84,7 +134,11 @@ function events_row_for_form(array $row): array {
         }
     }
     $e['venue_id'] = isset($e['venue_id']) && $e['venue_id'] !== null ? (string) (int) $e['venue_id'] : '';
-    $e['organizer_id'] = $e['organizer_id'] ?? null;
+    if (!isset($e['organizer_ids']) || !is_array($e['organizer_ids'])) {
+        $e['organizer_ids'] = [];
+    } else {
+        $e['organizer_ids'] = array_values(array_unique(array_map('intval', $e['organizer_ids'])));
+    }
     $e['event_allday'] = !empty($e['event_allday']);
     $e['event_latinfohu_partner'] = !empty($e['event_latinfohu_partner']);
     $st = (string) ($e['event_status'] ?? '');

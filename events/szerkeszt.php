@@ -22,22 +22,26 @@ if (!$event) {
 }
 
 $organizers = events_load_organizer_options($db);
+$event['organizer_ids'] = events_load_event_organizer_ids($db, $id);
+
 $hiba = '';
 $e = events_row_for_form($event);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    [$row, $err] = events_row_from_request($db, $event, $id);
+    [$row, $err, $organizerIds] = events_row_from_request($db, $event, $id);
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
+        $e['organizer_ids'] = $organizerIds;
     } else {
         try {
+            $db->beginTransaction();
             $upd = $db->prepare('
                 UPDATE `events_calendar_events` SET
                     event_name = ?, event_slug = ?, event_content = ?, event_status = ?,
                     event_start = ?, event_end = ?, event_allday = ?,
                     event_cost_from = ?, event_cost_to = ?, event_url = ?, event_latinfohu_partner = ?,
-                    organizer_id = ?, venue_id = ?
+                    venue_id = ?
                 WHERE id = ?
             ');
             $upd->execute([
@@ -52,16 +56,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_cost_to'],
                 $row['event_url'],
                 $row['event_latinfohu_partner'],
-                $row['organizer_id'],
                 $row['venue_id'],
                 $id,
             ]);
+            events_save_event_organizers($db, $id, $organizerIds);
+            $db->commit();
             rendszer_log('esemény', $id, 'Módosítva', $row['event_name']);
             flash('success', 'Mentve.');
             redirect(events_url('szerkeszt.php?id=') . $id);
         } catch (Throwable $ex) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             $hiba = 'Mentési hiba: ' . $ex->getMessage();
             $e = events_row_for_form($row);
+            $e['organizer_ids'] = $organizerIds;
         }
     }
 }

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * CSV import: cél táblák és oszlop meta (mapping űrlaphoz + típusellenőrzés).
- * Az import fájlban szereplő ID nem lehet nagyobb 100000-nál (spec / migráció).
+ * Az import fájlban szereplő ID nem lehet nagyobb 100000-nál (spec / migráció), ahol van `id` oszlop.
  */
 function events_csv_import_schema(): array {
     return [
@@ -25,8 +25,17 @@ function events_csv_import_schema(): array {
                 'event_cost_to' => ['type' => 'decimal', 'nullable' => true],
                 'event_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
                 'event_latinfohu_partner' => ['type' => 'bool', 'nullable' => false],
-                'organizer_id' => ['type' => 'uint', 'nullable' => true],
                 'venue_id' => ['type' => 'uint', 'nullable' => true],
+            ],
+        ],
+        'events_calendar_event_organizers' => [
+            'label' => 'Esemény–szervező (`events_calendar_event_organizers`, ID alapján)',
+            'composite_key' => ['event_id', 'organizer_id'],
+            'id_max_import' => 0,
+            'columns' => [
+                'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
+                'organizer_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Szervező ID (events_organizers.id)'],
+                'sort_order' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = 0; kisebb = előrébb'],
             ],
         ],
         'events_organizers' => [
