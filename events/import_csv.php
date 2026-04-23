@@ -110,11 +110,6 @@ if ($presetsJson === false) {
 ?>
 <div class="card">
     <h2>CSV import (események, esemény–szervező, szervezők)</h2>
-    <p class="card-lead">
-        Alapértelmezett elválasztó: <strong>pontosvessző (;)</strong>. A mentett mapping és egyéb beállítások <strong>cél táblánként</strong> tárolódnak – válaszd a táblát, állítsd be, majd „Beállítások mentése”.
-        Tölts fel UTF‑8 CSV-t. <strong>Események / szervezők táblánál:</strong> ha a sorban van ID (≤ <?= (int) ($schema['events_calendar_events']['id_max_import'] ?? 100000) ?>) és már létezik a sor → UPDATE, egyébként INSERT.
-        <strong>Esemény–szervező táblánál:</strong> minden sor <code>event_id</code> + <code>organizer_id</code> (mindkettő létező ID); ha a pár már létezik → <code>sort_order</code> frissül, egyébként új kapcsolat.
-    </p>
     <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
