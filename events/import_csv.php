@@ -96,7 +96,8 @@ if ($formTargetTable === '' || !isset($schema[$formTargetTable])) {
     }
 }
 $pForm = $presets[$formTargetTable] ?? [];
-$delVal = in_array($pForm['delimiter'] ?? ';', [',', ';', 'tab'], true) ? $pForm['delimiter'] : ';';
+$delRaw = (string) ($pForm['delimiter'] ?? ';');
+$delVal = in_array($delRaw, [',', ';', 'tab'], true) ? $delRaw : ';';
 $subVal = (string) ($pForm['required_substring'] ?? '');
 
 $pageTitle = 'CSV import';
