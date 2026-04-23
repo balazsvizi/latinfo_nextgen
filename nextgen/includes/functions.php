@@ -133,6 +133,36 @@ function cimkek_has_szin(PDO $db): bool {
 }
 
 /**
+ * Megmondja, hogy egy tábla létezik-e.
+ */
+function db_table_exists(PDO $db, string $table): bool {
+    static $cache = [];
+    if (array_key_exists($table, $cache)) {
+        return $cache[$table];
+    }
+    try {
+        $stmt = $db->prepare('SHOW TABLES LIKE ?');
+        $stmt->execute([$table]);
+        $cache[$table] = (bool) $stmt->fetchColumn();
+    } catch (Throwable $e) {
+        $cache[$table] = false;
+    }
+    return $cache[$table];
+}
+
+/**
+ * Első létező táblanév kiválasztása kompatibilitáshoz.
+ */
+function db_resolve_table(PDO $db, array $candidates, string $default): string {
+    foreach ($candidates as $candidate) {
+        if (db_table_exists($db, $candidate)) {
+            return $candidate;
+        }
+    }
+    return $default;
+}
+
+/**
  * Form érték visszaadása
  */
 function old(string $key, string $default = ''): string {

@@ -12,7 +12,20 @@ if (!$id) {
 
 $db = getDb();
 $hasCimkeSzin = cimkek_has_szin($db);
-$szervezo = $db->prepare('SELECT * FROM finance_organizers WHERE id = ?');
+$organizersTable = db_resolve_table($db, ['finance_organizers', 'nextgen_organizers', 'szervezők'], 'finance_organizers');
+$organizerNotesTable = db_resolve_table($db, ['finance_organizer_notes', 'nextgen_organizer_notes', 'szervező_megjegyzések'], 'finance_organizer_notes');
+$organizerLogTable = db_resolve_table($db, ['finance_organizer_activity_log', 'nextgen_organizer_activity_log', 'szervező_log'], 'finance_organizer_activity_log');
+$organizerTagsTable = db_resolve_table($db, ['finance_organizer_tags', 'nextgen_organizer_tags', 'szervező_címkék'], 'finance_organizer_tags');
+$tagsTable = db_resolve_table($db, ['finance_tags', 'nextgen_tags', 'címkék'], 'finance_tags');
+$adminsTable = db_resolve_table($db, ['nextgen_admins', 'adminok'], 'nextgen_admins');
+$organizerContactsTable = db_resolve_table($db, ['finance_organizer_contacts', 'nextgen_organizer_contacts', 'szervező_kontakt'], 'finance_organizer_contacts');
+$contactsTable = db_resolve_table($db, ['finance_contacts', 'nextgen_contacts', 'kontaktok'], 'finance_contacts');
+$billingAddressesTable = db_resolve_table($db, ['finance_billing_addresses', 'nextgen_billing_addresses', 'számlázási_címek'], 'finance_billing_addresses');
+$invoicesTable = db_resolve_table($db, ['finance_invoices', 'számlák'], 'finance_invoices');
+$billingItemsTable = db_resolve_table($db, ['finance_billing_items', 'számlázandó'], 'finance_billing_items');
+$billingPeriodsTable = db_resolve_table($db, ['finance_billing_periods', 'számlázandó_időszak'], 'finance_billing_periods');
+
+$szervezo = $db->prepare("SELECT * FROM {$organizersTable} WHERE id = ?");
 $szervezo->execute([$id]);
 $szervezo = $szervezo->fetch();
 if (!$szervezo) {
@@ -24,7 +37,7 @@ if (!$szervezo) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['megjegyzes_szoveg'])) {
     $szoveg = trim($_POST['megjegyzes_szoveg']);
     if ($szoveg !== '') {
-        $db->prepare('INSERT INTO finance_organizer_notes (szervező_id, megjegyzés, admin_id) VALUES (?, ?, ?)')
+        $db->prepare("INSERT INTO {$organizerNotesTable} (szervező_id, megjegyzés, admin_id) VALUES (?, ?, ?)")
             ->execute([$id, $szoveg, $_SESSION['admin_id'] ?? null]);
         rendszer_log('szervező_megjegyzés', (int)$db->lastInsertId(), 'Felvéve', null);
         flash('success', 'Megjegyzés hozzáadva.');
@@ -37,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['log_esemeny'])) {
     $esemeny = trim($_POST['log_esemeny']);
     $reszletek = trim($_POST['log_reszletek'] ?? '');
     if ($esemeny !== '') {
-        $db->prepare('INSERT INTO finance_organizer_activity_log (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)')
+        $db->prepare("INSERT INTO {$organizerLogTable} (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)")
             ->execute([$id, $esemeny, $reszletek ?: null, $_SESSION['admin_id'] ?? null]);
         rendszer_log('szervező_log', (int)$db->lastInsertId(), 'Felvéve', null);
         flash('success', 'Esemény rögzítve.');
@@ -46,33 +59,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['log_esemeny'])) {
 }
 
 $cimkeSql = $hasCimkeSzin
-    ? 'SELECT c.név, COALESCE(c.szín, "#6366F1") AS szín FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név'
-    : 'SELECT c.név, "#6366F1" AS szín FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név';
+    ? "SELECT c.név, COALESCE(c.szín, '#6366F1') AS szín FROM {$organizerTagsTable} sc JOIN {$tagsTable} c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név"
+    : "SELECT c.név, '#6366F1' AS szín FROM {$organizerTagsTable} sc JOIN {$tagsTable} c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név";
 $címkék = $db->prepare($cimkeSql);
 $címkék->execute([$id]);
 $címkék = $címkék->fetchAll();
 
-$megjegyzesek = $db->prepare('SELECT m.*, a.név AS admin_név FROM finance_organizer_notes m LEFT JOIN nextgen_admins a ON a.id = m.admin_id WHERE m.szervező_id = ? ORDER BY m.létrehozva DESC');
+$megjegyzesek = $db->prepare("SELECT m.*, a.név AS admin_név FROM {$organizerNotesTable} m LEFT JOIN {$adminsTable} a ON a.id = m.admin_id WHERE m.szervező_id = ? ORDER BY m.létrehozva DESC");
 $megjegyzesek->execute([$id]);
 $megjegyzesek = $megjegyzesek->fetchAll();
 
-$szervezo_log = $db->prepare('SELECT l.*, a.név AS admin_név FROM finance_organizer_activity_log l LEFT JOIN nextgen_admins a ON a.id = l.admin_id WHERE l.szervező_id = ? ORDER BY l.létrehozva DESC');
+$szervezo_log = $db->prepare("SELECT l.*, a.név AS admin_név FROM {$organizerLogTable} l LEFT JOIN {$adminsTable} a ON a.id = l.admin_id WHERE l.szervező_id = ? ORDER BY l.létrehozva DESC");
 $szervezo_log->execute([$id]);
 $szervezo_log = $szervezo_log->fetchAll();
 
-$kontaktok = $db->prepare('SELECT k.* FROM finance_organizer_contacts sk JOIN finance_contacts k ON k.id = sk.kontakt_id WHERE sk.szervező_id = ? ORDER BY k.név');
+$kontaktok = $db->prepare("SELECT k.* FROM {$organizerContactsTable} sk JOIN {$contactsTable} k ON k.id = sk.kontakt_id WHERE sk.szervező_id = ? ORDER BY k.név");
 $kontaktok->execute([$id]);
 $kontaktok = $kontaktok->fetchAll();
 
-$cimek = $db->prepare('SELECT * FROM finance_billing_addresses WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név');
+$cimek = $db->prepare("SELECT * FROM {$billingAddressesTable} WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név");
 $cimek->execute([$id]);
 $cimek = $cimek->fetchAll();
 
-$szamlak = $db->prepare('SELECT * FROM finance_invoices WHERE szervező_id = ? AND (COALESCE(törölve,0) = 0) ORDER BY dátum DESC');
+$szamlak = $db->prepare("SELECT * FROM {$invoicesTable} WHERE szervező_id = ? AND (COALESCE(törölve,0) = 0) ORDER BY dátum DESC");
 $szamlak->execute([$id]);
 $szamlak = $szamlak->fetchAll();
 
-$szamlazando = $db->prepare('SELECT s.*, (SELECT GROUP_CONCAT(CONCAT(si.év, \'-\', LPAD(si.hónap, 2, \'0\')) ORDER BY si.év, si.hónap) FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok FROM finance_billing_items s WHERE s.szervező_id = ? AND (COALESCE(s.törölve,0) = 0) ORDER BY s.létrehozva DESC');
+$szamlazando = $db->prepare("SELECT s.*, (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap) FROM {$billingPeriodsTable} si WHERE si.számlázandó_id = s.id) AS idoszakok FROM {$billingItemsTable} s WHERE s.szervező_id = ? AND (COALESCE(s.törölve,0) = 0) ORDER BY s.létrehozva DESC");
 $szamlazando->execute([$id]);
 $szamlazando = $szamlazando->fetchAll();
 $pageTitle = $szervezo['név'];
