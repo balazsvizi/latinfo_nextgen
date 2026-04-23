@@ -13,7 +13,7 @@ if ($id <= 0) {
 
 $db = getDb();
 ensure_levelsablonok_table($db);
-$stmt = $db->prepare('SELECT * FROM levélsablonok WHERE id = ?');
+$stmt = $db->prepare('SELECT * FROM finance_email_templates WHERE id = ?');
 $stmt->execute([$id]);
 $sablon = $stmt->fetch();
 if (!$sablon) {
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'A kód csak betűt, számot, pontot, kötőjelet és alsóvonalat tartalmazhat.';
     } else {
         try {
-            $upd = $db->prepare('UPDATE levélsablonok SET név = ?, kód = ?, tárgy = ?, megjegyzés = ?, html_tartalom = ? WHERE id = ?');
+            $upd = $db->prepare('UPDATE finance_email_templates SET név = ?, kód = ?, tárgy = ?, megjegyzés = ?, html_tartalom = ? WHERE id = ?');
             $upd->execute([$nev, $kod, $targy, $megjegyzes ?: null, $html, $id]);
             rendszer_log('levélsablon', $id, 'Módosítva', 'Kód: ' . $kod);
             flash('success', 'Levélsablon mentve.');
@@ -56,8 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $logStmt = $db->prepare("
     SELECT r.*, a.név AS admin_név
-    FROM rendszer_log r
-    LEFT JOIN adminok a ON a.id = r.admin_id
+    FROM nextgen_system_log r
+    LEFT JOIN nextgen_admins a ON a.id = r.admin_id
     WHERE r.entitás = ? AND r.entitás_id = ?
     ORDER BY r.létrehozva DESC
     LIMIT 30

@@ -10,12 +10,12 @@ if (!$id) {
     redirect(nextgen_url('admin/adminok/'));
 }
 $db = getDb();
-$aktív_count = $db->query('SELECT COUNT(*) FROM adminok WHERE aktív = 1')->fetchColumn();
+$aktív_count = $db->query('SELECT COUNT(*) FROM nextgen_admins WHERE aktív = 1')->fetchColumn();
 if ($aktív_count <= 1) {
     flash('error', 'Nem tiltható le az utolsó aktív admin.');
     redirect(nextgen_url('admin/adminok/'));
 }
-$db->prepare('UPDATE adminok SET aktív = 0 WHERE id = ?')->execute([$id]);
+$db->prepare('UPDATE nextgen_admins SET aktív = 0 WHERE id = ?')->execute([$id]);
 rendszer_log('admin', $id, 'Letiltva', null);
 flash('success', 'Admin letiltva.');
 redirect(nextgen_url('admin/adminok/'));

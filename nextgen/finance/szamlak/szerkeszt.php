@@ -12,7 +12,7 @@ if (!$id) {
     redirect(nextgen_url('finance/szamlak/'));
 }
 $db = getDb();
-$szamla = $db->prepare('SELECT s.*, sz.név AS szervezo_nev FROM számlák s JOIN szervezők sz ON sz.id = s.szervező_id WHERE s.id = ? AND (COALESCE(s.törölve,0) = 0)');
+$szamla = $db->prepare('SELECT s.*, sz.név AS szervezo_nev FROM finance_invoices s JOIN finance_organizers sz ON sz.id = s.szervező_id WHERE s.id = ? AND (COALESCE(s.törölve,0) = 0)');
 $szamla->execute([$id]);
 $szamla = $szamla->fetch();
 if (!$szamla) {
@@ -22,7 +22,7 @@ if (!$szamla) {
 $szervezo_id = (int) $szamla['szervező_id'];
 
 // SMTP feladók (email_config), alapértelmezett: naptar@latinfo.hu
-$smtp_feladok = $db->query('SELECT id, név, from_email, from_name, alapértelmezett FROM email_config ORDER BY alapértelmezett DESC, név ASC')->fetchAll(PDO::FETCH_ASSOC);
+$smtp_feladok = $db->query('SELECT id, név, from_email, from_name, alapértelmezett FROM finance_email_accounts ORDER BY alapértelmezett DESC, név ASC')->fetchAll(PDO::FETCH_ASSOC);
 $smtp_felado_ids = array_map(static fn($r) => (int)$r['id'], $smtp_feladok);
 $default_felado_id = 0;
 foreach ($smtp_feladok as $f) {
@@ -39,7 +39,7 @@ if ($default_felado_id === 0 && !empty($smtp_feladok)) {
 $default_sablon_html = '';
 $default_sablon_targy = '';
 try {
-    $sablonStmt = $db->prepare("SELECT tárgy, html_tartalom FROM levélsablonok WHERE kód = 'szamla_kuldes' LIMIT 1");
+    $sablonStmt = $db->prepare("SELECT tárgy, html_tartalom FROM finance_email_templates WHERE kód = 'szamla_kuldes' LIMIT 1");
     $sablonStmt->execute();
     $sablonRow = $sablonStmt->fetch(PDO::FETCH_ASSOC) ?: [];
     $default_sablon_targy = (string)($sablonRow['tárgy'] ?? '');
@@ -52,10 +52,10 @@ try {
 // Címzettek: szervező kontaktjai közül, akiknél be van állítva a számlázás típus
 $cimzettek_stmt = $db->prepare("
     SELECT DISTINCT k.id, k.név, k.email
-    FROM szervező_kontakt sk
-    JOIN kontaktok k ON k.id = sk.kontakt_id
-    JOIN kontakt_típus_kapcsolat kt ON kt.kontakt_id = k.id
-    JOIN kontakt_típusok t ON t.id = kt.típus_id
+    FROM finance_organizer_contacts sk
+    JOIN finance_contacts k ON k.id = sk.kontakt_id
+    JOIN finance_contact_type_links kt ON kt.kontakt_id = k.id
+    JOIN finance_contact_types t ON t.id = kt.típus_id
     WHERE sk.szervező_id = ?
       AND k.email IS NOT NULL
       AND k.email <> ''
@@ -82,7 +82,7 @@ if ($session_email !== '' && filter_var($session_email, FILTER_VALIDATE_EMAIL)) 
 }
 if ($admin_test_email === '') {
     try {
-        $aStmt = $db->prepare('SELECT email, felhasználónév FROM adminok WHERE id = ? LIMIT 1');
+        $aStmt = $db->prepare('SELECT email, felhasználónév FROM nextgen_admins WHERE id = ? LIMIT 1');
         $aStmt->execute([(int)($_SESSION['admin_id'] ?? 0)]);
         $admin = $aStmt->fetch(PDO::FETCH_ASSOC) ?: [];
         if (!empty($admin['email']) && filter_var($admin['email'], FILTER_VALIDATE_EMAIL)) {
@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action']
     $subject = strtr($template_subject, $replace);
     $body = strtr($template_html, $replace);
 
-    $fajlok_stmt = $db->prepare('SELECT eredeti_név, fájl_útvonal FROM számla_fájlok WHERE számla_id = ? ORDER BY id');
+    $fajlok_stmt = $db->prepare('SELECT eredeti_név, fájl_útvonal FROM finance_invoice_files WHERE számla_id = ? ORDER BY id');
     $fajlok_stmt->execute([$id]);
     $attachments = [];
     foreach ($fajlok_stmt->fetchAll(PDO::FETCH_ASSOC) as $f) {
@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action']
         'attachments' => $attachments,
     ]);
     if ($res['ok']) {
-        $db->prepare('UPDATE számlák SET státusz = ? WHERE id = ? AND (COALESCE(törölve,0) = 0)')
+        $db->prepare('UPDATE finance_invoices SET státusz = ? WHERE id = ? AND (COALESCE(törölve,0) = 0)')
             ->execute(['kiküldve', $id]);
         rendszer_log('számla', $id, 'Számla e-mail küldve', 'Címzettek: ' . implode(', ', $cimzettek));
         flash('success', 'Számla e-mail elküldve, státusz: Kiküldve.');
@@ -230,7 +230,7 @@ function feltolt_szamla_fajlok(PDO $db, int $szamla_id, array $fajlAdat): int
             $ujnev = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name)) ?: ('file_' . $i . '.' . $ext);
             $cel = $upload_dir . '/' . $ujnev;
             if (move_uploaded_file($tmp[$i], $cel)) {
-                $db->prepare('INSERT INTO számla_fájlok (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
+                $db->prepare('INSERT INTO finance_invoice_files (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
                     ->execute([$szamla_id, $name, $szamla_id . '/' . $ujnev]);
                 $feltoltve++;
             }
@@ -248,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mentes_szamla'])) {
     $megj = trim($_POST['belső_megjegyzés'] ?? '');
     $statusz = in_array($_POST['státusz'] ?? '', ['generált', 'kiküldve', 'kiegyenlítve', 'egyéb', 'KP', 'sztornó'], true) ? $_POST['státusz'] : $szamla['státusz'];
     if ($szamla_szam !== '') {
-        $db->prepare('UPDATE számlák SET számla_szám = ?, dátum = ?, összeg = ?, belső_megjegyzés = ?, státusz = ? WHERE id = ?')
+        $db->prepare('UPDATE finance_invoices SET számla_szám = ?, dátum = ?, összeg = ?, belső_megjegyzés = ?, státusz = ? WHERE id = ?')
             ->execute([$szamla_szam, $datum ?: $szamla['dátum'], $osszeg ?: 0, $megj ?: null, $statusz, $id]);
         rendszer_log('számla', $id, 'Módosítva', null);
         flash('success', 'Számla mentve.');
@@ -260,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mentes_szamla'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['lecsatol_szamlazando_id'])) {
     $sid = (int) $_POST['lecsatol_szamlazando_id'];
     if ($sid) {
-        $db->prepare('UPDATE számlázandó SET számla_id = NULL WHERE id = ? AND számla_id = ?')->execute([$sid, $id]);
+        $db->prepare('UPDATE finance_billing_items SET számla_id = NULL WHERE id = ? AND számla_id = ?')->execute([$sid, $id]);
         flash('success', 'Számlázandó tétel lecsatolva.');
         redirect($szerkeszt_url);
     }
@@ -271,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hozzacsatol_szamlazan
     $csatol_ids = array_filter($csatol_ids);
     if (!empty($csatol_ids)) {
         $placeholders = implode(',', array_fill(0, count($csatol_ids), '?'));
-        $db->prepare("UPDATE számlázandó SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)")
+        $db->prepare("UPDATE finance_billing_items SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)")
             ->execute(array_merge([$id], $csatol_ids, [$szervezo_id]));
         flash('success', 'Számlázandó tétel(ek) csatolva.');
         redirect($szerkeszt_url);
@@ -282,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hozzacsatol_szamlazan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_fajl_id'])) {
     $fid = (int) $_POST['torol_fajl_id'];
     if ($fid) {
-        $stmt = $db->prepare('SELECT fájl_útvonal FROM számla_fájlok WHERE id = ? AND számla_id = ?');
+        $stmt = $db->prepare('SELECT fájl_útvonal FROM finance_invoice_files WHERE id = ? AND számla_id = ?');
         $stmt->execute([$fid, $id]);
         $f = $stmt->fetch();
         if ($f) {
@@ -290,7 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_fajl_id'])) {
             if (is_file($path)) {
                 @unlink($path);
             }
-            $db->prepare('DELETE FROM számla_fájlok WHERE id = ?')->execute([$fid]);
+            $db->prepare('DELETE FROM finance_invoice_files WHERE id = ?')->execute([$fid]);
             flash('success', 'Fájl törölve.');
         }
     }
@@ -309,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['uj_fajl']['name']) 
 // Számla törlése (soft delete: törölve=1, becsatolt fájlok törlése)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_szamla'])) {
     rendszer_log('számla', $id, 'Törölve', null);
-    $fajlok_stmt = $db->prepare('SELECT id, fájl_útvonal FROM számla_fájlok WHERE számla_id = ?');
+    $fajlok_stmt = $db->prepare('SELECT id, fájl_útvonal FROM finance_invoice_files WHERE számla_id = ?');
     $fajlok_stmt->execute([$id]);
     while ($f = $fajlok_stmt->fetch(PDO::FETCH_ASSOC)) {
         $path = UPLOAD_PATH . '/' . $f['fájl_útvonal'];
@@ -317,9 +317,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_szamla'])) {
             @unlink($path);
         }
     }
-    $db->prepare('DELETE FROM számla_fájlok WHERE számla_id = ?')->execute([$id]);
-    $db->prepare('UPDATE számlázandó SET számla_id = NULL WHERE számla_id = ?')->execute([$id]);
-    $db->prepare('UPDATE számlák SET törölve = 1 WHERE id = ?')->execute([$id]);
+    $db->prepare('DELETE FROM finance_invoice_files WHERE számla_id = ?')->execute([$id]);
+    $db->prepare('UPDATE finance_billing_items SET számla_id = NULL WHERE számla_id = ?')->execute([$id]);
+    $db->prepare('UPDATE finance_invoices SET törölve = 1 WHERE id = ?')->execute([$id]);
     $upload_dir = UPLOAD_PATH . '/' . $id;
     if (is_dir($upload_dir)) {
         @array_map('unlink', glob($upload_dir . '/*'));
@@ -338,19 +338,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_szamla'])) {
 }
 
 // Frissített adatok
-$szamla = $db->prepare('SELECT s.*, sz.név AS szervezo_nev FROM számlák s JOIN szervezők sz ON sz.id = s.szervező_id WHERE s.id = ? AND (COALESCE(s.törölve,0) = 0)');
+$szamla = $db->prepare('SELECT s.*, sz.név AS szervezo_nev FROM finance_invoices s JOIN finance_organizers sz ON sz.id = s.szervező_id WHERE s.id = ? AND (COALESCE(s.törölve,0) = 0)');
 $szamla->execute([$id]);
 $szamla = $szamla->fetch();
 
-$fajlok = $db->prepare('SELECT * FROM számla_fájlok WHERE számla_id = ? ORDER BY id');
+$fajlok = $db->prepare('SELECT * FROM finance_invoice_files WHERE számla_id = ? ORDER BY id');
 $fajlok->execute([$id]);
 $fajlok = $fajlok->fetchAll();
 
 $csatolt_szamlazando = $db->prepare("
     SELECT s.id, s.összeg, s.megjegyzés,
            (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap)
-            FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok
-    FROM számlázandó s
+            FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok
+    FROM finance_billing_items s
     WHERE s.számla_id = ? AND (COALESCE(s.törölve,0) = 0)
     ORDER BY s.létrehozva
 ");
@@ -360,8 +360,8 @@ $csatolt_szamlazando = $csatolt_szamlazando->fetchAll(PDO::FETCH_ASSOC);
 $tovabbi_szamlazando = $db->prepare("
     SELECT s.id, s.összeg, s.megjegyzés,
            (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap)
-            FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok
-    FROM számlázandó s
+            FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok
+    FROM finance_billing_items s
     WHERE s.szervező_id = ? AND s.számla_id IS NULL AND (COALESCE(s.törölve,0) = 0)
     ORDER BY s.létrehozva DESC
 ");
@@ -370,8 +370,8 @@ $tovabbi_szamlazando = $tovabbi_szamlazando->fetchAll(PDO::FETCH_ASSOC);
 
 $szamla_logok_stmt = $db->prepare("
     SELECT l.id, l.művelet, l.részletek, l.létrehozva, a.név AS admin_nev
-    FROM rendszer_log l
-    LEFT JOIN adminok a ON a.id = l.admin_id
+    FROM nextgen_system_log l
+    LEFT JOIN nextgen_admins a ON a.id = l.admin_id
     WHERE l.entitás = 'számla' AND l.entitás_id = ?
     ORDER BY l.id DESC
     LIMIT 30
@@ -424,7 +424,7 @@ require_once __DIR__ . '/../../partials/header.php';
         </div>
     </form>
     <div class="form-actions" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-        <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a számlát? A csatolt fájlok is törlődnek, a számlázandó tételek visszakerülnek „nem csatolt” állapotba.');">
+        <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a számlát? A csatolt fájlok is törlődnek, a finance_billing_items tételek visszakerülnek „nem csatolt” állapotba.');">
             <input type="hidden" name="torol_szamla" value="1">
             <input type="hidden" name="vissza" value="<?= h($vissza) ?>">
             <input type="hidden" name="vissza_szervezo_id" value="<?= (int)$vissza_szervezo_id ?>">
@@ -458,7 +458,7 @@ require_once __DIR__ . '/../../partials/header.php';
 </div>
 
 <div class="card">
-    <h2>Csatolt számlázandó tételek – időszakok szerkesztése</h2>
+    <h2>Csatolt finance_billing_items tételek – időszakok szerkesztése</h2>
     <p class="help">Az egyes tételek időszakait az „Időszakok szerkesztése” gombbal módosíthatod.</p>
     <?php if (!empty($csatolt_szamlazando)): ?>
     <ul class="szamlazando-csatolt-lista">
@@ -476,7 +476,7 @@ require_once __DIR__ . '/../../partials/header.php';
         <?php endforeach; ?>
     </ul>
     <?php else: ?>
-    <p>Ehhez a számlához nincs csatolva számlázandó tétel.</p>
+    <p>Ehhez a számlához nincs csatolva finance_billing_items tétel.</p>
     <?php endif; ?>
     <?php if (!empty($tovabbi_szamlazando)): ?>
     <form method="post" class="mt-1">

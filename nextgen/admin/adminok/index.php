@@ -9,9 +9,9 @@ require_once __DIR__ . '/../../partials/header.php';
 
 $db = getDb();
 try {
-    $col = $db->query("SHOW COLUMNS FROM adminok LIKE 'email'")->fetch();
+    $col = $db->query("SHOW COLUMNS FROM nextgen_admins LIKE 'email'")->fetch();
     if (!$col) {
-        $db->exec("ALTER TABLE adminok ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
+        $db->exec("ALTER TABLE nextgen_admins ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
     }
 } catch (Throwable $e) {
     // nincs ALTER jog: migrációval felvehető
@@ -29,7 +29,7 @@ if ($kereso !== '') {
     $params = [$p, $p, $p];
 }
 $order_sql = $order === 'név' ? 'név' : ($order === 'felhasználónév' ? 'felhasználónév' : ($order === 'email' ? 'email' : ($order === 'szint' ? 'szint' : 'létrehozva')));
-$stmt = $db->prepare("SELECT id, név, felhasználónév, email, szint, aktív, létrehozva FROM adminok $where ORDER BY $order_sql $dir");
+$stmt = $db->prepare("SELECT id, név, felhasználónév, email, szint, aktív, létrehozva FROM nextgen_admins $where ORDER BY $order_sql $dir");
 $stmt->execute($params);
 $adminok = $stmt->fetchAll();
 

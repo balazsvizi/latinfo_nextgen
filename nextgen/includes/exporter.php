@@ -18,7 +18,7 @@ function getExporterPdo(?int $connectionId = null): PDO {
         return getDb();
     }
     $db = getDb();
-    $stmt = $db->prepare('SELECT host, port, dbname, felhasználó, jelszó_titkosított FROM exporter_connections WHERE id = ?');
+    $stmt = $db->prepare('SELECT host, port, dbname, felhasználó, jelszó_titkosított FROM nextgen_exporter_connections WHERE id = ?');
     $stmt->execute([$connectionId]);
     $row = $stmt->fetch();
     if (!$row) {

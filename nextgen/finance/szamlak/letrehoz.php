@@ -11,7 +11,7 @@ $db = getDb();
 
 // Ha csak szamlazando_id van, szervezo_id-t onnan vesszük
 if ($szamlazando_id && !$szervezo_id) {
-    $sza = $db->prepare('SELECT szervező_id FROM számlázandó WHERE id = ? AND (COALESCE(törölve,0) = 0)');
+    $sza = $db->prepare('SELECT szervező_id FROM finance_billing_items WHERE id = ? AND (COALESCE(törölve,0) = 0)');
     $sza->execute([$szamlazando_id]);
     $row = $sza->fetch();
     if ($row) {
@@ -23,7 +23,7 @@ if (!$szervezo_id) {
     redirect(nextgen_url('organizers/'));
 }
 
-$sz = $db->prepare('SELECT id, név FROM szervezők WHERE id = ?');
+$sz = $db->prepare('SELECT id, név FROM finance_organizers WHERE id = ?');
 $sz->execute([$szervezo_id]);
 $szervezo = $sz->fetch(PDO::FETCH_ASSOC);
 if (!$szervezo) {
@@ -35,7 +35,7 @@ if (!$szervezo) {
 $elotolt_osszeg = '';
 $elotolt_szamlazando_ids = [];
 if ($szamlazando_id) {
-    $sza = $db->prepare('SELECT id, összeg FROM számlázandó WHERE id = ? AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)');
+    $sza = $db->prepare('SELECT id, összeg FROM finance_billing_items WHERE id = ? AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)');
     $sza->execute([$szamlazando_id, $szervezo_id]);
     $sza_row = $sza->fetch();
     if ($sza_row) {
@@ -45,7 +45,7 @@ if ($szamlazando_id) {
 }
 
 // Számlázási címek a szervezőhöz (primary előrébb)
-$cimek = $db->prepare('SELECT * FROM számlázási_címek WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név');
+$cimek = $db->prepare('SELECT * FROM finance_billing_addresses WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név');
 $cimek->execute([$szervezo_id]);
 $cimek = $cimek->fetchAll(PDO::FETCH_ASSOC);
 
@@ -53,8 +53,8 @@ $cimek = $cimek->fetchAll(PDO::FETCH_ASSOC);
 $szamlazando_lista = $db->prepare("
     SELECT s.id, s.összeg, s.megjegyzés,
            (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap)
-            FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok
-    FROM számlázandó s
+            FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok
+    FROM finance_billing_items s
     WHERE s.szervező_id = ? AND s.számla_id IS NULL AND (COALESCE(s.törölve,0) = 0)
     ORDER BY s.létrehozva DESC
 ");
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $db->beginTransaction();
         try {
-            $db->prepare('INSERT INTO számlák (szervező_id, számla_szám, dátum, összeg, belső_megjegyzés, státusz) VALUES (?, ?, ?, ?, ?, ?)')
+            $db->prepare('INSERT INTO finance_invoices (szervező_id, számla_szám, dátum, összeg, belső_megjegyzés, státusz) VALUES (?, ?, ?, ?, ?, ?)')
                 ->execute([$szervezo_id, $szamla_szam, $datum, $osszeg, $belso ?: null, $statusz]);
             $szamla_id = (int) $db->lastInsertId();
             rendszer_log('számla', $szamla_id, 'Létrehozva', null);
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? array_map('intval', $_POST['szamlazando_ids']) : [];
             if (!empty($csatol_ids)) {
                 $placeholders = implode(',', array_fill(0, count($csatol_ids), '?'));
-                $stmt = $db->prepare("UPDATE számlázandó SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)");
+                $stmt = $db->prepare("UPDATE finance_billing_items SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)");
                 $stmt->execute(array_merge([$szamla_id], $csatol_ids, [$szervezo_id]));
             }
 
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ujnev = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name)) ?: 'file_' . $i . '.' . $ext;
                         $cel = $upload_dir . '/' . $ujnev;
                         if (move_uploaded_file($fajlok['tmp_name'][$i], $cel)) {
-                            $db->prepare('INSERT INTO számla_fájlok (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
+                            $db->prepare('INSERT INTO finance_invoice_files (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
                                 ->execute([$szamla_id, $name, $szamla_id . '/' . $ujnev]);
                         }
                     }
@@ -174,7 +174,7 @@ require_once __DIR__ . '/../../partials/header.php';
         <?php if (!empty($szamlazando_lista)): ?>
         <div class="form-group">
             <label>Számlázandó tétel(ek) csatolása</label>
-            <p class="form-hint">Kijelölheted, mely számlázandó tételek tartoznak ehhez a számlához.</p>
+            <p class="form-hint">Kijelölheted, mely finance_billing_items tételek tartoznak ehhez a számlához.</p>
             <div class="checkbox-group">
                 <?php foreach ($szamlazando_lista as $sz): ?>
                 <label class="checkbox-label">

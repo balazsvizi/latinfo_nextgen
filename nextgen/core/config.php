@@ -50,7 +50,7 @@ if ($baseUrlResolved === '' && PHP_SAPI !== 'cli') {
         if ($src === '') {
             continue;
         }
-        foreach (['/nextgen/', '/lanueva/'] as $needle) {
+        foreach (['/nextgen/', '/lanueva/', '/events/'] as $needle) {
             $p = strpos($src, $needle);
             if ($p > 0) {
                 $baseUrlResolved = substr($src, 0, $p);
@@ -107,6 +107,11 @@ if (!function_exists('nextgen_url')) {
 }
 define('UPLOAD_PATH', (string) cfg_get('UPLOAD_PATH', BASE_PATH . '/nextgen/uploads/szamlak', $localConfig));
 define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', nextgen_url('uploads/szamlak'), $localConfig));
+
+/** Nyilvános esemény URL szegmens (pl. esemenyek → /esemenyek/slug). Lásd events/docs/specs.md. */
+if (!defined('EVENTS_PUBLIC_PATH')) {
+    define('EVENTS_PUBLIC_PATH', trim((string) cfg_get('EVENTS_PUBLIC_PATH', 'esemenyek', $localConfig), '/'));
+}
 
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra

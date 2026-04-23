@@ -12,7 +12,7 @@ if ($id <= 0) {
 }
 
 $db = getDb();
-$stmt = $db->prepare('SELECT id, név, host, port, titkosítás, felhasználó, from_email, from_name, alapértelmezett FROM email_config WHERE id = ?');
+$stmt = $db->prepare('SELECT id, név, host, port, titkosítás, felhasználó, from_email, from_name, alapértelmezett FROM finance_email_accounts WHERE id = ?');
 $stmt->execute([$id]);
 $row = $stmt->fetch();
 if (!$row) {
@@ -38,14 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Érvénytelen feladó e-mail cím.';
     } else {
         if ($alapértelmezett) {
-            $db->exec('UPDATE email_config SET alapértelmezett = 0');
+            $db->exec('UPDATE finance_email_accounts SET alapértelmezett = 0');
         }
         if ($jelszó !== '') {
             $jelszó_enc = email_jelszo_titkosit($jelszó);
-            $stmt = $db->prepare('UPDATE email_config SET név=?, host=?, port=?, titkosítás=?, felhasználó=?, jelszó_titkosított=?, from_email=?, from_name=?, alapértelmezett=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE finance_email_accounts SET név=?, host=?, port=?, titkosítás=?, felhasználó=?, jelszó_titkosított=?, from_email=?, from_name=?, alapértelmezett=? WHERE id=?');
             $stmt->execute([$név, $host, $port ?: 587, $titkosítás, $felhasználó, $jelszó_enc, $from_email, $from_name, $alapértelmezett ? 1 : 0, $id]);
         } else {
-            $stmt = $db->prepare('UPDATE email_config SET név=?, host=?, port=?, titkosítás=?, felhasználó=?, from_email=?, from_name=?, alapértelmezett=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE finance_email_accounts SET név=?, host=?, port=?, titkosítás=?, felhasználó=?, from_email=?, from_name=?, alapértelmezett=? WHERE id=?');
             $stmt->execute([$név, $host, $port ?: 587, $titkosítás, $felhasználó, $from_email, $from_name, $alapértelmezett ? 1 : 0, $id]);
         }
         rendszer_log('email_config', $id, 'SMTP fiók módosítva', null);

@@ -11,10 +11,10 @@ requireSuperadmin();
 $db = getDb();
 
 // Mentett kapcsolatok (exportáláshoz)
-$connections = $db->query('SELECT id, név FROM exporter_connections ORDER BY név ASC')->fetchAll();
+$connections = $db->query('SELECT id, név FROM nextgen_exporter_connections ORDER BY név ASC')->fetchAll();
 
 // Mentett lekérdezések betöltése
-$saved = $db->query('SELECT id, név, query_sql, megjegyzés, módosítva FROM exporter_queries ORDER BY módosítva DESC')->fetchAll();
+$saved = $db->query('SELECT id, név, query_sql, megjegyzés, módosítva FROM nextgen_exporter_queries ORDER BY módosítva DESC')->fetchAll();
 
 $selectedId = isset($_GET['id']) ? (int) $_GET['id'] : null;
 $currentSql = '';
@@ -22,7 +22,7 @@ $currentName = '';
 $currentMegjegyzes = '';
 $currentConnectionId = null; // '' = alapértelmezett
 if ($selectedId) {
-    $stmt = $db->prepare('SELECT név, query_sql, megjegyzés, connection_id FROM exporter_queries WHERE id = ?');
+    $stmt = $db->prepare('SELECT név, query_sql, megjegyzés, connection_id FROM nextgen_exporter_queries WHERE id = ?');
     $stmt->execute([$selectedId]);
     $row = $stmt->fetch();
     if ($row) {
@@ -93,7 +93,7 @@ $flashError = flash('error');
                 </div>
                 <div class="form-group">
                     <label for="query_sql">SQL lekérdezés <em>(csak SELECT)</em></label>
-                    <textarea id="query_sql" name="query_sql" class="form-control code" rows="12" placeholder="SELECT * FROM szervezők LIMIT 100"><?= h($currentSql) ?></textarea>
+                    <textarea id="query_sql" name="query_sql" class="form-control code" rows="12" placeholder="SELECT * FROM finance_organizers LIMIT 100"><?= h($currentSql) ?></textarea>
                 </div>
                 <div class="form-actions">
                     <input type="hidden" name="id" value="<?= $selectedId ?: '' ?>">

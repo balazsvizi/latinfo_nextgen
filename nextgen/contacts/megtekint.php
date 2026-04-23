@@ -10,7 +10,7 @@ if (!$id) {
     redirect(nextgen_url('contacts/'));
 }
 $db = getDb();
-$k = $db->prepare('SELECT * FROM kontaktok WHERE id = ?');
+$k = $db->prepare('SELECT * FROM finance_contacts WHERE id = ?');
 $k->execute([$id]);
 $k = $k->fetch();
 if (!$k) {
@@ -22,7 +22,7 @@ if (!$k) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['megjegyzes_szoveg'])) {
     $szoveg = trim($_POST['megjegyzes_szoveg']);
     if ($szoveg !== '') {
-        $db->prepare('INSERT INTO kontakt_megjegyzések (kontakt_id, megjegyzés, admin_id) VALUES (?, ?, ?)')
+        $db->prepare('INSERT INTO finance_contact_notes (kontakt_id, megjegyzés, admin_id) VALUES (?, ?, ?)')
             ->execute([$id, $szoveg, $_SESSION['admin_id'] ?? null]);
         rendszer_log('kontakt_megjegyzés', (int)$db->lastInsertId(), 'Felvéve', null);
         flash('success', 'Megjegyzés hozzáadva.');
@@ -30,15 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['megjegyzes_szoveg']))
     }
 }
 
-$megjegyzesek = $db->prepare('SELECT m.*, a.név AS admin_név FROM kontakt_megjegyzések m LEFT JOIN adminok a ON a.id = m.admin_id WHERE m.kontakt_id = ? ORDER BY m.létrehozva DESC');
+$megjegyzesek = $db->prepare('SELECT m.*, a.név AS admin_név FROM finance_contact_notes m LEFT JOIN nextgen_admins a ON a.id = m.admin_id WHERE m.kontakt_id = ? ORDER BY m.létrehozva DESC');
 $megjegyzesek->execute([$id]);
 $megjegyzesek = $megjegyzesek->fetchAll();
 
-$szervezok = $db->prepare('SELECT sz.id, sz.név FROM szervező_kontakt sk JOIN szervezők sz ON sz.id = sk.szervező_id WHERE sk.kontakt_id = ? ORDER BY sz.név');
+$szervezok = $db->prepare('SELECT sz.id, sz.név FROM finance_organizer_contacts sk JOIN finance_organizers sz ON sz.id = sk.szervező_id WHERE sk.kontakt_id = ? ORDER BY sz.név');
 $szervezok->execute([$id]);
 $szervezok = $szervezok->fetchAll();
 
-$tipusok = $db->prepare('SELECT t.név FROM kontakt_típus_kapcsolat kt JOIN kontakt_típusok t ON t.id = kt.típus_id WHERE kt.kontakt_id = ? ORDER BY t.név');
+$tipusok = $db->prepare('SELECT t.név FROM finance_contact_type_links kt JOIN finance_contact_types t ON t.id = kt.típus_id WHERE kt.kontakt_id = ? ORDER BY t.név');
 $tipusok->execute([$id]);
 $tipusok = $tipusok->fetchAll(PDO::FETCH_COLUMN);
 

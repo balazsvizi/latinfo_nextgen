@@ -1,6 +1,6 @@
 -- E-mail / SMTP fiókok (több fiók, jelszó titkosítva) – meglévő telepítésekhez
 
-CREATE TABLE IF NOT EXISTS email_config (
+CREATE TABLE IF NOT EXISTS finance_email_accounts (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(100) NOT NULL,
     host VARCHAR(255) NOT NULL,

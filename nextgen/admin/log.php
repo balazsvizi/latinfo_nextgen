@@ -24,14 +24,14 @@ $order = isset($_GET['order']) && in_array($_GET['order'], ['létrehozva', 'enti
 $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
 $dir = $dir_param === 'desc' ? 'DESC' : 'ASC';
 
-$total = $db->prepare("SELECT COUNT(*) FROM rendszer_log $where_sql");
+$total = $db->prepare("SELECT COUNT(*) FROM nextgen_system_log $where_sql");
 $total->execute($params);
 $total = (int) $total->fetchColumn();
 
 $stmt = $db->prepare("
     SELECT r.*, a.név AS admin_név
-    FROM rendszer_log r
-    LEFT JOIN adminok a ON a.id = r.admin_id
+    FROM nextgen_system_log r
+    LEFT JOIN nextgen_admins a ON a.id = r.admin_id
     $where_sql
     ORDER BY r.$order $dir
     LIMIT $per_page OFFSET $offset
@@ -41,7 +41,7 @@ $logok = $stmt->fetchAll();
 
 $get_params = array_filter(['entitas' => $_GET['entitas'] ?? '', 'muvelet' => $_GET['muvelet'] ?? '']);
 
-$entitasok = $db->query("SELECT DISTINCT entitás FROM rendszer_log ORDER BY entitás")->fetchAll(PDO::FETCH_COLUMN);
+$entitasok = $db->query("SELECT DISTINCT entitás FROM nextgen_system_log ORDER BY entitás")->fetchAll(PDO::FETCH_COLUMN);
 ?>
 <div class="card">
     <h2>Rendszer log</h2>

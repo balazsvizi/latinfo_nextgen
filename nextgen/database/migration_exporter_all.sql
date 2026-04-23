@@ -1,7 +1,7 @@
 -- Exporter modul: mentett lekérdezések + kapcsolatok (futtasd az adatbázison)
 
 -- Mentett SQL lekérdezések (connection_id = melyik adatbázis kapcsolat, NULL/0 = alapértelmezett)
-CREATE TABLE IF NOT EXISTS exporter_queries (
+CREATE TABLE IF NOT EXISTS nextgen_exporter_queries (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(200) NOT NULL,
     query_sql TEXT NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS exporter_queries (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Mentett adatbázis kapcsolatok
-CREATE TABLE IF NOT EXISTS exporter_connections (
+CREATE TABLE IF NOT EXISTS nextgen_exporter_connections (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(200) NOT NULL,
     host VARCHAR(255) NOT NULL DEFAULT 'localhost',

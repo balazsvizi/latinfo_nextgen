@@ -10,7 +10,7 @@ if (!$id) {
     redirect(nextgen_url('admin/adminok/'));
 }
 $db = getDb();
-$db->prepare('UPDATE adminok SET aktív = 1 WHERE id = ?')->execute([$id]);
+$db->prepare('UPDATE nextgen_admins SET aktív = 1 WHERE id = ?')->execute([$id]);
 rendszer_log('admin', $id, 'Engedélyezve', null);
 flash('success', 'Admin engedélyezve.');
 redirect(nextgen_url('admin/adminok/'));

@@ -21,7 +21,7 @@ if ($id <= 0) {
 }
 
 $db = getDb();
-$stmt = $db->prepare('DELETE FROM exporter_connections WHERE id = ?');
+$stmt = $db->prepare('DELETE FROM nextgen_exporter_connections WHERE id = ?');
 $stmt->execute([$id]);
 if ($stmt->rowCount()) {
     flash('success', 'Kapcsolat törölve.');

@@ -1,6 +1,6 @@
 -- Exporter: mentett adatbázis kapcsolatok
 
-CREATE TABLE IF NOT EXISTS exporter_connections (
+CREATE TABLE IF NOT EXISTS nextgen_exporter_connections (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(200) NOT NULL,
     host VARCHAR(255) NOT NULL DEFAULT 'localhost',

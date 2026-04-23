@@ -11,7 +11,7 @@ if (!$szervezo_id || !$kontakt_id) {
     redirect(nextgen_url('organizers/'));
 }
 $db = getDb();
-$db->prepare('DELETE FROM szervező_kontakt WHERE szervező_id = ? AND kontakt_id = ?')->execute([$szervezo_id, $kontakt_id]);
+$db->prepare('DELETE FROM finance_organizer_contacts WHERE szervező_id = ? AND kontakt_id = ?')->execute([$szervezo_id, $kontakt_id]);
 rendszer_log('szervező_kontakt', null, 'Kapcsolat törölve', "szervező_id=$szervezo_id, kontakt_id=$kontakt_id");
 flash('success', 'Kontakt lecsatolva.');
 redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id . '#kontaktok');

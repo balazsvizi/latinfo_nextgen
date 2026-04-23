@@ -1,6 +1,17 @@
 <?php
 require_once __DIR__ . '/../init.php';
 requireLogin();
+
+$scriptPath = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$eventsAdminHome = (strpos($scriptPath, '/events/') !== false);
+$appsHome = (strpos($scriptPath, '/nextgen/apps.php') !== false || str_ends_with($scriptPath, '/apps.php'));
+if ($eventsAdminHome) {
+    $logoHomeUrl = site_url('events/events_admin.php');
+} elseif ($appsHome) {
+    $logoHomeUrl = nextgen_url('apps.php');
+} else {
+    $logoHomeUrl = nextgen_url('index.php');
+}
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -14,32 +25,34 @@ requireLogin();
 <body>
 <header class="main-header">
     <div class="header-inner">
-        <a href="<?= h(nextgen_url('index.php')) ?>" class="logo" title="<?= h(app_backoffice_brand_line()) ?>"><span class="logo-site"><?= h(SITE_NAME) ?></span><span class="logo-area-sep" aria-hidden="true"> </span><span class="logo-area"><?= h(app_backoffice_area()) ?></span></a>
+        <a href="<?= h($logoHomeUrl) ?>" class="logo" title="<?= h(app_backoffice_brand_line()) ?>"><span class="logo-site"><?= h(SITE_NAME) ?></span><span class="logo-area-sep" aria-hidden="true"> </span><span class="logo-area"><?= h(app_backoffice_area()) ?></span></a>
         <?php if (isLoggedIn()): ?><a href="<?= h(nextgen_url('jelszo.php')) ?>" class="header-user"><?= h($_SESSION['admin_nev']) ?></a><?php endif; ?>
         <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Menü" aria-expanded="false">
             <span class="icon">☰</span>
         </button>
         <nav class="main-nav" id="main-nav" aria-label="Főmenü">
             <ul class="nav-list">
-                <li class="nav-item has-submenu">
-                    <span class="nav-parent-wrap">
-                        <a href="<?= h(nextgen_url('organizers/')) ?>" class="nav-parent-link">Szervezők</a>
-                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="szervezo" aria-label="Almenü">▾</button>
-                    </span>
-                    <ul class="nav-submenu" id="submenu-szervezo" role="menu">
-                        <li role="none"><a href="<?= h(nextgen_url('organizers/')) ?>" role="menuitem">Szervezők</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('contacts/')) ?>" role="menuitem">Kontaktok</a></li>
-                    </ul>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('apps.php')) ?>" class="nav-parent-link">Alkalmazások</a>
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
-                        <a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" class="nav-parent-link">Finance</a>
-                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="finance" aria-label="Almenü">▾</button>
+                        <a href="<?= h(nextgen_url('index.php')) ?>" class="nav-parent-link">Finance</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="finance-app" aria-label="Finance almenü">▾</button>
                     </span>
-                    <ul class="nav-submenu" id="submenu-finance" role="menu">
+                    <ul class="nav-submenu" id="submenu-finance-app" role="menu">
+                        <li class="nav-submenu-heading" role="presentation"><span>Dashboard</span></li>
+                        <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance főoldal</a></li>
+                        <li class="nav-submenu-heading" role="presentation"><span>Szervezők</span></li>
+                        <li role="none"><a href="<?= h(nextgen_url('organizers/')) ?>" role="menuitem">Szervezők</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('contacts/')) ?>" role="menuitem">Kontaktok</a></li>
+                        <li class="nav-submenu-heading" role="presentation"><span>Pénzügy</span></li>
                         <li role="none"><a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" role="menuitem">Számlázandó</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('finance/szamlak/')) ?>" role="menuitem">Számlák</a></li>
                     </ul>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(site_url('events/events_admin.php')) ?>" class="nav-parent-link">Event Admin</a>
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">

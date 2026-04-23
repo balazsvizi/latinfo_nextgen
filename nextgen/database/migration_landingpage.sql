@@ -1,5 +1,5 @@
 -- NextGen landing: visszajelzés és értesítési e-mail
-CREATE TABLE IF NOT EXISTS landingpage (
+CREATE TABLE IF NOT EXISTS nextgen_landing_feedback (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ilyen_legyen TEXT NULL,
     ilyen_ne_legyen TEXT NULL,

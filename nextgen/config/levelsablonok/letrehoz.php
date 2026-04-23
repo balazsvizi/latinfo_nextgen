@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'A kód csak betűt, számot, pontot, kötőjelet és alsóvonalat tartalmazhat.';
     } else {
         try {
-            $stmt = $db->prepare('INSERT INTO levélsablonok (név, kód, tárgy, megjegyzés, html_tartalom) VALUES (?, ?, ?, ?, ?)');
+            $stmt = $db->prepare('INSERT INTO finance_email_templates (név, kód, tárgy, megjegyzés, html_tartalom) VALUES (?, ?, ?, ?, ?)');
             $stmt->execute([$nev, $kod, $targy, $megjegyzes ?: null, $html]);
             $id = (int)$db->lastInsertId();
             rendszer_log('levélsablon', $id, 'Létrehozva', 'Kód: ' . $kod);

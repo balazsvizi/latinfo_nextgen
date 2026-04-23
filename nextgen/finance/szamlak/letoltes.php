@@ -10,7 +10,7 @@ if (!$id) {
     exit;
 }
 $db = getDb();
-$f = $db->prepare('SELECT * FROM számla_fájlok WHERE id = ?');
+$f = $db->prepare('SELECT * FROM finance_invoice_files WHERE id = ?');
 $f->execute([$id]);
 $f = $f->fetch();
 if (!$f) {

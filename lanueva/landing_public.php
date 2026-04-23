@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
         $hiba_feedback = 'Írj legalább az egyik mezőbe: mit szeretnél, vagy mit ne.';
     } else {
         [$ip, $ua] = landing_client_meta();
-        $stmt = $db->prepare('INSERT INTO landingpage (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (?, ?, NULL, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO nextgen_landing_feedback (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (?, ?, NULL, ?, ?)');
         $stmt->execute([
             $ilyen !== '' ? $ilyen : null,
             $ne !== '' ? $ne : null,
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_notify'])) {
         $hiba_notify = 'Adj meg egy érvényes e-mail címet az értesítéshez.';
     } else {
         [$ip, $ua] = landing_client_meta();
-        $stmt = $db->prepare('INSERT INTO landingpage (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (NULL, NULL, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO nextgen_landing_feedback (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (NULL, NULL, ?, ?, ?)');
         $stmt->execute([$email, $ip, $ua]);
         flash('landing_ok_notify', 'Köszönjük! Az e-mail címed elmentve – induláskor értesítünk.');
         redirect(site_url('lanueva/'));

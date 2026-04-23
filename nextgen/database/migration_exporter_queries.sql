@@ -1,6 +1,6 @@
 -- Mentett SQL lekérdezések az Exporter modulhoz
 
-CREATE TABLE IF NOT EXISTS exporter_queries (
+CREATE TABLE IF NOT EXISTS nextgen_exporter_queries (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(200) NOT NULL,
     query_sql TEXT NOT NULL,

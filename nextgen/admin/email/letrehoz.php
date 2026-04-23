@@ -25,10 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Érvénytelen feladó e-mail cím.';
     } else {
         if ($alapértelmezett) {
-            $db->exec('UPDATE email_config SET alapértelmezett = 0');
+            $db->exec('UPDATE finance_email_accounts SET alapértelmezett = 0');
         }
         $jelszó_enc = $jelszó !== '' ? email_jelszo_titkosit($jelszó) : null;
-        $stmt = $db->prepare('INSERT INTO email_config (név, host, port, titkosítás, felhasználó, jelszó_titkosított, from_email, from_name, alapértelmezett)
+        $stmt = $db->prepare('INSERT INTO finance_email_accounts (név, host, port, titkosítás, felhasználó, jelszó_titkosított, from_email, from_name, alapértelmezett)
                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$név, $host, $port ?: 587, $titkosítás, $felhasználó, $jelszó_enc, $from_email, $from_name, $alapértelmezett ? 1 : 0]);
         rendszer_log('email_config', (int)$db->lastInsertId(), 'SMTP fiók létrehozva', null);

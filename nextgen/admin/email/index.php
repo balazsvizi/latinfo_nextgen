@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../partials/header.php';
 
 $db = getDb();
 $stmt = $db->query('SELECT id, név, host, port, titkosítás, from_email, from_name, alapértelmezett, létrehozva
-                    FROM email_config ORDER BY alapértelmezett DESC, név ASC');
+                    FROM finance_email_accounts ORDER BY alapértelmezett DESC, név ASC');
 $listak = $stmt->fetchAll();
 ?>
 <div class="card">

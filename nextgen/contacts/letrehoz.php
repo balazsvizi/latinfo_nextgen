@@ -8,7 +8,7 @@ $szervezo_id = (int)($_GET['szervezo_id'] ?? 0);
 $db = getDb();
 $hiba = '';
 
-$tipusok = $db->query('SELECT id, név, leírás FROM kontakt_típusok ORDER BY név')->fetchAll();
+$tipusok = $db->query('SELECT id, név, leírás FROM finance_contact_types ORDER BY név')->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $név = trim($_POST['név'] ?? '');
@@ -22,16 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($név === '') {
         $hiba = 'A név megadása kötelező.';
     } else {
-        $db->prepare('INSERT INTO kontaktok (név, email, telefon, fb, egyéb_kontakt) VALUES (?, ?, ?, ?, ?)')
+        $db->prepare('INSERT INTO finance_contacts (név, email, telefon, fb, egyéb_kontakt) VALUES (?, ?, ?, ?, ?)')
             ->execute([$név, $email ?: null, $telefon ?: null, $fb ?: null, $egyeb ?: null]);
         $kid = (int) $db->lastInsertId();
         foreach ($tipus_ids as $tid) {
-            $db->prepare('INSERT IGNORE INTO kontakt_típus_kapcsolat (kontakt_id, típus_id) VALUES (?, ?)')
+            $db->prepare('INSERT IGNORE INTO finance_contact_type_links (kontakt_id, típus_id) VALUES (?, ?)')
                 ->execute([$kid, $tid]);
         }
         rendszer_log('kontakt', $kid, 'Létrehozva', null);
         if ($link_szervezo) {
-            $db->prepare('INSERT IGNORE INTO szervező_kontakt (szervező_id, kontakt_id) VALUES (?, ?)')->execute([$link_szervezo, $kid]);
+            $db->prepare('INSERT IGNORE INTO finance_organizer_contacts (szervező_id, kontakt_id) VALUES (?, ?)')->execute([$link_szervezo, $kid]);
         }
         flash('success', 'Kontakt létrehozva.');
         if ($link_szervezo) {
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $szervezo_id = $link_szervezo ?: $szervezo_id;
 }
 
-$szervezok = $db->query('SELECT id, név FROM szervezők ORDER BY név')->fetchAll();
+$szervezok = $db->query('SELECT id, név FROM finance_organizers ORDER BY név')->fetchAll();
 $pageTitle = 'Új kontakt';
 require_once __DIR__ . '/../partials/header.php';
 ?>

@@ -21,7 +21,7 @@ if (isset($_POST['query_sql']) && is_string($_POST['query_sql'])) {
     $sql = trim($_POST['query_sql']);
 } elseif (isset($_GET['id']) && (int) $_GET['id'] > 0) {
     $db = getDb();
-    $stmt = $db->prepare('SELECT query_sql FROM exporter_queries WHERE id = ?');
+    $stmt = $db->prepare('SELECT query_sql FROM nextgen_exporter_queries WHERE id = ?');
     $stmt->execute([(int) $_GET['id']]);
     $row = $stmt->fetch();
     if ($row) {
@@ -48,7 +48,7 @@ if ($connectionId === null || $connectionId <= 0) {
 } else {
     require_once __DIR__ . '/../../../nextgen/includes/email.php';
     $appDb = getDb();
-    $stmt = $appDb->prepare('SELECT host, port, dbname, felhasználó, jelszó_titkosított FROM exporter_connections WHERE id = ?');
+    $stmt = $appDb->prepare('SELECT host, port, dbname, felhasználó, jelszó_titkosított FROM nextgen_exporter_connections WHERE id = ?');
     $stmt->execute([$connectionId]);
     $row = $stmt->fetch();
     if (!$row) {
@@ -80,7 +80,7 @@ try {
 $queryName = '';
 if (isset($_GET['id']) && (int) $_GET['id'] > 0) {
     $appDb = getDb();
-    $nameStmt = $appDb->prepare('SELECT név FROM exporter_queries WHERE id = ?');
+    $nameStmt = $appDb->prepare('SELECT név FROM nextgen_exporter_queries WHERE id = ?');
     $nameStmt->execute([(int) $_GET['id']]);
     $n = $nameStmt->fetch();
     if ($n) {

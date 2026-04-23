@@ -29,10 +29,10 @@ $sql_nincs = "
     SELECT s.id, s.szervező_id, s.összeg, s.megjegyzés, s.számla_id, s.létrehozva,
            sz.név AS szervezo_nev,
            (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap)
-            FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok,
+            FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok,
            NULL AS szamla_szam, NULL AS szamla_id, NULL AS elso_fajl_id
-    FROM számlázandó s
-    JOIN szervezők sz ON sz.id = s.szervező_id
+    FROM finance_billing_items s
+    JOIN finance_organizers sz ON sz.id = s.szervező_id
     $where_nincs_szamla
     ORDER BY s.id DESC
 ";
@@ -40,17 +40,17 @@ $stmt_nincs = $db->prepare($sql_nincs);
 $stmt_nincs->execute($params);
 $lista_nincs_szamla = $stmt_nincs->fetchAll(PDO::FETCH_ASSOC);
 
-// Összes (szűrővel), alap rendezés legújabb; törölt számlázandók NEM jelennek meg
+// Összes (szűrővel), alap rendezés legújabb; törölt finance_billing_itemsk NEM jelennek meg
 $sql = "
     SELECT s.id, s.szervező_id, s.összeg, s.megjegyzés, s.számla_id, s.létrehozva,
            sz.név AS szervezo_nev,
            (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap)
-            FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok,
+            FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok,
            szam.számla_szám AS szamla_szam, szam.id AS szamla_id,
-           (SELECT id FROM számla_fájlok WHERE számla_id = s.számla_id ORDER BY id LIMIT 1) AS elso_fajl_id
-    FROM számlázandó s
-    JOIN szervezők sz ON sz.id = s.szervező_id
-    LEFT JOIN számlák szam ON szam.id = s.számla_id AND (COALESCE(szam.törölve,0) = 0)
+           (SELECT id FROM finance_invoice_files WHERE számla_id = s.számla_id ORDER BY id LIMIT 1) AS elso_fajl_id
+    FROM finance_billing_items s
+    JOIN finance_organizers sz ON sz.id = s.szervező_id
+    LEFT JOIN finance_invoices szam ON szam.id = s.számla_id AND (COALESCE(szam.törölve,0) = 0)
     $where_sql
     ORDER BY $order_sql $dir, s.id DESC
 ";
@@ -106,7 +106,7 @@ require_once __DIR__ . '/../../partials/header.php';
 </div>
 
 <div class="card">
-    <h2>Összes számlázandó</h2>
+    <h2>Összes finance_billing_items</h2>
     <p>Szűrhető lista, alapértelmezett sorrend: legújabb elöl. A csatolt számla mellett a letöltés ikonnal a számla első csatolt fájlja tölthető le.</p>
     <form method="get" class="toolbar">
         <input type="search" name="kereso" placeholder="Szervező vagy megjegyzés..." value="<?= h($kereso) ?>">
@@ -157,7 +157,7 @@ require_once __DIR__ . '/../../partials/header.php';
         </table>
     </div>
     <?php if (empty($lista)): ?>
-        <p>Még nincs számlázandó tétel, vagy a szűrőre nincs találat. A szervező megtekintőben tudsz újat létrehozni.</p>
+        <p>Még nincs finance_billing_items tétel, vagy a szűrőre nincs találat. A szervező megtekintőben tudsz újat létrehozni.</p>
     <?php endif; ?>
 </div>
 <?php require_once __DIR__ . '/../../partials/footer.php'; ?>

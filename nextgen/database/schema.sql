@@ -1,19 +1,19 @@
 -- Latinfo.hu Backoffice - Adatbázis séma
--- PHP MySQL - Szervezők, kontaktok, számlázás
+-- PHP MySQL - Táblanevek: finance_* (CRM + számlázás + e-mail sablonok/SMTP), nextgen_* (admin, log, landing, exporter), events_* (naptár)
 
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
 -- Címkék (új címke szabadon felvehető, máshol is használható)
-CREATE TABLE IF NOT EXISTS címkék (
+CREATE TABLE IF NOT EXISTS finance_tags (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(100) NOT NULL UNIQUE,
     szín CHAR(7) NOT NULL DEFAULT '#6366F1',
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Szervezők
-CREATE TABLE IF NOT EXISTS szervezők (
+-- Szervezők (CRM)
+CREATE TABLE IF NOT EXISTS finance_organizers (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(255) NOT NULL,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS szervezők (
 
 -- Adminok (előbb kell, mert más táblák hivatkoznak rá)
 -- szint: admin = normál admin, superadmin = Admin menü + admin kezelés
-CREATE TABLE IF NOT EXISTS adminok (
+CREATE TABLE IF NOT EXISTS nextgen_admins (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(255) NOT NULL,
     felhasználónév VARCHAR(100) NOT NULL UNIQUE,
@@ -35,37 +35,37 @@ CREATE TABLE IF NOT EXISTS adminok (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Szervező - címke kapcsolat (N:N)
-CREATE TABLE IF NOT EXISTS szervező_címkék (
+CREATE TABLE IF NOT EXISTS finance_organizer_tags (
     szervező_id INT UNSIGNED NOT NULL,
     címke_id INT UNSIGNED NOT NULL,
     PRIMARY KEY (szervező_id, címke_id),
-    FOREIGN KEY (szervező_id) REFERENCES szervezők(id) ON DELETE CASCADE,
-    FOREIGN KEY (címke_id) REFERENCES címkék(id) ON DELETE CASCADE
+    FOREIGN KEY (szervező_id) REFERENCES finance_organizers(id) ON DELETE CASCADE,
+    FOREIGN KEY (címke_id) REFERENCES finance_tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Szervező megjegyzések (időbélyeges log)
-CREATE TABLE IF NOT EXISTS szervező_megjegyzések (
+CREATE TABLE IF NOT EXISTS finance_organizer_notes (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     szervező_id INT UNSIGNED NOT NULL,
     megjegyzés TEXT NOT NULL,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
     admin_id INT UNSIGNED NULL,
-    FOREIGN KEY (szervező_id) REFERENCES szervezők(id) ON DELETE CASCADE
+    FOREIGN KEY (szervező_id) REFERENCES finance_organizers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Szervező log (történések)
-CREATE TABLE IF NOT EXISTS szervező_log (
+CREATE TABLE IF NOT EXISTS finance_organizer_activity_log (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     szervező_id INT UNSIGNED NOT NULL,
     esemény VARCHAR(500) NOT NULL,
     részletek TEXT NULL,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
     admin_id INT UNSIGNED NULL,
-    FOREIGN KEY (szervező_id) REFERENCES szervezők(id) ON DELETE CASCADE
+    FOREIGN KEY (szervező_id) REFERENCES finance_organizers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Kontaktok
-CREATE TABLE IF NOT EXISTS kontaktok (
+CREATE TABLE IF NOT EXISTS finance_contacts (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(255) NOT NULL,
     email VARCHAR(255) NULL,
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS kontaktok (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Kontakt típusok (címkeszerű értékek a kontaktokhoz)
-CREATE TABLE IF NOT EXISTS kontakt_típusok (
+CREATE TABLE IF NOT EXISTS finance_contact_types (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(100) NOT NULL UNIQUE,
     leírás TEXT NULL,
@@ -85,35 +85,35 @@ CREATE TABLE IF NOT EXISTS kontakt_típusok (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Kontakt - típus kapcsolat (N:N)
-CREATE TABLE IF NOT EXISTS kontakt_típus_kapcsolat (
+CREATE TABLE IF NOT EXISTS finance_contact_type_links (
     kontakt_id INT UNSIGNED NOT NULL,
     típus_id INT UNSIGNED NOT NULL,
     PRIMARY KEY (kontakt_id, típus_id),
-    FOREIGN KEY (kontakt_id) REFERENCES kontaktok(id) ON DELETE CASCADE,
-    FOREIGN KEY (típus_id) REFERENCES kontakt_típusok(id) ON DELETE CASCADE
+    FOREIGN KEY (kontakt_id) REFERENCES finance_contacts(id) ON DELETE CASCADE,
+    FOREIGN KEY (típus_id) REFERENCES finance_contact_types(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Kontakt megjegyzések (időbélyeges log)
-CREATE TABLE IF NOT EXISTS kontakt_megjegyzések (
+CREATE TABLE IF NOT EXISTS finance_contact_notes (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     kontakt_id INT UNSIGNED NOT NULL,
     megjegyzés TEXT NOT NULL,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
     admin_id INT UNSIGNED NULL,
-    FOREIGN KEY (kontakt_id) REFERENCES kontaktok(id) ON DELETE CASCADE
+    FOREIGN KEY (kontakt_id) REFERENCES finance_contacts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Szervező - Kontakt kapcsolat (N:N)
-CREATE TABLE IF NOT EXISTS szervező_kontakt (
+CREATE TABLE IF NOT EXISTS finance_organizer_contacts (
     szervező_id INT UNSIGNED NOT NULL,
     kontakt_id INT UNSIGNED NOT NULL,
     PRIMARY KEY (szervező_id, kontakt_id),
-    FOREIGN KEY (szervező_id) REFERENCES szervezők(id) ON DELETE CASCADE,
-    FOREIGN KEY (kontakt_id) REFERENCES kontaktok(id) ON DELETE CASCADE
+    FOREIGN KEY (szervező_id) REFERENCES finance_organizers(id) ON DELETE CASCADE,
+    FOREIGN KEY (kontakt_id) REFERENCES finance_contacts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Számlázási címek (egy szervezőhöz több, egy primary)
-CREATE TABLE IF NOT EXISTS számlázási_címek (
+CREATE TABLE IF NOT EXISTS finance_billing_addresses (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     szervező_id INT UNSIGNED NOT NULL,
     név VARCHAR(255) NOT NULL,
@@ -126,11 +126,11 @@ CREATE TABLE IF NOT EXISTS számlázási_címek (
     alapértelmezett TINYINT(1) NOT NULL DEFAULT 0,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
     módosítva DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (szervező_id) REFERENCES szervezők(id) ON DELETE CASCADE
+    FOREIGN KEY (szervező_id) REFERENCES finance_organizers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Számlák
-CREATE TABLE IF NOT EXISTS számlák (
+CREATE TABLE IF NOT EXISTS finance_invoices (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     szervező_id INT UNSIGNED NOT NULL,
     számla_szám VARCHAR(50) NOT NULL,
@@ -141,21 +141,21 @@ CREATE TABLE IF NOT EXISTS számlák (
     törölve TINYINT(1) NOT NULL DEFAULT 0,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
     módosítva DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (szervező_id) REFERENCES szervezők(id) ON DELETE CASCADE
+    FOREIGN KEY (szervező_id) REFERENCES finance_organizers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Számla fájl csatolmányok
-CREATE TABLE IF NOT EXISTS számla_fájlok (
+CREATE TABLE IF NOT EXISTS finance_invoice_files (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     számla_id INT UNSIGNED NOT NULL,
     eredeti_név VARCHAR(255) NOT NULL,
     fájl_útvonal VARCHAR(500) NOT NULL,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (számla_id) REFERENCES számlák(id) ON DELETE CASCADE
+    FOREIGN KEY (számla_id) REFERENCES finance_invoices(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Számlázandó (időszak: év/hó, több hónap kijelölhető; opcionálisan egy számlához csatolva)
-CREATE TABLE IF NOT EXISTS számlázandó (
+CREATE TABLE IF NOT EXISTS finance_billing_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     szervező_id INT UNSIGNED NOT NULL,
     számla_id INT UNSIGNED NULL,
@@ -164,27 +164,27 @@ CREATE TABLE IF NOT EXISTS számlázandó (
     törölve TINYINT(1) NOT NULL DEFAULT 0,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
     módosítva DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (szervező_id) REFERENCES szervezők(id) ON DELETE CASCADE,
-    FOREIGN KEY (számla_id) REFERENCES számlák(id) ON DELETE SET NULL
+    FOREIGN KEY (szervező_id) REFERENCES finance_organizers(id) ON DELETE CASCADE,
+    FOREIGN KEY (számla_id) REFERENCES finance_invoices(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Számlázandó időszak (év, hónap - több hónap egy számlázandóhoz)
-CREATE TABLE IF NOT EXISTS számlázandó_időszak (
+-- Számlázandó időszak (év, hónap - több hónap egy finance_billing_itemshoz)
+CREATE TABLE IF NOT EXISTS finance_billing_periods (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     számlázandó_id INT UNSIGNED NOT NULL,
     év SMALLINT UNSIGNED NOT NULL,
     hónap TINYINT UNSIGNED NOT NULL CHECK (hónap BETWEEN 1 AND 12),
     UNIQUE KEY (számlázandó_id, év, hónap),
-    FOREIGN KEY (számlázandó_id) REFERENCES számlázandó(id) ON DELETE CASCADE
+    FOREIGN KEY (számlázandó_id) REFERENCES finance_billing_items(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Admin ID hivatkozások (szervező_megjegyzések, szervező_log, kontakt_megjegyzések, log)
-ALTER TABLE szervező_megjegyzések ADD CONSTRAINT fk_szerv_megj_admin FOREIGN KEY (admin_id) REFERENCES adminok(id) ON DELETE SET NULL;
-ALTER TABLE szervező_log ADD CONSTRAINT fk_szerv_log_admin FOREIGN KEY (admin_id) REFERENCES adminok(id) ON DELETE SET NULL;
-ALTER TABLE kontakt_megjegyzések ADD CONSTRAINT fk_kontakt_megj_admin FOREIGN KEY (admin_id) REFERENCES adminok(id) ON DELETE SET NULL;
+-- Admin ID hivatkozások (megjegyzések, log, kontakt megjegyzések, rendszer log)
+ALTER TABLE finance_organizer_notes ADD CONSTRAINT fk_ng_org_notes_admin FOREIGN KEY (admin_id) REFERENCES nextgen_admins(id) ON DELETE SET NULL;
+ALTER TABLE finance_organizer_activity_log ADD CONSTRAINT fk_ng_org_log_admin FOREIGN KEY (admin_id) REFERENCES nextgen_admins(id) ON DELETE SET NULL;
+ALTER TABLE finance_contact_notes ADD CONSTRAINT fk_ng_contact_notes_admin FOREIGN KEY (admin_id) REFERENCES nextgen_admins(id) ON DELETE SET NULL;
 
 -- E-mail / SMTP fiókok (több fiók, jelszó titkosítva)
-CREATE TABLE IF NOT EXISTS email_config (
+CREATE TABLE IF NOT EXISTS finance_email_accounts (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(100) NOT NULL,
     host VARCHAR(255) NOT NULL,
@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS email_config (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Levélsablonok (e-mail sablonok)
-CREATE TABLE IF NOT EXISTS levélsablonok (
+CREATE TABLE IF NOT EXISTS finance_email_templates (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(255) NOT NULL,
     kód VARCHAR(100) NOT NULL UNIQUE,
@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS levélsablonok (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Rendszer log (tétel felvétel, státusz módosítás stb.)
-CREATE TABLE IF NOT EXISTS rendszer_log (
+CREATE TABLE IF NOT EXISTS nextgen_system_log (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     entitás VARCHAR(50) NOT NULL,
     entitás_id INT UNSIGNED NULL,
@@ -220,11 +220,11 @@ CREATE TABLE IF NOT EXISTS rendszer_log (
     részletek TEXT NULL,
     admin_id INT UNSIGNED NULL,
     létrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id) REFERENCES adminok(id) ON DELETE SET NULL
+    FOREIGN KEY (admin_id) REFERENCES nextgen_admins(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- NextGen landing (visszajelzés, értesítés)
-CREATE TABLE IF NOT EXISTS landingpage (
+CREATE TABLE IF NOT EXISTS nextgen_landing_feedback (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ilyen_legyen TEXT NULL,
     ilyen_ne_legyen TEXT NULL,
@@ -235,5 +235,5 @@ CREATE TABLE IF NOT EXISTS landingpage (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Alapértelmezett admin: felhasználónév = admin, jelszó = password, szint = superadmin
-INSERT IGNORE INTO adminok (id, név, felhasználónév, jelszó_hash, szint, aktív) VALUES
+INSERT IGNORE INTO nextgen_admins (id, név, felhasználónév, jelszó_hash, szint, aktív) VALUES
 (1, 'Főadmin', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'superadmin', 1);

@@ -65,7 +65,7 @@ function email_kuld($cimzett, string $targy, string $szoveg, array $opciok = [])
 
     $db = getDb();
     $sql = 'SELECT id, név, host, port, titkosítás, felhasználó, jelszó_titkosított, from_email, from_name
-            FROM email_config WHERE 1=1';
+            FROM finance_email_accounts WHERE 1=1';
     $params = [];
     if ($config_id !== null) {
         $sql .= ' AND id = ?';

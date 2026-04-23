@@ -1,6 +1,6 @@
 -- Levélsablonok tábla létrehozása
 
-CREATE TABLE IF NOT EXISTS levélsablonok (
+CREATE TABLE IF NOT EXISTS finance_email_templates (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     név VARCHAR(255) NOT NULL,
     kód VARCHAR(100) NOT NULL UNIQUE,

@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'A név és az adatbázis megadása kötelező.';
     } else {
         $jelszó_enc = $jelszó !== '' ? email_jelszo_titkosit($jelszó) : null;
-        $stmt = $db->prepare('INSERT INTO exporter_connections (név, host, port, dbname, felhasználó, jelszó_titkosított) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO nextgen_exporter_connections (név, host, port, dbname, felhasználó, jelszó_titkosított) VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->execute([$név, $host ?: 'localhost', $port ?: 3306, $dbname, $felhasználó, $jelszó_enc]);
         flash('success', 'Kapcsolat létrehozva.');
         redirect(nextgen_url('admin/exporter/connections.php'));

@@ -20,17 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($uj !== $uj2) {
         $hiba = 'Az új jelszó és a megerősítés nem egyezik.';
     } else {
-        $stmt = $db->prepare('SELECT jelszó_hash FROM adminok WHERE id = ?');
+        $stmt = $db->prepare('SELECT jelszó_hash FROM nextgen_admins WHERE id = ?');
         $stmt->execute([$admin_id]);
         $row = $stmt->fetch();
         if (!$row || !password_verify($jelenlegi, $row['jelszó_hash'])) {
             $hiba = 'A jelenlegi jelszó nem helyes.';
         } else {
             $hash = password_hash($uj, PASSWORD_DEFAULT);
-            $db->prepare('UPDATE adminok SET jelszó_hash = ? WHERE id = ?')->execute([$hash, $admin_id]);
+            $db->prepare('UPDATE nextgen_admins SET jelszó_hash = ? WHERE id = ?')->execute([$hash, $admin_id]);
             rendszer_log('admin', $admin_id, 'Jelszó módosítva', null);
             flash('success', 'A jelszó sikeresen megváltozott.');
-            redirect(nextgen_url('index.php'));
+            redirect(nextgen_url('apps.php'));
         }
     }
 }

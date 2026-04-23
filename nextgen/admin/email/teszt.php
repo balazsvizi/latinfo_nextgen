@@ -15,7 +15,7 @@ $admin_email = '';
 $admin_id = (int) ($_SESSION['admin_id'] ?? 0);
 if ($admin_id > 0) {
     try {
-        $ae = $db->prepare('SELECT email FROM adminok WHERE id = ?');
+        $ae = $db->prepare('SELECT email FROM nextgen_admins WHERE id = ?');
         $ae->execute([$admin_id]);
         $admin_email = trim((string) ($ae->fetchColumn() ?: ''));
     } catch (Throwable $e) {
@@ -26,7 +26,7 @@ if ($admin_email === '') {
     $admin_email = trim((string) ($_SESSION['admin_email'] ?? ''));
 }
 
-$stmt = $db->query('SELECT id, név, from_email, from_name FROM email_config ORDER BY alapértelmezett DESC, név ASC');
+$stmt = $db->query('SELECT id, név, from_email, from_name FROM finance_email_accounts ORDER BY alapértelmezett DESC, név ASC');
 $fiokok = $stmt->fetchAll();
 
 $hiba = '';

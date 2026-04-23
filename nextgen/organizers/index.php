@@ -20,7 +20,7 @@ if ($kereso !== '') {
     $params[] = $kereso;
 }
 if ($cimke_id > 0) {
-    $where[] = 'EXISTS (SELECT 1 FROM szervező_címkék sc WHERE sc.szervező_id = s.id AND sc.címke_id = ?)';
+    $where[] = 'EXISTS (SELECT 1 FROM finance_organizer_tags sc WHERE sc.szervező_id = s.id AND sc.címke_id = ?)';
     $params[] = $cimke_id;
 }
 $where_sql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -31,10 +31,10 @@ $cimkeConcatExpr = $hasCimkeSzin
     : "GROUP_CONCAT(CONCAT(c.név, '|', '#6366F1') ORDER BY c.név SEPARATOR '||')";
 $stmt = $db->prepare("
     SELECT s.id, s.név,
-           (SELECT $cimkeConcatExpr FROM szervező_címkék sc JOIN címkék c ON c.id = sc.címke_id WHERE sc.szervező_id = s.id) AS címkék,
-           (SELECT COUNT(*) FROM számlázandó sz WHERE sz.szervező_id = s.id AND sz.számla_id IS NULL AND (COALESCE(sz.törölve,0) = 0)) AS szamlazando_nem,
-           (SELECT COUNT(*) FROM számlák szl WHERE szl.szervező_id = s.id AND szl.státusz NOT IN ('kiegyenlítve','sztornó') AND (COALESCE(szl.törölve,0) = 0)) AS szamla_nem
-    FROM szervezők s
+           (SELECT $cimkeConcatExpr FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = s.id) AS címkék,
+           (SELECT COUNT(*) FROM finance_billing_items sz WHERE sz.szervező_id = s.id AND sz.számla_id IS NULL AND (COALESCE(sz.törölve,0) = 0)) AS szamlazando_nem,
+           (SELECT COUNT(*) FROM finance_invoices szl WHERE szl.szervező_id = s.id AND szl.státusz NOT IN ('kiegyenlítve','sztornó') AND (COALESCE(szl.törölve,0) = 0)) AS szamla_nem
+    FROM finance_organizers s
     $where_sql
     ORDER BY $order_sql $dir
 ");
@@ -42,8 +42,8 @@ $stmt->execute($params);
 $szervezok = $stmt->fetchAll();
 
 $cimkeSelectSql = $hasCimkeSzin
-    ? 'SELECT id, név, COALESCE(szín, "#6366F1") AS szín FROM címkék ORDER BY név'
-    : 'SELECT id, név, "#6366F1" AS szín FROM címkék ORDER BY név';
+    ? 'SELECT id, név, COALESCE(szín, "#6366F1") AS szín FROM finance_tags ORDER BY név'
+    : 'SELECT id, név, "#6366F1" AS szín FROM finance_tags ORDER BY név';
 $címkék = $db->query($cimkeSelectSql)->fetchAll();
 $get_params = array_filter(['kereso' => $kereso, 'cimke_id' => $cimke_id ?: null]);
 ?>

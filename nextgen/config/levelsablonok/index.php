@@ -20,7 +20,7 @@ if ($kereso !== '') {
     $params = [$p, $p, $p];
 }
 
-$stmt = $db->prepare("SELECT id, név, kód, megjegyzés, módosítva, létrehozva FROM levélsablonok $where ORDER BY $order $dir");
+$stmt = $db->prepare("SELECT id, név, kód, megjegyzés, módosítva, létrehozva FROM finance_email_templates $where ORDER BY $order $dir");
 $stmt->execute($params);
 $sablonok = $stmt->fetchAll();
 

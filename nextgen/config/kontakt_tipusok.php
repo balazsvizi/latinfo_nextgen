@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['uj_tipus_nev'])) {
     $leiras = trim($_POST['uj_tipus_leiras'] ?? '');
     if ($nev !== '') {
         try {
-            $db->prepare('INSERT INTO kontakt_típusok (név, leírás) VALUES (?, ?)')->execute([$nev, $leiras ?: null]);
+            $db->prepare('INSERT INTO finance_contact_types (név, leírás) VALUES (?, ?)')->execute([$nev, $leiras ?: null]);
             rendszer_log('kontakt_típus', (int)$db->lastInsertId(), 'Létrehozva', 'Név: ' . $nev);
             flash('success', 'Kontakt típus felvéve.');
             redirect(nextgen_url('config/kontakt_tipusok.php'));
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szerkeszt_id'], $_POS
     $leiras = trim($_POST['uj_leiras'] ?? '');
     if ($tid && $nev !== '') {
         try {
-            $db->prepare('UPDATE kontakt_típusok SET név = ?, leírás = ? WHERE id = ?')->execute([$nev, $leiras ?: null, $tid]);
+            $db->prepare('UPDATE finance_contact_types SET név = ?, leírás = ? WHERE id = ?')->execute([$nev, $leiras ?: null, $tid]);
             rendszer_log('kontakt_típus', $tid, 'Módosítva', 'Új név: ' . $nev);
             flash('success', 'Kontakt típus módosítva.');
             redirect(nextgen_url('config/kontakt_tipusok.php'));
@@ -46,18 +46,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_id'])) {
     if ($tid) {
         $hasznalat = $db->prepare('
             SELECT k.id, k.név
-            FROM kontakt_típus_kapcsolat kt
-            JOIN kontaktok k ON k.id = kt.kontakt_id
+            FROM finance_contact_type_links kt
+            JOIN finance_contacts k ON k.id = kt.kontakt_id
             WHERE kt.típus_id = ?
             ORDER BY k.név
         ');
         $hasznalat->execute([$tid]);
-        $kontaktok = $hasznalat->fetchAll();
-        if (!empty($kontaktok)) {
-            $nevek = array_map(function ($r) { return $r['név']; }, $kontaktok);
+        $hasznalatban_kontaktok = $hasznalat->fetchAll();
+        if (!empty($hasznalatban_kontaktok)) {
+            $nevek = array_map(function ($r) { return $r['név']; }, $hasznalatban_kontaktok);
             $hiba = 'A típus még használatban van, ezért nem törölhető. Kontaktok: ' . implode(', ', $nevek);
         } else {
-            $db->prepare('DELETE FROM kontakt_típusok WHERE id = ?')->execute([$tid]);
+            $db->prepare('DELETE FROM finance_contact_types WHERE id = ?')->execute([$tid]);
             rendszer_log('kontakt_típus', $tid, 'Törölve', null);
             flash('success', 'Kontakt típus törölve.');
             redirect(nextgen_url('config/kontakt_tipusok.php'));
@@ -76,7 +76,7 @@ if ($kereso !== '') {
     $where = 'WHERE név LIKE ?';
     $params = ['%' . $kereso . '%'];
 }
-$stmt = $db->prepare("SELECT * FROM kontakt_típusok $where ORDER BY $order $dir");
+$stmt = $db->prepare("SELECT * FROM finance_contact_types $where ORDER BY $order $dir");
 $stmt->execute($params);
 $tipusok = $stmt->fetchAll();
 
@@ -161,6 +161,6 @@ $get_params = array_filter(['kereso' => $kereso]);
         <?php endif; ?>
     </section>
 </div>
-<p><a href="<?= h(nextgen_url('contacts/')) ?>">← Vissza a kontaktokhoz</a></p>
+<p><a href="<?= h(nextgen_url('contacts/')) ?>">← Vissza a finance_contactshoz</a></p>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
 

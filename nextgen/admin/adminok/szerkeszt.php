@@ -12,14 +12,14 @@ if (!$id) {
 
 $db = getDb();
 try {
-    $col = $db->query("SHOW COLUMNS FROM adminok LIKE 'email'")->fetch();
+    $col = $db->query("SHOW COLUMNS FROM nextgen_admins LIKE 'email'")->fetch();
     if (!$col) {
-        $db->exec("ALTER TABLE adminok ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
+        $db->exec("ALTER TABLE nextgen_admins ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
     }
 } catch (Throwable $e) {
     // nincs ALTER jog: migrációval felvehető
 }
-$stmt = $db->prepare('SELECT id, név, felhasználónév, email, szint, aktív FROM adminok WHERE id = ?');
+$stmt = $db->prepare('SELECT id, név, felhasználónév, email, szint, aktív FROM nextgen_admins WHERE id = ?');
 $stmt->execute([$id]);
 $admin = $stmt->fetch();
 if (!$admin) {
@@ -46,17 +46,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($jelszo !== '' && $jelszo !== $jelszo2) {
         $hiba = 'A két jelszó nem egyezik.';
     } else {
-        $check = $db->prepare('SELECT id FROM adminok WHERE felhasználónév = ? AND id != ?');
+        $check = $db->prepare('SELECT id FROM nextgen_admins WHERE felhasználónév = ? AND id != ?');
         $check->execute([$fh, $id]);
         if ($check->fetch()) {
             $hiba = 'Ez a felhasználónév már foglalt.';
         } else {
             if ($jelszo !== '') {
                 $hash = password_hash($jelszo, PASSWORD_DEFAULT);
-                $db->prepare('UPDATE adminok SET név = ?, felhasználónév = ?, email = ?, jelszó_hash = ?, szint = ?, aktív = ? WHERE id = ?')
+                $db->prepare('UPDATE nextgen_admins SET név = ?, felhasználónév = ?, email = ?, jelszó_hash = ?, szint = ?, aktív = ? WHERE id = ?')
                     ->execute([$név, $fh, ($email !== '' ? $email : null), $hash, $szint, $aktív, $id]);
             } else {
-                $db->prepare('UPDATE adminok SET név = ?, felhasználónév = ?, email = ?, szint = ?, aktív = ? WHERE id = ?')
+                $db->prepare('UPDATE nextgen_admins SET név = ?, felhasználónév = ?, email = ?, szint = ?, aktív = ? WHERE id = ?')
                     ->execute([$név, $fh, ($email !== '' ? $email : null), $szint, $aktív, $id]);
             }
             rendszer_log('admin', $id, 'Módosítva', null);

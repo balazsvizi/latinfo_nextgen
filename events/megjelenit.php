@@ -1,0 +1,83 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/bootstrap.php';
+
+$slug = trim((string) ($_GET['slug'] ?? ''));
+if ($slug === '') {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo 'Nincs ilyen esemény.';
+    exit;
+}
+
+$db = getDb();
+$stmt = $db->prepare('
+    SELECT * FROM `events_calendar_events`
+    WHERE `event_slug` = ? AND `event_status` = ?
+    LIMIT 1
+');
+$stmt->execute([$slug, events_public_post_status()]);
+$event = $stmt->fetch(PDO::FETCH_ASSOC);
+if (!$event) {
+    http_response_code(404);
+    header('Content-Type: text/html; charset=UTF-8');
+    ?><!DOCTYPE html>
+<html lang="hu">
+<head><meta charset="UTF-8"><title>Nincs ilyen esemény</title></head>
+<body><p>Nincs ilyen esemény.</p></body>
+</html><?php
+    exit;
+}
+
+try {
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    $ipHash = $ip !== '' ? hash('sha256', $ip . '|' . SITE_NAME) : null;
+    $ins = $db->prepare('INSERT INTO `events_calendar_event_views` (`esemény_id`, `ip_hash`) VALUES (?, ?)');
+    $ins->execute([(int) $event['id'], $ipHash]);
+} catch (Throwable $e) {
+    // Megtekintés napló opcionális – ne törjük a megjelenítést
+}
+
+$canonical = events_public_canonical_url($event['event_slug']);
+$title = $event['event_name'];
+$desc = mb_substr(trim(strip_tags($event['event_content'])), 0, 160, 'UTF-8');
+header('Content-Type: text/html; charset=UTF-8');
+?>
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?= h($title) ?> – <?= h(SITE_NAME) ?></title>
+    <meta name="description" content="<?= h($desc) ?>">
+    <link rel="canonical" href="<?= h($canonical) ?>">
+</head>
+<body>
+<article>
+    <header>
+        <h1><?= h($event['event_name']) ?></h1>
+        <p>
+            <?php if (!empty($event['event_start_date'])): ?>
+                <time datetime="<?= h($event['event_start_date']) ?>"><?= h($event['event_start_date']) ?></time>
+                <?php if (!empty($event['event_start_time']) && empty($event['event_allday'])): ?>
+                    <?= h(substr((string) $event['event_start_time'], 0, 5)) ?>
+                <?php endif; ?>
+                <?php if (!empty($event['event_end_date'])): ?>
+                    – <time datetime="<?= h($event['event_end_date']) ?>"><?= h($event['event_end_date']) ?></time>
+                    <?php if (!empty($event['event_end_time']) && empty($event['event_allday'])): ?>
+                        <?= h(substr((string) $event['event_end_time'], 0, 5)) ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+            <?php endif; ?>
+        </p>
+        <?php if (!empty($event['event_url'])): ?>
+            <p><a href="<?= h($event['event_url']) ?>">További információ / jegy</a></p>
+        <?php endif; ?>
+    </header>
+    <div class="event-body">
+        <?= $event['event_content'] ?>
+    </div>
+</article>
+</body>
+</html>

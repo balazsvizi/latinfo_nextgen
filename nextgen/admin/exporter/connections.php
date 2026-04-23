@@ -9,7 +9,7 @@ requireLogin();
 requireSuperadmin();
 
 $db = getDb();
-$listak = $db->query('SELECT id, név, host, port, dbname, felhasználó, létrehozva FROM exporter_connections ORDER BY név ASC')->fetchAll();
+$listak = $db->query('SELECT id, név, host, port, dbname, felhasználó, létrehozva FROM nextgen_exporter_connections ORDER BY név ASC')->fetchAll();
 ?>
 <div class="card">
     <h2>Adatbázis kapcsolatok</h2>

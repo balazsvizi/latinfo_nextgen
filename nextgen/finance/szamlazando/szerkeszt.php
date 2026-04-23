@@ -10,7 +10,7 @@ if (!$id) {
     redirect(nextgen_url('organizers/'));
 }
 $db = getDb();
-$s = $db->prepare('SELECT * FROM számlázandó WHERE id = ? AND (COALESCE(törölve,0) = 0)');
+$s = $db->prepare('SELECT * FROM finance_billing_items WHERE id = ? AND (COALESCE(törölve,0) = 0)');
 $s->execute([$id]);
 $s = $s->fetch();
 if (!$s) {
@@ -22,7 +22,7 @@ $szervezo_id = (int)$s['szervező_id'];
 // Számlázandó törlése (soft delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_szamlazando'])) {
     rendszer_log('számlázandó', $id, 'Törölve', null);
-    $db->prepare('UPDATE számlázandó SET törölve = 1, számla_id = NULL WHERE id = ?')->execute([$id]);
+    $db->prepare('UPDATE finance_billing_items SET törölve = 1, számla_id = NULL WHERE id = ?')->execute([$id]);
     flash('success', 'Számlázandó tétel törölve.');
     if (!empty($_POST['vissza']) && $_POST['vissza'] === 'szamla' && !empty($_POST['szamla_id'])) {
         redirect(nextgen_url('finance/szamlak/szerkeszt.php?id=') . (int)$_POST['szamla_id']);
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_szamlazando']))
     redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
 }
 
-$idoszakok = $db->prepare('SELECT év, hónap FROM számlázandó_időszak WHERE számlázandó_id = ?');
+$idoszakok = $db->prepare('SELECT év, hónap FROM finance_billing_periods WHERE számlázandó_id = ?');
 $idoszakok->execute([$id]);
 $idoszakok = $idoszakok->fetchAll();
 
@@ -46,14 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Válasszon legalább egy hónapot.';
     } else {
         try {
-            $db->prepare('UPDATE számlázandó SET összeg = ?, megjegyzés = ? WHERE id = ?')->execute([$osszeg, $megjegyzes ?: null, $id]);
-            $db->prepare('DELETE FROM számlázandó_időszak WHERE számlázandó_id = ?')->execute([$id]);
+            $db->prepare('UPDATE finance_billing_items SET összeg = ?, megjegyzés = ? WHERE id = ?')->execute([$osszeg, $megjegyzes ?: null, $id]);
+            $db->prepare('DELETE FROM finance_billing_periods WHERE számlázandó_id = ?')->execute([$id]);
             foreach ($honapok as $evho) {
                 if (preg_match('/^(\d{4})-(\d{1,2})$/', $evho, $m)) {
                     $ev = (int)$m[1];
                     $ho = (int)$m[2];
                     if ($ho >= 1 && $ho <= 12) {
-                        $db->prepare('INSERT INTO számlázandó_időszak (számlázandó_id, év, hónap) VALUES (?, ?, ?)')->execute([$id, $ev, $ho]);
+                        $db->prepare('INSERT INTO finance_billing_periods (számlázandó_id, év, hónap) VALUES (?, ?, ?)')->execute([$id, $ev, $ho]);
                     }
                 }
             }
@@ -137,7 +137,7 @@ $extra_idoszakok = array_filter($idoszakok, function ($r) use ($grid_values) {
         </div>
     </form>
     <div class="form-actions" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-        <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a számlázandó tételt? A tétel nem jelenik meg a listákban, a kapcsolt számlától le fog szakadni.');">
+        <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a finance_billing_items tételt? A tétel nem jelenik meg a listákban, a kapcsolt számlától le fog szakadni.');">
             <input type="hidden" name="torol_szamlazando" value="1">
             <?php if (!empty($_GET['vissza']) && $_GET['vissza'] === 'szamla' && !empty($_GET['szamla_id'])): ?>
             <input type="hidden" name="vissza" value="szamla">

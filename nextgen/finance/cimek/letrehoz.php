@@ -26,9 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Név, ország, irányítószám és cím megadása kötelező.';
     } else {
         if ($alapértelmezett) {
-            $db->prepare('UPDATE számlázási_címek SET alapértelmezett = 0 WHERE szervező_id = ?')->execute([$szervezo_id]);
+            $db->prepare('UPDATE finance_billing_addresses SET alapértelmezett = 0 WHERE szervező_id = ?')->execute([$szervezo_id]);
         }
-        $db->prepare('INSERT INTO számlázási_címek (szervező_id, név, ország, irsz, település, cím, adószám, megjegyzés, alapértelmezett) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        $db->prepare('INSERT INTO finance_billing_addresses (szervező_id, név, ország, irsz, település, cím, adószám, megjegyzés, alapértelmezett) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
             ->execute([$szervezo_id, $név, $ország, $irsz, $település, $cím, $adószám ?: null, $megjegyzés ?: null, $alapértelmezett]);
         rendszer_log('számlázási_cím', (int)$db->lastInsertId(), 'Létrehozva', null);
         flash('success', 'Cím mentve.');

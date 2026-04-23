@@ -11,7 +11,7 @@ if (!$szervezo_id) {
 }
 
 $db = getDb();
-$sz = $db->prepare('SELECT id, név FROM szervezők WHERE id = ?');
+$sz = $db->prepare('SELECT id, név FROM finance_organizers WHERE id = ?');
 $sz->execute([$szervezo_id]);
 if (!$sz->fetch()) {
     flash('error', 'Szervező nem található.');
@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kontakt_id = (int)($_POST['kontakt_id'] ?? 0);
     if ($kontakt_id) {
         try {
-            $db->prepare('INSERT IGNORE INTO szervező_kontakt (szervező_id, kontakt_id) VALUES (?, ?)')->execute([$szervezo_id, $kontakt_id]);
+            $db->prepare('INSERT IGNORE INTO finance_organizer_contacts (szervező_id, kontakt_id) VALUES (?, ?)')->execute([$szervezo_id, $kontakt_id]);
             rendszer_log('szervező_kontakt', null, 'Kapcsolat létrehozva', "szervező_id=$szervezo_id, kontakt_id=$kontakt_id");
             flash('success', 'Kontakt hozzáadva.');
         } catch (Exception $e) {}
@@ -30,14 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$mar_hozzarendelt = $db->prepare('SELECT kontakt_id FROM szervező_kontakt WHERE szervező_id = ?');
+$mar_hozzarendelt = $db->prepare('SELECT kontakt_id FROM finance_organizer_contacts WHERE szervező_id = ?');
 $mar_hozzarendelt->execute([$szervezo_id]);
 $mar_hozzarendelt = $mar_hozzarendelt->fetchAll(PDO::FETCH_COLUMN);
 $placeholders = implode(',', array_fill(0, count($mar_hozzarendelt) ?: 1, '?'));
 $params = $mar_hozzarendelt ?: [0];
-$stmt = $db->prepare("SELECT id, név, email FROM kontaktok WHERE id NOT IN ($placeholders) ORDER BY név");
+$stmt = $db->prepare("SELECT id, név, email FROM finance_contacts WHERE id NOT IN ($placeholders) ORDER BY név");
 $stmt->execute($params);
-$kontaktok = $stmt->fetchAll();
+$elerheto_kontaktok = $stmt->fetchAll();
 
 $pageTitle = 'Kontakt hozzáadása';
 require_once __DIR__ . '/../partials/header.php';
@@ -48,7 +48,7 @@ require_once __DIR__ . '/../partials/header.php';
 
     <div class="kontakt-hozzaad-blokk">
         <h3>Válasszon a listából</h3>
-        <?php if (empty($kontaktok)): ?>
+        <?php if (empty($elerheto_kontaktok)): ?>
             <p class="text-muted">Nincs olyan kontakt, aki még nincs ehhez a szervezőhöz rendelve. Hozzon létre újat, vagy válasszon másik szervezőnél.</p>
         <?php else: ?>
         <form method="post">
@@ -56,7 +56,7 @@ require_once __DIR__ . '/../partials/header.php';
                 <label>Meglévő kontakt</label>
                 <select name="kontakt_id" required>
                     <option value="">-- Válasszon kontaktot --</option>
-                    <?php foreach ($kontaktok as $k): ?>
+                    <?php foreach ($elerheto_kontaktok as $k): ?>
                         <option value="<?= (int)$k['id'] ?>"><?= h($k['név']) ?><?= $k['email'] ? ' – ' . h($k['email']) : '' ?></option>
                     <?php endforeach; ?>
                 </select>

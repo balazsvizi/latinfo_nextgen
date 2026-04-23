@@ -32,11 +32,11 @@ if (preg_match('/^\s*SELECT\s+/i', $t) !== 1 || strpos($t, ';') !== false) {
 
 $db = getDb();
 if ($id > 0) {
-    $stmt = $db->prepare('UPDATE exporter_queries SET név = ?, query_sql = ?, megjegyzés = ?, connection_id = ? WHERE id = ?');
+    $stmt = $db->prepare('UPDATE nextgen_exporter_queries SET név = ?, query_sql = ?, megjegyzés = ?, connection_id = ? WHERE id = ?');
     $stmt->execute([$nev ?: 'Lekérdezés #' . $id, $query_sql, $megjegyzés, $connection_id, $id]);
     flash('success', 'Lekérdezés frissítve.');
 } else {
-    $stmt = $db->prepare('INSERT INTO exporter_queries (név, query_sql, megjegyzés, connection_id) VALUES (?, ?, ?, ?)');
+    $stmt = $db->prepare('INSERT INTO nextgen_exporter_queries (név, query_sql, megjegyzés, connection_id) VALUES (?, ?, ?, ?)');
     $stmt->execute([$nev ?: 'Új lekérdezés', $query_sql, $megjegyzés, $connection_id]);
     flash('success', 'Lekérdezés mentve.');
 }

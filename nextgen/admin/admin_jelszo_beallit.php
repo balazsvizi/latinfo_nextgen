@@ -18,14 +18,14 @@ $jelszo = 'password';
 $hash = password_hash($jelszo, PASSWORD_DEFAULT);
 
 $db = getDb();
-$stmt = $db->prepare('UPDATE adminok SET jelszó_hash = ? WHERE felhasználónév = ?');
+$stmt = $db->prepare('UPDATE nextgen_admins SET jelszó_hash = ? WHERE felhasználónév = ?');
 $stmt->execute([$hash, 'admin']);
 $n = $stmt->rowCount();
 
 if ($n > 0) {
     $uzenet = "Kész. Az 'admin' felhasználó jelszava most: " . $jelszo;
 } else {
-    $stmt = $db->prepare("INSERT INTO adminok (név, felhasználónév, jelszó_hash, szint, aktív) VALUES (?, ?, ?, 'superadmin', 1)");
+    $stmt = $db->prepare("INSERT INTO nextgen_admins (név, felhasználónév, jelszó_hash, szint, aktív) VALUES (?, ?, ?, 'superadmin', 1)");
     $stmt->execute(['Főadmin', 'admin', $hash]);
     $uzenet = "Kész. Új admin létrehozva: felhasználónév = admin, jelszó = " . $jelszo;
 }

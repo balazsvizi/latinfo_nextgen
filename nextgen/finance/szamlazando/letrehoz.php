@@ -10,7 +10,7 @@ if (!$szervezo_id) {
     redirect(nextgen_url('organizers/'));
 }
 $db = getDb();
-$sz = $db->prepare('SELECT id, név FROM szervezők WHERE id = ?');
+$sz = $db->prepare('SELECT id, név FROM finance_organizers WHERE id = ?');
 $sz->execute([$szervezo_id]);
 if (!$sz->fetch()) {
     flash('error', 'Szervező nem található.');
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $db->beginTransaction();
         try {
-            $db->prepare('INSERT INTO számlázandó (szervező_id, összeg, megjegyzés) VALUES (?, ?, ?)')
+            $db->prepare('INSERT INTO finance_billing_items (szervező_id, összeg, megjegyzés) VALUES (?, ?, ?)')
                 ->execute([$szervezo_id, $osszeg, $megjegyzes ?: null]);
             $sid = (int) $db->lastInsertId();
             foreach ($honapok as $evho) {
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ev = (int)$m[1];
                     $ho = (int)$m[2];
                     if ($ho >= 1 && $ho <= 12) {
-                        $db->prepare('INSERT IGNORE INTO számlázandó_időszak (számlázandó_id, év, hónap) VALUES (?, ?, ?)')
+                        $db->prepare('INSERT IGNORE INTO finance_billing_periods (számlázandó_id, év, hónap) VALUES (?, ?, ?)')
                             ->execute([$sid, $ev, $ho]);
                     }
                 }
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Új számlázandó';
+$pageTitle = 'Új finance_billing_items';
 require_once __DIR__ . '/../../partials/header.php';
 
 // Aktuális hónap és 3 hónap hátra (összesen 4 hónap)
@@ -67,7 +67,7 @@ for ($i = 3; $i >= 0; $i--) {
 }
 ?>
 <div class="card card-szamlazando">
-    <h2>Új számlázandó</h2>
+    <h2>Új finance_billing_items</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post" id="szamlazando-form">
         <div class="form-group idoszak-csoport">

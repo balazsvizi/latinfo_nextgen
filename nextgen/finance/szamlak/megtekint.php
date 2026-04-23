@@ -11,7 +11,7 @@ if (!$id) {
     redirect(nextgen_url('organizers/'));
 }
 $db = getDb();
-$szamla = $db->prepare('SELECT s.*, sz.név AS szervezo_nev FROM számlák s JOIN szervezők sz ON sz.id = s.szervező_id WHERE s.id = ? AND (COALESCE(s.törölve,0) = 0)');
+$szamla = $db->prepare('SELECT s.*, sz.név AS szervezo_nev FROM finance_invoices s JOIN finance_organizers sz ON sz.id = s.szervező_id WHERE s.id = ? AND (COALESCE(s.törölve,0) = 0)');
 $szamla->execute([$id]);
 $szamla = $szamla->fetch();
 if (!$szamla) {
@@ -24,7 +24,7 @@ $szervezo_id = (int) $szamla['szervező_id'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['lecsatol_szamlazando_id'])) {
     $sid = (int) $_POST['lecsatol_szamlazando_id'];
     if ($sid) {
-        $db->prepare('UPDATE számlázandó SET számla_id = NULL WHERE id = ? AND számla_id = ?')->execute([$sid, $id]);
+        $db->prepare('UPDATE finance_billing_items SET számla_id = NULL WHERE id = ? AND számla_id = ?')->execute([$sid, $id]);
         flash('success', 'Számlázandó tétel lecsatolva.');
         redirect(nextgen_url('finance/szamlak/megtekint.php?id=') . $id);
     }
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hozzacsatol_szamlazan
     $csatol_ids = array_filter($csatol_ids);
     if (!empty($csatol_ids)) {
         $placeholders = implode(',', array_fill(0, count($csatol_ids), '?'));
-        $db->prepare("UPDATE számlázandó SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)")
+        $db->prepare("UPDATE finance_billing_items SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)")
             ->execute(array_merge([$id], $csatol_ids, [$szervezo_id]));
         flash('success', 'Számlázandó tétel(ek) csatolva.');
         redirect(nextgen_url('finance/szamlak/megtekint.php?id=') . $id);
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hozzacsatol_szamlazan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['státusz'])) {
     $uj = $_POST['státusz'];
     if (in_array($uj, ['generált', 'kiküldve', 'kiegyenlítve', 'egyéb', 'KP', 'sztornó'], true)) {
-        $db->prepare('UPDATE számlák SET státusz = ? WHERE id = ?')->execute([$uj, $id]);
+        $db->prepare('UPDATE finance_invoices SET státusz = ? WHERE id = ?')->execute([$uj, $id]);
         rendszer_log('számla', $id, 'Státusz módosítva', $uj);
         flash('success', 'Státusz frissítve.');
         redirect(nextgen_url('finance/szamlak/megtekint.php?id=') . $id);
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['uj_fajl']['name']) 
             $ujnev = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name)) ?: 'file_' . $i . '.' . $ext;
             $cel = $upload_dir . '/' . $ujnev;
             if (move_uploaded_file($tmp[$i], $cel)) {
-                $db->prepare('INSERT INTO számla_fájlok (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
+                $db->prepare('INSERT INTO finance_invoice_files (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
                     ->execute([$id, $name, $id . '/' . $ujnev]);
                 $feltoltve++;
             }
@@ -79,28 +79,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['uj_fajl']['name']) 
     }
 }
 
-$fajlok = $db->prepare('SELECT * FROM számla_fájlok WHERE számla_id = ? ORDER BY id');
+$fajlok = $db->prepare('SELECT * FROM finance_invoice_files WHERE számla_id = ? ORDER BY id');
 $fajlok->execute([$id]);
 $fajlok = $fajlok->fetchAll();
 
-// Ehhez a számlához csatolt számlázandó tételek
+// Ehhez a számlához csatolt finance_billing_items tételek
 $csatolt_szamlazando = $db->prepare("
     SELECT s.id, s.összeg, s.megjegyzés,
            (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap)
-            FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok
-    FROM számlázandó s
+            FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok
+    FROM finance_billing_items s
     WHERE s.számla_id = ? AND (COALESCE(s.törölve,0) = 0)
     ORDER BY s.létrehozva
 ");
 $csatolt_szamlazando->execute([$id]);
 $csatolt_szamlazando = $csatolt_szamlazando->fetchAll(PDO::FETCH_ASSOC);
 
-// Ugyanahhoz a szervezőhöz tartozó, még nem csatolt számlázandó (további csatoláshoz)
+// Ugyanahhoz a szervezőhöz tartozó, még nem csatolt finance_billing_items (további csatoláshoz)
 $tovabbi_szamlazando = $db->prepare("
     SELECT s.id, s.összeg, s.megjegyzés,
            (SELECT GROUP_CONCAT(CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY si.év, si.hónap)
-            FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok
-    FROM számlázandó s
+            FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok
+    FROM finance_billing_items s
     WHERE s.szervező_id = ? AND s.számla_id IS NULL AND (COALESCE(s.törölve,0) = 0)
     ORDER BY s.létrehozva DESC
 ");
@@ -151,7 +151,7 @@ require_once __DIR__ . '/../../partials/header.php';
 </div>
 
 <div class="card">
-    <h2>Csatolt számlázandó tételek</h2>
+    <h2>Csatolt finance_billing_items tételek</h2>
     <?php if (!empty($csatolt_szamlazando)): ?>
     <ul class="szamlazando-csatolt-lista">
         <?php foreach ($csatolt_szamlazando as $sz): ?>
@@ -167,7 +167,7 @@ require_once __DIR__ . '/../../partials/header.php';
         <?php endforeach; ?>
     </ul>
     <?php else: ?>
-    <p>Ehhez a számlához nincs csatolva számlázandó tétel.</p>
+    <p>Ehhez a számlához nincs csatolva finance_billing_items tétel.</p>
     <?php endif; ?>
     <?php if (!empty($tovabbi_szamlazando)): ?>
     <form method="post" class="mt-1">

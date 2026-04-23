@@ -10,7 +10,7 @@ if (!$id) {
     redirect(nextgen_url('contacts/'));
 }
 $db = getDb();
-$k = $db->prepare('SELECT * FROM kontaktok WHERE id = ?');
+$k = $db->prepare('SELECT * FROM finance_contacts WHERE id = ?');
 $k->execute([$id]);
 $k = $k->fetch();
 if (!$k) {
@@ -18,8 +18,8 @@ if (!$k) {
     redirect(nextgen_url('contacts/'));
 }
 
-$tipusok = $db->query('SELECT id, név, leírás FROM kontakt_típusok ORDER BY név')->fetchAll();
-$kivalasztott_tipusok = $db->prepare('SELECT típus_id FROM kontakt_típus_kapcsolat WHERE kontakt_id = ?');
+$tipusok = $db->query('SELECT id, név, leírás FROM finance_contact_types ORDER BY név')->fetchAll();
+$kivalasztott_tipusok = $db->prepare('SELECT típus_id FROM finance_contact_type_links WHERE kontakt_id = ?');
 $kivalasztott_tipusok->execute([$id]);
 $kivalasztott_tipusok = array_column($kivalasztott_tipusok->fetchAll(PDO::FETCH_ASSOC), 'típus_id');
 
@@ -34,11 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($név === '') {
         $hiba = 'A név megadása kötelező.';
     } else {
-        $db->prepare('UPDATE kontaktok SET név=?, email=?, telefon=?, fb=?, egyéb_kontakt=? WHERE id=?')
+        $db->prepare('UPDATE finance_contacts SET név=?, email=?, telefon=?, fb=?, egyéb_kontakt=? WHERE id=?')
             ->execute([$név, $email ?: null, $telefon ?: null, $fb ?: null, $egyeb ?: null, $id]);
-        $db->prepare('DELETE FROM kontakt_típus_kapcsolat WHERE kontakt_id = ?')->execute([$id]);
+        $db->prepare('DELETE FROM finance_contact_type_links WHERE kontakt_id = ?')->execute([$id]);
         foreach ($tipus_ids as $tid) {
-            $db->prepare('INSERT IGNORE INTO kontakt_típus_kapcsolat (kontakt_id, típus_id) VALUES (?, ?)')
+            $db->prepare('INSERT IGNORE INTO finance_contact_type_links (kontakt_id, típus_id) VALUES (?, ?)')
                 ->execute([$id, $tid]);
         }
         rendszer_log('kontakt', $id, 'Módosítva', null);

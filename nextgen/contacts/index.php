@@ -20,14 +20,14 @@ $order_col = $order === 'szervezo_nevek' ? 'szervezo_nevek' : ($order === 'tipus
 $stmt = $db->prepare("
     SELECT k.*,
            (SELECT GROUP_CONCAT(sz.név ORDER BY sz.név SEPARATOR ', ')
-            FROM szervező_kontakt sk
-            JOIN szervezők sz ON sz.id = sk.szervező_id
+            FROM finance_organizer_contacts sk
+            JOIN finance_organizers sz ON sz.id = sk.szervező_id
             WHERE sk.kontakt_id = k.id) AS szervezo_nevek,
            (SELECT GROUP_CONCAT(t.név ORDER BY t.név SEPARATOR ', ')
-            FROM kontakt_típus_kapcsolat kt
-            JOIN kontakt_típusok t ON t.id = kt.típus_id
+            FROM finance_contact_type_links kt
+            JOIN finance_contact_types t ON t.id = kt.típus_id
             WHERE kt.kontakt_id = k.id) AS tipusok
-    FROM kontaktok k
+    FROM finance_contacts k
     $where
     ORDER BY $order_col $dir
 ");

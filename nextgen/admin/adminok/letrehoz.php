@@ -7,9 +7,9 @@ requireSuperadmin();
 $db = getDb();
 $hiba = '';
 try {
-    $col = $db->query("SHOW COLUMNS FROM adminok LIKE 'email'")->fetch();
+    $col = $db->query("SHOW COLUMNS FROM nextgen_admins LIKE 'email'")->fetch();
     if (!$col) {
-        $db->exec("ALTER TABLE adminok ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
+        $db->exec("ALTER TABLE nextgen_admins ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
     }
 } catch (Throwable $e) {
     // nincs ALTER jog: migrációval felvehető
@@ -32,13 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($jelszo !== $jelszo2) {
         $hiba = 'A két jelszó nem egyezik.';
     } else {
-        $check = $db->prepare('SELECT id FROM adminok WHERE felhasználónév = ?');
+        $check = $db->prepare('SELECT id FROM nextgen_admins WHERE felhasználónév = ?');
         $check->execute([$fh]);
         if ($check->fetch()) {
             $hiba = 'Ez a felhasználónév már foglalt.';
         } else {
             $hash = password_hash($jelszo, PASSWORD_DEFAULT);
-            $db->prepare('INSERT INTO adminok (név, felhasználónév, email, jelszó_hash, szint, aktív) VALUES (?, ?, ?, ?, ?, 1)')
+            $db->prepare('INSERT INTO nextgen_admins (név, felhasználónév, email, jelszó_hash, szint, aktív) VALUES (?, ?, ?, ?, ?, 1)')
                 ->execute([$név, $fh, ($email !== '' ? $email : null), $hash, $szint]);
             rendszer_log('admin', (int)$db->lastInsertId(), 'Létrehozva', null);
             flash('success', 'Admin létrehozva.');

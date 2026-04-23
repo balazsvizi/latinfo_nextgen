@@ -8,8 +8,8 @@ $db = getDb();
 $hiba = '';
 $hasCimkeSzin = cimkek_has_szin($db);
 $cimkeSql = $hasCimkeSzin
-    ? 'SELECT id, név, COALESCE(szín, "#6366F1") AS szín FROM címkék ORDER BY név'
-    : 'SELECT id, név, "#6366F1" AS szín FROM címkék ORDER BY név';
+    ? 'SELECT id, név, COALESCE(szín, "#6366F1") AS szín FROM finance_tags ORDER BY név'
+    : 'SELECT id, név, "#6366F1" AS szín FROM finance_tags ORDER BY név';
 $címkék = $db->query($cimkeSql)->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -21,16 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $db->beginTransaction();
         try {
-            $stmt = $db->prepare('INSERT INTO szervezők (név) VALUES (?)');
+            $stmt = $db->prepare('INSERT INTO finance_organizers (név) VALUES (?)');
             $stmt->execute([$név]);
             $szervezo_id = (int) $db->lastInsertId();
 
             foreach ($címke_ids as $cid) {
-                $db->prepare('INSERT INTO szervező_címkék (szervező_id, címke_id) VALUES (?, ?)')->execute([$szervezo_id, $cid]);
+                $db->prepare('INSERT INTO finance_organizer_tags (szervező_id, címke_id) VALUES (?, ?)')->execute([$szervezo_id, $cid]);
             }
 
             rendszer_log('szervező', $szervezo_id, 'Létrehozva', 'Név: ' . $név);
-            $db->prepare('INSERT INTO szervező_log (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)')
+            $db->prepare('INSERT INTO finance_organizer_activity_log (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)')
                 ->execute([$szervezo_id, 'Szervező létrehozva', null, $_SESSION['admin_id'] ?? null]);
 
             $db->commit();

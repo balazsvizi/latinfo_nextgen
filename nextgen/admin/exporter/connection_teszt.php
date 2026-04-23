@@ -16,7 +16,7 @@ if ($id <= 0) {
 }
 
 $appDb = getDb();
-$stmt = $appDb->prepare('SELECT id, név, host, port, dbname, felhasználó, jelszó_titkosított FROM exporter_connections WHERE id = ?');
+$stmt = $appDb->prepare('SELECT id, név, host, port, dbname, felhasználó, jelszó_titkosított FROM nextgen_exporter_connections WHERE id = ?');
 $stmt->execute([$id]);
 $row = $stmt->fetch();
 if (!$row) {

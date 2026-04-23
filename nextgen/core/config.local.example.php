@@ -22,6 +22,9 @@ return [
     // 'UPLOAD_PATH' => __DIR__ . '/../uploads/szamlak',
     // 'UPLOAD_URL' => '/nextgen/uploads/szamlak',
 
+    // Nyilvános esemény URL: /{EVENTS_PUBLIC_PATH}/{slug} (canonical). Alap: esemenyek
+    // 'EVENTS_PUBLIC_PATH' => 'esemenyek',
+
     'SITE_NAME' => 'Latinfo.hu',
     'APP_TIMEZONE' => 'Europe/Budapest',
     'APP_DISPLAY_ERRORS' => '1',

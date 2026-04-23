@@ -13,7 +13,7 @@ requireSuperadmin();
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 if ($id > 0) {
     $db = getDb();
-    $db->prepare('DELETE FROM exporter_queries WHERE id = ?')->execute([$id]);
+    $db->prepare('DELETE FROM nextgen_exporter_queries WHERE id = ?')->execute([$id]);
     flash('success', 'Lekérdezés törölve.');
 }
 redirect(nextgen_url('admin/exporter/'));

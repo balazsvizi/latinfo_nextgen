@@ -7,7 +7,7 @@
 function ensure_levelsablonok_table(PDO $db): void
 {
     $db->exec("
-        CREATE TABLE IF NOT EXISTS levélsablonok (
+        CREATE TABLE IF NOT EXISTS finance_email_templates (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             név VARCHAR(255) NOT NULL,
             kód VARCHAR(100) NOT NULL UNIQUE,
@@ -21,9 +21,9 @@ function ensure_levelsablonok_table(PDO $db): void
 
     // Régi telepítéseknél lehet, hogy a tárgy oszlop hiányzik.
     try {
-        $col = $db->query("SHOW COLUMNS FROM levélsablonok LIKE 'tárgy'")->fetch();
+        $col = $db->query("SHOW COLUMNS FROM finance_email_templates LIKE 'tárgy'")->fetch();
         if (!$col) {
-            $db->exec("ALTER TABLE levélsablonok ADD COLUMN tárgy VARCHAR(255) NOT NULL DEFAULT '' AFTER kód");
+            $db->exec("ALTER TABLE finance_email_templates ADD COLUMN tárgy VARCHAR(255) NOT NULL DEFAULT '' AFTER kód");
         }
     } catch (Throwable $e) {
         // nincs ALTER jog -> marad fallback tárgy a kódban

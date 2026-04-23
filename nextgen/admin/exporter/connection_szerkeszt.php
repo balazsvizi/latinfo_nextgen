@@ -17,7 +17,7 @@ if ($id <= 0) {
 }
 
 $db = getDb();
-$stmt = $db->prepare('SELECT id, név, host, port, dbname, felhasználó FROM exporter_connections WHERE id = ?');
+$stmt = $db->prepare('SELECT id, név, host, port, dbname, felhasználó FROM nextgen_exporter_connections WHERE id = ?');
 $stmt->execute([$id]);
 $row = $stmt->fetch();
 if (!$row) {
@@ -39,10 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if ($jelszó !== '') {
             $jelszó_enc = email_jelszo_titkosit($jelszó);
-            $stmt = $db->prepare('UPDATE exporter_connections SET név=?, host=?, port=?, dbname=?, felhasználó=?, jelszó_titkosított=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE nextgen_exporter_connections SET név=?, host=?, port=?, dbname=?, felhasználó=?, jelszó_titkosított=? WHERE id=?');
             $stmt->execute([$név, $host ?: 'localhost', $port ?: 3306, $dbname, $felhasználó, $jelszó_enc, $id]);
         } else {
-            $stmt = $db->prepare('UPDATE exporter_connections SET név=?, host=?, port=?, dbname=?, felhasználó=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE nextgen_exporter_connections SET név=?, host=?, port=?, dbname=?, felhasználó=? WHERE id=?');
             $stmt->execute([$név, $host ?: 'localhost', $port ?: 3306, $dbname, $felhasználó, $id]);
         }
         flash('success', 'Kapcsolat mentve.');

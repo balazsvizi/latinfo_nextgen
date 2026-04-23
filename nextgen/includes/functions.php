@@ -12,7 +12,7 @@ if (!defined('NEXTGEN_WEB')) {
 function rendszer_log(string $entitás, ?int $entitás_id, string $művelet, ?string $részletek = null): void {
     $db = getDb();
     $admin_id = $_SESSION['admin_id'] ?? null;
-    $stmt = $db->prepare('INSERT INTO rendszer_log (entitás, entitás_id, művelet, részletek, admin_id) VALUES (?, ?, ?, ?, ?)');
+    $stmt = $db->prepare('INSERT INTO nextgen_system_log (entitás, entitás_id, művelet, részletek, admin_id) VALUES (?, ?, ?, ?, ?)');
     $stmt->execute([$entitás, $entitás_id, $művelet, $részletek, $admin_id]);
 }
 
@@ -33,6 +33,7 @@ function log_entity_url(string $entitás, ?int $entitás_id): ?string {
         'admin' => $p . '/admin/adminok/szerkeszt.php?id=',
         'email_config' => $p . '/admin/email/szerkeszt.php?id=',
         'levélsablon' => $p . '/config/levelsablonok/szerkeszt.php?id=',
+        'esemény' => site_url('events/szerkeszt.php?id='),
         'címke' => null, // csak lista, nincs egy tétel oldal
         'kontakt_típus' => null, // csak lista, nincs egy tétel oldal
     ];
@@ -68,7 +69,13 @@ function h(?string $s): string {
  * Alapértelmezés: Finance (szervezők, pénzügy, kontaktok, kezdőlap, jelszó, belépés).
  */
 function app_backoffice_area(): string {
-    $s = $_SERVER['SCRIPT_NAME'] ?? '';
+    $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (strpos($s, '/events/') !== false) {
+        return 'Event Admin';
+    }
+    if (strpos($s, '/nextgen/apps.php') !== false || str_ends_with($s, '/apps.php')) {
+        return 'Alkalmazások';
+    }
     if (strpos($s, '/config/') !== false) {
         return 'Config';
     }
@@ -79,7 +86,7 @@ function app_backoffice_area(): string {
 }
 
 /**
- * Logó / böngésző cím előtagja: SITE_NAME + szóköz + terület (Finance|Admin|Config).
+ * Logó / böngésző cím előtagja: SITE_NAME + szóköz + terület (Finance|Admin|Config|Event Admin|Alkalmazások).
  */
 function app_backoffice_brand_line(): string {
     return trim(SITE_NAME . ' ' . app_backoffice_area());
@@ -117,7 +124,7 @@ function cimkek_has_szin(PDO $db): bool {
         return $cached;
     }
     try {
-        $stmt = $db->query("SHOW COLUMNS FROM címkék LIKE 'szín'");
+        $stmt = $db->query("SHOW COLUMNS FROM finance_tags LIKE 'szín'");
         $cached = (bool) $stmt->fetch();
     } catch (Throwable $e) {
         $cached = false;

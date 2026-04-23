@@ -1,4 +1,4 @@
 -- Kontakt típus leírás mező (meglévő telepítésekhez)
 
-ALTER TABLE kontakt_típusok
+ALTER TABLE finance_contact_types
   ADD COLUMN leírás TEXT NULL AFTER név;

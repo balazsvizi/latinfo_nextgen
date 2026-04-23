@@ -1,0 +1,34 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Közös betöltés events/*.php számára (nextgen init, nincs kötelező login).
+ */
+require_once dirname(__DIR__) . '/nextgen/init.php';
+require_once __DIR__ . '/lib/slug.php';
+require_once __DIR__ . '/lib/event_status.php';
+
+if (!function_exists('events_url')) {
+    /**
+     * Abszolút URL az events mappa alatti admin / nyilvános PHP fájlokhoz.
+     */
+    function events_url(string $path = ''): string {
+        return site_url('events/' . ltrim($path, '/'));
+    }
+}
+
+if (!function_exists('events_public_canonical_url')) {
+    /**
+     * Cél URL a spec „eventmappa” + slug mintához (SEO canonical; később .htaccess).
+     */
+    function events_public_canonical_url(string $slug): string {
+        $seg = defined('EVENTS_PUBLIC_PATH') ? EVENTS_PUBLIC_PATH : 'esemenyek';
+        return site_url($seg . '/' . rawurlencode($slug));
+    }
+}
+
+if (!function_exists('events_megjelenit_url')) {
+    function events_megjelenit_url(string $slug): string {
+        return events_url('megjelenit.php?slug=' . rawurlencode($slug));
+    }
+}

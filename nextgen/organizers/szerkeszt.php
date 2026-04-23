@@ -11,7 +11,7 @@ if (!$id) {
 }
 
 $db = getDb();
-$szervezo = $db->prepare('SELECT * FROM szervezők WHERE id = ?');
+$szervezo = $db->prepare('SELECT * FROM finance_organizers WHERE id = ?');
 $szervezo->execute([$id]);
 $szervezo = $szervezo->fetch();
 if (!$szervezo) {
@@ -21,10 +21,10 @@ if (!$szervezo) {
 
 $hasCimkeSzin = cimkek_has_szin($db);
 $cimkeSql = $hasCimkeSzin
-    ? 'SELECT id, név, COALESCE(szín, "#6366F1") AS szín FROM címkék ORDER BY név'
-    : 'SELECT id, név, "#6366F1" AS szín FROM címkék ORDER BY név';
+    ? 'SELECT id, név, COALESCE(szín, "#6366F1") AS szín FROM finance_tags ORDER BY név'
+    : 'SELECT id, név, "#6366F1" AS szín FROM finance_tags ORDER BY név';
 $címkék = $db->query($cimkeSql)->fetchAll();
-$kivalasztott = $db->prepare('SELECT címke_id FROM szervező_címkék WHERE szervező_id = ?');
+$kivalasztott = $db->prepare('SELECT címke_id FROM finance_organizer_tags WHERE szervező_id = ?');
 $kivalasztott->execute([$id]);
 $kivalasztott = $kivalasztott->fetchAll(PDO::FETCH_COLUMN);
 
@@ -38,13 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $db->beginTransaction();
-            $db->prepare('UPDATE szervezők SET név = ? WHERE id = ?')->execute([$név, $id]);
-            $db->prepare('DELETE FROM szervező_címkék WHERE szervező_id = ?')->execute([$id]);
+            $db->prepare('UPDATE finance_organizers SET név = ? WHERE id = ?')->execute([$név, $id]);
+            $db->prepare('DELETE FROM finance_organizer_tags WHERE szervező_id = ?')->execute([$id]);
             foreach ($címke_ids as $cid) {
-                $db->prepare('INSERT INTO szervező_címkék (szervező_id, címke_id) VALUES (?, ?)')->execute([$id, $cid]);
+                $db->prepare('INSERT INTO finance_organizer_tags (szervező_id, címke_id) VALUES (?, ?)')->execute([$id, $cid]);
             }
             rendszer_log('szervező', $id, 'Módosítva', 'Név: ' . $név);
-            $db->prepare('INSERT INTO szervező_log (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)')
+            $db->prepare('INSERT INTO finance_organizer_activity_log (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)')
                 ->execute([$id, 'Szervező adatai módosítva', null, $_SESSION['admin_id'] ?? null]);
             $db->commit();
             flash('success', 'Mentve.');

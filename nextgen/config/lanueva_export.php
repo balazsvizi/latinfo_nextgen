@@ -26,7 +26,7 @@ if ($tipus === 'visszajelzes') {
 
 $stmt = $db->prepare("
     SELECT id, ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent, létrehozva
-    FROM landingpage
+    FROM nextgen_landing_feedback
     $where_sql
     ORDER BY létrehozva DESC
 ");

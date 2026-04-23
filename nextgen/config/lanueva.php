@@ -27,13 +27,13 @@ $order = 'létrehozva';
 $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
 $dir = $dir_param === 'desc' ? 'DESC' : 'ASC';
 
-$count_stmt = $db->prepare("SELECT COUNT(*) FROM landingpage $where_sql");
+$count_stmt = $db->prepare("SELECT COUNT(*) FROM nextgen_landing_feedback $where_sql");
 $count_stmt->execute($params);
 $total = (int) $count_stmt->fetchColumn();
 
 $stmt = $db->prepare("
     SELECT id, ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent, létrehozva
-    FROM landingpage
+    FROM nextgen_landing_feedback
     $where_sql
     ORDER BY $order $dir
     LIMIT $per_page OFFSET $offset

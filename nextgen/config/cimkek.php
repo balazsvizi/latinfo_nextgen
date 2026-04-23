@@ -8,7 +8,7 @@ $hiba = '';
 $hasCimkeSzin = cimkek_has_szin($db);
 if (!$hasCimkeSzin) {
     try {
-        $db->exec("ALTER TABLE címkék ADD COLUMN szín CHAR(7) NOT NULL DEFAULT '#6366F1' AFTER név");
+        $db->exec("ALTER TABLE finance_tags ADD COLUMN szín CHAR(7) NOT NULL DEFAULT '#6366F1' AFTER név");
         $hasCimkeSzin = true;
     } catch (Throwable $e) {
         // Ha nincs jogosultság ALTER-re, fallback marad (csak név menthető).
@@ -24,9 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mod === 'create') {
     } else {
         try {
             if ($hasCimkeSzin) {
-                $db->prepare('INSERT INTO címkék (név, szín) VALUES (?, ?)')->execute([$név, $szin]);
+                $db->prepare('INSERT INTO finance_tags (név, szín) VALUES (?, ?)')->execute([$név, $szin]);
             } else {
-                $db->prepare('INSERT INTO címkék (név) VALUES (?)')->execute([$név]);
+                $db->prepare('INSERT INTO finance_tags (név) VALUES (?)')->execute([$név]);
             }
             rendszer_log('címke', (int)$db->lastInsertId(), 'Létrehozva', 'Név: ' . $név . ', Szín: ' . $szin);
             flash('success', 'Címke felvéve.');
@@ -50,9 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mod === 'update') {
     } else {
         try {
             if ($hasCimkeSzin) {
-                $db->prepare('UPDATE címkék SET név = ?, szín = ? WHERE id = ?')->execute([$név, $szin, $id]);
+                $db->prepare('UPDATE finance_tags SET név = ?, szín = ? WHERE id = ?')->execute([$név, $szin, $id]);
             } else {
-                $db->prepare('UPDATE címkék SET név = ? WHERE id = ?')->execute([$név, $id]);
+                $db->prepare('UPDATE finance_tags SET név = ? WHERE id = ?')->execute([$név, $id]);
             }
             rendszer_log('címke', $id, 'Módosítva', 'Név: ' . $név . ', Szín: ' . $szin);
             flash('success', 'Címke mentve.');
@@ -80,8 +80,8 @@ if ($kereso !== '') {
     $params = ['%' . $kereso . '%'];
 }
 $selectSql = $hasCimkeSzin
-    ? "SELECT id, név, COALESCE(szín, ?) AS szín, létrehozva FROM címkék $where ORDER BY $order $dir"
-    : "SELECT id, név, ? AS szín, létrehozva FROM címkék $where ORDER BY $order $dir";
+    ? "SELECT id, név, COALESCE(szín, ?) AS szín, létrehozva FROM finance_tags $where ORDER BY $order $dir"
+    : "SELECT id, név, ? AS szín, létrehozva FROM finance_tags $where ORDER BY $order $dir";
 $stmt = $db->prepare($selectSql);
 $stmt->execute(array_merge([$alap_szin], $params));
 $címkék = $stmt->fetchAll();

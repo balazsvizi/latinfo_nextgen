@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_id'], $_POST['
     $sid = (int) $_POST['szamla_id'];
     $uj = $_POST['státusz'];
     if ($sid && in_array($uj, ['generált', 'kiküldve', 'kiegyenlítve', 'egyéb', 'KP', 'sztornó'], true)) {
-        $db->prepare('UPDATE számlák SET státusz = ? WHERE id = ? AND (COALESCE(törölve,0) = 0)')->execute([$uj, $sid]);
+        $db->prepare('UPDATE finance_invoices SET státusz = ? WHERE id = ? AND (COALESCE(törölve,0) = 0)')->execute([$uj, $sid]);
         rendszer_log('számla', $sid, 'Státusz módosítva', $uj);
         flash('success', 'Státusz frissítve.');
         redirect(nextgen_url('finance/szamlak/'));
@@ -37,18 +37,18 @@ if ($kereso !== '') {
 }
 $where_sql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-// Csak generáltak (külön lista felül), legújabb elöl; törölt számlák kiszűrve
+// Csak generáltak (külön lista felül), legújabb elöl; törölt finance_invoices kiszűrve
 $where_gen = $where_sql ? $where_sql . " AND s.státusz = 'generált' AND (COALESCE(s.törölve,0) = 0)" : "WHERE s.státusz = 'generált' AND (COALESCE(s.törölve,0) = 0)";
 $stmt_gen = $db->prepare("
     SELECT s.id, s.szervező_id, s.számla_szám, s.összeg, s.belső_megjegyzés, s.státusz, sz.név AS szervezo_nev,
-           (SELECT $cimkeConcatExpr FROM szervező_címkék sc JOIN címkék c ON c.id = sc.címke_id WHERE sc.szervező_id = s.szervező_id) AS címkék,
-           (SELECT id FROM számla_fájlok WHERE számla_id = s.id ORDER BY id LIMIT 1) AS elso_fajl_id,
+           (SELECT $cimkeConcatExpr FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = s.szervező_id) AS címkék,
+           (SELECT id FROM finance_invoice_files WHERE számla_id = s.id ORDER BY id LIMIT 1) AS elso_fajl_id,
            (SELECT GROUP_CONCAT(DISTINCT CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) SEPARATOR ', ')
-            FROM számlázandó sz2
-            JOIN számlázandó_időszak si ON si.számlázandó_id = sz2.id
+            FROM finance_billing_items sz2
+            JOIN finance_billing_periods si ON si.számlázandó_id = sz2.id
             WHERE sz2.számla_id = s.id AND (COALESCE(sz2.törölve,0) = 0)) AS idoszakok
-    FROM számlák s
-    JOIN szervezők sz ON sz.id = s.szervező_id
+    FROM finance_invoices s
+    JOIN finance_organizers sz ON sz.id = s.szervező_id
     $where_gen
     ORDER BY s.id DESC
 ");
@@ -66,14 +66,14 @@ $order_sql = $order === 'id' ? 's.id' : ($order === 'szervezo_nev' ? 'sz.név' :
 
 $stmt = $db->prepare("
     SELECT s.id, s.szervező_id, s.számla_szám, s.összeg, s.belső_megjegyzés, s.státusz, sz.név AS szervezo_nev,
-           (SELECT $cimkeConcatExpr FROM szervező_címkék sc JOIN címkék c ON c.id = sc.címke_id WHERE sc.szervező_id = s.szervező_id) AS címkék,
-           (SELECT id FROM számla_fájlok WHERE számla_id = s.id ORDER BY id LIMIT 1) AS elso_fajl_id,
+           (SELECT $cimkeConcatExpr FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = s.szervező_id) AS címkék,
+           (SELECT id FROM finance_invoice_files WHERE számla_id = s.id ORDER BY id LIMIT 1) AS elso_fajl_id,
            (SELECT GROUP_CONCAT(DISTINCT CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) ORDER BY CONCAT(si.év, '-', LPAD(si.hónap, 2, '0')) SEPARATOR ', ')
-            FROM számlázandó sz2
-            JOIN számlázandó_időszak si ON si.számlázandó_id = sz2.id
+            FROM finance_billing_items sz2
+            JOIN finance_billing_periods si ON si.számlázandó_id = sz2.id
             WHERE sz2.számla_id = s.id AND (COALESCE(sz2.törölve,0) = 0)) AS idoszakok
-    FROM számlák s
-    JOIN szervezők sz ON sz.id = s.szervező_id
+    FROM finance_invoices s
+    JOIN finance_organizers sz ON sz.id = s.szervező_id
     $where_osszes_sql
     ORDER BY $order_sql $dir, s.id DESC
 ");
@@ -87,7 +87,7 @@ require_once __DIR__ . '/../../partials/header.php';
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 
 <div class="card">
-    <h2>Generált számlák</h2>
+    <h2>Generált finance_invoices</h2>
     <?php if (!empty($szamlak_generalt)): ?>
     <div class="table-wrap">
         <table class="sortable-table">

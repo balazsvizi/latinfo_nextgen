@@ -10,17 +10,17 @@ require_once __DIR__ . '/partials/header.php';
 
 $db = getDb();
 
-$szervezo_count = $db->query('SELECT COUNT(*) FROM szervezők')->fetchColumn();
+$szervezo_count = $db->query('SELECT COUNT(*) FROM finance_organizers')->fetchColumn();
 
-$szamlazando_osszes = (int) $db->query('SELECT COUNT(*) FROM számlázandó WHERE (COALESCE(törölve,0) = 0)')->fetchColumn();
-$szamlazando_nem_szamla = (int) $db->query('SELECT COUNT(*) FROM számlázandó WHERE számla_id IS NULL AND (COALESCE(törölve,0) = 0)')->fetchColumn();
+$szamlazando_osszes = (int) $db->query('SELECT COUNT(*) FROM finance_billing_items WHERE (COALESCE(törölve,0) = 0)')->fetchColumn();
+$szamlazando_nem_szamla = (int) $db->query('SELECT COUNT(*) FROM finance_billing_items WHERE számla_id IS NULL AND (COALESCE(törölve,0) = 0)')->fetchColumn();
 
 $szamla_statuszok = ['generált' => 'Generált', 'kiküldve' => 'Kiküldve', 'kiegyenlítve' => 'Kiegyenlítve', 'egyéb' => 'Egyéb', 'KP' => 'KP', 'sztornó' => 'Sztornó'];
 $szamla_by_status = [];
 $szamla_osszes_db = 0;
 $szamla_osszes_osszeg = 0;
 foreach (array_keys($szamla_statuszok) as $st) {
-    $stmt = $db->prepare('SELECT COUNT(*), COALESCE(SUM(összeg), 0) FROM számlák WHERE státusz = ? AND (COALESCE(törölve,0) = 0)');
+    $stmt = $db->prepare('SELECT COUNT(*), COALESCE(SUM(összeg), 0) FROM finance_invoices WHERE státusz = ? AND (COALESCE(törölve,0) = 0)');
     $stmt->execute([$st]);
     $row = $stmt->fetch(PDO::FETCH_NUM);
     $szamla_by_status[$st] = ['db' => (int) $row[0], 'osszeg' => (float) $row[1]];
@@ -32,6 +32,10 @@ foreach (array_keys($szamla_statuszok) as $st) {
 ?>
 <?php if ($err = flash('error')): ?><p class="alert alert-error"><?= h($err) ?></p><?php endif; ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
+<p class="toolbar" style="margin-bottom:1rem;">
+    <a href="<?= h(nextgen_url('apps.php')) ?>" class="btn btn-secondary">← Alkalmazások (Finance / Event Admin)</a>
+    <a href="<?= h(site_url('events/events_admin.php')) ?>" class="btn btn-secondary">Event Admin →</a>
+</p>
 <div class="dash-cards">
     <a href="<?= h(nextgen_url('organizers/')) ?>" class="dash-card">
         <h3>Szervezők</h3>

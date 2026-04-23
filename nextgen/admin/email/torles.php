@@ -15,7 +15,7 @@ if ($id <= 0) {
 }
 
 $db = getDb();
-$stmt = $db->prepare('DELETE FROM email_config WHERE id = ?');
+$stmt = $db->prepare('DELETE FROM finance_email_accounts WHERE id = ?');
 $stmt->execute([$id]);
 if ($stmt->rowCount()) {
     rendszer_log('email_config', $id, 'SMTP fiók törölve', null);

@@ -12,7 +12,7 @@ if (!$id) {
 
 $db = getDb();
 $hasCimkeSzin = cimkek_has_szin($db);
-$szervezo = $db->prepare('SELECT * FROM szervezők WHERE id = ?');
+$szervezo = $db->prepare('SELECT * FROM finance_organizers WHERE id = ?');
 $szervezo->execute([$id]);
 $szervezo = $szervezo->fetch();
 if (!$szervezo) {
@@ -24,7 +24,7 @@ if (!$szervezo) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['megjegyzes_szoveg'])) {
     $szoveg = trim($_POST['megjegyzes_szoveg']);
     if ($szoveg !== '') {
-        $db->prepare('INSERT INTO szervező_megjegyzések (szervező_id, megjegyzés, admin_id) VALUES (?, ?, ?)')
+        $db->prepare('INSERT INTO finance_organizer_notes (szervező_id, megjegyzés, admin_id) VALUES (?, ?, ?)')
             ->execute([$id, $szoveg, $_SESSION['admin_id'] ?? null]);
         rendszer_log('szervező_megjegyzés', (int)$db->lastInsertId(), 'Felvéve', null);
         flash('success', 'Megjegyzés hozzáadva.');
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['log_esemeny'])) {
     $esemeny = trim($_POST['log_esemeny']);
     $reszletek = trim($_POST['log_reszletek'] ?? '');
     if ($esemeny !== '') {
-        $db->prepare('INSERT INTO szervező_log (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)')
+        $db->prepare('INSERT INTO finance_organizer_activity_log (szervező_id, esemény, részletek, admin_id) VALUES (?, ?, ?, ?)')
             ->execute([$id, $esemeny, $reszletek ?: null, $_SESSION['admin_id'] ?? null]);
         rendszer_log('szervező_log', (int)$db->lastInsertId(), 'Felvéve', null);
         flash('success', 'Esemény rögzítve.');
@@ -46,33 +46,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['log_esemeny'])) {
 }
 
 $cimkeSql = $hasCimkeSzin
-    ? 'SELECT c.név, COALESCE(c.szín, "#6366F1") AS szín FROM szervező_címkék sc JOIN címkék c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név'
-    : 'SELECT c.név, "#6366F1" AS szín FROM szervező_címkék sc JOIN címkék c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név';
+    ? 'SELECT c.név, COALESCE(c.szín, "#6366F1") AS szín FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név'
+    : 'SELECT c.név, "#6366F1" AS szín FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = ? ORDER BY c.név';
 $címkék = $db->prepare($cimkeSql);
 $címkék->execute([$id]);
 $címkék = $címkék->fetchAll();
 
-$megjegyzesek = $db->prepare('SELECT m.*, a.név AS admin_név FROM szervező_megjegyzések m LEFT JOIN adminok a ON a.id = m.admin_id WHERE m.szervező_id = ? ORDER BY m.létrehozva DESC');
+$megjegyzesek = $db->prepare('SELECT m.*, a.név AS admin_név FROM finance_organizer_notes m LEFT JOIN nextgen_admins a ON a.id = m.admin_id WHERE m.szervező_id = ? ORDER BY m.létrehozva DESC');
 $megjegyzesek->execute([$id]);
 $megjegyzesek = $megjegyzesek->fetchAll();
 
-$szervezo_log = $db->prepare('SELECT l.*, a.név AS admin_név FROM szervező_log l LEFT JOIN adminok a ON a.id = l.admin_id WHERE l.szervező_id = ? ORDER BY l.létrehozva DESC');
+$szervezo_log = $db->prepare('SELECT l.*, a.név AS admin_név FROM finance_organizer_activity_log l LEFT JOIN nextgen_admins a ON a.id = l.admin_id WHERE l.szervező_id = ? ORDER BY l.létrehozva DESC');
 $szervezo_log->execute([$id]);
 $szervezo_log = $szervezo_log->fetchAll();
 
-$kontaktok = $db->prepare('SELECT k.* FROM szervező_kontakt sk JOIN kontaktok k ON k.id = sk.kontakt_id WHERE sk.szervező_id = ? ORDER BY k.név');
+$kontaktok = $db->prepare('SELECT k.* FROM finance_organizer_contacts sk JOIN finance_contacts k ON k.id = sk.kontakt_id WHERE sk.szervező_id = ? ORDER BY k.név');
 $kontaktok->execute([$id]);
 $kontaktok = $kontaktok->fetchAll();
 
-$cimek = $db->prepare('SELECT * FROM számlázási_címek WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név');
+$cimek = $db->prepare('SELECT * FROM finance_billing_addresses WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név');
 $cimek->execute([$id]);
 $cimek = $cimek->fetchAll();
 
-$szamlak = $db->prepare('SELECT * FROM számlák WHERE szervező_id = ? AND (COALESCE(törölve,0) = 0) ORDER BY dátum DESC');
+$szamlak = $db->prepare('SELECT * FROM finance_invoices WHERE szervező_id = ? AND (COALESCE(törölve,0) = 0) ORDER BY dátum DESC');
 $szamlak->execute([$id]);
 $szamlak = $szamlak->fetchAll();
 
-$szamlazando = $db->prepare('SELECT s.*, (SELECT GROUP_CONCAT(CONCAT(si.év, \'-\', LPAD(si.hónap, 2, \'0\')) ORDER BY si.év, si.hónap) FROM számlázandó_időszak si WHERE si.számlázandó_id = s.id) AS idoszakok FROM számlázandó s WHERE s.szervező_id = ? AND (COALESCE(s.törölve,0) = 0) ORDER BY s.létrehozva DESC');
+$szamlazando = $db->prepare('SELECT s.*, (SELECT GROUP_CONCAT(CONCAT(si.év, \'-\', LPAD(si.hónap, 2, \'0\')) ORDER BY si.év, si.hónap) FROM finance_billing_periods si WHERE si.számlázandó_id = s.id) AS idoszakok FROM finance_billing_items s WHERE s.szervező_id = ? AND (COALESCE(s.törölve,0) = 0) ORDER BY s.létrehozva DESC');
 $szamlazando->execute([$id]);
 $szamlazando = $szamlazando->fetchAll();
 $pageTitle = $szervezo['név'];
@@ -133,7 +133,7 @@ $show_limit = 3;
 ?>
 <div class="card card-collapsible-list" id="card-szamlazando">
     <h2>Számlázandó</h2>
-    <p><a href="<?= h(nextgen_url('finance/szamlazando/letrehoz.php?szervezo_id=')) ?><?= $id ?>" class="btn btn-primary btn-sm">Új számlázandó</a></p>
+    <p><a href="<?= h(nextgen_url('finance/szamlazando/letrehoz.php?szervezo_id=')) ?><?= $id ?>" class="btn btn-primary btn-sm">Új finance_billing_items</a></p>
     <?php if (!empty($szamlazando)): ?>
     <table>
         <thead><tr><th>ID</th><th>Időszak</th><th>Összeg</th><th>Megjegyzés</th><th></th></tr></thead>
@@ -158,7 +158,7 @@ $show_limit = 3;
     <p class="collapse-trigger-wrap"><button type="button" class="btn btn-secondary btn-sm js-collapse-trigger" data-target="card-szamlazando" data-more="<?= $szamlazando_total - $show_limit ?>">Tovább (<?= $szamlazando_total - $show_limit ?> további)</button></p>
     <?php endif; ?>
     <?php else: ?>
-    <p>Nincs számlázandó tétel.</p>
+    <p>Nincs finance_billing_items tétel.</p>
     <?php endif; ?>
 </div>
 
@@ -189,7 +189,7 @@ $show_limit = 3;
     <?php endif; ?>
 </div>
 
-<div class="card">
+<div class="card" id="kontaktok">
     <h2>Kontaktok</h2>
     <p><a href="<?= h(nextgen_url('organizers/kontakt_hozzaad.php?szervezo_id=')) ?><?= $id ?>" class="btn btn-primary btn-sm">Kontakt hozzáadása</a></p>
     <table>

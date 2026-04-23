@@ -6,7 +6,7 @@ require_once __DIR__ . '/core/database.php';
 require_once __DIR__ . '/includes/auth.php';
 
 if (isLoggedIn()) {
-    redirect(nextgen_url('index.php'));
+    redirect(nextgen_url('apps.php'));
 }
 
 $hiba = '';
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($fh === '' || $jelszo === '') {
         $hiba = 'Kérjük, töltse ki mindkét mezőt.';
     } elseif (login($fh, $jelszo)) {
-        $url = $_SESSION['_redirect_after_login'] ?? nextgen_url('index.php');
+        $url = $_SESSION['_redirect_after_login'] ?? nextgen_url('apps.php');
         unset($_SESSION['_redirect_after_login']);
         if ($url !== '' && $url[0] !== '/') {
             $url = rtrim(BASE_URL, '/') . '/' . ltrim($url, '/');
@@ -41,7 +41,7 @@ $loginBrand = trim(SITE_NAME . ' NextGen');
 <body class="login-page">
     <div class="login-box">
         <h1 class="login-brand"><span class="logo-site"><?= h(SITE_NAME) ?></span> <span class="logo-area">NextGen</span></h1>
-        <p class="login-sub">Bejelentkezés</p>
+        <p class="login-sub">Bejelentkezés – Finance és Event Admin egy jelszóval</p>
         <?php if ($hiba): ?>
             <p class="error"><?= h($hiba) ?></p>
         <?php endif; ?>

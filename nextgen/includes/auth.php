@@ -39,7 +39,7 @@ function requireSuperadmin(): void {
     requireLogin();
     if (!isSuperadmin()) {
         $_SESSION['_flash']['error'] = 'Nincs jogosultságod ehhez a laphoz.';
-        redirect(nextgen_url('index.php'));
+        redirect(nextgen_url('apps.php'));
     }
 }
 
@@ -49,11 +49,11 @@ function requireSuperadmin(): void {
 function login(string $felhasznalonev, string $jelszo): bool {
     $db = getDb();
     try {
-        $stmt = $db->prepare('SELECT id, név, felhasználónév, email, jelszó_hash, szint FROM adminok WHERE felhasználónév = ? AND aktív = 1');
+        $stmt = $db->prepare('SELECT id, név, felhasználónév, email, jelszó_hash, szint FROM nextgen_admins WHERE felhasználónév = ? AND aktív = 1');
         $stmt->execute([$felhasznalonev]);
         $admin = $stmt->fetch();
     } catch (Throwable $e) {
-        $stmt = $db->prepare('SELECT id, név, felhasználónév, jelszó_hash, szint FROM adminok WHERE felhasználónév = ? AND aktív = 1');
+        $stmt = $db->prepare('SELECT id, név, felhasználónév, jelszó_hash, szint FROM nextgen_admins WHERE felhasználónév = ? AND aktív = 1');
         $stmt->execute([$felhasznalonev]);
         $admin = $stmt->fetch();
         if ($admin) {
