@@ -1087,6 +1087,11 @@ tr:hover td { background: var(--bg); }
     align-items: stretch;
     margin-top: 0.25rem;
 }
+/* Középen a +/− a két lista között, oszlop magassága a magasabb (bal) listához igazodik */
+.events-org-picker-grid > .events-org-picker-btns {
+    align-self: stretch;
+    justify-content: center;
+}
 @media (max-width: 640px) {
     .events-org-picker-grid {
         grid-template-columns: 1fr;
@@ -1112,13 +1117,18 @@ tr:hover td { background: var(--bg); }
 .events-org-list {
     width: 100%;
     box-sizing: border-box;
-    min-height: 12rem;
     padding: 0.35rem;
     font-size: 0.9rem;
+    line-height: 1.35;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--bg-elevated);
     color: var(--text);
+}
+.events-org-list--pool,
+.events-org-list--selected {
+    height: auto;
+    min-height: 0;
 }
 .events-org-list:focus {
     outline: none;
@@ -1128,9 +1138,7 @@ tr:hover td { background: var(--bg); }
 .events-org-picker-btns {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: 0.5rem;
-    align-self: center;
 }
 .events-org-btn {
     min-width: 2.75rem;

@@ -25,8 +25,8 @@ if ($orgPickerJson === false) {
         <input type="search" id="org-picker-filter" class="events-org-filter" placeholder="Szűrés név vagy ID szerint…" autocomplete="off" spellcheck="false">
         <div class="events-org-picker-grid">
             <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="org-picker-pool">Elérhető</label>
-                <select id="org-picker-pool" class="events-org-list" size="10"></select>
+                <label class="events-org-picker-label" for="org-picker-pool">Szervezők</label>
+                <select id="org-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
             </div>
             <div class="events-org-picker-btns">
                 <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-add" title="Hozzáadás a kiválasztottakhoz">+</button>
@@ -34,7 +34,7 @@ if ($orgPickerJson === false) {
             </div>
             <div class="events-org-picker-col">
                 <label class="events-org-picker-label" for="org-picker-selected">Kiválasztott</label>
-                <select id="org-picker-selected" class="events-org-list" size="10"></select>
+                <select id="org-picker-selected" class="events-org-list events-org-list--selected" size="3"></select>
             </div>
         </div>
         <div id="org-picker-hiddens" class="org-picker-hiddens">
