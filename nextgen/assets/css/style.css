@@ -692,6 +692,64 @@ tr:hover td { background: var(--bg); }
 }
 .sort-arrow { font-size: 0.85em; opacity: 0.9; }
 
+/* Esemény admin lista */
+.events-admin-card .events-list-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.events-admin-card .events-list-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+.events-admin-card .events-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+.events-admin-table .events-filter-row th {
+    vertical-align: bottom;
+    padding: 0.4rem 0.5rem;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+}
+.events-admin-table .events-filter-row input,
+.events-admin-table .events-filter-row select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.45rem;
+}
+.events-admin-table .events-th-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.events-admin-table .events-th-dates input[type="date"] {
+    min-width: 0;
+}
+.events-cell-edit {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dashed var(--border);
+}
+.events-cell-edit:hover {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+.events-admin-empty {
+    margin: 0 0 0.5rem;
+    color: var(--text-muted);
+}
+
 .toolbar {
     display: flex;
     flex-wrap: wrap;
