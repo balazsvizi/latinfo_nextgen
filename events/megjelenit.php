@@ -138,17 +138,17 @@ header('Content-Type: text/html; charset=UTF-8');
 <body class="event-public-page">
 <div class="event-shell">
     <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__end">
+        <div class="event-shell-toolbar__leading">
             <?php if ($showAdminEdit): ?>
                 <a class="event-admin-edit" href="<?= h($eventEditUrl) ?>" title="<?= h($T['admin_edit_title']) ?>" aria-label="<?= h($T['admin_edit_aria']) ?>">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </a>
             <?php endif; ?>
-            <div class="event-lang-switch" role="navigation" aria-label="<?= h($T['lang_nav']) ?>">
-                <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($T['lang_hu']) ?></a>
-                <span class="event-lang-switch__sep" aria-hidden="true">|</span>
-                <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en"><?= h($T['lang_en']) ?></a>
-            </div>
+        </div>
+        <div class="event-lang-switch" role="navigation" aria-label="<?= h($T['lang_nav']) ?>">
+            <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($T['lang_hu']) ?></a>
+            <span class="event-lang-switch__sep" aria-hidden="true">|</span>
+            <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en"><?= h($T['lang_en']) ?></a>
         </div>
     </div>
 <article class="event-public">
@@ -166,7 +166,7 @@ header('Content-Type: text/html; charset=UTF-8');
             </div>
 
             <?php
-            $showMetaBlock = $dateLines !== [] || $costText !== null || $showVenue;
+            $showMetaBlock = $dateLines !== [] || $showVenue;
             ?>
             <?php if ($showMetaBlock): ?>
             <div class="event-meta">
@@ -186,18 +186,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                     <?php endif; ?>
                                 <?php endforeach; ?>
                             </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($costText !== null): ?>
-                    <div class="event-meta__card">
-                        <div class="event-meta__icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                        </div>
-                        <div>
-                            <p class="event-meta__label"><?= h($T['meta_price']) ?></p>
-                            <p class="event-meta__value"><?= h($costText) ?></p>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -245,6 +233,12 @@ header('Content-Type: text/html; charset=UTF-8');
         <div class="event-body">
             <?= $event['event_content'] ?>
         </div>
+        <?php if ($costText !== null): ?>
+            <aside class="event-public__admission" aria-label="<?= h($T['meta_price']) ?>">
+                <p class="event-public__admission-label"><?= h($T['meta_price']) ?></p>
+                <p class="event-public__admission-value"><?= h($costText) ?></p>
+            </aside>
+        <?php endif; ?>
     </div>
 
     <footer class="event-public__footer">
