@@ -2,6 +2,10 @@
 declare(strict_types=1);
 /** @var array $e aktuális mezőértékek */
 /** @var array $organizers id => név */
+/** @var array<int, string> $venues id => név (events_load_venue_options) */
+if (!isset($venues) || !is_array($venues)) {
+    $venues = [];
+}
 $selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_values(array_unique(array_map('intval', $e['organizer_ids']))) : [];
 $orgPickerAll = [];
 foreach ($organizers as $oid => $onev) {
@@ -139,8 +143,18 @@ if ($orgPickerJson === false) {
     <?php endif; ?>
 </fieldset>
 <div class="form-group">
-    <label for="venue_id">Helyszín ID (későbbi modul)</label>
-    <input type="number" id="venue_id" name="venue_id" min="0" step="1" value="<?= h($e['venue_id']) ?>">
+    <label for="venue_id">Helyszín</label>
+    <?php if ($venues !== []): ?>
+        <select id="venue_id" name="venue_id">
+            <option value="">— nincs —</option>
+            <?php foreach ($venues as $vid => $vname): ?>
+                <option value="<?= (int) $vid ?>" <?= ((string) (int) $vid === (string) $e['venue_id']) ? 'selected' : '' ?>><?= h($vname) ?></option>
+            <?php endforeach; ?>
+        </select>
+    <?php else: ?>
+        <p class="help">Nincs helyszín felvéve. <a href="<?= h(events_url('venues.php')) ?>">Helyszínek</a> · <a href="<?= h(events_url('venue_letrehoz.php')) ?>">Új helyszín</a> · <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_venues">CSV import</a></p>
+        <input type="hidden" name="venue_id" value="">
+    <?php endif; ?>
 </div>
 <div class="form-group">
     <label for="event_name">Esemény neve *</label>

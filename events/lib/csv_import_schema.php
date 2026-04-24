@@ -46,5 +46,18 @@ function events_csv_import_schema(): array {
                 'name' => ['type' => 'string', 'max' => 255, 'nullable' => false],
             ],
         ],
+        'events_venues' => [
+            'label' => 'Helyszínek (`events_venues`)',
+            'id_max_import' => 100000,
+            'columns' => [
+                'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID. Kitöltve: max 100000, upsert.'],
+                'name' => ['type' => 'string', 'max' => 500, 'nullable' => false],
+                'slug' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'Üres CSV → névből generáljuk; egyedi a táblában'],
+                'description' => ['type' => 'text', 'nullable' => true],
+                'address' => ['type' => 'text', 'nullable' => true],
+                'created' => ['type' => 'datetime', 'nullable' => true],
+                'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
+            ],
+        ],
     ];
 }

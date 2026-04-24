@@ -8,6 +8,7 @@ requireLogin();
 
 $db = getDb();
 $organizers = events_load_organizer_options($db);
+$venues = events_load_venue_options($db);
 
 $defaults = [
     'event_name' => '',

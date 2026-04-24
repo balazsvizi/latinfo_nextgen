@@ -22,6 +22,7 @@ if (!$event) {
 }
 
 $organizers = events_load_organizer_options($db);
+$venues = events_load_venue_options($db);
 $event['organizer_ids'] = events_load_event_organizer_ids($db, $id);
 
 $hiba = '';

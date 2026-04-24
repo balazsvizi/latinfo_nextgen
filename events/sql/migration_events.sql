@@ -1,6 +1,6 @@
 -- Naptár / Events modul (Latinfo.hu)
 -- Futtatás: mysql ... < events/sql/migration_events.sql
--- Tartalmazza az `events_organizers` táblát (ID 200000+) és az esemény–szervező kapcsolótáblát.
+-- Tartalmazza az `events_organizers` táblát (ID 200000+), `events_venues` helyszíneket és az esemény–szervező kapcsolótáblát.
 -- Meglévő DB, ahol a régi FK még `szervezők`: migration_organizers.sql + migration_naptar_esemeny_fk_to_organizers.sql
 -- Régi táblanevekről: nextgen/database/migration_rename_legacy_tables_to_prefixed.sql
 
@@ -58,4 +58,18 @@ CREATE TABLE IF NOT EXISTS `events_calendar_event_views` (
     PRIMARY KEY (`id`),
     KEY `idx_esemeny_id` (`esemény_id`),
     CONSTRAINT `fk_events_calendar_event_views_event` FOREIGN KEY (`esemény_id`) REFERENCES `events_calendar_events` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Helyszínek (venues); az esemény `venue_id` erre hivatkozhat (FK opcionálisan: events/sql/migration_event_venue_fk.sql).
+CREATE TABLE IF NOT EXISTS `events_venues` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(500) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
+    `description` MEDIUMTEXT NULL,
+    `address` TEXT NULL,
+    `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_events_venues_slug` (`slug`),
+    KEY `idx_events_venues_name` (`name`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

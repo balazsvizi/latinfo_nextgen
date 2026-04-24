@@ -131,6 +131,19 @@ CREATE TABLE IF NOT EXISTS `events_organizers` (
 
 ALTER TABLE `events_organizers` AUTO_INCREMENT = 200000;
 
+CREATE TABLE IF NOT EXISTS `events_venues` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(500) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
+    `description` MEDIUMTEXT NULL,
+    `address` TEXT NULL,
+    `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_events_venues_slug` (`slug`),
+    KEY `idx_events_venues_name` (`name`(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `events_calendar_events` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `event_name` VARCHAR(500) NOT NULL,
@@ -150,7 +163,8 @@ CREATE TABLE IF NOT EXISTS `events_calendar_events` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_event_slug` (`event_slug`),
     KEY `idx_event_status` (`event_status`),
-    KEY `idx_event_start` (`event_start`)
+    KEY `idx_event_start` (`event_start`),
+    CONSTRAINT `fk_ec_event_venue` FOREIGN KEY (`venue_id`) REFERENCES `events_venues` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE `events_calendar_events` AUTO_INCREMENT = 100000;

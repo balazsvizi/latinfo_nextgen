@@ -33,7 +33,7 @@ foreach (array_keys($szamla_statuszok) as $st) {
 <?php if ($err = flash('error')): ?><p class="alert alert-error"><?= h($err) ?></p><?php endif; ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <p class="toolbar" style="margin-bottom:1rem;">
-    <a href="<?= h(nextgen_url('apps.php')) ?>" class="btn btn-secondary">← Alkalmazások (Finance / Event Admin)</a>
+    <a href="<?= h(nextgen_url('apps.php')) ?>" class="btn btn-secondary">← Alkalmazások (Finance / Event Admin / NextGen)</a>
     <a href="<?= h(site_url('events/events_admin.php')) ?>" class="btn btn-secondary">Event Admin →</a>
 </p>
 <div class="dash-cards">

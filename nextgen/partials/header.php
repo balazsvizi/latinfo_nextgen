@@ -36,6 +36,7 @@ if ($navZone === 'events') {
                 <ul class="nav-submenu" id="submenu-apps-switcher" role="menu">
                     <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance</a></li>
                     <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
+                    <li role="none"><a href="<?= h(nextgen_url('config/cimkek.php')) ?>" role="menuitem">NextGen</a></li>
                 </ul>
             </div>
         </div>
@@ -70,6 +71,9 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(site_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
                         <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
                     </ul>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(site_url('events/venues.php')) ?>" class="nav-parent-link">Helyszínek</a>
                 </li>
                 <li class="nav-item">
                     <a href="<?= h(site_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>

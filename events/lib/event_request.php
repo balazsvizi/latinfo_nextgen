@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/venue_request.php';
+
 function events_load_organizer_options(PDO $db): array {
     $rows = $db->query('SELECT id, name FROM events_organizers ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
     $out = [];
@@ -97,7 +99,8 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $row['event_latinfohu_partner'] = isset($_POST['event_latinfohu_partner']) ? 1 : 0;
 
     $vid = trim((string) ($_POST['venue_id'] ?? ''));
-    $row['venue_id'] = $vid === '' ? null : (int) $vid;
+    $rawVid = $vid === '' ? null : (int) $vid;
+    $row['venue_id'] = events_normalize_venue_id($db, $rawVid);
 
     $organizerIds = events_organizer_ids_from_post();
 

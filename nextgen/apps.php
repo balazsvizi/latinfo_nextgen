@@ -20,7 +20,7 @@ try {
 ?>
 <div class="card">
     <h2>Alkalmazások</h2>
-    <p class="card-lead">Válassz területet. A belépés közös (<code>nextgen/login.php</code>); a Finance a <code>nextgen/</code> alatt, az események az <code>events/</code> mappában futnak.</p>
+    <p class="card-lead">Válassz területet. A belépés közös (<code>nextgen/login.php</code>); a Finance a <code>nextgen/</code> alatt, az események az <code>events/</code> mappában, a NextGen (Config, Admin, …) a <code>nextgen/config/</code> és <code>nextgen/admin/</code> alatt fut.</p>
 </div>
 
 <div class="dash-cards dash-cards-apps">
@@ -34,6 +34,11 @@ try {
         <div class="num"><?= $eventCount ?></div>
         <p>Események naptár – <code>events/</code></p>
     </a>
+    <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="dash-card dash-card-nextgen">
+        <h3>NextGen</h3>
+        <div class="num">→</div>
+        <p>Config, admin, levélsablonok – <code>nextgen/config/</code>, <code>nextgen/admin/</code></p>
+    </a>
 </div>
 
 <div class="card">
@@ -43,6 +48,8 @@ try {
         <a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" class="btn btn-secondary">Számlázandó</a>
         <a href="<?= h(site_url('events/letrehoz.php')) ?>" class="btn btn-secondary">Új esemény</a>
         <a href="<?= h(site_url('events/import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
+        <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="btn btn-secondary">NextGen – Címkék</a>
+        <a href="<?= h(nextgen_url('admin/log.php')) ?>" class="btn btn-secondary">NextGen – Logok</a>
     </p>
 </div>
 <?php require_once __DIR__ . '/partials/footer.php'; ?>

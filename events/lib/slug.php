@@ -42,3 +42,25 @@ function events_ensure_unique_slug(PDO $db, string $base, ?int $excludeId): stri
     }
     return $slug;
 }
+
+function events_venue_slug_exists(PDO $db, string $slug, ?int $excludeVenueId): bool {
+    $sql = 'SELECT 1 FROM `events_venues` WHERE `slug` = ?';
+    $params = [$slug];
+    if ($excludeVenueId !== null) {
+        $sql .= ' AND `id` != ?';
+        $params[] = $excludeVenueId;
+    }
+    $stmt = $db->prepare($sql . ' LIMIT 1');
+    $stmt->execute($params);
+    return (bool) $stmt->fetchColumn();
+}
+
+function events_ensure_unique_venue_slug(PDO $db, string $base, ?int $excludeVenueId): string {
+    $slug = $base;
+    $n = 2;
+    while (events_venue_slug_exists($db, $slug, $excludeVenueId)) {
+        $slug = $base . '-' . $n;
+        $n++;
+    }
+    return $slug;
+}

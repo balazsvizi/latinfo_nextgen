@@ -205,6 +205,7 @@ function events_csv_build_row_values(
     array $csvRow,
     array $tableSchema,
     bool $forUpdate,
+    ?int $slugExcludeId = null,
 ): array {
     $idMax = (int) ($tableSchema['id_max_import'] ?? 100000);
     $colsMeta = $tableSchema['columns'];
@@ -267,6 +268,31 @@ function events_csv_build_row_values(
             $name = (string) ($values['name'] ?? '');
             if ($name === '') {
                 return [[], 'name kötelező új sorhoz.'];
+            }
+        }
+    }
+
+    if ($table === 'events_venues') {
+        if (!$forUpdate) {
+            $name = (string) ($values['name'] ?? '');
+            if ($name === '') {
+                return [[], 'name kötelező új sorhoz.'];
+            }
+            $slug = isset($values['slug']) ? trim((string) $values['slug']) : '';
+            if ($slug === '') {
+                $base = events_slugify($name);
+                $values['slug'] = events_ensure_unique_venue_slug($db, $base, null);
+            } else {
+                $values['slug'] = events_ensure_unique_venue_slug($db, events_slugify($slug), null);
+            }
+        } else {
+            if (array_key_exists('slug', $values)) {
+                $slug = trim((string) $values['slug']);
+                if ($slug === '') {
+                    unset($values['slug']);
+                } else {
+                    $values['slug'] = events_ensure_unique_venue_slug($db, events_slugify($slug), $slugExcludeId);
+                }
             }
         }
     }
@@ -438,7 +464,7 @@ function events_csv_import_run(
     if (!empty($tableSchema['composite_key'])) {
         foreach ($parsed['rows'] as $csvRow) {
             $lineNo++;
-            [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false);
+            [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
             if ($err !== null) {
                 $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                 continue;
@@ -479,7 +505,7 @@ function events_csv_import_run(
             if ($idVal !== null && $idVal > 0) {
                 $exists = events_csv_row_exists($db, $table, $idVal);
                 if ($exists) {
-                    [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true);
+                    [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true, $idVal);
                     if ($err !== null) {
                         $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                         continue;
@@ -491,7 +517,7 @@ function events_csv_import_run(
                         $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező rekord (id={$idVal}), de nincs frissítendő mező: a mapolt oszlopok CSV értékei üresek, vagy csak `created` / tiltott mezők változnának.";
                     }
                 } else {
-                    [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false);
+                    [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                     if ($err !== null) {
                         $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                         continue;
@@ -501,7 +527,7 @@ function events_csv_import_run(
                     $inserted++;
                 }
             } else {
-                [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false);
+                [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                 if ($err !== null) {
                     $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                     continue;

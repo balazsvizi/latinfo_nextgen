@@ -109,7 +109,7 @@ if ($presetsJson === false) {
 }
 ?>
 <div class="card">
-    <h2>CSV import (események, esemény–szervező, szervezők)</h2>
+    <h2>CSV import (események, esemény–szervező, szervezők, helyszínek)</h2>
     <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 

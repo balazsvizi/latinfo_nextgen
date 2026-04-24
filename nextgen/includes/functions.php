@@ -34,6 +34,7 @@ function log_entity_url(string $entitás, ?int $entitás_id): ?string {
         'email_config' => $p . '/admin/email/szerkeszt.php?id=',
         'levélsablon' => $p . '/config/levelsablonok/szerkeszt.php?id=',
         'esemény' => site_url('events/szerkeszt.php?id='),
+        'helyszín' => site_url('events/venue_szerkeszt.php?id='),
         'címke' => null, // csak lista, nincs egy tétel oldal
         'kontakt_típus' => null, // csak lista, nincs egy tétel oldal
     ];
