@@ -1,20 +1,35 @@
 /* Nyilvános esemény oldal — events/megjelenit.php */
+/* Színek: latinfo.hu / lanueva landing (neon latino) */
 :root {
-    --ev-bg: #f4f2ef;
-    --ev-bg-elevated: #ffffff;
-    --ev-ink: #1a1714;
-    --ev-ink-muted: #5c5650;
-    --ev-ink-soft: #8a827a;
-    --ev-accent: #c45c26;
-    --ev-accent-hover: #a34d20;
-    --ev-accent-soft: rgba(196, 92, 38, 0.12);
-    --ev-border: rgba(26, 23, 20, 0.1);
-    --ev-shadow: 0 4px 24px rgba(26, 23, 20, 0.08);
-    --ev-shadow-lg: 0 12px 48px rgba(26, 23, 20, 0.12);
+    --ln-pink: #ff1654;
+    --ln-cyan: #00d9ff;
+    --ln-magenta: #e60aad;
+    --ln-lime: #39ff14;
+    --ln-dark: #0a0e27;
+    --ln-surface: #141829;
+    --ln-text: #f0f0f0;
+    --ln-text-dim: #a0a0b0;
+
+    --ev-bg: var(--ln-dark);
+    --ev-bg-mid: #1a1f3a;
+    --ev-bg-elevated: rgba(20, 24, 41, 0.94);
+    --ev-ink: var(--ln-text);
+    --ev-ink-muted: var(--ln-text-dim);
+    --ev-ink-soft: #8b90a8;
+    --ev-accent: var(--ln-pink);
+    --ev-accent-alt: var(--ln-cyan);
+    --ev-accent-hover: #ff4d7d;
+    --ev-accent-soft: rgba(255, 22, 84, 0.14);
+    --ev-accent-cyan-soft: rgba(0, 217, 255, 0.12);
+    --ev-border: rgba(255, 22, 84, 0.22);
+    --ev-border-cyan: rgba(0, 217, 255, 0.28);
+    --ev-shadow: 0 4px 28px rgba(0, 0, 0, 0.4);
+    --ev-shadow-lg: 0 16px 56px rgba(0, 0, 0, 0.5), 0 0 48px rgba(255, 22, 84, 0.1);
     --ev-radius: 16px;
     --ev-radius-sm: 10px;
-    --ev-font: "Source Serif 4", "Georgia", "Times New Roman", serif;
-    --ev-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ev-font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --ev-display: "Poppins", system-ui, sans-serif;
+    --ev-sans: var(--ev-font);
 }
 
 *,
@@ -42,12 +57,14 @@ body.event-public-page {
     min-height: 100vh;
     font-family: var(--ev-sans);
     font-size: 1rem;
-    line-height: 1.55;
+    line-height: 1.6;
     color: var(--ev-ink);
-    background: var(--ev-bg);
+    background-color: var(--ln-dark);
     background-image:
-        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(196, 92, 38, 0.14), transparent 55%),
-        radial-gradient(ellipse 90% 50% at 100% 0%, rgba(90, 120, 160, 0.06), transparent 45%);
+        radial-gradient(ellipse 85% 70% at 0% -10%, rgba(255, 22, 84, 0.22), transparent 50%),
+        radial-gradient(ellipse 80% 60% at 100% 10%, rgba(0, 217, 255, 0.14), transparent 48%),
+        linear-gradient(135deg, var(--ln-dark) 0%, var(--ev-bg-mid) 50%, var(--ln-surface) 100%);
+    background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -81,22 +98,24 @@ body.event-public-page {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 10px;
-    color: var(--ev-ink-muted);
-    background: var(--ev-bg-elevated);
+    color: var(--ev-accent-alt);
+    background: rgba(20, 24, 41, 0.75);
     border: 1px solid var(--ev-border);
     box-shadow: var(--ev-shadow);
-    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    backdrop-filter: blur(8px);
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .event-admin-edit:hover {
-    color: var(--ev-accent);
-    background: var(--ev-accent-soft);
-    border-color: rgba(196, 92, 38, 0.25);
+    color: var(--ln-text);
+    background: rgba(255, 22, 84, 0.2);
+    border-color: rgba(255, 22, 84, 0.45);
+    box-shadow: 0 0 20px rgba(255, 22, 84, 0.25);
     transform: translateY(-1px);
 }
 
 .event-admin-edit:focus-visible {
-    outline: 2px solid var(--ev-accent);
+    outline: 2px solid var(--ev-accent-alt);
     outline-offset: 2px;
 }
 
@@ -121,22 +140,24 @@ body.event-public-page {
     text-decoration: none;
     padding: 0.2rem 0.45rem;
     border-radius: 6px;
-    transition: color 0.15s ease, background 0.15s ease;
+    border: 1px solid transparent;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .event-lang-switch__link:hover {
-    color: var(--ev-accent);
-    background: rgba(196, 92, 38, 0.08);
+    color: var(--ev-accent-alt);
+    background: var(--ev-accent-cyan-soft);
 }
 
 .event-lang-switch__link.is-active {
-    color: var(--ev-accent);
+    color: var(--ln-text);
     background: var(--ev-accent-soft);
+    border: 1px solid var(--ev-border);
     pointer-events: none;
 }
 
 .event-lang-switch__link:focus-visible {
-    outline: 2px solid var(--ev-accent);
+    outline: 2px solid var(--ev-accent-alt);
     outline-offset: 2px;
 }
 
@@ -145,21 +166,23 @@ body.event-public-page {
     border-radius: var(--ev-radius);
     box-shadow: var(--ev-shadow-lg);
     border: 1px solid var(--ev-border);
+    backdrop-filter: blur(12px);
     overflow: hidden;
 }
 
 .event-public__hero {
     position: relative;
     padding: clamp(1.5rem, 5vw, 2.75rem) clamp(1.25rem, 4vw, 2.25rem);
-    background: linear-gradient(155deg, #2d2621 0%, #1f1b18 48%, #2a241f 100%);
-    color: #faf8f5;
+    background: linear-gradient(160deg, var(--ln-dark) 0%, var(--ev-bg-mid) 45%, var(--ln-surface) 100%);
+    color: var(--ln-text);
+    border-bottom: 1px solid var(--ev-border);
 }
 
 .event-public__hero::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.18) 100%);
+    background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.35) 100%);
     pointer-events: none;
 }
 
@@ -174,17 +197,19 @@ body.event-public-page {
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(250, 248, 245, 0.55);
+    color: rgba(0, 217, 255, 0.75);
 }
 
 .event-public__title {
     margin: 0;
-    font-family: var(--ev-font);
+    font-family: var(--ev-display);
     font-size: clamp(1.65rem, 5.5vw, 2.35rem);
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
     text-wrap: balance;
+    color: var(--ln-text);
+    text-shadow: 0 0 28px rgba(255, 22, 84, 0.15);
 }
 
 .event-public__badges {
@@ -202,15 +227,15 @@ body.event-public-page {
     font-weight: 600;
     letter-spacing: 0.02em;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(250, 248, 245, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(20, 24, 41, 0.6);
+    color: var(--ln-text);
+    border: 1px solid var(--ev-border);
 }
 
 .event-badge--accent {
-    background: var(--ev-accent-soft);
-    color: #ffd4bc;
-    border-color: rgba(196, 92, 38, 0.35);
+    background: var(--ev-accent-cyan-soft);
+    color: var(--ev-accent-alt);
+    border-color: var(--ev-border-cyan);
 }
 
 .event-meta {
@@ -231,20 +256,21 @@ body.event-public-page {
     align-items: flex-start;
     padding: 0.9rem 1rem;
     border-radius: var(--ev-radius-sm);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(20, 24, 41, 0.55);
+    border: 1px solid var(--ev-border);
     text-decoration: none;
     color: inherit;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 a.event-meta__card:hover {
-    background: rgba(255, 255, 255, 0.11);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 22, 84, 0.08);
+    border-color: rgba(255, 22, 84, 0.35);
+    box-shadow: 0 0 20px rgba(255, 22, 84, 0.12);
 }
 
 a.event-meta__card:focus-visible {
-    outline: 2px solid var(--ev-accent);
+    outline: 2px solid var(--ev-accent-alt);
     outline-offset: 2px;
 }
 
@@ -256,8 +282,8 @@ a.event-meta__card:focus-visible {
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: rgba(196, 92, 38, 0.25);
-    color: #ffc8a8;
+    background: rgba(255, 22, 84, 0.22);
+    color: #ffb3c9;
 }
 
 .event-meta__icon svg {
@@ -276,7 +302,7 @@ a.event-meta__card:focus-visible {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: rgba(250, 248, 245, 0.5);
+    color: rgba(0, 217, 255, 0.65);
 }
 
 .event-meta__value {
@@ -284,13 +310,13 @@ a.event-meta__card:focus-visible {
     font-size: 0.95rem;
     font-weight: 500;
     line-height: 1.45;
-    color: #faf8f5;
+    color: var(--ln-text);
 }
 
 .event-meta__value--muted {
     font-size: 0.88rem;
     font-weight: 400;
-    color: rgba(250, 248, 245, 0.75);
+    color: var(--ln-text-dim);
 }
 
 .event-meta__value-line2 {
@@ -300,7 +326,7 @@ a.event-meta__card:focus-visible {
 
 .event-public__hero .event-venue-name-link,
 .event-public__hero .event-venue-sub-link {
-    color: #fff4eb;
+    color: var(--ev-accent-alt);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 0.2em;
@@ -309,7 +335,7 @@ a.event-meta__card:focus-visible {
 
 .event-public__hero .event-venue-name-link:hover,
 .event-public__hero .event-venue-sub-link:hover {
-    color: #ffd4bc;
+    color: var(--ev-accent-hover);
 }
 
 .event-venue-linked-p {
@@ -337,24 +363,25 @@ a.event-meta__card:focus-visible {
     max-width: 100%;
     padding: 0.9rem 1.25rem;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 700;
+    font-family: var(--ev-display);
     text-decoration: none;
-    color: #1a1714;
-    background: linear-gradient(180deg, #fff8f4 0%, #f0e8e2 100%);
+    color: var(--ln-text);
+    background: linear-gradient(90deg, var(--ln-pink) 0%, var(--ln-magenta) 50%, #c41a7a 100%);
     border-radius: var(--ev-radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    border: 1px solid rgba(255, 22, 84, 0.45);
+    box-shadow: 0 4px 24px rgba(255, 22, 84, 0.35), 0 0 32px rgba(0, 217, 255, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .event-cta:hover {
-    background: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    filter: brightness(1.08);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(255, 22, 84, 0.45), 0 0 40px rgba(0, 217, 255, 0.18);
 }
 
 .event-cta:focus-visible {
-    outline: 2px solid var(--ev-accent);
+    outline: 2px solid var(--ev-accent-alt);
     outline-offset: 3px;
 }
 
@@ -375,6 +402,7 @@ a.event-meta__card:focus-visible {
 
 .event-public__content {
     padding: clamp(1.5rem, 4vw, 2.25rem) clamp(1.25rem, 4vw, 2rem) clamp(2rem, 5vw, 2.75rem);
+    background: linear-gradient(180deg, rgba(10, 14, 39, 0.35) 0%, rgba(20, 24, 41, 0.5) 100%);
 }
 
 .event-public__admission {
@@ -391,15 +419,15 @@ a.event-meta__card:focus-visible {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--ev-ink-soft);
+    color: rgba(0, 217, 255, 0.75);
 }
 
 .event-public__admission-value {
     margin: 0;
-    font-family: var(--ev-sans);
+    font-family: var(--ev-display);
     font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--ev-ink);
+    font-weight: 700;
+    color: var(--ln-text);
 }
 
 .event-body {
@@ -422,10 +450,10 @@ a.event-meta__card:focus-visible {
 .event-body h2,
 .event-body h3,
 .event-body h4 {
-    font-family: var(--ev-sans);
+    font-family: var(--ev-display);
     font-weight: 700;
     line-height: 1.3;
-    color: var(--ev-ink);
+    color: var(--ln-text);
     margin: 1.5em 0 0.5em;
 }
 
@@ -462,7 +490,7 @@ a.event-meta__card:focus-visible {
 }
 
 .event-body a:hover {
-    color: var(--ev-accent-hover);
+    color: var(--ev-accent-alt);
 }
 
 .event-body img,
@@ -477,7 +505,7 @@ a.event-meta__card:focus-visible {
     margin: 1.25em 0;
     padding: 0.75rem 1rem 0.75rem 1rem;
     border-left: 4px solid var(--ev-accent);
-    background: var(--ev-accent-soft);
+    background: rgba(255, 22, 84, 0.08);
     border-radius: 0 var(--ev-radius-sm) var(--ev-radius-sm) 0;
     font-style: italic;
     color: var(--ev-ink-muted);
@@ -492,9 +520,10 @@ a.event-meta__card:focus-visible {
 .event-body pre {
     overflow-x: auto;
     padding: 1rem;
-    background: #f0ebe6;
+    background: rgba(10, 14, 39, 0.85);
     border-radius: var(--ev-radius-sm);
-    border: 1px solid var(--ev-border);
+    border: 1px solid var(--ev-border-cyan);
+    color: var(--ln-text-dim);
 }
 
 .event-body table {
@@ -509,13 +538,19 @@ a.event-meta__card:focus-visible {
     padding: 0.5rem 0.65rem;
     border: 1px solid var(--ev-border);
     text-align: left;
+    color: var(--ln-text);
+}
+
+.event-body td {
+    background: rgba(10, 14, 39, 0.25);
 }
 
 .event-body th {
-    background: #f0ebe6;
+    background: rgba(255, 22, 84, 0.12);
     font-family: var(--ev-sans);
     font-weight: 600;
     font-size: 0.85rem;
+    color: var(--ln-text);
 }
 
 .event-public__footer {
