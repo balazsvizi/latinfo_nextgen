@@ -25,6 +25,9 @@ return [
     // Nyilvános esemény URL: /{EVENTS_PUBLIC_PATH}/{slug} (canonical). Alap: esemenyek
     // 'EVENTS_PUBLIC_PATH' => 'esemenyek',
 
+    // Esemény megjelenítő: logó és lábléc „főoldal” link (alap: https://latinfo.hu/)
+    // 'LATINFO_PUBLIC_HOME_URL' => 'http://localhost/wordpress',
+
     'SITE_NAME' => 'Latinfo.hu',
     'APP_TIMEZONE' => 'Europe/Budapest',
     'APP_DISPLAY_ERRORS' => '1',

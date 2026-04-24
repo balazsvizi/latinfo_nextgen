@@ -69,3 +69,14 @@ if (!function_exists('events_absolute_url')) {
         return $scheme . '://' . $host . $path;
     }
 }
+
+if (!function_exists('events_public_favicon_head_markup')) {
+    /**
+     * Nyilvános esemény oldal favicon (zöld Latinfo-hang, SVG).
+     */
+    function events_public_favicon_head_markup(): string {
+        $href = events_url('assets/favicon-latinfo-event.svg');
+
+        return '<link rel="icon" href="' . h($href) . '" type="image/svg+xml" sizes="any">' . "\n";
+    }
+}

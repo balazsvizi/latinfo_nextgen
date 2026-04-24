@@ -12,8 +12,7 @@ $slug = trim((string) ($_GET['slug'] ?? ''));
 if ($slug === '') {
     http_response_code(404);
     header('Content-Type: text/html; charset=UTF-8');
-    $htmlLang = $lang === 'en' ? 'en' : 'hu';
-    echo '<!DOCTYPE html><html lang="' . h($htmlLang) . '"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . h($T['not_found_title']) . '</title></head><body><p>' . h($T['not_found_body']) . '</p></body></html>';
+    echo events_public_megjelenit_not_found_html($lang);
     exit;
 }
 
@@ -39,8 +38,7 @@ $event = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$event) {
     http_response_code(404);
     header('Content-Type: text/html; charset=UTF-8');
-    $htmlLang = $lang === 'en' ? 'en' : 'hu';
-    echo '<!DOCTYPE html><html lang="' . h($htmlLang) . '"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . h($T['not_found_title']) . '</title></head><body><p>' . h($T['not_found_body']) . '</p></body></html>';
+    echo events_public_megjelenit_not_found_html($lang);
     exit;
 }
 
@@ -93,6 +91,8 @@ $urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $showAdminEdit = isLoggedIn();
 $eventEditUrl = events_url('szerkeszt.php?id=') . (int) ($event['id'] ?? 0);
+$latinfoHomeUrl = LATINFO_PUBLIC_HOME_URL;
+$latinfoLogoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
 
 $jsonLd = [
     '@context' => 'https://schema.org',
@@ -149,7 +149,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="alternate" hreflang="hu" href="<?= h($urlHu) ?>">
     <link rel="alternate" hreflang="en" href="<?= h($urlEn) ?>">
     <link rel="alternate" hreflang="x-default" href="<?= h($urlHu) ?>">
-    <?php require dirname(__DIR__) . '/nextgen/includes/favicon_head.php'; ?>
+    <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
     <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 </head>
@@ -162,6 +162,9 @@ header('Content-Type: text/html; charset=UTF-8');
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </a>
             <?php endif; ?>
+            <a class="event-brand-logo" href="<?= h($latinfoHomeUrl) ?>" title="<?= h($T['logo_home_title']) ?>" aria-label="<?= h($T['logo_home_aria']) ?>">
+                <img src="<?= h($latinfoLogoSrc) ?>" alt="<?= h($T['logo_alt']) ?>" width="180" height="48" decoding="async" fetchpriority="high">
+            </a>
         </div>
         <div class="event-lang-switch" role="navigation" aria-label="<?= h($T['lang_nav']) ?>">
             <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($T['lang_hu']) ?></a>
@@ -276,7 +279,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <footer class="event-public__footer">
         <p class="event-site-line">
-            <a href="<?= h(site_url('/')) ?>"><?= h(SITE_NAME) ?></a>
+            <a href="<?= h($latinfoHomeUrl) ?>"><?= h($T['footer_home_link']) ?></a>
         </p>
     </footer>
 </article>

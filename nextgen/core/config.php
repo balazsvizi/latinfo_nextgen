@@ -113,6 +113,12 @@ if (!defined('EVENTS_PUBLIC_PATH')) {
     define('EVENTS_PUBLIC_PATH', trim((string) cfg_get('EVENTS_PUBLIC_PATH', 'esemenyek', $localConfig), '/'));
 }
 
+/** Nyilvános főoldal (logó / lábléc link a megjelenítőn). Fejlesztői felülírás: config.local.php vagy LATINFO_PUBLIC_HOME_URL env. */
+if (!defined('LATINFO_PUBLIC_HOME_URL')) {
+    $pubHome = rtrim((string) cfg_get('LATINFO_PUBLIC_HOME_URL', 'https://latinfo.hu', $localConfig), '/');
+    define('LATINFO_PUBLIC_HOME_URL', $pubHome !== '' ? $pubHome . '/' : 'https://latinfo.hu/');
+}
+
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra
 

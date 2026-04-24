@@ -52,6 +52,10 @@ function events_public_megjelenit_strings(string $lang): array {
         'not_found_body' => 'Nincs ilyen esemény.',
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Esemény szerkesztése az adminban',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'footer_home_link' => 'Latinfo.hu',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -69,6 +73,10 @@ function events_public_megjelenit_strings(string $lang): array {
         'not_found_body' => 'There is no event with this link.',
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this event in admin',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
+        'footer_home_link' => 'Latinfo.hu',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -161,4 +169,41 @@ function events_public_megjelenit_lang_switch_url(string $slug, string $targetLa
     $q = ['slug' => $slug, 'lang' => $targetLang];
 
     return events_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+}
+
+/**
+ * 404 HTML (slug üres / nincs esemény) — ugyanaz a favicon és logó, mint a normál megjelenítőn.
+ */
+function events_public_megjelenit_not_found_html(string $lang): string {
+    $T = events_public_megjelenit_strings($lang);
+    $htmlLang = $lang === 'en' ? 'en' : 'hu';
+    $home = LATINFO_PUBLIC_HOME_URL;
+    $cssUrl = events_url('assets/event_public.css');
+    $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+    $fav = events_public_favicon_head_markup();
+
+    return '<!DOCTYPE html>
+<html lang="' . h($htmlLang) . '">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#6d8f63">
+    <title>' . h($T['not_found_title']) . '</title>
+    ' . $fav . '
+    <link rel="stylesheet" href="' . h($cssUrl) . '">
+</head>
+<body class="event-public-page">
+<div class="event-shell">
+    <div class="event-shell-toolbar">
+        <div class="event-shell-toolbar__leading">
+            <a class="event-brand-logo" href="' . h($home) . '" title="' . h($T['logo_home_title']) . '" aria-label="' . h($T['logo_home_aria']) . '">
+                <img src="' . h($logoSrc) . '" alt="' . h($T['logo_alt']) . '" width="180" height="48" decoding="async">
+            </a>
+        </div>
+    </div>
+    <p class="event-not-found-msg">' . h($T['not_found_body']) . '</p>
+    <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($T['footer_home_link']) . '</a></p>
+</div>
+</body>
+</html>';
 }
