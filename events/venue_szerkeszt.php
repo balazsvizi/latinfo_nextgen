@@ -21,6 +21,8 @@ if (!$venue) {
     redirect(events_url('venues.php'));
 }
 
+$venuesLinkOptions = events_load_venue_options_excluding($db, $id);
+
 $hiba = '';
 $v = events_venue_row_for_form($venue);
 
@@ -46,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upd = $db->prepare('
                     UPDATE `events_venues` SET
                         `name` = ?, `slug` = ?, `description` = ?,
-                        `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?
+                        `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?, `linked_venue_id` = ?
                     WHERE `id` = ?
                 ');
                 $upd->execute([
@@ -57,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $row['city'] === '' ? null : $row['city'],
                     $row['postal_code'] === '' ? null : $row['postal_code'],
                     $row['address'] === '' ? null : $row['address'],
+                    $row['linked_venue_id'],
                     $id,
                 ]);
                 rendszer_log('helyszín', $id, 'Módosítva', $row['name']);
@@ -77,6 +80,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 <div class="card">
     <h2>Helyszín szerkesztése</h2>
+    <p class="help">Nyilvános oldal: <a href="<?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?>" target="_blank" rel="noopener"><?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?></a></p>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
         <?php require __DIR__ . '/partials/venue_fields.php'; ?>

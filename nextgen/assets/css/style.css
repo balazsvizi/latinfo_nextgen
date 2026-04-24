@@ -1054,6 +1054,16 @@ tr:hover td { background: var(--bg); }
     color: var(--text-muted);
 }
 
+.venues-name-with-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+.venues-td-name .events-icon-action {
+    flex-shrink: 0;
+}
+
 .events-organizers-fieldset,
 .events-venue-address-fieldset {
     border: 1px solid var(--border);

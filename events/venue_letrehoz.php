@@ -16,7 +16,10 @@ $defaults = [
     'city' => '',
     'postal_code' => '',
     'address' => '',
+    'linked_venue_id' => null,
 ];
+
+$venuesLinkOptions = events_load_venue_options($db);
 
 $hiba = '';
 $v = events_venue_row_for_form($defaults);
@@ -29,8 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $ins = $db->prepare('
-                INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`)
-                VALUES (?,?,?,?,?,?,?)
+                INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`, `linked_venue_id`)
+                VALUES (?,?,?,?,?,?,?,?)
             ');
             $ins->execute([
                 $row['name'],
@@ -40,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['city'] === '' ? null : $row['city'],
                 $row['postal_code'] === '' ? null : $row['postal_code'],
                 $row['address'] === '' ? null : $row['address'],
+                $row['linked_venue_id'],
             ]);
             $newId = (int) $db->lastInsertId();
             rendszer_log('helyszín', $newId, 'Létrehozva', $row['name']);

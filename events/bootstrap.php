@@ -32,3 +32,12 @@ if (!function_exists('events_megjelenit_url')) {
         return events_url('megjelenit.php?slug=' . rawurlencode($slug));
     }
 }
+
+if (!function_exists('events_helyszin_megjelenit_url')) {
+    /**
+     * Nyilvános helyszín oldal (slug) – később átírható EVENTS_PUBLIC_PATH mintára.
+     */
+    function events_helyszin_megjelenit_url(string $slug): string {
+        return events_url('helyszin_megjelenit.php?slug=' . rawurlencode($slug));
+    }
+}

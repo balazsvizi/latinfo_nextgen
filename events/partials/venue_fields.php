@@ -1,11 +1,27 @@
 <?php
 declare(strict_types=1);
 /** @var array<string, string> $v űrlap mezők */
+/** @var array<int, string> $venuesLinkOptions kapcsolt helyszín választó (id => név) */
+if (!isset($venuesLinkOptions) || !is_array($venuesLinkOptions)) {
+    $venuesLinkOptions = [];
+}
 ?>
 <div class="form-group">
     <label for="venue_name">Név *</label>
     <input type="text" id="venue_name" name="name" value="<?= h($v['name']) ?>" required maxlength="500">
 </div>
+<?php if ($venuesLinkOptions !== []): ?>
+<div class="form-group">
+    <label for="venue_linked_venue_id">Megjelenített név (kapcsolt helyszín)</label>
+    <select id="venue_linked_venue_id" name="linked_venue_id">
+        <option value="">— nincs —</option>
+        <?php foreach ($venuesLinkOptions as $vid => $vlabel): ?>
+            <option value="<?= (int) $vid ?>" <?= ((string) (int) $vid === (string) ($v['linked_venue_id'] ?? '')) ? 'selected' : '' ?>><?= h($vlabel) ?> (<?= (int) $vid ?>)</option>
+        <?php endforeach; ?>
+    </select>
+    <p class="help">A nyilvános helyszínoldalon ez a név jelenik meg <strong>linkként</strong>, a kiválasztott helyszín megjelenítőjére mutatva.</p>
+</div>
+<?php endif; ?>
 <div class="form-group">
     <label for="venue_slug">Slug (URL)</label>
     <input type="text" id="venue_slug" name="slug" value="<?= h($v['slug']) ?>" maxlength="255" pattern="[a-z0-9\-]*" title="Kisbetű, szám és kötőjel">

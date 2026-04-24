@@ -302,6 +302,19 @@ function events_csv_build_row_values(
                 }
             }
         }
+        if (array_key_exists('linked_venue_id', $values) && $values['linked_venue_id'] !== null) {
+            $lid = (int) $values['linked_venue_id'];
+            if ($lid <= 0) {
+                unset($values['linked_venue_id']);
+            } elseif (!events_normalize_venue_id($db, $lid)) {
+                return [[], 'linked_venue_id: nem létező helyszín.'];
+            } else {
+                $values['linked_venue_id'] = $lid;
+                if ($slugExcludeId !== null && $lid === $slugExcludeId) {
+                    return [[], 'linked_venue_id: nem lehet önmaga.'];
+                }
+            }
+        }
     }
 
     if ($table === 'events_calendar_event_organizers') {

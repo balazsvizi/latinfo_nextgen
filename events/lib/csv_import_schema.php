@@ -58,6 +58,7 @@ function events_csv_import_schema(): array {
                 'city' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'note' => 'Település'],
                 'postal_code' => ['type' => 'string', 'max' => 16, 'nullable' => true, 'note' => 'IRSZ'],
                 'address' => ['type' => 'text', 'nullable' => true, 'note' => 'Utca, házszám'],
+                'linked_venue_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Másik venue ID; nyilvános név linkhez'],
                 'created' => ['type' => 'datetime', 'nullable' => true],
                 'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
             ],

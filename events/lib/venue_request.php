@@ -43,6 +43,19 @@ function events_load_venue_options(PDO $db): array {
     return $out;
 }
 
+/**
+ * Kapcsolt helyszín választóhoz: összes venue, opcionálisan egy ID kihagyása (szerkesztés: ne önmagára mutasson).
+ *
+ * @return array<int, string> id => név
+ */
+function events_load_venue_options_excluding(PDO $db, ?int $excludeId): array {
+    $out = events_load_venue_options($db);
+    if ($excludeId !== null && $excludeId > 0) {
+        unset($out[$excludeId]);
+    }
+    return $out;
+}
+
 function events_normalize_venue_id(PDO $db, ?int $id): ?int {
     if ($id === null || $id <= 0) {
         return null;
@@ -53,7 +66,7 @@ function events_normalize_venue_id(PDO $db, ?int $id): ?int {
 }
 
 /**
- * @param array<string, mixed> $defaults name, slug, description, country, city, postal_code, address
+ * @param array<string, mixed> $defaults name, slug, description, country, city, postal_code, address, linked_venue_id
  * @return array{0: array<string, mixed>, 1: ?string}
  */
 function events_venue_row_from_post(PDO $db, array $defaults, ?int $excludeIdForSlug): array {
@@ -69,6 +82,22 @@ function events_venue_row_from_post(PDO $db, array $defaults, ?int $excludeIdFor
     $row['city'] = trim((string) ($_POST['city'] ?? ''));
     $row['postal_code'] = trim((string) ($_POST['postal_code'] ?? ''));
     $row['address'] = trim((string) ($_POST['address'] ?? ''));
+
+    $linkRaw = trim((string) ($_POST['linked_venue_id'] ?? ''));
+    $row['linked_venue_id'] = $linkRaw === '' ? null : (int) $linkRaw;
+    if ($row['linked_venue_id'] !== null && $row['linked_venue_id'] <= 0) {
+        $row['linked_venue_id'] = null;
+    }
+    if ($row['linked_venue_id'] !== null) {
+        $norm = events_normalize_venue_id($db, $row['linked_venue_id']);
+        if ($norm === null) {
+            return [$row, 'A kapcsolt helyszín nem található.'];
+        }
+        if ($excludeIdForSlug !== null && $norm === $excludeIdForSlug) {
+            return [$row, 'A kapcsolt helyszín nem lehet ugyanaz a rekord, amit szerkesztesz.'];
+        }
+        $row['linked_venue_id'] = $norm;
+    }
 
     if ($row['name'] === '') {
         return [$row, 'A név kötelező.'];
@@ -91,6 +120,11 @@ function events_venue_row_for_form(array $row): array {
     }
     if (($e['country'] ?? '') === '') {
         $e['country'] = events_venue_default_country();
+    }
+    if (array_key_exists('linked_venue_id', $e) && $e['linked_venue_id'] !== null && $e['linked_venue_id'] !== '') {
+        $e['linked_venue_id'] = (string) (int) $e['linked_venue_id'];
+    } else {
+        $e['linked_venue_id'] = '';
     }
     return $e;
 }
