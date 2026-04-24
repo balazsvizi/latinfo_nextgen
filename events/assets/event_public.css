@@ -219,6 +219,25 @@ body.event-public-page {
     margin-top: 1rem;
 }
 
+.event-featured {
+    margin: clamp(1rem, 3vw, 1.5rem) 0 0;
+    padding: 0;
+    border-radius: var(--ev-radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--ev-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 28px rgba(255, 22, 84, 0.12);
+    background: rgba(10, 14, 39, 0.5);
+}
+
+.event-featured__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(52vh, 22rem);
+    object-fit: cover;
+    object-position: center;
+}
+
 .event-badge {
     display: inline-flex;
     align-items: center;

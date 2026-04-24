@@ -3,6 +3,39 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/venue_request.php';
 
+/**
+ * Űrlapról: kiemelt kép URL (üres = null), vagy hibaüzenet.
+ *
+ * @return array{0: ?string, 1: ?string} [érték vagy null, hiba]
+ */
+function events_normalize_featured_image_url(?string $raw): array {
+    $u = trim((string) $raw);
+    if ($u === '') {
+        return [null, null];
+    }
+    if (strlen($u) > 2000) {
+        return [null, 'A kiemelt kép URL legfeljebb 2000 karakter lehet.'];
+    }
+    if (preg_match('/[\s<>"\'{}|\\\\^`\x00-\x1f]/', $u)) {
+        return [null, 'A kiemelt kép URL érvénytelen karaktereket tartalmaz.'];
+    }
+    if (preg_match('#^https?://#i', $u)) {
+        if (filter_var($u, FILTER_VALIDATE_URL)) {
+            return [$u, null];
+        }
+
+        return [null, 'A kiemelt kép URL érvénytelen (ellenőrizd a https:// formátumot).'];
+    }
+    if (preg_match('#^//#', $u)) {
+        return [$u, null];
+    }
+    if (str_starts_with($u, '/')) {
+        return [$u, null];
+    }
+
+    return [null, 'A kiemelt képhez teljes URL-t (https://…) vagy /-rel kezdődő útvonalat adj meg.'];
+}
+
 function events_load_organizer_options(PDO $db): array {
     $rows = $db->query('SELECT id, name FROM events_organizers ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
     $out = [];
@@ -104,6 +137,12 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
     $organizerIds = events_organizer_ids_from_post();
 
+    [$featUrl, $featErr] = events_normalize_featured_image_url((string) ($_POST['event_featured_image_url'] ?? ''));
+    if ($featErr !== null) {
+        return [$row, $featErr, $organizerIds];
+    }
+    $row['event_featured_image_url'] = $featUrl;
+
     if ($row['event_name'] === '') {
         return [$row, 'Az esemény neve kötelező.', $organizerIds];
     }
@@ -137,6 +176,9 @@ function events_row_for_form(array $row): array {
         }
     }
     $e['venue_id'] = isset($e['venue_id']) && $e['venue_id'] !== null ? (string) (int) $e['venue_id'] : '';
+    $e['event_featured_image_url'] = isset($e['event_featured_image_url']) && $e['event_featured_image_url'] !== null
+        ? (string) $e['event_featured_image_url']
+        : '';
     if (!isset($e['organizer_ids']) || !is_array($e['organizer_ids'])) {
         $e['organizer_ids'] = [];
     } else {

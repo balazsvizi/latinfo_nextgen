@@ -84,6 +84,9 @@ try {
 $canonical = events_public_canonical_url($event['event_slug']);
 $title = $event['event_name'];
 $desc = mb_substr(trim(strip_tags($event['event_content'])), 0, 160, 'UTF-8');
+$featuredRaw = trim((string) ($event['event_featured_image_url'] ?? ''));
+$featuredAbsolute = $featuredRaw !== '' ? events_absolute_url($featuredRaw) : '';
+$ogPageUrl = events_absolute_url(events_url('megjelenit.php?slug=' . rawurlencode($slug)));
 $cssUrl = events_url('assets/event_public.css');
 $urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu');
 $urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');
@@ -113,6 +116,9 @@ if ($showVenue && ($venueName !== '' || $venueAddrLine !== '')) {
         $jsonLd['location']['address'] = $venueAddrLine;
     }
 }
+if ($featuredAbsolute !== '') {
+    $jsonLd['image'] = [$featuredAbsolute];
+}
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -124,6 +130,21 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta name="theme-color" content="#0a0e27">
     <title><?= h((string) $title) ?><?= h($T['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<?= h(SITE_NAME) ?>">
+    <meta property="og:title" content="<?= h((string) $title) ?>">
+    <meta property="og:description" content="<?= h($desc) ?>">
+    <meta property="og:url" content="<?= h($ogPageUrl) ?>">
+    <?php if ($featuredAbsolute !== ''): ?>
+        <meta property="og:image" content="<?= h($featuredAbsolute) ?>">
+        <meta property="og:image:alt" content="<?= h((string) $title) ?>">
+    <?php endif; ?>
+    <meta name="twitter:card" content="<?= $featuredAbsolute !== '' ? 'summary_large_image' : 'summary' ?>">
+    <meta name="twitter:title" content="<?= h((string) $title) ?>">
+    <meta name="twitter:description" content="<?= h($desc) ?>">
+    <?php if ($featuredAbsolute !== ''): ?>
+        <meta name="twitter:image" content="<?= h($featuredAbsolute) ?>">
+    <?php endif; ?>
     <link rel="canonical" href="<?= h($canonical) ?>">
     <link rel="alternate" hreflang="hu" href="<?= h($urlHu) ?>">
     <link rel="alternate" hreflang="en" href="<?= h($urlEn) ?>">
@@ -164,6 +185,21 @@ header('Content-Type: text/html; charset=UTF-8');
                     <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>
                 <?php endif; ?>
             </div>
+
+            <?php if ($featuredAbsolute !== ''): ?>
+                <figure class="event-featured">
+                    <img
+                        class="event-featured__img"
+                        src="<?= h($featuredAbsolute) ?>"
+                        alt="<?= h((string) $title) ?>"
+                        width="1200"
+                        height="630"
+                        decoding="async"
+                        fetchpriority="high"
+                        loading="eager"
+                    >
+                </figure>
+            <?php endif; ?>
 
             <?php
             $showMetaBlock = $dateLines !== [] || $showVenue;

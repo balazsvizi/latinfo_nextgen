@@ -21,6 +21,7 @@ $defaults = [
     'event_cost_from' => null,
     'event_cost_to' => null,
     'event_url' => null,
+    'event_featured_image_url' => null,
     'event_latinfohu_partner' => 0,
     'organizer_ids' => [],
     'venue_id' => null,
@@ -42,9 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO `events_calendar_events` (
                     event_name, event_slug, event_content, event_status,
                     event_start, event_end, event_allday,
-                    event_cost_from, event_cost_to, event_url, event_latinfohu_partner,
+                    event_cost_from, event_cost_to, event_url, event_featured_image_url, event_latinfohu_partner,
                     venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
@@ -57,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_cost_from'],
                 $row['event_cost_to'],
                 $row['event_url'],
+                $row['event_featured_image_url'],
                 $row['event_latinfohu_partner'],
                 $row['venue_id'],
             ]);

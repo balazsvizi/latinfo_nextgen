@@ -24,6 +24,7 @@ function events_csv_import_schema(): array {
                 'event_cost_from' => ['type' => 'decimal', 'nullable' => true],
                 'event_cost_to' => ['type' => 'decimal', 'nullable' => true],
                 'event_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
+                'event_featured_image_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true, 'note' => 'Kiemelt kép (https vagy /útvonal)'],
                 'event_latinfohu_partner' => ['type' => 'bool', 'nullable' => false],
                 'venue_id' => ['type' => 'uint', 'nullable' => true],
             ],

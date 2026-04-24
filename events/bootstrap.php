@@ -41,3 +41,31 @@ if (!function_exists('events_helyszin_megjelenit_url')) {
         return events_url('helyszin_megjelenit.php?slug=' . rawurlencode($slug));
     }
 }
+
+if (!function_exists('events_absolute_url')) {
+    /**
+     * Teljes URL (OG, kép src): https://…, //…, vagy site_url szerinti útvonal.
+     */
+    function events_absolute_url(string $pathOrUrl): string {
+        $t = trim($pathOrUrl);
+        if ($t === '') {
+            return '';
+        }
+        if (preg_match('#^https?://#i', $t)) {
+            return $t;
+        }
+        if (str_starts_with($t, '//')) {
+            $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https:' : 'http:';
+
+            return $scheme . $t;
+        }
+        $path = str_starts_with($t, '/') ? $t : site_url($t);
+        if (!str_starts_with($path, '/')) {
+            $path = '/' . ltrim($path, '/');
+        }
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+        $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+
+        return $scheme . '://' . $host . $path;
+    }
+}

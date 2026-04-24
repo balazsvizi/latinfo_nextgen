@@ -166,6 +166,11 @@ if ($orgPickerJson === false) {
     <p class="help">Ha üres, a névből generáljuk. Nyilvános: <?= h(events_public_canonical_url('pelda-slug')) ?> (slug helye)</p>
 </div>
 <div class="form-group">
+    <label for="event_featured_image_url">Kiemelt kép (URL)</label>
+    <input type="text" id="event_featured_image_url" name="event_featured_image_url" value="<?= h($e['event_featured_image_url'] ?? '') ?>" maxlength="2000" placeholder="https://… vagy /útvonal/kép.jpg" spellcheck="false" autocomplete="off">
+    <p class="help">Opcionális. Teljes https URL vagy a honlapon belüli útvonal <code>/</code>-rel. A nyilvános oldalon és a közösségi megosztásoknál (OG) jelenik meg.</p>
+</div>
+<div class="form-group">
     <label for="event_status">Státusz *</label>
     <select id="event_status" name="event_status" required>
         <?php foreach (events_allowed_post_statuses() as $val): ?>
