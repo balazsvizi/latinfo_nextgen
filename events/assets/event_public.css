@@ -58,6 +58,47 @@ body.event-public-page {
     padding: clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 1.5rem) 3rem;
 }
 
+.event-lang-switch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.event-lang-switch__sep {
+    color: var(--ev-ink-soft);
+    font-weight: 400;
+    user-select: none;
+}
+
+.event-lang-switch__link {
+    color: var(--ev-ink-muted);
+    text-decoration: none;
+    padding: 0.2rem 0.45rem;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.event-lang-switch__link:hover {
+    color: var(--ev-accent);
+    background: rgba(196, 92, 38, 0.08);
+}
+
+.event-lang-switch__link.is-active {
+    color: var(--ev-accent);
+    background: var(--ev-accent-soft);
+    pointer-events: none;
+}
+
+.event-lang-switch__link:focus-visible {
+    outline: 2px solid var(--ev-accent);
+    outline-offset: 2px;
+}
+
 .event-public {
     background: var(--ev-bg-elevated);
     border-radius: var(--ev-radius);

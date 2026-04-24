@@ -3,12 +3,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/venue_request.php';
+require_once __DIR__ . '/lib/event_public_lang.php';
+
+$lang = events_public_resolve_megjelenit_lang();
+$T = events_public_megjelenit_strings($lang);
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
 if ($slug === '') {
     http_response_code(404);
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo 'Nincs ilyen esemény.';
+    header('Content-Type: text/html; charset=UTF-8');
+    $htmlLang = $lang === 'en' ? 'en' : 'hu';
+    echo '<!DOCTYPE html><html lang="' . h($htmlLang) . '"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . h($T['not_found_title']) . '</title></head><body><p>' . h($T['not_found_body']) . '</p></body></html>';
     exit;
 }
 
@@ -34,11 +39,8 @@ $event = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$event) {
     http_response_code(404);
     header('Content-Type: text/html; charset=UTF-8');
-    ?><!DOCTYPE html>
-<html lang="hu">
-<head><meta charset="UTF-8"><title>Nincs ilyen esemény</title></head>
-<body><p>Nincs ilyen esemény.</p></body>
-</html><?php
+    $htmlLang = $lang === 'en' ? 'en' : 'hu';
+    echo '<!DOCTYPE html><html lang="' . h($htmlLang) . '"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . h($T['not_found_title']) . '</title></head><body><p>' . h($T['not_found_body']) . '</p></body></html>';
     exit;
 }
 
@@ -58,58 +60,17 @@ $venueLinkedName = trim((string) ($event['venue_linked_name'] ?? ''));
 $venueLinkedSlug = trim((string) ($event['venue_linked_slug'] ?? ''));
 $venueHasLinked = $venueLinkedName !== '' && $venueLinkedSlug !== '';
 
-$huMonths = [
-    1 => 'január', 2 => 'február', 3 => 'március', 4 => 'április', 5 => 'május', 6 => 'június',
-    7 => 'július', 8 => 'augusztus', 9 => 'szeptember', 10 => 'október', 11 => 'november', 12 => 'december',
-];
-$fmtDayHu = static function (int $ts) use ($huMonths): string {
-    return (int) date('Y', $ts) . '. ' . $huMonths[(int) date('n', $ts)] . ' ' . (int) date('j', $ts) . '.';
-};
-
 $allday = !empty($event['event_allday']);
 $tsStart = !empty($event['event_start']) ? strtotime((string) $event['event_start']) : false;
 $tsEnd = !empty($event['event_end']) ? strtotime((string) $event['event_end']) : false;
 
-$dateLines = [];
-if ($tsStart) {
-    if ($tsEnd && date('Y-m-d', $tsStart) === date('Y-m-d', $tsEnd)) {
-        $dateLines[] = $fmtDayHu($tsStart);
-        if (!$allday) {
-            $dateLines[] = date('H:i', $tsStart) . ' – ' . date('H:i', $tsEnd);
-        }
-    } elseif ($tsEnd) {
-        $dateLines[] = $fmtDayHu($tsStart) . ($allday ? '' : ' ' . date('H:i', $tsStart));
-        $dateLines[] = '– ' . $fmtDayHu($tsEnd) . ($allday ? '' : ' ' . date('H:i', $tsEnd));
-    } else {
-        $line = $fmtDayHu($tsStart);
-        if (!$allday) {
-            $line .= ' ' . date('H:i', $tsStart);
-        }
-        $dateLines[] = $line;
-    }
-}
+$dateLines = events_public_megjelenit_date_lines($allday, $tsStart, $tsEnd, $lang);
 
 $cfRaw = $event['event_cost_from'] ?? null;
 $ctRaw = $event['event_cost_to'] ?? null;
 $cf = $cfRaw !== null && $cfRaw !== '' ? (float) $cfRaw : null;
 $ct = $ctRaw !== null && $ctRaw !== '' ? (float) $ctRaw : null;
-$costText = null;
-if ($cf !== null || $ct !== null) {
-    $fmtFt = static function (float $x): string {
-        $decimals = abs($x - round($x)) < 0.000001 ? 0 : 2;
-
-        return number_format($x, $decimals, ',', ' ');
-    };
-    if ($cf !== null && $ct !== null) {
-        $costText = abs($cf - $ct) < 0.000001
-            ? $fmtFt($cf) . ' Ft'
-            : $fmtFt($cf) . ' – ' . $fmtFt((float) $ct) . ' Ft';
-    } elseif ($cf !== null) {
-        $costText = $fmtFt($cf) . ' Ft-tól';
-    } else {
-        $costText = 'Legfeljebb ' . $fmtFt((float) $ct) . ' Ft';
-    }
-}
+$costText = events_public_megjelenit_cost_text($cf, $ct, $lang);
 
 try {
     $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
@@ -124,12 +85,16 @@ $canonical = events_public_canonical_url($event['event_slug']);
 $title = $event['event_name'];
 $desc = mb_substr(trim(strip_tags($event['event_content'])), 0, 160, 'UTF-8');
 $cssUrl = events_url('assets/event_public.css');
+$urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu');
+$urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');
+$htmlLang = $lang === 'en' ? 'en' : 'hu';
 
 $jsonLd = [
     '@context' => 'https://schema.org',
     '@type' => 'Event',
     'name' => (string) $event['event_name'],
     'url' => $canonical,
+    'inLanguage' => $lang === 'en' ? 'en' : 'hu',
 ];
 if (!empty($event['event_start']) && $tsStart) {
     $jsonLd['startDate'] = date('c', $tsStart);
@@ -150,14 +115,17 @@ if ($showVenue && ($venueName !== '' || $venueAddrLine !== '')) {
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="<?= h($htmlLang) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#2d2621">
-    <title><?= h((string) $title) ?> – <?= h(SITE_NAME) ?></title>
+    <title><?= h((string) $title) ?><?= h($T['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">
     <link rel="canonical" href="<?= h($canonical) ?>">
+    <link rel="alternate" hreflang="hu" href="<?= h($urlHu) ?>">
+    <link rel="alternate" hreflang="en" href="<?= h($urlEn) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= h($urlHu) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
@@ -167,17 +135,22 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
+    <div class="event-lang-switch" role="navigation" aria-label="<?= h($T['lang_nav']) ?>">
+        <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($T['lang_hu']) ?></a>
+        <span class="event-lang-switch__sep" aria-hidden="true">|</span>
+        <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en"><?= h($T['lang_en']) ?></a>
+    </div>
 <article class="event-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
-            <p class="event-public__eyebrow">Esemény</p>
+            <p class="event-public__eyebrow"><?= h($T['eyebrow']) ?></p>
             <h1 class="event-public__title"><?= h((string) $event['event_name']) ?></h1>
             <div class="event-public__badges">
                 <?php if ($allday && $tsStart): ?>
-                    <span class="event-badge">Egész napos</span>
+                    <span class="event-badge"><?= h($T['badge_allday']) ?></span>
                 <?php endif; ?>
                 <?php if (!empty($event['event_latinfohu_partner'])): ?>
-                    <span class="event-badge event-badge--accent">Latinfo.hu partner</span>
+                    <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>
                 <?php endif; ?>
             </div>
 
@@ -192,7 +165,7 @@ header('Content-Type: text/html; charset=UTF-8');
                             <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                         </div>
                         <div>
-                            <p class="event-meta__label">Időpont</p>
+                            <p class="event-meta__label"><?= h($T['meta_datetime']) ?></p>
                             <div class="event-meta__value">
                                 <?php foreach ($dateLines as $i => $line): ?>
                                     <?php if ($i > 0): ?>
@@ -212,7 +185,7 @@ header('Content-Type: text/html; charset=UTF-8');
                             <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                         </div>
                         <div>
-                            <p class="event-meta__label">Belépő</p>
+                            <p class="event-meta__label"><?= h($T['meta_price']) ?></p>
                             <p class="event-meta__value"><?= h($costText) ?></p>
                         </div>
                     </div>
@@ -224,7 +197,7 @@ header('Content-Type: text/html; charset=UTF-8');
                             <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         </div>
                         <div>
-                            <p class="event-meta__label">Helyszín</p>
+                            <p class="event-meta__label"><?= h($T['meta_venue']) ?></p>
                             <p class="event-meta__value">
                                 <?php if ($venueSlug !== ''): ?>
                                     <a class="event-venue-name-link" href="<?= h(events_helyszin_megjelenit_url($venueSlug)) ?>"><?= $venueName !== '' ? h($venueName) : h($venueSlug) ?></a>
@@ -249,7 +222,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php if (!empty($event['event_url'])): ?>
                 <div class="event-cta-wrap">
                     <a class="event-cta" href="<?= h((string) $event['event_url']) ?>" target="_blank" rel="noopener noreferrer">
-                        <span>További információ vagy jegy</span>
+                        <span><?= h($T['cta_external']) ?></span>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     </a>
                 </div>
