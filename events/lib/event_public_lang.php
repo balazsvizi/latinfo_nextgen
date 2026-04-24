@@ -50,6 +50,8 @@ function events_public_megjelenit_strings(string $lang): array {
         'cta_external' => 'További információ vagy jegy',
         'not_found_title' => 'Nincs ilyen esemény',
         'not_found_body' => 'Nincs ilyen esemény.',
+        'admin_edit_title' => 'Szerkesztés',
+        'admin_edit_aria' => 'Esemény szerkesztése az adminban',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -65,6 +67,8 @@ function events_public_megjelenit_strings(string $lang): array {
         'cta_external' => 'More information or tickets',
         'not_found_title' => 'Event not found',
         'not_found_body' => 'There is no event with this link.',
+        'admin_edit_title' => 'Edit',
+        'admin_edit_aria' => 'Edit this event in admin',
     ];
 
     return $lang === 'en' ? $en : $hu;
