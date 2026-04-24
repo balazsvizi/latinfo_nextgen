@@ -145,6 +145,19 @@ $delRaw = (string) ($pForm['delimiter'] ?? ';');
 $delVal = in_array($delRaw, [',', ';', 'tab'], true) ? $delRaw : ';';
 $subVal = (string) ($pForm['required_substring'] ?? '');
 
+$purgeSess = $_SESSION['csv_import_purge'] ?? null;
+if (isset($_GET['purge_step']) && (string) $_GET['purge_step'] === 'confirm') {
+    if (!is_array($purgeSess) || ($purgeSess['table'] ?? '') !== $formTargetTable) {
+        unset($_SESSION['csv_import_purge']);
+        redirect(events_url('import_csv.php?target_table=' . rawurlencode($formTargetTable)));
+    }
+}
+$purgeSess = $_SESSION['csv_import_purge'] ?? null;
+$showPurgeConfirm = isset($_GET['purge_step']) && (string) $_GET['purge_step'] === 'confirm'
+    && is_array($purgeSess)
+    && ($purgeSess['table'] ?? '') === $formTargetTable
+    && isset($purgeSess['count'], $purgeSess['token']);
+
 $pageTitle = 'CSV import';
 require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 
@@ -157,6 +170,46 @@ if ($presetsJson === false) {
     <h2>CSV import (események, esemény–szervező, szervezők, helyszínek)</h2>
     <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
+
+    <?php if (!empty($showPurgeConfirm) && is_array($purgeSess)): ?>
+        <?php
+        $purgeTbl = (string) $purgeSess['table'];
+        $purgeCnt = (int) $purgeSess['count'];
+        $purgeLbl = (string) ($schema[$purgeTbl]['label'] ?? $purgeTbl);
+        ?>
+        <div class="alert alert-error csv-import-purge-confirm" role="alert">
+            <p><strong>Figyelem – visszavonhatatlan törlés</strong></p>
+            <p>
+                A kiválasztott cél tábla: <strong><?= h($purgeLbl) ?></strong> (<code><?= h($purgeTbl) ?></code>).<br>
+                Jelenleg <strong><?= $purgeCnt ?></strong> sor van a táblában; a végleges törlés <strong>mindegyiket</strong> eltávolítja.
+            </p>
+            <div class="csv-import-purge-actions" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;">
+                <form method="post" style="display:inline;">
+                    <input type="hidden" name="action" value="purge_execute">
+                    <input type="hidden" name="target_table" value="<?= h($purgeTbl) ?>">
+                    <input type="hidden" name="purge_token" value="<?= h((string) $purgeSess['token']) ?>">
+                    <button type="submit" class="btn btn-danger" data-purge-count="<?= $purgeCnt ?>">Igen, töröld mind a <?= $purgeCnt ?> sort</button>
+                </form>
+                <form method="post" style="display:inline;">
+                    <input type="hidden" name="action" value="purge_cancel">
+                    <input type="hidden" name="target_table" value="<?= h($purgeTbl) ?>">
+                    <button type="submit" class="btn btn-secondary">Mégse</button>
+                </form>
+            </div>
+        </div>
+        <script>
+        (function () {
+            var b = document.querySelector('.csv-import-purge-confirm .btn-danger[data-purge-count]');
+            if (!b) return;
+            b.addEventListener('click', function (e) {
+                var n = b.getAttribute('data-purge-count') || '0';
+                if (!confirm('VÉGLEGES törlés: ' + n + ' sor törlődik. Biztosan folytatod?')) {
+                    e.preventDefault();
+                }
+            });
+        })();
+        </script>
+    <?php endif; ?>
 
     <?php if ($eredmeny !== null): ?>
         <div class="alert alert-success">
@@ -257,6 +310,16 @@ if ($presetsJson === false) {
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
         </div>
     </form>
+
+    <div class="csv-import-purge-panel" style="margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+        <h3 style="margin-top:0;">Teljes tábla ürítése</h3>
+        <p class="help" style="margin-bottom:0.75rem;">A fenti <strong>cél tábla</strong> legördülőben kiválasztott táblából minden sor törlődik (FK-k miatt kapcsolt sorok is törlődhetnek / nullázódhatnak). Először megjelenik a törlendő sorok száma, majd megerősítheted.</p>
+        <form method="post" id="csv-purge-preview-form">
+            <input type="hidden" name="action" value="purge_preview">
+            <input type="hidden" name="target_table" id="purge_preview_target_table" value="">
+            <button type="submit" class="btn btn-danger">Összes sor törlése…</button>
+        </form>
+    </div>
 </div>
 <script>
 (function () {
@@ -347,6 +410,14 @@ if ($presetsJson === false) {
         actionInput.value = 'import';
         fileInput.setAttribute('required', 'required');
     });
+
+    var purgeForm = document.getElementById('csv-purge-preview-form');
+    var purgeTarget = document.getElementById('purge_preview_target_table');
+    if (purgeForm && purgeTarget && sel) {
+        purgeForm.addEventListener('submit', function () {
+            purgeTarget.value = sel.value;
+        });
+    }
 })();
 </script>
 <?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
