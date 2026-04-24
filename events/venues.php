@@ -12,7 +12,7 @@ $f_q = trim((string) ($_GET['f_q'] ?? ''));
 $f_city = trim((string) ($_GET['f_city'] ?? ''));
 $f_id = trim((string) ($_GET['f_id'] ?? ''));
 
-$allowedOrder = ['id', 'name', 'slug', 'city', 'country', 'postal_code', 'modified'];
+$allowedOrder = ['id', 'name', 'cim', 'modified'];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -47,15 +47,12 @@ $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
     'id' => "v.`id` $dirSql",
     'name' => "v.`name` $dirSql",
-    'slug' => "v.`slug` $dirSql",
-    'city' => "v.`city` IS NULL, v.`city` $dirSql",
-    'country' => "v.`country` IS NULL, v.`country` $dirSql",
-    'postal_code' => "v.`postal_code` IS NULL, v.`postal_code` $dirSql",
+    'cim' => "v.`city` IS NULL, v.`city` $dirSql, v.`postal_code` IS NULL, v.`postal_code` $dirSql, v.`address` IS NULL, v.`address` $dirSql",
     'modified' => "v.`modified` $dirSql",
     default => 'v.`name` ASC, v.`id` ASC',
 };
 
-$sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`description`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`modified`
+$sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`modified`
         FROM `events_venues` v
         $whereSql
         ORDER BY $orderSql";
@@ -81,7 +78,7 @@ $excerpt = static function (?string $s, int $max): string {
 };
 
 $hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '';
-$colspan = 9;
+$colspan = 4;
 
 $pageTitle = 'Helyszínek';
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -109,7 +106,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
             <div class="events-filters-grid">
                 <div class="events-filter-field">
                     <label class="events-filter-label" for="v-f-q">Keresés</label>
-                    <input class="events-filter-input" type="search" name="f_q" id="v-f-q" value="<?= h($f_q) ?>" placeholder="Név, slug, település, cím, IRSZ, ország, ID…" autocomplete="off">
+                    <input class="events-filter-input" type="search" name="f_q" id="v-f-q" value="<?= h($f_q) ?>" placeholder="Név, település, utca, IRSZ, ország, ID…" autocomplete="off">
                 </div>
                 <div class="events-filter-field">
                     <label class="events-filter-label" for="v-f-city">Település</label>
@@ -132,12 +129,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <tr>
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Slug', 'slug', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Település', 'city', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('IRSZ', 'postal_code', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Ország', 'country', $order, $dir_param, $get_params) ?></th>
-                        <th>Leírás</th>
-                        <th>Cím</th>
+                        <th><?= sort_th('Cím', 'cim', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Módosítva', 'modified', $order, $dir_param, $get_params) ?></th>
                     </tr>
                 </thead>
@@ -169,12 +161,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         </a>
                                     </span>
                                 </td>
-                                <td><code><?= h((string) $r['slug']) ?></code></td>
-                                <td><?= h((string) ($r['city'] ?? '')) ?></td>
-                                <td><?= h((string) ($r['postal_code'] ?? '')) ?></td>
-                                <td><?= h((string) ($r['country'] ?? '')) ?></td>
-                                <td><?= h($excerpt((string) ($r['description'] ?? ''), 80)) ?></td>
-                                <td><?php $addrOnly = trim((string) ($r['address'] ?? '')); echo $addrOnly !== '' ? h($excerpt($addrOnly, 72)) : '–'; ?></td>
+                                <td><?php
+                                    $line = events_venue_address_summary($r);
+                                    echo $line !== '' ? h($excerpt($line, 200)) : '–';
+                                ?></td>
                                 <td><?= !empty($r['modified']) ? h((string) $r['modified']) : '–' ?></td>
                             </tr>
                         <?php endforeach; ?>

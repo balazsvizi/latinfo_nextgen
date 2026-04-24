@@ -25,7 +25,8 @@ function events_venue_address_summary(array $r): string {
         $parts[] = $street;
     }
     $out = implode(', ', $parts);
-    if ($country !== '' && $country !== events_venue_default_country()) {
+    $def = events_venue_default_country();
+    if ($country !== '' && mb_strtolower($country, 'UTF-8') !== mb_strtolower($def, 'UTF-8')) {
         $out = $out === '' ? $country : $out . ', ' . $country;
     }
     return $out;
