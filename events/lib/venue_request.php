@@ -57,6 +57,18 @@ function events_load_venue_options_excluding(PDO $db, ?int $excludeId): array {
     return $out;
 }
 
+/**
+ * Hány naptár-esemény hivatkozik erre a helyszínre (venue_id).
+ */
+function events_venue_calendar_event_count(PDO $db, int $venueId): int {
+    if ($venueId <= 0) {
+        return 0;
+    }
+    $st = $db->prepare('SELECT COUNT(*) FROM `events_calendar_events` WHERE `venue_id` = ?');
+    $st->execute([$venueId]);
+    return (int) $st->fetchColumn();
+}
+
 function events_normalize_venue_id(PDO $db, ?int $id): ?int {
     if ($id === null || $id <= 0) {
         return null;

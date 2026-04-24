@@ -25,18 +25,24 @@ $venuesLinkOptions = events_load_venue_options_excluding($db, $id);
 
 $hiba = '';
 $v = events_venue_row_for_form($venue);
+$venueEventCount = events_venue_calendar_event_count($db, $id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string) ($_POST['action'] ?? 'save');
     if ($action === 'delete') {
-        try {
-            $db->prepare('UPDATE `events_calendar_events` SET `venue_id` = NULL WHERE `venue_id` = ?')->execute([$id]);
-            $db->prepare('DELETE FROM `events_venues` WHERE `id` = ?')->execute([$id]);
-            rendszer_log('helyszín', $id, 'Törölve', (string) ($venue['name'] ?? ''));
-            flash('success', 'Helyszín törölve.');
-            redirect(events_url('venues.php'));
-        } catch (Throwable $ex) {
-            $hiba = 'Törlési hiba: ' . $ex->getMessage();
+        $usage = events_venue_calendar_event_count($db, $id);
+        if ($usage > 0) {
+            $hiba = 'A helyszín nem törölhető: ' . $usage . ' eseményhez van rendelve. Előbb válaszd le a helyszínt az eseményeken.';
+            $venueEventCount = $usage;
+        } else {
+            try {
+                $db->prepare('DELETE FROM `events_venues` WHERE `id` = ?')->execute([$id]);
+                rendszer_log('helyszín', $id, 'Törölve', (string) ($venue['name'] ?? ''));
+                flash('success', 'Helyszín törölve.');
+                redirect(events_url('venues.php'));
+            } catch (Throwable $ex) {
+                $hiba = 'Törlési hiba: ' . $ex->getMessage();
+            }
         }
     } else {
         [$row, $err] = events_venue_row_from_post($db, $venue, $id);
@@ -82,12 +88,17 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <h2>Helyszín szerkesztése</h2>
     <p class="help">Nyilvános oldal: <a href="<?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?>" target="_blank" rel="noopener"><?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?></a></p>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
+    <?php if ($venueEventCount > 0): ?>
+        <p class="help muted" style="margin-bottom:1rem;">A helyszín nem törölhető: <strong><?= (int) $venueEventCount ?></strong> eseményhez van rendelve. Előbb válaszd le a helyszínt az esemény szerkesztőben.</p>
+    <?php endif; ?>
     <form method="post" class="venue-form venue-form--edit">
         <?php require __DIR__ . '/partials/venue_fields.php'; ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary" name="action" value="save">Mentés</button>
             <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
-            <button type="submit" class="btn btn-danger" style="margin-left:auto" name="action" value="delete" onclick="return confirm('Biztosan törlöd ezt a helyszínt? Az eseményekről leválasztjuk a hivatkozást.');">Törlés</button>
+            <?php if ($venueEventCount === 0): ?>
+                <button type="submit" class="btn btn-danger" style="margin-left:auto" name="action" value="delete" onclick="return confirm('Biztosan törlöd ezt a helyszínt?');">Törlés</button>
+            <?php endif; ?>
         </div>
     </form>
 </div>
