@@ -141,8 +141,8 @@ function events_public_megjelenit_cost_text(?float $cf, ?float $ct, string $lang
     }
     if ($cf !== null) {
         return $lang === 'en'
-            ? 'From ' . $fmtNum($cf) . ' HUF'
-            : $fmtNum($cf) . ' Ft-tól';
+            ? $fmtNum($cf) . ' HUF'
+            : $fmtNum($cf) . ' Ft';
     }
 
     return $lang === 'en'
