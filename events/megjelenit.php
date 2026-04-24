@@ -127,7 +127,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0a0e27">
+    <meta name="theme-color" content="#6d8f63">
     <title><?= h((string) $title) ?><?= h($T['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">
     <meta property="og:type" content="website">
@@ -149,9 +149,6 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="alternate" hreflang="hu" href="<?= h($urlHu) ?>">
     <link rel="alternate" hreflang="en" href="<?= h($urlEn) ?>">
     <link rel="alternate" hreflang="x-default" href="<?= h($urlHu) ?>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Poppins:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
     <?php require dirname(__DIR__) . '/nextgen/includes/favicon_head.php'; ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
     <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
