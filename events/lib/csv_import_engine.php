@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/csv_import_schema.php';
 require_once __DIR__ . '/slug.php';
+require_once __DIR__ . '/venue_request.php';
 
 /**
  * @return array{headers: list<string>, rows: list<array<string,string>>, file_skipped: list<string>}
@@ -273,6 +274,12 @@ function events_csv_build_row_values(
     }
 
     if ($table === 'events_venues') {
+        if (array_key_exists('country', $values)) {
+            $c = trim((string) $values['country']);
+            $values['country'] = $c === '' ? events_venue_default_country() : $c;
+        } elseif (!$forUpdate) {
+            $values['country'] = events_venue_default_country();
+        }
         if (!$forUpdate) {
             $name = (string) ($values['name'] ?? '');
             if ($name === '') {

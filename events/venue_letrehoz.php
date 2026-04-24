@@ -12,6 +12,9 @@ $defaults = [
     'name' => '',
     'slug' => '',
     'description' => '',
+    'country' => events_venue_default_country(),
+    'city' => '',
+    'postal_code' => '',
     'address' => '',
 ];
 
@@ -26,13 +29,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $ins = $db->prepare('
-                INSERT INTO `events_venues` (`name`, `slug`, `description`, `address`)
-                VALUES (?,?,?,?)
+                INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`)
+                VALUES (?,?,?,?,?,?,?)
             ');
             $ins->execute([
                 $row['name'],
                 $row['slug'],
                 $row['description'] === '' ? null : $row['description'],
+                $row['country'],
+                $row['city'] === '' ? null : $row['city'],
+                $row['postal_code'] === '' ? null : $row['postal_code'],
                 $row['address'] === '' ? null : $row['address'],
             ]);
             $newId = (int) $db->lastInsertId();

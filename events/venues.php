@@ -3,10 +3,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once __DIR__ . '/lib/venue_request.php';
 requireLogin();
 
 $db = getDb();
-$stmt = $db->query('SELECT `id`, `name`, `slug`, `description`, `address` FROM `events_venues` ORDER BY `name` ASC, `id` ASC');
+$stmt = $db->query('SELECT `id`, `name`, `slug`, `description`, `country`, `city`, `postal_code`, `address` FROM `events_venues` ORDER BY `name` ASC, `id` ASC');
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $excerpt = static function (?string $s, int $max): string {
@@ -55,7 +56,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                             <td><?= h((string) $r['name']) ?></td>
                             <td><code><?= h((string) $r['slug']) ?></code></td>
                             <td><?= h($excerpt((string) ($r['description'] ?? ''), 120)) ?></td>
-                            <td><?= h($excerpt((string) ($r['address'] ?? ''), 80)) ?></td>
+                            <td><?= h($excerpt(events_venue_address_summary($r), 100)) ?></td>
                             <td><a href="<?= h(events_url('venue_szerkeszt.php?id=') . (int) $r['id']) ?>" class="btn btn-sm btn-secondary">Szerkesztés</a></td>
                         </tr>
                     <?php endforeach; ?>

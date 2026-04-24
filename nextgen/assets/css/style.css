@@ -1054,13 +1054,15 @@ tr:hover td { background: var(--bg); }
     color: var(--text-muted);
 }
 
-.events-organizers-fieldset {
+.events-organizers-fieldset,
+.events-venue-address-fieldset {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 1rem 1.1rem;
     margin-bottom: 1.25rem;
 }
-.events-organizers-fieldset legend {
+.events-organizers-fieldset legend,
+.events-venue-address-fieldset legend {
     font-weight: 600;
     padding: 0 0.35rem;
 }

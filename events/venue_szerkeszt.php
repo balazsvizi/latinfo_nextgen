@@ -45,13 +45,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $upd = $db->prepare('
                     UPDATE `events_venues` SET
-                        `name` = ?, `slug` = ?, `description` = ?, `address` = ?
+                        `name` = ?, `slug` = ?, `description` = ?,
+                        `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?
                     WHERE `id` = ?
                 ');
                 $upd->execute([
                     $row['name'],
                     $row['slug'],
                     $row['description'] === '' ? null : $row['description'],
+                    $row['country'],
+                    $row['city'] === '' ? null : $row['city'],
+                    $row['postal_code'] === '' ? null : $row['postal_code'],
                     $row['address'] === '' ? null : $row['address'],
                     $id,
                 ]);
