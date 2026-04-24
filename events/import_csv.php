@@ -19,7 +19,50 @@ $table = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string) ($_POST['action'] ?? 'import');
     $table = trim((string) ($_POST['target_table'] ?? ''));
-    if (!isset($schema[$table])) {
+
+    if ($action === 'purge_preview') {
+        if (!isset($schema[$table])) {
+            $hiba = 'Érvénytelen cél tábla.';
+        } else {
+            try {
+                $cnt = events_csv_import_count_rows($db, $table);
+                $_SESSION['csv_import_purge'] = [
+                    'table' => $table,
+                    'count' => $cnt,
+                    'token' => bin2hex(random_bytes(16)),
+                ];
+                redirect(events_url('import_csv.php?target_table=' . rawurlencode($table) . '&purge_step=confirm'));
+            } catch (Throwable $e) {
+                $hiba = 'Törlés előnézet hiba: ' . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'purge_cancel') {
+        unset($_SESSION['csv_import_purge']);
+        $redir = events_url('import_csv.php');
+        if (isset($schema[$table])) {
+            $redir .= '?target_table=' . rawurlencode($table);
+        }
+        redirect($redir);
+    } elseif ($action === 'purge_execute') {
+        $token = (string) ($_POST['purge_token'] ?? '');
+        $sess = $_SESSION['csv_import_purge'] ?? null;
+        if (!isset($schema[$table])) {
+            $hiba = 'Érvénytelen cél tábla.';
+        } elseif (!is_array($sess) || ($sess['table'] ?? '') !== $table || !isset($sess['token']) || !hash_equals((string) $sess['token'], $token)) {
+            $hiba = 'A törlési jóváhagyás érvénytelen vagy lejárt. Indítsd újra az „Összes sor törlése…” lépést.';
+            unset($_SESSION['csv_import_purge']);
+        } else {
+            try {
+                $n = events_csv_import_delete_all_rows($db, $table);
+                unset($_SESSION['csv_import_purge']);
+                rendszer_log('csv_import', null, 'CSV tábla teljes ürítés', $table . ': törölve ' . $n . ' sor');
+                flash('success', 'Törölve: ' . $n . ' sor a „' . $table . '” táblából.');
+                redirect(events_url('import_csv.php?target_table=' . rawurlencode($table)));
+            } catch (Throwable $e) {
+                $hiba = 'Törlés hiba: ' . $e->getMessage();
+            }
+        }
+    } elseif (!isset($schema[$table])) {
         $hiba = 'Érvénytelen cél tábla.';
     } else {
         $delimiter = (string) ($_POST['delimiter'] ?? ';');
@@ -54,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } catch (Throwable $e) {
                 $hiba = 'Mentési hiba: ' . $e->getMessage();
             }
-        } else {
+        } elseif ($action === 'import') {
             if (!isset($_FILES['csv_file']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
                 $hiba = 'Válassz CSV fájlt.';
             } elseif (($_FILES['csv_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -81,6 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
+        } else {
+            $hiba = 'Ismeretlen művelet.';
         }
     }
 }

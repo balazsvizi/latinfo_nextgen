@@ -562,3 +562,29 @@ function events_csv_import_run(
 
     return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors, 'skipped' => $skipped];
 }
+
+/**
+ * Engedélyezett CSV cél tábla sorainak száma (teljes törlés előnézethez).
+ */
+function events_csv_import_count_rows(PDO $db, string $table): int {
+    $schema = events_csv_import_schema();
+    if (!isset($schema[$table])) {
+        throw new InvalidArgumentException('Ismeretlen tábla: ' . $table);
+    }
+    $q = events_csv_quote_table($table);
+    return (int) $db->query('SELECT COUNT(*) FROM ' . $q)->fetchColumn();
+}
+
+/**
+ * A cél tábla összes sorának törlése (CSV import „üres tábla”). Visszaadja a törlés előtti sorok számát.
+ */
+function events_csv_import_delete_all_rows(PDO $db, string $table): int {
+    $schema = events_csv_import_schema();
+    if (!isset($schema[$table])) {
+        throw new InvalidArgumentException('Ismeretlen tábla: ' . $table);
+    }
+    $q = events_csv_quote_table($table);
+    $cnt = (int) $db->query('SELECT COUNT(*) FROM ' . $q)->fetchColumn();
+    $db->exec('DELETE FROM ' . $q);
+    return $cnt;
+}
