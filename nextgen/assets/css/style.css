@@ -1227,6 +1227,10 @@ tr:hover td { background: var(--bg); }
     color: var(--text-muted);
     margin-top: 0.35rem;
 }
+/* Helyszín szerkesztés: hosszú név a kártya teljes szélességében */
+.venue-form--edit .form-group--venue-name input {
+    max-width: none;
+}
 .form-hint {
     font-size: 0.875rem;
     color: var(--text-muted);

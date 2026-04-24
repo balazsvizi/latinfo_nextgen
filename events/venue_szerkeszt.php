@@ -82,7 +82,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <h2>Helyszín szerkesztése</h2>
     <p class="help">Nyilvános oldal: <a href="<?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?>" target="_blank" rel="noopener"><?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?></a></p>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <form method="post">
+    <form method="post" class="venue-form venue-form--edit">
         <?php require __DIR__ . '/partials/venue_fields.php'; ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary" name="action" value="save">Mentés</button>
@@ -91,4 +91,28 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </div>
     </form>
 </div>
+<script>
+(function () {
+    var nameEl = document.getElementById('venue_name');
+    var slugEl = document.getElementById('venue_slug');
+    if (!nameEl || !slugEl) return;
+    var ajaxPath = <?= json_encode(events_url('ajax_venue_unique_slug.php'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var excludeId = <?= (int) $id ?>;
+    nameEl.addEventListener('blur', function () {
+        if (slugEl.value.trim() !== '') return;
+        var nm = nameEl.value.trim();
+        if (nm === '') return;
+        var u = new URL(ajaxPath, window.location.href);
+        u.searchParams.set('name', nm);
+        u.searchParams.set('exclude_id', String(excludeId));
+        fetch(u.toString(), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (slugEl.value.trim() !== '') return;
+                if (data && data.ok && typeof data.slug === 'string') slugEl.value = data.slug;
+            })
+            .catch(function () {});
+    });
+})();
+</script>
 <?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
