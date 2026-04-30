@@ -29,6 +29,9 @@ if (!$organizer) {
 
 $orgName = (string) ($organizer['name'] ?? '');
 $eventsList = events_public_organizer_published_events($db, $organizerId, events_public_post_status());
+$partitioned = events_public_organizer_partition_events($eventsList);
+$eventsUpcoming = $partitioned['upcoming'];
+$eventsPast = $partitioned['past'];
 
 $title = $orgName !== '' ? $orgName : ('#' . $organizerId);
 $desc = $lang === 'en'
