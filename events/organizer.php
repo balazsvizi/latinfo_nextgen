@@ -120,7 +120,8 @@ header('Content-Type: text/html; charset=UTF-8');
                                 $relAllday = !empty($rel['event_allday']);
                                 $relTsStart = !empty($rel['event_start']) ? strtotime((string) $rel['event_start']) : false;
                                 $dateDisplay = events_public_event_start_date_time_display($relAllday, $relTsStart, $lang);
-                                $relFeatRaw = trim((string) ($rel['event_featured_image_url'] ?? ''));
+                                $relFeatRaw = trim(html_entity_decode(trim((string) ($rel['event_featured_image_url'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                                $relFeatRaw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $relFeatRaw) ?? $relFeatRaw;
                                 $relFeatAbs = $relFeatRaw !== '' ? events_absolute_url($relFeatRaw) : '';
                                 $venueCity = trim((string) ($rel['venue_city'] ?? ''));
                                 ?>

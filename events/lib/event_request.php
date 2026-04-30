@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/eventpics.php';
+require_once __DIR__ . '/html_security.php';
 
 /**
  * Űrlapról: kiemelt kép URL (üres = null), vagy hibaüzenet.
@@ -11,6 +12,7 @@ require_once __DIR__ . '/eventpics.php';
  */
 function events_normalize_featured_image_url(?string $raw): array {
     $u = trim((string) $raw);
+    $u = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $u) ?? $u;
     if ($u === '') {
         return [null, null];
     }
@@ -20,8 +22,15 @@ function events_normalize_featured_image_url(?string $raw): array {
     if (preg_match('/[\s<>"\'{}|\\\\^`\x00-\x1f]/', $u)) {
         return [null, 'A kiemelt kép URL érvénytelen karaktereket tartalmaz.'];
     }
+    if (!preg_match('#^https?://#i', $u) && !preg_match('#^//#', $u) && !str_starts_with($u, '/')) {
+        $try = 'https://' . $u;
+        $host = parse_url($try, PHP_URL_HOST);
+        if ($host !== null && $host !== '' && (str_contains($host, '.') || strcasecmp($host, 'localhost') === 0)) {
+            $u = $try;
+        }
+    }
     if (preg_match('#^https?://#i', $u)) {
-        if (filter_var($u, FILTER_VALIDATE_URL)) {
+        if (events_http_https_url_is_acceptable($u)) {
             return [$u, null];
         }
 
