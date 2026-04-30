@@ -221,13 +221,13 @@ function events_public_megjelenit_hero_datetime_lines(bool $allday, int|false $t
 }
 
 /**
- * Csak kezdő nap és (ha nem egész napos) kezdő idő — pl. szervező oldal kártyái.
+ * Kezdő dátum + hét napja, opcionálisan kezdő idő — szervező oldal kártyák (ugyanaz a nap-formátum, mint a megjelenítőn).
  */
 function events_public_event_start_date_time_display(bool $allday, int|false $tsStart, string $lang): string {
     if (!$tsStart) {
         return '';
     }
-    $out = events_public_format_event_day($tsStart, $lang);
+    $out = events_public_megjelenit_day_line($tsStart, $lang);
     if (!$allday) {
         $out .= ' ' . date('H:i', $tsStart);
     }
@@ -236,7 +236,7 @@ function events_public_event_start_date_time_display(bool $allday, int|false $ts
 }
 
 /**
- * Megjelenítő hero: dátum + hét napja (a szervezői lista `events_public_format_event_day` változatlan marad).
+ * Dátum + hét napja (megjelenítő hero / szervezői lista közös formátuma).
  */
 function events_public_megjelenit_day_line(int $ts, string $lang): string {
     return events_public_format_event_day($ts, $lang) . ', ' . events_public_format_event_weekday($ts, $lang);
