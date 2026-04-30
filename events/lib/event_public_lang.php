@@ -236,6 +236,13 @@ function events_public_event_start_date_time_display(bool $allday, int|false $ts
 }
 
 /**
+ * Megjelenítő hero: dátum + hét napja (a szervezői lista `events_public_format_event_day` változatlan marad).
+ */
+function events_public_megjelenit_day_line(int $ts, string $lang): string {
+    return events_public_format_event_day($ts, $lang) . ', ' . events_public_format_event_weekday($ts, $lang);
+}
+
+/**
  * @return list<string>
  */
 function events_public_megjelenit_date_lines(bool $allday, int|false $tsStart, int|false $tsEnd, string $lang): array {
@@ -245,15 +252,15 @@ function events_public_megjelenit_date_lines(bool $allday, int|false $tsStart, i
 
     $lines = [];
     if ($tsEnd && date('Y-m-d', $tsStart) === date('Y-m-d', $tsEnd)) {
-        $lines[] = events_public_format_event_day($tsStart, $lang);
+        $lines[] = events_public_megjelenit_day_line($tsStart, $lang);
         if (!$allday) {
             $lines[] = date('H:i', $tsStart) . ' – ' . date('H:i', $tsEnd);
         }
     } elseif ($tsEnd) {
-        $lines[] = events_public_format_event_day($tsStart, $lang) . ($allday ? '' : ' ' . date('H:i', $tsStart));
-        $lines[] = '– ' . events_public_format_event_day($tsEnd, $lang) . ($allday ? '' : ' ' . date('H:i', $tsEnd));
+        $lines[] = events_public_megjelenit_day_line($tsStart, $lang) . ($allday ? '' : ' ' . date('H:i', $tsStart));
+        $lines[] = '– ' . events_public_megjelenit_day_line($tsEnd, $lang) . ($allday ? '' : ' ' . date('H:i', $tsEnd));
     } else {
-        $line = events_public_format_event_day($tsStart, $lang);
+        $line = events_public_megjelenit_day_line($tsStart, $lang);
         if (!$allday) {
             $line .= ' ' . date('H:i', $tsStart);
         }
