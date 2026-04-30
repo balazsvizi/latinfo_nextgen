@@ -1,105 +1,138 @@
+<script src="https://cdn.ckeditor.com/ckeditor5/40.2.0/classic/ckeditor.js"></script>
 <script>
 (function () {
-    function buildEditor(textarea) {
+    function buildEnhancedEditor(textarea) {
         var wrapper = document.createElement('div');
         wrapper.className = 'html-editor';
+        textarea.parentNode.insertBefore(wrapper, textarea);
+        wrapper.appendChild(textarea);
 
         var toolbar = document.createElement('div');
         toolbar.className = 'html-editor-toolbar';
         toolbar.innerHTML = ''
-            + '<button type="button" data-cmd="bold"><strong>B</strong></button>'
-            + '<button type="button" data-cmd="italic"><em>I</em></button>'
-            + '<button type="button" data-cmd="underline"><u>U</u></button>'
-            + '<button type="button" data-cmd="insertUnorderedList">Lista</button>'
-            + '<button type="button" data-cmd="insertOrderedList">Számozás</button>'
-            + '<button type="button" data-cmd="createLink">Link</button>'
-            + '<button type="button" data-cmd="formatBlock" data-value="h2">Címsor</button>'
-            + '<button type="button" data-cmd="formatBlock" data-value="p">Bekezdés</button>'
             + '<button type="button" class="js-toggle-source">Forráskód</button>'
             + '<button type="button" class="js-toggle-preview">Előnézet</button>';
-
-        var editor = document.createElement('div');
-        editor.className = 'html-editor-area';
-        editor.contentEditable = 'true';
-        editor.innerHTML = textarea.value || '';
 
         var preview = document.createElement('div');
         preview.className = 'html-editor-preview';
         preview.hidden = true;
+        var sourceBox = document.createElement('textarea');
+        sourceBox.className = 'html-editor-source';
+        sourceBox.rows = Math.max(parseInt(textarea.getAttribute('rows') || '14', 10), 10);
+        sourceBox.hidden = true;
+        sourceBox.value = textarea.value || '';
 
-        textarea.parentNode.insertBefore(wrapper, textarea);
-        wrapper.appendChild(toolbar);
-        wrapper.appendChild(editor);
-        wrapper.appendChild(preview);
-        wrapper.appendChild(textarea);
-        textarea.classList.add('html-editor-source');
-        textarea.hidden = true;
+        wrapper.insertBefore(toolbar, textarea);
+        wrapper.insertBefore(preview, textarea);
+        wrapper.insertBefore(sourceBox, textarea);
 
         var sourceMode = false;
+        var editorInstance = null;
+        var hasCk = typeof window.ClassicEditor !== 'undefined';
 
-        function syncToSource() {
-            textarea.value = editor.innerHTML;
-        }
-        function syncFromSource() {
-            editor.innerHTML = textarea.value;
+        function syncPreview() {
+            if (sourceMode) {
+                preview.innerHTML = sourceBox.value || '';
+                return;
+            }
+            preview.innerHTML = editorInstance ? editorInstance.getData() : (textarea.value || '');
         }
 
-        editor.addEventListener('input', syncToSource);
+        function setSourceMode(enabled) {
+            sourceMode = enabled;
+            if (sourceMode) {
+                if (editorInstance) {
+                    sourceBox.value = editorInstance.getData();
+                } else {
+                    sourceBox.value = textarea.value || '';
+                }
+                sourceBox.hidden = false;
+            } else {
+                if (editorInstance) {
+                    editorInstance.setData(sourceBox.value || '');
+                } else {
+                    textarea.value = sourceBox.value || '';
+                }
+                sourceBox.hidden = true;
+            }
+            toolbar.querySelector('.js-toggle-source').classList.toggle('is-active', sourceMode);
+            if (sourceMode) {
+                preview.hidden = true;
+                toolbar.querySelector('.js-toggle-preview').classList.remove('is-active');
+            }
+        }
 
         toolbar.addEventListener('click', function (e) {
             var btn = e.target.closest('button');
             if (!btn) return;
-
             if (btn.classList.contains('js-toggle-source')) {
-                sourceMode = !sourceMode;
-                if (sourceMode) {
-                    syncToSource();
-                    textarea.hidden = false;
-                    editor.hidden = true;
-                    preview.hidden = true;
-                    btn.classList.add('is-active');
-                } else {
-                    syncFromSource();
-                    textarea.hidden = true;
-                    editor.hidden = false;
-                    btn.classList.remove('is-active');
-                }
+                setSourceMode(!sourceMode);
                 return;
             }
-
             if (btn.classList.contains('js-toggle-preview')) {
-                if (sourceMode) {
-                    syncFromSource();
+                if (editorInstance && !sourceMode) {
+                    textarea.value = editorInstance.getData();
+                } else if (sourceMode) {
+                    textarea.value = sourceBox.value || '';
                 }
-                syncToSource();
-                preview.innerHTML = textarea.value;
+                syncPreview();
                 preview.hidden = !preview.hidden;
                 btn.classList.toggle('is-active', !preview.hidden);
-                return;
             }
-
-            var cmd = btn.getAttribute('data-cmd');
-            if (!cmd) return;
-            editor.focus();
-            if (cmd === 'createLink') {
-                var url = window.prompt('Link URL:', 'https://');
-                if (url) document.execCommand('createLink', false, url);
-            } else if (cmd === 'formatBlock') {
-                document.execCommand('formatBlock', false, btn.getAttribute('data-value') || 'p');
-            } else {
-                document.execCommand(cmd, false, null);
-            }
-            syncToSource();
         });
 
         var form = textarea.closest('form');
         if (form) {
             form.addEventListener('submit', function () {
-                if (!sourceMode) syncToSource();
+                if (editorInstance && !sourceMode) {
+                    textarea.value = editorInstance.getData();
+                } else if (sourceMode) {
+                    textarea.value = sourceBox.value || '';
+                }
             });
         }
+
+        if (!hasCk) {
+            textarea.hidden = false;
+            return;
+        }
+
+        window.ClassicEditor.create(textarea, {
+            toolbar: [
+                'heading', '|',
+                'bold', 'italic', 'underline', 'strikethrough', '|',
+                'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+                'link', 'blockQuote', 'insertTable', '|',
+                'undo', 'redo'
+            ],
+            heading: {
+                options: [
+                    { model: 'paragraph', title: 'Bekezdés', class: 'ck-heading_paragraph' },
+                    { model: 'heading1', view: 'h2', title: 'Címsor 1', class: 'ck-heading_heading1' },
+                    { model: 'heading2', view: 'h3', title: 'Címsor 2', class: 'ck-heading_heading2' }
+                ]
+            },
+            link: {
+                decorators: {
+                    openInNewTab: {
+                        mode: 'manual',
+                        label: 'Új lapon nyíljon',
+                        defaultValue: true,
+                        attributes: {
+                            target: '_blank',
+                            rel: 'noopener noreferrer'
+                        }
+                    }
+                }
+            }
+        }).then(function (editor) {
+            editorInstance = editor;
+            textarea.hidden = true;
+        }).catch(function () {
+            textarea.hidden = false;
+        });
     }
 
-    document.querySelectorAll('.js-html-editor-source').forEach(buildEditor);
+    document.querySelectorAll('.js-html-editor-source').forEach(buildEnhancedEditor);
 })();
 </script>
