@@ -78,6 +78,15 @@ if ($navZone === 'events') {
                 <li class="nav-item">
                     <a href="<?= h(site_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>
                 </li>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(site_url('events/boritokepek.php')) ?>" class="nav-parent-link">Egyéb</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-egyeb" aria-label="Egyéb almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
+                        <li role="none"><a href="<?= h(site_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
+                    </ul>
+                </li>
                 <?php endif; ?>
                 <?php if ($navZone === 'nextgen'): ?>
                 <li class="nav-item has-submenu">

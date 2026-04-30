@@ -1398,6 +1398,154 @@ dialog.eventpics-modal::backdrop {
         width: 100%;
     }
 }
+
+/* Event admin — borítóképek (boritokepek.php) */
+.events-boritokepek-card .events-list-head {
+    margin-bottom: 1rem;
+}
+.events-boritokepek-filter {
+    margin-bottom: 1.25rem;
+}
+.events-boritokepek-filter label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+.events-boritokepek-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+.events-boritokepek-filter-row input[type="search"] {
+    min-width: min(100%, 14rem);
+    flex: 1;
+    max-width: 22rem;
+}
+.events-boritokepek-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
+    gap: 1.5rem 2rem;
+    align-items: start;
+}
+@media (max-width: 960px) {
+    .events-boritokepek-layout {
+        grid-template-columns: 1fr;
+    }
+}
+.events-boritokepek-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: 0.75rem;
+}
+.events-boritokepek-grid__cell {
+    margin: 0;
+}
+.events-boritokepek-thumb {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem;
+    background: var(--bg-elevated);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.events-boritokepek-thumb:hover {
+    border-color: var(--primary);
+}
+.events-boritokepek-thumb.is-selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+.events-boritokepek-thumb img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: #e8eaef;
+}
+.events-boritokepek-thumb__name {
+    font-size: 0.7rem;
+    line-height: 1.25;
+    word-break: break-all;
+    color: var(--text-muted);
+}
+.events-boritokepek-detail {
+    position: sticky;
+    top: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+}
+.events-boritokepek-detail--empty {
+    opacity: 0.85;
+}
+.events-boritokepek-detail__title {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+.events-boritokepek-detail__figure {
+    margin: 0 0 1rem;
+}
+.events-boritokepek-detail__figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 14rem;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: #f1f3f8;
+}
+.events-boritokepek-detail__fn {
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    word-break: break-all;
+    color: var(--text-muted);
+}
+.events-boritokepek-detail__sub {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+}
+.events-boritokepek-usage {
+    margin: 0 0 1rem;
+    padding-left: 1.15rem;
+    font-size: 0.9rem;
+}
+.events-boritokepek-usage li {
+    margin-bottom: 0.35rem;
+}
+.events-boritokepek-usage__meta {
+    margin-left: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.events-boritokepek-delete {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+.events-boritokepek-delete__warn {
+    font-size: 0.875rem;
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+}
+.events-boritokepek-delete__confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
 @media (max-width: 640px) {
     .events-org-picker-row {
         grid-template-columns: 1fr;

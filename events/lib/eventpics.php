@@ -177,3 +177,81 @@ function events_eventpics_extract_selected_from_featured(?string $featured): str
 
     return $f;
 }
+
+/**
+ * Események, ahol a kiemelt kép URL az adott eventpics fájlra mutat (path alapján).
+ *
+ * @return list<array{id: int, event_name: string, event_slug: string}>
+ */
+function events_events_using_eventpic(PDO $db, string $filename): array {
+    if (!events_eventpics_is_safe_filename($filename)) {
+        return [];
+    }
+    $st = $db->query('
+        SELECT `id`, `event_name`, `event_slug`, `event_featured_image_url`
+        FROM `events_calendar_events`
+        WHERE `event_featured_image_url` IS NOT NULL AND TRIM(`event_featured_image_url`) != \'\'
+          AND `event_featured_image_url` LIKE \'%/events/eventpics/%\'
+    ');
+    if ($st === false) {
+        return [];
+    }
+    $out = [];
+    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+        if (events_eventpics_extract_selected_from_featured((string) ($row['event_featured_image_url'] ?? '')) !== $filename) {
+            continue;
+        }
+        $out[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'event_name' => (string) ($row['event_name'] ?? ''),
+            'event_slug' => (string) ($row['event_slug'] ?? ''),
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * Eventpics fájl törlése: előbb az eseményekről leválasztjuk, majd lemez törlés. Sikertelen unlink esetén rollback.
+ *
+ * @return array{0: bool, 1: string}
+ */
+function events_eventpics_delete_with_clear(PDO $db, string $filename): array {
+    if (!events_eventpics_is_safe_filename($filename)) {
+        return [false, 'Érvénytelen fájlnév.'];
+    }
+    $path = events_eventpics_dir_path() . '/' . $filename;
+    if (!is_file($path)) {
+        return [false, 'A fájl nem található a lemezen.'];
+    }
+    $rows = events_events_using_eventpic($db, $filename);
+    $ids = [];
+    foreach ($rows as $r) {
+        $i = (int) ($r['id'] ?? 0);
+        if ($i > 0) {
+            $ids[] = $i;
+        }
+    }
+    try {
+        $db->beginTransaction();
+        if ($ids !== []) {
+            $ph = implode(',', array_fill(0, count($ids), '?'));
+            $db->prepare("UPDATE `events_calendar_events` SET `event_featured_image_url` = NULL WHERE `id` IN ($ph)")->execute($ids);
+        }
+        if (!@unlink($path)) {
+            $db->rollBack();
+
+            return [false, 'A fájl törlése nem sikerült (fájlrendszer). Az események változatlanok maradtak.'];
+        }
+        $db->commit();
+
+        return [true, 'A kép törölve. ' . count($ids) . ' esemény borító URL-je üres lett.'];
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('events_eventpics_delete_with_clear: ' . $e->getMessage());
+
+        return [false, 'Adatbázis vagy törlési hiba történt.'];
+    }
+}
