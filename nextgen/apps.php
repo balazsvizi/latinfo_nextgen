@@ -20,7 +20,6 @@ try {
 ?>
 <div class="card">
     <h2>Alkalmazások</h2>
-    <p class="card-lead">Válassz területet. A belépés közös (<code>nextgen/login.php</code>); a Finance a <code>nextgen/</code> alatt, az események az <code>events/</code> mappában, a NextGen (Config, Admin, …) a <code>nextgen/config/</code> és <code>nextgen/admin/</code> alatt fut.</p>
 </div>
 
 <div class="dash-cards dash-cards-apps">
