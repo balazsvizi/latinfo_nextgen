@@ -69,7 +69,6 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-events-app" role="menu">
                         <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
                         <li role="none"><a href="<?= h(site_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -85,6 +84,7 @@ if ($navZone === 'events') {
                     </span>
                     <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
                         <li role="none"><a href="<?= h(site_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
+                        <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
                     </ul>
                 </li>
                 <?php endif; ?>
