@@ -173,8 +173,19 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <?php endif; ?>
     </div>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">Esemény képe</h3>
+<div class="card event-featured-card" style="margin-bottom:1rem;">
+    <div class="event-featured-card__head">
+        <h3 class="event-featured-card__title">Esemény képe</h3>
+        <div class="event-featured-card__cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
+            <div class="event-featured-card__figure">
+                <img id="eventpics-summary-img" src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>" alt="Borító előnézet" decoding="async">
+            </div>
+            <div class="event-featured-card__caption">
+                <span id="eventpics-summary-name" class="eventpics-form-summary__name"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
+                <span id="eventpics-summary-source" class="eventpics-form-summary__source help"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
+            </div>
+        </div>
+    </div>
     <div class="form-group">
         <label for="event_featured_image_url">Kiemelt kép URL</label>
         <input type="text" id="event_featured_image_url" name="event_featured_image_url" value="<?= h($e['event_featured_image_url'] ?? '') ?>" maxlength="2000" placeholder="https://… vagy /útvonal/kép.jpg" spellcheck="false" autocomplete="off">
@@ -185,14 +196,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <p class="help">Egy képet adhatsz meg. A választó ablakban tallózhatsz vagy feltölthetsz (egyszerre egy fájl). Ugyanaz a fájl több eseménynél is használható.</p>
         <input type="hidden" name="event_featured_image_pick" id="event_featured_image_pick" value="<?= h($eventpicsPick) ?>">
         <div class="eventpics-form-summary" id="eventpics-form-summary" data-base="<?= h(site_url('events/eventpics/')) ?>">
-            <div class="eventpics-form-summary__inner">
-                <div class="eventpics-form-summary__preview" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
-                    <img id="eventpics-summary-img" src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>" alt="" width="72" height="72">
-                    <div class="eventpics-form-summary__preview-text">
-                        <span id="eventpics-summary-name" class="eventpics-form-summary__name"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
-                        <span id="eventpics-summary-source" class="eventpics-form-summary__source help"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
-                    </div>
-                </div>
+            <div class="eventpics-form-summary__inner eventpics-form-summary__inner--toolbar">
                 <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép (adj meg URL-t vagy válassz eventpics képet).</p>
                 <div class="eventpics-form-summary__actions">
                     <button type="button" class="btn btn-primary" id="eventpics-open-modal">Borítókép választása…</button>
