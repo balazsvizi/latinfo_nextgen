@@ -598,16 +598,6 @@ a.event-meta__card:focus-visible {
     border-bottom: 1px solid var(--li-border);
 }
 
-.event-organizers-hero__label {
-    margin: 0 0 0.5rem;
-    font-family: var(--ev-sans);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--li-text-soft);
-}
-
 .event-org-chips {
     display: flex;
     flex-wrap: wrap;

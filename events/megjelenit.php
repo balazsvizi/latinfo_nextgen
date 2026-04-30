@@ -181,9 +181,8 @@ header('Content-Type: text/html; charset=UTF-8');
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
             <?php if ($eventOrganizers !== []): ?>
-                <div class="event-organizers-hero" aria-labelledby="event-organizers-hero-heading">
-                    <p class="event-organizers-hero__label" id="event-organizers-hero-heading"><?= h($T['section_organizers']) ?></p>
-                    <ul class="event-org-chips event-org-chips--hero" role="list">
+                <div class="event-organizers-hero">
+                    <ul class="event-org-chips event-org-chips--hero" role="list" aria-label="<?= h($T['section_organizers']) ?>">
                         <?php foreach ($eventOrganizers as $org): ?>
                             <li class="event-org-chips__item">
                                 <a class="event-org-chip" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
