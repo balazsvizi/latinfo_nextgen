@@ -66,7 +66,7 @@ $allday = !empty($event['event_allday']);
 $tsStart = !empty($event['event_start']) ? strtotime((string) $event['event_start']) : false;
 $tsEnd = !empty($event['event_end']) ? strtotime((string) $event['event_end']) : false;
 
-$dateLines = events_public_megjelenit_date_lines($allday, $tsStart, $tsEnd, $lang);
+$heroDateLines = events_public_megjelenit_hero_datetime_lines($allday, $tsStart, $tsEnd, $lang);
 
 $cfRaw = $event['event_cost_from'] ?? null;
 $ctRaw = $event['event_cost_to'] ?? null;
@@ -217,32 +217,26 @@ header('Content-Type: text/html; charset=UTF-8');
                 </figure>
             <?php endif; ?>
 
+            <?php if ($heroDateLines !== []): ?>
+                <div class="event-datetime-hero" role="group" aria-label="<?= h($T['meta_datetime']) ?>">
+                    <p class="event-datetime-hero__label"><?= h($T['meta_datetime']) ?></p>
+                    <div class="event-datetime-hero__value">
+                        <?php foreach ($heroDateLines as $i => $line): ?>
+                            <?php if ($i > 0): ?>
+                                <span class="event-datetime-hero__line event-datetime-hero__line--secondary"><?= h($line) ?></span>
+                            <?php else: ?>
+                                <span class="event-datetime-hero__line"><?= h($line) ?></span>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php
-            $showMetaBlock = $dateLines !== [] || $showVenue;
+            $showMetaBlock = $showVenue;
             ?>
             <?php if ($showMetaBlock): ?>
             <div class="event-meta">
-                <?php if ($dateLines !== []): ?>
-                    <div class="event-meta__card event-meta__card--wide">
-                        <div class="event-meta__icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                        </div>
-                        <div>
-                            <p class="event-meta__label"><?= h($T['meta_datetime']) ?></p>
-                            <div class="event-meta__value">
-                                <?php foreach ($dateLines as $i => $line): ?>
-                                    <?php if ($i > 0): ?>
-                                        <span class="event-meta__value--muted event-meta__value-line2"><?= h($line) ?></span>
-                                    <?php else: ?>
-                                        <?= h($line) ?>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($showVenue): ?>
                     <div class="event-meta__card event-meta__card--wide">
                         <div class="event-meta__icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -266,7 +260,6 @@ header('Content-Type: text/html; charset=UTF-8');
                             <?php endif; ?>
                         </div>
                     </div>
-                <?php endif; ?>
             </div>
             <?php endif; ?>
 

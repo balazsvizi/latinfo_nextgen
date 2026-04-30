@@ -153,6 +153,74 @@ function events_public_format_event_day(int $ts, string $lang): string {
 }
 
 /**
+ * Kezdő és vége „egy napnak” számít: ugyanazon naptári napon, vagy a vége a következő napon legkésőbb 06:00-ig.
+ */
+function events_public_event_same_display_day(int $tsStart, int $tsEnd): bool {
+    if ($tsEnd < $tsStart) {
+        return false;
+    }
+    if (date('Y-m-d', $tsStart) === date('Y-m-d', $tsEnd)) {
+        return true;
+    }
+    $startMidnight = strtotime(date('Y-m-d', $tsStart) . ' 00:00:00');
+    $boundary = strtotime('+1 day +6 hours', $startMidnight);
+
+    return $tsEnd <= $boundary;
+}
+
+/**
+ * YYYY.MM.DD. (vezető nullákkal a hónapra és napra).
+ */
+function events_public_megjelenit_ymd_numeric_dots(int $ts): string {
+    return date('Y', $ts) . '.' . date('m', $ts) . '.' . date('d', $ts) . '.';
+}
+
+/**
+ * A hét napja (megjelenítő hero dátumsorhoz).
+ */
+function events_public_format_event_weekday(int $ts, string $lang): string {
+    $w = (int) date('w', $ts);
+    if ($lang === 'en') {
+        $names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        return $names[$w];
+    }
+    $names = ['vasárnap', 'hétfő', 'kedd', 'szerda', 'csütörtök', 'péntek', 'szombat'];
+
+    return $names[$w];
+}
+
+/**
+ * Megjelenítő hero: többnyire egy sor YYYY.MM.DD. nap HH:mm - HH:mm (éjfél utáni „hajnali” vég 06:00-ig egy napnak számít).
+ *
+ * @return list<string>
+ */
+function events_public_megjelenit_hero_datetime_lines(bool $allday, int|false $tsStart, int|false $tsEnd, string $lang): array {
+    if (!$tsStart) {
+        return [];
+    }
+    if ($allday) {
+        return events_public_megjelenit_date_lines(true, $tsStart, $tsEnd, $lang);
+    }
+    if ($tsEnd && events_public_event_same_display_day($tsStart, $tsEnd)) {
+        $line = events_public_megjelenit_ymd_numeric_dots($tsStart)
+            . ' ' . events_public_format_event_weekday($tsStart, $lang)
+            . ' ' . date('H:i', $tsStart) . ' - ' . date('H:i', $tsEnd);
+
+        return [$line];
+    }
+    if (!$tsEnd) {
+        $line = events_public_megjelenit_ymd_numeric_dots($tsStart)
+            . ' ' . events_public_format_event_weekday($tsStart, $lang)
+            . ' ' . date('H:i', $tsStart);
+
+        return [$line];
+    }
+
+    return events_public_megjelenit_date_lines(false, $tsStart, $tsEnd, $lang);
+}
+
+/**
  * Csak kezdő nap és (ha nem egész napos) kezdő idő — pl. szervező oldal kártyái.
  */
 function events_public_event_start_date_time_display(bool $allday, int|false $tsStart, string $lang): string {
