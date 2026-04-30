@@ -1099,6 +1099,52 @@ tr:hover td { background: var(--bg); }
     align-items: stretch;
     margin-top: 0.25rem;
 }
+/* Esemény szerkesztő: választó lista felül, kiválasztottak alatta */
+.events-org-picker-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+.events-org-picker-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem 1rem;
+    align-items: stretch;
+}
+.events-org-picker-row > .events-org-picker-btns {
+    align-self: stretch;
+    justify-content: center;
+}
+@media (max-width: 720px) {
+    .events-form-row-name-slug {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.events-url-open-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+.events-url-open-row input[type="url"] {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+.events-url-open-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+@media (max-width: 640px) {
+    .events-org-picker-row {
+        grid-template-columns: 1fr;
+    }
+    .events-org-picker-row > .events-org-picker-btns {
+        flex-direction: row !important;
+        justify-content: center;
+    }
+}
 /* Középen a +/− a két lista között, oszlop magassága a magasabb (bal) listához igazodik */
 .events-org-picker-grid > .events-org-picker-btns {
     align-self: stretch;

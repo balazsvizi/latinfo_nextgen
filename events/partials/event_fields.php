@@ -42,16 +42,18 @@ if ($venuePickerJson === false) {
             <?php if ($organizers === []): ?>
                 <p class="help">Nincs szervező rögzítve. Előbb <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_organizers">CSV importtal</a> vagy az adatbázisban vegyél fel szervezőket.</p>
             <?php else: ?>
-                <p class="help">Szűrj, majd <strong>+</strong> a felvételhez. Jobb oldalon a kiválasztott lista.</p>
+                <p class="help">Szűrj, majd <strong>+</strong> a felvételhez. A kiválasztottak a lista alatt jelennek meg.</p>
                 <input type="search" id="org-picker-filter" class="events-org-filter" placeholder="Szűrés név vagy ID szerint…" autocomplete="off" spellcheck="false">
-                <div class="events-org-picker-grid">
-                    <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="org-picker-pool">Szervezők</label>
-                        <select id="org-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
-                    </div>
-                    <div class="events-org-picker-btns">
-                        <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-add" title="Hozzáadás">+</button>
-                        <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-remove" title="Eltávolítás">−</button>
+                <div class="events-org-picker-stack">
+                    <div class="events-org-picker-row">
+                        <div class="events-org-picker-col">
+                            <label class="events-org-picker-label" for="org-picker-pool">Szervezők</label>
+                            <select id="org-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
+                        </div>
+                        <div class="events-org-picker-btns">
+                            <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-add" title="Hozzáadás">+</button>
+                            <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-remove" title="Eltávolítás">−</button>
+                        </div>
                     </div>
                     <div class="events-org-picker-col">
                         <label class="events-org-picker-label" for="org-picker-selected">Kiválasztott</label>
@@ -72,14 +74,16 @@ if ($venuePickerJson === false) {
                 <input type="hidden" name="venue_id" value="">
             <?php else: ?>
                 <input type="search" id="venue-picker-filter" class="events-org-filter" placeholder="Helyszín keresése..." autocomplete="off" spellcheck="false">
-                <div class="events-org-picker-grid" style="grid-template-columns:1fr auto 1fr;">
-                    <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="venue-picker-pool">Helyszínek</label>
-                        <select id="venue-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
-                    </div>
-                    <div class="events-org-picker-btns">
-                        <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-add" title="Kiválasztás">+</button>
-                        <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-remove" title="Törlés">−</button>
+                <div class="events-org-picker-stack">
+                    <div class="events-org-picker-row">
+                        <div class="events-org-picker-col">
+                            <label class="events-org-picker-label" for="venue-picker-pool">Helyszínek</label>
+                            <select id="venue-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
+                        </div>
+                        <div class="events-org-picker-btns">
+                            <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-add" title="Kiválasztás">+</button>
+                            <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-remove" title="Törlés">−</button>
+                        </div>
                     </div>
                     <div class="events-org-picker-col">
                         <label class="events-org-picker-label" for="venue-picker-selected">Kiválasztott</label>
@@ -95,7 +99,7 @@ if ($venuePickerJson === false) {
 </div>
 <div class="card" style="margin-bottom:1rem;">
     <h3 style="margin-top:0;">Alap adatok</h3>
-    <div class="form-row" style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;">
+    <div class="form-row events-form-row-name-slug" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(10rem,14rem);gap:1rem;">
         <div class="form-group">
             <label for="event_name">Esemény neve *</label>
             <input type="text" id="event_name" name="event_name" value="<?= h($e['event_name']) ?>" required maxlength="500">
@@ -155,13 +159,12 @@ if ($venuePickerJson === false) {
 </div>
 <div class="card" style="margin-bottom:1rem;">
     <h3 style="margin-top:0;">További információ</h3>
-<div class="form-group">
-    <label for="event_url">További információ</label>
-    <input type="url" id="event_url" name="event_url" value="<?= h($e['event_url']) ?>" maxlength="2000" placeholder="https://">
-    <?php if (!empty($e['event_url'])): ?>
-        <p class="help" style="margin-top:0.5rem;"><a class="btn btn-secondary" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a></p>
-    <?php endif; ?>
-</div>
+    <div class="form-group events-url-open-row">
+        <input type="url" id="event_url" name="event_url" value="<?= h($e['event_url']) ?>" maxlength="2000" placeholder="https://" aria-label="További információ URL">
+        <?php if (!empty($e['event_url'])): ?>
+            <a class="btn btn-secondary events-url-open-btn" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a>
+        <?php endif; ?>
+    </div>
 </div>
 <div class="card" style="margin-bottom:1rem;">
     <h3 style="margin-top:0;">Esemény képe</h3>
