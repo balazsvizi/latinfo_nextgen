@@ -220,7 +220,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
             <?php if ($heroDateLines !== []): ?>
                 <div class="event-datetime-hero" role="group" aria-label="<?= h($T['meta_datetime']) ?>">
-                    <p class="event-datetime-hero__label"><?= h($T['meta_datetime']) ?></p>
+                    <p class="event-datetime-hero__label event-datetime-hero__label--cal" aria-hidden="true">🗓️</p>
                     <div class="event-datetime-hero__value">
                         <?php foreach ($heroDateLines as $i => $line): ?>
                             <?php if ($i > 0): ?>

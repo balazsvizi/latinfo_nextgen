@@ -276,6 +276,13 @@ body.event-public-page {
     color: var(--li-text-soft);
 }
 
+.event-datetime-hero__label--cal {
+    font-size: 1.05rem;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
 .event-datetime-hero__value {
     display: flex;
     flex-direction: column;
