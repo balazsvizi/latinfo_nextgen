@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/csv_import_schema.php';
 require_once __DIR__ . '/slug.php';
 require_once __DIR__ . '/venue_request.php';
+require_once __DIR__ . '/event_request.php';
 
 /**
  * @return array{headers: list<string>, rows: list<array<string,string>>, file_skipped: list<string>}
@@ -26,9 +27,7 @@ function events_csv_read_file(string $path, string $delimiter): array {
     $headers = [];
     foreach ($first as $i => $h) {
         $key = trim((string) $h);
-        if ($i === 0) {
-            $key = preg_replace('/^\xEF\xBB\xBF/', '', $key) ?? $key;
-        }
+        $key = preg_replace('/^\xEF\xBB\xBF/', '', $key) ?? $key;
         $headers[] = $key;
     }
     $rows = [];
@@ -246,6 +245,18 @@ function events_csv_build_row_values(
                 return [[], $urlErr . ' (event_url)'];
             }
             $values['event_url'] = $safeUrl;
+        }
+        if (array_key_exists('event_featured_image_url', $values)) {
+            $feat = $values['event_featured_image_url'];
+            if ($feat === null || $feat === '') {
+                $values['event_featured_image_url'] = null;
+            } else {
+                [$featNorm, $featErr] = events_normalize_featured_image_url((string) $feat);
+                if ($featErr !== null) {
+                    return [[], $featErr . ' (event_featured_image_url)'];
+                }
+                $values['event_featured_image_url'] = $featNorm;
+            }
         }
         if (!$forUpdate) {
             $name = (string) ($values['event_name'] ?? '');
