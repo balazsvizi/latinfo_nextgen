@@ -31,6 +31,9 @@ $hiba = '';
 $e = events_row_for_form($defaults);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_validate('events_letrehoz')) {
+        $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
+    } else {
     [$row, $err, $organizerIds] = events_row_from_request($db, $defaults, null);
     if ($err !== null) {
         $hiba = $err;
@@ -72,10 +75,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($db->inTransaction()) {
                 $db->rollBack();
             }
-            $hiba = 'Mentési hiba: ' . $ex->getMessage();
+            error_log('events letrehoz mentesi hiba: ' . $ex->getMessage());
+            $hiba = 'Mentési hiba történt. Kérlek próbáld újra.';
             $e = events_row_for_form($row);
             $e['organizer_ids'] = $organizerIds;
         }
+    }
     }
 }
 
@@ -87,6 +92,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <h2>Új esemény</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('events_letrehoz') ?>
         <?php require __DIR__ . '/partials/event_fields.php'; ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>

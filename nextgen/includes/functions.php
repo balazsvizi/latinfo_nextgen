@@ -215,6 +215,34 @@ function flash(string $key, ?string $msg = null): ?string {
 }
 
 /**
+ * CSRF token kezelők.
+ */
+function csrf_token(string $scope = 'default'): string {
+    if (!isset($_SESSION['_csrf']) || !is_array($_SESSION['_csrf'])) {
+        $_SESSION['_csrf'] = [];
+    }
+    if (empty($_SESSION['_csrf'][$scope]) || !is_string($_SESSION['_csrf'][$scope])) {
+        $_SESSION['_csrf'][$scope] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['_csrf'][$scope];
+}
+
+function csrf_input(string $scope = 'default', string $field = '_csrf'): string {
+    return '<input type="hidden" name="' . h($field) . '" value="' . h(csrf_token($scope)) . '">';
+}
+
+function csrf_validate(string $scope = 'default', string $field = '_csrf'): bool {
+    $token = (string) ($_POST[$field] ?? '');
+    $expected = (string) ($_SESSION['_csrf'][$scope] ?? '');
+    if ($token === '' || $expected === '') {
+        return false;
+    }
+
+    return hash_equals($expected, $token);
+}
+
+/**
  * Számla státusz feliratok
  */
 function szamla_statusz_label(string $s): string {

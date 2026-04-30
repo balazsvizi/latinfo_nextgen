@@ -81,7 +81,8 @@ try {
 
 $canonical = events_public_canonical_url($event['event_slug']);
 $title = $event['event_name'];
-$desc = mb_substr(trim(strip_tags($event['event_content'])), 0, 160, 'UTF-8');
+$safeEventContent = events_sanitize_html_fragment((string) ($event['event_content'] ?? ''));
+$desc = mb_substr(trim(strip_tags($safeEventContent)), 0, 160, 'UTF-8');
 $featuredRaw = trim((string) ($event['event_featured_image_url'] ?? ''));
 $featuredAbsolute = $featuredRaw !== '' ? events_absolute_url($featuredRaw) : '';
 $ogPageUrl = events_absolute_url(events_url('megjelenit.php?slug=' . rawurlencode($slug)));
@@ -267,7 +268,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <div class="event-public__content">
         <div class="event-body">
-            <?= $event['event_content'] ?>
+            <?= $safeEventContent ?>
         </div>
         <?php if ($costText !== null): ?>
             <aside class="event-public__admission" aria-label="<?= h($T['meta_price']) ?>">

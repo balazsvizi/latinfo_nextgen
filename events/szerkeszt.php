@@ -29,6 +29,9 @@ $hiba = '';
 $e = events_row_for_form($event);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_validate('events_szerkeszt')) {
+        $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
+    } else {
     [$row, $err, $organizerIds] = events_row_from_request($db, $event, $id);
     if ($err !== null) {
         $hiba = $err;
@@ -70,10 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($db->inTransaction()) {
                 $db->rollBack();
             }
-            $hiba = 'Mentési hiba: ' . $ex->getMessage();
+            error_log('events szerkeszt mentesi hiba: ' . $ex->getMessage());
+            $hiba = 'Mentési hiba történt. Kérlek próbáld újra.';
             $e = events_row_for_form($row);
             $e['organizer_ids'] = $organizerIds;
         }
+    }
     }
 }
 
@@ -97,6 +102,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <p class="help"><?php if (($e['event_status'] ?? '') === events_public_post_status()): ?>Nyilvános előnézet: <a href="<?= h(events_megjelenit_url($e['event_slug'])) ?>" target="_blank" rel="noopener"><?= h(events_megjelenit_url($e['event_slug'])) ?></a><?php else: ?>Nyilvános oldal csak „Közzétéve” (publish) státusznál érhető el.<?php endif; ?></p>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('events_szerkeszt') ?>
         <?php require __DIR__ . '/partials/event_fields.php'; ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>

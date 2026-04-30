@@ -35,7 +35,8 @@ if (!$venue) {
 
 $canonical = events_helyszin_megjelenit_url((string) $venue['slug']);
 $title = (string) $venue['name'];
-$descRaw = trim(strip_tags((string) ($venue['description'] ?? '')));
+$safeVenueBody = events_sanitize_html_fragment((string) ($venue['description'] ?? ''));
+$descRaw = trim(strip_tags($safeVenueBody));
 $desc = function_exists('mb_substr') ? mb_substr($descRaw, 0, 160, 'UTF-8') : substr($descRaw, 0, 160);
 $addrLine = events_venue_address_summary($venue);
 
@@ -67,7 +68,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <p class="venue-address-line"><?= nl2br(h($addrLine)) ?></p>
         <?php endif; ?>
     </header>
-    <?php $body = trim((string) ($venue['description'] ?? '')); ?>
+    <?php $body = trim($safeVenueBody); ?>
     <?php if ($body !== ''): ?>
         <div class="venue-body">
             <?= $body ?>

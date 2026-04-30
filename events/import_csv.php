@@ -17,6 +17,9 @@ $eredmeny = null;
 $table = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_validate('events_import_csv')) {
+        $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
+    } else {
     $action = (string) ($_POST['action'] ?? 'import');
     $table = trim((string) ($_POST['target_table'] ?? ''));
 
@@ -33,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
                 redirect(events_url('import_csv.php?target_table=' . rawurlencode($table) . '&purge_step=confirm'));
             } catch (Throwable $e) {
-                $hiba = 'Törlés előnézet hiba: ' . $e->getMessage();
+                error_log('events import_csv purge_preview hiba: ' . $e->getMessage());
+                $hiba = 'Törlés előnézet hiba történt.';
             }
         }
     } elseif ($action === 'purge_cancel') {
@@ -59,7 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash('success', 'Törölve: ' . $n . ' sor a „' . $table . '” táblából.');
                 redirect(events_url('import_csv.php?target_table=' . rawurlencode($table)));
             } catch (Throwable $e) {
-                $hiba = 'Törlés hiba: ' . $e->getMessage();
+                error_log('events import_csv purge_execute hiba: ' . $e->getMessage());
+                $hiba = 'Törlés hiba történt.';
             }
         }
     } elseif (!isset($schema[$table])) {
@@ -95,7 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash('success', 'Import beállítások elmentve ehhez a cél táblához: ' . $table . '.');
                 redirect(events_url('import_csv.php?target_table=' . rawurlencode($table)));
             } catch (Throwable $e) {
-                $hiba = 'Mentési hiba: ' . $e->getMessage();
+                error_log('events import_csv save_preset hiba: ' . $e->getMessage());
+                $hiba = 'Mentési hiba történt.';
             }
         } elseif ($action === 'import') {
             if (!isset($_FILES['csv_file']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
@@ -127,6 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $hiba = 'Ismeretlen művelet.';
         }
+    }
     }
 }
 
@@ -185,12 +192,14 @@ if ($presetsJson === false) {
             </p>
             <div class="csv-import-purge-actions" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;">
                 <form method="post" style="display:inline;">
+                    <?= csrf_input('events_import_csv') ?>
                     <input type="hidden" name="action" value="purge_execute">
                     <input type="hidden" name="target_table" value="<?= h($purgeTbl) ?>">
                     <input type="hidden" name="purge_token" value="<?= h((string) $purgeSess['token']) ?>">
                     <button type="submit" class="btn btn-danger" data-purge-count="<?= $purgeCnt ?>">Igen, töröld mind a <?= $purgeCnt ?> sort</button>
                 </form>
                 <form method="post" style="display:inline;">
+                    <?= csrf_input('events_import_csv') ?>
                     <input type="hidden" name="action" value="purge_cancel">
                     <input type="hidden" name="target_table" value="<?= h($purgeTbl) ?>">
                     <button type="submit" class="btn btn-secondary">Mégse</button>
@@ -244,6 +253,7 @@ if ($presetsJson === false) {
     <?php endif; ?>
 
     <form method="post" enctype="multipart/form-data" class="csv-import-form" id="csv-import-form">
+        <?= csrf_input('events_import_csv') ?>
         <input type="hidden" name="action" id="import_action" value="import">
         <div class="form-group">
             <label for="target_table">Cél tábla *</label>
@@ -315,6 +325,7 @@ if ($presetsJson === false) {
         <h3 style="margin-top:0;">Teljes tábla ürítése</h3>
         <p class="help" style="margin-bottom:0.75rem;">A fenti <strong>cél tábla</strong> legördülőben kiválasztott táblából minden sor törlődik (FK-k miatt kapcsolt sorok is törlődhetnek / nullázódhatnak). Először megjelenik a törlendő sorok száma, majd megerősítheted.</p>
         <form method="post" id="csv-purge-preview-form">
+            <?= csrf_input('events_import_csv') ?>
             <input type="hidden" name="action" value="purge_preview">
             <input type="hidden" name="target_table" id="purge_preview_target_table" value="">
             <button type="submit" class="btn btn-danger">Összes sor törlése…</button>

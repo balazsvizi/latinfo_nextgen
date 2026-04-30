@@ -25,6 +25,9 @@ $hiba = '';
 $v = events_venue_row_for_form($defaults);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_validate('venue_letrehoz')) {
+        $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
+    } else {
     [$row, $err] = events_venue_row_from_post($db, $defaults, null);
     if ($err !== null) {
         $hiba = $err;
@@ -50,9 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', 'Helyszín létrehozva.');
             redirect(events_url('venue_szerkeszt.php?id=') . $newId);
         } catch (Throwable $ex) {
-            $hiba = 'Mentési hiba: ' . $ex->getMessage();
+            error_log('events venue_letrehoz mentesi hiba: ' . $ex->getMessage());
+            $hiba = 'Mentési hiba történt. Kérlek próbáld újra.';
             $v = events_venue_row_for_form($row);
         }
+    }
     }
 }
 
@@ -64,6 +69,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <h2>Új helyszín</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('venue_letrehoz') ?>
         <?php require __DIR__ . '/partials/venue_fields.php'; ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>

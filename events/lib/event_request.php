@@ -106,7 +106,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $row['event_name'] = trim((string) ($_POST['event_name'] ?? ''));
     $slugInput = trim((string) ($_POST['event_slug'] ?? ''));
     $row['event_slug'] = $slugInput !== '' ? events_slugify($slugInput) : '';
-    $row['event_content'] = (string) ($_POST['event_content'] ?? '');
+    $row['event_content'] = events_sanitize_html_fragment((string) ($_POST['event_content'] ?? ''));
     $st = (string) ($_POST['event_status'] ?? events_default_post_status());
     if (!events_is_allowed_post_status($st)) {
         $st = events_default_post_status();
@@ -125,17 +125,18 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $ct = trim((string) ($_POST['event_cost_to'] ?? ''));
     $row['event_cost_from'] = $cf === '' ? null : (float) str_replace(',', '.', $cf);
     $row['event_cost_to'] = $ct === '' ? null : (float) str_replace(',', '.', $ct);
-    $row['event_url'] = trim((string) ($_POST['event_url'] ?? ''));
-    if ($row['event_url'] === '') {
-        $row['event_url'] = null;
+    $organizerIds = events_organizer_ids_from_post();
+
+    [$eventUrl, $eventUrlErr] = events_normalize_safe_url((string) ($_POST['event_url'] ?? ''), true);
+    if ($eventUrlErr !== null) {
+        return [$row, $eventUrlErr, $organizerIds];
     }
+    $row['event_url'] = $eventUrl;
     $row['event_latinfohu_partner'] = isset($_POST['event_latinfohu_partner']) ? 1 : 0;
 
     $vid = trim((string) ($_POST['venue_id'] ?? ''));
     $rawVid = $vid === '' ? null : (int) $vid;
     $row['venue_id'] = events_normalize_venue_id($db, $rawVid);
-
-    $organizerIds = events_organizer_ids_from_post();
 
     [$featUrl, $featErr] = events_normalize_featured_image_url((string) ($_POST['event_featured_image_url'] ?? ''));
     if ($featErr !== null) {

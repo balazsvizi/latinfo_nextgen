@@ -28,52 +28,58 @@ $v = events_venue_row_for_form($venue);
 $venueEventCount = events_venue_calendar_event_count($db, $id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = (string) ($_POST['action'] ?? 'save');
-    if ($action === 'delete') {
-        $usage = events_venue_calendar_event_count($db, $id);
-        if ($usage > 0) {
-            $hiba = 'A helyszín nem törölhető: ' . $usage . ' eseményhez van rendelve. Előbb válaszd le a helyszínt az eseményeken.';
-            $venueEventCount = $usage;
-        } else {
-            try {
-                $db->prepare('DELETE FROM `events_venues` WHERE `id` = ?')->execute([$id]);
-                rendszer_log('helyszín', $id, 'Törölve', (string) ($venue['name'] ?? ''));
-                flash('success', 'Helyszín törölve.');
-                redirect(events_url('venues.php'));
-            } catch (Throwable $ex) {
-                $hiba = 'Törlési hiba: ' . $ex->getMessage();
-            }
-        }
+    if (!csrf_validate('venue_szerkeszt')) {
+        $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-        [$row, $err] = events_venue_row_from_post($db, $venue, $id);
-        if ($err !== null) {
-            $hiba = $err;
-            $v = events_venue_row_for_form($row);
+        $action = (string) ($_POST['action'] ?? 'save');
+        if ($action === 'delete') {
+            $usage = events_venue_calendar_event_count($db, $id);
+            if ($usage > 0) {
+                $hiba = 'A helyszín nem törölhető: ' . $usage . ' eseményhez van rendelve. Előbb válaszd le a helyszínt az eseményeken.';
+                $venueEventCount = $usage;
+            } else {
+                try {
+                    $db->prepare('DELETE FROM `events_venues` WHERE `id` = ?')->execute([$id]);
+                    rendszer_log('helyszín', $id, 'Törölve', (string) ($venue['name'] ?? ''));
+                    flash('success', 'Helyszín törölve.');
+                    redirect(events_url('venues.php'));
+                } catch (Throwable $ex) {
+                    error_log('events venue_szerkeszt torlesi hiba: ' . $ex->getMessage());
+                    $hiba = 'Törlési hiba történt. Kérlek próbáld újra.';
+                }
+            }
         } else {
-            try {
-                $upd = $db->prepare('
-                    UPDATE `events_venues` SET
-                        `name` = ?, `slug` = ?, `description` = ?,
-                        `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?, `linked_venue_id` = ?
-                    WHERE `id` = ?
-                ');
-                $upd->execute([
-                    $row['name'],
-                    $row['slug'],
-                    $row['description'] === '' ? null : $row['description'],
-                    $row['country'],
-                    $row['city'] === '' ? null : $row['city'],
-                    $row['postal_code'] === '' ? null : $row['postal_code'],
-                    $row['address'] === '' ? null : $row['address'],
-                    $row['linked_venue_id'],
-                    $id,
-                ]);
-                rendszer_log('helyszín', $id, 'Módosítva', $row['name']);
-                flash('success', 'Mentve.');
-                redirect(events_url('venue_szerkeszt.php?id=') . $id);
-            } catch (Throwable $ex) {
-                $hiba = 'Mentési hiba: ' . $ex->getMessage();
+            [$row, $err] = events_venue_row_from_post($db, $venue, $id);
+            if ($err !== null) {
+                $hiba = $err;
                 $v = events_venue_row_for_form($row);
+            } else {
+                try {
+                    $upd = $db->prepare('
+                        UPDATE `events_venues` SET
+                            `name` = ?, `slug` = ?, `description` = ?,
+                            `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?, `linked_venue_id` = ?
+                        WHERE `id` = ?
+                    ');
+                    $upd->execute([
+                        $row['name'],
+                        $row['slug'],
+                        $row['description'] === '' ? null : $row['description'],
+                        $row['country'],
+                        $row['city'] === '' ? null : $row['city'],
+                        $row['postal_code'] === '' ? null : $row['postal_code'],
+                        $row['address'] === '' ? null : $row['address'],
+                        $row['linked_venue_id'],
+                        $id,
+                    ]);
+                    rendszer_log('helyszín', $id, 'Módosítva', $row['name']);
+                    flash('success', 'Mentve.');
+                    redirect(events_url('venue_szerkeszt.php?id=') . $id);
+                } catch (Throwable $ex) {
+                    error_log('events venue_szerkeszt mentesi hiba: ' . $ex->getMessage());
+                    $hiba = 'Mentési hiba történt. Kérlek próbáld újra.';
+                    $v = events_venue_row_for_form($row);
+                }
             }
         }
     }
@@ -92,6 +98,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         <p class="help muted" style="margin-bottom:1rem;">A helyszín nem törölhető: <strong><?= (int) $venueEventCount ?></strong> eseményhez van rendelve. Előbb válaszd le a helyszínt az esemény szerkesztőben.</p>
     <?php endif; ?>
     <form method="post" class="venue-form venue-form--edit">
+        <?= csrf_input('venue_szerkeszt') ?>
         <?php require __DIR__ . '/partials/venue_fields.php'; ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary" name="action" value="save">Mentés</button>

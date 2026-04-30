@@ -237,6 +237,16 @@ function events_csv_build_row_values(
     }
 
     if ($table === 'events_calendar_events') {
+        if (array_key_exists('event_content', $values) && $values['event_content'] !== null) {
+            $values['event_content'] = events_sanitize_html_fragment((string) $values['event_content']);
+        }
+        if (array_key_exists('event_url', $values)) {
+            [$safeUrl, $urlErr] = events_normalize_safe_url((string) ($values['event_url'] ?? ''), true);
+            if ($urlErr !== null) {
+                return [[], $urlErr . ' (event_url)'];
+            }
+            $values['event_url'] = $safeUrl;
+        }
         if (!$forUpdate) {
             $name = (string) ($values['event_name'] ?? '');
             if ($name === '') {
@@ -274,6 +284,9 @@ function events_csv_build_row_values(
     }
 
     if ($table === 'events_venues') {
+        if (array_key_exists('description', $values) && $values['description'] !== null) {
+            $values['description'] = events_sanitize_html_fragment((string) $values['description']);
+        }
         if (array_key_exists('country', $values)) {
             $c = trim((string) $values['country']);
             $values['country'] = $c === '' ? events_venue_default_country() : $c;

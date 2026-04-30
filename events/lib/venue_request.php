@@ -87,7 +87,7 @@ function events_venue_row_from_post(PDO $db, array $defaults, ?int $excludeIdFor
     $row['name'] = trim((string) ($_POST['name'] ?? ''));
     $slugInput = trim((string) ($_POST['slug'] ?? ''));
     $row['slug'] = $slugInput !== '' ? events_slugify($slugInput) : '';
-    $row['description'] = (string) ($_POST['description'] ?? '');
+    $row['description'] = events_sanitize_html_fragment((string) ($_POST['description'] ?? ''));
     $row['country'] = trim((string) ($_POST['country'] ?? ''));
     if ($row['country'] === '') {
         $row['country'] = events_venue_default_country();
