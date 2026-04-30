@@ -85,36 +85,24 @@ function events_eventpics_normalize_selected(?string $selected): array {
 }
 
 /**
- * @param array<string,mixed>|null $file
- * @return array{0:?string,1:?string} [webPath, error]
+ * Fájl mentése az eventpics mappába (MIME + méret ellenőrzés).
+ *
+ * @return array{0:?string,1:?string} [webPath pl. /events/eventpics/a.jpg, hiba]
  */
-function events_eventpics_handle_upload(?array $file): array {
-    if (!is_array($file) || !isset($file['error'])) {
-        return [null, null];
+function events_eventpics_store_from_tmp(string $tmpPath, string $origName, int $sizeBytes, bool $useMoveUploadedFile): array {
+    if ($tmpPath === '' || !is_readable($tmpPath)) {
+        return [null, 'A feltöltött fájl nem olvasható.'];
     }
-    $err = (int) $file['error'];
-    if ($err === UPLOAD_ERR_NO_FILE) {
-        return [null, null];
-    }
-    if ($err !== UPLOAD_ERR_OK) {
-        return [null, 'A borítókép feltöltése sikertelen.'];
-    }
-    $tmp = (string) ($file['tmp_name'] ?? '');
-    if ($tmp === '' || !is_uploaded_file($tmp)) {
-        return [null, 'A borítókép feltöltése érvénytelen.'];
-    }
-    $size = (int) ($file['size'] ?? 0);
-    if ($size <= 0 || $size > 8 * 1024 * 1024) {
+    if ($sizeBytes <= 0 || $sizeBytes > 8 * 1024 * 1024) {
         return [null, 'A borítókép maximum 8 MB lehet.'];
     }
     if (!events_eventpics_ensure_dir()) {
         return [null, 'Az eventpics mappa nem létrehozható.'];
     }
 
-    $origName = (string) ($file['name'] ?? '');
     $origExt = strtolower((string) pathinfo($origName, PATHINFO_EXTENSION));
     $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = (string) $finfo->file($tmp);
+    $mime = (string) $finfo->file($tmpPath);
     $map = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
@@ -136,11 +124,39 @@ function events_eventpics_handle_upload(?array $file): array {
     }
     $name = $base . '-' . date('Ymd-His') . '-' . bin2hex(random_bytes(3)) . '.' . $ext;
     $target = events_eventpics_dir_path() . '/' . $name;
-    if (!@move_uploaded_file($tmp, $target)) {
+    if ($useMoveUploadedFile) {
+        if (!@move_uploaded_file($tmpPath, $target)) {
+            return [null, 'A borítókép mentése nem sikerült.'];
+        }
+    } elseif (!@copy($tmpPath, $target)) {
         return [null, 'A borítókép mentése nem sikerült.'];
     }
 
     return [events_eventpics_build_web_path($name), null];
+}
+
+/**
+ * @param array<string,mixed>|null $file
+ * @return array{0:?string,1:?string} [webPath, error]
+ */
+function events_eventpics_handle_upload(?array $file): array {
+    if (!is_array($file) || !isset($file['error'])) {
+        return [null, null];
+    }
+    $err = (int) $file['error'];
+    if ($err === UPLOAD_ERR_NO_FILE) {
+        return [null, null];
+    }
+    if ($err !== UPLOAD_ERR_OK) {
+        return [null, 'A borítókép feltöltése sikertelen.'];
+    }
+    $tmp = (string) ($file['tmp_name'] ?? '');
+    if ($tmp === '' || !is_uploaded_file($tmp)) {
+        return [null, 'A borítókép feltöltése érvénytelen.'];
+    }
+    $size = (int) ($file['size'] ?? 0);
+
+    return events_eventpics_store_from_tmp($tmp, (string) ($file['name'] ?? ''), $size, true);
 }
 
 function events_eventpics_extract_selected_from_featured(?string $featured): string {

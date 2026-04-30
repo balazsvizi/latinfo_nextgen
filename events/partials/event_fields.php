@@ -33,6 +33,7 @@ $venuePickerJson = json_encode(
 if ($venuePickerJson === false) {
     $venuePickerJson = '{"all":[],"selected":0}';
 }
+$eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
 ?>
 <div class="card" style="margin-bottom:1rem;">
     <h3 style="margin-top:0;">Szervezők és helyszín</h3>
@@ -173,19 +174,39 @@ if ($venuePickerJson === false) {
         <input type="text" id="event_featured_image_url" name="event_featured_image_url" value="<?= h($e['event_featured_image_url'] ?? '') ?>" maxlength="2000" placeholder="https://… vagy /útvonal/kép.jpg" spellcheck="false" autocomplete="off">
         <p class="help">Ha URL meg van adva, ez elsőbbséget élvez az eventpics képpel szemben.</p>
     </div>
-    <div class="form-group">
-        <label for="event_featured_image_upload">Kép feltöltése az eventpics mappába</label>
-        <input type="file" id="event_featured_image_upload" name="event_featured_image_upload" accept="image/jpeg,image/png,image/webp,image/gif">
-    </div>
-    <div class="form-group">
-        <label for="event_featured_image_pick">Választás az eventpics mappából</label>
-        <select id="event_featured_image_pick" name="event_featured_image_pick">
-            <option value="">— nincs —</option>
-            <?php foreach ($eventpicFiles as $picFile): ?>
-                <option value="<?= h($picFile) ?>" <?= ($picFile === (string) ($e['event_featured_image_pick'] ?? '')) ? 'selected' : '' ?>><?= h($picFile) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <p class="help">Egy kép több eseménynél is használható.</p>
+    <div class="form-group eventpics-media-block">
+        <label>Médiagaléria (eventpics)</label>
+        <p class="help">Válassz egy képet a rácsból, vagy tölts fel újat (ide húzhatod is). Ugyanaz a fájl több eseménynél is használható.</p>
+        <input type="hidden" name="event_featured_image_pick" id="event_featured_image_pick" value="<?= h($eventpicsPick) ?>">
+        <div
+            class="eventpics-browser"
+            id="eventpics-browser"
+            data-upload-url="<?= h(events_url('ajax_eventpic_upload.php')) ?>"
+            data-csrf="<?= h(csrf_token('events_eventpics')) ?>"
+        >
+            <div class="eventpics-toolbar">
+                <button type="button" class="btn btn-primary" id="eventpics-btn-upload">Fájlok feltöltése</button>
+                <button type="button" class="btn btn-secondary" id="eventpics-btn-clear">Nincs kiválasztott kép</button>
+                <input type="search" class="eventpics-filter" id="eventpics-filter" placeholder="Szűrés fájlnév szerint…" autocomplete="off" spellcheck="false">
+                <span class="eventpics-msg" id="eventpics-msg" role="status"></span>
+            </div>
+            <div class="eventpics-dropzone" id="eventpics-dropzone" tabindex="-1">
+                <div class="eventpics-grid" id="eventpics-grid">
+                    <?php foreach ($eventpicFiles as $picFile): ?>
+                        <button
+                            type="button"
+                            class="eventpics-item<?= $picFile === $eventpicsPick ? ' is-selected' : '' ?>"
+                            data-filename="<?= h($picFile) ?>"
+                            title="<?= h($picFile) ?>"
+                        >
+                            <span class="eventpics-item-check" aria-hidden="true"></span>
+                            <img src="<?= h(site_url('events/eventpics/' . rawurlencode($picFile))) ?>" alt="" loading="lazy" width="150" height="150">
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <input type="file" id="eventpics-file-input" class="visually-hidden" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+        </div>
     </div>
 </div>
 <script type="application/json" id="events-org-picker-json"><?= $orgPickerJson ?></script>
@@ -323,5 +344,163 @@ if ($venuePickerJson === false) {
         renderVenueSelected();
         renderVenuePool();
     }
+})();
+
+(function () {
+    var root = document.getElementById('eventpics-browser');
+    var hidden = document.getElementById('event_featured_image_pick');
+    var grid = document.getElementById('eventpics-grid');
+    var btnUp = document.getElementById('eventpics-btn-upload');
+    var btnClear = document.getElementById('eventpics-btn-clear');
+    var fileInp = document.getElementById('eventpics-file-input');
+    var drop = document.getElementById('eventpics-dropzone');
+    var msg = document.getElementById('eventpics-msg');
+    var filter = document.getElementById('eventpics-filter');
+    if (!root || !hidden || !grid || !btnUp || !btnClear || !fileInp || !drop) return;
+
+    function setMsg(t, isErr) {
+        if (!msg) return;
+        msg.textContent = t || '';
+        msg.classList.toggle('eventpics-msg--error', !!isErr);
+    }
+
+    function syncSelectionClasses() {
+        var cur = (hidden.value || '').trim();
+        grid.querySelectorAll('.eventpics-item').forEach(function (b) {
+            b.classList.toggle('is-selected', cur !== '' && b.getAttribute('data-filename') === cur);
+        });
+    }
+
+    function selectFilename(name) {
+        hidden.value = name || '';
+        syncSelectionClasses();
+    }
+
+    function hasThumb(filename) {
+        return Array.prototype.some.call(grid.querySelectorAll('.eventpics-item'), function (b) {
+            return (b.getAttribute('data-filename') || '') === filename;
+        });
+    }
+
+    function addThumb(filename, imgUrl) {
+        if (hasThumb(filename)) return;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'eventpics-item';
+        btn.setAttribute('data-filename', filename);
+        btn.title = filename;
+        var chk = document.createElement('span');
+        chk.className = 'eventpics-item-check';
+        chk.setAttribute('aria-hidden', 'true');
+        var img = document.createElement('img');
+        img.src = imgUrl;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.width = 150;
+        img.height = 150;
+        btn.appendChild(chk);
+        btn.appendChild(img);
+        grid.insertBefore(btn, grid.firstChild);
+        bindItem(btn);
+    }
+
+    function bindItem(btn) {
+        btn.addEventListener('click', function () {
+            var fn = btn.getAttribute('data-filename') || '';
+            if (!fn) return;
+            if (hidden.value === fn) {
+                selectFilename('');
+            } else {
+                selectFilename(fn);
+            }
+        });
+    }
+    grid.querySelectorAll('.eventpics-item').forEach(bindItem);
+
+    btnClear.addEventListener('click', function () {
+        selectFilename('');
+        setMsg('');
+    });
+
+    btnUp.addEventListener('click', function () { fileInp.click(); });
+
+    if (filter) {
+        filter.addEventListener('input', function () {
+            var q = (filter.value || '').trim().toLowerCase();
+            grid.querySelectorAll('.eventpics-item').forEach(function (b) {
+                var fn = (b.getAttribute('data-filename') || '').toLowerCase();
+                b.style.display = !q || fn.indexOf(q) !== -1 ? '' : 'none';
+            });
+        });
+    }
+
+    function uploadFiles(files) {
+        var list = files ? Array.prototype.slice.call(files) : [];
+        if (!list.length) return;
+        var url = root.getAttribute('data-upload-url') || '';
+        var csrf = root.getAttribute('data-csrf') || '';
+        if (!url || !csrf) {
+            setMsg('Hiányzik a feltöltési beállítás.', true);
+            return;
+        }
+        var total = list.length;
+        setMsg('Feltöltés…', false);
+        function runOne() {
+            if (!list.length) {
+                setMsg(total > 1 ? total + ' fájl feltöltve.' : 'Feltöltve.', false);
+                fileInp.value = '';
+                if (filter) {
+                    filter.value = '';
+                    filter.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                return;
+            }
+            var f = list.shift();
+            var fd = new FormData();
+            fd.append('file', f, f.name);
+            fd.append('eventpics_csrf', csrf);
+            fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data || !data.ok) {
+                        setMsg((data && data.error) ? data.error : 'Feltöltés sikertelen.', true);
+                        runOne();
+                        return;
+                    }
+                    addThumb(data.filename, data.thumb_url || data.url);
+                    selectFilename(data.filename);
+                    runOne();
+                })
+                .catch(function () {
+                    setMsg('Hálózati hiba a feltöltéskor.', true);
+                    runOne();
+                });
+        }
+        runOne();
+    }
+
+    fileInp.addEventListener('change', function () {
+        uploadFiles(fileInp.files);
+    });
+
+    ;['dragenter', 'dragover'].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            drop.classList.add('eventpics-dropzone--active');
+        });
+    });
+    ;['dragleave', 'drop'].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            drop.classList.remove('eventpics-dropzone--active');
+        });
+    });
+    drop.addEventListener('drop', function (e) {
+        var dt = e.dataTransfer;
+        if (!dt || !dt.files || !dt.files.length) return;
+        uploadFiles(dt.files);
+    });
 })();
 </script>
