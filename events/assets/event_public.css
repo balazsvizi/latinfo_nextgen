@@ -266,27 +266,27 @@ body.event-public-page {
     margin-top: 0.85rem;
 }
 
-.event-datetime-hero__label {
-    margin: 0 0 0.35rem;
-    font-family: var(--ev-sans);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--li-text-soft);
+.event-datetime-hero__row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.45rem;
 }
 
-.event-datetime-hero__label--cal {
+.event-datetime-hero__cal {
+    flex-shrink: 0;
+    margin: 0;
+    font-family: var(--ev-sans);
     font-size: 1.05rem;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
+    line-height: 1.45;
 }
 
 .event-datetime-hero__value {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
 }
 
 .event-datetime-hero__line {
@@ -395,6 +395,10 @@ a.event-meta__card:focus-visible {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--li-green-muted);
+}
+
+.event-meta__card--wide > div:not(.event-meta__icon) > .event-meta__value:first-of-type {
+    margin-top: 0;
 }
 
 .event-meta__value {

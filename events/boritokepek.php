@@ -70,7 +70,13 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 <div class="card events-boritokepek-card">
     <div class="events-list-head">
         <h2 class="events-list-title">Borítóképek</h2>
-        <p class="help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Válassz egy képet a használat és törlés kezeléséhez. A törlés a fájlt eltávolítja a lemezről, és az érintett eseményeknél üresre állítja a kiemelt kép URL mezőt.</p>
+        <p class="help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Válassz egy képet a használat és törlés kezeléséhez. Új képet is feltölthetsz; siker után megnyílik a részletek nézet. A törlés a fájlt eltávolítja a lemezről, és az érintett eseményeknél üresre állítja a kiemelt kép URL mezőt.</p>
+    </div>
+
+    <div class="events-boritokepek-upload">
+        <input type="file" id="boritokepek-upload-input" class="visually-hidden" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Új borítókép kiválasztása feltöltéshez">
+        <button type="button" class="btn btn-primary" id="boritokepek-upload-btn">Új kép feltöltése</button>
+        <span class="events-boritokepek-upload__msg help" id="boritokepek-upload-msg" role="status"></span>
     </div>
 
     <form method="get" action="<?= h(events_url('boritokepek.php')) ?>" class="events-boritokepek-filter" role="search">
@@ -157,5 +163,47 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+(function () {
+    var btn = document.getElementById('boritokepek-upload-btn');
+    var inp = document.getElementById('boritokepek-upload-input');
+    var msg = document.getElementById('boritokepek-upload-msg');
+    var uploadUrl = <?= json_encode(events_url('ajax_eventpic_upload.php'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var listUrl = <?= json_encode(events_url('boritokepek.php'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var csrf = <?= json_encode(csrf_token('events_eventpics'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    if (!btn || !inp) return;
+    btn.addEventListener('click', function () {
+        if (msg) msg.textContent = '';
+        inp.click();
+    });
+    inp.addEventListener('change', function () {
+        if (!inp.files || !inp.files.length) return;
+        var f = inp.files[0];
+        var fd = new FormData();
+        fd.append('file', f, f.name);
+        fd.append('eventpics_csrf', csrf);
+        if (msg) msg.textContent = 'Feltöltés…';
+        fetch(uploadUrl, { method: 'POST', body: fd, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    if (msg) msg.textContent = (data && data.error) ? data.error : 'Feltöltés sikertelen.';
+                    return;
+                }
+                var fn = data.filename ? encodeURIComponent(data.filename) : '';
+                if (fn) {
+                    window.location.href = listUrl + '?file=' + fn;
+                    return;
+                }
+                if (msg) msg.textContent = 'Válasz hibás formátumú.';
+            })
+            .catch(function () {
+                if (msg) msg.textContent = 'Hálózati hiba a feltöltéskor.';
+            });
+        inp.value = '';
+    });
+})();
+</script>
 
 <?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>

@@ -192,16 +192,12 @@ header('Content-Type: text/html; charset=UTF-8');
                     </ul>
                 </div>
             <?php endif; ?>
-            <p class="event-public__eyebrow"><?= h($T['eyebrow']) ?></p>
             <h1 class="event-public__title"><?= h((string) $event['event_name']) ?></h1>
-            <div class="event-public__badges">
-                <?php if ($allday && $tsStart): ?>
-                    <span class="event-badge"><?= h($T['badge_allday']) ?></span>
-                <?php endif; ?>
-                <?php if (!empty($event['event_latinfohu_partner'])): ?>
+            <?php if (!empty($event['event_latinfohu_partner'])): ?>
+                <div class="event-public__badges">
                     <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>
-                <?php endif; ?>
-            </div>
+                </div>
+            <?php endif; ?>
 
             <?php if ($featuredAbsolute !== ''): ?>
                 <figure class="event-featured">
@@ -220,15 +216,17 @@ header('Content-Type: text/html; charset=UTF-8');
 
             <?php if ($heroDateLines !== []): ?>
                 <div class="event-datetime-hero" role="group" aria-label="<?= h($T['meta_datetime']) ?>">
-                    <p class="event-datetime-hero__label event-datetime-hero__label--cal" aria-hidden="true">🗓️</p>
-                    <div class="event-datetime-hero__value">
-                        <?php foreach ($heroDateLines as $i => $line): ?>
-                            <?php if ($i > 0): ?>
-                                <span class="event-datetime-hero__line event-datetime-hero__line--secondary"><?= h($line) ?></span>
-                            <?php else: ?>
-                                <span class="event-datetime-hero__line"><?= h($line) ?></span>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
+                    <div class="event-datetime-hero__row">
+                        <span class="event-datetime-hero__cal" aria-hidden="true">🗓️</span>
+                        <div class="event-datetime-hero__value">
+                            <?php foreach ($heroDateLines as $i => $line): ?>
+                                <?php if ($i > 0): ?>
+                                    <span class="event-datetime-hero__line event-datetime-hero__line--secondary"><?= h($line) ?></span>
+                                <?php else: ?>
+                                    <span class="event-datetime-hero__line"><?= h($line) ?></span>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -238,12 +236,11 @@ header('Content-Type: text/html; charset=UTF-8');
             ?>
             <?php if ($showMetaBlock): ?>
             <div class="event-meta">
-                    <div class="event-meta__card event-meta__card--wide">
+                    <div class="event-meta__card event-meta__card--wide" role="group" aria-label="<?= h($T['meta_venue']) ?>">
                         <div class="event-meta__icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         </div>
                         <div>
-                            <p class="event-meta__label"><?= h($T['meta_venue']) ?></p>
                             <p class="event-meta__value">
                                 <?php if ($venueSlug !== ''): ?>
                                     <a class="event-venue-name-link" href="<?= h(events_helyszin_megjelenit_url($venueSlug)) ?>"><?= $venueName !== '' ? h($venueName) : h($venueSlug) ?></a>

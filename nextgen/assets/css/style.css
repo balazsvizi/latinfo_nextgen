@@ -1403,6 +1403,21 @@ dialog.eventpics-modal::backdrop {
 .events-boritokepek-card .events-list-head {
     margin-bottom: 1rem;
 }
+.events-boritokepek-upload {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+    margin-bottom: 1.25rem;
+    padding: 0.85rem 1rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+}
+.events-boritokepek-upload__msg {
+    margin: 0;
+    min-height: 1.25em;
+}
 .events-boritokepek-filter {
     margin-bottom: 1.25rem;
 }
