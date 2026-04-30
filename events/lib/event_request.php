@@ -133,7 +133,11 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         return [$row, $eventUrlErr, $organizerIds];
     }
     $row['event_url'] = $eventUrl;
-    $row['event_latinfohu_partner'] = isset($_POST['event_latinfohu_partner']) ? 1 : 0;
+    if (array_key_exists('event_latinfohu_partner', $_POST)) {
+        $row['event_latinfohu_partner'] = isset($_POST['event_latinfohu_partner']) ? 1 : 0;
+    } else {
+        $row['event_latinfohu_partner'] = !empty($defaults['event_latinfohu_partner']) ? 1 : 0;
+    }
 
     $vid = trim((string) ($_POST['venue_id'] ?? ''));
     $rawVid = $vid === '' ? null : (int) $vid;
