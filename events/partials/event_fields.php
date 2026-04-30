@@ -175,9 +175,31 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
         <p class="help">Ha URL meg van adva, ez elsőbbséget élvez az eventpics képpel szemben.</p>
     </div>
     <div class="form-group eventpics-media-block">
-        <label>Médiagaléria (eventpics)</label>
-        <p class="help">Válassz egy képet a rácsból, vagy tölts fel újat (ide húzhatod is). Ugyanaz a fájl több eseménynél is használható.</p>
+        <label>Eventpics borítókép</label>
+        <p class="help">Egy képet adhatsz meg. A választó ablakban tallózhatsz vagy feltölthetsz (egyszerre egy fájl). Ugyanaz a fájl több eseménynél is használható.</p>
         <input type="hidden" name="event_featured_image_pick" id="event_featured_image_pick" value="<?= h($eventpicsPick) ?>">
+        <div class="eventpics-form-summary" id="eventpics-form-summary" data-base="<?= h(site_url('events/eventpics/')) ?>">
+            <div class="eventpics-form-summary__inner">
+                <div class="eventpics-form-summary__preview" id="eventpics-summary-preview"<?= $eventpicsPick === '' ? ' hidden' : '' ?>>
+                    <img id="eventpics-summary-img" src="<?= $eventpicsPick !== '' ? h(site_url('events/eventpics/' . rawurlencode($eventpicsPick))) : '' ?>" alt="" width="72" height="72">
+                    <span id="eventpics-summary-name" class="eventpics-form-summary__name"><?= $eventpicsPick !== '' ? h($eventpicsPick) : '' ?></span>
+                </div>
+                <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $eventpicsPick !== '' ? ' hidden' : '' ?>>Nincs eventpics borítókép kiválasztva.</p>
+                <div class="eventpics-form-summary__actions">
+                    <button type="button" class="btn btn-primary" id="eventpics-open-modal">Borítókép választása…</button>
+                    <button type="button" class="btn btn-secondary" id="eventpics-clear-main">Törlés</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<dialog class="eventpics-modal" id="eventpics-modal" aria-labelledby="eventpics-modal-title">
+    <div class="eventpics-modal__inner">
+        <header class="eventpics-modal__header">
+            <h2 class="eventpics-modal__title" id="eventpics-modal-title">Borítókép kiválasztása</h2>
+            <button type="button" class="eventpics-modal__x" id="eventpics-modal-x" aria-label="Bezárás">×</button>
+        </header>
         <div
             class="eventpics-browser"
             id="eventpics-browser"
@@ -185,8 +207,8 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
             data-csrf="<?= h(csrf_token('events_eventpics')) ?>"
         >
             <div class="eventpics-toolbar">
-                <button type="button" class="btn btn-primary" id="eventpics-btn-upload">Fájlok feltöltése</button>
-                <button type="button" class="btn btn-secondary" id="eventpics-btn-clear">Nincs kiválasztott kép</button>
+                <button type="button" class="btn btn-primary" id="eventpics-btn-upload">Kép feltöltése</button>
+                <button type="button" class="btn btn-secondary" id="eventpics-btn-clear">Nincs kiválasztva</button>
                 <input type="search" class="eventpics-filter" id="eventpics-filter" placeholder="Szűrés fájlnév szerint…" autocomplete="off" spellcheck="false">
                 <span class="eventpics-msg" id="eventpics-msg" role="status"></span>
             </div>
@@ -205,10 +227,14 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
                     <?php endforeach; ?>
                 </div>
             </div>
-            <input type="file" id="eventpics-file-input" class="visually-hidden" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+            <input type="file" id="eventpics-file-input" class="visually-hidden" accept="image/jpeg,image/png,image/webp,image/gif">
         </div>
+        <footer class="eventpics-modal__footer">
+            <button type="button" class="btn btn-secondary" id="eventpics-modal-cancel">Mégse</button>
+            <button type="button" class="btn btn-primary" id="eventpics-modal-ok">Kiválasztás</button>
+        </footer>
     </div>
-</div>
+</dialog>
 <script type="application/json" id="events-org-picker-json"><?= $orgPickerJson ?></script>
 <script type="application/json" id="events-venue-picker-json"><?= $venuePickerJson ?></script>
 <script>
@@ -347,6 +373,7 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
 })();
 
 (function () {
+    var dialog = document.getElementById('eventpics-modal');
     var root = document.getElementById('eventpics-browser');
     var hidden = document.getElementById('event_featured_image_pick');
     var grid = document.getElementById('eventpics-grid');
@@ -356,7 +383,19 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
     var drop = document.getElementById('eventpics-dropzone');
     var msg = document.getElementById('eventpics-msg');
     var filter = document.getElementById('eventpics-filter');
-    if (!root || !hidden || !grid || !btnUp || !btnClear || !fileInp || !drop) return;
+    var btnOpen = document.getElementById('eventpics-open-modal');
+    var btnClearMain = document.getElementById('eventpics-clear-main');
+    var btnOk = document.getElementById('eventpics-modal-ok');
+    var btnCancel = document.getElementById('eventpics-modal-cancel');
+    var btnX = document.getElementById('eventpics-modal-x');
+    var summary = document.getElementById('eventpics-form-summary');
+    var sumPreview = document.getElementById('eventpics-summary-preview');
+    var sumImg = document.getElementById('eventpics-summary-img');
+    var sumName = document.getElementById('eventpics-summary-name');
+    var sumEmpty = document.getElementById('eventpics-summary-empty');
+    if (!dialog || !root || !hidden || !grid || !btnUp || !btnClear || !fileInp || !drop || !btnOpen || !btnOk || !btnCancel) return;
+
+    var pendingPick = (hidden.value || '').trim();
 
     function setMsg(t, isErr) {
         if (!msg) return;
@@ -364,16 +403,45 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
         msg.classList.toggle('eventpics-msg--error', !!isErr);
     }
 
-    function syncSelectionClasses() {
-        var cur = (hidden.value || '').trim();
+    function syncModalSelection() {
+        var cur = (pendingPick || '').trim();
         grid.querySelectorAll('.eventpics-item').forEach(function (b) {
             b.classList.toggle('is-selected', cur !== '' && b.getAttribute('data-filename') === cur);
         });
     }
 
-    function selectFilename(name) {
-        hidden.value = name || '';
-        syncSelectionClasses();
+    function pickInModal(name) {
+        var fn = (name || '').trim();
+        if (fn && pendingPick === fn) {
+            pendingPick = '';
+        } else {
+            pendingPick = fn;
+        }
+        syncModalSelection();
+    }
+
+    function summaryBase() {
+        var b = (summary && summary.getAttribute('data-base')) || '';
+        if (b && b.slice(-1) !== '/') {
+            return b + '/';
+        }
+        return b;
+    }
+
+    function syncMainSummary() {
+        var fn = (hidden.value || '').trim();
+        if (!sumPreview || !sumImg || !sumName || !sumEmpty) return;
+        if (fn === '') {
+            sumPreview.hidden = true;
+            sumEmpty.hidden = false;
+            sumImg.removeAttribute('src');
+            sumName.textContent = '';
+            return;
+        }
+        sumPreview.hidden = false;
+        sumEmpty.hidden = true;
+        sumImg.src = summaryBase() + encodeURIComponent(fn);
+        sumName.textContent = fn;
     }
 
     function hasThumb(filename) {
@@ -408,17 +476,14 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
         btn.addEventListener('click', function () {
             var fn = btn.getAttribute('data-filename') || '';
             if (!fn) return;
-            if (hidden.value === fn) {
-                selectFilename('');
-            } else {
-                selectFilename(fn);
-            }
+            pickInModal(fn);
         });
     }
     grid.querySelectorAll('.eventpics-item').forEach(bindItem);
 
     btnClear.addEventListener('click', function () {
-        selectFilename('');
+        pendingPick = '';
+        syncModalSelection();
         setMsg('');
     });
 
@@ -437,46 +502,41 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
     function uploadFiles(files) {
         var list = files ? Array.prototype.slice.call(files) : [];
         if (!list.length) return;
+        if (list.length > 1) {
+            setMsg('Egyszerre egy kép tölthető fel; az első kerül feldolgozásra.', false);
+            list = [list[0]];
+        }
         var url = root.getAttribute('data-upload-url') || '';
         var csrf = root.getAttribute('data-csrf') || '';
         if (!url || !csrf) {
             setMsg('Hiányzik a feltöltési beállítás.', true);
             return;
         }
-        var total = list.length;
         setMsg('Feltöltés…', false);
-        function runOne() {
-            if (!list.length) {
-                setMsg(total > 1 ? total + ' fájl feltöltve.' : 'Feltöltve.', false);
+        var f = list[0];
+        var fd = new FormData();
+        fd.append('file', f, f.name);
+        fd.append('eventpics_csrf', csrf);
+        fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    setMsg((data && data.error) ? data.error : 'Feltöltés sikertelen.', true);
+                    return;
+                }
+                addThumb(data.filename, data.thumb_url || data.url);
+                pendingPick = data.filename;
+                syncModalSelection();
+                setMsg('Feltöltve. Nyomd meg a „Kiválasztás” gombot a mentéshez.', false);
                 fileInp.value = '';
                 if (filter) {
                     filter.value = '';
                     filter.dispatchEvent(new Event('input', { bubbles: true }));
                 }
-                return;
-            }
-            var f = list.shift();
-            var fd = new FormData();
-            fd.append('file', f, f.name);
-            fd.append('eventpics_csrf', csrf);
-            fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { Accept: 'application/json' } })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data || !data.ok) {
-                        setMsg((data && data.error) ? data.error : 'Feltöltés sikertelen.', true);
-                        runOne();
-                        return;
-                    }
-                    addThumb(data.filename, data.thumb_url || data.url);
-                    selectFilename(data.filename);
-                    runOne();
-                })
-                .catch(function () {
-                    setMsg('Hálózati hiba a feltöltéskor.', true);
-                    runOne();
-                });
-        }
-        runOne();
+            })
+            .catch(function () {
+                setMsg('Hálózati hiba a feltöltéskor.', true);
+            });
     }
 
     fileInp.addEventListener('change', function () {
@@ -500,7 +560,52 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
     drop.addEventListener('drop', function (e) {
         var dt = e.dataTransfer;
         if (!dt || !dt.files || !dt.files.length) return;
-        uploadFiles(dt.files);
+        uploadFiles([dt.files[0]]);
     });
+
+    function openModal() {
+        pendingPick = (hidden.value || '').trim();
+        syncModalSelection();
+        setMsg('');
+        if (filter) {
+            filter.value = '';
+            filter.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (typeof dialog.showModal === 'function') {
+            dialog.showModal();
+        } else {
+            dialog.setAttribute('open', 'open');
+        }
+        try {
+            filter.focus();
+        } catch (e2) {}
+    }
+
+    function closeModal() {
+        if (typeof dialog.close === 'function') {
+            dialog.close();
+        } else {
+            dialog.removeAttribute('open');
+        }
+    }
+
+    btnOpen.addEventListener('click', openModal);
+    if (btnX) btnX.addEventListener('click', closeModal);
+    btnCancel.addEventListener('click', closeModal);
+    btnOk.addEventListener('click', function () {
+        hidden.value = pendingPick;
+        syncMainSummary();
+        closeModal();
+    });
+    if (btnClearMain) {
+        btnClearMain.addEventListener('click', function () {
+            hidden.value = '';
+            pendingPick = '';
+            syncModalSelection();
+            syncMainSummary();
+        });
+    }
+
+    syncMainSummary();
 })();
 </script>
