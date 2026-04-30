@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/venue_request.php';
+require_once __DIR__ . '/eventpics.php';
 
 /**
  * Űrlapról: kiemelt kép URL (üres = null), vagy hibaüzenet.
@@ -138,11 +139,20 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $rawVid = $vid === '' ? null : (int) $vid;
     $row['venue_id'] = events_normalize_venue_id($db, $rawVid);
 
-    [$featUrl, $featErr] = events_normalize_featured_image_url((string) ($_POST['event_featured_image_url'] ?? ''));
-    if ($featErr !== null) {
-        return [$row, $featErr, $organizerIds];
+    [$featUrlInput, $featUrlErr] = events_normalize_featured_image_url((string) ($_POST['event_featured_image_url'] ?? ''));
+    if ($featUrlErr !== null) {
+        return [$row, $featUrlErr, $organizerIds];
     }
-    $row['event_featured_image_url'] = $featUrl;
+    [$featPickPath, $featPickErr] = events_eventpics_normalize_selected((string) ($_POST['event_featured_image_pick'] ?? ''));
+    if ($featPickErr !== null) {
+        return [$row, $featPickErr, $organizerIds];
+    }
+    [$featUploadPath, $featUploadErr] = events_eventpics_handle_upload($_FILES['event_featured_image_upload'] ?? null);
+    if ($featUploadErr !== null) {
+        return [$row, $featUploadErr, $organizerIds];
+    }
+    // Prioritás: URL > friss feltöltés > eventpics kiválasztás.
+    $row['event_featured_image_url'] = $featUrlInput ?? $featUploadPath ?? $featPickPath;
 
     if ($row['event_name'] === '') {
         return [$row, 'Az esemény neve kötelező.', $organizerIds];
@@ -180,6 +190,7 @@ function events_row_for_form(array $row): array {
     $e['event_featured_image_url'] = isset($e['event_featured_image_url']) && $e['event_featured_image_url'] !== null
         ? (string) $e['event_featured_image_url']
         : '';
+    $e['event_featured_image_pick'] = events_eventpics_extract_selected_from_featured($e['event_featured_image_url']);
     if (!isset($e['organizer_ids']) || !is_array($e['organizer_ids'])) {
         $e['organizer_ids'] = [];
     } else {

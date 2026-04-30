@@ -19,6 +19,7 @@ $orgPickerJson = json_encode(
 if ($orgPickerJson === false) {
     $orgPickerJson = '{"all":[],"selected":[]}';
 }
+$eventpicFiles = events_eventpics_list_files();
 ?>
 <fieldset class="form-group events-organizers-fieldset" id="events-org-picker-fieldset"<?= $organizers === [] ? ' data-organizers-empty="1"' : '' ?>>
     <legend>Szervezők</legend>
@@ -168,7 +169,22 @@ if ($orgPickerJson === false) {
 <div class="form-group">
     <label for="event_featured_image_url">Kiemelt kép (URL)</label>
     <input type="text" id="event_featured_image_url" name="event_featured_image_url" value="<?= h($e['event_featured_image_url'] ?? '') ?>" maxlength="2000" placeholder="https://… vagy /útvonal/kép.jpg" spellcheck="false" autocomplete="off">
-    <p class="help">Opcionális. Teljes https URL vagy a honlapon belüli útvonal <code>/</code>-rel. A nyilvános oldalon és a közösségi megosztásoknál (OG) jelenik meg.</p>
+    <p class="help">Ha itt URL van megadva, az elsőbbséget élvez az eventpics képpel szemben.</p>
+</div>
+<div class="form-group">
+    <label for="event_featured_image_upload">Kiemelt kép feltöltése (eventpics)</label>
+    <input type="file" id="event_featured_image_upload" name="event_featured_image_upload" accept="image/jpeg,image/png,image/webp,image/gif">
+    <p class="help">A feltöltött kép az <code>events/eventpics</code> mappába kerül, és később más eseményhez is kiválasztható.</p>
+</div>
+<div class="form-group">
+    <label for="event_featured_image_pick">Kiemelt kép kiválasztása az eventpics mappából</label>
+    <select id="event_featured_image_pick" name="event_featured_image_pick">
+        <option value="">— nincs —</option>
+        <?php foreach ($eventpicFiles as $picFile): ?>
+            <option value="<?= h($picFile) ?>" <?= ($picFile === (string) ($e['event_featured_image_pick'] ?? '')) ? 'selected' : '' ?>><?= h($picFile) ?></option>
+        <?php endforeach; ?>
+    </select>
+    <p class="help">Egy kép több eseménynél is használható.</p>
 </div>
 <div class="form-group">
     <label for="event_status">Státusz *</label>

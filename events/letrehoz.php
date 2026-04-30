@@ -91,7 +91,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 <div class="card">
     <h2>Új esemény</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <?= csrf_input('events_letrehoz') ?>
         <?php require __DIR__ . '/partials/event_fields.php'; ?>
         <div class="form-actions">
