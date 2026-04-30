@@ -56,6 +56,9 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu kezdőoldala',
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'footer_home_link' => 'Latinfo.hu',
+        'section_organizers' => 'Szervezők',
+        'section_organizer_events' => 'További események a szervezőtől',
+        'related_events_empty' => 'Nincs más közzétett esemény ehhez a szervezőhöz.',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -77,6 +80,9 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu home',
         'logo_home_aria' => 'Go to the Latinfo.hu homepage',
         'footer_home_link' => 'Latinfo.hu',
+        'section_organizers' => 'Organizers',
+        'section_organizer_events' => 'More events from this organizer',
+        'related_events_empty' => 'No other published events for this organizer.',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -165,8 +171,23 @@ function events_public_megjelenit_cost_text(?float $cf, ?float $ct, string $lang
 /**
  * Ugyanaz az esemény slug, más nyelvi paraméterrel (váltó linkek).
  */
-function events_public_megjelenit_lang_switch_url(string $slug, string $targetLang): string {
+function events_public_megjelenit_lang_switch_url(string $slug, string $targetLang, ?int $orgId = null): string {
     $q = ['slug' => $slug, 'lang' => $targetLang];
+    if ($orgId !== null && $orgId > 0) {
+        $q['org'] = $orgId;
+    }
+
+    return events_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+}
+
+/**
+ * Nyilvános esemény URL slug + nyelv + opcionális szervező lap (?org= több szervezőnél).
+ */
+function events_public_megjelenit_page_url(string $slug, string $lang, ?int $orgId): string {
+    $q = ['slug' => $slug, 'lang' => $lang];
+    if ($orgId !== null && $orgId > 0) {
+        $q['org'] = $orgId;
+    }
 
     return events_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
 }

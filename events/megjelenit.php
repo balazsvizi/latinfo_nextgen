@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/venue_request.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
+require_once __DIR__ . '/lib/event_public_organizers.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $T = events_public_megjelenit_strings($lang);
@@ -41,6 +42,23 @@ if (!$event) {
     echo events_public_megjelenit_not_found_html($lang);
     exit;
 }
+
+$eventId = (int) ($event['id'] ?? 0);
+$eventOrganizers = events_public_event_organizers_for_display($db, $eventId);
+$relatedByOrg = $eventOrganizers !== []
+    ? events_public_related_events_by_organizer($db, $eventId, events_public_post_status())
+    : [];
+$validOrgIds = array_column($eventOrganizers, 'id');
+$fromGetOrg = (int) ($_GET['org'] ?? 0);
+$activeOrgId = 0;
+if ($eventOrganizers !== []) {
+    if ($fromGetOrg > 0 && in_array($fromGetOrg, $validOrgIds, true)) {
+        $activeOrgId = $fromGetOrg;
+    } else {
+        $activeOrgId = (int) $eventOrganizers[0]['id'];
+    }
+}
+$langOrgForSwitch = count($eventOrganizers) > 1 && $activeOrgId > 0 ? $activeOrgId : null;
 
 $venueName = trim((string) ($event['venue_name'] ?? ''));
 $venueSlug = trim((string) ($event['venue_slug'] ?? ''));
@@ -87,8 +105,8 @@ $featuredRaw = trim((string) ($event['event_featured_image_url'] ?? ''));
 $featuredAbsolute = $featuredRaw !== '' ? events_absolute_url($featuredRaw) : '';
 $ogPageUrl = events_absolute_url(events_url('megjelenit.php?slug=' . rawurlencode($slug)));
 $cssUrl = events_url('assets/event_public.css');
-$urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu');
-$urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');
+$urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu', $langOrgForSwitch);
+$urlEn = events_public_megjelenit_lang_switch_url($slug, 'en', $langOrgForSwitch);
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $showAdminEdit = isLoggedIn();
 $eventEditUrl = events_url('szerkeszt.php?id=') . (int) ($event['id'] ?? 0);
@@ -277,6 +295,91 @@ header('Content-Type: text/html; charset=UTF-8');
             </aside>
         <?php endif; ?>
     </div>
+
+    <?php if ($eventOrganizers !== []): ?>
+        <?php
+        $activeOrgName = '';
+        foreach ($eventOrganizers as $_o) {
+            if ((int) $_o['id'] === $activeOrgId) {
+                $activeOrgName = (string) $_o['name'];
+                break;
+            }
+        }
+        $relatedList = $relatedByOrg[$activeOrgId] ?? [];
+        $multiOrg = count($eventOrganizers) > 1;
+        ?>
+        <section class="event-organizers-block" id="event-organizer-related" aria-labelledby="event-organizers-heading">
+            <h2 class="event-organizers-block__title" id="event-organizers-heading"><?= h($T['section_organizers']) ?></h2>
+            <ul class="event-org-chips" role="list">
+                <?php foreach ($eventOrganizers as $org): ?>
+                    <?php
+                    $oid = (int) $org['id'];
+                    $isActive = $oid === $activeOrgId;
+                    ?>
+                    <li class="event-org-chips__item">
+                        <?php if ($multiOrg): ?>
+                            <a
+                                class="event-org-chip<?= $isActive ? ' is-active' : '' ?>"
+                                href="<?= h(events_public_megjelenit_page_url($slug, $lang, $oid)) ?>"
+                                <?= $isActive ? ' aria-current="page"' : '' ?>
+                            ><?= h((string) $org['name']) ?></a>
+                        <?php else: ?>
+                            <span class="event-org-chip event-org-chip--solo is-active"><?= h((string) $org['name']) ?></span>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <div class="event-organizer-related">
+                <h3 class="event-organizer-related__subtitle"><?= h($T['section_organizer_events']) ?><?= $activeOrgName !== '' ? ' — ' . h($activeOrgName) : '' ?></h3>
+                <?php if ($relatedList === []): ?>
+                    <p class="event-organizer-related__empty"><?= h($T['related_events_empty']) ?></p>
+                <?php else: ?>
+                    <ul class="event-related-grid" role="list">
+                        <?php foreach ($relatedList as $rel): ?>
+                            <?php
+                            $relSlug = (string) ($rel['event_slug'] ?? '');
+                            $relTitle = (string) ($rel['event_name'] ?? '');
+                            $relHref = events_public_megjelenit_page_url($relSlug, $lang, null);
+                            $relAllday = !empty($rel['event_allday']);
+                            $relTsStart = !empty($rel['event_start']) ? strtotime((string) $rel['event_start']) : false;
+                            $relTsEnd = !empty($rel['event_end']) ? strtotime((string) $rel['event_end']) : false;
+                            $relDateLines = events_public_megjelenit_date_lines($relAllday, $relTsStart, $relTsEnd, $lang);
+                            $relFeatRaw = trim((string) ($rel['event_featured_image_url'] ?? ''));
+                            $relFeatAbs = $relFeatRaw !== '' ? events_absolute_url($relFeatRaw) : '';
+                            ?>
+                            <li class="event-related-grid__cell">
+                                <a class="event-related-card" href="<?= h($relHref) ?>">
+                                    <div class="event-related-card__media">
+                                        <?php if ($relFeatAbs !== ''): ?>
+                                            <img
+                                                class="event-related-card__img"
+                                                src="<?= h($relFeatAbs) ?>"
+                                                alt=""
+                                                width="640"
+                                                height="360"
+                                                loading="lazy"
+                                                decoding="async"
+                                            >
+                                        <?php else: ?>
+                                            <div class="event-related-card__placeholder" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 5-6 5 7"/></svg>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="event-related-card__body">
+                                        <span class="event-related-card__title"><?= h($relTitle) ?></span>
+                                        <?php if ($relDateLines !== []): ?>
+                                            <span class="event-related-card__date"><?= h(implode(' · ', $relDateLines)) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php endif; ?>
 
     <footer class="event-public__footer">
         <p class="event-site-line">
