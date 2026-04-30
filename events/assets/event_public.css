@@ -704,12 +704,33 @@ a.event-meta__card:focus-visible {
     margin-top: 0.25rem;
 }
 
+/* Már lezajlott események — elkülönített „archívum” sáv */
+.organizer-public__subsection--past {
+    margin-top: 2.5rem;
+    margin-left: calc(-1 * clamp(1.25rem, 4vw, 2rem));
+    margin-right: calc(-1 * clamp(1.25rem, 4vw, 2rem));
+    padding: 1.5rem clamp(1.25rem, 4vw, 2rem) 1.25rem;
+    border-top: 2px solid var(--li-border-strong);
+    border-radius: var(--ev-radius-sm);
+    background: linear-gradient(180deg, #e2e6dd 0%, #ecefe8 55%, #eef1ea 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
 .organizer-public__subsection-title {
     margin: 0 0 0.75rem;
     font-family: var(--ev-sans);
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--li-text-muted);
+}
+
+.organizer-public__subsection-title--past {
+    margin-bottom: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--li-text-soft);
 }
 
 .organizer-public__subsection-empty {
@@ -737,6 +758,38 @@ a.event-meta__card:focus-visible {
     .event-related-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+}
+
+.organizer-public__subsection--past .event-related-card {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: #c5d1bf;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.organizer-public__subsection--past .event-related-card:hover {
+    border-color: var(--li-green-muted);
+    box-shadow: 0 2px 12px rgba(45, 58, 40, 0.08);
+}
+
+.organizer-public__subsection--past .event-related-card__img {
+    filter: grayscale(0.22) brightness(0.97);
+    transition: filter 0.2s ease;
+}
+
+.organizer-public__subsection--past .event-related-card:hover .event-related-card__img {
+    filter: grayscale(0) brightness(1);
+}
+
+.organizer-public__subsection--past .event-related-card__placeholder {
+    opacity: 0.88;
+}
+
+.organizer-public__subsection--past .event-related-card__title {
+    color: var(--li-text-muted);
+}
+
+.organizer-public__subsection--past .event-related-card:hover .event-related-card__title {
+    color: var(--li-green-hover);
 }
 
 .event-related-card {

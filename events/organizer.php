@@ -106,8 +106,13 @@ header('Content-Type: text/html; charset=UTF-8');
             ];
             ?>
             <?php foreach ($organizerEventBlocks as $block): ?>
-                <div class="organizer-public__subsection" id="<?= h((string) $block['id']) ?>">
-                    <h3 class="organizer-public__subsection-title"><?= h((string) $block['heading']) ?></h3>
+                <?php
+                $isPastSection = ($block['id'] ?? '') === 'organizer-past';
+                $subsectionClass = 'organizer-public__subsection' . ($isPastSection ? ' organizer-public__subsection--past' : '');
+                $subsectionTitleClass = 'organizer-public__subsection-title' . ($isPastSection ? ' organizer-public__subsection-title--past' : '');
+                ?>
+                <div class="<?= h($subsectionClass) ?>" id="<?= h((string) $block['id']) ?>">
+                    <h3 class="<?= h($subsectionTitleClass) ?>"><?= h((string) $block['heading']) ?></h3>
                     <?php if ($block['rows'] === []): ?>
                         <p class="organizer-public__subsection-empty"><?= h((string) $block['empty']) ?></p>
                     <?php else: ?>
