@@ -648,6 +648,28 @@ a.event-meta__card:focus-visible {
     color: var(--li-green-dark);
 }
 
+.organizer-public__subsection {
+    margin-top: 1.5rem;
+}
+
+.organizer-public__subsection:first-of-type {
+    margin-top: 0.25rem;
+}
+
+.organizer-public__subsection-title {
+    margin: 0 0 0.75rem;
+    font-family: var(--ev-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--li-text-muted);
+}
+
+.organizer-public__subsection-empty {
+    margin: 0 0 0.25rem;
+    font-size: 0.9rem;
+    color: var(--li-text-soft);
+}
+
 .organizer-public__empty {
     margin: 0;
     font-size: 0.95rem;
@@ -733,6 +755,19 @@ a.event-meta__card:focus-visible {
     font-size: 0.8125rem;
     color: var(--li-text-soft);
     line-height: 1.4;
+}
+
+.event-related-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.event-related-card__city {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--li-text-muted);
+    line-height: 1.35;
 }
 
 .event-public__footer {

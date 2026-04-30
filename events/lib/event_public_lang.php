@@ -131,12 +131,9 @@ function events_public_organizer_strings(string $lang): array {
 }
 
 /**
- * @return list<string>
+ * Egy nap megjelenítése (megjelenítő és szervező-lista közös formátuma).
  */
-function events_public_megjelenit_date_lines(bool $allday, int|false $tsStart, int|false $tsEnd, string $lang): array {
-    if (!$tsStart) {
-        return [];
-    }
+function events_public_format_event_day(int $ts, string $lang): string {
     $huMonths = [
         1 => 'január', 2 => 'február', 3 => 'március', 4 => 'április', 5 => 'május', 6 => 'június',
         7 => 'július', 8 => 'augusztus', 9 => 'szeptember', 10 => 'október', 11 => 'november', 12 => 'december',
@@ -145,28 +142,50 @@ function events_public_megjelenit_date_lines(bool $allday, int|false $tsStart, i
         1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June',
         7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
     ];
-    $fmtDay = static function (int $ts) use ($lang, $huMonths, $enMonths): string {
-        if ($lang === 'en') {
-            $m = $enMonths[(int) date('n', $ts)];
+    if ($lang === 'en') {
+        $m = $enMonths[(int) date('n', $ts)];
 
-            return $m . ' ' . (int) date('j', $ts) . ', ' . (int) date('Y', $ts);
-        }
-        $m = $huMonths[(int) date('n', $ts)];
+        return $m . ' ' . (int) date('j', $ts) . ', ' . (int) date('Y', $ts);
+    }
+    $m = $huMonths[(int) date('n', $ts)];
 
-        return (int) date('Y', $ts) . '. ' . $m . ' ' . (int) date('j', $ts) . '.';
-    };
+    return (int) date('Y', $ts) . '. ' . $m . ' ' . (int) date('j', $ts) . '.';
+}
+
+/**
+ * Csak kezdő nap és (ha nem egész napos) kezdő idő — pl. szervező oldal kártyái.
+ */
+function events_public_event_start_date_time_display(bool $allday, int|false $tsStart, string $lang): string {
+    if (!$tsStart) {
+        return '';
+    }
+    $out = events_public_format_event_day($tsStart, $lang);
+    if (!$allday) {
+        $out .= ' ' . date('H:i', $tsStart);
+    }
+
+    return $out;
+}
+
+/**
+ * @return list<string>
+ */
+function events_public_megjelenit_date_lines(bool $allday, int|false $tsStart, int|false $tsEnd, string $lang): array {
+    if (!$tsStart) {
+        return [];
+    }
 
     $lines = [];
     if ($tsEnd && date('Y-m-d', $tsStart) === date('Y-m-d', $tsEnd)) {
-        $lines[] = $fmtDay($tsStart);
+        $lines[] = events_public_format_event_day($tsStart, $lang);
         if (!$allday) {
             $lines[] = date('H:i', $tsStart) . ' – ' . date('H:i', $tsEnd);
         }
     } elseif ($tsEnd) {
-        $lines[] = $fmtDay($tsStart) . ($allday ? '' : ' ' . date('H:i', $tsStart));
-        $lines[] = '– ' . $fmtDay($tsEnd) . ($allday ? '' : ' ' . date('H:i', $tsEnd));
+        $lines[] = events_public_format_event_day($tsStart, $lang) . ($allday ? '' : ' ' . date('H:i', $tsStart));
+        $lines[] = '– ' . events_public_format_event_day($tsEnd, $lang) . ($allday ? '' : ' ' . date('H:i', $tsEnd));
     } else {
-        $line = $fmtDay($tsStart);
+        $line = events_public_format_event_day($tsStart, $lang);
         if (!$allday) {
             $line .= ' ' . date('H:i', $tsStart);
         }

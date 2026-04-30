@@ -99,48 +99,70 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php if ($eventsList === []): ?>
             <p class="organizer-public__empty"><?= h($O['list_empty']) ?></p>
         <?php else: ?>
-            <ul class="event-related-grid" role="list">
-                <?php foreach ($eventsList as $rel): ?>
-                    <?php
-                    $relSlug = (string) ($rel['event_slug'] ?? '');
-                    $relTitle = (string) ($rel['event_name'] ?? '');
-                    $relHref = events_public_event_page_url($relSlug, $lang);
-                    $relAllday = !empty($rel['event_allday']);
-                    $relTsStart = !empty($rel['event_start']) ? strtotime((string) $rel['event_start']) : false;
-                    $relTsEnd = !empty($rel['event_end']) ? strtotime((string) $rel['event_end']) : false;
-                    $relDateLines = events_public_megjelenit_date_lines($relAllday, $relTsStart, $relTsEnd, $lang);
-                    $relFeatRaw = trim((string) ($rel['event_featured_image_url'] ?? ''));
-                    $relFeatAbs = $relFeatRaw !== '' ? events_absolute_url($relFeatRaw) : '';
-                    ?>
-                    <li class="event-related-grid__cell">
-                        <a class="event-related-card" href="<?= h($relHref) ?>">
-                            <div class="event-related-card__media">
-                                <?php if ($relFeatAbs !== ''): ?>
-                                    <img
-                                        class="event-related-card__img"
-                                        src="<?= h($relFeatAbs) ?>"
-                                        alt=""
-                                        width="640"
-                                        height="360"
-                                        loading="lazy"
-                                        decoding="async"
-                                    >
-                                <?php else: ?>
-                                    <div class="event-related-card__placeholder" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 5-6 5 7"/></svg>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="event-related-card__body">
-                                <span class="event-related-card__title"><?= h($relTitle) ?></span>
-                                <?php if ($relDateLines !== []): ?>
-                                    <span class="event-related-card__date"><?= h(implode(' · ', $relDateLines)) ?></span>
-                                <?php endif; ?>
-                            </div>
-                        </a>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+            <?php
+            $organizerEventBlocks = [
+                ['id' => 'organizer-upcoming', 'heading' => $O['section_upcoming'], 'rows' => $eventsUpcoming, 'empty' => $O['upcoming_empty']],
+                ['id' => 'organizer-past', 'heading' => $O['section_past'], 'rows' => $eventsPast, 'empty' => $O['past_empty']],
+            ];
+            ?>
+            <?php foreach ($organizerEventBlocks as $block): ?>
+                <div class="organizer-public__subsection" id="<?= h((string) $block['id']) ?>">
+                    <h3 class="organizer-public__subsection-title"><?= h((string) $block['heading']) ?></h3>
+                    <?php if ($block['rows'] === []): ?>
+                        <p class="organizer-public__subsection-empty"><?= h((string) $block['empty']) ?></p>
+                    <?php else: ?>
+                        <ul class="event-related-grid" role="list">
+                            <?php foreach ($block['rows'] as $rel): ?>
+                                <?php
+                                $relSlug = (string) ($rel['event_slug'] ?? '');
+                                $relTitle = (string) ($rel['event_name'] ?? '');
+                                $relHref = events_public_event_page_url($relSlug, $lang);
+                                $relAllday = !empty($rel['event_allday']);
+                                $relTsStart = !empty($rel['event_start']) ? strtotime((string) $rel['event_start']) : false;
+                                $dateDisplay = events_public_event_start_date_time_display($relAllday, $relTsStart, $lang);
+                                $relFeatRaw = trim((string) ($rel['event_featured_image_url'] ?? ''));
+                                $relFeatAbs = $relFeatRaw !== '' ? events_absolute_url($relFeatRaw) : '';
+                                $venueCity = trim((string) ($rel['venue_city'] ?? ''));
+                                ?>
+                                <li class="event-related-grid__cell">
+                                    <a class="event-related-card" href="<?= h($relHref) ?>">
+                                        <div class="event-related-card__media">
+                                            <?php if ($relFeatAbs !== ''): ?>
+                                                <img
+                                                    class="event-related-card__img"
+                                                    src="<?= h($relFeatAbs) ?>"
+                                                    alt=""
+                                                    width="640"
+                                                    height="360"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                >
+                                            <?php else: ?>
+                                                <div class="event-related-card__placeholder" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 5-6 5 7"/></svg>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="event-related-card__body">
+                                            <span class="event-related-card__title"><?= h($relTitle) ?></span>
+                                            <?php if ($dateDisplay !== '' || $venueCity !== ''): ?>
+                                                <div class="event-related-card__meta">
+                                                    <?php if ($dateDisplay !== ''): ?>
+                                                        <span class="event-related-card__date"><?= h($dateDisplay) ?></span>
+                                                    <?php endif; ?>
+                                                    <?php if ($venueCity !== ''): ?>
+                                                        <span class="event-related-card__city"><?= h($venueCity) ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
         <?php endif; ?>
     </section>
 
