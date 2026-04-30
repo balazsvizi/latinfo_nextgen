@@ -591,22 +591,21 @@ a.event-meta__card:focus-visible {
     color: var(--li-green-dark);
 }
 
-/* Szervezők + kapcsolódó események (megjelenit.php) */
-.event-organizers-block {
-    margin: 2rem 0 0;
-    padding: 1.35rem clamp(1.25rem, 4vw, 2rem) 1.75rem;
-    border-top: 1px solid var(--li-border);
-    background: var(--li-card);
-    border-radius: var(--ev-radius);
-    box-shadow: var(--li-shadow);
+/* Szervező chipek — megjelenit.php (cím fölött), organizer.php nem használja */
+.event-organizers-hero {
+    margin: 0 0 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--li-border);
 }
 
-.event-organizers-block__title {
-    margin: 0 0 0.85rem;
-    font-family: var(--ev-font);
-    font-size: 1.2rem;
+.event-organizers-hero__label {
+    margin: 0 0 0.5rem;
+    font-family: var(--ev-sans);
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--li-green-dark);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--li-text-soft);
 }
 
 .event-org-chips {
@@ -614,8 +613,12 @@ a.event-meta__card:focus-visible {
     flex-wrap: wrap;
     gap: 0.5rem 0.6rem;
     list-style: none;
-    margin: 0 0 1.25rem;
+    margin: 0;
     padding: 0;
+}
+
+.event-org-chips--hero {
+    margin-bottom: 0;
 }
 
 .event-org-chips__item {
@@ -641,28 +644,23 @@ a.event-meta__card:focus-visible {
     color: var(--li-green-hover);
 }
 
-.event-org-chip.is-active {
-    background: var(--li-green);
-    border-color: var(--li-green);
-    color: #fff;
-    pointer-events: none;
-}
-
-.event-org-chip--solo.is-active {
-    pointer-events: auto;
-}
-
-.event-organizer-related__subtitle {
-    margin: 0 0 1rem;
-    font-family: var(--ev-sans);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--li-text-muted);
-}
-
-.event-organizer-related__empty {
+/* Szervező eseménylista (organizer.php) */
+.organizer-public__events {
     margin: 0;
-    font-size: 0.9rem;
+    padding: 0 clamp(1.25rem, 4vw, 2rem) 1.5rem;
+}
+
+.organizer-public__events-title {
+    margin: 0 0 1rem;
+    font-family: var(--ev-font);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--li-green-dark);
+}
+
+.organizer-public__empty {
+    margin: 0;
+    font-size: 0.95rem;
     color: var(--li-text-soft);
 }
 
@@ -752,8 +750,8 @@ a.event-meta__card:focus-visible {
     margin-top: -0.5rem;
 }
 
-.event-organizers-block + .event-public__footer {
-    margin-top: 1.5rem;
+.organizer-public .event-public__footer {
+    margin-top: 0.5rem;
 }
 
 .event-site-line {

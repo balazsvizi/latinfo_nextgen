@@ -57,8 +57,6 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'footer_home_link' => 'Latinfo.hu',
         'section_organizers' => 'Szervezők',
-        'section_organizer_events' => 'További események a szervezőtől',
-        'related_events_empty' => 'Nincs más közzétett esemény ehhez a szervezőhöz.',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -81,8 +79,44 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_aria' => 'Go to the Latinfo.hu homepage',
         'footer_home_link' => 'Latinfo.hu',
         'section_organizers' => 'Organizers',
-        'section_organizer_events' => 'More events from this organizer',
-        'related_events_empty' => 'No other published events for this organizer.',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+/**
+ * @return array<string, string>
+ */
+function events_public_organizer_strings(string $lang): array {
+    $hu = [
+        'html_title_suffix' => ' – ',
+        'lang_nav' => 'Nyelv',
+        'lang_hu' => 'Magyar',
+        'lang_en' => 'English',
+        'eyebrow' => 'Szervező',
+        'events_heading' => 'Események',
+        'list_empty' => 'Nincs közzétett esemény ehhez a szervezőhöz.',
+        'not_found_title' => 'Nincs ilyen szervező',
+        'not_found_body' => 'Nincs ilyen szervező.',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'footer_home_link' => 'Latinfo.hu',
+    ];
+    $en = [
+        'html_title_suffix' => ' – ',
+        'lang_nav' => 'Language',
+        'lang_hu' => 'Hungarian',
+        'lang_en' => 'English',
+        'eyebrow' => 'Organizer',
+        'events_heading' => 'Events',
+        'list_empty' => 'No published events for this organizer.',
+        'not_found_title' => 'Organizer not found',
+        'not_found_body' => 'There is no organizer with this link.',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
+        'footer_home_link' => 'Latinfo.hu',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -171,25 +205,28 @@ function events_public_megjelenit_cost_text(?float $cf, ?float $ct, string $lang
 /**
  * Ugyanaz az esemény slug, más nyelvi paraméterrel (váltó linkek).
  */
-function events_public_megjelenit_lang_switch_url(string $slug, string $targetLang, ?int $orgId = null): string {
+function events_public_megjelenit_lang_switch_url(string $slug, string $targetLang): string {
     $q = ['slug' => $slug, 'lang' => $targetLang];
-    if ($orgId !== null && $orgId > 0) {
-        $q['org'] = $orgId;
-    }
 
     return events_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
 }
 
 /**
- * Nyilvános esemény URL slug + nyelv + opcionális szervező lap (?org= több szervezőnél).
+ * Nyilvános eseményoldal URL (slug + nyelv).
  */
-function events_public_megjelenit_page_url(string $slug, string $lang, ?int $orgId): string {
-    $q = ['slug' => $slug, 'lang' => $lang];
-    if ($orgId !== null && $orgId > 0) {
-        $q['org'] = $orgId;
-    }
+function events_public_event_page_url(string $slug, string $lang): string {
+    return events_url('megjelenit.php?' . http_build_query(['slug' => $slug, 'lang' => $lang], '', '&', PHP_QUERY_RFC3986));
+}
 
-    return events_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+/**
+ * Nyilvános szervező-oldal URL.
+ */
+function events_public_organizer_page_url(int $organizerId, string $lang): string {
+    return events_url('organizer.php?' . http_build_query(['id' => $organizerId, 'lang' => $lang], '', '&', PHP_QUERY_RFC3986));
+}
+
+function events_public_organizer_lang_switch_url(int $organizerId, string $targetLang): string {
+    return events_url('organizer.php?' . http_build_query(['id' => $organizerId, 'lang' => $targetLang], '', '&', PHP_QUERY_RFC3986));
 }
 
 /**
@@ -224,6 +261,43 @@ function events_public_megjelenit_not_found_html(string $lang): string {
     </div>
     <p class="event-not-found-msg">' . h($T['not_found_body']) . '</p>
     <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($T['footer_home_link']) . '</a></p>
+</div>
+</body>
+</html>';
+}
+
+/**
+ * 404 HTML — ismeretlen szervező ID (organizer.php).
+ */
+function events_public_organizer_not_found_html(string $lang): string {
+    $O = events_public_organizer_strings($lang);
+    $htmlLang = $lang === 'en' ? 'en' : 'hu';
+    $home = LATINFO_PUBLIC_HOME_URL;
+    $cssUrl = events_url('assets/event_public.css');
+    $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+    $fav = events_public_favicon_head_markup();
+
+    return '<!DOCTYPE html>
+<html lang="' . h($htmlLang) . '">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#6d8f63">
+    <title>' . h($O['not_found_title']) . '</title>
+    ' . $fav . '
+    <link rel="stylesheet" href="' . h($cssUrl) . '">
+</head>
+<body class="event-public-page">
+<div class="event-shell">
+    <div class="event-shell-toolbar">
+        <div class="event-shell-toolbar__leading">
+            <a class="event-brand-logo" href="' . h($home) . '" title="' . h($O['logo_home_title']) . '" aria-label="' . h($O['logo_home_aria']) . '">
+                <img src="' . h($logoSrc) . '" alt="' . h($O['logo_alt']) . '" width="180" height="48" decoding="async">
+            </a>
+        </div>
+    </div>
+    <p class="event-not-found-msg">' . h($O['not_found_body']) . '</p>
+    <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($O['footer_home_link']) . '</a></p>
 </div>
 </body>
 </html>';
