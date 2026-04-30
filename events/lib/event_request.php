@@ -46,6 +46,40 @@ function events_normalize_featured_image_url(?string $raw): array {
     return [null, 'A kiemelt képhez teljes URL-t (https://…) vagy /-rel kezdődő útvonalat adj meg.'];
 }
 
+/**
+ * Űrlap borító előnézet (URL-first, mint a mentés): nem üres URL mező → abszolút kép URL; különben eventpics.
+ *
+ * @return array{src: string, source: 'url'|'eventpic'|'none', label: string}
+ */
+function events_featured_image_form_preview_meta(string $featuredUrlField, string $eventpicsPickFilename): array {
+    $raw = trim($featuredUrlField);
+    $raw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $raw) ?? $raw;
+    if ($raw !== '') {
+        $decoded = trim(html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $src = events_absolute_url($decoded);
+        $label = $raw;
+        if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+            if (mb_strlen($label, 'UTF-8') > 52) {
+                $label = mb_substr($label, 0, 50, 'UTF-8') . '…';
+            }
+        } elseif (strlen($label) > 52) {
+            $label = substr($label, 0, 50) . '…';
+        }
+
+        return ['src' => $src, 'source' => 'url', 'label' => $label];
+    }
+    $pick = trim($eventpicsPickFilename);
+    if ($pick !== '') {
+        return [
+            'src' => site_url('events/eventpics/' . rawurlencode($pick)),
+            'source' => 'eventpic',
+            'label' => $pick,
+        ];
+    }
+
+    return ['src' => '', 'source' => 'none', 'label' => ''];
+}
+
 function events_load_organizer_options(PDO $db): array {
     $rows = $db->query('SELECT id, name FROM events_organizers ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
     $out = [];

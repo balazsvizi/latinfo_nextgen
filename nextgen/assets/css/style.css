@@ -1316,7 +1316,7 @@ dialog.eventpics-modal::backdrop {
 }
 .eventpics-form-summary__preview {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.65rem;
 }
 .eventpics-form-summary__preview img {
@@ -1325,11 +1325,25 @@ dialog.eventpics-modal::backdrop {
     object-fit: cover;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.eventpics-form-summary__preview-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    max-width: min(18rem, 100%);
 }
 .eventpics-form-summary__name {
     font-size: 0.88rem;
-    word-break: break-all;
-    max-width: 18rem;
+    word-break: break-word;
+}
+.eventpics-form-summary__source {
+    display: block;
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--text-muted);
 }
 .eventpics-form-summary__actions {
     display: flex;

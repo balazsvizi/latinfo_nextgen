@@ -34,6 +34,12 @@ if ($venuePickerJson === false) {
     $venuePickerJson = '{"all":[],"selected":0}';
 }
 $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
+$coverPreview = events_featured_image_form_preview_meta((string) ($e['event_featured_image_url'] ?? ''), $eventpicsPick);
+$coverPreviewCaption = $coverPreview['source'] === 'url'
+    ? 'Előnézet a „Kiemelt kép URL” mező alapján (elsőbbség az eventpics felett).'
+    : ($coverPreview['source'] === 'eventpic'
+        ? 'Előnézet az eventpics borító alapján (nincs kitöltött URL).'
+        : '');
 ?>
 <div class="card" style="margin-bottom:1rem;">
     <h3 style="margin-top:0;">Szervezők és helyszín</h3>
@@ -180,11 +186,14 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
         <input type="hidden" name="event_featured_image_pick" id="event_featured_image_pick" value="<?= h($eventpicsPick) ?>">
         <div class="eventpics-form-summary" id="eventpics-form-summary" data-base="<?= h(site_url('events/eventpics/')) ?>">
             <div class="eventpics-form-summary__inner">
-                <div class="eventpics-form-summary__preview" id="eventpics-summary-preview"<?= $eventpicsPick === '' ? ' hidden' : '' ?>>
-                    <img id="eventpics-summary-img" src="<?= $eventpicsPick !== '' ? h(site_url('events/eventpics/' . rawurlencode($eventpicsPick))) : '' ?>" alt="" width="72" height="72">
-                    <span id="eventpics-summary-name" class="eventpics-form-summary__name"><?= $eventpicsPick !== '' ? h($eventpicsPick) : '' ?></span>
+                <div class="eventpics-form-summary__preview" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
+                    <img id="eventpics-summary-img" src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>" alt="" width="72" height="72">
+                    <div class="eventpics-form-summary__preview-text">
+                        <span id="eventpics-summary-name" class="eventpics-form-summary__name"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
+                        <span id="eventpics-summary-source" class="eventpics-form-summary__source help"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
+                    </div>
                 </div>
-                <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $eventpicsPick !== '' ? ' hidden' : '' ?>>Nincs eventpics borítókép kiválasztva.</p>
+                <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép (adj meg URL-t vagy válassz eventpics képet).</p>
                 <div class="eventpics-form-summary__actions">
                     <button type="button" class="btn btn-primary" id="eventpics-open-modal">Borítókép választása…</button>
                     <button type="button" class="btn btn-secondary" id="eventpics-clear-main">Törlés</button>
@@ -392,7 +401,9 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
     var sumPreview = document.getElementById('eventpics-summary-preview');
     var sumImg = document.getElementById('eventpics-summary-img');
     var sumName = document.getElementById('eventpics-summary-name');
+    var sumSource = document.getElementById('eventpics-summary-source');
     var sumEmpty = document.getElementById('eventpics-summary-empty');
+    var urlInp = document.getElementById('event_featured_image_url');
     if (!dialog || !root || !hidden || !grid || !btnUp || !btnClear || !fileInp || !drop || !btnOpen || !btnOk || !btnCancel) return;
 
     var pendingPick = (hidden.value || '').trim();
@@ -428,20 +439,61 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
         return b;
     }
 
+    function resolveCoverImgSrcFromUrlField(urlTrim) {
+        var t = (urlTrim || '').trim();
+        if (!t) return '';
+        if (/^https?:\/\//i.test(t)) return t;
+        if (t.indexOf('//') === 0) {
+            return (window.location.protocol || 'https:') + t;
+        }
+        if (t.charAt(0) === '/') {
+            try {
+                return new URL(t, window.location.origin).href;
+            } catch (e1) {
+                return t;
+            }
+        }
+        if (/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(\/|$)/i.test(t)) {
+            return 'https://' + t;
+        }
+        return t;
+    }
+
+    function truncateLabel(s, maxLen) {
+        var t = (s || '').trim();
+        if (!t) return '';
+        if (t.length <= maxLen) return t;
+        return t.slice(0, Math.max(0, maxLen - 1)) + '…';
+    }
+
     function syncMainSummary() {
+        var urlTrim = urlInp ? (urlInp.value || '').trim() : '';
         var fn = (hidden.value || '').trim();
         if (!sumPreview || !sumImg || !sumName || !sumEmpty) return;
-        if (fn === '') {
+        var src = '';
+        var nameText = '';
+        var capUrl = 'Előnézet a „Kiemelt kép URL” mező alapján (elsőbbség az eventpics felett).';
+        var capPic = 'Előnézet az eventpics borító alapján (nincs kitöltött URL).';
+        if (urlTrim) {
+            src = resolveCoverImgSrcFromUrlField(urlTrim);
+            nameText = truncateLabel(urlTrim, 52);
+        } else if (fn) {
+            src = summaryBase() + encodeURIComponent(fn);
+            nameText = fn;
+        }
+        if (src === '') {
             sumPreview.hidden = true;
             sumEmpty.hidden = false;
             sumImg.removeAttribute('src');
             sumName.textContent = '';
+            if (sumSource) sumSource.textContent = '';
             return;
         }
         sumPreview.hidden = false;
         sumEmpty.hidden = true;
-        sumImg.src = summaryBase() + encodeURIComponent(fn);
-        sumName.textContent = fn;
+        sumImg.src = src;
+        sumName.textContent = nameText;
+        if (sumSource) sumSource.textContent = urlTrim ? capUrl : capPic;
     }
 
     function hasThumb(filename) {
@@ -604,6 +656,11 @@ $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
             syncModalSelection();
             syncMainSummary();
         });
+    }
+
+    if (urlInp) {
+        urlInp.addEventListener('input', syncMainSummary);
+        urlInp.addEventListener('change', syncMainSummary);
     }
 
     syncMainSummary();
