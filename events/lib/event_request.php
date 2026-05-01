@@ -91,6 +91,10 @@ function events_load_organizer_options(PDO $db): array {
 
 function events_load_category_options(PDO $db): array {
     $rows = $db->query('SELECT id, name, parent_id, sort_order FROM events_categories ORDER BY sort_order ASC, name ASC, id ASC')->fetchAll(PDO::FETCH_ASSOC);
+    $nameById = [];
+    foreach ($rows as $r) {
+        $nameById[(int) $r['id']] = (string) $r['name'];
+    }
     $children = [];
     foreach ($rows as $r) {
         $pid = isset($r['parent_id']) && $r['parent_id'] !== null ? (int) $r['parent_id'] : 0;
@@ -102,9 +106,20 @@ function events_load_category_options(PDO $db): array {
             'name' => (string) $r['name'],
         ];
     }
+    $appendParentSuffix = static function (int $parentId, string $base) use ($nameById): string {
+        if ($parentId <= 0) {
+            return $base;
+        }
+        $pname = $nameById[$parentId] ?? '';
+        if ($pname === '') {
+            return $base;
+        }
+
+        return $base . ' (' . $pname . ')';
+    };
     $out = [];
     $seen = [];
-    $walk = static function (int $pid, int $depth) use (&$walk, &$children, &$out, &$seen): void {
+    $walk = static function (int $pid, int $depth) use (&$walk, &$children, &$out, &$seen, $appendParentSuffix): void {
         foreach ($children[$pid] ?? [] as $node) {
             $id = (int) $node['id'];
             if ($id <= 0 || isset($seen[$id])) {
@@ -112,7 +127,8 @@ function events_load_category_options(PDO $db): array {
             }
             $seen[$id] = true;
             $prefix = str_repeat('— ', max(0, $depth));
-            $out[$id] = $prefix . (string) $node['name'];
+            $base = $prefix . (string) $node['name'];
+            $out[$id] = $appendParentSuffix($pid, $base);
             $walk($id, $depth + 1);
         }
     };
@@ -120,7 +136,8 @@ function events_load_category_options(PDO $db): array {
     foreach ($rows as $r) {
         $id = (int) $r['id'];
         if ($id > 0 && !isset($out[$id])) {
-            $out[$id] = (string) $r['name'];
+            $pid = isset($r['parent_id']) && $r['parent_id'] !== null ? (int) $r['parent_id'] : 0;
+            $out[$id] = $appendParentSuffix($pid, (string) $r['name']);
         }
     }
     return $out;
