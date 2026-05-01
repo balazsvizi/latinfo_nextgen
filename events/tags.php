@@ -156,6 +156,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(events_url('tags.php'));
     }
 
+    if ($action === 'bulk_add_specials_to_tags') {
+        $tagRaw = $_POST['tag_ids'] ?? [];
+        $specRaw = $_POST['bulk_special_tag_ids'] ?? [];
+        $tagIds = [];
+        if (is_array($tagRaw)) {
+            foreach ($tagRaw as $v) {
+                $t = (int) $v;
+                if ($t > 0 && !in_array($t, $tagIds, true)) {
+                    $tagIds[] = $t;
+                }
+            }
+        }
+        $specIds = [];
+        if (is_array($specRaw)) {
+            foreach ($specRaw as $v) {
+                $s = (int) $v;
+                if ($s > 0 && !in_array($s, $specIds, true)) {
+                    $specIds[] = $s;
+                }
+            }
+        }
+        if ($tagIds === []) {
+            flash('error', 'Válassz ki legalább egy címkét a táblázatban.');
+            redirect(events_url('tags.php'));
+        }
+        if ($specIds === []) {
+            flash('error', 'Válassz ki legalább egy speciális csoportot a hozzáadáshoz.');
+            redirect(events_url('tags.php'));
+        }
+        $ph = implode(',', array_fill(0, count($specIds), '?'));
+        $chk = $db->prepare("SELECT COUNT(*) FROM `events_specialtags` WHERE `id` IN ({$ph})");
+        $chk->execute($specIds);
+        if ((int) $chk->fetchColumn() !== count($specIds)) {
+            flash('error', 'Érvénytelen speciális csoport lett kijelölve.');
+            redirect(events_url('tags.php'));
+        }
+        $phTags = implode(',', array_fill(0, count($tagIds), '?'));
+        $chkTags = $db->prepare("SELECT COUNT(*) FROM `events_tags` WHERE `id` IN ({$phTags})");
+        $chkTags->execute($tagIds);
+        if ((int) $chkTags->fetchColumn() !== count($tagIds)) {
+            flash('error', 'Érvénytelen címke lett kijelölve.');
+            redirect(events_url('tags.php'));
+        }
+        $db->beginTransaction();
+        try {
+            foreach ($tagIds as $tid) {
+                events_merge_tag_special_memberships($db, $tid, $specIds);
+            }
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+        flash('success', 'A kijelölt speciális csoportok hozzá lettek adva ' . count($tagIds) . ' címkéhez.');
+        redirect(events_url('tags.php'));
+    }
+
     redirect(events_url('tags.php'));
 }
 
@@ -217,23 +274,28 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         >
             <thead>
                 <tr>
+                    <th scope="col" class="events-tags-bulk-th">
+                        <label class="events-tags-bulk-selectall visually-hidden" for="tags-bulk-select-all">Összes címke kijelölése</label>
+                        <input type="checkbox" id="tags-bulk-select-all" title="Összes címke kijelölése / törlése" aria-label="Összes címke kijelölése">
+                    </th>
                     <th scope="col">
                         <span class="events-inline-th-label">ID</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="0" data-sort-type="int" aria-label="Rendezés ID szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="1" data-sort-type="int" aria-label="Rendezés ID szerint">↕</button>
                     </th>
                     <th scope="col">
                         <span class="events-inline-th-label">Név</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="1" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="2" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
                     </th>
                     <th scope="col">
                         <span class="events-inline-th-label">Speciális csoportok</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="2" data-sort-type="text" aria-label="Rendezés csoport szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="3" data-sort-type="text" aria-label="Rendezés csoport szerint">↕</button>
                     </th>
                 </tr>
                 <tr class="events-inline-filter-row">
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="0" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="1" placeholder="Szűrés…" aria-label="Szűrés név"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="2" placeholder="Szűrés…" aria-label="Szűrés csoport"></th>
+                    <th class="events-tags-bulk-th"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="1" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="2" placeholder="Szűrés…" aria-label="Szűrés név"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="3" placeholder="Szűrés…" aria-label="Szűrés csoport"></th>
                 </tr>
             </thead>
             <tbody>
@@ -244,11 +306,12 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     role="button"
                     aria-expanded="<?= $openTagGroup === 'new' ? 'true' : 'false' ?>"
                 >
+                    <td class="events-tags-bulk-td"></td>
                     <td class="events-inline-summary-muted">—</td>
                     <td colspan="2"><strong>Új címke</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
                 </tr>
                 <tr class="events-inline-detail" data-expand-group="new" <?= $openTagGroup === 'new' ? '' : 'hidden' ?>>
-                    <td colspan="3">
+                    <td colspan="4">
                         <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                             <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                 <?= csrf_input('events_tags') ?>
@@ -296,12 +359,21 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         role="button"
                         aria-expanded="<?= $isOpen ? 'true' : 'false' ?>"
                     >
+                        <td class="events-tags-bulk-td">
+                            <input
+                                type="checkbox"
+                                name="tag_ids[]"
+                                value="<?= $tid ?>"
+                                form="tags-bulk-special-form"
+                                aria-label="Kijelölés: <?= h((string) $tr['name']) ?>"
+                            >
+                        </td>
                         <td><?= $tid ?></td>
                         <td><?= h((string) $tr['name']) ?></td>
                         <td><?= $slabel !== '' ? h($slabel) : '—' ?></td>
                     </tr>
                     <tr class="events-inline-detail" data-expand-group="<?= $tid ?>" <?= $isOpen ? '' : 'hidden' ?>>
-                        <td colspan="3">
+                        <td colspan="4">
                             <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                                 <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                     <?= csrf_input('events_tags') ?>
@@ -345,6 +417,33 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+
+    <div class="events-tags-bulk-panel">
+        <form id="tags-bulk-special-form" method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-bulk-form">
+            <?= csrf_input('events_tags') ?>
+            <input type="hidden" name="action" value="bulk_add_specials_to_tags">
+            <fieldset class="events-tags-bulk-fieldset">
+                <legend class="events-tags-bulk-legend">Csoportos művelet: speciális csoportok hozzáadása</legend>
+                <p class="help events-tags-bulk-help">Jelöld ki a címkéket a fenti táblázatban, válaszd ki a hozzáadandó speciális csoportokat, majd futtasd a műveletet. A meglévő csoport-hozzárendelések megmaradnak.</p>
+                <?php if ($specials === []): ?>
+                    <p class="help">Ehhez legalább egy speciális csoport szükséges (lent létrehozható).</p>
+                <?php else: ?>
+                    <div class="events-tags-special-checkboxes events-tags-bulk-checkboxes">
+                        <?php foreach ($specials as $sp): ?>
+                            <?php $sid = (int) $sp['id']; ?>
+                            <label class="events-tags-special-check-label">
+                                <input type="checkbox" name="bulk_special_tag_ids[]" value="<?= $sid ?>">
+                                <?= h((string) $sp['name']) ?> <span class="help">(#<?= $sid ?>)</span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="toolbar">
+                        <button type="submit" class="btn btn-primary">Hozzáadás a kijelöltekhez</button>
+                    </div>
+                <?php endif; ?>
+            </fieldset>
+        </form>
     </div>
 
     <h3 class="events-tags-section-title">Speciális csoportok szerkesztése</h3>
@@ -605,13 +704,14 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
             if (e.target.closest('a, button, input, textarea, select, label')) return;
             var g = sum.getAttribute('data-expand-group');
             if (!g) return;
-            var det = tbody.querySelector('.events-inline-detail[data-expand-group="' + CSS.escape(g) + '"]');
+            var det = queryByGroup(tbody, '.events-inline-detail', g);
             if (!det) return;
             toggleGroup(table, g);
         });
 
         tbody.addEventListener('keydown', function (e) {
             if (e.key !== 'Enter' && e.key !== ' ') return;
+            if (e.target.closest('input[type="checkbox"], input[type="search"], button')) return;
             var sum = e.target.closest('.events-inline-summary');
             if (!sum || !tbody.contains(sum)) return;
             e.preventDefault();
@@ -639,6 +739,15 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         var t = document.getElementById(id);
         if (t) bindExpandTable(t);
     });
+
+    var bulkMaster = document.getElementById('tags-bulk-select-all');
+    if (bulkMaster) {
+        bulkMaster.addEventListener('change', function () {
+            document.querySelectorAll('input[form="tags-bulk-special-form"][name="tag_ids[]"]').forEach(function (cb) {
+                cb.checked = bulkMaster.checked;
+            });
+        });
+    }
 })();
 </script>
 

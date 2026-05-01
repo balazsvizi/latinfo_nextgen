@@ -1729,6 +1729,48 @@ dialog.eventpics-modal::backdrop {
     margin-top: 1rem;
 }
 
+.events-tags-bulk-th,
+.events-tags-bulk-td {
+    width: 2.5rem;
+    text-align: center;
+    vertical-align: middle;
+}
+.events-tags-bulk-th {
+    white-space: nowrap;
+}
+.events-tags-bulk-td input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+.events-tags-bulk-panel {
+    margin: 1.25rem 0 0;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+}
+.events-tags-bulk-form {
+    margin: 0;
+}
+.events-tags-bulk-fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+.events-tags-bulk-legend {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    padding: 0;
+}
+.events-tags-bulk-help {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+.events-tags-bulk-checkboxes {
+    margin-bottom: 0.75rem;
+}
+
 @media (max-width: 640px) {
     .events-org-picker-row {
         grid-template-columns: 1fr;

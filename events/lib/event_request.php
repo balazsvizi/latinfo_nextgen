@@ -272,6 +272,31 @@ function events_save_tag_special_memberships(PDO $db, int $tagId, array $special
 }
 
 /**
+ * Meglévő speciális csoportok mellé hozzáad (nem távolít el korábbi kapcsolatot).
+ *
+ * @param list<int> $specialTagIdsToAdd
+ */
+function events_merge_tag_special_memberships(PDO $db, int $tagId, array $specialTagIdsToAdd): void {
+    if (!events_tags_tables_available($db)) {
+        return;
+    }
+    $add = [];
+    foreach ($specialTagIdsToAdd as $sid) {
+        $s = (int) $sid;
+        if ($s > 0 && !in_array($s, $add, true)) {
+            $add[] = $s;
+        }
+    }
+    if ($add === []) {
+        return;
+    }
+    $existing = events_load_special_ids_for_tag($db, $tagId);
+    $merged = array_values(array_unique(array_merge($existing, $add)));
+    sort($merged);
+    events_save_tag_special_memberships($db, $tagId, $merged);
+}
+
+/**
  * @return list<int>
  */
 function events_load_special_ids_for_tag(PDO $db, int $tagId): array {
