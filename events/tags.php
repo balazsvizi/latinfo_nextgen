@@ -212,85 +212,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </div>
     </div>
 
-    <div class="events-categories-layout">
-        <section class="events-tags-admin__tables">
-            <h3 style="margin-top:0;">Speciális tag csoportok</h3>
-            <div class="table-wrap events-admin-table-wrap" style="margin-bottom:2rem;">
-                <table class="sortable-table events-admin-table">
-                    <thead>
-                        <tr><th>ID</th><th>Név</th><th></th></tr>
-                    </thead>
-                    <tbody>
-                    <?php if ($specials === []): ?>
-                        <tr><td colspan="3">Még nincs speciális csoport.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($specials as $sp): ?>
-                            <?php $sid = (int) $sp['id']; ?>
-                            <tr>
-                                <td><?= $sid ?></td>
-                                <td><a class="events-cell-edit" href="<?= h(events_url('tags.php?edit_special=' . $sid)) ?>"><?= h((string) $sp['name']) ?></a></td>
-                                <td><a href="<?= h(events_url('tags.php?edit_special=' . $sid)) ?>" class="btn btn-secondary btn-sm">Szerkesztés</a></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <h3>Tag lista</h3>
-            <div class="table-wrap events-admin-table-wrap">
-                <table class="sortable-table events-admin-table">
-                    <thead>
-                        <tr><th>ID</th><th>Név</th><th>Speciális csoportok</th><th></th></tr>
-                    </thead>
-                    <tbody>
-                    <?php if ($tagsWithSpecials === []): ?>
-                        <tr><td colspan="4">Még nincs címke.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($tagsWithSpecials as $tr): ?>
-                            <?php $tid = (int) $tr['id']; ?>
-                            <tr>
-                                <td><?= $tid ?></td>
-                                <td><a class="events-cell-edit" href="<?= h(events_url('tags.php?edit_tag=' . $tid)) ?>"><?= h((string) $tr['name']) ?></a></td>
-                                <td><?= trim((string) ($tr['specials_label'] ?? '')) !== '' ? h((string) $tr['specials_label']) : '—' ?></td>
-                                <td><a href="<?= h(events_url('tags.php?edit_tag=' . $tid)) ?>" class="btn btn-secondary btn-sm">Szerkesztés</a></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <aside class="events-categories-form-wrap">
-            <h3 style="margin-top:0;">Speciális csoport</h3>
-            <form method="post" action="<?= h(events_url('tags.php') . ($formSpecial['id'] > 0 ? '?edit_special=' . (int) $formSpecial['id'] : '')) ?>">
-                <?= csrf_input('events_tags') ?>
-                <input type="hidden" name="action" value="save_specialtag">
-                <input type="hidden" name="id" value="<?= (int) $formSpecial['id'] ?>">
-                <div class="form-group">
-                    <label for="spec_name">Név *</label>
-                    <input type="text" id="spec_name" name="name" required maxlength="255" value="<?= h($formSpecial['name']) ?>" placeholder="pl. DJ-k, stílusok">
-                </div>
-                <div class="toolbar">
-                    <button type="submit" class="btn btn-primary">Mentés</button>
-                    <?php if ($formSpecial['id'] > 0): ?>
-                        <a class="btn btn-secondary" href="<?= h(events_url('tags.php')) ?>">Új csoport</a>
-                    <?php endif; ?>
-                </div>
-            </form>
-            <?php if ($formSpecial['id'] > 0): ?>
-                <form method="post" action="<?= h(events_url('tags.php?edit_special=' . (int) $formSpecial['id'])) ?>" style="margin-top:1rem;" onsubmit="return confirm('Biztosan törlöd ezt a speciális csoportot? A címkék kapcsolatai ehhez a csoporthoz törlődnek.');">
-                    <?= csrf_input('events_tags') ?>
-                    <input type="hidden" name="action" value="delete_specialtag">
-                    <input type="hidden" name="id" value="<?= (int) $formSpecial['id'] ?>">
-                    <button type="submit" class="btn btn-secondary">Csoport törlése</button>
-                </form>
-            <?php endif; ?>
-
-            <hr style="margin:1.75rem 0 1.25rem;border:none;border-top:1px solid var(--border,#ddd);">
-
-            <h3 style="margin-top:0;">Címke</h3>
+    <div class="events-tags-admin__forms-top">
+        <div class="events-tags-admin__form-panel events-tags-admin__form-panel--tag">
+            <h3 style="margin-top:0;"><?= $formTag['id'] > 0 ? 'Címke szerkesztése' : 'Új címke' ?></h3>
             <form method="post" action="<?= h(events_url('tags.php') . ($formTag['id'] > 0 ? '?edit_tag=' . (int) $formTag['id'] : '')) ?>">
                 <?= csrf_input('events_tags') ?>
                 <input type="hidden" name="action" value="save_tag">
@@ -303,7 +227,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <legend style="font-size:0.9rem;font-weight:600;margin-bottom:0.35rem;">Speciális csoport(ok)</legend>
                     <p class="help" style="margin-top:0;">Jelöld be, ha a címke tartozik valamelyik csoportba.</p>
                     <?php if ($specials === []): ?>
-                        <p class="help">Előbb hozz létre legalább egy speciális csoportot.</p>
+                        <p class="help">Előbb add meg jobbra a speciális csoport nevét, majd mentsd.</p>
                     <?php else: ?>
                         <div class="events-tags-special-checkboxes">
                             <?php foreach ($specials as $sp): ?>
@@ -332,8 +256,83 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 </form>
                 <p class="help" style="margin-top:0.5rem;">Törlés csak akkor lehetséges, ha egy esemény sem használja.</p>
             <?php endif; ?>
-        </aside>
+        </div>
+        <div class="events-tags-admin__form-panel events-tags-admin__form-panel--special">
+            <h3 style="margin-top:0;"><?= $formSpecial['id'] > 0 ? 'Speciális csoport szerkesztése' : 'Új speciális csoport' ?></h3>
+            <form method="post" action="<?= h(events_url('tags.php') . ($formSpecial['id'] > 0 ? '?edit_special=' . (int) $formSpecial['id'] : '')) ?>">
+                <?= csrf_input('events_tags') ?>
+                <input type="hidden" name="action" value="save_specialtag">
+                <input type="hidden" name="id" value="<?= (int) $formSpecial['id'] ?>">
+                <div class="form-group">
+                    <label for="spec_name">Név *</label>
+                    <input type="text" id="spec_name" name="name" required maxlength="255" value="<?= h($formSpecial['name']) ?>" placeholder="pl. DJ-k, stílusok">
+                </div>
+                <div class="toolbar">
+                    <button type="submit" class="btn btn-primary">Mentés</button>
+                    <?php if ($formSpecial['id'] > 0): ?>
+                        <a class="btn btn-secondary" href="<?= h(events_url('tags.php')) ?>">Új csoport</a>
+                    <?php endif; ?>
+                </div>
+            </form>
+            <?php if ($formSpecial['id'] > 0): ?>
+                <form method="post" action="<?= h(events_url('tags.php?edit_special=' . (int) $formSpecial['id'])) ?>" style="margin-top:1rem;" onsubmit="return confirm('Biztosan törlöd ezt a speciális csoportot? A címkék kapcsolatai ehhez a csoporthoz törlődnek.');">
+                    <?= csrf_input('events_tags') ?>
+                    <input type="hidden" name="action" value="delete_specialtag">
+                    <input type="hidden" name="id" value="<?= (int) $formSpecial['id'] ?>">
+                    <button type="submit" class="btn btn-secondary">Csoport törlése</button>
+                </form>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <section class="events-tags-admin__tables">
+        <h3 style="margin-top:0;">Speciális tag csoportok</h3>
+        <div class="table-wrap events-admin-table-wrap" style="margin-bottom:2rem;">
+            <table class="sortable-table events-admin-table">
+                <thead>
+                    <tr><th>ID</th><th>Név</th><th></th></tr>
+                </thead>
+                <tbody>
+                <?php if ($specials === []): ?>
+                    <tr><td colspan="3">Még nincs speciális csoport.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($specials as $sp): ?>
+                        <?php $sid = (int) $sp['id']; ?>
+                        <tr>
+                            <td><?= $sid ?></td>
+                            <td><a class="events-cell-edit" href="<?= h(events_url('tags.php?edit_special=' . $sid)) ?>"><?= h((string) $sp['name']) ?></a></td>
+                            <td><a href="<?= h(events_url('tags.php?edit_special=' . $sid)) ?>" class="btn btn-secondary btn-sm">Szerkesztés</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Tag lista</h3>
+        <div class="table-wrap events-admin-table-wrap">
+            <table class="sortable-table events-admin-table">
+                <thead>
+                    <tr><th>ID</th><th>Név</th><th>Speciális csoportok</th><th></th></tr>
+                </thead>
+                <tbody>
+                <?php if ($tagsWithSpecials === []): ?>
+                    <tr><td colspan="4">Még nincs címke.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($tagsWithSpecials as $tr): ?>
+                        <?php $tid = (int) $tr['id']; ?>
+                        <tr>
+                            <td><?= $tid ?></td>
+                            <td><a class="events-cell-edit" href="<?= h(events_url('tags.php?edit_tag=' . $tid)) ?>"><?= h((string) $tr['name']) ?></a></td>
+                            <td><?= trim((string) ($tr['specials_label'] ?? '')) !== '' ? h((string) $tr['specials_label']) : '—' ?></td>
+                            <td><a href="<?= h(events_url('tags.php?edit_tag=' . $tid)) ?>" class="btn btn-secondary btn-sm">Szerkesztés</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 
 <?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
