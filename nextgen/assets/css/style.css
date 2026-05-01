@@ -1772,6 +1772,49 @@ dialog.eventpics-modal::backdrop {
     margin-bottom: 0.75rem;
 }
 
+/* Címke admin tábla: ID oszlop ~6 karakter széles */
+#events-tags-inline-table {
+    table-layout: fixed;
+    width: 100%;
+}
+#events-tags-inline-table th:nth-child(2),
+#events-tags-inline-table td:nth-child(2) {
+    width: 6ch;
+    max-width: 6ch;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+#events-tags-inline-table thead tr:first-child th:nth-child(2) {
+    text-align: center;
+    line-height: 1.2;
+}
+#events-tags-inline-table thead tr:first-child th:nth-child(2) .events-inline-th-label {
+    display: block;
+    margin-right: 0;
+}
+#events-tags-inline-table thead tr:first-child th:nth-child(2) .events-inline-sort-btn {
+    display: inline-flex;
+    margin-top: 0.2rem;
+    margin-left: 0;
+}
+#events-tags-inline-table td:nth-child(2) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+#events-tags-inline-table .events-inline-filter-row th:nth-child(2) {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+}
+#events-tags-inline-table .events-inline-filter-row th:nth-child(2) .events-inline-filter-input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+
 @media (max-width: 640px) {
     .events-org-picker-row {
         grid-template-columns: 1fr;
