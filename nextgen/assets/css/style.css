@@ -1784,15 +1784,15 @@ dialog.eventpics-modal::backdrop {
     margin-bottom: 0.75rem;
 }
 
-/* Címke admin tábla: ID oszlop ~6 karakter széles */
+/* Címke admin tábla: ID oszlop keskeny, de elfér a 6 jegyű ID + szűrő placeholder */
 #events-tags-inline-table {
     table-layout: fixed;
     width: 100%;
 }
 #events-tags-inline-table th:nth-child(2),
 #events-tags-inline-table td:nth-child(2) {
-    width: 6ch;
-    max-width: 6ch;
+    width: 8.5rem;
+    min-width: 7rem;
     box-sizing: border-box;
     vertical-align: middle;
 }
@@ -1811,8 +1811,6 @@ dialog.eventpics-modal::backdrop {
 }
 #events-tags-inline-table td:nth-child(2) {
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     text-align: center;
 }
 #events-tags-inline-table .events-inline-filter-row th:nth-child(2) {
