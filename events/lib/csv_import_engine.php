@@ -447,6 +447,49 @@ function events_csv_build_row_values(
         }
     }
 
+    if ($table === 'events_categories') {
+        if (array_key_exists('color', $values)) {
+            $colorRaw = trim((string) $values['color']);
+            if ($colorRaw === '') {
+                $values['color'] = '#6D8F63';
+            } else {
+                $color = strtoupper($colorRaw);
+                if (!preg_match('/^#[0-9A-F]{6}$/', $color)) {
+                    return [[], 'color: formátum #RRGGBB legyen.'];
+                }
+                $values['color'] = $color;
+            }
+        } elseif (!$forUpdate) {
+            $values['color'] = '#6D8F63';
+        }
+        if (array_key_exists('parent_id', $values) && $values['parent_id'] !== null) {
+            $pid = (int) $values['parent_id'];
+            if ($pid <= 0) {
+                $values['parent_id'] = null;
+            } else {
+                $stParent = $db->prepare('SELECT 1 FROM `events_categories` WHERE `id` = ? LIMIT 1');
+                $stParent->execute([$pid]);
+                if (!$stParent->fetchColumn()) {
+                    return [[], 'parent_id: nem létező kategória.'];
+                }
+                if ($slugExcludeId !== null && $pid === $slugExcludeId) {
+                    return [[], 'parent_id: nem lehet önmaga.'];
+                }
+                $values['parent_id'] = $pid;
+            }
+        }
+        if (!array_key_exists('sort_order', $values) || $values['sort_order'] === null) {
+            $values['sort_order'] = 0;
+        }
+        if (!$forUpdate) {
+            $name = trim((string) ($values['name'] ?? ''));
+            if ($name === '') {
+                return [[], 'name kötelező új sorhoz.'];
+            }
+            $values['name'] = $name;
+        }
+    }
+
     if ($table === 'events_calendar_event_organizers') {
         $ev = (int) ($values['event_id'] ?? 0);
         $org = (int) ($values['organizer_id'] ?? 0);
@@ -455,6 +498,13 @@ function events_csv_build_row_values(
         }
         if (!array_key_exists('sort_order', $values) || $values['sort_order'] === null) {
             $values['sort_order'] = 0;
+        }
+    }
+    if ($table === 'events_calendar_event_categories') {
+        $ev = (int) ($values['event_id'] ?? 0);
+        $cat = (int) ($values['category_id'] ?? 0);
+        if ($ev <= 0 || $cat <= 0) {
+            return [[], 'event_id és category_id kötelező minden sorhoz.'];
         }
     }
 
@@ -548,6 +598,40 @@ function events_csv_upsert_event_organizer_link(PDO $db, array $values): string 
     return 'inserted';
 }
 
+function events_csv_event_category_link_exists(PDO $db, int $eventId, int $categoryId): bool {
+    $st = $db->prepare('SELECT 1 FROM `events_calendar_event_categories` WHERE `event_id` = ? AND `category_id` = ? LIMIT 1');
+    $st->execute([$eventId, $categoryId]);
+    return (bool) $st->fetchColumn();
+}
+
+/**
+ * @param array<string,mixed> $values event_id, category_id
+ * @return 'inserted'|'updated'
+ */
+function events_csv_upsert_event_category_link(PDO $db, array $values): string {
+    $eventId = (int) ($values['event_id'] ?? 0);
+    $categoryId = (int) ($values['category_id'] ?? 0);
+    if ($eventId <= 0 || $categoryId <= 0) {
+        throw new RuntimeException('event_id és category_id kötelező.');
+    }
+    $chkEv = $db->prepare('SELECT 1 FROM `events_calendar_events` WHERE `id` = ? LIMIT 1');
+    $chkEv->execute([$eventId]);
+    if (!$chkEv->fetchColumn()) {
+        throw new RuntimeException('Nem létezik esemény ezzel az ID-val: ' . $eventId);
+    }
+    $chkCat = $db->prepare('SELECT 1 FROM `events_categories` WHERE `id` = ? LIMIT 1');
+    $chkCat->execute([$categoryId]);
+    if (!$chkCat->fetchColumn()) {
+        throw new RuntimeException('Nem létezik kategória ezzel az ID-val: ' . $categoryId);
+    }
+    if (events_csv_event_category_link_exists($db, $eventId, $categoryId)) {
+        return 'updated';
+    }
+    $db->prepare('INSERT INTO `events_calendar_event_categories` (`event_id`, `category_id`) VALUES (?,?)')
+        ->execute([$eventId, $categoryId]);
+    return 'inserted';
+}
+
 /**
  * @return bool True, ha futott UPDATE; false, ha nem volt egyetlen frissítendő mező sem (kihagyás).
  */
@@ -638,7 +722,13 @@ function events_csv_import_run(
                 continue;
             }
             try {
-                $op = events_csv_upsert_event_organizer_link($db, $vals);
+                if ($table === 'events_calendar_event_organizers') {
+                    $op = events_csv_upsert_event_organizer_link($db, $vals);
+                } elseif ($table === 'events_calendar_event_categories') {
+                    $op = events_csv_upsert_event_category_link($db, $vals);
+                } else {
+                    throw new RuntimeException('Nem támogatott composite cél tábla: ' . $table);
+                }
                 if ($op === 'updated') {
                     $updated++;
                 } else {

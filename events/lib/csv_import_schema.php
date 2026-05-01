@@ -41,6 +41,15 @@ function events_csv_import_schema(): array {
                 'sort_order' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = 0; kisebb = előrébb'],
             ],
         ],
+        'events_calendar_event_categories' => [
+            'label' => 'Esemény–kategória (`events_calendar_event_categories`, ID alapján)',
+            'composite_key' => ['event_id', 'category_id'],
+            'id_max_import' => 0,
+            'columns' => [
+                'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
+                'category_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Kategória ID (events_categories.id)'],
+            ],
+        ],
         'events_organizers' => [
             'label' => 'Szervezők (`events_organizers`)',
             'id_max_import' => 100000,
@@ -62,6 +71,19 @@ function events_csv_import_schema(): array {
                 'postal_code' => ['type' => 'string', 'max' => 16, 'nullable' => true, 'note' => 'IRSZ'],
                 'address' => ['type' => 'text', 'nullable' => true, 'note' => 'Utca, házszám'],
                 'linked_venue_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Másik venue ID; nyilvános név linkhez'],
+                'created' => ['type' => 'datetime', 'nullable' => true],
+                'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
+            ],
+        ],
+        'events_categories' => [
+            'label' => 'Kategóriák (`events_categories`)',
+            'id_max_import' => 100000,
+            'columns' => [
+                'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥10000). Kitöltve: max 100000, upsert.'],
+                'name' => ['type' => 'string', 'max' => 255, 'nullable' => false],
+                'parent_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Szülő kategória ID; üres = gyökér'],
+                'color' => ['type' => 'string', 'max' => 7, 'nullable' => true, 'note' => 'Hex szín, pl. #6D8F63'],
+                'sort_order' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = 0; kisebb = előrébb'],
                 'created' => ['type' => 'datetime', 'nullable' => true],
                 'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
             ],
