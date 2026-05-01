@@ -65,11 +65,11 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
             <?php if ($organizers === []): ?>
                 <p class="help">Nincs szervező rögzítve. Előbb <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_organizers">CSV importtal</a> vagy az adatbázisban vegyél fel szervezőket.</p>
             <?php else: ?>
-                <p class="help">Szűrj, majd <strong>+</strong> a felvételhez. A gombok a két lista között vannak.</p>
+                <p class="help">Felül szűrés, alatta választó lista, középen <strong>+</strong> / <strong>−</strong>, alul a kiválasztottak.</p>
                 <input type="search" id="org-picker-filter" class="events-org-filter" placeholder="Szűrés név vagy ID szerint…" autocomplete="off" spellcheck="false">
                 <div class="events-org-picker-grid">
                     <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="org-picker-pool">Szervezők</label>
+                        <label class="events-org-picker-label" for="org-picker-pool">Kiválasztó lista</label>
                         <select id="org-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
                     </div>
                     <div class="events-org-picker-btns">
@@ -97,7 +97,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
                 <input type="search" id="venue-picker-filter" class="events-org-filter" placeholder="Helyszín keresése..." autocomplete="off" spellcheck="false">
                 <div class="events-org-picker-grid">
                     <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="venue-picker-pool">Helyszínek</label>
+                        <label class="events-org-picker-label" for="venue-picker-pool">Kiválasztó lista</label>
                         <select id="venue-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
                     </div>
                     <div class="events-org-picker-btns">
@@ -194,7 +194,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <input type="search" id="cat-picker-filter" class="events-org-filter" placeholder="Kategória keresése..." autocomplete="off" spellcheck="false">
         <div class="events-org-picker-grid">
             <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="cat-picker-pool">Kategóriák</label>
+                <label class="events-org-picker-label" for="cat-picker-pool">Kiválasztó lista</label>
                 <select id="cat-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
             </div>
             <div class="events-org-picker-btns">
