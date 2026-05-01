@@ -256,8 +256,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </div>
     </div>
 
-    <p class="help" style="margin-top:0;">A kategóriák több szintűek lehetnek (szülő → gyermek). A <strong>név</strong> mindig magyar (admin és választók).<?= $categoriesNameEnOk ? ' Az <strong>angol név</strong> a nyilvános EN nézetben látszik, ha ki van töltve.' : '' ?> Az új rekordok ID-je 10000-től indul (AUTO_INCREMENT).</p>
-
     <div class="events-categories-layout">
         <section class="events-categories-table-wrap">
             <div class="table-wrap events-admin-table-wrap">
@@ -266,9 +264,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         <tr>
                             <th>ID</th>
                             <th>Név (HU)</th>
-                            <?php if ($categoriesNameEnOk): ?>
-                                <th>Név (EN)</th>
-                            <?php endif; ?>
+                            <th>Név (EN)</th>
                             <th>Szín</th>
                             <th>Sorrend</th>
                             <th>Módosítva</th>
@@ -277,7 +273,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <tbody>
                     <?php if ($flat === []): ?>
                         <tr>
-                            <td colspan="<?= $categoriesNameEnOk ? 6 : 5 ?>">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
+                            <td colspan="6">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($flat as $r): ?>
@@ -295,9 +291,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         <?= h($indent . (string) $r['name']) ?>
                                     </a>
                                 </td>
-                                <?php if ($categoriesNameEnOk): ?>
-                                    <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
-                                <?php endif; ?>
+                                <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
                                 <td>
                                     <span class="events-category-color-chip">
                                         <span class="events-category-color-chip__dot" style="background: <?= h($color) ?>;"></span>
