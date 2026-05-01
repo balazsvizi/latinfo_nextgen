@@ -1636,27 +1636,97 @@ dialog.eventpics-modal::backdrop {
     flex-shrink: 0;
 }
 
-/* Címke admin: felül címke + speciális csoport űrlap egymás mellett */
-.events-tags-admin__forms-top {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
-    gap: 1rem 1.25rem;
-    align-items: start;
-    margin-bottom: 2rem;
-}
+/* Címke admin: inline űrlap a táblában */
 .events-tags-admin__form-panel {
     padding: 1rem 1.15rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--bg-elevated);
 }
-.events-tags-admin__form-panel h3 {
-    margin-bottom: 0.75rem;
+.events-tags-admin__form-panel--inline {
+    margin: 0;
+    max-width: 42rem;
 }
-@media (max-width: 900px) {
-    .events-tags-admin__forms-top {
-        grid-template-columns: 1fr;
-    }
+.events-tags-section-title {
+    margin: 2rem 0 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+.events-inline-expand-wrap {
+    margin-bottom: 0;
+}
+.events-inline-expand-table .events-inline-th-label {
+    margin-right: 0.25rem;
+}
+.events-inline-expand-table th {
+    vertical-align: bottom;
+}
+.events-inline-sort-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
+    margin-left: 0.15rem;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.85rem;
+    line-height: 1;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.events-inline-sort-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.events-inline-filter-row th {
+    padding-top: 0.35rem;
+    padding-bottom: 0.5rem;
+    background: var(--bg);
+}
+.events-inline-filter-input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8125rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+.events-inline-summary {
+    cursor: pointer;
+}
+.events-inline-summary:hover td {
+    background: var(--bg);
+}
+.events-inline-summary.is-active td {
+    background: var(--primary-light);
+}
+.events-inline-summary-muted {
+    color: var(--text-muted);
+}
+.events-inline-summary-hint {
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.events-inline-detail td {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+}
+.events-tags-special-legend {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    padding: 0;
+}
+.events-tags-special-help {
+    margin-top: 0;
+}
+.events-tags-delete-form {
+    margin-top: 1rem;
 }
 
 @media (max-width: 640px) {
