@@ -81,3 +81,23 @@ if (!function_exists('events_public_favicon_head_markup')) {
         return '<link rel="icon" href="' . h($href) . '" type="image/svg+xml" sizes="any">' . "\n";
     }
 }
+
+if (!function_exists('events_categories_name_en_available')) {
+    /**
+     * Van-e events_categories.name_en oszlop (régi DB-k migráció nélkül működjenek).
+     */
+    function events_categories_name_en_available(PDO $db): bool {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $db->query('SELECT `name_en` FROM `events_categories` LIMIT 1');
+            $cached = true;
+        } catch (PDOException $e) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+}

@@ -20,7 +20,9 @@ function events_category_locale_label(string $lang, string $nameHu, string $name
  * @return list<array<string,mixed>>
  */
 function events_public_event_category_rows(PDO $db, int $eventId): array {
-    $st = $db->prepare('
+    $useEn = function_exists('events_categories_name_en_available') && events_categories_name_en_available($db);
+    if ($useEn) {
+        $sql = '
         SELECT
             c.`id`,
             c.`name`,
@@ -35,7 +37,26 @@ function events_public_event_category_rows(PDO $db, int $eventId): array {
         LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
         WHERE ec.`event_id` = ?
         ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
-    ');
+    ';
+    } else {
+        $sql = '
+        SELECT
+            c.`id`,
+            c.`name`,
+            \'\' AS `name_en`,
+            c.`parent_id`,
+            c.`sort_order`,
+            c.`color`,
+            p.`name` AS `parent_name`,
+            \'\' AS `parent_name_en`
+        FROM `events_calendar_event_categories` ec
+        INNER JOIN `events_categories` c ON c.`id` = ec.`category_id`
+        LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
+        WHERE ec.`event_id` = ?
+        ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
+    ';
+    }
+    $st = $db->prepare($sql);
     $st->execute([$eventId]);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 

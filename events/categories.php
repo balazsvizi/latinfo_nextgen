@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
 requireLogin();
 
 $db = getDb();
+$categoriesNameEnOk = events_categories_name_en_available($db);
 
 /**
  * @param list<array<string,mixed>> $rows
@@ -96,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_category') {
         $id = (int) ($_POST['id'] ?? 0);
         $name = trim((string) ($_POST['name'] ?? ''));
-        $nameEn = trim((string) ($_POST['name_en'] ?? ''));
+        $nameEn = $categoriesNameEnOk ? trim((string) ($_POST['name_en'] ?? '')) : '';
         $parentRaw = trim((string) ($_POST['parent_id'] ?? ''));
         $parentId = $parentRaw === '' ? null : (int) $parentRaw;
         $color = strtoupper(trim((string) ($_POST['color'] ?? '#6D8F63')));
@@ -107,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('error', 'A kategória neve kötelező.');
             redirect(events_url('categories.php') . ($id > 0 ? '?edit=' . $id : ''));
         }
-        if (strlen($nameEn) > 255) {
+        if ($categoriesNameEnOk && strlen($nameEn) > 255) {
             flash('error', 'Az angol név legfeljebb 255 karakter lehet.');
             redirect(events_url('categories.php') . ($id > 0 ? '?edit=' . $id : ''));
         }
@@ -140,15 +141,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($id > 0) {
-            $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `name_en` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ? WHERE `id` = ?');
-            $st->execute([$name, $nameEn, $parentId, $color, $sortOrder, $id]);
+            if ($categoriesNameEnOk) {
+                $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `name_en` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ? WHERE `id` = ?');
+                $st->execute([$name, $nameEn, $parentId, $color, $sortOrder, $id]);
+            } else {
+                $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ? WHERE `id` = ?');
+                $st->execute([$name, $parentId, $color, $sortOrder, $id]);
+            }
             flash('success', 'Kategória mentve.');
             rendszer_log('kategória', $id, 'Módosítva', $name . ' (' . $color . ')');
             redirect(events_url('categories.php?edit=') . $id);
         }
 
-        $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `name_en`, `parent_id`, `color`, `sort_order`) VALUES (?, ?, ?, ?, ?)');
-        $ins->execute([$name, $nameEn, $parentId, $color, $sortOrder]);
+        if ($categoriesNameEnOk) {
+            $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `name_en`, `parent_id`, `color`, `sort_order`) VALUES (?, ?, ?, ?, ?)');
+            $ins->execute([$name, $nameEn, $parentId, $color, $sortOrder]);
+        } else {
+            $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `parent_id`, `color`, `sort_order`) VALUES (?, ?, ?, ?)');
+            $ins->execute([$name, $parentId, $color, $sortOrder]);
+        }
         $newId = (int) $db->lastInsertId();
         flash('success', 'Kategória létrehozva.');
         rendszer_log('kategória', $newId, 'Létrehozva', $name . ' (' . $color . ')');
@@ -196,7 +207,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(events_url('categories.php'));
 }
 
-$rows = $db->query('SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` ORDER BY `sort_order` ASC, `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+if ($categoriesNameEnOk) {
+    $rows = $db->query('SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` ORDER BY `sort_order` ASC, `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $rows = $db->query('SELECT `id`, `name`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` ORDER BY `sort_order` ASC, `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as &$r) {
+        $r['name_en'] = '';
+    }
+    unset($r);
+}
 $flat = events_categories_flatten_tree($rows);
 $byId = [];
 foreach ($rows as $r) {
@@ -224,6 +243,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+<?php if (!$categoriesNameEnOk): ?>
+    <p class="alert alert-warning">Az adatbázisban még nincs <code>name_en</code> oszlop a kategóriáknál. Az oldal így is működik (csak magyar név). A kétnyelvű megjelenítéshez futtasd a szervertől: <code>events/sql/migration_categories_name_en.sql</code></p>
+<?php endif; ?>
 
 <div class="card events-admin-card">
     <div class="events-list-head">
