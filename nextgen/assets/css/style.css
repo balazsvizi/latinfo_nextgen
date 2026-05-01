@@ -205,6 +205,15 @@ a.header-user:hover {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
+/* Csak almenü: a szülő címke nem nyit oldalt (pl. Event admin „Egyéb”) */
+.nav-parent-link--label {
+    cursor: default;
+    user-select: none;
+}
+.nav-parent-link--label:hover {
+    color: var(--text-secondary);
+    background: transparent;
+}
 .nav-parent-arrow {
     background: none;
     border: none;

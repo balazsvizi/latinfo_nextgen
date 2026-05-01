@@ -79,7 +79,7 @@ if ($navZone === 'events') {
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
-                        <a href="<?= h(site_url('events/boritokepek.php')) ?>" class="nav-parent-link">Egyéb</a>
+                        <span class="nav-parent-link nav-parent-link--label" tabindex="0">Egyéb</span>
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-egyeb" aria-label="Egyéb almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
