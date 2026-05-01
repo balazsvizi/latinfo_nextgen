@@ -2,11 +2,16 @@
 declare(strict_types=1);
 /** @var array $e aktuális mezőértékek */
 /** @var array $organizers id => név */
+/** @var array $categories id => név */
 /** @var array<int, string> $venues id => név (events_load_venue_options) */
 if (!isset($venues) || !is_array($venues)) {
     $venues = [];
 }
+if (!isset($categories) || !is_array($categories)) {
+    $categories = [];
+}
 $selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_values(array_unique(array_map('intval', $e['organizer_ids']))) : [];
+$selCat = isset($e['category_ids']) && is_array($e['category_ids']) ? array_values(array_unique(array_map('intval', $e['category_ids']))) : [];
 $orgPickerAll = [];
 foreach ($organizers as $oid => $onev) {
     $orgPickerAll[] = ['id' => (int) $oid, 'name' => (string) $onev];
@@ -18,6 +23,17 @@ $orgPickerJson = json_encode(
 );
 if ($orgPickerJson === false) {
     $orgPickerJson = '{"all":[],"selected":[]}';
+}
+$catPickerAll = [];
+foreach ($categories as $cid => $cnev) {
+    $catPickerAll[] = ['id' => (int) $cid, 'name' => (string) $cnev];
+}
+$catPickerJson = json_encode(
+    ['all' => $catPickerAll, 'selected' => $selCat],
+    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+);
+if ($catPickerJson === false) {
+    $catPickerJson = '{"all":[],"selected":[]}';
 }
 $eventpicFiles = events_eventpics_list_files();
 $selectedVenueId = (string) ($e['venue_id'] ?? '');
@@ -49,18 +65,16 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
             <?php if ($organizers === []): ?>
                 <p class="help">Nincs szervező rögzítve. Előbb <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_organizers">CSV importtal</a> vagy az adatbázisban vegyél fel szervezőket.</p>
             <?php else: ?>
-                <p class="help">Szűrj, majd <strong>+</strong> a felvételhez. A kiválasztottak a lista alatt jelennek meg.</p>
+                <p class="help">Szűrj, majd <strong>+</strong> a felvételhez. A gombok a két lista között vannak.</p>
                 <input type="search" id="org-picker-filter" class="events-org-filter" placeholder="Szűrés név vagy ID szerint…" autocomplete="off" spellcheck="false">
-                <div class="events-org-picker-stack">
-                    <div class="events-org-picker-row">
-                        <div class="events-org-picker-col">
-                            <label class="events-org-picker-label" for="org-picker-pool">Szervezők</label>
-                            <select id="org-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
-                        </div>
-                        <div class="events-org-picker-btns">
-                            <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-add" title="Hozzáadás">+</button>
-                            <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-remove" title="Eltávolítás">−</button>
-                        </div>
+                <div class="events-org-picker-grid">
+                    <div class="events-org-picker-col">
+                        <label class="events-org-picker-label" for="org-picker-pool">Szervezők</label>
+                        <select id="org-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
+                    </div>
+                    <div class="events-org-picker-btns">
+                        <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-add" title="Hozzáadás">+</button>
+                        <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-remove" title="Eltávolítás">−</button>
                     </div>
                     <div class="events-org-picker-col">
                         <label class="events-org-picker-label" for="org-picker-selected">Kiválasztott</label>
@@ -81,16 +95,14 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
                 <input type="hidden" name="venue_id" value="">
             <?php else: ?>
                 <input type="search" id="venue-picker-filter" class="events-org-filter" placeholder="Helyszín keresése..." autocomplete="off" spellcheck="false">
-                <div class="events-org-picker-stack">
-                    <div class="events-org-picker-row">
-                        <div class="events-org-picker-col">
-                            <label class="events-org-picker-label" for="venue-picker-pool">Helyszínek</label>
-                            <select id="venue-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
-                        </div>
-                        <div class="events-org-picker-btns">
-                            <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-add" title="Kiválasztás">+</button>
-                            <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-remove" title="Törlés">−</button>
-                        </div>
+                <div class="events-org-picker-grid">
+                    <div class="events-org-picker-col">
+                        <label class="events-org-picker-label" for="venue-picker-pool">Helyszínek</label>
+                        <select id="venue-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
+                    </div>
+                    <div class="events-org-picker-btns">
+                        <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-add" title="Kiválasztás">+</button>
+                        <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-remove" title="Törlés">−</button>
                     </div>
                     <div class="events-org-picker-col">
                         <label class="events-org-picker-label" for="venue-picker-selected">Kiválasztott</label>
@@ -173,6 +185,34 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <?php endif; ?>
     </div>
 </div>
+<div class="card" style="margin-bottom:1rem;">
+    <h3 style="margin-top:0;">Kategóriák</h3>
+    <?php if ($categories === []): ?>
+        <p class="help">Nincs kategória felvéve. <a href="<?= h(events_url('categories.php')) ?>">Kategóriák</a> · vagy <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_categories">CSV import</a></p>
+    <?php else: ?>
+        <p class="help">Több kategória is hozzárendelhető az eseményhez.</p>
+        <input type="search" id="cat-picker-filter" class="events-org-filter" placeholder="Kategória keresése..." autocomplete="off" spellcheck="false">
+        <div class="events-org-picker-grid">
+            <div class="events-org-picker-col">
+                <label class="events-org-picker-label" for="cat-picker-pool">Kategóriák</label>
+                <select id="cat-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
+            </div>
+            <div class="events-org-picker-btns">
+                <button type="button" class="btn btn-secondary events-org-btn" id="cat-picker-add" title="Hozzáadás">+</button>
+                <button type="button" class="btn btn-secondary events-org-btn" id="cat-picker-remove" title="Eltávolítás">−</button>
+            </div>
+            <div class="events-org-picker-col">
+                <label class="events-org-picker-label" for="cat-picker-selected">Kiválasztott</label>
+                <select id="cat-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
+            </div>
+        </div>
+        <div id="cat-picker-hiddens" class="org-picker-hiddens">
+            <?php foreach ($selCat as $cid): ?>
+                <input type="hidden" name="category_ids[]" value="<?= (int) $cid ?>">
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
 <div class="card event-featured-card" style="margin-bottom:1rem;">
     <div class="event-featured-card__head">
         <h3 class="event-featured-card__title">Esemény képe</h3>
@@ -250,6 +290,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 </dialog>
 <script type="application/json" id="events-org-picker-json"><?= $orgPickerJson ?></script>
 <script type="application/json" id="events-venue-picker-json"><?= $venuePickerJson ?></script>
+<script type="application/json" id="events-cat-picker-json"><?= $catPickerJson ?></script>
 <script>
 (function () {
     var orgJsonEl = document.getElementById('events-org-picker-json');
@@ -382,6 +423,79 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         vSel.addEventListener('dblclick', removeVenue);
         renderVenueSelected();
         renderVenuePool();
+    }
+
+    var catJsonEl = document.getElementById('events-cat-picker-json');
+    var cPool = document.getElementById('cat-picker-pool');
+    var cSel = document.getElementById('cat-picker-selected');
+    var cFilter = document.getElementById('cat-picker-filter');
+    var cHiddens = document.getElementById('cat-picker-hiddens');
+    var cAdd = document.getElementById('cat-picker-add');
+    var cRemove = document.getElementById('cat-picker-remove');
+    if (catJsonEl && cPool && cSel && cFilter && cHiddens && cAdd && cRemove) {
+        var cData;
+        try { cData = JSON.parse(catJsonEl.textContent || '{}'); } catch (e) { cData = { all: [], selected: [] }; }
+        var cAll = Array.isArray(cData.all) ? cData.all : [];
+        var cSelected = Array.isArray(cData.selected) ? cData.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
+        var cNameById = {};
+        cAll.forEach(function (row) { cNameById[row.id] = row.name; });
+        function syncCatHiddens() {
+            cHiddens.innerHTML = '';
+            Array.from(cSel.options).forEach(function (opt) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'category_ids[]';
+                inp.value = opt.value;
+                cHiddens.appendChild(inp);
+            });
+        }
+        function renderCatPool() {
+            var q = (cFilter.value || '').trim().toLowerCase();
+            cPool.innerHTML = '';
+            var taken = {};
+            cSelected.forEach(function (id) { taken[id] = true; });
+            cAll.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
+                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
+                var opt = document.createElement('option');
+                opt.value = String(row.id);
+                opt.textContent = row.name + ' (#' + row.id + ')';
+                cPool.appendChild(opt);
+            });
+        }
+        function renderCatSelected() {
+            cSel.innerHTML = '';
+            cSelected.forEach(function (id) {
+                var opt = document.createElement('option');
+                opt.value = String(id);
+                opt.textContent = (cNameById[id] || '?') + ' (#' + id + ')';
+                cSel.appendChild(opt);
+            });
+            syncCatHiddens();
+        }
+        function addCat() {
+            var opt = cPool.options[cPool.selectedIndex];
+            if (!opt) return;
+            var id = parseInt(opt.value, 10);
+            if (!id || cSelected.indexOf(id) !== -1) return;
+            cSelected.push(id);
+            renderCatSelected();
+            renderCatPool();
+        }
+        function removeCat() {
+            var opt = cSel.options[cSel.selectedIndex];
+            if (!opt) return;
+            var id = parseInt(opt.value, 10);
+            cSelected = cSelected.filter(function (x) { return x !== id; });
+            renderCatSelected();
+            renderCatPool();
+        }
+        cFilter.addEventListener('input', renderCatPool);
+        cAdd.addEventListener('click', addCat);
+        cRemove.addEventListener('click', removeCat);
+        cPool.addEventListener('dblclick', addCat);
+        cSel.addEventListener('dblclick', removeCat);
+        renderCatSelected();
+        renderCatPool();
     }
 })();
 

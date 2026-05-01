@@ -22,8 +22,10 @@ if (!$event) {
 }
 
 $organizers = events_load_organizer_options($db);
+$categories = events_load_category_options($db);
 $venues = events_load_venue_options($db);
 $event['organizer_ids'] = events_load_event_organizer_ids($db, $id);
+$event['category_ids'] = events_load_event_category_ids($db, $id);
 
 $hiba = '';
 $e = events_row_for_form($event);
@@ -32,11 +34,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-    [$row, $err, $organizerIds] = events_row_from_request($db, $event, $id);
+    [$row, $err, $organizerIds, $categoryIds] = events_row_from_request($db, $event, $id);
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
         $e['organizer_ids'] = $organizerIds;
+        $e['category_ids'] = $categoryIds;
     } else {
         try {
             $db->beginTransaction();
@@ -65,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id,
             ]);
             events_save_event_organizers($db, $id, $organizerIds);
+            events_save_event_categories($db, $id, $categoryIds);
             $db->commit();
             rendszer_log('esemény', $id, 'Módosítva', $row['event_name']);
             flash('success', 'Mentve.');
@@ -77,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hiba = 'Mentési hiba történt. Kérlek próbáld újra.';
             $e = events_row_for_form($row);
             $e['organizer_ids'] = $organizerIds;
+            $e['category_ids'] = $categoryIds;
         }
     }
     }

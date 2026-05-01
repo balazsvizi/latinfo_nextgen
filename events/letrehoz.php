@@ -8,6 +8,7 @@ requireLogin();
 
 $db = getDb();
 $organizers = events_load_organizer_options($db);
+$categories = events_load_category_options($db);
 $venues = events_load_venue_options($db);
 
 $defaults = [
@@ -24,6 +25,7 @@ $defaults = [
     'event_featured_image_url' => null,
     'event_latinfohu_partner' => 0,
     'organizer_ids' => [],
+    'category_ids' => [],
     'venue_id' => null,
 ];
 
@@ -34,11 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_letrehoz')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-    [$row, $err, $organizerIds] = events_row_from_request($db, $defaults, null);
+    [$row, $err, $organizerIds, $categoryIds] = events_row_from_request($db, $defaults, null);
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
         $e['organizer_ids'] = $organizerIds;
+        $e['category_ids'] = $categoryIds;
     } else {
         try {
             $db->beginTransaction();
@@ -67,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             $newId = (int) $db->lastInsertId();
             events_save_event_organizers($db, $newId, $organizerIds);
+            events_save_event_categories($db, $newId, $categoryIds);
             $db->commit();
             rendszer_log('esemény', $newId, 'Létrehozva', $row['event_name']);
             flash('success', 'Esemény létrehozva.');
@@ -79,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hiba = 'Mentési hiba történt. Kérlek próbáld újra.';
             $e = events_row_for_form($row);
             $e['organizer_ids'] = $organizerIds;
+            $e['category_ids'] = $categoryIds;
         }
     }
     }
