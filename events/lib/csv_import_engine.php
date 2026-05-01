@@ -504,6 +504,27 @@ function events_csv_build_row_values(
         }
     }
 
+    if ($table === 'events_tags') {
+        if (!events_tags_tables_available($db)) {
+            return [[], 'Az events_tags tábla nem elérhető (migration_tags.sql).'];
+        }
+        if (!$forUpdate) {
+            $name = trim((string) ($values['name'] ?? ''));
+            if ($name === '') {
+                return [[], 'name kötelező minden új címke sorhoz.'];
+            }
+            $values['name'] = $name;
+        } else {
+            if (array_key_exists('name', $values)) {
+                $name = trim((string) $values['name']);
+                if ($name === '') {
+                    return [[], 'name nem lehet üres (frissítés).'];
+                }
+                $values['name'] = $name;
+            }
+        }
+    }
+
     if ($table === 'events_calendar_event_organizers') {
         $ev = (int) ($values['event_id'] ?? 0);
         $org = (int) ($values['organizer_id'] ?? 0);
@@ -745,9 +766,11 @@ function events_csv_import_run(
     }
 
     $tagNotices = [];
-    $tagErr = events_csv_apply_tag_name_filter($db, $tagNameFilter, $tagNotices);
-    if ($tagErr !== null) {
-        return $emptyResult([$tagErr], [], $tagNotices);
+    if ($table !== 'events_tags') {
+        $tagErr = events_csv_apply_tag_name_filter($db, $tagNameFilter, $tagNotices);
+        if ($tagErr !== null) {
+            return $emptyResult([$tagErr], [], $tagNotices);
+        }
     }
 
     try {
@@ -813,6 +836,79 @@ function events_csv_import_run(
         }
 
         try {
+            if ($table === 'events_tags') {
+                if (!events_tags_tables_available($db)) {
+                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az events_tags tábla nem elérhető.";
+                    continue;
+                }
+                if ($idVal !== null && $idVal > 0) {
+                    $exists = events_csv_row_exists($db, 'events_tags', $idVal);
+                    if ($exists) {
+                        [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true, $idVal);
+                        if ($err !== null) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            continue;
+                        }
+                        if (array_key_exists('name', $vals)) {
+                            $newName = trim((string) $vals['name']);
+                            if ($newName !== '') {
+                                $stDup = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? AND `id` <> ? LIMIT 1');
+                                $stDup->execute([$newName, $idVal]);
+                                if ($stDup->fetchColumn()) {
+                                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$newName}” név már egy másik címkéhez tartozik.";
+                                    continue;
+                                }
+                            }
+                        }
+                        $didUpdate = events_csv_do_update($db, $table, $idVal, $vals);
+                        if ($didUpdate) {
+                            $updated++;
+                        } else {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező címke (id={$idVal}), nincs frissítendő mező.";
+                        }
+                    } else {
+                        [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
+                        if ($err !== null) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            continue;
+                        }
+                        $nm = trim((string) ($vals['name'] ?? ''));
+                        if ($nm === '') {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                            continue;
+                        }
+                        $stName = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
+                        $stName->execute([$nm]);
+                        if ($stName->fetchColumn()) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű címke már létezik.";
+                            continue;
+                        }
+                        $vals['id'] = $idVal;
+                        events_csv_do_insert($db, $table, $vals);
+                        $inserted++;
+                    }
+                } else {
+                    [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
+                    if ($err !== null) {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                        continue;
+                    }
+                    $nm = trim((string) ($vals['name'] ?? ''));
+                    if ($nm === '') {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                        continue;
+                    }
+                    $stName = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
+                    $stName->execute([$nm]);
+                    if ($stName->fetchColumn()) {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű címke már létezik.";
+                        continue;
+                    }
+                    events_csv_do_insert($db, $table, $vals);
+                    $inserted++;
+                }
+                continue;
+            }
             if ($idVal !== null && $idVal > 0) {
                 $exists = events_csv_row_exists($db, $table, $idVal);
                 if ($exists) {

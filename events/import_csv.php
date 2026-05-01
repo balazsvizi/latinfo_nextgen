@@ -176,7 +176,7 @@ if ($presetsJson === false) {
 }
 ?>
 <div class="card">
-    <h2>CSV import (események, esemény–szervező, esemény–kategória, kategóriák, szervezők, helyszínek; opcionális címkenév előfeltétel)</h2>
+    <h2>CSV import (események, címkék, szervezők, helyszínek, kategóriák, kapcsolótáblák; opcionális címkenév előfeltétel más táblákhoz)</h2>
     <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
@@ -290,7 +290,7 @@ if ($presetsJson === false) {
         <div class="form-group">
             <label for="tag_name_filter">Címkenév szűrés (opcionális)</label>
             <input type="text" id="tag_name_filter" name="tag_name_filter" value="<?= h($tagFilterVal) ?>" maxlength="255" placeholder="pl. Workshop – üres = nincs teendő">
-            <p class="help">Ha megadsz egy nevet, az import előtt lefut: ha már van ilyen nevű címke az <code>events_tags</code> táblában, nem történik semmi; ha nincs, új címkeként felvesszük. A CSV soroktól függetlenül, minden cél táblához ugyanaz a logika.</p>
+            <p class="help">Csak akkor érdemes kitölteni, ha a <strong>cél tábla nem</strong> „Címkék”: egyetlen név, amit az import előtt biztosítunk az <code>events_tags</code> táblában (létező névnél nincs teendő, új névnél beszúrás). A <strong>Címkék</strong> cél táblánál a soronkénti CSV import kezeli a neveket és a duplikátum kihagyást.</p>
         </div>
         <div class="form-group">
             <label for="csv_file">CSV fájl</label>

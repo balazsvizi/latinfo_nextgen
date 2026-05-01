@@ -89,5 +89,15 @@ function events_csv_import_schema(): array {
                 'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
             ],
         ],
+        'events_tags' => [
+            'label' => 'Címkék (`events_tags`)',
+            'id_max_import' => 100000,
+            'columns' => [
+                'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥20000). Kitöltve: max 100000, upsert. Ugyanilyen név már létezik → sor kihagyva.'],
+                'name' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'Címke neve (kötelező minden sorban).'],
+                'created' => ['type' => 'datetime', 'nullable' => true],
+                'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
+            ],
+        ],
     ];
 }
