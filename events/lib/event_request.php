@@ -106,20 +106,20 @@ function events_load_category_options(PDO $db): array {
             'name' => (string) $r['name'],
         ];
     }
-    $appendParentSuffix = static function (int $parentId, string $base) use ($nameById): string {
-        if ($parentId <= 0) {
-            return $base;
-        }
-        $pname = $nameById[$parentId] ?? '';
-        if ($pname === '') {
-            return $base;
+    /* Megjelenítés: Szülő / gyerek (gyökérnek csak a név) */
+    $formatCategoryLabel = static function (int $parentId, string $depthPrefix, string $leafName) use ($nameById): string {
+        if ($parentId > 0) {
+            $pname = $nameById[$parentId] ?? '';
+            if ($pname !== '') {
+                return $depthPrefix . $pname . ' / ' . $leafName;
+            }
         }
 
-        return $base . ' (' . $pname . ')';
+        return $depthPrefix . $leafName;
     };
     $out = [];
     $seen = [];
-    $walk = static function (int $pid, int $depth) use (&$walk, &$children, &$out, &$seen, $appendParentSuffix): void {
+    $walk = static function (int $pid, int $depth) use (&$walk, &$children, &$out, &$seen, $formatCategoryLabel): void {
         foreach ($children[$pid] ?? [] as $node) {
             $id = (int) $node['id'];
             if ($id <= 0 || isset($seen[$id])) {
@@ -127,8 +127,7 @@ function events_load_category_options(PDO $db): array {
             }
             $seen[$id] = true;
             $prefix = str_repeat('— ', max(0, $depth));
-            $base = $prefix . (string) $node['name'];
-            $out[$id] = $appendParentSuffix($pid, $base);
+            $out[$id] = $formatCategoryLabel($pid, $prefix, (string) $node['name']);
             $walk($id, $depth + 1);
         }
     };
@@ -137,7 +136,7 @@ function events_load_category_options(PDO $db): array {
         $id = (int) $r['id'];
         if ($id > 0 && !isset($out[$id])) {
             $pid = isset($r['parent_id']) && $r['parent_id'] !== null ? (int) $r['parent_id'] : 0;
-            $out[$id] = $appendParentSuffix($pid, (string) $r['name']);
+            $out[$id] = $formatCategoryLabel($pid, '', (string) $r['name']);
         }
     }
     return $out;
