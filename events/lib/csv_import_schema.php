@@ -80,7 +80,8 @@ function events_csv_import_schema(): array {
             'id_max_import' => 100000,
             'columns' => [
                 'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥10000). Kitöltve: max 100000, upsert.'],
-                'name' => ['type' => 'string', 'max' => 255, 'nullable' => false],
+                'name' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'Magyar név'],
+                'name_en' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'note' => 'Angol név; üres = változatlan (UPDATE) / üres INSERT'],
                 'parent_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Szülő kategória ID; üres = gyökér'],
                 'color' => ['type' => 'string', 'max' => 7, 'nullable' => true, 'note' => 'Hex szín, pl. #6D8F63'],
                 'sort_order' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = 0; kisebb = előrébb'],

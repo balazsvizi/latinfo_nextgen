@@ -96,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_category') {
         $id = (int) ($_POST['id'] ?? 0);
         $name = trim((string) ($_POST['name'] ?? ''));
+        $nameEn = trim((string) ($_POST['name_en'] ?? ''));
         $parentRaw = trim((string) ($_POST['parent_id'] ?? ''));
         $parentId = $parentRaw === '' ? null : (int) $parentRaw;
         $color = strtoupper(trim((string) ($_POST['color'] ?? '#6D8F63')));
@@ -104,6 +105,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($name === '') {
             flash('error', 'A kategória neve kötelező.');
+            redirect(events_url('categories.php') . ($id > 0 ? '?edit=' . $id : ''));
+        }
+        if (strlen($nameEn) > 255) {
+            flash('error', 'Az angol név legfeljebb 255 karakter lehet.');
             redirect(events_url('categories.php') . ($id > 0 ? '?edit=' . $id : ''));
         }
         if ($sortOrder < 0 || $sortOrder > 65535) {
@@ -135,15 +140,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($id > 0) {
-            $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ? WHERE `id` = ?');
-            $st->execute([$name, $parentId, $color, $sortOrder, $id]);
+            $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `name_en` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ? WHERE `id` = ?');
+            $st->execute([$name, $nameEn, $parentId, $color, $sortOrder, $id]);
             flash('success', 'Kategória mentve.');
             rendszer_log('kategória', $id, 'Módosítva', $name . ' (' . $color . ')');
             redirect(events_url('categories.php?edit=') . $id);
         }
 
-        $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `parent_id`, `color`, `sort_order`) VALUES (?, ?, ?, ?)');
-        $ins->execute([$name, $parentId, $color, $sortOrder]);
+        $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `name_en`, `parent_id`, `color`, `sort_order`) VALUES (?, ?, ?, ?, ?)');
+        $ins->execute([$name, $nameEn, $parentId, $color, $sortOrder]);
         $newId = (int) $db->lastInsertId();
         flash('success', 'Kategória létrehozva.');
         rendszer_log('kategória', $newId, 'Létrehozva', $name . ' (' . $color . ')');
@@ -191,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(events_url('categories.php'));
 }
 
-$rows = $db->query('SELECT `id`, `name`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` ORDER BY `sort_order` ASC, `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+$rows = $db->query('SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` ORDER BY `sort_order` ASC, `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
 $flat = events_categories_flatten_tree($rows);
 $byId = [];
 foreach ($rows as $r) {
@@ -207,6 +212,7 @@ if ($editId > 0 && isset($byId[$editId])) {
 $form = [
     'id' => $editRow ? (int) $editRow['id'] : 0,
     'name' => $editRow ? (string) $editRow['name'] : '',
+    'name_en' => $editRow ? (string) ($editRow['name_en'] ?? '') : '',
     'parent_id' => $editRow && $editRow['parent_id'] !== null ? (int) $editRow['parent_id'] : 0,
     'color' => $editRow ? (string) $editRow['color'] : '#6D8F63',
     'sort_order' => $editRow ? (int) $editRow['sort_order'] : 0,
@@ -228,7 +234,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </div>
     </div>
 
-    <p class="help" style="margin-top:0;">A kategóriák több szintűek lehetnek (szülő → gyermek). Az új rekordok ID-je 10000-től indul (AUTO_INCREMENT).</p>
+    <p class="help" style="margin-top:0;">A kategóriák több szintűek lehetnek (szülő → gyermek). A <strong>név</strong> magyar (admin és választók); az <strong>angol név</strong> a nyilvános EN nézetben látszik, ha ki van töltve. Az új rekordok ID-je 10000-től indul (AUTO_INCREMENT).</p>
 
     <div class="events-categories-layout">
         <section class="events-categories-table-wrap">
@@ -237,7 +243,8 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Név</th>
+                            <th>Név (HU)</th>
+                            <th>Név (EN)</th>
                             <th>Szín</th>
                             <th>Sorrend</th>
                             <th>Módosítva</th>
@@ -246,7 +253,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <tbody>
                     <?php if ($flat === []): ?>
                         <tr>
-                            <td colspan="5">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
+                            <td colspan="6">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($flat as $r): ?>
@@ -255,6 +262,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                             $depth = (int) ($r['_depth'] ?? 0);
                             $indent = str_repeat('— ', max(0, $depth));
                             $color = (string) ($r['color'] ?? '#6D8F63');
+                            $nameEnCell = trim((string) ($r['name_en'] ?? ''));
                             ?>
                             <tr>
                                 <td><?= $rid ?></td>
@@ -263,6 +271,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         <?= h($indent . (string) $r['name']) ?>
                                     </a>
                                 </td>
+                                <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
                                 <td>
                                     <span class="events-category-color-chip">
                                         <span class="events-category-color-chip__dot" style="background: <?= h($color) ?>;"></span>
@@ -287,8 +296,14 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 <input type="hidden" name="id" value="<?= (int) $form['id'] ?>">
 
                 <div class="form-group">
-                    <label for="cat_name">Név *</label>
+                    <label for="cat_name">Név (magyar) *</label>
                     <input type="text" id="cat_name" name="name" required maxlength="255" value="<?= h((string) $form['name']) ?>">
+                </div>
+
+                <div class="form-group">
+                    <label for="cat_name_en">Név (angol)</label>
+                    <input type="text" id="cat_name_en" name="name_en" maxlength="255" value="<?= h((string) $form['name_en']) ?>" placeholder="Opcionális; üres → EN nézetben is magyar név">
+                    <p class="help">Nyilvános esemény oldal: angol nézet csak akkor mutatja, ha ez ki van töltve (különben a magyar).</p>
                 </div>
 
                 <div class="form-group">

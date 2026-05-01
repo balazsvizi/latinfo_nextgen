@@ -57,6 +57,7 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'footer_home_link' => 'Latinfo.hu',
         'section_organizers' => 'Szervezők',
+        'section_categories' => 'Kategóriák',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -79,6 +80,7 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_aria' => 'Go to the Latinfo.hu homepage',
         'footer_home_link' => 'Latinfo.hu',
         'section_organizers' => 'Organizers',
+        'section_categories' => 'Categories',
     ];
 
     return $lang === 'en' ? $en : $hu;

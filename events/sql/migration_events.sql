@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS `events_venues` (
 -- Kategóriák (hierarchikus, egyéni színnel)
 CREATE TABLE IF NOT EXISTS `events_categories` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(255) NOT NULL,
+    `name` VARCHAR(255) NOT NULL COMMENT 'Magyar név (admin, választó, HU nyilvános)',
+    `name_en` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Angol; üres = EN nézetben is a magyar név',
     `parent_id` INT UNSIGNED NULL,
     `color` VARCHAR(7) NOT NULL DEFAULT '#6d8f63' COMMENT 'Hex szín, pl. #AABBCC',
     `sort_order` SMALLINT UNSIGNED NOT NULL DEFAULT 0,

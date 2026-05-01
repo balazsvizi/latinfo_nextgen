@@ -481,6 +481,15 @@ function events_csv_build_row_values(
         if (!array_key_exists('sort_order', $values) || $values['sort_order'] === null) {
             $values['sort_order'] = 0;
         }
+        if (array_key_exists('name_en', $values) && $values['name_en'] !== null) {
+            $ne = trim((string) $values['name_en']);
+            if (strlen($ne) > 255) {
+                return [[], 'name_en legfeljebb 255 karakter lehet.'];
+            }
+            $values['name_en'] = $ne;
+        } elseif (!$forUpdate) {
+            $values['name_en'] = '';
+        }
         if (!$forUpdate) {
             $name = trim((string) ($values['name'] ?? ''));
             if ($name === '') {

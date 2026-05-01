@@ -190,7 +190,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
     <?php if ($categories === []): ?>
         <p class="help">Nincs kategória felvéve. <a href="<?= h(events_url('categories.php')) ?>">Kategóriák</a> · vagy <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_categories">CSV import</a></p>
     <?php else: ?>
-        <p class="help">Több kategória is hozzárendelhető az eseményhez.</p>
+        <p class="help">Több kategória is hozzárendelhető az eseményhez. A választóban a magyar nevek látszanak.</p>
         <input type="search" id="cat-picker-filter" class="events-org-filter" placeholder="Kategória keresése..." autocomplete="off" spellcheck="false">
         <div class="events-org-picker-grid">
             <div class="events-org-picker-col">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/venue_request.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
+require_once __DIR__ . '/lib/category_locale.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 
 $lang = events_public_resolve_megjelenit_lang();
@@ -45,6 +46,7 @@ if (!$event) {
 
 $eventId = (int) ($event['id'] ?? 0);
 $eventOrganizers = events_public_event_organizers_for_display($db, $eventId);
+$eventCategories = events_public_event_category_rows($db, $eventId);
 
 $venueName = trim((string) ($event['venue_name'] ?? ''));
 $venueSlug = trim((string) ($event['venue_slug'] ?? ''));
@@ -181,6 +183,25 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
+            <?php if ($eventCategories !== []): ?>
+                <div class="event-hero-categories-top" role="group" aria-label="<?= h($T['section_categories']) ?>">
+                    <div class="event-hero-categories-top__cluster">
+                        <p class="event-hero-categories-top__eyebrow"><?= h($T['section_categories']) ?></p>
+                        <ul class="event-hero-category-pills" role="list">
+                            <?php foreach ($eventCategories as $catRow): ?>
+                                <?php
+                                $chipLabel = events_public_category_chip_label($lang, $catRow);
+                                $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
+                                $pillStyle = events_public_category_pill_inline_style($chipColor);
+                                ?>
+                                <li class="event-hero-category-pills__item">
+                                    <span class="event-hero-category-pill" style="<?= h($pillStyle) ?>"><?= h($chipLabel) ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            <?php endif; ?>
             <?php if ($eventOrganizers !== []): ?>
                 <div class="event-organizers-hero">
                     <ul class="event-org-chips event-org-chips--hero" role="list" aria-label="<?= h($T['section_organizers']) ?>">
