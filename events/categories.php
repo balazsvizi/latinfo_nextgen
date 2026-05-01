@@ -256,7 +256,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </div>
     </div>
 
-    <p class="help" style="margin-top:0;">A kategóriák több szintűek lehetnek (szülő → gyermek). A <strong>név</strong> magyar (admin és választók); az <strong>angol név</strong> a nyilvános EN nézetben látszik, ha ki van töltve. Az új rekordok ID-je 10000-től indul (AUTO_INCREMENT).</p>
+    <p class="help" style="margin-top:0;">A kategóriák több szintűek lehetnek (szülő → gyermek). A <strong>név</strong> mindig magyar (admin és választók).<?= $categoriesNameEnOk ? ' Az <strong>angol név</strong> a nyilvános EN nézetben látszik, ha ki van töltve.' : '' ?> Az új rekordok ID-je 10000-től indul (AUTO_INCREMENT).</p>
 
     <div class="events-categories-layout">
         <section class="events-categories-table-wrap">
@@ -266,7 +266,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         <tr>
                             <th>ID</th>
                             <th>Név (HU)</th>
-                            <th>Név (EN)</th>
+                            <?php if ($categoriesNameEnOk): ?>
+                                <th>Név (EN)</th>
+                            <?php endif; ?>
                             <th>Szín</th>
                             <th>Sorrend</th>
                             <th>Módosítva</th>
@@ -275,7 +277,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <tbody>
                     <?php if ($flat === []): ?>
                         <tr>
-                            <td colspan="6">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
+                            <td colspan="<?= $categoriesNameEnOk ? 6 : 5 ?>">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($flat as $r): ?>
@@ -293,7 +295,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         <?= h($indent . (string) $r['name']) ?>
                                     </a>
                                 </td>
-                                <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
+                                <?php if ($categoriesNameEnOk): ?>
+                                    <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
+                                <?php endif; ?>
                                 <td>
                                     <span class="events-category-color-chip">
                                         <span class="events-category-color-chip__dot" style="background: <?= h($color) ?>;"></span>
@@ -322,11 +326,13 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <input type="text" id="cat_name" name="name" required maxlength="255" value="<?= h((string) $form['name']) ?>">
                 </div>
 
+                <?php if ($categoriesNameEnOk): ?>
                 <div class="form-group">
                     <label for="cat_name_en">Név (angol)</label>
                     <input type="text" id="cat_name_en" name="name_en" maxlength="255" value="<?= h((string) $form['name_en']) ?>" placeholder="Opcionális; üres → EN nézetben is magyar név">
                     <p class="help">Nyilvános esemény oldal: angol nézet csak akkor mutatja, ha ez ki van töltve (különben a magyar).</p>
                 </div>
+                <?php endif; ?>
 
                 <div class="form-group">
                     <label for="cat_parent">Szülő kategória</label>
