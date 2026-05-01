@@ -101,3 +101,22 @@ if (!function_exists('events_categories_name_en_available')) {
         return $cached;
     }
 }
+
+if (!function_exists('events_tags_tables_available')) {
+    /** Van-e events_tags + esemény–tag kapcsoló (migráció nélkül ne omoljon össze az űrlap). */
+    function events_tags_tables_available(PDO $db): bool {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $db->query('SELECT 1 FROM `events_tags` LIMIT 1');
+            $db->query('SELECT 1 FROM `events_calendar_event_tags` LIMIT 1');
+            $cached = true;
+        } catch (PDOException $e) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+}

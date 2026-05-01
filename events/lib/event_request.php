@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/bootstrap.php';
 require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/eventpics.php';
 require_once __DIR__ . '/html_security.php';
@@ -179,6 +180,111 @@ function events_category_ids_from_post(): array {
 }
 
 /**
+ * @return array<int, string> id => név
+ */
+function events_load_tag_options(PDO $db): array {
+    if (!events_tags_tables_available($db)) {
+        return [];
+    }
+    $rows = $db->query('SELECT `id`, `name` FROM `events_tags` ORDER BY `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+    $out = [];
+    foreach ($rows as $r) {
+        $out[(int) $r['id']] = (string) $r['name'];
+    }
+    return $out;
+}
+
+/**
+ * @return list<int>
+ */
+function events_tag_ids_from_post(): array {
+    $raw = $_POST['tag_ids'] ?? [];
+    if (!is_array($raw)) {
+        return [];
+    }
+    $ids = [];
+    foreach ($raw as $v) {
+        $i = (int) $v;
+        if ($i > 0 && !in_array($i, $ids, true)) {
+            $ids[] = $i;
+        }
+    }
+    return $ids;
+}
+
+/**
+ * @param list<int> $tagIds
+ */
+function events_save_event_tags(PDO $db, int $eventId, array $tagIds): void {
+    if (!events_tags_tables_available($db)) {
+        return;
+    }
+    $db->prepare('DELETE FROM `events_calendar_event_tags` WHERE `event_id` = ?')->execute([$eventId]);
+    if ($tagIds === []) {
+        return;
+    }
+    $ins = $db->prepare('INSERT INTO `events_calendar_event_tags` (`event_id`, `tag_id`) VALUES (?,?)');
+    foreach ($tagIds as $tid) {
+        if ($tid <= 0) {
+            continue;
+        }
+        $ins->execute([$eventId, $tid]);
+    }
+}
+
+/**
+ * @return list<int>
+ */
+function events_load_event_tag_ids(PDO $db, int $eventId): array {
+    if (!events_tags_tables_available($db)) {
+        return [];
+    }
+    $st = $db->prepare('
+        SELECT `tag_id` FROM `events_calendar_event_tags`
+        WHERE `event_id` = ?
+        ORDER BY `tag_id` ASC
+    ');
+    $st->execute([$eventId]);
+
+    return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN, 0));
+}
+
+/**
+ * Tag ↔ speciális csoportok (teljes csere).
+ *
+ * @param list<int> $specialTagIds
+ */
+function events_save_tag_special_memberships(PDO $db, int $tagId, array $specialTagIds): void {
+    if (!events_tags_tables_available($db)) {
+        return;
+    }
+    $db->prepare('DELETE FROM `events_special_tags` WHERE `tag_id` = ?')->execute([$tagId]);
+    if ($specialTagIds === []) {
+        return;
+    }
+    $ins = $db->prepare('INSERT INTO `events_special_tags` (`special_tag_id`, `tag_id`) VALUES (?,?)');
+    foreach ($specialTagIds as $sid) {
+        if ($sid <= 0) {
+            continue;
+        }
+        $ins->execute([$sid, $tagId]);
+    }
+}
+
+/**
+ * @return list<int>
+ */
+function events_load_special_ids_for_tag(PDO $db, int $tagId): array {
+    if (!events_tags_tables_available($db)) {
+        return [];
+    }
+    $st = $db->prepare('SELECT `special_tag_id` FROM `events_special_tags` WHERE `tag_id` = ? ORDER BY `special_tag_id` ASC');
+    $st->execute([$tagId]);
+
+    return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN, 0));
+}
+
+/**
  * @param list<int> $organizerIds
  */
 function events_save_event_organizers(PDO $db, int $eventId, array $organizerIds): void {
@@ -244,7 +350,7 @@ function events_load_event_category_ids(PDO $db, int $eventId): array {
  * Űrlap → adatbázis mezők + slug egyediség.
  *
  * @param array<string,mixed> $defaults Alapértelmezett értékek (pl. DB sor szerkesztésnél)
- * @return array{0: array<string,mixed>, 1: ?string, 2: list<int>, 3: list<int>} [row, hibaüzenet vagy null, szervező ID-k, kategória ID-k]
+ * @return array{0: array<string,mixed>, 1: ?string, 2: list<int>, 3: list<int>, 4: list<int>} [row, hiba, szervező ID-k, kategória ID-k, tag ID-k]
  */
 function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlug): array {
     $row = $defaults;
@@ -272,6 +378,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $row['event_cost_to'] = $ct === '' ? null : (float) str_replace(',', '.', $ct);
     $organizerIds = events_organizer_ids_from_post();
     $categoryIds = events_category_ids_from_post();
+    $tagIds = events_tags_tables_available($db) ? events_tag_ids_from_post() : [];
 
     if ($categoryIds !== []) {
         $ph = implode(',', array_fill(0, count($categoryIds), '?'));
@@ -282,13 +389,26 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         $chk = $categoryIds;
         sort($chk);
         if ($existing !== $chk) {
-            return [$row, 'A kiválasztott kategóriák között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds];
+            return [$row, 'A kiválasztott kategóriák között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds];
+        }
+    }
+
+    if ($tagIds !== []) {
+        $ph = implode(',', array_fill(0, count($tagIds), '?'));
+        $stTags = $db->prepare("SELECT `id` FROM `events_tags` WHERE `id` IN ({$ph})");
+        $stTags->execute($tagIds);
+        $existTags = array_map('intval', $stTags->fetchAll(PDO::FETCH_COLUMN, 0));
+        sort($existTags);
+        $chkT = $tagIds;
+        sort($chkT);
+        if ($existTags !== $chkT) {
+            return [$row, 'A kiválasztott címkék között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds];
         }
     }
 
     [$eventUrl, $eventUrlErr] = events_normalize_safe_url((string) ($_POST['event_url'] ?? ''), true);
     if ($eventUrlErr !== null) {
-        return [$row, $eventUrlErr, $organizerIds, $categoryIds];
+        return [$row, $eventUrlErr, $organizerIds, $categoryIds, $tagIds];
     }
     $row['event_url'] = $eventUrl;
     if (array_key_exists('event_latinfohu_partner', $_POST)) {
@@ -303,27 +423,27 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
     [$featUrlInput, $featUrlErr] = events_normalize_featured_image_url((string) ($_POST['event_featured_image_url'] ?? ''));
     if ($featUrlErr !== null) {
-        return [$row, $featUrlErr, $organizerIds, $categoryIds];
+        return [$row, $featUrlErr, $organizerIds, $categoryIds, $tagIds];
     }
     [$featPickPath, $featPickErr] = events_eventpics_normalize_selected((string) ($_POST['event_featured_image_pick'] ?? ''));
     if ($featPickErr !== null) {
-        return [$row, $featPickErr, $organizerIds, $categoryIds];
+        return [$row, $featPickErr, $organizerIds, $categoryIds, $tagIds];
     }
     [$featUploadPath, $featUploadErr] = events_eventpics_handle_upload($_FILES['event_featured_image_upload'] ?? null);
     if ($featUploadErr !== null) {
-        return [$row, $featUploadErr, $organizerIds, $categoryIds];
+        return [$row, $featUploadErr, $organizerIds, $categoryIds, $tagIds];
     }
     // Prioritás: URL > friss feltöltés > eventpics kiválasztás.
     $row['event_featured_image_url'] = $featUrlInput ?? $featUploadPath ?? $featPickPath;
 
     if ($row['event_name'] === '') {
-        return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds];
+        return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds, $tagIds];
     }
 
     $baseSlug = $row['event_slug'] !== '' ? $row['event_slug'] : events_slugify($row['event_name']);
     $row['event_slug'] = events_ensure_unique_slug($db, $baseSlug, $excludeIdForSlug);
 
-    return [$row, null, $organizerIds, $categoryIds];
+    return [$row, null, $organizerIds, $categoryIds, $tagIds];
 }
 
 /**
@@ -362,6 +482,11 @@ function events_row_for_form(array $row): array {
         $e['category_ids'] = [];
     } else {
         $e['category_ids'] = array_values(array_unique(array_map('intval', $e['category_ids'])));
+    }
+    if (!isset($e['tag_ids']) || !is_array($e['tag_ids'])) {
+        $e['tag_ids'] = [];
+    } else {
+        $e['tag_ids'] = array_values(array_unique(array_map('intval', $e['tag_ids'])));
     }
     $e['event_allday'] = !empty($e['event_allday']);
     $e['event_latinfohu_partner'] = !empty($e['event_latinfohu_partner']);

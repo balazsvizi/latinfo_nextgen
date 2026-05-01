@@ -4,14 +4,19 @@ declare(strict_types=1);
 /** @var array $organizers id => név */
 /** @var array $categories id => név */
 /** @var array<int, string> $venues id => név (events_load_venue_options) */
+/** @var array<int, string> $tags id => név (events_load_tag_options) */
 if (!isset($venues) || !is_array($venues)) {
     $venues = [];
 }
 if (!isset($categories) || !is_array($categories)) {
     $categories = [];
 }
+if (!isset($tags) || !is_array($tags)) {
+    $tags = [];
+}
 $selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_values(array_unique(array_map('intval', $e['organizer_ids']))) : [];
 $selCat = isset($e['category_ids']) && is_array($e['category_ids']) ? array_values(array_unique(array_map('intval', $e['category_ids']))) : [];
+$selTag = isset($e['tag_ids']) && is_array($e['tag_ids']) ? array_values(array_unique(array_map('intval', $e['tag_ids']))) : [];
 $orgPickerAll = [];
 foreach ($organizers as $oid => $onev) {
     $orgPickerAll[] = ['id' => (int) $oid, 'name' => (string) $onev];
@@ -34,6 +39,18 @@ $catPickerJson = json_encode(
 );
 if ($catPickerJson === false) {
     $catPickerJson = '{"all":[],"selected":[]}';
+}
+$tagPickerAll = [];
+foreach ($tags as $tid => $tnev) {
+    $tagPickerAll[] = ['id' => (int) $tid, 'name' => (string) $tnev];
+}
+usort($tagPickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+$tagPickerJson = json_encode(
+    ['all' => $tagPickerAll, 'selected' => $selTag],
+    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+);
+if ($tagPickerJson === false) {
+    $tagPickerJson = '{"all":[],"selected":[]}';
 }
 $eventpicFiles = events_eventpics_list_files();
 $selectedVenueId = (string) ($e['venue_id'] ?? '');
@@ -213,6 +230,34 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         </div>
     <?php endif; ?>
 </div>
+<div class="card" style="margin-bottom:1rem;">
+    <h3 style="margin-top:0;">Címkék</h3>
+    <?php if ($tags === []): ?>
+        <p class="help">Még nincs címke felvéve. <a href="<?= h(events_url('tags.php')) ?>">Címkék szerkesztése</a></p>
+    <?php else: ?>
+        <p class="help">Több címke is választható. Felül szűrés, alatta választó lista, középen <strong>+</strong> / <strong>−</strong>, alul a kiválasztottak.</p>
+        <input type="search" id="tag-picker-filter" class="events-org-filter" placeholder="Címke keresése…" autocomplete="off" spellcheck="false">
+        <div class="events-org-picker-grid">
+            <div class="events-org-picker-col">
+                <label class="events-org-picker-label" for="tag-picker-pool">Kiválasztó lista</label>
+                <select id="tag-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
+            </div>
+            <div class="events-org-picker-btns">
+                <button type="button" class="btn btn-secondary events-org-btn" id="tag-picker-add" title="Hozzáadás">+</button>
+                <button type="button" class="btn btn-secondary events-org-btn" id="tag-picker-remove" title="Eltávolítás">−</button>
+            </div>
+            <div class="events-org-picker-col">
+                <label class="events-org-picker-label" for="tag-picker-selected">Kiválasztott</label>
+                <select id="tag-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
+            </div>
+        </div>
+        <div id="tag-picker-hiddens" class="org-picker-hiddens">
+            <?php foreach ($selTag as $tgid): ?>
+                <input type="hidden" name="tag_ids[]" value="<?= (int) $tgid ?>">
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
 <div class="card event-featured-card" style="margin-bottom:1rem;">
     <div class="event-featured-card__head">
         <h3 class="event-featured-card__title">Esemény képe</h3>
@@ -291,6 +336,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 <script type="application/json" id="events-org-picker-json"><?= $orgPickerJson ?></script>
 <script type="application/json" id="events-venue-picker-json"><?= $venuePickerJson ?></script>
 <script type="application/json" id="events-cat-picker-json"><?= $catPickerJson ?></script>
+<script type="application/json" id="events-tag-picker-json"><?= $tagPickerJson ?></script>
 <script>
 (function () {
     var orgJsonEl = document.getElementById('events-org-picker-json');
@@ -496,6 +542,79 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         cSel.addEventListener('dblclick', removeCat);
         renderCatSelected();
         renderCatPool();
+    }
+
+    var tagJsonEl = document.getElementById('events-tag-picker-json');
+    var tPool = document.getElementById('tag-picker-pool');
+    var tSel = document.getElementById('tag-picker-selected');
+    var tFilter = document.getElementById('tag-picker-filter');
+    var tHiddens = document.getElementById('tag-picker-hiddens');
+    var tAdd = document.getElementById('tag-picker-add');
+    var tRemove = document.getElementById('tag-picker-remove');
+    if (tagJsonEl && tPool && tSel && tFilter && tHiddens && tAdd && tRemove) {
+        var tData;
+        try { tData = JSON.parse(tagJsonEl.textContent || '{}'); } catch (e2) { tData = { all: [], selected: [] }; }
+        var tAll = Array.isArray(tData.all) ? tData.all : [];
+        var tPick = Array.isArray(tData.selected) ? tData.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
+        var tNameById = {};
+        tAll.forEach(function (row) { tNameById[row.id] = row.name; });
+        function syncTagHiddens() {
+            tHiddens.innerHTML = '';
+            Array.from(tSel.options).forEach(function (opt) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'tag_ids[]';
+                inp.value = opt.value;
+                tHiddens.appendChild(inp);
+            });
+        }
+        function renderTagPool() {
+            var q = (tFilter.value || '').trim().toLowerCase();
+            tPool.innerHTML = '';
+            var taken = {};
+            tPick.forEach(function (id) { taken[id] = true; });
+            tAll.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
+                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
+                var opt = document.createElement('option');
+                opt.value = String(row.id);
+                opt.textContent = row.name + ' (#' + row.id + ')';
+                tPool.appendChild(opt);
+            });
+        }
+        function renderTagSelected() {
+            tSel.innerHTML = '';
+            tPick.forEach(function (id) {
+                var opt = document.createElement('option');
+                opt.value = String(id);
+                opt.textContent = (tNameById[id] || '?') + ' (#' + id + ')';
+                tSel.appendChild(opt);
+            });
+            syncTagHiddens();
+        }
+        function addTag() {
+            var opt = tPool.options[tPool.selectedIndex];
+            if (!opt) return;
+            var id = parseInt(opt.value, 10);
+            if (!id || tPick.indexOf(id) !== -1) return;
+            tPick.push(id);
+            renderTagSelected();
+            renderTagPool();
+        }
+        function removeTag() {
+            var opt = tSel.options[tSel.selectedIndex];
+            if (!opt) return;
+            var id = parseInt(opt.value, 10);
+            tPick = tPick.filter(function (x) { return x !== id; });
+            renderTagSelected();
+            renderTagPool();
+        }
+        tFilter.addEventListener('input', renderTagPool);
+        tAdd.addEventListener('click', addTag);
+        tRemove.addEventListener('click', removeTag);
+        tPool.addEventListener('dblclick', addTag);
+        tSel.addEventListener('dblclick', removeTag);
+        renderTagSelected();
+        renderTagPool();
     }
 })();
 
