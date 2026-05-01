@@ -331,7 +331,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                                 <?php $sid = (int) $sp['id']; ?>
                                                 <label class="events-tags-special-check-label">
                                                     <input type="checkbox" name="special_tag_ids[]" value="<?= $sid ?>">
-                                                    <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?> <span class="help">(#<?= $sid ?>)</span></span>
+                                                    <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
                                                 </label>
                                             <?php endforeach; ?>
                                         </div>
@@ -392,7 +392,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                                     <?php $sid = (int) $sp['id']; ?>
                                                     <label class="events-tags-special-check-label">
                                                         <input type="checkbox" name="special_tag_ids[]" value="<?= $sid ?>" <?= in_array($sid, $specIds, true) ? 'checked' : '' ?>>
-                                                        <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?> <span class="help">(#<?= $sid ?>)</span></span>
+                                                        <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
                                                     </label>
                                                 <?php endforeach; ?>
                                             </div>
@@ -432,7 +432,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                             <?php $sid = (int) $sp['id']; ?>
                             <label class="events-tags-special-check-label">
                                 <input type="checkbox" name="bulk_special_tag_ids[]" value="<?= $sid ?>">
-                                <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?> <span class="help">(#<?= $sid ?>)</span></span>
+                                <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
                             </label>
                         <?php endforeach; ?>
                     </div>

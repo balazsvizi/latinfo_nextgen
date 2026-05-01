@@ -1625,19 +1625,31 @@ dialog.eventpics-modal::backdrop {
     padding: 0.35rem 0;
 }
 .events-tags-special-check-label {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    column-gap: 0.5rem;
-    align-items: start;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.45rem;
+    width: 100%;
+    box-sizing: border-box;
     font-size: 0.9375rem;
     line-height: 1.4;
 }
 .events-tags-special-check-label input[type="checkbox"] {
-    margin: 0.2rem 0 0;
-    justify-self: start;
+    flex: 0 0 auto;
+    margin: 0.18rem 0 0;
+    width: 1rem;
+    height: 1rem;
 }
 .events-tags-special-check-text {
+    flex: 1 1 auto;
     min-width: 0;
+}
+.events-tags-special-id-suffix {
+    display: inline;
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    white-space: nowrap;
 }
 
 /* Címke admin: inline űrlap a táblában */
