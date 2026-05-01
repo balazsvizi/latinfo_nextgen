@@ -1561,6 +1561,51 @@ dialog.eventpics-modal::backdrop {
     cursor: pointer;
 }
 
+.events-categories-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+@media (max-width: 980px) {
+    .events-categories-layout {
+        grid-template-columns: 1fr;
+    }
+}
+.events-categories-form-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    background: var(--bg-elevated);
+}
+.events-category-color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-variant-numeric: tabular-nums;
+}
+.events-category-color-chip__dot {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.events-category-color-input-row {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: center;
+}
+.events-category-color-input-row input[type="color"] {
+    width: 3rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: #fff;
+    padding: 0.1rem;
+}
+
 @media (max-width: 640px) {
     .events-org-picker-row {
         grid-template-columns: 1fr;

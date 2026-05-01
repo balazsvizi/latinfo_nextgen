@@ -83,6 +83,7 @@ if ($navZone === 'events') {
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-egyeb" aria-label="Egyéb almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
+                        <li role="none"><a href="<?= h(site_url('events/categories.php')) ?>" role="menuitem">Kategóriák</a></li>
                         <li role="none"><a href="<?= h(site_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
                         <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
                     </ul>
