@@ -650,11 +650,27 @@ a.event-meta__card:focus-visible {
     color: var(--li-green-dark);
 }
 
-/* Szervező chipek — megjelenit.php (cím fölött), organizer.php nem használja */
-.event-organizers-hero {
+/* Szervezők + kategóriák egy sorban — megjelenit.php hero (bal / jobbra) */
+.event-hero-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.65rem 1rem;
     margin: 0 0 1rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--li-border);
+}
+
+.event-hero-meta-row__organizers {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.event-hero-meta-row__categories {
+    flex: 0 1 auto;
+    margin-left: auto;
+    max-width: 100%;
 }
 
 .event-org-chips {
@@ -693,45 +709,15 @@ a.event-meta__card:focus-visible {
     color: var(--li-green-hover);
 }
 
-/* Kategóriák — eseménykártya teteje, jobbra (megjelenit.php) */
-.event-hero-categories-top {
-    display: flex;
-    justify-content: flex-end;
-    width: 100%;
-    margin: 0 0 1.1rem;
-    padding-bottom: 0.85rem;
-    border-bottom: 1px solid var(--li-border);
-}
-
-.event-hero-categories-top__cluster {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.45rem;
-    max-width: min(100%, 17.5rem);
-    text-align: right;
-}
-
-.event-hero-categories-top__eyebrow {
-    margin: 0;
-    padding: 0;
-    font-family: var(--ev-sans);
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--li-text-soft);
-}
-
 .event-hero-category-pills {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.42rem;
-    width: 100%;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.4rem 0.45rem;
 }
 
 .event-hero-category-pills__item {
@@ -740,16 +726,15 @@ a.event-meta__card:focus-visible {
 }
 
 .event-hero-category-pill {
-    display: block;
+    display: inline-block;
     width: fit-content;
     max-width: 100%;
-    margin-left: auto;
     padding: 0.42rem 0.75rem;
     font-family: var(--ev-sans);
     font-size: 0.8125rem;
     font-weight: 600;
     line-height: 1.35;
-    text-align: right;
+    text-align: center;
     text-wrap: balance;
     border-radius: var(--ev-radius-sm);
     box-decoration-break: clone;

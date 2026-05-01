@@ -183,34 +183,35 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
-            <?php if ($eventCategories !== []): ?>
-                <div class="event-hero-categories-top" role="group" aria-label="<?= h($T['section_categories']) ?>">
-                    <div class="event-hero-categories-top__cluster">
-                        <p class="event-hero-categories-top__eyebrow"><?= h($T['section_categories']) ?></p>
-                        <ul class="event-hero-category-pills" role="list">
-                            <?php foreach ($eventCategories as $catRow): ?>
-                                <?php
-                                $chipLabel = events_public_category_chip_label($lang, $catRow);
-                                $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
-                                $pillStyle = events_public_category_pill_inline_style($chipColor);
-                                ?>
-                                <li class="event-hero-category-pills__item">
-                                    <span class="event-hero-category-pill" style="<?= h($pillStyle) ?>"><?= h($chipLabel) ?></span>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-            <?php endif; ?>
-            <?php if ($eventOrganizers !== []): ?>
-                <div class="event-organizers-hero">
-                    <ul class="event-org-chips event-org-chips--hero" role="list" aria-label="<?= h($T['section_organizers']) ?>">
-                        <?php foreach ($eventOrganizers as $org): ?>
-                            <li class="event-org-chips__item">
-                                <a class="event-org-chip" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
+            <?php if ($eventOrganizers !== [] || $eventCategories !== []): ?>
+                <div class="event-hero-meta-row">
+                    <?php if ($eventOrganizers !== []): ?>
+                        <div class="event-hero-meta-row__organizers">
+                            <ul class="event-org-chips event-org-chips--hero" role="list" aria-label="<?= h($T['section_organizers']) ?>">
+                                <?php foreach ($eventOrganizers as $org): ?>
+                                    <li class="event-org-chips__item">
+                                        <a class="event-org-chip" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($eventCategories !== []): ?>
+                        <div class="event-hero-meta-row__categories" role="group" aria-label="<?= h($T['section_categories']) ?>">
+                            <ul class="event-hero-category-pills" role="list">
+                                <?php foreach ($eventCategories as $catRow): ?>
+                                    <?php
+                                    $chipLabel = events_public_category_chip_label($lang, $catRow);
+                                    $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
+                                    $pillStyle = events_public_category_pill_inline_style($chipColor);
+                                    ?>
+                                    <li class="event-hero-category-pills__item">
+                                        <span class="event-hero-category-pill" style="<?= h($pillStyle) ?>"><?= h($chipLabel) ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
             <h1 class="event-public__title"><?= h((string) $event['event_name']) ?></h1>
