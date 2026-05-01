@@ -13,18 +13,10 @@ function events_import_settings_ensure_table(PDO $db): void {
         `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`target_table`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    try {
-        $db->exec("ALTER TABLE `events_import_settings` ADD COLUMN `tag_name_filter` VARCHAR(255) NOT NULL DEFAULT '' AFTER `required_substring`");
-    } catch (PDOException $e) {
-        $msg = $e->getMessage();
-        if (strpos($msg, 'Duplicate column') === false && strpos($msg, '1060') === false) {
-            throw $e;
-        }
-    }
 }
 
 /**
- * @return array<string, array{delimiter: string, required_substring: string, tag_name_filter: string, map: array<string, string>}>
+ * @return array<string, array{delimiter: string, required_substring: string, map: array<string, string>}>
  */
 function events_import_settings_load_all(PDO $db): array {
     try {
@@ -33,7 +25,7 @@ function events_import_settings_load_all(PDO $db): array {
         return [];
     }
     try {
-        $rows = $db->query('SELECT `target_table`, `delimiter`, `required_substring`, `tag_name_filter`, `column_map` FROM `events_import_settings`')->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $db->query('SELECT `target_table`, `delimiter`, `required_substring`, `column_map` FROM `events_import_settings`')->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $e) {
         return [];
     }
@@ -54,7 +46,6 @@ function events_import_settings_load_all(PDO $db): array {
         $out[$tbl] = [
             'delimiter' => in_array($r['delimiter'] ?? ';', [',', ';', 'tab'], true) ? (string) $r['delimiter'] : ';',
             'required_substring' => (string) ($r['required_substring'] ?? ''),
-            'tag_name_filter' => (string) ($r['tag_name_filter'] ?? ''),
             'map' => $clean,
         ];
     }
@@ -64,18 +55,17 @@ function events_import_settings_load_all(PDO $db): array {
 /**
  * @param array<string, string> $columnMap DB oszlop => CSV fejléc név
  */
-function events_import_settings_save(PDO $db, string $targetTable, string $delimiter, string $requiredSubstring, string $tagNameFilter, array $columnMap): void {
+function events_import_settings_save(PDO $db, string $targetTable, string $delimiter, string $requiredSubstring, array $columnMap): void {
     events_import_settings_ensure_table($db);
     if (!in_array($delimiter, [',', ';', 'tab'], true)) {
         $delimiter = ';';
     }
-    $tagNameFilter = mb_substr(trim($tagNameFilter), 0, 255, 'UTF-8');
     $json = json_encode($columnMap, JSON_UNESCAPED_UNICODE);
     if ($json === false) {
         throw new RuntimeException('JSON kódolási hiba.');
     }
-    $stmt = $db->prepare('INSERT INTO `events_import_settings` (`target_table`, `delimiter`, `required_substring`, `tag_name_filter`, `column_map`)
-        VALUES (?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE `delimiter` = VALUES(`delimiter`), `required_substring` = VALUES(`required_substring`), `tag_name_filter` = VALUES(`tag_name_filter`), `column_map` = VALUES(`column_map`)');
-    $stmt->execute([$targetTable, $delimiter, $requiredSubstring, $tagNameFilter, $json]);
+    $stmt = $db->prepare('INSERT INTO `events_import_settings` (`target_table`, `delimiter`, `required_substring`, `column_map`)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE `delimiter` = VALUES(`delimiter`), `required_substring` = VALUES(`required_substring`), `column_map` = VALUES(`column_map`)');
+    $stmt->execute([$targetTable, $delimiter, $requiredSubstring, $json]);
 }

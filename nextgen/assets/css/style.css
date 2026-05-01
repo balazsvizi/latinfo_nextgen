@@ -1770,6 +1770,11 @@ dialog.eventpics-modal::backdrop {
     padding: 0;
     border: none;
 }
+.events-tags-bulk-fieldset--remove {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+}
 .events-tags-bulk-legend {
     font-size: 1rem;
     font-weight: 600;

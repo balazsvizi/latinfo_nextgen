@@ -699,39 +699,8 @@ function events_csv_do_update(PDO $db, string $table, int $id, array $values): b
 }
 
 /**
- * Címkenév „szűrés”: létező név esetén nem csinál semmit, hiányzó névnél beszúr egy `events_tags` sort.
- *
- * @param list<string> $notices ide kerül a tájékoztató üzenet (üres = nincs teendő)
- * @return string|null globális hibaüzenet
- */
-function events_csv_apply_tag_name_filter(PDO $db, string $rawName, array &$notices): ?string {
-    $name = trim($rawName);
-    if ($name === '') {
-        return null;
-    }
-    if (mb_strlen($name, 'UTF-8') > 255) {
-        return 'A címkenév legfeljebb 255 karakter lehet.';
-    }
-    if (!events_tags_tables_available($db)) {
-        return 'A címkenév szűréshez szükséges az events_tags tábla (lásd: events/sql/migration_tags.sql).';
-    }
-    $st = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
-    $st->execute([$name]);
-    if ($st->fetch(PDO::FETCH_ASSOC)) {
-        $notices[] = 'Címkenév szűrés: a „' . $name . '” nevű címke már szerepel – nem lett új címke felvéve.';
-
-        return null;
-    }
-    $ins = $db->prepare('INSERT INTO `events_tags` (`name`) VALUES (?)');
-    $ins->execute([$name]);
-    $notices[] = 'Címkenév szűrés: új címke felvéve: „' . $name . '”.';
-
-    return null;
-}
-
-/**
  * @param array<string,string> $map
- * @return array{inserted: int, updated: int, errors: list<string>, skipped: list<string>, notices: list<string>}
+ * @return array{inserted: int, updated: int, errors: list<string>, skipped: list<string>}
  */
 function events_csv_import_run(
     PDO $db,
@@ -741,14 +710,12 @@ function events_csv_import_run(
     string $requiredFilenameSubstring,
     string $uploadOriginalName,
     array $map,
-    string $tagNameFilter = '',
 ): array {
-    $emptyResult = static fn (array $err, array $skip = [], array $notices = []): array => [
+    $emptyResult = static fn (array $err, array $skip = []): array => [
         'inserted' => 0,
         'updated' => 0,
         'errors' => $err,
         'skipped' => $skip,
-        'notices' => $notices,
     ];
 
     $schemaAll = events_csv_import_schema();
@@ -765,22 +732,14 @@ function events_csv_import_run(
         ]);
     }
 
-    $tagNotices = [];
-    if ($table !== 'events_tags') {
-        $tagErr = events_csv_apply_tag_name_filter($db, $tagNameFilter, $tagNotices);
-        if ($tagErr !== null) {
-            return $emptyResult([$tagErr], [], $tagNotices);
-        }
-    }
-
     try {
         $parsed = events_csv_read_file($tmpPath, $delimiter);
     } catch (Throwable $e) {
-        return $emptyResult([$e->getMessage()], [], $tagNotices);
+        return $emptyResult([$e->getMessage()]);
     }
 
     if ($map === []) {
-        return $emptyResult(['Legalább egy oszlop mapping szükséges.'], [], $tagNotices);
+        return $emptyResult(['Legalább egy oszlop mapping szükséges.']);
     }
 
     $inserted = 0;
@@ -815,7 +774,7 @@ function events_csv_import_run(
             }
         }
 
-        return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors, 'skipped' => $skipped, 'notices' => $tagNotices];
+        return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors, 'skipped' => $skipped];
     }
 
     foreach ($parsed['rows'] as $csvRow) {
@@ -959,7 +918,7 @@ function events_csv_import_run(
         }
     }
 
-    return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors, 'skipped' => $skipped, 'notices' => $tagNotices];
+    return ['inserted' => $inserted, 'updated' => $updated, 'errors' => $errors, 'skipped' => $skipped];
 }
 
 /**

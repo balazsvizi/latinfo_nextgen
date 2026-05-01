@@ -213,6 +213,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(events_url('tags.php'));
     }
 
+    if ($action === 'bulk_remove_specials_from_tags') {
+        $tagRaw = $_POST['tag_ids'] ?? [];
+        $specRaw = $_POST['bulk_remove_special_tag_ids'] ?? [];
+        $tagIds = [];
+        if (is_array($tagRaw)) {
+            foreach ($tagRaw as $v) {
+                $t = (int) $v;
+                if ($t > 0 && !in_array($t, $tagIds, true)) {
+                    $tagIds[] = $t;
+                }
+            }
+        }
+        $specIds = [];
+        if (is_array($specRaw)) {
+            foreach ($specRaw as $v) {
+                $s = (int) $v;
+                if ($s > 0 && !in_array($s, $specIds, true)) {
+                    $specIds[] = $s;
+                }
+            }
+        }
+        if ($tagIds === []) {
+            flash('error', 'Válassz ki legalább egy címkét a táblázatban.');
+            redirect(events_url('tags.php'));
+        }
+        if ($specIds === []) {
+            flash('error', 'Válassz ki legalább egy speciális csoportot az eltávolításhoz.');
+            redirect(events_url('tags.php'));
+        }
+        $ph = implode(',', array_fill(0, count($specIds), '?'));
+        $chk = $db->prepare("SELECT COUNT(*) FROM `events_specialtags` WHERE `id` IN ({$ph})");
+        $chk->execute($specIds);
+        if ((int) $chk->fetchColumn() !== count($specIds)) {
+            flash('error', 'Érvénytelen speciális csoport lett kijelölve.');
+            redirect(events_url('tags.php'));
+        }
+        $phTags = implode(',', array_fill(0, count($tagIds), '?'));
+        $chkTags = $db->prepare("SELECT COUNT(*) FROM `events_tags` WHERE `id` IN ({$phTags})");
+        $chkTags->execute($tagIds);
+        if ((int) $chkTags->fetchColumn() !== count($tagIds)) {
+            flash('error', 'Érvénytelen címke lett kijelölve.');
+            redirect(events_url('tags.php'));
+        }
+        events_remove_special_links_from_tags($db, $tagIds, $specIds);
+        flash('success', 'A kijelölt speciális csoport kapcsolatok törölve lettek a megjelölt címkéknél (' . count($tagIds) . ' címke).');
+        redirect(events_url('tags.php'));
+    }
+
     redirect(events_url('tags.php'));
 }
 
@@ -420,7 +468,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <div class="events-tags-bulk-panel">
         <form id="tags-bulk-special-form" method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-bulk-form">
             <?= csrf_input('events_tags') ?>
-            <input type="hidden" name="action" value="bulk_add_specials_to_tags">
             <fieldset class="events-tags-bulk-fieldset">
                 <legend class="events-tags-bulk-legend">Csoportos művelet: speciális csoportok hozzáadása</legend>
                 <p class="help events-tags-bulk-help">Jelöld ki a címkéket a fenti táblázatban, válaszd ki a hozzáadandó speciális csoportokat, majd futtasd a műveletet. A meglévő csoport-hozzárendelések megmaradnak.</p>
@@ -437,7 +484,27 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         <?php endforeach; ?>
                     </div>
                     <div class="toolbar">
-                        <button type="submit" class="btn btn-primary">Hozzáadás a kijelöltekhez</button>
+                        <button type="submit" class="btn btn-primary" name="action" value="bulk_add_specials_to_tags">Hozzáadás a kijelöltekhez</button>
+                    </div>
+                <?php endif; ?>
+            </fieldset>
+            <fieldset class="events-tags-bulk-fieldset events-tags-bulk-fieldset--remove">
+                <legend class="events-tags-bulk-legend">Csoportos művelet: speciális csoport hozzárendelés törlése</legend>
+                <p class="help events-tags-bulk-help">A kijelölt címkéknél eltávolítja a megjelölt speciális csoportok kapcsolatát (a címkék és a csoportok megmaradnak).</p>
+                <?php if ($specials === []): ?>
+                    <p class="help">Ehhez legalább egy speciális csoport szükséges (lent létrehozható).</p>
+                <?php else: ?>
+                    <div class="events-tags-special-checkboxes events-tags-bulk-checkboxes">
+                        <?php foreach ($specials as $sp): ?>
+                            <?php $sid = (int) $sp['id']; ?>
+                            <label class="events-tags-special-check-label">
+                                <input type="checkbox" name="bulk_remove_special_tag_ids[]" value="<?= $sid ?>">
+                                <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="toolbar">
+                        <button type="submit" class="btn btn-secondary" name="action" value="bulk_remove_specials_from_tags" onclick="return confirm('Biztosan eltávolítod a kijelölt speciális csoport kapcsolatokat a megjelölt címkéknél?');">Eltávolítás a kijelöltekről</button>
                     </div>
                 <?php endif; ?>
             </fieldset>
@@ -544,6 +611,35 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 
 <script>
 (function () {
+    function isSummaryRowVisible(tr) {
+        if (!tr) return false;
+        return tr.style.display !== 'none' && window.getComputedStyle(tr).display !== 'none';
+    }
+
+    function getVisibleTagRowCheckboxes() {
+        var table = document.getElementById('events-tags-inline-table');
+        if (!table) return [];
+        return Array.prototype.slice.call(
+            table.querySelectorAll('tbody .events-inline-summary input[name="tag_ids[]"]')
+        ).filter(function (cb) {
+            return isSummaryRowVisible(cb.closest('tr'));
+        });
+    }
+
+    function syncTagsBulkMaster() {
+        var master = document.getElementById('tags-bulk-select-all');
+        if (!master) return;
+        var vis = getVisibleTagRowCheckboxes();
+        if (vis.length === 0) {
+            master.checked = false;
+            master.indeterminate = false;
+            return;
+        }
+        var nChecked = vis.filter(function (cb) { return cb.checked; }).length;
+        master.checked = nChecked === vis.length;
+        master.indeterminate = nChecked > 0 && nChecked < vis.length;
+    }
+
     /** data-expand-group értékek: csak `new` vagy pozitív egész (biztonságos querySelector). */
     function validExpandGroup(g) {
         return g === 'new' || /^\d+$/.test(String(g));
@@ -611,6 +707,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
             tbody.appendChild(p.summary);
             tbody.appendChild(p.detail);
         });
+        if (table.id === 'events-tags-inline-table') {
+            syncTagsBulkMaster();
+        }
     }
 
     function applyFilters(table) {
@@ -639,7 +738,16 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
             }
             sum.style.display = show ? '' : 'none';
             if (det) det.style.display = show ? '' : 'none';
+            if (table.id === 'events-tags-inline-table' && !show) {
+                var hideCb = sum.querySelector('input[name="tag_ids[]"]');
+                if (hideCb) {
+                    hideCb.checked = false;
+                }
+            }
         });
+        if (table.id === 'events-tags-inline-table') {
+            syncTagsBulkMaster();
+        }
     }
 
     function closeAllDetails(tbody, exceptGroup) {
@@ -741,10 +849,26 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     var bulkMaster = document.getElementById('tags-bulk-select-all');
     if (bulkMaster) {
         bulkMaster.addEventListener('change', function () {
-            document.querySelectorAll('input[form="tags-bulk-special-form"][name="tag_ids[]"]').forEach(function (cb) {
-                cb.checked = bulkMaster.checked;
+            var on = bulkMaster.checked;
+            getVisibleTagRowCheckboxes().forEach(function (cb) {
+                cb.checked = on;
             });
+            syncTagsBulkMaster();
         });
+    }
+
+    var tagTableEl = document.getElementById('events-tags-inline-table');
+    if (tagTableEl) {
+        var tagTbody = tagTableEl.querySelector('tbody');
+        if (tagTbody) {
+            tagTbody.addEventListener('change', function (e) {
+                var t = e.target;
+                if (t && t.name === 'tag_ids[]') {
+                    syncTagsBulkMaster();
+                }
+            });
+        }
+        syncTagsBulkMaster();
     }
 })();
 </script>

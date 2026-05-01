@@ -297,6 +297,39 @@ function events_merge_tag_special_memberships(PDO $db, int $tagId, array $specia
 }
 
 /**
+ * A megadott címkéknél törli a kiválasztott speciális csoport kapcsolatokat (`events_special_tags`).
+ *
+ * @param list<int> $tagIds
+ * @param list<int> $specialTagIdsToRemove
+ */
+function events_remove_special_links_from_tags(PDO $db, array $tagIds, array $specialTagIdsToRemove): void {
+    if (!events_tags_tables_available($db)) {
+        return;
+    }
+    $tids = [];
+    foreach ($tagIds as $t) {
+        $t = (int) $t;
+        if ($t > 0 && !in_array($t, $tids, true)) {
+            $tids[] = $t;
+        }
+    }
+    $sids = [];
+    foreach ($specialTagIdsToRemove as $s) {
+        $s = (int) $s;
+        if ($s > 0 && !in_array($s, $sids, true)) {
+            $sids[] = $s;
+        }
+    }
+    if ($tids === [] || $sids === []) {
+        return;
+    }
+    $phT = implode(',', array_fill(0, count($tids), '?'));
+    $phS = implode(',', array_fill(0, count($sids), '?'));
+    $params = array_merge($tids, $sids);
+    $db->prepare("DELETE FROM `events_special_tags` WHERE `tag_id` IN ({$phT}) AND `special_tag_id` IN ({$phS})")->execute($params);
+}
+
+/**
  * @return list<int>
  */
 function events_load_special_ids_for_tag(PDO $db, int $tagId): array {

@@ -75,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $delimiter = ';';
         }
         $requiredSubstring = trim((string) ($_POST['required_substring'] ?? ''));
-        $tagNameFilter = mb_substr(trim((string) ($_POST['tag_name_filter'] ?? '')), 0, 255, 'UTF-8');
         $mapPost = $_POST['map'] ?? [];
         if (!is_array($mapPost)) {
             $mapPost = [];
@@ -96,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             try {
-                events_import_settings_save($db, $table, $delimiter, $requiredSubstring, $tagNameFilter, $columnMap);
+                events_import_settings_save($db, $table, $delimiter, $requiredSubstring, $columnMap);
                 $presets = events_import_settings_load_all($db);
                 flash('success', 'Import beállítások elmentve ehhez a cél táblához: ' . $table . '.');
                 redirect(events_url('import_csv.php?target_table=' . rawurlencode($table)));
@@ -121,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 if ($hiba === '') {
-                    $eredmeny = events_csv_import_run($db, $table, $tmp, $delimiter, $requiredSubstring, $uploadName, $map, $tagNameFilter);
+                    $eredmeny = events_csv_import_run($db, $table, $tmp, $delimiter, $requiredSubstring, $uploadName, $map);
                     $ins = (int) ($eredmeny['inserted'] ?? 0);
                     $upd = (int) ($eredmeny['updated'] ?? 0);
                     $errs = $eredmeny['errors'] ?? [];
@@ -152,7 +151,6 @@ $pForm = $presets[$formTargetTable] ?? [];
 $delRaw = (string) ($pForm['delimiter'] ?? ';');
 $delVal = in_array($delRaw, [',', ';', 'tab'], true) ? $delRaw : ';';
 $subVal = (string) ($pForm['required_substring'] ?? '');
-$tagFilterVal = (string) ($pForm['tag_name_filter'] ?? '');
 
 $purgeSess = $_SESSION['csv_import_purge'] ?? null;
 if (isset($_GET['purge_step']) && (string) $_GET['purge_step'] === 'confirm') {
@@ -176,7 +174,7 @@ if ($presetsJson === false) {
 }
 ?>
 <div class="card">
-    <h2>CSV import (események, címkék, szervezők, helyszínek, kategóriák, kapcsolótáblák; opcionális címkenév előfeltétel más táblákhoz)</h2>
+    <h2>CSV import (események, címkék, szervezők, helyszínek, kategóriák, kapcsolótáblák)</h2>
     <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
@@ -228,16 +226,7 @@ if ($presetsJson === false) {
             <?php
             $errs = $eredmeny['errors'] ?? [];
             $skipped = $eredmeny['skipped'] ?? [];
-            $notices = $eredmeny['notices'] ?? [];
             ?>
-            <?php if ($notices !== []): ?>
-                <p><strong>Tájékoztatás</strong></p>
-                <ul class="csv-import-report-list" style="max-height:8rem;overflow:auto;">
-                    <?php foreach ($notices as $n): ?>
-                        <li><?= h($n) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
             <?php if ($skipped !== []): ?>
                 <p><strong>Kihagyott tételek (<?= count($skipped) ?>)</strong> – a sor nem került be / nem módosult; ok:</p>
                 <ul class="csv-import-report-list" style="max-height:18rem;overflow:auto;">
@@ -286,11 +275,6 @@ if ($presetsJson === false) {
             <label for="required_substring">Kötelező szövegrészlet a fájlnévben</label>
             <input type="text" id="required_substring" name="required_substring" value="<?= h($subVal) ?>" maxlength="500" placeholder="pl. import vagy _esemeny_ – üres = nincs ellenőrzés">
             <p class="help">Ha kitöltöd, csak olyan fájl választható / tölthető fel, amelynek a nevében szerepel ez a szöveg (UTF‑8, a kliensen is ellenőrizzük).</p>
-        </div>
-        <div class="form-group">
-            <label for="tag_name_filter">Címkenév szűrés (opcionális)</label>
-            <input type="text" id="tag_name_filter" name="tag_name_filter" value="<?= h($tagFilterVal) ?>" maxlength="255" placeholder="pl. Workshop – üres = nincs teendő">
-            <p class="help">Csak akkor érdemes kitölteni, ha a <strong>cél tábla nem</strong> „Címkék”: egyetlen név, amit az import előtt biztosítunk az <code>events_tags</code> táblában (létező névnél nincs teendő, új névnél beszúrás). A <strong>Címkék</strong> cél táblánál a soronkénti CSV import kezeli a neveket és a duplikátum kihagyást.</p>
         </div>
         <div class="form-group">
             <label for="csv_file">CSV fájl</label>
@@ -355,7 +339,6 @@ if ($presetsJson === false) {
     var sel = document.getElementById('target_table');
     var del = document.getElementById('delimiter');
     var sub = document.getElementById('required_substring');
-    var tagF = document.getElementById('tag_name_filter');
     var blocks = document.querySelectorAll('.csv-mapping-block');
     var actionInput = document.getElementById('import_action');
     var btnSave = document.getElementById('btn-save-preset');
@@ -390,9 +373,6 @@ if ($presetsJson === false) {
         }
         if (sub) {
             sub.value = typeof p.required_substring === 'string' ? p.required_substring : '';
-        }
-        if (tagF) {
-            tagF.value = typeof p.tag_name_filter === 'string' ? p.tag_name_filter : '';
         }
         var m = p.map || {};
         document.querySelectorAll('.csv-map-input[data-tbl="' + table + '"]').forEach(function (inp) {
