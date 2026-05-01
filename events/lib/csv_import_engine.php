@@ -87,6 +87,93 @@ function events_csv_filter_map(array $map): array {
 /**
  * @param array<string,mixed> $meta
  */
+/**
+ * Virtuális category_ids CSV cella feldolgozása → egyedi pozitív ID-k sorrend szerint.
+ *
+ * @return array{0: list<int>, 1: ?string}
+ */
+function events_csv_parse_category_id_list_cell(string $raw): array {
+    $raw = trim($raw);
+    if ($raw === '') {
+        return [[], null];
+    }
+    $parts = preg_split('/[,;|]+/u', $raw) ?: [];
+    $ids = [];
+    foreach ($parts as $p) {
+        $t = trim((string) $p);
+        if ($t === '') {
+            continue;
+        }
+        if (!preg_match('/^\d+$/', $t)) {
+            return [[], 'Érvénytelen kategória ID (nem természetes szám): ' . $t];
+        }
+        $n = (int) $t;
+        if ($n <= 0) {
+            return [[], 'Érvénytelen kategória ID (≥1 kell): ' . $t];
+        }
+        $ids[] = $n;
+    }
+    $seen = [];
+    $uniq = [];
+    foreach ($ids as $id) {
+        if (isset($seen[$id])) {
+            continue;
+        }
+        $seen[$id] = true;
+        $uniq[] = $id;
+    }
+
+    return [$uniq, null];
+}
+
+/**
+ * Ellenőrzi, hogy minden ID létezik-e az events_categories táblában.
+ *
+ * @param list<int> $ids
+ * @return ?string Hiba szöveg, vagy null
+ */
+function events_csv_validate_existing_category_ids(PDO $db, array $ids): ?string {
+    if ($ids === []) {
+        return null;
+    }
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $st = $db->prepare("SELECT COUNT(*) FROM `events_categories` WHERE `id` IN ({$placeholders})");
+    $st->execute($ids);
+    $cnt = (int) $st->fetchColumn();
+
+    return $cnt === count($ids) ? null : 'Egy vagy több megadott kategória ID nem létezik (events_categories).';
+}
+
+/**
+ * @param list<int> $categoryIds
+ */
+function events_csv_replace_event_categories(PDO $db, int $eventId, array $categoryIds): void {
+    $db->prepare('DELETE FROM `events_calendar_event_categories` WHERE `event_id` = ?')->execute([$eventId]);
+    if ($categoryIds === []) {
+        return;
+    }
+    $ins = $db->prepare('INSERT INTO `events_calendar_event_categories` (`event_id`, `category_id`) VALUES (?,?)');
+    foreach ($categoryIds as $cid) {
+        $ins->execute([$eventId, (int) $cid]);
+    }
+}
+
+/**
+ * Kiszedi a virtuálisan importált kategória-ID listát. null = nem mapolt category_ids → kapcsoló nem változik.
+ *
+ * @return list<int>|null
+ */
+function events_csv_take_category_sync_payload(array &$values): ?array {
+    if (!array_key_exists('_category_sync_ids', $values)) {
+        return null;
+    }
+    $ids = $values['_category_sync_ids'];
+    unset($values['_category_sync_ids']);
+
+    return is_array($ids) ? array_values(array_map('intval', $ids)) : [];
+}
+
 function events_csv_coerce_cell(string $raw, array $meta, int $idMaxImport, string $dbCol, ?string &$err): mixed {
     $raw = trim($raw);
     $nullable = !empty($meta['nullable']);
@@ -215,6 +302,10 @@ function events_csv_build_row_values(
         if (!isset($colsMeta[$dbCol])) {
             continue;
         }
+        $colMetaRow = $colsMeta[$dbCol];
+        if (!empty($colMetaRow['virtual'])) {
+            continue;
+        }
         if ($forUpdate && $dbCol === 'id') {
             continue;
         }
@@ -258,6 +349,21 @@ function events_csv_build_row_values(
                 $values['event_featured_image_url'] = $featNorm;
             }
         }
+        // Virtuális category_ids → kapcsolótábla (nem kerül INSERT/UPDATE mezőlistába).
+        if (isset($map['category_ids'])) {
+            $hCat = $map['category_ids'];
+            $catRaw = array_key_exists($hCat, $csvRow) ? (string) $csvRow[$hCat] : '';
+            [$catIds, $catErr] = events_csv_parse_category_id_list_cell($catRaw);
+            if ($catErr !== null) {
+                return [[], $catErr . ' (category_ids)'];
+            }
+            $exErr = events_csv_validate_existing_category_ids($db, $catIds);
+            if ($exErr !== null) {
+                return [[], $exErr . ' (category_ids)'];
+            }
+            $values['_category_sync_ids'] = $catIds;
+        }
+
         if (!$forUpdate) {
             $name = (string) ($values['event_name'] ?? '');
             if ($name === '') {
@@ -368,11 +474,18 @@ function events_csv_row_exists(PDO $db, string $table, int $id): bool {
 /**
  * @param array<string,mixed> $values
  */
-function events_csv_do_insert(PDO $db, string $table, array $values): void {
+function events_csv_do_insert(PDO $db, string $table, array $values): int {
     $allowed = array_keys(events_csv_import_schema()[$table]['columns']);
     $pairs = [];
     foreach ($values as $k => $v) {
+        if (str_starts_with((string) $k, '_')) {
+            continue;
+        }
         if (!in_array($k, $allowed, true)) {
+            continue;
+        }
+        $colMetaRow = events_csv_import_schema()[$table]['columns'][$k] ?? [];
+        if (!empty($colMetaRow['virtual'])) {
             continue;
         }
         if ($k === 'id' && ($v === null || $v === '')) {
@@ -389,6 +502,10 @@ function events_csv_do_insert(PDO $db, string $table, array $values): void {
     $sql = 'INSERT INTO ' . events_csv_quote_table($table) . " ({$colSql}) VALUES ({$ph})";
     $stmt = $db->prepare($sql);
     $stmt->execute(array_values($pairs));
+    if (!empty($pairs['id'])) {
+        return (int) $pairs['id'];
+    }
+    return (int) $db->lastInsertId();
 }
 
 /**
@@ -440,6 +557,13 @@ function events_csv_do_update(PDO $db, string $table, int $id, array $values): b
     $sets = [];
     $params = [];
     foreach ($values as $k => $v) {
+        if (str_starts_with((string) $k, '_')) {
+            continue;
+        }
+        $colMetaRow = events_csv_import_schema()[$table]['columns'][$k] ?? [];
+        if (!empty($colMetaRow['virtual'])) {
+            continue;
+        }
         if (!in_array($k, $allowed, true) || $k === 'id' || $k === 'created') {
             continue;
         }
@@ -554,8 +678,12 @@ function events_csv_import_run(
                         $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                         continue;
                     }
+                    $cats = events_csv_take_category_sync_payload($vals);
                     $didUpdate = events_csv_do_update($db, $table, $idVal, $vals);
-                    if ($didUpdate) {
+                    if ($table === 'events_calendar_events' && $cats !== null) {
+                        events_csv_replace_event_categories($db, $idVal, $cats);
+                    }
+                    if ($didUpdate || $cats !== null) {
                         $updated++;
                     } else {
                         $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező rekord (id={$idVal}), de nincs frissítendő mező: a mapolt oszlopok CSV értékei üresek, vagy csak `created` / tiltott mezők változnának.";
@@ -566,8 +694,12 @@ function events_csv_import_run(
                         $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                         continue;
                     }
+                    $cats = events_csv_take_category_sync_payload($vals);
                     $vals['id'] = $idVal;
-                    events_csv_do_insert($db, $table, $vals);
+                    $eventPk = events_csv_do_insert($db, $table, $vals);
+                    if ($table === 'events_calendar_events' && $cats !== null) {
+                        events_csv_replace_event_categories($db, $eventPk, $cats);
+                    }
                     $inserted++;
                 }
             } else {
@@ -576,7 +708,11 @@ function events_csv_import_run(
                     $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
                     continue;
                 }
-                events_csv_do_insert($db, $table, $vals);
+                $cats = events_csv_take_category_sync_payload($vals);
+                $eventPk = events_csv_do_insert($db, $table, $vals);
+                if ($table === 'events_calendar_events' && $cats !== null) {
+                    events_csv_replace_event_categories($db, $eventPk, $cats);
+                }
                 $inserted++;
             }
         } catch (Throwable $e) {
