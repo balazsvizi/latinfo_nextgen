@@ -140,7 +140,7 @@ require __DIR__ . '/wp_token_field.php';
         <label for="event_start_date">Kezdő dátum</label>
         <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
     </div>
-    <div class="form-group">
+    <div class="form-group events-edit-time-field" id="events-edit-start-time-wrap">
         <label for="event_start_time">Kezdő idő</label>
         <input type="time" id="event_start_time" name="event_start_time" value="<?= h($e['event_start_time']) ?>">
     </div>
@@ -148,13 +148,13 @@ require __DIR__ . '/wp_token_field.php';
         <label for="event_end_date">Záró dátum</label>
         <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
     </div>
-    <div class="form-group">
+    <div class="form-group events-edit-time-field" id="events-edit-end-time-wrap">
         <label for="event_end_time">Záró idő</label>
         <input type="time" id="event_end_time" name="event_end_time" value="<?= h($e['event_end_time']) ?>">
     </div>
 </div>
 <div class="form-group">
-    <label><input type="checkbox" name="event_allday" value="1" <?= !empty($e['event_allday']) ? 'checked' : '' ?>> Egész napos</label>
+    <label><input type="checkbox" name="event_allday" value="1" id="event_allday" <?= !empty($e['event_allday']) ? 'checked' : '' ?>> Egész napos</label>
 </div>
 <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
     <div class="form-group">
@@ -652,3 +652,4 @@ require __DIR__ . '/wp_token_field.php';
 </script>
 <?php require __DIR__ . '/wp_token_input_script.php'; ?>
 <?php require __DIR__ . '/event_slug_script.php'; ?>
+<?php require __DIR__ . '/event_allday_script.php'; ?>

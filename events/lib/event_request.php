@@ -451,9 +451,20 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $stt = trim((string) ($_POST['event_start_time'] ?? ''));
     $ed = trim((string) ($_POST['event_end_date'] ?? ''));
     $ett = trim((string) ($_POST['event_end_time'] ?? ''));
+    $row['event_allday'] = isset($_POST['event_allday']) ? 1 : 0;
+    if ($row['event_allday']) {
+        if ($sd !== '') {
+            $stt = '00:00';
+        }
+        if ($ed === '' && $sd !== '') {
+            $ed = $sd;
+        }
+        if ($ed !== '') {
+            $ett = '23:59';
+        }
+    }
     $row['event_start'] = events_build_event_datetime($sd, $stt);
     $row['event_end'] = events_build_event_datetime($ed, $ett);
-    $row['event_allday'] = isset($_POST['event_allday']) ? 1 : 0;
 
     $cf = trim((string) ($_POST['event_cost_from'] ?? ''));
     $ct = trim((string) ($_POST['event_cost_to'] ?? ''));
@@ -629,6 +640,10 @@ function events_row_for_form(array $row): array {
         $e['supplementary_style_ids'] = array_values(array_unique(array_map('intval', $e['supplementary_style_ids'])));
     }
     $e['event_allday'] = !empty($e['event_allday']);
+    if ($e['event_allday']) {
+        $e['event_start_time'] = '';
+        $e['event_end_time'] = '';
+    }
     $e['event_latinfohu_partner'] = !empty($e['event_latinfohu_partner']);
     $st = (string) ($e['event_status'] ?? '');
     if (!events_is_allowed_post_status($st)) {

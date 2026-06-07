@@ -98,6 +98,19 @@ function events_admin_calendar_grid_days(DateTimeImmutable $monthFirst, DateTime
 }
 
 /**
+ * Naptári utolsó nap: ha a zárás 06:00 előtt van, az előző naphoz tartozik (éjszakai bulik).
+ */
+function events_admin_calendar_effective_end_day(DateTimeImmutable $end): DateTimeImmutable {
+    $dayStart = $end->setTime(0, 0, 0);
+    $sixAm = $dayStart->setTime(6, 0, 0);
+    if ($end < $sixAm) {
+        return $dayStart->modify('-1 day');
+    }
+
+    return $dayStart;
+}
+
+/**
  * @param list<array<string,mixed>> $rows
  * @return array{byDay: array<string, list<array<string,mixed>>>, undated: list<array<string,mixed>>}
  */
@@ -127,7 +140,11 @@ function events_admin_calendar_bucket_events(array $rows, DateTimeImmutable $mon
         }
 
         $rangeStart = $start->setTime(0, 0, 0);
-        $rangeEnd = $end->setTime(0, 0, 0);
+        if (!empty($row['event_allday'])) {
+            $rangeEnd = $end->setTime(0, 0, 0);
+        } else {
+            $rangeEnd = events_admin_calendar_effective_end_day($end);
+        }
         if ($rangeEnd < $rangeStart) {
             $rangeEnd = $rangeStart;
         }
