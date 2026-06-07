@@ -101,6 +101,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 <span class="events-cal-view-switch__item is-active" aria-current="page">Hónap</span>
             </nav>
         </div>
+        <p class="events-cal-legend" aria-label="Naptár jelmagyarázat">
+            <span class="events-cal-legend__item events-cal-legend__item--published">Közzétéve</span>
+            <span class="events-cal-legend__item events-cal-legend__item--unpublished">Nem közzétett</span>
+        </p>
 
         <div class="events-cal" role="grid" aria-label="<?= h($monthLabel) ?> naptár">
             <div class="events-cal__weekdays" role="row">
@@ -131,19 +135,28 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         <?php foreach ($dayEvents as $ev): ?>
                                             <?php
                                             $eid = (int) ($ev['id'] ?? 0);
+                                            $isPublished = events_admin_calendar_event_is_published($ev);
                                             $timeLabel = events_admin_calendar_event_time_label($ev);
-                                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid);
+                                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
                                             $eventUrl = events_admin_calendar_event_public_url($ev);
+                                            $eventStatus = (string) ($ev['event_status'] ?? '');
+                                            $linkClass = 'events-cal__event-link' . ($isPublished ? '' : ' events-cal__event-link--unpublished');
+                                            $statusBadgeClass = events_post_status_badge_class($eventStatus);
+                                            $statusLabel = events_post_status_label($eventStatus);
+                                            $linkTarget = $isPublished ? '_blank' : '_self';
                                             ?>
-                                            <li class="events-cal__event" role="listitem">
+                                            <li class="events-cal__event<?= $isPublished ? '' : ' events-cal__event--unpublished' ?>" role="listitem">
                                                 <a
-                                                    class="events-cal__event-link"
+                                                    class="<?= h($linkClass) ?>"
                                                     style="<?= h($eventStyle) ?>"
                                                     href="<?= h($eventUrl) ?>"
-                                                    target="_blank"
-                                                    rel="noopener"
-                                                    title="<?= h((string) ($ev['event_name'] ?? '')) ?>"
+                                                    target="<?= h($linkTarget) ?>"
+                                                    <?= $isPublished ? 'rel="noopener"' : '' ?>
+                                                    title="<?= h((string) ($ev['event_name'] ?? '')) ?><?= $isPublished ? '' : ' (' . $statusLabel . ')' ?>"
                                                 >
+                                                    <?php if (!$isPublished): ?>
+                                                        <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
+                                                    <?php endif; ?>
                                                     <?php if ($timeLabel !== ''): ?>
                                                         <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
                                                     <?php endif; ?>
@@ -167,12 +180,21 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <?php foreach ($undated as $ev): ?>
                         <?php
                         $eid = (int) ($ev['id'] ?? 0);
-                        $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid);
+                        $isPublished = events_admin_calendar_event_is_published($ev);
+                        $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
                         $eventUrl = events_admin_calendar_event_public_url($ev);
+                        $eventStatus = (string) ($ev['event_status'] ?? '');
+                        $linkClass = 'events-cal-undated__link events-cal__event-link' . ($isPublished ? '' : ' events-cal__event-link--unpublished');
+                        $statusBadgeClass = events_post_status_badge_class($eventStatus);
+                        $statusLabel = events_post_status_label($eventStatus);
+                        $linkTarget = $isPublished ? '_blank' : '_self';
                         ?>
-                        <li role="listitem">
-                            <a class="events-cal-undated__link events-cal__event-link" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" target="_blank" rel="noopener">
-                                <?= h((string) ($ev['event_name'] ?? '')) ?>
+                        <li role="listitem"<?= $isPublished ? '' : ' class="events-cal__event--unpublished"' ?>>
+                            <a class="<?= h($linkClass) ?>" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" target="<?= h($linkTarget) ?>" <?= $isPublished ? 'rel="noopener"' : '' ?>>
+                                <?php if (!$isPublished): ?>
+                                    <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
+                                <?php endif; ?>
+                                <span class="events-cal__event-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                             </a>
                         </li>
                     <?php endforeach; ?>

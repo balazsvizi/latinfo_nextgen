@@ -1,17 +1,27 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/event_status.php';
+
 /**
  * Admin havi naptár nézet — hónap feloldás, rács, események naphoz rendelése.
  */
+
+function events_admin_calendar_event_is_published(array $ev): bool {
+    return (string) ($ev['event_status'] ?? '') === events_public_post_status();
+}
 
 /**
  * @param array<int, list<array{color:string}>> $categoriesByEventId
  */
 function events_admin_calendar_event_public_url(array $ev): string {
+    $id = (int) ($ev['id'] ?? 0);
+    if (!events_admin_calendar_event_is_published($ev)) {
+        return events_url('szerkeszt.php?id=') . $id;
+    }
     $slug = trim((string) ($ev['event_slug'] ?? ''));
     if ($slug === '') {
-        return events_url('szerkeszt.php?id=') . (int) ($ev['id'] ?? 0);
+        return events_url('szerkeszt.php?id=') . $id;
     }
 
     return events_megjelenit_url($slug);
@@ -22,7 +32,7 @@ function events_admin_calendar_event_public_url(array $ev): string {
  *
  * @param array<int, list<array{color:string}>> $categoriesByEventId
  */
-function events_admin_calendar_event_block_style(array $categoriesByEventId, int $eventId): string {
+function events_admin_calendar_event_block_style(array $categoriesByEventId, int $eventId, bool $isPublished = true): string {
     $cats = $categoriesByEventId[$eventId] ?? [];
     $hex = '#6d8f63';
     if ($cats !== []) {
@@ -33,6 +43,13 @@ function events_admin_calendar_event_block_style(array $categoriesByEventId, int
     }
     if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)) {
         $hex = '#6d8f63';
+    }
+    if (!$isPublished) {
+        return sprintf(
+            'background-color:#f8fafc;color:#334155;border-color:%s;--events-cal-accent:%s',
+            $hex,
+            $hex
+        );
     }
     $r = hexdec(substr($hex, 1, 2));
     $g = hexdec(substr($hex, 3, 2));
