@@ -10,6 +10,18 @@ require_once __DIR__ . '/category_locale.php';
 /**
  * @param array<int, list<array{color:string}>> $categoriesByEventId
  */
+function events_admin_calendar_event_public_url(array $ev): string {
+    $slug = trim((string) ($ev['event_slug'] ?? ''));
+    if ($slug === '') {
+        return events_url('szerkeszt.php?id=') . (int) ($ev['id'] ?? 0);
+    }
+
+    return events_megjelenit_url($slug);
+}
+
+/**
+ * @param array<int, list<array{color:string}>> $categoriesByEventId
+ */
 function events_admin_calendar_event_category_style(array $categoriesByEventId, int $eventId): string {
     $cats = $categoriesByEventId[$eventId] ?? [];
     if ($cats === []) {

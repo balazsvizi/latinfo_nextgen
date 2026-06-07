@@ -62,8 +62,6 @@ $navBaseParams = $filters['get_params'];
 $prevMonthUrl = events_admin_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_admin_calendar_month_url($nextMonthKey, $navBaseParams);
 $todayMonthUrl = events_admin_calendar_month_url((new DateTimeImmutable('today'))->format('Y-m'), $navBaseParams);
-$editBase = events_url('szerkeszt.php?id=');
-
 $filterFormAction = events_url('events_naptar.php');
 $filterFormHidden = ['month' => $monthKey];
 $filterClearUrl = events_url('events_naptar.php?month=' . rawurlencode($monthKey));
@@ -128,12 +126,15 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                             $eid = (int) ($ev['id'] ?? 0);
                                             $timeLabel = events_admin_calendar_event_time_label($ev);
                                             $eventStyle = events_admin_calendar_event_category_style($categoriesByEventId, $eid);
+                                            $eventUrl = events_admin_calendar_event_public_url($ev);
                                             ?>
                                             <li class="events-cal__event" role="listitem">
                                                 <a
                                                     class="events-cal__event-link"
                                                     style="<?= h($eventStyle) ?>"
-                                                    href="<?= h($editBase . $eid) ?>"
+                                                    href="<?= h($eventUrl) ?>"
+                                                    target="_blank"
+                                                    rel="noopener"
                                                     title="<?= h((string) ($ev['event_name'] ?? '')) ?>"
                                                 >
                                                     <?php if ($timeLabel !== ''): ?>
@@ -160,9 +161,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         <?php
                         $eid = (int) ($ev['id'] ?? 0);
                         $eventStyle = events_admin_calendar_event_category_style($categoriesByEventId, $eid);
+                        $eventUrl = events_admin_calendar_event_public_url($ev);
                         ?>
                         <li role="listitem">
-                            <a class="events-cal-undated__link events-cal__event-link" style="<?= h($eventStyle) ?>" href="<?= h($editBase . $eid) ?>">
+                            <a class="events-cal-undated__link events-cal__event-link" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" target="_blank" rel="noopener">
                                 <?= h((string) ($ev['event_name'] ?? '')) ?>
                             </a>
                         </li>
