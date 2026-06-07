@@ -103,6 +103,7 @@ $wpTokenSelected = $selOrg;
 $wpTokenAllowCreate = true;
 $wpTokenEntityType = 'organizer';
 $wpTokenSingle = false;
+$wpTokenShowPopular = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
@@ -121,6 +122,7 @@ $wpTokenSelected = $selVenue;
 $wpTokenAllowCreate = true;
 $wpTokenEntityType = 'venue';
 $wpTokenSingle = true;
+$wpTokenShowPopular = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
@@ -205,6 +207,7 @@ $wpTokenSelected = $selCat;
 $wpTokenAllowCreate = true;
 $wpTokenEntityType = 'category';
 $wpTokenSingle = false;
+$wpTokenShowPopular = true;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
@@ -223,6 +226,7 @@ $wpTokenSelected = $selTag;
 $wpTokenAllowCreate = $tagsAllowCreate;
 $wpTokenEntityType = 'tag';
 $wpTokenSingle = false;
+$wpTokenShowPopular = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
@@ -241,6 +245,7 @@ $wpTokenSelected = $selDj;
 $wpTokenAllowCreate = $djsAllowCreate;
 $wpTokenEntityType = 'dj';
 $wpTokenSingle = false;
+$wpTokenShowPopular = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
@@ -259,6 +264,7 @@ $wpTokenSelected = $selMainStyle;
 $wpTokenAllowCreate = $stylesAllowCreate;
 $wpTokenEntityType = 'style';
 $wpTokenSingle = false;
+$wpTokenShowPopular = true;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
@@ -277,6 +283,7 @@ $wpTokenSelected = $selSupplementaryStyle;
 $wpTokenAllowCreate = $stylesAllowCreate;
 $wpTokenEntityType = 'style';
 $wpTokenSingle = false;
+$wpTokenShowPopular = true;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>

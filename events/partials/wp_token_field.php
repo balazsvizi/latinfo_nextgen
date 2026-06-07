@@ -15,6 +15,7 @@ declare(strict_types=1);
  * @var bool $wpTokenAllowCreate
  * @var string $wpTokenEntityType
  * @var bool $wpTokenSingle
+ * @var bool $wpTokenShowPopular gyakran használt gyorslinkek
  */
 $wpTokenId = $wpTokenId ?? 'wp-token';
 $wpTokenLabel = $wpTokenLabel ?? '';
@@ -28,6 +29,7 @@ $wpTokenSelected = $wpTokenSelected ?? [];
 $wpTokenAllowCreate = $wpTokenAllowCreate ?? false;
 $wpTokenEntityType = $wpTokenEntityType ?? '';
 $wpTokenSingle = $wpTokenSingle ?? false;
+$wpTokenShowPopular = $wpTokenShowPopular ?? false;
 $wpTokenJson = json_encode(
     ['all' => array_values($wpTokenAll), 'selected' => array_values($wpTokenSelected)],
     JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
@@ -74,10 +76,12 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
             <ul class="wp-token-input__suggestions" role="listbox" hidden></ul>
             <div class="wp-token-input__hiddens"></div>
         </div>
+        <?php if ($wpTokenShowPopular): ?>
         <div class="wp-token-field__popular" data-wp-token-popular hidden>
             <span class="wp-token-field__popular-label">Gyakran használt:</span>
             <span class="wp-token-field__popular-list"></span>
         </div>
+        <?php endif; ?>
         <?php if ($wpTokenManageUrl !== null): ?>
             <p class="wp-token-field__footer"><a href="<?= h($wpTokenManageUrl) ?>"><?= h($wpTokenManageLabel) ?></a></p>
         <?php endif; ?>
