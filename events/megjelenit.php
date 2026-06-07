@@ -6,6 +6,7 @@ require_once __DIR__ . '/lib/venue_request.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/category_locale.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
+require_once __DIR__ . '/lib/event_public_djs.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $T = events_public_megjelenit_strings($lang);
@@ -47,6 +48,7 @@ if (!$event) {
 $eventId = (int) ($event['id'] ?? 0);
 $eventOrganizers = events_public_event_organizers_for_display($db, $eventId);
 $eventCategories = events_public_event_category_rows($db, $eventId);
+$eventDjs = events_public_event_djs_for_display($db, $eventId);
 
 $venueName = trim((string) ($event['venue_name'] ?? ''));
 $venueSlug = trim((string) ($event['venue_slug'] ?? ''));
@@ -183,7 +185,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
-            <?php if ($eventOrganizers !== [] || $eventCategories !== []): ?>
+            <?php if ($eventOrganizers !== [] || $eventCategories !== [] || $eventDjs !== []): ?>
                 <div class="event-hero-meta-row">
                     <?php if ($eventOrganizers !== []): ?>
                         <div class="event-hero-meta-row__organizers">
@@ -191,6 +193,17 @@ header('Content-Type: text/html; charset=UTF-8');
                                 <?php foreach ($eventOrganizers as $org): ?>
                                     <li class="event-org-chips__item">
                                         <a class="event-org-chip" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($eventDjs !== []): ?>
+                        <div class="event-hero-meta-row__djs">
+                            <ul class="event-org-chips event-org-chips--hero event-dj-chips" role="list" aria-label="<?= h($T['section_djs']) ?>">
+                                <?php foreach ($eventDjs as $djRow): ?>
+                                    <li class="event-org-chips__item">
+                                        <a class="event-org-chip event-dj-chip" href="<?= h(events_public_dj_page_url((int) $djRow['id'], $lang)) ?>"><?= h((string) $djRow['name']) ?></a>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>

@@ -5,6 +5,7 @@ require_once __DIR__ . '/csv_import_schema.php';
 require_once __DIR__ . '/slug.php';
 require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/event_request.php';
+require_once __DIR__ . '/dj_request.php';
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 /**
@@ -525,6 +526,49 @@ function events_csv_build_row_values(
         }
     }
 
+    if ($table === 'events_djs') {
+        if (!events_djs_tables_available($db)) {
+            return [[], 'Az events_djs tábla nem elérhető (migration_djs.sql).'];
+        }
+        if (!$forUpdate) {
+            $name = trim((string) ($values['name'] ?? ''));
+            if ($name === '') {
+                return [[], 'name kötelező minden új DJ sorhoz.'];
+            }
+            $values['name'] = $name;
+        } else {
+            if (array_key_exists('name', $values)) {
+                $name = trim((string) $values['name']);
+                if ($name === '') {
+                    return [[], 'name nem lehet üres (frissítés).'];
+                }
+                $values['name'] = $name;
+            }
+        }
+    }
+
+    if ($table === 'events_calendar_event_djs') {
+        $ev = (int) ($values['event_id'] ?? 0);
+        if ($ev <= 0) {
+            return [[], 'event_id kötelező minden sorhoz.'];
+        }
+        $djId = (int) ($values['dj_id'] ?? 0);
+        $djName = '';
+        if (isset($map['dj_name'])) {
+            $hDj = $map['dj_name'];
+            $djName = trim(array_key_exists($hDj, $csvRow) ? (string) $csvRow[$hDj] : '');
+            if (strlen($djName) > 255) {
+                return [[], 'dj_name legfeljebb 255 karakter lehet.'];
+            }
+        }
+        if ($djId <= 0 && $djName === '') {
+            return [[], 'dj_id vagy dj_name kötelező minden sorhoz.'];
+        }
+        if ($djName !== '') {
+            $values['_dj_name'] = $djName;
+        }
+    }
+
     if ($table === 'events_calendar_event_organizers') {
         $ev = (int) ($values['event_id'] ?? 0);
         $org = (int) ($values['organizer_id'] ?? 0);
@@ -643,6 +687,49 @@ function events_csv_event_category_link_exists(PDO $db, int $eventId, int $categ
  * @param array<string,mixed> $values event_id, category_id
  * @return 'inserted'|'updated'
  */
+function events_csv_event_dj_link_exists(PDO $db, int $eventId, int $djId): bool {
+    $st = $db->prepare('SELECT 1 FROM `events_calendar_event_djs` WHERE `event_id` = ? AND `dj_id` = ? LIMIT 1');
+    $st->execute([$eventId, $djId]);
+    return (bool) $st->fetchColumn();
+}
+
+/**
+ * @param array<string,mixed> $values event_id, dj_id, opcionálisan _dj_name
+ * @return 'inserted'|'updated'
+ */
+function events_csv_upsert_event_dj_link(PDO $db, array $values): string {
+    $eventId = (int) ($values['event_id'] ?? 0);
+    $djId = (int) ($values['dj_id'] ?? 0);
+    $djName = trim((string) ($values['_dj_name'] ?? ''));
+    if ($eventId <= 0) {
+        throw new RuntimeException('event_id kötelező.');
+    }
+    if ($djId <= 0) {
+        if ($djName === '') {
+            throw new RuntimeException('dj_id vagy dj_name kötelező.');
+        }
+        $djId = events_find_or_create_dj_by_name($db, $djName);
+        $values['dj_id'] = $djId;
+    }
+    $chkEv = $db->prepare('SELECT 1 FROM `events_calendar_events` WHERE `id` = ? LIMIT 1');
+    $chkEv->execute([$eventId]);
+    if (!$chkEv->fetchColumn()) {
+        throw new RuntimeException('Nem létezik esemény ezzel az ID-val: ' . $eventId);
+    }
+    $chkDj = $db->prepare('SELECT 1 FROM `events_djs` WHERE `id` = ? LIMIT 1');
+    $chkDj->execute([$djId]);
+    if (!$chkDj->fetchColumn()) {
+        throw new RuntimeException('Nem létezik DJ ezzel az ID-val: ' . $djId);
+    }
+    if (events_csv_event_dj_link_exists($db, $eventId, $djId)) {
+        return 'updated';
+    }
+    $db->prepare('INSERT INTO `events_calendar_event_djs` (`event_id`, `dj_id`) VALUES (?,?)')
+        ->execute([$eventId, $djId]);
+
+    return 'inserted';
+}
+
 function events_csv_upsert_event_category_link(PDO $db, array $values): string {
     $eventId = (int) ($values['event_id'] ?? 0);
     $categoryId = (int) ($values['category_id'] ?? 0);
@@ -761,6 +848,8 @@ function events_csv_import_run(
                     $op = events_csv_upsert_event_organizer_link($db, $vals);
                 } elseif ($table === 'events_calendar_event_categories') {
                     $op = events_csv_upsert_event_category_link($db, $vals);
+                } elseif ($table === 'events_calendar_event_djs') {
+                    $op = events_csv_upsert_event_dj_link($db, $vals);
                 } else {
                     throw new RuntimeException('Nem támogatott composite cél tábla: ' . $table);
                 }
@@ -795,6 +884,79 @@ function events_csv_import_run(
         }
 
         try {
+            if ($table === 'events_djs') {
+                if (!events_djs_tables_available($db)) {
+                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az events_djs tábla nem elérhető.";
+                    continue;
+                }
+                if ($idVal !== null && $idVal > 0) {
+                    $exists = events_csv_row_exists($db, 'events_djs', $idVal);
+                    if ($exists) {
+                        [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true, $idVal);
+                        if ($err !== null) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            continue;
+                        }
+                        if (array_key_exists('name', $vals)) {
+                            $newName = trim((string) $vals['name']);
+                            if ($newName !== '') {
+                                $stDup = $db->prepare('SELECT `id` FROM `events_djs` WHERE `name` = ? AND `id` <> ? LIMIT 1');
+                                $stDup->execute([$newName, $idVal]);
+                                if ($stDup->fetchColumn()) {
+                                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$newName}” név már egy másik DJ-hez tartozik.";
+                                    continue;
+                                }
+                            }
+                        }
+                        $didUpdate = events_csv_do_update($db, $table, $idVal, $vals);
+                        if ($didUpdate) {
+                            $updated++;
+                        } else {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező DJ (id={$idVal}), nincs frissítendő mező.";
+                        }
+                    } else {
+                        [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
+                        if ($err !== null) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            continue;
+                        }
+                        $nm = trim((string) ($vals['name'] ?? ''));
+                        if ($nm === '') {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                            continue;
+                        }
+                        $stName = $db->prepare('SELECT `id` FROM `events_djs` WHERE `name` = ? LIMIT 1');
+                        $stName->execute([$nm]);
+                        if ($stName->fetchColumn()) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű DJ már létezik.";
+                            continue;
+                        }
+                        $vals['id'] = $idVal;
+                        events_csv_do_insert($db, $table, $vals);
+                        $inserted++;
+                    }
+                } else {
+                    [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
+                    if ($err !== null) {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                        continue;
+                    }
+                    $nm = trim((string) ($vals['name'] ?? ''));
+                    if ($nm === '') {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                        continue;
+                    }
+                    $stName = $db->prepare('SELECT `id` FROM `events_djs` WHERE `name` = ? LIMIT 1');
+                    $stName->execute([$nm]);
+                    if ($stName->fetchColumn()) {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű DJ már létezik.";
+                        continue;
+                    }
+                    events_csv_do_insert($db, $table, $vals);
+                    $inserted++;
+                }
+                continue;
+            }
             if ($table === 'events_tags') {
                 if (!events_tags_tables_available($db)) {
                     $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az events_tags tábla nem elérhető.";

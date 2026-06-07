@@ -99,5 +99,25 @@ function events_csv_import_schema(): array {
                 'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
             ],
         ],
+        'events_djs' => [
+            'label' => 'DJ-k (`events_djs`)',
+            'id_max_import' => 100000,
+            'columns' => [
+                'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥25000). Kitöltve: max 100000, upsert. Ugyanilyen név már létezik → sor kihagyva.'],
+                'name' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'DJ neve (kötelező minden sorban).'],
+                'created' => ['type' => 'datetime', 'nullable' => true],
+                'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
+            ],
+        ],
+        'events_calendar_event_djs' => [
+            'label' => 'Esemény–DJ (`events_calendar_event_djs`, event_id + DJ név)',
+            'composite_key' => ['event_id', 'dj_id'],
+            'id_max_import' => 0,
+            'columns' => [
+                'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
+                'dj_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'DJ ID (events_djs.id); üres, ha dj_name van megadva'],
+                'dj_name' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'DJ név: meglévő keresés vagy automatikus létrehozás (dj_id helyett vagy mellette)'],
+            ],
+        ],
     ];
 }

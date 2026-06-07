@@ -5,6 +5,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/eventpics.php';
 require_once __DIR__ . '/html_security.php';
+require_once __DIR__ . '/dj_request.php';
 
 /**
  * Űrlapról: kiemelt kép URL (üres = null), vagy hibaüzenet.
@@ -437,6 +438,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $organizerIds = events_organizer_ids_from_post();
     $categoryIds = events_category_ids_from_post();
     $tagIds = events_tags_tables_available($db) ? events_tag_ids_from_post() : [];
+    $djIds = events_djs_tables_available($db) ? events_dj_ids_from_post() : [];
 
     if ($categoryIds !== []) {
         $ph = implode(',', array_fill(0, count($categoryIds), '?'));
@@ -447,7 +449,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         $chk = $categoryIds;
         sort($chk);
         if ($existing !== $chk) {
-            return [$row, 'A kiválasztott kategóriák között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds];
+            return [$row, 'A kiválasztott kategóriák között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds];
         }
     }
 
@@ -460,13 +462,26 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         $chkT = $tagIds;
         sort($chkT);
         if ($existTags !== $chkT) {
-            return [$row, 'A kiválasztott címkék között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds];
+            return [$row, 'A kiválasztott címkék között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds];
+        }
+    }
+
+    if ($djIds !== []) {
+        $ph = implode(',', array_fill(0, count($djIds), '?'));
+        $stDjs = $db->prepare("SELECT `id` FROM `events_djs` WHERE `id` IN ({$ph})");
+        $stDjs->execute($djIds);
+        $existDjs = array_map('intval', $stDjs->fetchAll(PDO::FETCH_COLUMN, 0));
+        sort($existDjs);
+        $chkD = $djIds;
+        sort($chkD);
+        if ($existDjs !== $chkD) {
+            return [$row, 'A kiválasztott DJ-k között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds];
         }
     }
 
     [$eventUrl, $eventUrlErr] = events_normalize_safe_url((string) ($_POST['event_url'] ?? ''), true);
     if ($eventUrlErr !== null) {
-        return [$row, $eventUrlErr, $organizerIds, $categoryIds, $tagIds];
+        return [$row, $eventUrlErr, $organizerIds, $categoryIds, $tagIds, $djIds];
     }
     $row['event_url'] = $eventUrl;
     if (array_key_exists('event_latinfohu_partner', $_POST)) {
@@ -481,27 +496,27 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
     [$featUrlInput, $featUrlErr] = events_normalize_featured_image_url((string) ($_POST['event_featured_image_url'] ?? ''));
     if ($featUrlErr !== null) {
-        return [$row, $featUrlErr, $organizerIds, $categoryIds, $tagIds];
+        return [$row, $featUrlErr, $organizerIds, $categoryIds, $tagIds, $djIds];
     }
     [$featPickPath, $featPickErr] = events_eventpics_normalize_selected((string) ($_POST['event_featured_image_pick'] ?? ''));
     if ($featPickErr !== null) {
-        return [$row, $featPickErr, $organizerIds, $categoryIds, $tagIds];
+        return [$row, $featPickErr, $organizerIds, $categoryIds, $tagIds, $djIds];
     }
     [$featUploadPath, $featUploadErr] = events_eventpics_handle_upload($_FILES['event_featured_image_upload'] ?? null);
     if ($featUploadErr !== null) {
-        return [$row, $featUploadErr, $organizerIds, $categoryIds, $tagIds];
+        return [$row, $featUploadErr, $organizerIds, $categoryIds, $tagIds, $djIds];
     }
     // Prioritás: URL > friss feltöltés > eventpics kiválasztás.
     $row['event_featured_image_url'] = $featUrlInput ?? $featUploadPath ?? $featPickPath;
 
     if ($row['event_name'] === '') {
-        return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds, $tagIds];
+        return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds, $tagIds, $djIds];
     }
 
     $baseSlug = $row['event_slug'] !== '' ? $row['event_slug'] : events_slugify($row['event_name']);
     $row['event_slug'] = events_ensure_unique_slug($db, $baseSlug, $excludeIdForSlug);
 
-    return [$row, null, $organizerIds, $categoryIds, $tagIds];
+    return [$row, null, $organizerIds, $categoryIds, $tagIds, $djIds];
 }
 
 /**
@@ -545,6 +560,11 @@ function events_row_for_form(array $row): array {
         $e['tag_ids'] = [];
     } else {
         $e['tag_ids'] = array_values(array_unique(array_map('intval', $e['tag_ids'])));
+    }
+    if (!isset($e['dj_ids']) || !is_array($e['dj_ids'])) {
+        $e['dj_ids'] = [];
+    } else {
+        $e['dj_ids'] = array_values(array_unique(array_map('intval', $e['dj_ids'])));
     }
     $e['event_allday'] = !empty($e['event_allday']);
     $e['event_latinfohu_partner'] = !empty($e['event_latinfohu_partner']);

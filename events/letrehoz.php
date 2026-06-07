@@ -11,6 +11,7 @@ $organizers = events_load_organizer_options($db);
 $categories = events_load_category_options($db);
 $venues = events_load_venue_options($db);
 $tags = events_load_tag_options($db);
+$djs = events_load_dj_options($db);
 
 $defaults = [
     'event_name' => '',
@@ -28,6 +29,7 @@ $defaults = [
     'organizer_ids' => [],
     'category_ids' => [],
     'tag_ids' => [],
+    'dj_ids' => [],
     'venue_id' => null,
 ];
 
@@ -38,13 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_letrehoz')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-    [$row, $err, $organizerIds, $categoryIds, $tagIds] = events_row_from_request($db, $defaults, null);
+    [$row, $err, $organizerIds, $categoryIds, $tagIds, $djIds] = events_row_from_request($db, $defaults, null);
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
         $e['organizer_ids'] = $organizerIds;
         $e['category_ids'] = $categoryIds;
         $e['tag_ids'] = $tagIds;
+        $e['dj_ids'] = $djIds;
     } else {
         try {
             $db->beginTransaction();
@@ -75,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             events_save_event_organizers($db, $newId, $organizerIds);
             events_save_event_categories($db, $newId, $categoryIds);
             events_save_event_tags($db, $newId, $tagIds);
+            events_save_event_djs($db, $newId, $djIds);
             $db->commit();
             rendszer_log('esemény', $newId, 'Létrehozva', $row['event_name']);
             flash('success', 'Esemény létrehozva.');
@@ -89,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $e['organizer_ids'] = $organizerIds;
             $e['category_ids'] = $categoryIds;
             $e['tag_ids'] = $tagIds;
+            $e['dj_ids'] = $djIds;
         }
     }
     }

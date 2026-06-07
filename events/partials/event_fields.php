@@ -5,6 +5,7 @@ declare(strict_types=1);
 /** @var array $categories id => név */
 /** @var array<int, string> $venues id => név (events_load_venue_options) */
 /** @var array<int, string> $tags id => név (events_load_tag_options) */
+/** @var array<int, string> $djs id => név (events_load_dj_options) */
 if (!isset($venues) || !is_array($venues)) {
     $venues = [];
 }
@@ -14,9 +15,13 @@ if (!isset($categories) || !is_array($categories)) {
 if (!isset($tags) || !is_array($tags)) {
     $tags = [];
 }
+if (!isset($djs) || !is_array($djs)) {
+    $djs = [];
+}
 $selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_values(array_unique(array_map('intval', $e['organizer_ids']))) : [];
 $selCat = isset($e['category_ids']) && is_array($e['category_ids']) ? array_values(array_unique(array_map('intval', $e['category_ids']))) : [];
 $selTag = isset($e['tag_ids']) && is_array($e['tag_ids']) ? array_values(array_unique(array_map('intval', $e['tag_ids']))) : [];
+$selDj = isset($e['dj_ids']) && is_array($e['dj_ids']) ? array_values(array_unique(array_map('intval', $e['dj_ids']))) : [];
 $orgPickerAll = [];
 foreach ($organizers as $oid => $onev) {
     $orgPickerAll[] = ['id' => (int) $oid, 'name' => (string) $onev];
@@ -51,6 +56,18 @@ $tagPickerJson = json_encode(
 );
 if ($tagPickerJson === false) {
     $tagPickerJson = '{"all":[],"selected":[]}';
+}
+$djPickerAll = [];
+foreach ($djs as $did => $dnev) {
+    $djPickerAll[] = ['id' => (int) $did, 'name' => (string) $dnev];
+}
+usort($djPickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+$djPickerJson = json_encode(
+    ['all' => $djPickerAll, 'selected' => $selDj],
+    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+);
+if ($djPickerJson === false) {
+    $djPickerJson = '{"all":[],"selected":[]}';
 }
 $eventpicFiles = events_eventpics_list_files();
 $selectedVenueId = (string) ($e['venue_id'] ?? '');
@@ -258,6 +275,34 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         </div>
     <?php endif; ?>
 </div>
+<div class="card" style="margin-bottom:1rem;">
+    <h3 style="margin-top:0;">DJ-k</h3>
+    <?php if ($djs === []): ?>
+        <p class="help">Még nincs DJ felvéve. <a href="<?= h(events_url('djs.php')) ?>">DJ-k szerkesztése</a></p>
+    <?php else: ?>
+        <p class="help">Több DJ is választható. A DJ-k külön entitás, nem címke — nyilvánosan is külön jelennek meg.</p>
+        <input type="search" id="dj-picker-filter" class="events-org-filter" placeholder="DJ keresése…" autocomplete="off" spellcheck="false">
+        <div class="events-org-picker-grid">
+            <div class="events-org-picker-col">
+                <label class="events-org-picker-label" for="dj-picker-pool">Kiválasztó lista</label>
+                <select id="dj-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
+            </div>
+            <div class="events-org-picker-btns">
+                <button type="button" class="btn btn-secondary events-org-btn" id="dj-picker-add" title="Hozzáadás">+</button>
+                <button type="button" class="btn btn-secondary events-org-btn" id="dj-picker-remove" title="Eltávolítás">−</button>
+            </div>
+            <div class="events-org-picker-col">
+                <label class="events-org-picker-label" for="dj-picker-selected">Kiválasztott</label>
+                <select id="dj-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
+            </div>
+        </div>
+        <div id="dj-picker-hiddens" class="org-picker-hiddens">
+            <?php foreach ($selDj as $dgid): ?>
+                <input type="hidden" name="dj_ids[]" value="<?= (int) $dgid ?>">
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
 <div class="card event-featured-card" style="margin-bottom:1rem;">
     <div class="event-featured-card__head">
         <h3 class="event-featured-card__title">Esemény képe</h3>
@@ -337,6 +382,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 <script type="application/json" id="events-venue-picker-json"><?= $venuePickerJson ?></script>
 <script type="application/json" id="events-cat-picker-json"><?= $catPickerJson ?></script>
 <script type="application/json" id="events-tag-picker-json"><?= $tagPickerJson ?></script>
+<script type="application/json" id="events-dj-picker-json"><?= $djPickerJson ?></script>
 <script>
 (function () {
     var orgJsonEl = document.getElementById('events-org-picker-json');
@@ -615,6 +661,79 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         tSel.addEventListener('dblclick', removeTag);
         renderTagSelected();
         renderTagPool();
+    }
+
+    var djJsonEl = document.getElementById('events-dj-picker-json');
+    var dPool = document.getElementById('dj-picker-pool');
+    var dSel = document.getElementById('dj-picker-selected');
+    var dFilter = document.getElementById('dj-picker-filter');
+    var dHiddens = document.getElementById('dj-picker-hiddens');
+    var dAdd = document.getElementById('dj-picker-add');
+    var dRemove = document.getElementById('dj-picker-remove');
+    if (djJsonEl && dPool && dSel && dFilter && dHiddens && dAdd && dRemove) {
+        var dData;
+        try { dData = JSON.parse(djJsonEl.textContent || '{}'); } catch (e3) { dData = { all: [], selected: [] }; }
+        var dAll = Array.isArray(dData.all) ? dData.all : [];
+        var dPick = Array.isArray(dData.selected) ? dData.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
+        var dNameById = {};
+        dAll.forEach(function (row) { dNameById[row.id] = row.name; });
+        function syncDjHiddens() {
+            dHiddens.innerHTML = '';
+            Array.from(dSel.options).forEach(function (opt) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'dj_ids[]';
+                inp.value = opt.value;
+                dHiddens.appendChild(inp);
+            });
+        }
+        function renderDjPool() {
+            var q = (dFilter.value || '').trim().toLowerCase();
+            dPool.innerHTML = '';
+            var taken = {};
+            dPick.forEach(function (id) { taken[id] = true; });
+            dAll.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
+                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
+                var opt = document.createElement('option');
+                opt.value = String(row.id);
+                opt.textContent = row.name + ' (#' + row.id + ')';
+                dPool.appendChild(opt);
+            });
+        }
+        function renderDjSelected() {
+            dSel.innerHTML = '';
+            dPick.forEach(function (id) {
+                var opt = document.createElement('option');
+                opt.value = String(id);
+                opt.textContent = (dNameById[id] || '?') + ' (#' + id + ')';
+                dSel.appendChild(opt);
+            });
+            syncDjHiddens();
+        }
+        function addDj() {
+            var opt = dPool.options[dPool.selectedIndex];
+            if (!opt) return;
+            var id = parseInt(opt.value, 10);
+            if (!id || dPick.indexOf(id) !== -1) return;
+            dPick.push(id);
+            renderDjSelected();
+            renderDjPool();
+        }
+        function removeDj() {
+            var opt = dSel.options[dSel.selectedIndex];
+            if (!opt) return;
+            var id = parseInt(opt.value, 10);
+            dPick = dPick.filter(function (x) { return x !== id; });
+            renderDjSelected();
+            renderDjPool();
+        }
+        dFilter.addEventListener('input', renderDjPool);
+        dAdd.addEventListener('click', addDj);
+        dRemove.addEventListener('click', removeDj);
+        dPool.addEventListener('dblclick', addDj);
+        dSel.addEventListener('dblclick', removeDj);
+        renderDjSelected();
+        renderDjPool();
     }
 })();
 
