@@ -2612,6 +2612,19 @@ dialog.eventpics-modal::backdrop {
     padding-top: 1rem;
     border-top: 1px solid var(--border);
 }
+.events-edit-form-actions--sidebar {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+.events-edit-form-actions--sidebar .btn {
+    flex: 1 1 calc(50% - 0.375rem);
+    justify-content: center;
+    text-align: center;
+}
+.events-edit-form-actions--sidebar .btn-primary {
+    flex-basis: 100%;
+}
 .events-edit-log {
     margin-top: 1.5rem;
 }

@@ -192,6 +192,10 @@ require __DIR__ . '/wp_token_field.php';
 </div>
 </div>
 <aside class="events-edit-sidebar">
+<?php
+$eventFormActionsPlacement = 'sidebar';
+require __DIR__ . '/event_form_actions.php';
+?>
 <div class="events-edit-sidebar-cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
     <img
         id="eventpics-summary-img"
