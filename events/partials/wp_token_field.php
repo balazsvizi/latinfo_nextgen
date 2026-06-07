@@ -17,6 +17,7 @@ declare(strict_types=1);
  * @var bool $wpTokenSingle
  * @var bool $wpTokenShowPopular gyakran használt gyorslinkek
  * @var string|null $wpTokenChipLinkPattern Chip címke link sablon, pl. organizer.php?id={id}
+ * @var bool $wpTokenManageNewTab Kezelés / felvétel link új lapon
  */
 $wpTokenId = $wpTokenId ?? 'wp-token';
 $wpTokenLabel = $wpTokenLabel ?? '';
@@ -32,6 +33,7 @@ $wpTokenEntityType = $wpTokenEntityType ?? '';
 $wpTokenSingle = $wpTokenSingle ?? false;
 $wpTokenShowPopular = $wpTokenShowPopular ?? false;
 $wpTokenChipLinkPattern = $wpTokenChipLinkPattern ?? null;
+$wpTokenManageNewTab = !empty($wpTokenManageNewTab);
 $wpTokenJson = json_encode(
     ['all' => array_values($wpTokenAll), 'selected' => array_values($wpTokenSelected)],
     JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
@@ -86,8 +88,8 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
         </div>
         <?php endif; ?>
         <?php if ($wpTokenManageUrl !== null): ?>
-            <p class="wp-token-field__footer"><a href="<?= h($wpTokenManageUrl) ?>"><?= h($wpTokenManageLabel) ?></a></p>
+            <p class="wp-token-field__footer"><a href="<?= h($wpTokenManageUrl) ?>"<?= $wpTokenManageNewTab ? ' target="_blank" rel="noopener noreferrer"' : '' ?>><?= h($wpTokenManageLabel) ?></a></p>
         <?php endif; ?>
     <?php endif; ?>
 </div>
-<?php unset($wpTokenChipLinkPattern); ?>
+<?php unset($wpTokenChipLinkPattern, $wpTokenManageNewTab); ?>

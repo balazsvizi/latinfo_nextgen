@@ -3341,6 +3341,11 @@ table select:focus {
     color: #991b1b;
     border: 1px solid #fecaca;
 }
+.alert-warning {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
 
 /* ========== Toolbar / filters ========== */
 .toolbar {

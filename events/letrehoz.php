@@ -39,6 +39,7 @@ $defaults = [
 $hiba = '';
 $copyNotice = '';
 $eventFormIsCopy = false;
+$eventCopySourceFeaturedImage = '';
 $e = events_row_for_form($defaults);
 
 $copyFromId = (int) ($_GET['copy_from'] ?? 0);
@@ -47,6 +48,7 @@ if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     if ($copied !== null) {
         $e = events_row_for_form($copied);
         $eventFormIsCopy = true;
+        $eventCopySourceFeaturedImage = trim((string) ($e['event_featured_image_url'] ?? ''));
         $copyNotice = 'Esemény másolva piszkozatként. A dátumok és a további információ URL nem kerültek át — add meg őket, majd mentsd.';
     } else {
         flash('error', 'A másolandó esemény nem található.');
@@ -54,6 +56,7 @@ if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['is_copy'] ?? '') === '1') {
     $eventFormIsCopy = true;
+    $eventCopySourceFeaturedImage = trim((string) ($_POST['copy_source_featured_image'] ?? ''));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -67,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ? events_public_post_status()
             : events_default_post_status();
     }
+    $copyWarnings = $eventFormIsCopy ? events_copy_save_warnings($row, $_POST) : [];
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
@@ -111,8 +115,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             events_save_event_supplementary_styles($db, $newId, $supplementaryStyleIds);
             $db->commit();
             rendszer_log('esemény', $newId, 'Létrehozva', $row['event_name']);
+            if ($copyWarnings !== []) {
+                flash('warning', implode(' ', $copyWarnings));
+            }
             flash('success', 'Esemény létrehozva.');
-            redirect(events_url('events_admin.php'));
+            redirect(events_url('szerkeszt.php?id=' . $newId));
         } catch (Throwable $ex) {
             if ($db->inTransaction()) {
                 $db->rollBack();
@@ -152,7 +159,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
           data-entity-create-url="<?= h(events_url('ajax_entity_quick_create.php')) ?>"
           data-entity-create-csrf="<?= h(csrf_token('events_entity_create')) ?>">
         <?= csrf_input('events_letrehoz') ?>
-        <?php if ($eventFormIsCopy): ?><input type="hidden" name="is_copy" value="1"><?php endif; ?>
+        <?php if ($eventFormIsCopy): ?>
+            <input type="hidden" name="is_copy" value="1">
+            <input type="hidden" name="copy_source_featured_image" id="copy_source_featured_image" value="<?= h($eventCopySourceFeaturedImage) ?>">
+        <?php endif; ?>
         <?php
         $eventFormCancelUrl = events_url('events_admin.php');
         require __DIR__ . '/partials/event_fields.php';
@@ -162,4 +172,5 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     </form>
 </div>
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
+<?php if ($eventFormIsCopy): require __DIR__ . '/partials/event_copy_save_script.php'; endif; ?>
 <?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>

@@ -122,6 +122,7 @@ $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
 require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
+<?php if ($s = flash('warning')): ?><p class="alert alert-warning"><?= h($s) ?></p><?php endif; ?>
 
 <div class="events-edit-page">
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>

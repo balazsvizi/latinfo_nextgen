@@ -617,6 +617,28 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
 }
 
 /**
+ * Másolat mentésekor nem blokkoló figyelmeztetések (borítókép / további infó).
+ *
+ * @param array<string,mixed> $row events_row_from_request eredmény
+ * @param array<string,mixed> $post $_POST
+ * @return list<string>
+ */
+function events_copy_save_warnings(array $row, array $post): array {
+    $warnings = [];
+    $sourceImg = trim((string) ($post['copy_source_featured_image'] ?? ''));
+    $finalImg = trim((string) ($row['event_featured_image_url'] ?? ''));
+    $eventUrl = trim((string) ($row['event_url'] ?? ''));
+    if ($sourceImg !== '' && $finalImg === $sourceImg) {
+        $warnings[] = 'A borítókép nem lett lecserélve az eredeti másolatról.';
+    }
+    if ($finalImg === '' && $eventUrl === '') {
+        $warnings[] = 'Nincs borítókép és további információ URL sem megadva.';
+    }
+
+    return $warnings;
+}
+
+/**
  * @param array<string,mixed> $row
  */
 function events_row_for_form(array $row): array {
