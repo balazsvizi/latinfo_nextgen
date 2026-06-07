@@ -4,55 +4,17 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
+$filters = events_admin_filters_from_request($db);
 
-$f_organizer = trim($_GET['f_organizer'] ?? '');
-$f_name = trim($_GET['f_name'] ?? '');
-$f_id = trim($_GET['f_id'] ?? '');
-$f_category = trim($_GET['f_category'] ?? '');
-$f_tag = trim($_GET['f_tag'] ?? '');
-$f_dj = trim($_GET['f_dj'] ?? '');
-$f_main_style = trim($_GET['f_main_style'] ?? '');
-$f_supplementary_style = trim($_GET['f_supplementary_style'] ?? '');
-$f_start_from = trim($_GET['f_start_from'] ?? '');
-$f_start_to = trim($_GET['f_start_to'] ?? '');
-$f_views_min = trim($_GET['f_views_min'] ?? '');
-
-$categoryOptions = events_load_category_options($db);
-$f_category_id = 0;
-if ($f_category !== '' && ctype_digit($f_category) && isset($categoryOptions[(int) $f_category])) {
-    $f_category_id = (int) $f_category;
-}
-
-$tagsAvailable = events_tags_tables_available($db);
-$tagOptions = $tagsAvailable ? events_load_tag_options($db) : [];
-$f_tag_id = 0;
-if ($tagsAvailable && $f_tag !== '' && ctype_digit($f_tag) && isset($tagOptions[(int) $f_tag])) {
-    $f_tag_id = (int) $f_tag;
-}
-
-$djsAvailable = events_djs_tables_available($db);
-$djOptions = $djsAvailable ? events_load_dj_options($db) : [];
-$f_dj_id = 0;
-if ($djsAvailable && $f_dj !== '' && ctype_digit($f_dj) && isset($djOptions[(int) $f_dj])) {
-    $f_dj_id = (int) $f_dj;
-}
-
-$stylesAvailable = events_styles_tables_available($db);
-$styleOptions = $stylesAvailable ? events_load_style_options($db) : [];
-$f_main_style_id = 0;
-$f_supplementary_style_id = 0;
-if ($stylesAvailable && $f_main_style !== '' && ctype_digit($f_main_style) && isset($styleOptions[(int) $f_main_style])) {
-    $f_main_style_id = (int) $f_main_style;
-}
-if ($stylesAvailable && $f_supplementary_style !== '' && ctype_digit($f_supplementary_style) && isset($styleOptions[(int) $f_supplementary_style])) {
-    $f_supplementary_style_id = (int) $f_supplementary_style;
-}
-
-$allowedStatus = array_merge([''], events_allowed_post_statuses());
-$status = isset($_GET['status']) && in_array((string) $_GET['status'], $allowedStatus, true) ? (string) $_GET['status'] : '';
+$tagsAvailable = $filters['tagsAvailable'];
+$tagOptions = $filters['tagOptions'];
+$djsAvailable = $filters['djsAvailable'];
+$stylesAvailable = $filters['stylesAvailable'];
+$get_params = $filters['get_params'];
 
 $allowedOrder = ['id', 'organizer', 'category'];
 if ($tagsAvailable) {
@@ -70,142 +32,8 @@ if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, tr
     $dir_param = 'desc';
 }
 
-$boundsRow = $db->query('
-    SELECT MIN(e.event_start) AS dmin, MAX(e.event_start) AS dmax
-    FROM `events_calendar_events` e
-    WHERE e.event_start IS NOT NULL
-')->fetch(PDO::FETCH_ASSOC);
-
-$now = new DateTimeImmutable('today');
-if (!empty($boundsRow['dmin'])) {
-    $axisMin = (new DateTimeImmutable($boundsRow['dmin']))->modify('first day of this month')->modify('-1 month');
-} else {
-    $axisMin = $now->modify('-18 months');
-}
-if (!empty($boundsRow['dmax'])) {
-    $axisMax = (new DateTimeImmutable($boundsRow['dmax']))->modify('first day of this month')->modify('+2 months');
-} else {
-    $axisMax = $now->modify('+24 months');
-}
-if ($axisMax <= $axisMin) {
-    $axisMax = $axisMin->modify('+1 year');
-}
-$axisMinStr = $axisMin->format('Y-m-d');
-$axisMaxStr = $axisMax->format('Y-m-d');
-$daysSpan = (int) $axisMin->diff($axisMax)->format('%a');
-if ($daysSpan < 1) {
-    $daysSpan = 365;
-}
-
-$clampIdx = static function (int $v, int $max): int {
-    if ($v < 0) {
-        return 0;
-    }
-    if ($v > $max) {
-        return $max;
-    }
-    return $v;
-};
-
-$idxFrom = 0;
-$idxTo = $daysSpan;
-if ($f_start_from !== '') {
-    try {
-        $d = new DateTimeImmutable($f_start_from);
-        $idxFrom = $clampIdx((int) $axisMin->diff($d->setTime(0, 0, 0))->format('%a'), $daysSpan);
-    } catch (Throwable) {
-        $idxFrom = 0;
-    }
-}
-if ($f_start_to !== '') {
-    try {
-        $d = new DateTimeImmutable($f_start_to);
-        $idxTo = $clampIdx((int) $axisMin->diff($d->setTime(0, 0, 0))->format('%a'), $daysSpan);
-    } catch (Throwable) {
-        $idxTo = $daysSpan;
-    }
-}
-if ($idxFrom > $idxTo) {
-    [$idxFrom, $idxTo] = [$idxTo, $idxFrom];
-}
-
-$where = [];
-$params = [];
-
-if ($f_organizer !== '') {
-    $where[] = 'EXISTS (
-        SELECT 1 FROM `events_calendar_event_organizers` eo2
-        INNER JOIN `events_organizers` o2 ON o2.id = eo2.organizer_id
-        WHERE eo2.event_id = e.id AND o2.name LIKE ?
-    )';
-    $params[] = '%' . $f_organizer . '%';
-}
-if ($f_category_id > 0) {
-    $where[] = 'EXISTS (
-        SELECT 1 FROM `events_calendar_event_categories` ec2
-        WHERE ec2.event_id = e.id AND ec2.category_id = ?
-    )';
-    $params[] = $f_category_id;
-}
-if ($f_tag_id > 0) {
-    $where[] = 'EXISTS (
-        SELECT 1 FROM `events_calendar_event_tags` et2
-        WHERE et2.event_id = e.id AND et2.tag_id = ?
-    )';
-    $params[] = $f_tag_id;
-}
-if ($f_dj_id > 0) {
-    $where[] = 'EXISTS (
-        SELECT 1 FROM `events_calendar_event_djs` ed2
-        WHERE ed2.event_id = e.id AND ed2.dj_id = ?
-    )';
-    $params[] = $f_dj_id;
-}
-if ($f_main_style_id > 0) {
-    $where[] = 'EXISTS (
-        SELECT 1 FROM `events_calendar_event_main_styles` ms2
-        WHERE ms2.event_id = e.id AND ms2.style_id = ?
-    )';
-    $params[] = $f_main_style_id;
-}
-if ($f_supplementary_style_id > 0) {
-    $where[] = 'EXISTS (
-        SELECT 1 FROM `events_calendar_event_supplementary_styles` ss2
-        WHERE ss2.event_id = e.id AND ss2.style_id = ?
-    )';
-    $params[] = $f_supplementary_style_id;
-}
-if ($f_name !== '') {
-    $where[] = 'e.event_name LIKE ?';
-    $params[] = '%' . $f_name . '%';
-}
-if ($f_id !== '') {
-    if (ctype_digit($f_id)) {
-        $where[] = 'e.id = ?';
-        $params[] = (int) $f_id;
-    } else {
-        $where[] = 'CAST(e.id AS CHAR) LIKE ?';
-        $params[] = '%' . $f_id . '%';
-    }
-}
-if ($f_start_from !== '') {
-    $where[] = '(e.event_start IS NOT NULL AND e.event_start >= ?)';
-    $params[] = $f_start_from . (strlen($f_start_from) <= 10 ? ' 00:00:00' : '');
-}
-if ($f_start_to !== '') {
-    $where[] = '(e.event_start IS NOT NULL AND e.event_start <= ?)';
-    $params[] = $f_start_to . (strlen($f_start_to) <= 10 ? ' 23:59:59' : '');
-}
-if ($status !== '') {
-    $where[] = 'e.event_status = ?';
-    $params[] = $status;
-}
-if ($f_views_min !== '' && ctype_digit($f_views_min)) {
-    $where[] = '(SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id) >= ?';
-    $params[] = (int) $f_views_min;
-}
-
-$whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+$whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
+$params = $filters['params'];
 
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
@@ -344,77 +172,10 @@ if ($rows !== []) {
     }
 }
 
-$get_params = array_filter([
-    'f_organizer' => $f_organizer !== '' ? $f_organizer : null,
-    'f_name' => $f_name !== '' ? $f_name : null,
-    'f_id' => $f_id !== '' ? $f_id : null,
-    'f_category' => $f_category_id > 0 ? (string) $f_category_id : null,
-    'f_tag' => $f_tag_id > 0 ? (string) $f_tag_id : null,
-    'f_dj' => $f_dj_id > 0 ? (string) $f_dj_id : null,
-    'f_main_style' => $f_main_style_id > 0 ? (string) $f_main_style_id : null,
-    'f_supplementary_style' => $f_supplementary_style_id > 0 ? (string) $f_supplementary_style_id : null,
-    'f_start_from' => $f_start_from !== '' ? $f_start_from : null,
-    'f_start_to' => $f_start_to !== '' ? $f_start_to : null,
-    'f_views_min' => $f_views_min !== '' ? $f_views_min : null,
-    'status' => $status !== '' ? $status : null,
-]);
-
 $editBase = events_url('szerkeszt.php?id=');
-
-function events_admin_format_datum_cell(array $r): string {
-    $allday = !empty($r['event_allday']);
-    $startRaw = $r['event_start'] ?? null;
-    $endRaw = $r['event_end'] ?? null;
-
-    if ($startRaw === null || $startRaw === '') {
-        if ($endRaw === null || $endRaw === '') {
-            return '–';
-        }
-        $endTs = strtotime((string) $endRaw);
-        if ($endTs === false) {
-            return '–';
-        }
-
-        return '– → ' . date($allday ? 'Y.m.d.' : 'Y.m.d. H:i', $endTs);
-    }
-
-    $startTs = strtotime((string) $startRaw);
-    if ($startTs === false) {
-        return '–';
-    }
-
-    if ($endRaw === null || $endRaw === '') {
-        return date($allday ? 'Y.m.d.' : 'Y.m.d. H:i', $startTs);
-    }
-
-    $endTs = strtotime((string) $endRaw);
-    if ($endTs === false) {
-        return date($allday ? 'Y.m.d.' : 'Y.m.d. H:i', $startTs);
-    }
-
-    $sameDay = date('Y-m-d', $startTs) === date('Y-m-d', $endTs);
-
-    if ($allday) {
-        if ($sameDay) {
-            return date('Y.m.d.', $startTs);
-        }
-
-        return date('Y.m.d.', $startTs) . ' → ' . date('Y.m.d.', $endTs);
-    }
-
-    if ($sameDay) {
-        $day = date('Y.m.d.', $startTs);
-        $tStart = date('H:i', $startTs);
-        $tEnd = date('H:i', $endTs);
-        if ($tStart === $tEnd) {
-            return $day . ' ' . $tStart;
-        }
-
-        return $day . ' ' . $tStart . ' → ' . $tEnd;
-    }
-
-    return date('Y.m.d. H:i', $startTs) . ' → ' . date('Y.m.d. H:i', $endTs);
-}
+$filterFormAction = events_url('events_admin.php');
+$filterFormHidden = [];
+$filterClearUrl = events_url('events_admin.php');
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Események';
@@ -424,137 +185,21 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
 <div class="card events-admin-card">
-    <form method="get" action="<?= h(events_url('events_admin.php')) ?>" class="events-admin-form" id="events-admin-filter-form">
-        <input type="hidden" name="order" value="<?= h($order) ?>">
-        <input type="hidden" name="dir" value="<?= h($dir_param) ?>">
-
+    <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form" id="events-admin-filter-form">
         <div class="events-list-head">
             <h2 class="events-list-title">Események</h2>
             <div class="events-list-actions">
-                <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Szűrők törlése</a>
+                <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary">Szűrők törlése</a>
+                <a href="<?= h(events_url('events_naptar.php') . ($get_params !== [] ? '?' . http_build_query($get_params) : '')) ?>" class="btn btn-secondary">Naptár nézet</a>
                 <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary">Új esemény</a>
                 <a href="<?= h(events_url('import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
             </div>
         </div>
 
-        <section class="events-filters-shell" aria-label="Szűrők"
-            data-axis-min="<?= h($axisMinStr) ?>"
-            data-axis-days="<?= (int) $daysSpan ?>"
-            data-idx-from="<?= (int) $idxFrom ?>"
-            data-idx-to="<?= (int) $idxTo ?>">
-            <div class="events-filters-grid">
-                <div class="events-filter-field">
-                    <label class="events-filter-label" for="ev-f-organizer">Szervező</label>
-                    <input class="events-filter-input" type="text" name="f_organizer" id="ev-f-organizer" value="<?= h($f_organizer) ?>" placeholder="Részlet a névből…" autocomplete="off">
-                </div>
-                <div class="events-filter-field events-filter-field--status">
-                    <label class="events-filter-label" for="ev-f-category">Kategória</label>
-                    <div class="events-filter-select-wrap">
-                        <select class="events-filter-select" name="f_category" id="ev-f-category" title="Kategória szűrő">
-                            <option value="">Összes kategória</option>
-                            <?php foreach ($categoryOptions as $cid => $cname): ?>
-                                <option value="<?= (int) $cid ?>" <?= $f_category_id === (int) $cid ? 'selected' : '' ?>><?= h($cname) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                <?php if ($tagsAvailable): ?>
-                <div class="events-filter-field events-filter-field--status">
-                    <label class="events-filter-label" for="ev-f-tag">Címke</label>
-                    <div class="events-filter-select-wrap">
-                        <select class="events-filter-select" name="f_tag" id="ev-f-tag" title="Címke szűrő">
-                            <option value="">Összes címke</option>
-                            <?php foreach ($tagOptions as $tid => $tname): ?>
-                                <option value="<?= (int) $tid ?>" <?= $f_tag_id === (int) $tid ? 'selected' : '' ?>><?= h($tname) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                <?php endif; ?>
-                <?php if ($djsAvailable): ?>
-                <div class="events-filter-field events-filter-field--status">
-                    <label class="events-filter-label" for="ev-f-dj">DJ</label>
-                    <div class="events-filter-select-wrap">
-                        <select class="events-filter-select" name="f_dj" id="ev-f-dj" title="DJ szűrő">
-                            <option value="">Összes DJ</option>
-                            <?php foreach ($djOptions as $did => $dname): ?>
-                                <option value="<?= (int) $did ?>" <?= $f_dj_id === (int) $did ? 'selected' : '' ?>><?= h($dname) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                <?php endif; ?>
-                <?php if ($stylesAvailable): ?>
-                <div class="events-filter-field events-filter-field--status">
-                    <label class="events-filter-label" for="ev-f-main-style">Fő stílus</label>
-                    <div class="events-filter-select-wrap">
-                        <select class="events-filter-select" name="f_main_style" id="ev-f-main-style" title="Fő stílus szűrő">
-                            <option value="">Összes fő stílus</option>
-                            <?php foreach ($styleOptions as $sid => $sname): ?>
-                                <option value="<?= (int) $sid ?>" <?= $f_main_style_id === (int) $sid ? 'selected' : '' ?>><?= h($sname) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                <div class="events-filter-field events-filter-field--status">
-                    <label class="events-filter-label" for="ev-f-supplementary-style">Kiegészítő stílus</label>
-                    <div class="events-filter-select-wrap">
-                        <select class="events-filter-select" name="f_supplementary_style" id="ev-f-supplementary-style" title="Kiegészítő stílus szűrő">
-                            <option value="">Összes kiegészítő stílus</option>
-                            <?php foreach ($styleOptions as $sid => $sname): ?>
-                                <option value="<?= (int) $sid ?>" <?= $f_supplementary_style_id === (int) $sid ? 'selected' : '' ?>><?= h($sname) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                <?php endif; ?>
-                <div class="events-filter-field">
-                    <label class="events-filter-label" for="ev-f-name">Esemény neve</label>
-                    <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($f_name) ?>" placeholder="Keresés a címben…" autocomplete="off">
-                </div>
-                <div class="events-filter-field">
-                    <label class="events-filter-label" for="ev-f-id">ID</label>
-                    <input class="events-filter-input" type="text" name="f_id" id="ev-f-id" value="<?= h($f_id) ?>" placeholder="Pl. 100001" inputmode="numeric" autocomplete="off">
-                </div>
-                <div class="events-filter-field">
-                    <label class="events-filter-label" for="ev-f-views">Min. megtekintés</label>
-                    <input class="events-filter-input" type="number" name="f_views_min" id="ev-f-views" value="<?= h($f_views_min) ?>" placeholder="0" min="0" step="1">
-                </div>
-                <div class="events-filter-field events-filter-field--status">
-                    <label class="events-filter-label" for="ev-f-status">Státusz</label>
-                    <div class="events-filter-select-wrap">
-                        <select class="events-filter-select events-filter-status" name="status" id="ev-f-status" title="Státusz szűrő">
-                            <option value="">Összes státusz</option>
-                            <?php foreach (events_allowed_post_statuses() as $st): ?>
-                                <option value="<?= h($st) ?>" <?= $status === $st ? 'selected' : '' ?>><?= h(events_post_status_label($st)) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="events-filter-field events-filter-field--full">
-                    <div class="events-date-slider-row">
-                        <div class="events-date-range-visual">
-                            <div class="events-date-range-track-bg" aria-hidden="true"></div>
-                            <div class="events-date-range-fill" id="ev-date-range-fill" aria-hidden="true"></div>
-                            <input type="range" class="events-range events-range-from" id="ev-range-from" min="0" max="<?= (int) $daysSpan ?>" value="<?= (int) $idxFrom ?>" step="1" aria-valuemin="0" aria-valuemax="<?= (int) $daysSpan ?>" aria-label="Kezdő nap a tengelyen">
-                            <input type="range" class="events-range events-range-to" id="ev-range-to" min="0" max="<?= (int) $daysSpan ?>" value="<?= (int) $idxTo ?>" step="1" aria-label="Záró nap a tengelyen">
-                        </div>
-                        <button type="submit" class="btn btn-primary events-filter-submit-inline">Szűrés alkalmazása</button>
-                    </div>
-                    <div class="events-date-range-readouts">
-                        <div class="events-date-readout">
-                            <span class="events-date-readout-label" id="ev-lbl-from">Ettől</span>
-                            <input class="events-filter-input events-filter-input--date" type="date" name="f_start_from" id="ev-f-start-from" value="<?= h($f_start_from) ?>">
-                        </div>
-                        <div class="events-date-readout">
-                            <span class="events-date-readout-label" id="ev-lbl-to">Eddig</span>
-                            <input class="events-filter-input events-filter-input--date" type="date" name="f_start_to" id="ev-f-start-to" value="<?= h($f_start_to) ?>">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <?php
+        $filterFormHidden = ['order' => $order, 'dir' => $dir_param];
+        require __DIR__ . '/partials/admin_event_filters.php';
+        ?>
 
         <div class="table-wrap events-admin-table-wrap">
             <table class="sortable-table events-admin-table">
@@ -685,84 +330,5 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         <p class="events-admin-empty">Nincs találat.</p>
     <?php endif; ?>
 </div>
-<script>
-(function () {
-    var shell = document.querySelector('.events-filters-shell');
-    if (!shell) return;
-    var axisMin = shell.getAttribute('data-axis-min');
-    var days = parseInt(shell.getAttribute('data-axis-days'), 10) || 0;
-    if (!axisMin || days < 1) return;
-
-    var axisStart = new Date(axisMin + 'T12:00:00');
-    function idxToYmd(idx) {
-        var d = new Date(axisStart);
-        d.setDate(d.getDate() + idx);
-        var y = d.getFullYear();
-        var m = String(d.getMonth() + 1).padStart(2, '0');
-        var day = String(d.getDate()).padStart(2, '0');
-        return y + '-' + m + '-' + day;
-    }
-    function ymdToIdx(ymd) {
-        if (!ymd) return null;
-        var t = new Date(ymd + 'T12:00:00').getTime();
-        if (isNaN(t)) return null;
-        var diff = Math.round((t - axisStart.getTime()) / 86400000);
-        if (diff < 0) return 0;
-        if (diff > days) return days;
-        return diff;
-    }
-    var rFrom = document.getElementById('ev-range-from');
-    var rTo = document.getElementById('ev-range-to');
-    var dFrom = document.getElementById('ev-f-start-from');
-    var dTo = document.getElementById('ev-f-start-to');
-    var fill = document.getElementById('ev-date-range-fill');
-    if (!rFrom || !rTo || !dFrom || !dTo) return;
-
-    function parseIdx(el) {
-        var v = parseInt(el.value, 10);
-        if (isNaN(v)) return 0;
-        if (v < 0) return 0;
-        if (v > days) return days;
-        return v;
-    }
-    function updateFill() {
-        var a = parseIdx(rFrom);
-        var b = parseIdx(rTo);
-        if (a > b) { b = a; rTo.value = String(b); }
-        var p0 = (a / days) * 100;
-        var p1 = (b / days) * 100;
-        if (fill) {
-            fill.style.left = p0 + '%';
-            fill.style.width = Math.max(0, p1 - p0) + '%';
-        }
-    }
-    function syncSlidersToDates() {
-        var i0 = ymdToIdx(dFrom.value);
-        var i1 = ymdToIdx(dTo.value);
-        if (dFrom.value === '') rFrom.value = '0';
-        else if (i0 !== null) rFrom.value = String(i0);
-        if (dTo.value === '') rTo.value = String(days);
-        else if (i1 !== null) rTo.value = String(i1);
-        var a = parseIdx(rFrom);
-        var b = parseIdx(rTo);
-        if (a > b) { rFrom.value = String(b); a = b; }
-        updateFill();
-    }
-    function syncDatesFromSliders() {
-        var a = parseIdx(rFrom);
-        var b = parseIdx(rTo);
-        if (a > b) { rTo.value = String(a); b = a; }
-        dFrom.value = a === 0 ? '' : idxToYmd(a);
-        dTo.value = b >= days ? '' : idxToYmd(b);
-        updateFill();
-    }
-
-    rFrom.addEventListener('input', syncDatesFromSliders);
-    rTo.addEventListener('input', syncDatesFromSliders);
-    dFrom.addEventListener('change', syncSlidersToDates);
-    dTo.addEventListener('change', syncSlidersToDates);
-
-    syncSlidersToDates();
-})();
-</script>
+<?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>

@@ -68,6 +68,7 @@ if ($navZone === 'events') {
                     </span>
                     <ul class="nav-submenu" id="submenu-events-app" role="menu">
                         <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
+                        <li role="none"><a href="<?= h(site_url('events/events_naptar.php')) ?>" role="menuitem">Naptár</a></li>
                         <li role="none"><a href="<?= h(site_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
                     </ul>
                 </li>
