@@ -1010,6 +1010,29 @@ tr:hover td { background: var(--bg); }
     filter: brightness(1.05);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
+.events-td-meta {
+    min-width: 10rem;
+    max-width: 22rem;
+}
+.events-cell-edit--meta {
+    border-bottom: none;
+}
+.events-admin-meta-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.events-admin-meta-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+.events-admin-meta-emoji {
+    flex-shrink: 0;
+    line-height: 1.45;
+    font-size: 0.95rem;
+}
 .events-cell-edit--categories {
     border-bottom: none;
 }

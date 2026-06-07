@@ -429,13 +429,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <tr>
                         <th class="events-th-actions" scope="col"><span class="visually-hidden">Műveletek</span></th>
                         <th><?= sort_th('Szervező', 'organizer', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Kategóriák', 'category', $order, $dir_param, $get_params) ?></th>
-                        <?php if ($tagsAvailable): ?>
-                        <th><?= sort_th('Címkék', 'tag', $order, $dir_param, $get_params) ?></th>
-                        <?php endif; ?>
-                        <?php if ($djsAvailable): ?>
-                        <th><?= sort_th('DJ-k', 'dj', $order, $dir_param, $get_params) ?></th>
-                        <?php endif; ?>
+                        <th><?= sort_th('Meta', 'category', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Dátum', 'start', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
@@ -465,55 +459,55 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                 </div>
                             </td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= ($r['organizer_name'] ?? '') !== '' ? h((string) $r['organizer_name']) : '–' ?></a></td>
-                            <td>
-                                <?php $eventCats = $categoriesByEventId[$eid] ?? []; ?>
-                                <?php if ($eventCats === []): ?>
+                            <td class="events-td-meta">
+                                <?php
+                                $eventCats = $categoriesByEventId[$eid] ?? [];
+                                $eventTags = $tagsAvailable ? ($tagsByEventId[$eid] ?? []) : [];
+                                $eventDjs = $djsAvailable ? ($djsByEventId[$eid] ?? []) : [];
+                                $hasMeta = $eventCats !== [] || $eventTags !== [] || $eventDjs !== [];
+                                ?>
+                                <?php if (!$hasMeta): ?>
                                     <a class="events-cell-edit" href="<?= h($edit) ?>">–</a>
                                 <?php else: ?>
-                                    <a class="events-cell-edit events-cell-edit--categories" href="<?= h($edit) ?>">
-                                        <span class="events-admin-category-list" role="list">
-                                            <?php foreach ($eventCats as $catItem): ?>
-                                                <span class="events-admin-category-chip" role="listitem">
-                                                    <span class="events-category-color-chip__dot" style="background: <?= h($catItem['color']) ?>;" aria-hidden="true"></span>
-                                                    <?= h($catItem['name']) ?>
+                                    <a class="events-cell-edit events-cell-edit--meta" href="<?= h($edit) ?>">
+                                        <span class="events-admin-meta-cell">
+                                            <?php if ($eventCats !== []): ?>
+                                                <span class="events-admin-meta-group">
+                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="Kategóriák">📁</span>
+                                                    <span class="events-admin-category-list" role="list">
+                                                        <?php foreach ($eventCats as $catItem): ?>
+                                                            <span class="events-admin-category-chip" role="listitem">
+                                                                <span class="events-category-color-chip__dot" style="background: <?= h($catItem['color']) ?>;" aria-hidden="true"></span>
+                                                                <?= h($catItem['name']) ?>
+                                                            </span>
+                                                        <?php endforeach; ?>
+                                                    </span>
                                                 </span>
-                                            <?php endforeach; ?>
+                                            <?php endif; ?>
+                                            <?php if ($eventTags !== []): ?>
+                                                <span class="events-admin-meta-group">
+                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="Címkék">🏷️</span>
+                                                    <span class="events-admin-tag-list" role="list">
+                                                        <?php foreach ($eventTags as $tagItem): ?>
+                                                            <span class="events-admin-tag-chip" role="listitem"><?= h($tagItem['name']) ?></span>
+                                                        <?php endforeach; ?>
+                                                    </span>
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if ($eventDjs !== []): ?>
+                                                <span class="events-admin-meta-group">
+                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="DJ-k">🎧</span>
+                                                    <span class="events-admin-dj-list" role="list">
+                                                        <?php foreach ($eventDjs as $djItem): ?>
+                                                            <span class="events-admin-dj-chip" role="listitem"><?= h($djItem['name']) ?></span>
+                                                        <?php endforeach; ?>
+                                                    </span>
+                                                </span>
+                                            <?php endif; ?>
                                         </span>
                                     </a>
                                 <?php endif; ?>
                             </td>
-                            <?php if ($tagsAvailable): ?>
-                            <td>
-                                <?php $eventTags = $tagsByEventId[$eid] ?? []; ?>
-                                <?php if ($eventTags === []): ?>
-                                    <a class="events-cell-edit" href="<?= h($edit) ?>">–</a>
-                                <?php else: ?>
-                                    <a class="events-cell-edit events-cell-edit--tags" href="<?= h($edit) ?>">
-                                        <span class="events-admin-tag-list" role="list">
-                                            <?php foreach ($eventTags as $tagItem): ?>
-                                                <span class="events-admin-tag-chip" role="listitem"><?= h($tagItem['name']) ?></span>
-                                            <?php endforeach; ?>
-                                        </span>
-                                    </a>
-                                <?php endif; ?>
-                            </td>
-                            <?php endif; ?>
-                            <?php if ($djsAvailable): ?>
-                            <td>
-                                <?php $eventDjs = $djsByEventId[$eid] ?? []; ?>
-                                <?php if ($eventDjs === []): ?>
-                                    <a class="events-cell-edit" href="<?= h($edit) ?>">–</a>
-                                <?php else: ?>
-                                    <a class="events-cell-edit events-cell-edit--djs" href="<?= h($edit) ?>">
-                                        <span class="events-admin-dj-list" role="list">
-                                            <?php foreach ($eventDjs as $djItem): ?>
-                                                <span class="events-admin-dj-chip" role="listitem"><?= h($djItem['name']) ?></span>
-                                            <?php endforeach; ?>
-                                        </span>
-                                    </a>
-                                <?php endif; ?>
-                            </td>
-                            <?php endif; ?>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
                             <td>
