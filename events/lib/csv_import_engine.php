@@ -569,6 +569,31 @@ function events_csv_build_row_values(
         }
     }
 
+    if ($table === 'events_calendar_event_tags') {
+        if (!events_tags_tables_available($db)) {
+            return [[], 'Az events_tags / events_calendar_event_tags táblák nem elérhetők (migration_tags.sql).'];
+        }
+        $ev = (int) ($values['event_id'] ?? 0);
+        if ($ev <= 0) {
+            return [[], 'event_id kötelező minden sorhoz.'];
+        }
+        $tagId = (int) ($values['tag_id'] ?? 0);
+        $tagName = '';
+        if (isset($map['tag_name'])) {
+            $hTag = $map['tag_name'];
+            $tagName = trim(array_key_exists($hTag, $csvRow) ? (string) $csvRow[$hTag] : '');
+            if (strlen($tagName) > 255) {
+                return [[], 'tag_name legfeljebb 255 karakter lehet.'];
+            }
+        }
+        if ($tagId <= 0 && $tagName === '') {
+            return [[], 'tag_id vagy tag_name kötelező minden sorhoz.'];
+        }
+        if ($tagName !== '') {
+            $values['_tag_name'] = $tagName;
+        }
+    }
+
     if ($table === 'events_calendar_event_organizers') {
         $ev = (int) ($values['event_id'] ?? 0);
         $org = (int) ($values['organizer_id'] ?? 0);
@@ -697,6 +722,52 @@ function events_csv_event_dj_link_exists(PDO $db, int $eventId, int $djId): bool
  * @param array<string,mixed> $values event_id, dj_id, opcionálisan _dj_name
  * @return 'inserted'|'updated'
  */
+function events_csv_event_tag_link_exists(PDO $db, int $eventId, int $tagId): bool {
+    $st = $db->prepare('SELECT 1 FROM `events_calendar_event_tags` WHERE `event_id` = ? AND `tag_id` = ? LIMIT 1');
+    $st->execute([$eventId, $tagId]);
+    return (bool) $st->fetchColumn();
+}
+
+/**
+ * @param array<string,mixed> $values event_id, tag_id, opcionálisan _tag_name
+ * @return 'inserted'|'updated'
+ */
+function events_csv_upsert_event_tag_link(PDO $db, array $values): string {
+    if (!events_tags_tables_available($db)) {
+        throw new RuntimeException('Az events_tags tábla nem elérhető (migration_tags.sql).');
+    }
+    $eventId = (int) ($values['event_id'] ?? 0);
+    $tagId = (int) ($values['tag_id'] ?? 0);
+    $tagName = trim((string) ($values['_tag_name'] ?? ''));
+    if ($eventId <= 0) {
+        throw new RuntimeException('event_id kötelező.');
+    }
+    if ($tagId <= 0) {
+        if ($tagName === '') {
+            throw new RuntimeException('tag_id vagy tag_name kötelező.');
+        }
+        $tagId = events_find_or_create_tag_by_name($db, $tagName);
+        $values['tag_id'] = $tagId;
+    }
+    $chkEv = $db->prepare('SELECT 1 FROM `events_calendar_events` WHERE `id` = ? LIMIT 1');
+    $chkEv->execute([$eventId]);
+    if (!$chkEv->fetchColumn()) {
+        throw new RuntimeException('Nem létezik esemény ezzel az ID-val: ' . $eventId);
+    }
+    $chkTag = $db->prepare('SELECT 1 FROM `events_tags` WHERE `id` = ? LIMIT 1');
+    $chkTag->execute([$tagId]);
+    if (!$chkTag->fetchColumn()) {
+        throw new RuntimeException('Nem létezik címke ezzel az ID-val: ' . $tagId);
+    }
+    if (events_csv_event_tag_link_exists($db, $eventId, $tagId)) {
+        return 'updated';
+    }
+    $db->prepare('INSERT INTO `events_calendar_event_tags` (`event_id`, `tag_id`) VALUES (?,?)')
+        ->execute([$eventId, $tagId]);
+
+    return 'inserted';
+}
+
 function events_csv_upsert_event_dj_link(PDO $db, array $values): string {
     $eventId = (int) ($values['event_id'] ?? 0);
     $djId = (int) ($values['dj_id'] ?? 0);
@@ -850,6 +921,8 @@ function events_csv_import_run(
                     $op = events_csv_upsert_event_category_link($db, $vals);
                 } elseif ($table === 'events_calendar_event_djs') {
                     $op = events_csv_upsert_event_dj_link($db, $vals);
+                } elseif ($table === 'events_calendar_event_tags') {
+                    $op = events_csv_upsert_event_tag_link($db, $vals);
                 } else {
                     throw new RuntimeException('Nem támogatott composite cél tábla: ' . $table);
                 }

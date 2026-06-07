@@ -251,6 +251,29 @@ function events_load_event_tag_ids(PDO $db, int $eventId): array {
 }
 
 /**
+ * Név alapján keresés; ha nincs, új címke rekord (CSV event–tag import).
+ */
+function events_find_or_create_tag_by_name(PDO $db, string $name): int {
+    $name = trim($name);
+    if ($name === '') {
+        throw new InvalidArgumentException('Üres címke név.');
+    }
+    if (!events_tags_tables_available($db)) {
+        throw new RuntimeException('Az events_tags tábla nem elérhető (migration_tags.sql).');
+    }
+    $st = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
+    $st->execute([$name]);
+    $existing = $st->fetchColumn();
+    if ($existing !== false) {
+        return (int) $existing;
+    }
+    $ins = $db->prepare('INSERT INTO `events_tags` (`name`) VALUES (?)');
+    $ins->execute([$name]);
+
+    return (int) $db->lastInsertId();
+}
+
+/**
  * Tag ↔ speciális csoportok (teljes csere).
  *
  * @param list<int> $specialTagIds
