@@ -119,29 +119,11 @@ $sablonLogok = $logStmt->fetchAll();
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
-$isPublished = ($e['event_status'] ?? '') === events_public_post_status();
 require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 
 <div class="events-edit-page">
-    <header class="events-edit-header">
-        <div class="events-edit-header__main">
-            <h1 class="events-edit-title">Esemény szerkesztése</h1>
-            <p class="events-edit-subtitle help">
-                <?php if ($isPublished): ?>
-                    Nyilvános előnézet:
-                    <a href="<?= h(events_megjelenit_url($e['event_slug'])) ?>" target="_blank" rel="noopener"><?= h($e['event_name'] ?: $e['event_slug']) ?></a>
-                <?php else: ?>
-                    Nyilvános oldal csak „Közzétéve” (publish) státusznál érhető el.
-                <?php endif; ?>
-            </p>
-        </div>
-        <div class="events-edit-header__actions">
-            <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary btn-sm">Vissza a listához</a>
-        </div>
-    </header>
-
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
     <form method="post" enctype="multipart/form-data" class="events-edit-form" id="events-edit-form"

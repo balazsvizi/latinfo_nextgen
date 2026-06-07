@@ -76,19 +76,10 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
     : ($coverPreview['source'] === 'eventpic'
         ? 'Előnézet az eventpics borító alapján (nincs kitöltött URL).'
         : '');
+$canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
+    && trim((string) ($e['event_slug'] ?? '')) !== '';
 ?>
 <div class="events-edit-layout">
-<div class="events-edit-top-cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
-    <img
-        id="eventpics-summary-img"
-        class="events-edit-top-cover__img"
-        src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
-        alt="Borító előnézet"
-        decoding="async"
-    >
-    <span id="eventpics-summary-name" class="events-edit-top-cover__name visually-hidden"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
-    <span id="eventpics-summary-source" class="visually-hidden"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
-</div>
 <div class="events-edit-main">
 <div class="events-edit-panel events-edit-panel--tone-title">
     <h3 class="events-edit-panel__title">Esemény neve</h3>
@@ -97,6 +88,11 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <input type="text" id="event_name" name="event_name" class="events-edit-name-input" value="<?= h($e['event_name']) ?>" required maxlength="500" placeholder="Esemény címe…">
         <button type="button" class="btn btn-secondary events-edit-slug-refresh" id="event-slug-refresh" title="Slug frissítése (név + kezdő dátum)" aria-label="Slug frissítése">🔄</button>
         <input type="text" id="event_slug" name="event_slug" class="events-edit-slug-input" value="<?= h($e['event_slug']) ?>" maxlength="255" pattern="[a-z0-9\-]*" title="URL slug — kisbetű, szám és kötőjel" placeholder="url-slug" aria-label="URL slug">
+        <?php if ($canPreviewPublic): ?>
+            <a href="<?= h(events_megjelenit_url((string) $e['event_slug'])) ?>" class="events-icon-action events-edit-preview-action" title="Nyilvános megtekintés (új lap)" aria-label="Nyilvános megtekintés új lapon" target="_blank" rel="noopener">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+            </a>
+        <?php endif; ?>
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-org">
@@ -145,7 +141,7 @@ require __DIR__ . '/wp_token_field.php';
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-dates">
-    <div class="events-edit-datetime-head">
+    <div class="events-edit-panel__title-row events-edit-panel__title-row--datetime">
         <h3 class="events-edit-panel__title">Időpont</h3>
         <label class="events-toggle" for="event_allday">
             <input type="checkbox" name="event_allday" value="1" id="event_allday" class="events-toggle__input" <?= !empty($e['event_allday']) ? 'checked' : '' ?>>
@@ -196,6 +192,17 @@ require __DIR__ . '/wp_token_field.php';
 </div>
 </div>
 <aside class="events-edit-sidebar">
+<div class="events-edit-sidebar-cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
+    <img
+        id="eventpics-summary-img"
+        class="events-edit-sidebar-cover__img"
+        src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
+        alt="Borító előnézet"
+        decoding="async"
+    >
+    <span id="eventpics-summary-name" class="visually-hidden"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
+    <span id="eventpics-summary-source" class="visually-hidden"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
+</div>
 <div class="events-edit-panel events-edit-panel--tone-publish events-edit-panel--publish">
     <h3 class="events-edit-panel__title">Közzététel</h3>
     <div class="form-group">
@@ -205,9 +212,6 @@ require __DIR__ . '/wp_token_field.php';
                 <option value="<?= h($val) ?>" <?= ($e['event_status'] === $val) ? 'selected' : '' ?>><?= h(events_post_status_label($val)) ?></option>
             <?php endforeach; ?>
         </select>
-    </div>
-    <div class="form-group">
-        <label><input type="checkbox" name="event_latinfohu_partner" value="1" <?= !empty($e['event_latinfohu_partner']) ? 'checked' : '' ?>> Latinfo.hu partner</label>
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-cat">
