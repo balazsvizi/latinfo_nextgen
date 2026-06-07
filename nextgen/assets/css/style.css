@@ -1028,12 +1028,16 @@ tr:hover td { background: var(--bg); }
     gap: 0.35rem;
     min-height: 1.35rem;
 }
-.events-admin-meta-emoji {
+.events-admin-meta-emoji,
+.events-admin-meta-emoji-spacer {
     flex-shrink: 0;
     width: 1.15rem;
     line-height: 1;
     font-size: 0.9rem;
     text-align: center;
+}
+.events-admin-meta-emoji-spacer {
+    display: inline-block;
 }
 .events-cell-edit--categories {
     border-bottom: none;

@@ -479,15 +479,23 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                                     </span>
                                                 </span>
                                             <?php endforeach; ?>
-                                            <?php foreach ($eventTags as $tagItem): ?>
+                                            <?php foreach ($eventTags as $tagIdx => $tagItem): ?>
                                                 <span class="events-admin-meta-row" role="listitem">
-                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="Címke">🏷️</span>
+                                                    <?php if ($tagIdx === 0): ?>
+                                                        <span class="events-admin-meta-emoji" aria-hidden="true" title="Címkék">🏷️</span>
+                                                    <?php else: ?>
+                                                        <span class="events-admin-meta-emoji-spacer" aria-hidden="true"></span>
+                                                    <?php endif; ?>
                                                     <span class="events-admin-tag-chip"><?= h($tagItem['name']) ?></span>
                                                 </span>
                                             <?php endforeach; ?>
-                                            <?php foreach ($eventDjs as $djItem): ?>
+                                            <?php foreach ($eventDjs as $djIdx => $djItem): ?>
                                                 <span class="events-admin-meta-row" role="listitem">
-                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="DJ">🎧</span>
+                                                    <?php if ($djIdx === 0): ?>
+                                                        <span class="events-admin-meta-emoji" aria-hidden="true" title="DJ-k">🎧</span>
+                                                    <?php else: ?>
+                                                        <span class="events-admin-meta-emoji-spacer" aria-hidden="true"></span>
+                                                    <?php endif; ?>
                                                     <span class="events-admin-dj-chip"><?= h($djItem['name']) ?></span>
                                                 </span>
                                             <?php endforeach; ?>
