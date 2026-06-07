@@ -139,3 +139,23 @@ if (!function_exists('events_djs_tables_available')) {
         return $cached;
     }
 }
+
+if (!function_exists('events_styles_tables_available')) {
+    /** Van-e events_styles + esemény–stílus kapcsolók (migráció nélkül ne omoljon össze az űrlap). */
+    function events_styles_tables_available(PDO $db): bool {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $db->query('SELECT 1 FROM `events_styles` LIMIT 1');
+            $db->query('SELECT 1 FROM `events_calendar_event_main_styles` LIMIT 1');
+            $db->query('SELECT 1 FROM `events_calendar_event_supplementary_styles` LIMIT 1');
+            $cached = true;
+        } catch (PDOException $e) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+}

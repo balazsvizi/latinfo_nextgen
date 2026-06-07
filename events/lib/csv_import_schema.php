@@ -129,5 +129,35 @@ function events_csv_import_schema(): array {
                 'dj_name' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'DJ név: meglévő keresés vagy automatikus létrehozás (dj_id helyett vagy mellette)'],
             ],
         ],
+        'events_styles' => [
+            'label' => 'Stílusok (`events_styles`)',
+            'id_max_import' => 100000,
+            'columns' => [
+                'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥26000). Kitöltve: max 100000, upsert. Ugyanilyen név már létezik → sor kihagyva.'],
+                'name' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'Stílus neve (kötelező minden sorban).'],
+                'created' => ['type' => 'datetime', 'nullable' => true],
+                'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
+            ],
+        ],
+        'events_calendar_event_main_styles' => [
+            'label' => 'Esemény–fő stílus (`events_calendar_event_main_styles`, event_id + style név)',
+            'composite_key' => ['event_id', 'style_id'],
+            'id_max_import' => 0,
+            'columns' => [
+                'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
+                'style_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Stílus ID (events_styles.id); üres, ha style_name van megadva'],
+                'style_name' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Stílus név: meglévő keresés vagy automatikus létrehozás (style_id helyett vagy mellette)'],
+            ],
+        ],
+        'events_calendar_event_supplementary_styles' => [
+            'label' => 'Esemény–kiegészítő stílus (`events_calendar_event_supplementary_styles`, event_id + style név)',
+            'composite_key' => ['event_id', 'style_id'],
+            'id_max_import' => 0,
+            'columns' => [
+                'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
+                'style_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Stílus ID (events_styles.id); üres, ha style_name van megadva'],
+                'style_name' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Stílus név: meglévő keresés vagy automatikus létrehozás (style_id helyett vagy mellette)'],
+            ],
+        ],
     ];
 }

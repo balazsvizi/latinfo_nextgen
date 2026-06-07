@@ -14,6 +14,8 @@ $f_id = trim($_GET['f_id'] ?? '');
 $f_category = trim($_GET['f_category'] ?? '');
 $f_tag = trim($_GET['f_tag'] ?? '');
 $f_dj = trim($_GET['f_dj'] ?? '');
+$f_main_style = trim($_GET['f_main_style'] ?? '');
+$f_supplementary_style = trim($_GET['f_supplementary_style'] ?? '');
 $f_start_from = trim($_GET['f_start_from'] ?? '');
 $f_start_to = trim($_GET['f_start_to'] ?? '');
 $f_views_min = trim($_GET['f_views_min'] ?? '');
@@ -36,6 +38,17 @@ $djOptions = $djsAvailable ? events_load_dj_options($db) : [];
 $f_dj_id = 0;
 if ($djsAvailable && $f_dj !== '' && ctype_digit($f_dj) && isset($djOptions[(int) $f_dj])) {
     $f_dj_id = (int) $f_dj;
+}
+
+$stylesAvailable = events_styles_tables_available($db);
+$styleOptions = $stylesAvailable ? events_load_style_options($db) : [];
+$f_main_style_id = 0;
+$f_supplementary_style_id = 0;
+if ($stylesAvailable && $f_main_style !== '' && ctype_digit($f_main_style) && isset($styleOptions[(int) $f_main_style])) {
+    $f_main_style_id = (int) $f_main_style;
+}
+if ($stylesAvailable && $f_supplementary_style !== '' && ctype_digit($f_supplementary_style) && isset($styleOptions[(int) $f_supplementary_style])) {
+    $f_supplementary_style_id = (int) $f_supplementary_style;
 }
 
 $allowedStatus = array_merge([''], events_allowed_post_statuses());
@@ -148,6 +161,20 @@ if ($f_dj_id > 0) {
     )';
     $params[] = $f_dj_id;
 }
+if ($f_main_style_id > 0) {
+    $where[] = 'EXISTS (
+        SELECT 1 FROM `events_calendar_event_main_styles` ms2
+        WHERE ms2.event_id = e.id AND ms2.style_id = ?
+    )';
+    $params[] = $f_main_style_id;
+}
+if ($f_supplementary_style_id > 0) {
+    $where[] = 'EXISTS (
+        SELECT 1 FROM `events_calendar_event_supplementary_styles` ss2
+        WHERE ss2.event_id = e.id AND ss2.style_id = ?
+    )';
+    $params[] = $f_supplementary_style_id;
+}
 if ($f_name !== '') {
     $where[] = 'e.event_name LIKE ?';
     $params[] = '%' . $f_name . '%';
@@ -213,6 +240,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $categoriesByEventId = [];
 $tagsByEventId = [];
 $djsByEventId = [];
+$mainStylesByEventId = [];
+$supplementaryStylesByEventId = [];
 if ($rows !== []) {
     $eventIds = array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
     $ph = implode(',', array_fill(0, count($eventIds), '?'));
@@ -275,6 +304,44 @@ if ($rows !== []) {
             ];
         }
     }
+    if ($stylesAvailable) {
+        $mainStyleStmt = $db->prepare("
+            SELECT ms.`event_id`, s.`id`, s.`name`
+            FROM `events_calendar_event_main_styles` ms
+            INNER JOIN `events_styles` s ON s.`id` = ms.`style_id`
+            WHERE ms.`event_id` IN ({$ph})
+            ORDER BY s.`name` ASC, s.`id` ASC
+        ");
+        $mainStyleStmt->execute($eventIds);
+        foreach ($mainStyleStmt->fetchAll(PDO::FETCH_ASSOC) as $styleRow) {
+            $eid = (int) $styleRow['event_id'];
+            if (!isset($mainStylesByEventId[$eid])) {
+                $mainStylesByEventId[$eid] = [];
+            }
+            $mainStylesByEventId[$eid][] = [
+                'id' => (int) $styleRow['id'],
+                'name' => (string) $styleRow['name'],
+            ];
+        }
+        $suppStyleStmt = $db->prepare("
+            SELECT ss.`event_id`, s.`id`, s.`name`
+            FROM `events_calendar_event_supplementary_styles` ss
+            INNER JOIN `events_styles` s ON s.`id` = ss.`style_id`
+            WHERE ss.`event_id` IN ({$ph})
+            ORDER BY s.`name` ASC, s.`id` ASC
+        ");
+        $suppStyleStmt->execute($eventIds);
+        foreach ($suppStyleStmt->fetchAll(PDO::FETCH_ASSOC) as $styleRow) {
+            $eid = (int) $styleRow['event_id'];
+            if (!isset($supplementaryStylesByEventId[$eid])) {
+                $supplementaryStylesByEventId[$eid] = [];
+            }
+            $supplementaryStylesByEventId[$eid][] = [
+                'id' => (int) $styleRow['id'],
+                'name' => (string) $styleRow['name'],
+            ];
+        }
+    }
 }
 
 $get_params = array_filter([
@@ -284,6 +351,8 @@ $get_params = array_filter([
     'f_category' => $f_category_id > 0 ? (string) $f_category_id : null,
     'f_tag' => $f_tag_id > 0 ? (string) $f_tag_id : null,
     'f_dj' => $f_dj_id > 0 ? (string) $f_dj_id : null,
+    'f_main_style' => $f_main_style_id > 0 ? (string) $f_main_style_id : null,
+    'f_supplementary_style' => $f_supplementary_style_id > 0 ? (string) $f_supplementary_style_id : null,
     'f_start_from' => $f_start_from !== '' ? $f_start_from : null,
     'f_start_to' => $f_start_to !== '' ? $f_start_to : null,
     'f_views_min' => $f_views_min !== '' ? $f_views_min : null,
@@ -415,6 +484,30 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     </div>
                 </div>
                 <?php endif; ?>
+                <?php if ($stylesAvailable): ?>
+                <div class="events-filter-field events-filter-field--status">
+                    <label class="events-filter-label" for="ev-f-main-style">Fő stílus</label>
+                    <div class="events-filter-select-wrap">
+                        <select class="events-filter-select" name="f_main_style" id="ev-f-main-style" title="Fő stílus szűrő">
+                            <option value="">Összes fő stílus</option>
+                            <?php foreach ($styleOptions as $sid => $sname): ?>
+                                <option value="<?= (int) $sid ?>" <?= $f_main_style_id === (int) $sid ? 'selected' : '' ?>><?= h($sname) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="events-filter-field events-filter-field--status">
+                    <label class="events-filter-label" for="ev-f-supplementary-style">Kiegészítő stílus</label>
+                    <div class="events-filter-select-wrap">
+                        <select class="events-filter-select" name="f_supplementary_style" id="ev-f-supplementary-style" title="Kiegészítő stílus szűrő">
+                            <option value="">Összes kiegészítő stílus</option>
+                            <?php foreach ($styleOptions as $sid => $sname): ?>
+                                <option value="<?= (int) $sid ?>" <?= $f_supplementary_style_id === (int) $sid ? 'selected' : '' ?>><?= h($sname) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="events-filter-field">
                     <label class="events-filter-label" for="ev-f-name">Esemény neve</label>
                     <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($f_name) ?>" placeholder="Keresés a címben…" autocomplete="off">
@@ -506,7 +599,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                 $eventCats = $categoriesByEventId[$eid] ?? [];
                                 $eventTags = $tagsAvailable ? ($tagsByEventId[$eid] ?? []) : [];
                                 $eventDjs = $djsAvailable ? ($djsByEventId[$eid] ?? []) : [];
-                                $hasMeta = $eventCats !== [] || $eventTags !== [] || $eventDjs !== [];
+                                $eventMainStyles = $stylesAvailable ? ($mainStylesByEventId[$eid] ?? []) : [];
+                                $eventSupplementaryStyles = $stylesAvailable ? ($supplementaryStylesByEventId[$eid] ?? []) : [];
+                                $hasMeta = $eventCats !== [] || $eventTags !== [] || $eventDjs !== [] || $eventMainStyles !== [] || $eventSupplementaryStyles !== [];
                                 ?>
                                 <?php if (!$hasMeta): ?>
                                     <span class="events-admin-meta-empty">–</span>
@@ -530,6 +625,26 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                                 <span class="events-admin-tag-list" role="list">
                                                     <?php foreach ($eventTags as $tagItem): ?>
                                                         <span class="events-admin-tag-chip" role="listitem"><?= h($tagItem['name']) ?></span>
+                                                    <?php endforeach; ?>
+                                                </span>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($eventMainStyles !== []): ?>
+                                            <span class="events-admin-meta-group">
+                                                <span class="events-admin-meta-emoji" aria-hidden="true" title="Fő stílusok">🎵</span>
+                                                <span class="events-admin-style-list" role="list">
+                                                    <?php foreach ($eventMainStyles as $styleItem): ?>
+                                                        <span class="events-admin-style-chip events-admin-style-chip--main" role="listitem"><?= h($styleItem['name']) ?></span>
+                                                    <?php endforeach; ?>
+                                                </span>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($eventSupplementaryStyles !== []): ?>
+                                            <span class="events-admin-meta-group">
+                                                <span class="events-admin-meta-emoji" aria-hidden="true" title="Kiegészítő stílusok">✨</span>
+                                                <span class="events-admin-style-list" role="list">
+                                                    <?php foreach ($eventSupplementaryStyles as $styleItem): ?>
+                                                        <span class="events-admin-style-chip events-admin-style-chip--supplementary" role="listitem"><?= h($styleItem['name']) ?></span>
                                                     <?php endforeach; ?>
                                                 </span>
                                             </span>

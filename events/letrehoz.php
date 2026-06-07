@@ -12,6 +12,7 @@ $categories = events_load_category_options($db);
 $venues = events_load_venue_options($db);
 $tags = events_load_tag_options($db);
 $djs = events_load_dj_options($db);
+$styles = events_load_style_options($db);
 
 $defaults = [
     'event_name' => '',
@@ -30,6 +31,8 @@ $defaults = [
     'category_ids' => [],
     'tag_ids' => [],
     'dj_ids' => [],
+    'main_style_ids' => [],
+    'supplementary_style_ids' => [],
     'venue_id' => null,
 ];
 
@@ -40,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_letrehoz')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-    [$row, $err, $organizerIds, $categoryIds, $tagIds, $djIds] = events_row_from_request($db, $defaults, null);
+    [$row, $err, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds] = events_row_from_request($db, $defaults, null);
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
@@ -48,6 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $e['category_ids'] = $categoryIds;
         $e['tag_ids'] = $tagIds;
         $e['dj_ids'] = $djIds;
+        $e['main_style_ids'] = $mainStyleIds;
+        $e['supplementary_style_ids'] = $supplementaryStyleIds;
     } else {
         try {
             $db->beginTransaction();
@@ -79,6 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             events_save_event_categories($db, $newId, $categoryIds);
             events_save_event_tags($db, $newId, $tagIds);
             events_save_event_djs($db, $newId, $djIds);
+            events_save_event_main_styles($db, $newId, $mainStyleIds);
+            events_save_event_supplementary_styles($db, $newId, $supplementaryStyleIds);
             $db->commit();
             rendszer_log('esemény', $newId, 'Létrehozva', $row['event_name']);
             flash('success', 'Esemény létrehozva.');
@@ -94,6 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $e['category_ids'] = $categoryIds;
             $e['tag_ids'] = $tagIds;
             $e['dj_ids'] = $djIds;
+            $e['main_style_ids'] = $mainStyleIds;
+            $e['supplementary_style_ids'] = $supplementaryStyleIds;
         }
     }
     }

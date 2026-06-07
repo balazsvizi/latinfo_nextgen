@@ -38,6 +38,7 @@ function log_entity_url(string $entitás, ?int $entitás_id): ?string {
         'tag' => site_url('events/tags.php?edit_tag='),
         'spec_tag' => site_url('events/tags.php?edit_special='),
         'dj' => site_url('events/djs.php?open_dj='),
+        'stílus' => site_url('events/styles.php?open_style='),
         'címke' => null, // csak lista, nincs egy tétel oldal
         'kontakt_típus' => null, // csak lista, nincs egy tétel oldal
     ];

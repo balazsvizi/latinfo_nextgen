@@ -26,10 +26,13 @@ $categories = events_load_category_options($db);
 $venues = events_load_venue_options($db);
 $tags = events_load_tag_options($db);
 $djs = events_load_dj_options($db);
+$styles = events_load_style_options($db);
 $event['organizer_ids'] = events_load_event_organizer_ids($db, $id);
 $event['category_ids'] = events_load_event_category_ids($db, $id);
 $event['tag_ids'] = events_load_event_tag_ids($db, $id);
 $event['dj_ids'] = events_load_event_dj_ids($db, $id);
+$event['main_style_ids'] = events_load_event_main_style_ids($db, $id);
+$event['supplementary_style_ids'] = events_load_event_supplementary_style_ids($db, $id);
 
 $hiba = '';
 $e = events_row_for_form($event);
@@ -38,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-    [$row, $err, $organizerIds, $categoryIds, $tagIds, $djIds] = events_row_from_request($db, $event, $id);
+    [$row, $err, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds] = events_row_from_request($db, $event, $id);
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
@@ -46,6 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $e['category_ids'] = $categoryIds;
         $e['tag_ids'] = $tagIds;
         $e['dj_ids'] = $djIds;
+        $e['main_style_ids'] = $mainStyleIds;
+        $e['supplementary_style_ids'] = $supplementaryStyleIds;
     } else {
         try {
             $db->beginTransaction();
@@ -77,6 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             events_save_event_categories($db, $id, $categoryIds);
             events_save_event_tags($db, $id, $tagIds);
             events_save_event_djs($db, $id, $djIds);
+            events_save_event_main_styles($db, $id, $mainStyleIds);
+            events_save_event_supplementary_styles($db, $id, $supplementaryStyleIds);
             $db->commit();
             rendszer_log('esemény', $id, 'Módosítva', $row['event_name']);
             flash('success', 'Mentve.');
@@ -92,6 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $e['category_ids'] = $categoryIds;
             $e['tag_ids'] = $tagIds;
             $e['dj_ids'] = $djIds;
+            $e['main_style_ids'] = $mainStyleIds;
+            $e['supplementary_style_ids'] = $supplementaryStyleIds;
         }
     }
     }

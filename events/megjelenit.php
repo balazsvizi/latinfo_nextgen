@@ -8,6 +8,7 @@ require_once __DIR__ . '/lib/category_locale.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 require_once __DIR__ . '/lib/event_public_djs.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
+require_once __DIR__ . '/lib/event_public_styles.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $T = events_public_megjelenit_strings($lang);
@@ -51,6 +52,8 @@ $eventOrganizers = events_public_event_organizers_for_display($db, $eventId);
 $eventCategories = events_public_event_category_rows($db, $eventId);
 $eventDjs = events_public_event_djs_for_display($db, $eventId);
 $eventTags = events_public_event_tags_for_display($db, $eventId);
+$eventMainStyles = events_public_event_main_styles_for_display($db, $eventId);
+$eventSupplementaryStyles = events_public_event_supplementary_styles_for_display($db, $eventId);
 
 $venueName = trim((string) ($event['venue_name'] ?? ''));
 $venueSlug = trim((string) ($event['venue_slug'] ?? ''));
@@ -187,7 +190,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
-            <?php if ($eventOrganizers !== [] || $eventCategories !== [] || $eventDjs !== []): ?>
+            <?php if ($eventOrganizers !== [] || $eventCategories !== [] || $eventDjs !== [] || $eventMainStyles !== [] || $eventSupplementaryStyles !== []): ?>
                 <div class="event-hero-meta-row">
                     <?php if ($eventOrganizers !== []): ?>
                         <div class="event-hero-meta-row__organizers">
@@ -206,6 +209,28 @@ header('Content-Type: text/html; charset=UTF-8');
                                 <?php foreach ($eventDjs as $djRow): ?>
                                     <li class="event-org-chips__item">
                                         <a class="event-org-chip event-dj-chip" href="<?= h(events_public_dj_page_url((int) $djRow['id'], $lang)) ?>"><?= h((string) $djRow['name']) ?></a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($eventMainStyles !== []): ?>
+                        <div class="event-hero-meta-row__main-styles">
+                            <ul class="event-style-chips event-style-chips--hero" role="list" aria-label="<?= h($T['section_main_styles']) ?>">
+                                <?php foreach ($eventMainStyles as $styleRow): ?>
+                                    <li class="event-style-chips__item">
+                                        <span class="event-style-chip event-style-chip--main"><?= h((string) $styleRow['name']) ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($eventSupplementaryStyles !== []): ?>
+                        <div class="event-hero-meta-row__supplementary-styles">
+                            <ul class="event-style-chips event-style-chips--hero" role="list" aria-label="<?= h($T['section_supplementary_styles']) ?>">
+                                <?php foreach ($eventSupplementaryStyles as $styleRow): ?>
+                                    <li class="event-style-chips__item">
+                                        <span class="event-style-chip event-style-chip--supplementary"><?= h((string) $styleRow['name']) ?></span>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>

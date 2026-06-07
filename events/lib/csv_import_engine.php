@@ -6,6 +6,7 @@ require_once __DIR__ . '/slug.php';
 require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/event_request.php';
 require_once __DIR__ . '/dj_request.php';
+require_once __DIR__ . '/style_request.php';
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 /**
@@ -569,6 +570,52 @@ function events_csv_build_row_values(
         }
     }
 
+    if ($table === 'events_styles') {
+        if (!events_styles_tables_available($db)) {
+            return [[], 'Az events_styles tábla nem elérhető (migration_styles.sql).'];
+        }
+        if (!$forUpdate) {
+            $name = trim((string) ($values['name'] ?? ''));
+            if ($name === '') {
+                return [[], 'name kötelező minden új stílus sorhoz.'];
+            }
+            $values['name'] = $name;
+        } else {
+            if (array_key_exists('name', $values)) {
+                $name = trim((string) $values['name']);
+                if ($name === '') {
+                    return [[], 'name nem lehet üres (frissítés).'];
+                }
+                $values['name'] = $name;
+            }
+        }
+    }
+
+    if ($table === 'events_calendar_event_main_styles' || $table === 'events_calendar_event_supplementary_styles') {
+        if (!events_styles_tables_available($db)) {
+            return [[], 'Az events_styles / stílus kapcsoló táblák nem elérhetők (migration_styles.sql).'];
+        }
+        $ev = (int) ($values['event_id'] ?? 0);
+        if ($ev <= 0) {
+            return [[], 'event_id kötelező minden sorhoz.'];
+        }
+        $styleId = (int) ($values['style_id'] ?? 0);
+        $styleName = '';
+        if (isset($map['style_name'])) {
+            $hStyle = $map['style_name'];
+            $styleName = trim(array_key_exists($hStyle, $csvRow) ? (string) $csvRow[$hStyle] : '');
+            if (strlen($styleName) > 255) {
+                return [[], 'style_name legfeljebb 255 karakter lehet.'];
+            }
+        }
+        if ($styleId <= 0 && $styleName === '') {
+            return [[], 'style_id vagy style_name kötelező minden sorhoz.'];
+        }
+        if ($styleName !== '') {
+            $values['_style_name'] = $styleName;
+        }
+    }
+
     if ($table === 'events_calendar_event_tags') {
         if (!events_tags_tables_available($db)) {
             return [[], 'Az events_tags / events_calendar_event_tags táblák nem elérhetők (migration_tags.sql).'];
@@ -768,6 +815,58 @@ function events_csv_upsert_event_tag_link(PDO $db, array $values): string {
     return 'inserted';
 }
 
+function events_csv_event_style_link_exists(PDO $db, int $eventId, int $styleId, string $table): bool {
+    if ($table !== 'events_calendar_event_main_styles' && $table !== 'events_calendar_event_supplementary_styles') {
+        return false;
+    }
+    $st = $db->prepare("SELECT 1 FROM `{$table}` WHERE `event_id` = ? AND `style_id` = ? LIMIT 1");
+    $st->execute([$eventId, $styleId]);
+
+    return (bool) $st->fetchColumn();
+}
+
+/**
+ * @param array<string,mixed> $values event_id, style_id, opcionálisan _style_name
+ */
+function events_csv_upsert_event_style_link(PDO $db, array $values, string $table): string {
+    if (!events_styles_tables_available($db)) {
+        throw new RuntimeException('Az events_styles tábla nem elérhető (migration_styles.sql).');
+    }
+    if ($table !== 'events_calendar_event_main_styles' && $table !== 'events_calendar_event_supplementary_styles') {
+        throw new InvalidArgumentException('Érvénytelen stílus kapcsoló tábla.');
+    }
+    $eventId = (int) ($values['event_id'] ?? 0);
+    $styleId = (int) ($values['style_id'] ?? 0);
+    $styleName = trim((string) ($values['_style_name'] ?? ''));
+    if ($eventId <= 0) {
+        throw new RuntimeException('event_id kötelező.');
+    }
+    if ($styleId <= 0) {
+        if ($styleName === '') {
+            throw new RuntimeException('style_id vagy style_name kötelező.');
+        }
+        $styleId = events_find_or_create_style_by_name($db, $styleName);
+        $values['style_id'] = $styleId;
+    }
+    $chkEv = $db->prepare('SELECT 1 FROM `events_calendar_events` WHERE `id` = ? LIMIT 1');
+    $chkEv->execute([$eventId]);
+    if (!$chkEv->fetchColumn()) {
+        throw new RuntimeException('Nem létezik esemény ezzel az ID-val: ' . $eventId);
+    }
+    $chkStyle = $db->prepare('SELECT 1 FROM `events_styles` WHERE `id` = ? LIMIT 1');
+    $chkStyle->execute([$styleId]);
+    if (!$chkStyle->fetchColumn()) {
+        throw new RuntimeException('Nem létezik stílus ezzel az ID-val: ' . $styleId);
+    }
+    if (events_csv_event_style_link_exists($db, $eventId, $styleId, $table)) {
+        return 'updated';
+    }
+    $db->prepare("INSERT INTO `{$table}` (`event_id`, `style_id`) VALUES (?,?)")
+        ->execute([$eventId, $styleId]);
+
+    return 'inserted';
+}
+
 function events_csv_upsert_event_dj_link(PDO $db, array $values): string {
     $eventId = (int) ($values['event_id'] ?? 0);
     $djId = (int) ($values['dj_id'] ?? 0);
@@ -921,6 +1020,10 @@ function events_csv_import_run(
                     $op = events_csv_upsert_event_category_link($db, $vals);
                 } elseif ($table === 'events_calendar_event_djs') {
                     $op = events_csv_upsert_event_dj_link($db, $vals);
+                } elseif ($table === 'events_calendar_event_main_styles') {
+                    $op = events_csv_upsert_event_style_link($db, $vals, 'events_calendar_event_main_styles');
+                } elseif ($table === 'events_calendar_event_supplementary_styles') {
+                    $op = events_csv_upsert_event_style_link($db, $vals, 'events_calendar_event_supplementary_styles');
                 } elseif ($table === 'events_calendar_event_tags') {
                     $op = events_csv_upsert_event_tag_link($db, $vals);
                 } else {
@@ -1023,6 +1126,79 @@ function events_csv_import_run(
                     $stName->execute([$nm]);
                     if ($stName->fetchColumn()) {
                         $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű DJ már létezik.";
+                        continue;
+                    }
+                    events_csv_do_insert($db, $table, $vals);
+                    $inserted++;
+                }
+                continue;
+            }
+            if ($table === 'events_styles') {
+                if (!events_styles_tables_available($db)) {
+                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az events_styles tábla nem elérhető.";
+                    continue;
+                }
+                if ($idVal !== null && $idVal > 0) {
+                    $exists = events_csv_row_exists($db, 'events_styles', $idVal);
+                    if ($exists) {
+                        [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true, $idVal);
+                        if ($err !== null) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            continue;
+                        }
+                        if (array_key_exists('name', $vals)) {
+                            $newName = trim((string) $vals['name']);
+                            if ($newName !== '') {
+                                $stDup = $db->prepare('SELECT `id` FROM `events_styles` WHERE `name` = ? AND `id` <> ? LIMIT 1');
+                                $stDup->execute([$newName, $idVal]);
+                                if ($stDup->fetchColumn()) {
+                                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$newName}” név már egy másik stílushoz tartozik.";
+                                    continue;
+                                }
+                            }
+                        }
+                        $didUpdate = events_csv_do_update($db, $table, $idVal, $vals);
+                        if ($didUpdate) {
+                            $updated++;
+                        } else {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező stílus (id={$idVal}), nincs frissítendő mező.";
+                        }
+                    } else {
+                        [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
+                        if ($err !== null) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            continue;
+                        }
+                        $nm = trim((string) ($vals['name'] ?? ''));
+                        if ($nm === '') {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                            continue;
+                        }
+                        $stName = $db->prepare('SELECT `id` FROM `events_styles` WHERE `name` = ? LIMIT 1');
+                        $stName->execute([$nm]);
+                        if ($stName->fetchColumn()) {
+                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű stílus már létezik.";
+                            continue;
+                        }
+                        $vals['id'] = $idVal;
+                        events_csv_do_insert($db, $table, $vals);
+                        $inserted++;
+                    }
+                } else {
+                    [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
+                    if ($err !== null) {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                        continue;
+                    }
+                    $nm = trim((string) ($vals['name'] ?? ''));
+                    if ($nm === '') {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                        continue;
+                    }
+                    $stName = $db->prepare('SELECT `id` FROM `events_styles` WHERE `name` = ? LIMIT 1');
+                    $stName->execute([$nm]);
+                    if ($stName->fetchColumn()) {
+                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű stílus már létezik.";
                         continue;
                     }
                     events_csv_do_insert($db, $table, $vals);

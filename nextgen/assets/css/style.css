@@ -1046,6 +1046,7 @@ tr:hover td { background: var(--bg); }
 }
 .events-admin-meta-group .events-admin-category-list,
 .events-admin-meta-group .events-admin-tag-list,
+.events-admin-meta-group .events-admin-style-list,
 .events-admin-meta-group .events-admin-dj-list {
     flex: 1;
     min-width: 0;
@@ -1117,6 +1118,35 @@ tr:hover td { background: var(--bg); }
     color: var(--primary);
     background: #fff;
     border-color: var(--primary);
+}
+.events-cell-edit--styles {
+    border-bottom: none;
+}
+.events-admin-style-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+.events-admin-style-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+.events-admin-style-chip--main {
+    background: #eef3ec;
+    border-color: var(--primary, #6d8f63);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.events-admin-style-chip--supplementary {
+    background: var(--bg-muted, #f0f2ef);
+    border-style: dashed;
 }
 
 .event-status-badge {

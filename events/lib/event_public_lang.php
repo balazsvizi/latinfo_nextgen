@@ -60,6 +60,8 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_categories' => 'Kategóriák',
         'section_djs' => 'DJ-k',
         'section_tags' => 'Címkék',
+        'section_main_styles' => 'Fő stílusok',
+        'section_supplementary_styles' => 'Kiegészítő stílusok',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -85,6 +87,8 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_categories' => 'Categories',
         'section_djs' => 'DJs',
         'section_tags' => 'Tags',
+        'section_main_styles' => 'Main styles',
+        'section_supplementary_styles' => 'Supplementary styles',
     ];
 
     return $lang === 'en' ? $en : $hu;
