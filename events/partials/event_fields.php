@@ -7,6 +7,9 @@ declare(strict_types=1);
 /** @var array<int, string> $tags id => név (events_load_tag_options) */
 /** @var array<int, string> $djs id => név (events_load_dj_options) */
 /** @var array<int, string> $styles id => név (events_load_style_options) */
+if (!isset($organizers) || !is_array($organizers)) {
+    $organizers = [];
+}
 if (!isset($venues) || !is_array($venues)) {
     $venues = [];
 }
@@ -78,17 +81,11 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 <div class="events-edit-main">
 <div class="events-edit-panel events-edit-panel--tone-title">
     <h3 class="events-edit-panel__title">Esemény neve</h3>
-    <div class="form-group events-edit-name-field">
+    <div class="events-edit-title-row">
         <label class="visually-hidden" for="event_name">Esemény neve *</label>
         <input type="text" id="event_name" name="event_name" class="events-edit-name-input" value="<?= h($e['event_name']) ?>" required maxlength="500" placeholder="Esemény címe…">
-    </div>
-    <div class="form-group events-edit-slug-row">
-        <label for="event_slug">URL slug</label>
-        <div class="events-edit-slug-controls">
-            <input type="text" id="event_slug" name="event_slug" value="<?= h($e['event_slug']) ?>" maxlength="255" pattern="[a-z0-9\-]*" title="Kisbetű, szám és kötőjel" placeholder="url-slug-2026-06-07">
-            <button type="button" class="btn btn-secondary btn-sm" id="event-slug-refresh" title="Név + kezdő dátum alapján">Slug frissítése</button>
-        </div>
-        <p class="help">Gombnyomásra: esemény neve + kezdő dátum (éééé-hh-nn). Ha üresen mentesz, a névből generáljuk.</p>
+        <button type="button" class="btn btn-secondary events-edit-slug-refresh" id="event-slug-refresh" title="Slug frissítése (név + kezdő dátum)" aria-label="Slug frissítése">🔄</button>
+        <input type="text" id="event_slug" name="event_slug" class="events-edit-slug-input" value="<?= h($e['event_slug']) ?>" maxlength="255" pattern="[a-z0-9\-]*" title="URL slug — kisbetű, szám és kötőjel" placeholder="url-slug" aria-label="URL slug">
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-org">

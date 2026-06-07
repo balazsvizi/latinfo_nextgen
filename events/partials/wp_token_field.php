@@ -57,6 +57,7 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
             <?= $wpTokenEntityType !== '' ? ' data-entity-type="' . h($wpTokenEntityType) . '"' : '' ?>
             <?= $wpTokenSingle ? ' data-single="1"' : '' ?>
         >
+            <script type="application/json" class="wp-token-input__json"><?= $wpTokenJson ?></script>
             <div class="wp-token-input__inner" tabindex="-1">
                 <div class="wp-token-input__tokens" aria-live="polite"></div>
                 <input
@@ -80,6 +81,5 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
         <?php if ($wpTokenManageUrl !== null): ?>
             <p class="wp-token-field__footer"><a href="<?= h($wpTokenManageUrl) ?>"><?= h($wpTokenManageLabel) ?></a></p>
         <?php endif; ?>
-        <script type="application/json" class="wp-token-input__json"><?= $wpTokenJson ?></script>
     <?php endif; ?>
 </div>

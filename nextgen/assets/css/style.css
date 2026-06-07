@@ -2431,8 +2431,15 @@ dialog.eventpics-modal::backdrop {
     border-left-color: #a16207;
     background: linear-gradient(135deg, #fffbeb 0%, #fff 60%);
 }
+.events-edit-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.45rem;
+}
 .events-edit-name-input {
-    width: 100%;
+    flex: 1 1 12rem;
+    min-width: 0;
     font-size: 1.35rem;
     font-weight: 600;
     padding: 0.65rem 0.75rem;
@@ -2445,15 +2452,30 @@ dialog.eventpics-modal::backdrop {
     border-color: var(--primary);
     box-shadow: 0 0 0 1px var(--primary);
 }
-.events-edit-slug-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
+.events-edit-slug-refresh {
+    flex-shrink: 0;
+    min-width: 2.5rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 1.15rem;
+    line-height: 1;
 }
-.events-edit-slug-controls input[type="text"] {
-    flex: 1 1 12rem;
-    min-width: 0;
+.events-edit-slug-input {
+    flex: 1 1 8rem;
+    min-width: 5rem;
+    max-width: 100%;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.875rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.events-edit-slug-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
 }
 .events-edit-panel__title {
     margin: 0 0 0.85rem;

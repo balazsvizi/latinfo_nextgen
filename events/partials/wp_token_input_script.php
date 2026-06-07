@@ -24,6 +24,10 @@
         var popularWrap = root.closest('.wp-token-field');
         var popularBox = popularWrap ? popularWrap.querySelector('[data-wp-token-popular]') : null;
         var popularList = popularWrap ? popularWrap.querySelector('.wp-token-field__popular-list') : null;
+        if (!jsonEl) {
+            var fieldWrap = root.closest('.wp-token-field');
+            jsonEl = fieldWrap ? fieldWrap.querySelector('.wp-token-input__json') : null;
+        }
         if (!jsonEl || !tokensEl || !searchEl || !suggEl || !hiddensEl) return;
 
         var data;
