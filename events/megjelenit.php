@@ -193,7 +193,8 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php if ($eventOrganizers !== [] || $eventCategories !== [] || $eventDjs !== [] || $eventMainStyles !== [] || $eventSupplementaryStyles !== []): ?>
                 <div class="event-hero-meta-row">
                     <?php if ($eventOrganizers !== []): ?>
-                        <div class="event-hero-meta-row__organizers">
+                        <div class="event-hero-meta-row__organizers event-hero-meta-group">
+                            <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_organizers']) ?>">👥</span>
                             <ul class="event-org-chips event-org-chips--hero" role="list" aria-label="<?= h($T['section_organizers']) ?>">
                                 <?php foreach ($eventOrganizers as $org): ?>
                                     <li class="event-org-chips__item">
@@ -204,7 +205,8 @@ header('Content-Type: text/html; charset=UTF-8');
                         </div>
                     <?php endif; ?>
                     <?php if ($eventDjs !== []): ?>
-                        <div class="event-hero-meta-row__djs">
+                        <div class="event-hero-meta-row__djs event-hero-meta-group">
+                            <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_djs']) ?>">🎧</span>
                             <ul class="event-org-chips event-org-chips--hero event-dj-chips" role="list" aria-label="<?= h($T['section_djs']) ?>">
                                 <?php foreach ($eventDjs as $djRow): ?>
                                     <li class="event-org-chips__item">
@@ -237,7 +239,8 @@ header('Content-Type: text/html; charset=UTF-8');
                         </div>
                     <?php endif; ?>
                     <?php if ($eventCategories !== []): ?>
-                        <div class="event-hero-meta-row__categories" role="group" aria-label="<?= h($T['section_categories']) ?>">
+                        <div class="event-hero-meta-row__categories event-hero-meta-group" role="group" aria-label="<?= h($T['section_categories']) ?>">
+                            <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_categories']) ?>">📂</span>
                             <ul class="event-hero-category-pills" role="list">
                                 <?php foreach ($eventCategories as $catRow): ?>
                                     <?php

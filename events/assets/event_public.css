@@ -725,6 +725,21 @@ a.event-meta__card:focus-visible {
     border-bottom: 1px solid var(--li-border);
 }
 
+.event-hero-meta-group {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.45rem;
+    min-width: 0;
+}
+
+.event-hero-meta-emoji {
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    line-height: 1;
+    opacity: 0.88;
+}
+
 .event-hero-meta-row__organizers {
     flex: 1 1 auto;
     min-width: 0;
@@ -734,6 +749,10 @@ a.event-meta__card:focus-visible {
     flex: 0 1 auto;
     margin-left: auto;
     max-width: 100%;
+}
+
+.event-hero-meta-row__categories.event-hero-meta-group {
+    justify-content: flex-end;
 }
 
 .event-style-chips {
