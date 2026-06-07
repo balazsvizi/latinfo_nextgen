@@ -583,6 +583,39 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 }
 
 /**
+ * Esemény másolása új létrehozáshoz: minden mező, kivéve időpont (dátum/idő) és további információ URL.
+ *
+ * @return array<string,mixed>|null forrás DB sor + kapcsolók, vagy null ha nincs ilyen esemény
+ */
+function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
+    if ($sourceId <= 0) {
+        return null;
+    }
+    $stmt = $db->prepare('SELECT * FROM `events_calendar_events` WHERE id = ?');
+    $stmt->execute([$sourceId]);
+    $event = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$event) {
+        return null;
+    }
+    $event['organizer_ids'] = events_load_event_organizer_ids($db, $sourceId);
+    $event['category_ids'] = events_load_event_category_ids($db, $sourceId);
+    $event['tag_ids'] = events_load_event_tag_ids($db, $sourceId);
+    $event['dj_ids'] = events_load_event_dj_ids($db, $sourceId);
+    $event['main_style_ids'] = events_load_event_main_style_ids($db, $sourceId);
+    $event['supplementary_style_ids'] = events_load_event_supplementary_style_ids($db, $sourceId);
+
+    $name = trim((string) ($event['event_name'] ?? ''));
+    $event['event_name'] = $name !== '' ? $name . ' másolat' : 'másolat';
+    $event['event_slug'] = '';
+    $event['event_start'] = null;
+    $event['event_end'] = null;
+    $event['event_allday'] = 0;
+    $event['event_url'] = null;
+
+    return $event;
+}
+
+/**
  * @param array<string,mixed> $row
  */
 function events_row_for_form(array $row): array {

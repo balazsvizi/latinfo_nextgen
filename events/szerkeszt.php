@@ -133,6 +133,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         <?php require __DIR__ . '/partials/event_fields.php'; ?>
         <div class="events-edit-form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>
+            <a href="<?= h(events_url('letrehoz.php?copy_from=') . $id) ?>" class="btn btn-secondary">Másolás</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Mégse</a>
         </div>
     </form>

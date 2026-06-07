@@ -37,7 +37,19 @@ $defaults = [
 ];
 
 $hiba = '';
+$copyNotice = '';
 $e = events_row_for_form($defaults);
+
+$copyFromId = (int) ($_GET['copy_from'] ?? 0);
+if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $copied = events_load_event_copy_template($db, $copyFromId);
+    if ($copied !== null) {
+        $e = events_row_for_form($copied);
+        $copyNotice = 'Esemény másolva. Az időpont és a további információ URL nem került át — add meg őket, majd mentsd.';
+    } else {
+        flash('error', 'A másolandó esemény nem található.');
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_letrehoz')) {
@@ -123,6 +135,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary btn-sm">Vissza a listához</a>
         </div>
     </header>
+    <?php if ($copyNotice !== ''): ?><p class="alert alert-success"><?= h($copyNotice) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post" enctype="multipart/form-data" class="events-edit-form" id="events-edit-form"
           data-entity-create-url="<?= h(events_url('ajax_entity_quick_create.php')) ?>"

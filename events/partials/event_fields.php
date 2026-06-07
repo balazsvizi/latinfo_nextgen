@@ -95,6 +95,34 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
         <?php endif; ?>
     </div>
 </div>
+<div class="events-edit-panel events-edit-panel--tone-dates">
+    <div class="events-edit-panel__title-row events-edit-panel__title-row--datetime">
+        <h3 class="events-edit-panel__title">Időpont</h3>
+        <label class="events-toggle" for="event_allday">
+            <input type="checkbox" name="event_allday" value="1" id="event_allday" class="events-toggle__input" <?= !empty($e['event_allday']) ? 'checked' : '' ?>>
+            <span class="events-toggle__ui" aria-hidden="true"></span>
+            <span class="events-toggle__label">Egész napos</span>
+        </label>
+    </div>
+    <div class="form-row events-edit-dates-grid">
+        <div class="form-group">
+            <label for="event_start_date">Kezdő dátum</label>
+            <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
+        </div>
+        <div class="form-group events-edit-time-field" id="events-edit-start-time-wrap">
+            <label for="event_start_time">Kezdő idő</label>
+            <input type="time" id="event_start_time" name="event_start_time" value="<?= h($e['event_start_time']) ?>">
+        </div>
+        <div class="form-group">
+            <label for="event_end_date">Záró dátum</label>
+            <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
+        </div>
+        <div class="form-group events-edit-time-field" id="events-edit-end-time-wrap">
+            <label for="event_end_time">Záró idő</label>
+            <input type="time" id="event_end_time" name="event_end_time" value="<?= h($e['event_end_time']) ?>">
+        </div>
+    </div>
+</div>
 <div class="events-edit-panel events-edit-panel--tone-org">
     <h3 class="events-edit-panel__title">Szervezők</h3>
 <?php
@@ -138,34 +166,6 @@ require __DIR__ . '/wp_token_field.php';
     <div class="form-group">
         <label class="visually-hidden" for="event_content">Leírás (HTML) *</label>
         <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="14" required><?= h($e['event_content']) ?></textarea>
-    </div>
-</div>
-<div class="events-edit-panel events-edit-panel--tone-dates">
-    <div class="events-edit-panel__title-row events-edit-panel__title-row--datetime">
-        <h3 class="events-edit-panel__title">Időpont</h3>
-        <label class="events-toggle" for="event_allday">
-            <input type="checkbox" name="event_allday" value="1" id="event_allday" class="events-toggle__input" <?= !empty($e['event_allday']) ? 'checked' : '' ?>>
-            <span class="events-toggle__ui" aria-hidden="true"></span>
-            <span class="events-toggle__label">Egész napos</span>
-        </label>
-    </div>
-    <div class="form-row events-edit-dates-grid">
-        <div class="form-group">
-            <label for="event_start_date">Kezdő dátum</label>
-            <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
-        </div>
-        <div class="form-group events-edit-time-field" id="events-edit-start-time-wrap">
-            <label for="event_start_time">Kezdő idő</label>
-            <input type="time" id="event_start_time" name="event_start_time" value="<?= h($e['event_start_time']) ?>">
-        </div>
-        <div class="form-group">
-            <label for="event_end_date">Záró dátum</label>
-            <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
-        </div>
-        <div class="form-group events-edit-time-field" id="events-edit-end-time-wrap">
-            <label for="event_end_time">Záró idő</label>
-            <input type="time" id="event_end_time" name="event_end_time" value="<?= h($e['event_end_time']) ?>">
-        </div>
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-cost">
