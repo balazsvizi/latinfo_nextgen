@@ -124,7 +124,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </div>
     </header>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <form method="post" enctype="multipart/form-data" class="events-edit-form" id="events-edit-form">
+    <form method="post" enctype="multipart/form-data" class="events-edit-form" id="events-edit-form"
+          data-entity-create-url="<?= h(events_url('ajax_entity_quick_create.php')) ?>"
+          data-entity-create-csrf="<?= h(csrf_token('events_entity_create')) ?>">
         <?= csrf_input('events_letrehoz') ?>
         <?php require __DIR__ . '/partials/event_fields.php'; ?>
         <div class="events-edit-form-actions">

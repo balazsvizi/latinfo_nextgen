@@ -3,15 +3,18 @@ declare(strict_types=1);
 /**
  * WordPress-szerű címke / token választó mező.
  *
- * @var string $wpTokenId egyedi DOM azonosító
- * @var string $wpTokenLabel címke szöveg
- * @var string $wpTokenFieldName hidden input name (pl. tag_ids[])
- * @var string $wpTokenPlaceholder kereső placeholder
- * @var string $wpTokenHelp opcionális súgó
- * @var string|null $wpTokenManageUrl kezelő oldal link
- * @var string $wpTokenManageLabel link szöveg
+ * @var string $wpTokenId
+ * @var string $wpTokenLabel
+ * @var string $wpTokenFieldName
+ * @var string $wpTokenPlaceholder
+ * @var string $wpTokenHelp
+ * @var string|null $wpTokenManageUrl
+ * @var string $wpTokenManageLabel
  * @var array<int, array{id:int,name:string}> $wpTokenAll
  * @var array<int, int> $wpTokenSelected
+ * @var bool $wpTokenAllowCreate
+ * @var string $wpTokenEntityType
+ * @var bool $wpTokenSingle
  */
 $wpTokenId = $wpTokenId ?? 'wp-token';
 $wpTokenLabel = $wpTokenLabel ?? '';
@@ -22,6 +25,9 @@ $wpTokenManageUrl = $wpTokenManageUrl ?? null;
 $wpTokenManageLabel = $wpTokenManageLabel ?? 'Szerkesztés';
 $wpTokenAll = $wpTokenAll ?? [];
 $wpTokenSelected = $wpTokenSelected ?? [];
+$wpTokenAllowCreate = $wpTokenAllowCreate ?? false;
+$wpTokenEntityType = $wpTokenEntityType ?? '';
+$wpTokenSingle = $wpTokenSingle ?? false;
 $wpTokenJson = json_encode(
     ['all' => array_values($wpTokenAll), 'selected' => array_values($wpTokenSelected)],
     JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
@@ -29,13 +35,16 @@ $wpTokenJson = json_encode(
 if ($wpTokenJson === false) {
     $wpTokenJson = '{"all":[],"selected":[]}';
 }
+$showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
 ?>
 <div class="wp-token-field" id="<?= h($wpTokenId) ?>-field">
-    <label class="wp-token-field__label" for="<?= h($wpTokenId) ?>-input"><?= h($wpTokenLabel) ?></label>
+    <?php if ($wpTokenLabel !== ''): ?>
+        <label class="wp-token-field__label" for="<?= h($wpTokenId) ?>-input"><?= h($wpTokenLabel) ?></label>
+    <?php endif; ?>
     <?php if ($wpTokenHelp !== ''): ?>
         <p class="help wp-token-field__help"><?= h($wpTokenHelp) ?></p>
     <?php endif; ?>
-    <?php if ($wpTokenAll === []): ?>
+    <?php if (!$showInput): ?>
         <p class="help">Még nincs elem felvéve.<?php if ($wpTokenManageUrl !== null): ?> <a href="<?= h($wpTokenManageUrl) ?>"><?= h($wpTokenManageLabel) ?></a><?php endif; ?></p>
     <?php else: ?>
         <div
@@ -44,6 +53,9 @@ if ($wpTokenJson === false) {
             data-wp-token="1"
             data-field-name="<?= h($wpTokenFieldName) ?>"
             data-placeholder="<?= h($wpTokenPlaceholder) ?>"
+            <?= $wpTokenAllowCreate ? ' data-allow-create="1"' : '' ?>
+            <?= $wpTokenEntityType !== '' ? ' data-entity-type="' . h($wpTokenEntityType) . '"' : '' ?>
+            <?= $wpTokenSingle ? ' data-single="1"' : '' ?>
         >
             <div class="wp-token-input__inner" tabindex="-1">
                 <div class="wp-token-input__tokens" aria-live="polite"></div>

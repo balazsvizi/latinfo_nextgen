@@ -22,6 +22,12 @@ if (!isset($djs) || !is_array($djs)) {
 if (!isset($styles) || !is_array($styles)) {
     $styles = [];
 }
+if (!isset($db) || !($db instanceof PDO)) {
+    $db = getDb();
+}
+$tagsAllowCreate = events_tags_tables_available($db);
+$djsAllowCreate = events_djs_tables_available($db);
+$stylesAllowCreate = events_styles_tables_available($db);
 $selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_values(array_unique(array_map('intval', $e['organizer_ids']))) : [];
 $selCat = isset($e['category_ids']) && is_array($e['category_ids']) ? array_values(array_unique(array_map('intval', $e['category_ids']))) : [];
 $selTag = isset($e['tag_ids']) && is_array($e['tag_ids']) ? array_values(array_unique(array_map('intval', $e['tag_ids']))) : [];
@@ -33,23 +39,9 @@ foreach ($organizers as $oid => $onev) {
     $orgPickerAll[] = ['id' => (int) $oid, 'name' => (string) $onev];
 }
 usort($orgPickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
-$orgPickerJson = json_encode(
-    ['all' => $orgPickerAll, 'selected' => $selOrg],
-    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-);
-if ($orgPickerJson === false) {
-    $orgPickerJson = '{"all":[],"selected":[]}';
-}
 $catPickerAll = [];
 foreach ($categories as $cid => $cnev) {
     $catPickerAll[] = ['id' => (int) $cid, 'name' => (string) $cnev];
-}
-$catPickerJson = json_encode(
-    ['all' => $catPickerAll, 'selected' => $selCat],
-    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-);
-if ($catPickerJson === false) {
-    $catPickerJson = '{"all":[],"selected":[]}';
 }
 $tagPickerAll = [];
 foreach ($tags as $tid => $tnev) {
@@ -68,18 +60,12 @@ foreach ($styles as $sid => $snev) {
 usort($stylePickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 $eventpicFiles = events_eventpics_list_files();
 $selectedVenueId = (string) ($e['venue_id'] ?? '');
+$selVenue = $selectedVenueId !== '' ? [(int) $selectedVenueId] : [];
 $venuePickerAll = [];
 foreach ($venues as $vid => $vname) {
     $venuePickerAll[] = ['id' => (int) $vid, 'name' => (string) $vname];
 }
 usort($venuePickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
-$venuePickerJson = json_encode(
-    ['all' => $venuePickerAll, 'selected' => $selectedVenueId !== '' ? (int) $selectedVenueId : 0],
-    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-);
-if ($venuePickerJson === false) {
-    $venuePickerJson = '{"all":[],"selected":0}';
-}
 $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
 $coverPreview = events_featured_image_form_preview_meta((string) ($e['event_featured_image_url'] ?? ''), $eventpicsPick);
 $coverPreviewCaption = $coverPreview['source'] === 'url'
@@ -90,84 +76,65 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 ?>
 <div class="events-edit-layout">
 <div class="events-edit-main">
-<div class="events-edit-panel">
-    <h3 class="events-edit-panel__title">Szervezők és helyszín</h3>
-    <div class="events-edit-org-venue-grid">
-        <fieldset class="form-group events-organizers-fieldset" id="events-org-picker-fieldset"<?= $organizers === [] ? ' data-organizers-empty="1"' : '' ?>>
-            <legend>Szervezők</legend>
-            <?php if ($organizers === []): ?>
-                <p class="help">Nincs szervező rögzítve. Előbb <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_organizers">CSV importtal</a> vagy az adatbázisban vegyél fel szervezőket.</p>
-            <?php else: ?>
-                <p class="help">Felül szűrés, alatta választó lista, középen <strong>+</strong> / <strong>−</strong>, alul a kiválasztottak.</p>
-                <input type="search" id="org-picker-filter" class="events-org-filter" placeholder="Szűrés név vagy ID szerint…" autocomplete="off" spellcheck="false">
-                <div class="events-org-picker-grid">
-                    <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="org-picker-pool">Kiválasztó lista</label>
-                        <select id="org-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
-                    </div>
-                    <div class="events-org-picker-btns">
-                        <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-add" title="Hozzáadás">+</button>
-                        <button type="button" class="btn btn-secondary events-org-btn" id="org-picker-remove" title="Eltávolítás">−</button>
-                    </div>
-                    <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="org-picker-selected">Kiválasztott</label>
-                        <select id="org-picker-selected" class="events-org-list events-org-list--selected" size="3"></select>
-                    </div>
-                </div>
-                <div id="org-picker-hiddens" class="org-picker-hiddens">
-                    <?php foreach ($selOrg as $oid): ?>
-                        <input type="hidden" name="organizer_ids[]" value="<?= (int) $oid ?>">
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </fieldset>
-        <fieldset class="form-group" id="events-venue-picker-fieldset">
-            <legend>Helyszín (egy választható)</legend>
-            <?php if ($venues === []): ?>
-                <p class="help">Nincs helyszín felvéve. <a href="<?= h(events_url('venues.php')) ?>">Helyszínek</a> · <a href="<?= h(events_url('venue_letrehoz.php')) ?>">Új helyszín</a></p>
-                <input type="hidden" name="venue_id" value="">
-            <?php else: ?>
-                <input type="search" id="venue-picker-filter" class="events-org-filter" placeholder="Helyszín keresése..." autocomplete="off" spellcheck="false">
-                <div class="events-org-picker-grid">
-                    <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="venue-picker-pool">Kiválasztó lista</label>
-                        <select id="venue-picker-pool" class="events-org-list events-org-list--pool" size="5"></select>
-                    </div>
-                    <div class="events-org-picker-btns">
-                        <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-add" title="Kiválasztás">+</button>
-                        <button type="button" class="btn btn-secondary events-org-btn" id="venue-picker-remove" title="Törlés">−</button>
-                    </div>
-                    <div class="events-org-picker-col">
-                        <label class="events-org-picker-label" for="venue-picker-selected">Kiválasztott</label>
-                        <select id="venue-picker-selected" class="events-org-list events-org-list--selected" size="2"></select>
-                    </div>
-                </div>
-                <div id="venue-picker-hidden">
-                    <input type="hidden" name="venue_id" id="venue_id" value="<?= h($selectedVenueId) ?>">
-                </div>
-            <?php endif; ?>
-        </fieldset>
+<div class="events-edit-panel events-edit-panel--tone-title">
+    <h3 class="events-edit-panel__title">Esemény neve</h3>
+    <div class="form-group events-edit-name-field">
+        <label class="visually-hidden" for="event_name">Esemény neve *</label>
+        <input type="text" id="event_name" name="event_name" class="events-edit-name-input" value="<?= h($e['event_name']) ?>" required maxlength="500" placeholder="Esemény címe…">
+    </div>
+    <div class="form-group events-edit-slug-row">
+        <label for="event_slug">URL slug</label>
+        <div class="events-edit-slug-controls">
+            <input type="text" id="event_slug" name="event_slug" value="<?= h($e['event_slug']) ?>" maxlength="255" pattern="[a-z0-9\-]*" title="Kisbetű, szám és kötőjel" placeholder="url-slug-2026-06-07">
+            <button type="button" class="btn btn-secondary btn-sm" id="event-slug-refresh" title="Név + kezdő dátum alapján">Slug frissítése</button>
+        </div>
+        <p class="help">Gombnyomásra: esemény neve + kezdő dátum (éééé-hh-nn). Ha üresen mentesz, a névből generáljuk.</p>
     </div>
 </div>
-<div class="events-edit-panel">
-    <h3 class="events-edit-panel__title">Alap adatok</h3>
-    <div class="form-row events-form-row-name-slug" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(10rem,14rem);gap:1rem;">
-        <div class="form-group">
-            <label for="event_name">Esemény neve *</label>
-            <input type="text" id="event_name" name="event_name" value="<?= h($e['event_name']) ?>" required maxlength="500">
-        </div>
-        <div class="form-group">
-            <label for="event_slug">URL slug</label>
-            <input type="text" id="event_slug" name="event_slug" value="<?= h($e['event_slug']) ?>" maxlength="255" pattern="[a-z0-9\-]*" title="Kisbetű, szám és kötőjel">
-            <p class="help">Ha üres, a névből generáljuk.</p>
-        </div>
+<div class="events-edit-panel events-edit-panel--tone-org">
+    <h3 class="events-edit-panel__title">Szervezők</h3>
+<?php
+$wpTokenId = 'event-organizers';
+$wpTokenLabel = '';
+$wpTokenFieldName = 'organizer_ids[]';
+$wpTokenPlaceholder = 'Szervező hozzáadása…';
+$wpTokenHelp = 'Írj be egy nevet — Enterrel hozzáadod vagy létrehozod.';
+$wpTokenManageUrl = events_url('import_csv.php') . '?target_table=events_organizers';
+$wpTokenManageLabel = 'Szervezők import';
+$wpTokenAll = $orgPickerAll;
+$wpTokenSelected = $selOrg;
+$wpTokenAllowCreate = true;
+$wpTokenEntityType = 'organizer';
+$wpTokenSingle = false;
+require __DIR__ . '/wp_token_field.php';
+?>
+</div>
+<div class="events-edit-panel events-edit-panel--tone-venue">
+    <h3 class="events-edit-panel__title">Helyszín</h3>
+<?php
+$wpTokenId = 'event-venue';
+$wpTokenLabel = '';
+$wpTokenFieldName = 'venue_id';
+$wpTokenPlaceholder = 'Helyszín hozzáadása…';
+$wpTokenHelp = 'Egy helyszín választható. Új név Enterrel azonnal felvételre kerül.';
+$wpTokenManageUrl = events_url('venues.php');
+$wpTokenManageLabel = 'Helyszínek kezelése';
+$wpTokenAll = $venuePickerAll;
+$wpTokenSelected = $selVenue;
+$wpTokenAllowCreate = true;
+$wpTokenEntityType = 'venue';
+$wpTokenSingle = true;
+require __DIR__ . '/wp_token_field.php';
+?>
+</div>
+<div class="events-edit-panel events-edit-panel--tone-content">
+    <h3 class="events-edit-panel__title">Leírás</h3>
+    <div class="form-group">
+        <label class="visually-hidden" for="event_content">Leírás (HTML) *</label>
+        <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="14" required><?= h($e['event_content']) ?></textarea>
     </div>
 </div>
-<div class="form-group">
-    <label for="event_content">Leírás (HTML) *</label>
-    <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="14" required><?= h($e['event_content']) ?></textarea>
-</div>
-<div class="events-edit-panel">
+<div class="events-edit-panel events-edit-panel--tone-dates">
     <h3 class="events-edit-panel__title">Időpont és belépő</h3>
 <div class="form-row events-edit-dates-grid">
     <div class="form-group">
@@ -201,7 +168,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
     </div>
 </div>
 </div>
-<div class="events-edit-panel">
+<div class="events-edit-panel events-edit-panel--tone-url">
     <h3 class="events-edit-panel__title">További információ</h3>
     <div class="form-group events-url-open-row">
         <input type="url" id="event_url" name="event_url" value="<?= h($e['event_url']) ?>" maxlength="2000" placeholder="https://" aria-label="További információ URL">
@@ -212,7 +179,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 </div>
 </div>
 <aside class="events-edit-sidebar">
-<div class="events-edit-panel events-edit-panel--publish">
+<div class="events-edit-panel events-edit-panel--tone-publish events-edit-panel--publish">
     <h3 class="events-edit-panel__title">Közzététel</h3>
     <div class="form-group">
         <label for="event_status">Státusz *</label>
@@ -226,52 +193,47 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <label><input type="checkbox" name="event_latinfohu_partner" value="1" <?= !empty($e['event_latinfohu_partner']) ? 'checked' : '' ?>> Latinfo.hu partner</label>
     </div>
 </div>
-<div class="events-edit-panel">
+<div class="events-edit-panel events-edit-panel--tone-cat">
     <h3 class="events-edit-panel__title">Kategóriák</h3>
-    <?php if ($categories === []): ?>
-        <p class="help">Nincs kategória felvéve. <a href="<?= h(events_url('categories.php')) ?>">Kategóriák</a> · vagy <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_categories">CSV import</a></p>
-    <?php else: ?>
-        <p class="help">Több kategória is hozzárendelhető az eseményhez. A választóban a magyar nevek látszanak.</p>
-        <input type="search" id="cat-picker-filter" class="events-org-filter" placeholder="Kategória keresése..." autocomplete="off" spellcheck="false">
-        <div class="events-org-picker-grid">
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="cat-picker-pool">Kiválasztó lista</label>
-                <select id="cat-picker-pool" class="events-org-list events-org-list--pool" size="4"></select>
-            </div>
-            <div class="events-org-picker-btns">
-                <button type="button" class="btn btn-secondary events-org-btn" id="cat-picker-add" title="Hozzáadás">+</button>
-                <button type="button" class="btn btn-secondary events-org-btn" id="cat-picker-remove" title="Eltávolítás">−</button>
-            </div>
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="cat-picker-selected">Kiválasztott</label>
-                <select id="cat-picker-selected" class="events-org-list events-org-list--selected" size="4"></select>
-            </div>
-        </div>
-        <div id="cat-picker-hiddens" class="org-picker-hiddens">
-            <?php foreach ($selCat as $cid): ?>
-                <input type="hidden" name="category_ids[]" value="<?= (int) $cid ?>">
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<?php
+$wpTokenId = 'event-categories';
+$wpTokenLabel = '';
+$wpTokenFieldName = 'category_ids[]';
+$wpTokenPlaceholder = 'Kategória hozzáadása…';
+$wpTokenHelp = 'Hierarchikus nevek is kereshetők. Új kategória Enterrel hozható létre.';
+$wpTokenManageUrl = events_url('categories.php');
+$wpTokenManageLabel = 'Kategóriák kezelése';
+$wpTokenAll = $catPickerAll;
+$wpTokenSelected = $selCat;
+$wpTokenAllowCreate = true;
+$wpTokenEntityType = 'category';
+$wpTokenSingle = false;
+require __DIR__ . '/wp_token_field.php';
+?>
 </div>
-<div class="events-edit-panel">
+<div class="events-edit-panel events-edit-panel--tone-tag">
+    <h3 class="events-edit-panel__title">Címkék</h3>
 <?php
 $wpTokenId = 'event-tags';
-$wpTokenLabel = 'Címkék';
+$wpTokenLabel = '';
 $wpTokenFieldName = 'tag_ids[]';
 $wpTokenPlaceholder = 'Címke hozzáadása…';
-$wpTokenHelp = 'Írj be egy nevet, válassz a listából, vagy kattints a gyakran használtakra.';
+$wpTokenHelp = 'Írj be egy nevet — Enterrel kiválasztod vagy létrehozod.';
 $wpTokenManageUrl = events_url('tags.php');
 $wpTokenManageLabel = 'Címkék kezelése';
 $wpTokenAll = $tagPickerAll;
 $wpTokenSelected = $selTag;
+$wpTokenAllowCreate = $tagsAllowCreate;
+$wpTokenEntityType = 'tag';
+$wpTokenSingle = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
-<div class="events-edit-panel">
+<div class="events-edit-panel events-edit-panel--tone-dj">
+    <h3 class="events-edit-panel__title">DJ-k</h3>
 <?php
 $wpTokenId = 'event-djs';
-$wpTokenLabel = 'DJ-k';
+$wpTokenLabel = '';
 $wpTokenFieldName = 'dj_ids[]';
 $wpTokenPlaceholder = 'DJ hozzáadása…';
 $wpTokenHelp = 'A DJ-k külön entitás — nyilvánosan is külön jelennek meg.';
@@ -279,13 +241,17 @@ $wpTokenManageUrl = events_url('djs.php');
 $wpTokenManageLabel = 'DJ-k kezelése';
 $wpTokenAll = $djPickerAll;
 $wpTokenSelected = $selDj;
+$wpTokenAllowCreate = $djsAllowCreate;
+$wpTokenEntityType = 'dj';
+$wpTokenSingle = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
-<div class="events-edit-panel">
+<div class="events-edit-panel events-edit-panel--tone-mstyle">
+    <h3 class="events-edit-panel__title">Fő stílusok</h3>
 <?php
 $wpTokenId = 'event-main-styles';
-$wpTokenLabel = 'Fő stílusok';
+$wpTokenLabel = '';
 $wpTokenFieldName = 'main_style_ids[]';
 $wpTokenPlaceholder = 'Stílus hozzáadása…';
 $wpTokenHelp = 'Nyilvánosan megjelennek, de nem kattinthatók.';
@@ -293,13 +259,17 @@ $wpTokenManageUrl = events_url('styles.php');
 $wpTokenManageLabel = 'Stílusok kezelése';
 $wpTokenAll = $stylePickerAll;
 $wpTokenSelected = $selMainStyle;
+$wpTokenAllowCreate = $stylesAllowCreate;
+$wpTokenEntityType = 'style';
+$wpTokenSingle = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
-<div class="events-edit-panel">
+<div class="events-edit-panel events-edit-panel--tone-sstyle">
+    <h3 class="events-edit-panel__title">Kiegészítő stílusok</h3>
 <?php
 $wpTokenId = 'event-supplementary-styles';
-$wpTokenLabel = 'Kiegészítő stílusok';
+$wpTokenLabel = '';
 $wpTokenFieldName = 'supplementary_style_ids[]';
 $wpTokenPlaceholder = 'Stílus hozzáadása…';
 $wpTokenHelp = 'Kiegészítő stílusok a fő stílusok mellett.';
@@ -307,10 +277,13 @@ $wpTokenManageUrl = events_url('styles.php');
 $wpTokenManageLabel = 'Stílusok kezelése';
 $wpTokenAll = $stylePickerAll;
 $wpTokenSelected = $selSupplementaryStyle;
+$wpTokenAllowCreate = $stylesAllowCreate;
+$wpTokenEntityType = 'style';
+$wpTokenSingle = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
-<div class="events-edit-panel event-featured-card">
+<div class="events-edit-panel events-edit-panel--tone-image event-featured-card">
     <div class="event-featured-card__head">
         <h3 class="event-featured-card__title">Esemény képe</h3>
         <div class="event-featured-card__cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
@@ -387,217 +360,7 @@ require __DIR__ . '/wp_token_field.php';
         </footer>
     </div>
 </dialog>
-<script type="application/json" id="events-org-picker-json"><?= $orgPickerJson ?></script>
-<script type="application/json" id="events-venue-picker-json"><?= $venuePickerJson ?></script>
-<script type="application/json" id="events-cat-picker-json"><?= $catPickerJson ?></script>
 <script>
-(function () {
-    var orgJsonEl = document.getElementById('events-org-picker-json');
-    var pool = document.getElementById('org-picker-pool');
-    var selected = document.getElementById('org-picker-selected');
-    var filter = document.getElementById('org-picker-filter');
-    var hiddens = document.getElementById('org-picker-hiddens');
-    var btnAdd = document.getElementById('org-picker-add');
-    var btnRemove = document.getElementById('org-picker-remove');
-    if (orgJsonEl && pool && selected && filter && hiddens && btnAdd && btnRemove) {
-        var raw = orgJsonEl.textContent || '{}';
-        var data;
-        try { data = JSON.parse(raw); } catch (e) { data = { all: [], selected: [] }; }
-        var all = Array.isArray(data.all) ? data.all : [];
-        var selectedIds = Array.isArray(data.selected) ? data.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
-        var nameById = {};
-        all.forEach(function (row) { nameById[row.id] = row.name; });
-        function syncHiddens() {
-            hiddens.innerHTML = '';
-            Array.from(selected.options).forEach(function (opt) {
-                var inp = document.createElement('input');
-                inp.type = 'hidden';
-                inp.name = 'organizer_ids[]';
-                inp.value = opt.value;
-                hiddens.appendChild(inp);
-            });
-        }
-        function renderPool() {
-            var q = (filter.value || '').trim().toLowerCase();
-            pool.innerHTML = '';
-            var taken = {};
-            selectedIds.forEach(function (id) { taken[id] = true; });
-            all.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
-                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
-                var opt = document.createElement('option');
-                opt.value = String(row.id);
-                opt.textContent = row.name + ' (#' + row.id + ')';
-                pool.appendChild(opt);
-            });
-        }
-        function renderSelected() {
-            selected.innerHTML = '';
-            selectedIds.forEach(function (id) {
-                var opt = document.createElement('option');
-                opt.value = String(id);
-                opt.textContent = (nameById[id] || '?') + ' (#' + id + ')';
-                selected.appendChild(opt);
-            });
-            syncHiddens();
-        }
-        function addOrg() {
-            var opt = pool.options[pool.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            if (!id || selectedIds.indexOf(id) !== -1) return;
-            selectedIds.push(id);
-            renderSelected();
-            renderPool();
-        }
-        function removeOrg() {
-            var opt = selected.options[selected.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            selectedIds = selectedIds.filter(function (x) { return x !== id; });
-            renderSelected();
-            renderPool();
-        }
-        filter.addEventListener('input', renderPool);
-        btnAdd.addEventListener('click', addOrg);
-        btnRemove.addEventListener('click', removeOrg);
-        pool.addEventListener('dblclick', addOrg);
-        selected.addEventListener('dblclick', removeOrg);
-        renderSelected();
-        renderPool();
-    }
-
-    var venueJsonEl = document.getElementById('events-venue-picker-json');
-    var vPool = document.getElementById('venue-picker-pool');
-    var vSel = document.getElementById('venue-picker-selected');
-    var vFilter = document.getElementById('venue-picker-filter');
-    var vAdd = document.getElementById('venue-picker-add');
-    var vRemove = document.getElementById('venue-picker-remove');
-    var vHidden = document.getElementById('venue_id');
-    if (venueJsonEl && vPool && vSel && vFilter && vAdd && vRemove && vHidden) {
-        var vData;
-        try { vData = JSON.parse(venueJsonEl.textContent || '{}'); } catch (e) { vData = { all: [], selected: 0 }; }
-        var vAll = Array.isArray(vData.all) ? vData.all : [];
-        var selectedVenue = parseInt(vData.selected || 0, 10) || 0;
-        function renderVenuePool() {
-            var q = (vFilter.value || '').trim().toLowerCase();
-            vPool.innerHTML = '';
-            vAll.forEach(function (row) {
-                if (selectedVenue === row.id) return;
-                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
-                var opt = document.createElement('option');
-                opt.value = String(row.id);
-                opt.textContent = row.name + ' (#' + row.id + ')';
-                vPool.appendChild(opt);
-            });
-        }
-        function renderVenueSelected() {
-            vSel.innerHTML = '';
-            var row = vAll.find(function (x) { return x.id === selectedVenue; });
-            if (row) {
-                var opt = document.createElement('option');
-                opt.value = String(row.id);
-                opt.textContent = row.name + ' (#' + row.id + ')';
-                vSel.appendChild(opt);
-                vHidden.value = String(row.id);
-            } else {
-                vHidden.value = '';
-            }
-        }
-        function addVenue() {
-            var opt = vPool.options[vPool.selectedIndex];
-            if (!opt) return;
-            selectedVenue = parseInt(opt.value, 10) || 0;
-            renderVenueSelected();
-            renderVenuePool();
-        }
-        function removeVenue() {
-            selectedVenue = 0;
-            renderVenueSelected();
-            renderVenuePool();
-        }
-        vFilter.addEventListener('input', renderVenuePool);
-        vAdd.addEventListener('click', addVenue);
-        vRemove.addEventListener('click', removeVenue);
-        vPool.addEventListener('dblclick', addVenue);
-        vSel.addEventListener('dblclick', removeVenue);
-        renderVenueSelected();
-        renderVenuePool();
-    }
-
-    var catJsonEl = document.getElementById('events-cat-picker-json');
-    var cPool = document.getElementById('cat-picker-pool');
-    var cSel = document.getElementById('cat-picker-selected');
-    var cFilter = document.getElementById('cat-picker-filter');
-    var cHiddens = document.getElementById('cat-picker-hiddens');
-    var cAdd = document.getElementById('cat-picker-add');
-    var cRemove = document.getElementById('cat-picker-remove');
-    if (catJsonEl && cPool && cSel && cFilter && cHiddens && cAdd && cRemove) {
-        var cData;
-        try { cData = JSON.parse(catJsonEl.textContent || '{}'); } catch (e) { cData = { all: [], selected: [] }; }
-        var cAll = Array.isArray(cData.all) ? cData.all : [];
-        var cSelected = Array.isArray(cData.selected) ? cData.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
-        var cNameById = {};
-        cAll.forEach(function (row) { cNameById[row.id] = row.name; });
-        function syncCatHiddens() {
-            cHiddens.innerHTML = '';
-            Array.from(cSel.options).forEach(function (opt) {
-                var inp = document.createElement('input');
-                inp.type = 'hidden';
-                inp.name = 'category_ids[]';
-                inp.value = opt.value;
-                cHiddens.appendChild(inp);
-            });
-        }
-        function renderCatPool() {
-            var q = (cFilter.value || '').trim().toLowerCase();
-            cPool.innerHTML = '';
-            var taken = {};
-            cSelected.forEach(function (id) { taken[id] = true; });
-            cAll.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
-                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
-                var opt = document.createElement('option');
-                opt.value = String(row.id);
-                opt.textContent = row.name + ' (#' + row.id + ')';
-                cPool.appendChild(opt);
-            });
-        }
-        function renderCatSelected() {
-            cSel.innerHTML = '';
-            cSelected.forEach(function (id) {
-                var opt = document.createElement('option');
-                opt.value = String(id);
-                opt.textContent = (cNameById[id] || '?') + ' (#' + id + ')';
-                cSel.appendChild(opt);
-            });
-            syncCatHiddens();
-        }
-        function addCat() {
-            var opt = cPool.options[cPool.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            if (!id || cSelected.indexOf(id) !== -1) return;
-            cSelected.push(id);
-            renderCatSelected();
-            renderCatPool();
-        }
-        function removeCat() {
-            var opt = cSel.options[cSel.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            cSelected = cSelected.filter(function (x) { return x !== id; });
-            renderCatSelected();
-            renderCatPool();
-        }
-        cFilter.addEventListener('input', renderCatPool);
-        cAdd.addEventListener('click', addCat);
-        cRemove.addEventListener('click', removeCat);
-        cPool.addEventListener('dblclick', addCat);
-        cSel.addEventListener('dblclick', removeCat);
-        renderCatSelected();
-        renderCatPool();
-    }
-})();
-
 (function () {
     var dialog = document.getElementById('eventpics-modal');
     var root = document.getElementById('eventpics-browser');
@@ -884,3 +647,4 @@ require __DIR__ . '/wp_token_field.php';
 })();
 </script>
 <?php require __DIR__ . '/wp_token_input_script.php'; ?>
+<?php require __DIR__ . '/event_slug_script.php'; ?>
