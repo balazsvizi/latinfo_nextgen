@@ -27,6 +27,31 @@ $stmt = $db->prepare($sql);
 $stmt->execute($filters['params']);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$categoriesByEventId = [];
+if ($rows !== []) {
+    $eventIds = array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
+    $ph = implode(',', array_fill(0, count($eventIds), '?'));
+    $catStmt = $db->prepare("
+        SELECT ec.`event_id`, c.`id`, c.`name`, c.`color`
+        FROM `events_calendar_event_categories` ec
+        INNER JOIN `events_categories` c ON c.`id` = ec.`category_id`
+        WHERE ec.`event_id` IN ({$ph})
+        ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
+    ");
+    $catStmt->execute($eventIds);
+    foreach ($catStmt->fetchAll(PDO::FETCH_ASSOC) as $catRow) {
+        $eid = (int) $catRow['event_id'];
+        if (!isset($categoriesByEventId[$eid])) {
+            $categoriesByEventId[$eid] = [];
+        }
+        $categoriesByEventId[$eid][] = [
+            'id' => (int) $catRow['id'],
+            'name' => (string) $catRow['name'],
+            'color' => trim((string) ($catRow['color'] ?? '')) !== '' ? trim((string) $catRow['color']) : '#6d8f63',
+        ];
+    }
+}
+
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
 $byDay = $bucket['byDay'];
 $undated = $bucket['undated'];
@@ -101,13 +126,13 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         <?php foreach ($dayEvents as $ev): ?>
                                             <?php
                                             $eid = (int) ($ev['id'] ?? 0);
-                                            $st = (string) ($ev['event_status'] ?? '');
-                                            $badgeClass = events_post_status_badge_class($st);
                                             $timeLabel = events_admin_calendar_event_time_label($ev);
+                                            $eventStyle = events_admin_calendar_event_category_style($categoriesByEventId, $eid);
                                             ?>
                                             <li class="events-cal__event" role="listitem">
                                                 <a
-                                                    class="events-cal__event-link event-status-badge <?= h($badgeClass) ?>"
+                                                    class="events-cal__event-link"
+                                                    style="<?= h($eventStyle) ?>"
                                                     href="<?= h($editBase . $eid) ?>"
                                                     title="<?= h((string) ($ev['event_name'] ?? '')) ?>"
                                                 >
@@ -134,11 +159,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <?php foreach ($undated as $ev): ?>
                         <?php
                         $eid = (int) ($ev['id'] ?? 0);
-                        $st = (string) ($ev['event_status'] ?? '');
-                        $badgeClass = events_post_status_badge_class($st);
+                        $eventStyle = events_admin_calendar_event_category_style($categoriesByEventId, $eid);
                         ?>
                         <li role="listitem">
-                            <a class="events-cal-undated__link event-status-badge <?= h($badgeClass) ?>" href="<?= h($editBase . $eid) ?>">
+                            <a class="events-cal-undated__link events-cal__event-link" style="<?= h($eventStyle) ?>" href="<?= h($editBase . $eid) ?>">
                                 <?= h((string) ($ev['event_name'] ?? '')) ?>
                             </a>
                         </li>

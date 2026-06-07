@@ -1,9 +1,24 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/category_locale.php';
+
 /**
  * Admin havi naptár nézet — hónap feloldás, rács, események naphoz rendelése.
  */
+
+/**
+ * @param array<int, list<array{color:string}>> $categoriesByEventId
+ */
+function events_admin_calendar_event_category_style(array $categoriesByEventId, int $eventId): string {
+    $cats = $categoriesByEventId[$eventId] ?? [];
+    if ($cats === []) {
+        return events_public_category_pill_inline_style('#6d8f63');
+    }
+    $color = trim((string) ($cats[0]['color'] ?? '#6d8f63'));
+
+    return events_public_category_pill_inline_style($color !== '' ? $color : '#6d8f63');
+}
 
 /**
  * @return array{0: DateTimeImmutable, 1: DateTimeImmutable, 2: string}
