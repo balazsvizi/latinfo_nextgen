@@ -576,8 +576,24 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
     }
 
-    $baseSlug = $row['event_slug'] !== '' ? $row['event_slug'] : events_slugify($row['event_name']);
-    $row['event_slug'] = events_ensure_unique_slug($db, $baseSlug, $excludeIdForSlug);
+    if ($sd === '') {
+        return [$row, 'A kezdő dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+    if ($ed === '') {
+        return [$row, 'A záró dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+    if ($row['event_start'] === null) {
+        return [$row, 'Érvénytelen kezdő dátum vagy idő.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+    if ($row['event_end'] === null) {
+        return [$row, 'Érvénytelen záró dátum vagy idő.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+
+    if ($row['event_slug'] === '') {
+        return [$row, 'Az URL slug kötelező. Használd a frissítés gombot a név és kezdő dátum alapján.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+
+    $row['event_slug'] = events_ensure_unique_slug($db, $row['event_slug'], $excludeIdForSlug);
 
     return [$row, null, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
 }

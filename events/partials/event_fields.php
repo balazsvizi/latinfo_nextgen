@@ -87,7 +87,7 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
         <label class="visually-hidden" for="event_name">Esemény neve *</label>
         <input type="text" id="event_name" name="event_name" class="events-edit-name-input" value="<?= h($e['event_name']) ?>" required maxlength="500" placeholder="Esemény címe…">
         <button type="button" class="btn btn-secondary events-edit-slug-refresh" id="event-slug-refresh" title="Slug frissítése (név + kezdő dátum)" aria-label="Slug frissítése">🔄</button>
-        <input type="text" id="event_slug" name="event_slug" class="events-edit-slug-input" value="<?= h($e['event_slug']) ?>" maxlength="255" pattern="[a-z0-9\-]*" title="URL slug — kisbetű, szám és kötőjel" placeholder="url-slug" aria-label="URL slug">
+        <input type="text" id="event_slug" name="event_slug" class="events-edit-slug-input" value="<?= h($e['event_slug']) ?>" required maxlength="255" pattern="[a-z0-9][a-z0-9\-]*" title="URL slug — kisbetű, szám és kötőjel" placeholder="url-slug" aria-label="URL slug *">
         <?php if ($canPreviewPublic): ?>
             <a href="<?= h(events_megjelenit_url((string) $e['event_slug'])) ?>" class="events-icon-action events-edit-preview-action" title="Nyilvános megtekintés (új lap)" aria-label="Nyilvános megtekintés új lapon" target="_blank" rel="noopener">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
@@ -107,8 +107,8 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
     <div class="form-row events-edit-dates-grid">
         <div class="events-edit-dates-date-row">
             <div class="form-group">
-                <label for="event_start_date">Kezdő dátum</label>
-                <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
+                <label for="event_start_date">Kezdő dátum *</label>
+                <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>" required>
             </div>
             <div class="events-edit-date-copy-cell">
                 <span class="events-edit-date-copy-label" aria-hidden="true">&nbsp;</span>
@@ -121,8 +121,8 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
                 >→</button>
             </div>
             <div class="form-group">
-                <label for="event_end_date">Záró dátum</label>
-                <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
+                <label for="event_end_date">Záró dátum *</label>
+                <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>" required>
             </div>
         </div>
         <div class="events-edit-dates-time-row" id="events-edit-dates-time-row">
