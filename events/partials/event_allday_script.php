@@ -1,6 +1,7 @@
 <script>
 (function () {
     var allday = document.getElementById('event_allday');
+    var timeRow = document.getElementById('events-edit-dates-time-row');
     var startTimeWrap = document.getElementById('events-edit-start-time-wrap');
     var endTimeWrap = document.getElementById('events-edit-end-time-wrap');
     var startTime = document.getElementById('event_start_time');
@@ -11,6 +12,7 @@
 
     function applyAlldayUi() {
         var on = allday.checked;
+        if (timeRow) timeRow.hidden = on;
         startTimeWrap.hidden = on;
         endTimeWrap.hidden = on;
         if (on) {

@@ -104,32 +104,36 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
             <span class="events-toggle__label">Egész napos</span>
         </label>
     </div>
-    <div class="form-row events-edit-dates-grid events-edit-dates-grid--with-copy">
-        <div class="form-group">
-            <label for="event_start_date">Kezdő dátum</label>
-            <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
+    <div class="form-row events-edit-dates-grid">
+        <div class="events-edit-dates-date-row">
+            <div class="form-group">
+                <label for="event_start_date">Kezdő dátum</label>
+                <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
+            </div>
+            <div class="events-edit-date-copy-cell">
+                <span class="events-edit-date-copy-label" aria-hidden="true">&nbsp;</span>
+                <button
+                    type="button"
+                    class="btn btn-secondary btn-sm events-edit-date-copy-btn"
+                    id="event-end-date-copy-start"
+                    title="Kezdő dátum másolása záró dátumra"
+                    aria-label="Kezdő dátum másolása záró dátumra"
+                >→</button>
+            </div>
+            <div class="form-group">
+                <label for="event_end_date">Záró dátum</label>
+                <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
+            </div>
         </div>
-        <div class="events-edit-date-copy-cell">
-            <button
-                type="button"
-                class="btn btn-secondary btn-sm events-edit-date-copy-btn"
-                id="event-end-date-copy-start"
-                title="Kezdő dátum másolása záró dátumra"
-                aria-label="Kezdő dátum másolása záró dátumra"
-            >→</button>
-        </div>
-        <div class="form-group">
-            <label for="event_end_date">Záró dátum</label>
-            <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
-        </div>
-        <div class="form-group events-edit-time-field" id="events-edit-start-time-wrap">
-            <label for="event_start_time">Kezdő idő</label>
-            <input type="time" id="event_start_time" name="event_start_time" value="<?= h($e['event_start_time']) ?>">
-        </div>
-        <div class="events-edit-date-copy-spacer" aria-hidden="true"></div>
-        <div class="form-group events-edit-time-field" id="events-edit-end-time-wrap">
-            <label for="event_end_time">Záró idő</label>
-            <input type="time" id="event_end_time" name="event_end_time" value="<?= h($e['event_end_time']) ?>">
+        <div class="events-edit-dates-time-row" id="events-edit-dates-time-row">
+            <div class="form-group events-edit-time-field" id="events-edit-start-time-wrap">
+                <label for="event_start_time">Kezdő idő</label>
+                <input type="time" id="event_start_time" name="event_start_time" value="<?= h($e['event_start_time']) ?>">
+            </div>
+            <div class="form-group events-edit-time-field" id="events-edit-end-time-wrap">
+                <label for="event_end_time">Záró idő</label>
+                <input type="time" id="event_end_time" name="event_end_time" value="<?= h($e['event_end_time']) ?>">
+            </div>
         </div>
     </div>
 </div>
@@ -149,6 +153,7 @@ $wpTokenAllowCreate = true;
 $wpTokenEntityType = 'organizer';
 $wpTokenSingle = false;
 $wpTokenShowPopular = false;
+$wpTokenChipLinkPattern = events_url('organizer.php?id={id}');
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>

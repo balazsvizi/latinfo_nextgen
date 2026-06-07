@@ -21,6 +21,7 @@
         var allowCreate = root.getAttribute('data-allow-create') === '1';
         var entityType = root.getAttribute('data-entity-type') || '';
         var isSingle = root.getAttribute('data-single') === '1';
+        var chipLinkPattern = root.getAttribute('data-chip-link-pattern') || '';
         var popularWrap = root.closest('.wp-token-field');
         var popularBox = popularWrap ? popularWrap.querySelector('[data-wp-token-popular]') : null;
         var popularList = popularWrap ? popularWrap.querySelector('.wp-token-field__popular-list') : null;
@@ -72,9 +73,20 @@
                 var chip = document.createElement('span');
                 chip.className = 'wp-token-input__chip';
                 chip.setAttribute('data-id', String(id));
-                var label = document.createElement('span');
-                label.className = 'wp-token-input__chip-label';
-                label.textContent = nameById[id] || ('#' + id);
+                var label;
+                var chipName = nameById[id] || ('#' + id);
+                if (chipLinkPattern !== '') {
+                    label = document.createElement('a');
+                    label.className = 'wp-token-input__chip-label wp-token-input__chip-link';
+                    label.href = chipLinkPattern.replace(/\{id\}/g, String(id));
+                    label.target = '_blank';
+                    label.rel = 'noopener noreferrer';
+                    label.textContent = chipName;
+                } else {
+                    label = document.createElement('span');
+                    label.className = 'wp-token-input__chip-label';
+                    label.textContent = chipName;
+                }
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'wp-token-input__chip-remove';

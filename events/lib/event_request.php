@@ -605,8 +605,7 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['main_style_ids'] = events_load_event_main_style_ids($db, $sourceId);
     $event['supplementary_style_ids'] = events_load_event_supplementary_style_ids($db, $sourceId);
 
-    $name = trim((string) ($event['event_name'] ?? ''));
-    $event['event_name'] = $name !== '' ? $name . ' másolat' : 'másolat';
+    $event['event_name'] = trim((string) ($event['event_name'] ?? ''));
     $event['event_slug'] = '';
     $event['event_start'] = null;
     $event['event_end'] = null;

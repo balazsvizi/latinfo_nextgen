@@ -2594,18 +2594,41 @@ dialog.eventpics-modal::backdrop {
     gap: 1rem;
 }
 .events-edit-dates-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+}
+.events-edit-dates-grid .form-group {
+    margin-bottom: 0;
+}
+.events-edit-dates-date-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0 1rem;
+    align-items: end;
+}
+.events-edit-dates-time-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem 1rem;
 }
-.events-edit-dates-grid--with-copy {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: end;
+.events-edit-dates-time-row[hidden] {
+    display: none !important;
 }
 .events-edit-date-copy-cell {
     display: flex;
-    align-items: flex-end;
-    padding-bottom: 0.15rem;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+.events-edit-date-copy-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    line-height: 1.2;
+    visibility: hidden;
+    user-select: none;
 }
 .events-edit-date-copy-btn {
     min-width: 2.25rem;
@@ -2613,18 +2636,6 @@ dialog.eventpics-modal::backdrop {
     padding-right: 0.55rem;
     font-weight: 600;
     line-height: 1.2;
-}
-.events-edit-date-copy-spacer {
-    display: block;
-}
-.events-edit-dates-grid--with-copy:has(.events-edit-time-field[hidden]) .events-edit-date-copy-spacer {
-    display: none;
-}
-.events-edit-dates-grid:has(.events-edit-time-field[hidden]) {
-    grid-template-columns: 1fr 1fr;
-}
-.events-edit-dates-grid--with-copy:has(.events-edit-time-field[hidden]) {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 .events-edit-time-field[hidden] {
     display: none;
@@ -2752,6 +2763,14 @@ dialog.eventpics-modal::backdrop {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+.wp-token-input__chip-link {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.wp-token-input__chip-link:hover {
+    color: var(--primary);
 }
 .wp-token-input__chip-remove {
     display: inline-flex;
