@@ -2358,6 +2358,29 @@ dialog.eventpics-modal::backdrop {
     gap: 1.25rem 1.5rem;
     align-items: start;
 }
+.events-edit-top-cover {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.events-edit-top-cover__img {
+    display: block;
+    width: 4.25rem;
+    height: 4.25rem;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: #fff;
+}
+.events-edit-top-cover[hidden] {
+    display: none !important;
+}
 .events-edit-main {
     display: flex;
     flex-direction: column;
@@ -2398,6 +2421,81 @@ dialog.eventpics-modal::backdrop {
 .events-edit-panel--tone-dates {
     border-left-color: #ea580c;
     background: linear-gradient(135deg, #fff7ed 0%, #fff 60%);
+}
+.events-edit-panel--tone-cost {
+    border-left-color: #d97706;
+    background: linear-gradient(135deg, #fffbeb 0%, #fff 60%);
+}
+.events-edit-datetime-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+.events-edit-datetime-head .events-edit-panel__title {
+    margin: 0;
+}
+.events-edit-cost-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1rem;
+}
+.events-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+.events-toggle__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.events-toggle__ui {
+    flex-shrink: 0;
+    width: 2.6rem;
+    height: 1.4rem;
+    background: #c3c4c7;
+    border-radius: 999px;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+.events-toggle__ui::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.05rem;
+    height: 1.05rem;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+    transition: transform 0.2s ease;
+}
+.events-toggle__input:checked + .events-toggle__ui {
+    background: var(--primary, #2563eb);
+}
+.events-toggle__input:checked + .events-toggle__ui::after {
+    transform: translateX(1.2rem);
+}
+.events-toggle__input:focus-visible + .events-toggle__ui {
+    outline: 2px solid var(--primary, #2563eb);
+    outline-offset: 2px;
+}
+.events-toggle__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
 }
 .events-edit-panel--tone-url {
     border-left-color: #78716c;
@@ -2518,12 +2616,8 @@ dialog.eventpics-modal::backdrop {
 .events-edit-log .log-item__text {
     margin: 0.25rem 0 0;
 }
-.events-edit-sidebar .event-featured-card__head {
-    flex-direction: column;
-    align-items: stretch;
-}
-.events-edit-sidebar .event-featured-card__cover {
-    margin-top: 0.5rem;
+.events-edit-sidebar .event-featured-card__title {
+    margin-top: 0;
 }
 .events-edit-sidebar .events-org-picker-grid {
     gap: 0.5rem;

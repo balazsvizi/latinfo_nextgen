@@ -78,6 +78,17 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         : '');
 ?>
 <div class="events-edit-layout">
+<div class="events-edit-top-cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
+    <img
+        id="eventpics-summary-img"
+        class="events-edit-top-cover__img"
+        src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
+        alt="Borító előnézet"
+        decoding="async"
+    >
+    <span id="eventpics-summary-name" class="events-edit-top-cover__name visually-hidden"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
+    <span id="eventpics-summary-source" class="visually-hidden"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
+</div>
 <div class="events-edit-main">
 <div class="events-edit-panel events-edit-panel--tone-title">
     <h3 class="events-edit-panel__title">Esemény neve</h3>
@@ -134,38 +145,45 @@ require __DIR__ . '/wp_token_field.php';
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-dates">
-    <h3 class="events-edit-panel__title">Időpont és belépő</h3>
-<div class="form-row events-edit-dates-grid">
-    <div class="form-group">
-        <label for="event_start_date">Kezdő dátum</label>
-        <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
+    <div class="events-edit-datetime-head">
+        <h3 class="events-edit-panel__title">Időpont</h3>
+        <label class="events-toggle" for="event_allday">
+            <input type="checkbox" name="event_allday" value="1" id="event_allday" class="events-toggle__input" <?= !empty($e['event_allday']) ? 'checked' : '' ?>>
+            <span class="events-toggle__ui" aria-hidden="true"></span>
+            <span class="events-toggle__label">Egész napos</span>
+        </label>
     </div>
-    <div class="form-group events-edit-time-field" id="events-edit-start-time-wrap">
-        <label for="event_start_time">Kezdő idő</label>
-        <input type="time" id="event_start_time" name="event_start_time" value="<?= h($e['event_start_time']) ?>">
-    </div>
-    <div class="form-group">
-        <label for="event_end_date">Záró dátum</label>
-        <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
-    </div>
-    <div class="form-group events-edit-time-field" id="events-edit-end-time-wrap">
-        <label for="event_end_time">Záró idő</label>
-        <input type="time" id="event_end_time" name="event_end_time" value="<?= h($e['event_end_time']) ?>">
-    </div>
-</div>
-<div class="form-group">
-    <label><input type="checkbox" name="event_allday" value="1" id="event_allday" <?= !empty($e['event_allday']) ? 'checked' : '' ?>> Egész napos</label>
-</div>
-<div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-    <div class="form-group">
-        <label for="event_cost_from">Belépő (tól)</label>
-        <input type="number" id="event_cost_from" name="event_cost_from" step="0.01" min="0" value="<?= h($e['event_cost_from']) ?>">
-    </div>
-    <div class="form-group">
-        <label for="event_cost_to">Belépő (ig)</label>
-        <input type="number" id="event_cost_to" name="event_cost_to" step="0.01" min="0" value="<?= h($e['event_cost_to']) ?>">
+    <div class="form-row events-edit-dates-grid">
+        <div class="form-group">
+            <label for="event_start_date">Kezdő dátum</label>
+            <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
+        </div>
+        <div class="form-group events-edit-time-field" id="events-edit-start-time-wrap">
+            <label for="event_start_time">Kezdő idő</label>
+            <input type="time" id="event_start_time" name="event_start_time" value="<?= h($e['event_start_time']) ?>">
+        </div>
+        <div class="form-group">
+            <label for="event_end_date">Záró dátum</label>
+            <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
+        </div>
+        <div class="form-group events-edit-time-field" id="events-edit-end-time-wrap">
+            <label for="event_end_time">Záró idő</label>
+            <input type="time" id="event_end_time" name="event_end_time" value="<?= h($e['event_end_time']) ?>">
+        </div>
     </div>
 </div>
+<div class="events-edit-panel events-edit-panel--tone-cost">
+    <h3 class="events-edit-panel__title">Belépő</h3>
+    <div class="form-row events-edit-cost-grid">
+        <div class="form-group">
+            <label for="event_cost_from">Belépő (tól)</label>
+            <input type="number" id="event_cost_from" name="event_cost_from" step="0.01" min="0" value="<?= h($e['event_cost_from']) ?>" placeholder="0">
+        </div>
+        <div class="form-group">
+            <label for="event_cost_to">Belépő (ig)</label>
+            <input type="number" id="event_cost_to" name="event_cost_to" step="0.01" min="0" value="<?= h($e['event_cost_to']) ?>" placeholder="0">
+        </div>
+    </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-url">
     <h3 class="events-edit-panel__title">További információ</h3>
@@ -288,18 +306,7 @@ require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-image event-featured-card">
-    <div class="event-featured-card__head">
-        <h3 class="event-featured-card__title">Esemény képe</h3>
-        <div class="event-featured-card__cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
-            <div class="event-featured-card__figure">
-                <img id="eventpics-summary-img" src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>" alt="Borító előnézet" decoding="async">
-            </div>
-            <div class="event-featured-card__caption">
-                <span id="eventpics-summary-name" class="eventpics-form-summary__name"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
-                <span id="eventpics-summary-source" class="eventpics-form-summary__source help"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
-            </div>
-        </div>
-    </div>
+    <h3 class="events-edit-panel__title event-featured-card__title">Esemény képe</h3>
     <div class="form-group">
         <label for="event_featured_image_url">Kiemelt kép URL</label>
         <input type="text" id="event_featured_image_url" name="event_featured_image_url" value="<?= h($e['event_featured_image_url'] ?? '') ?>" maxlength="2000" placeholder="https://… vagy /útvonal/kép.jpg" spellcheck="false" autocomplete="off">
