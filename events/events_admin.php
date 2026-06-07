@@ -472,7 +472,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     <a class="events-cell-edit events-cell-edit--meta" href="<?= h($edit) ?>">
                                         <span class="events-admin-meta-cell" role="list">
                                             <?php foreach ($eventCats as $catItem): ?>
-                                                <span class="events-admin-meta-row events-admin-meta-row--category" role="listitem">
+                                                <span class="events-admin-meta-row" role="listitem">
                                                     <span class="events-admin-category-chip">
                                                         <span class="events-category-color-chip__dot" style="background: <?= h($catItem['color']) ?>;" aria-hidden="true"></span>
                                                         <?= h($catItem['name']) ?>
