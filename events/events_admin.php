@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once __DIR__ . '/lib/event_request.php';
 requireLogin();
 
 $db = getDb();
@@ -10,14 +11,21 @@ $db = getDb();
 $f_organizer = trim($_GET['f_organizer'] ?? '');
 $f_name = trim($_GET['f_name'] ?? '');
 $f_id = trim($_GET['f_id'] ?? '');
+$f_category = trim($_GET['f_category'] ?? '');
 $f_start_from = trim($_GET['f_start_from'] ?? '');
 $f_start_to = trim($_GET['f_start_to'] ?? '');
 $f_views_min = trim($_GET['f_views_min'] ?? '');
 
+$categoryOptions = events_load_category_options($db);
+$f_category_id = 0;
+if ($f_category !== '' && ctype_digit($f_category) && isset($categoryOptions[(int) $f_category])) {
+    $f_category_id = (int) $f_category;
+}
+
 $allowedStatus = array_merge([''], events_allowed_post_statuses());
 $status = isset($_GET['status']) && in_array((string) $_GET['status'], $allowedStatus, true) ? (string) $_GET['status'] : '';
 
-$allowedOrder = ['id', 'organizer', 'name', 'start', 'end', 'status', 'views'];
+$allowedOrder = ['id', 'organizer', 'category', 'name', 'start', 'end', 'status', 'views'];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -96,6 +104,13 @@ if ($f_organizer !== '') {
     )';
     $params[] = '%' . $f_organizer . '%';
 }
+if ($f_category_id > 0) {
+    $where[] = 'EXISTS (
+        SELECT 1 FROM `events_calendar_event_categories` ec2
+        WHERE ec2.event_id = e.id AND ec2.category_id = ?
+    )';
+    $params[] = $f_category_id;
+}
 if ($f_name !== '') {
     $where[] = 'e.event_name LIKE ?';
     $params[] = '%' . $f_name . '%';
@@ -132,6 +147,7 @@ $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
     'id' => "e.id $dirSql",
     'organizer' => "( (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) IS NULL) ASC, (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) $dirSql",
+    'category' => "( (SELECT MIN(c.name) FROM `events_calendar_event_categories` ec INNER JOIN `events_categories` c ON c.id = ec.category_id WHERE ec.event_id = e.id) IS NULL) ASC, (SELECT MIN(c.name) FROM `events_calendar_event_categories` ec INNER JOIN `events_categories` c ON c.id = ec.category_id WHERE ec.event_id = e.id) $dirSql",
     'name' => "e.event_name $dirSql",
     'start' => "e.event_start IS NULL, e.event_start $dirSql",
     'end' => "e.event_end IS NULL, e.event_end $dirSql",
@@ -155,10 +171,36 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$categoriesByEventId = [];
+if ($rows !== []) {
+    $eventIds = array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
+    $ph = implode(',', array_fill(0, count($eventIds), '?'));
+    $catStmt = $db->prepare("
+        SELECT ec.`event_id`, c.`id`, c.`name`, c.`color`
+        FROM `events_calendar_event_categories` ec
+        INNER JOIN `events_categories` c ON c.`id` = ec.`category_id`
+        WHERE ec.`event_id` IN ({$ph})
+        ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
+    ");
+    $catStmt->execute($eventIds);
+    foreach ($catStmt->fetchAll(PDO::FETCH_ASSOC) as $catRow) {
+        $eid = (int) $catRow['event_id'];
+        if (!isset($categoriesByEventId[$eid])) {
+            $categoriesByEventId[$eid] = [];
+        }
+        $categoriesByEventId[$eid][] = [
+            'id' => (int) $catRow['id'],
+            'name' => (string) $catRow['name'],
+            'color' => trim((string) ($catRow['color'] ?? '')) !== '' ? trim((string) $catRow['color']) : '#6d8f63',
+        ];
+    }
+}
+
 $get_params = array_filter([
     'f_organizer' => $f_organizer !== '' ? $f_organizer : null,
     'f_name' => $f_name !== '' ? $f_name : null,
     'f_id' => $f_id !== '' ? $f_id : null,
+    'f_category' => $f_category_id > 0 ? (string) $f_category_id : null,
     'f_start_from' => $f_start_from !== '' ? $f_start_from : null,
     'f_start_to' => $f_start_to !== '' ? $f_start_to : null,
     'f_views_min' => $f_views_min !== '' ? $f_views_min : null,
@@ -212,6 +254,17 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 <div class="events-filter-field">
                     <label class="events-filter-label" for="ev-f-organizer">Szervező</label>
                     <input class="events-filter-input" type="text" name="f_organizer" id="ev-f-organizer" value="<?= h($f_organizer) ?>" placeholder="Részlet a névből…" autocomplete="off">
+                </div>
+                <div class="events-filter-field events-filter-field--status">
+                    <label class="events-filter-label" for="ev-f-category">Kategória</label>
+                    <div class="events-filter-select-wrap">
+                        <select class="events-filter-select" name="f_category" id="ev-f-category" title="Kategória szűrő">
+                            <option value="">Összes kategória</option>
+                            <?php foreach ($categoryOptions as $cid => $cname): ?>
+                                <option value="<?= (int) $cid ?>" <?= $f_category_id === (int) $cid ? 'selected' : '' ?>><?= h($cname) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="events-filter-field">
                     <label class="events-filter-label" for="ev-f-name">Esemény neve</label>
@@ -267,6 +320,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <tr>
                         <th class="events-th-actions" scope="col"><span class="visually-hidden">Műveletek</span></th>
                         <th><?= sort_th('Szervező', 'organizer', $order, $dir_param, $get_params) ?></th>
+                        <th><?= sort_th('Kategóriák', 'category', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Dátum', 'start', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
@@ -296,6 +350,23 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                 </div>
                             </td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= ($r['organizer_name'] ?? '') !== '' ? h((string) $r['organizer_name']) : '–' ?></a></td>
+                            <td>
+                                <?php $eventCats = $categoriesByEventId[$eid] ?? []; ?>
+                                <?php if ($eventCats === []): ?>
+                                    <a class="events-cell-edit" href="<?= h($edit) ?>">–</a>
+                                <?php else: ?>
+                                    <a class="events-cell-edit events-cell-edit--categories" href="<?= h($edit) ?>">
+                                        <span class="events-admin-category-list" role="list">
+                                            <?php foreach ($eventCats as $catItem): ?>
+                                                <span class="events-admin-category-chip" role="listitem">
+                                                    <span class="events-category-color-chip__dot" style="background: <?= h($catItem['color']) ?>;" aria-hidden="true"></span>
+                                                    <?= h($catItem['name']) ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        </span>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
                             <td>

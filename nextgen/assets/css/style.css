@@ -1010,6 +1010,25 @@ tr:hover td { background: var(--bg); }
     filter: brightness(1.05);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
+.events-cell-edit--categories {
+    border-bottom: none;
+}
+.events-admin-category-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+}
+.events-admin-category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.82rem;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+.events-admin-category-chip .events-category-color-chip__dot {
+    flex-shrink: 0;
+}
 
 .event-status-badge {
     display: inline-flex;
