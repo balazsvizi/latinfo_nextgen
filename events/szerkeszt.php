@@ -117,34 +117,55 @@ $logStmt = $db->prepare('
 $logStmt->execute(['esemény', $id]);
 $sablonLogok = $logStmt->fetchAll();
 
+$mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
+$isPublished = ($e['event_status'] ?? '') === events_public_post_status();
 require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
-<div class="card">
-    <h2>Esemény szerkesztése</h2>
-    <p class="help"><?php if (($e['event_status'] ?? '') === events_public_post_status()): ?>Nyilvános előnézet: <a href="<?= h(events_megjelenit_url($e['event_slug'])) ?>" target="_blank" rel="noopener"><?= h(events_megjelenit_url($e['event_slug'])) ?></a><?php else: ?>Nyilvános oldal csak „Közzétéve” (publish) státusznál érhető el.<?php endif; ?></p>
+
+<div class="events-edit-page">
+    <header class="events-edit-header">
+        <div class="events-edit-header__main">
+            <h1 class="events-edit-title">Esemény szerkesztése</h1>
+            <p class="events-edit-subtitle help">
+                <?php if ($isPublished): ?>
+                    Nyilvános előnézet:
+                    <a href="<?= h(events_megjelenit_url($e['event_slug'])) ?>" target="_blank" rel="noopener"><?= h($e['event_name'] ?: $e['event_slug']) ?></a>
+                <?php else: ?>
+                    Nyilvános oldal csak „Közzétéve” (publish) státusznál érhető el.
+                <?php endif; ?>
+            </p>
+        </div>
+        <div class="events-edit-header__actions">
+            <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary btn-sm">Vissza a listához</a>
+        </div>
+    </header>
+
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <form method="post" enctype="multipart/form-data">
+
+    <form method="post" enctype="multipart/form-data" class="events-edit-form" id="events-edit-form">
         <?= csrf_input('events_szerkeszt') ?>
         <?php require __DIR__ . '/partials/event_fields.php'; ?>
-        <div class="form-actions">
+        <div class="events-edit-form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>
-            <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
+            <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Mégse</a>
         </div>
     </form>
 </div>
-<div class="card">
-    <h2>Napló</h2>
+
+<div class="events-edit-panel events-edit-log">
+    <h2 class="events-edit-panel__title">Napló</h2>
     <div class="log-list">
         <?php foreach ($sablonLogok as $l): ?>
         <div class="log-item">
             <span class="log-date"><?= h($l['létrehozva']) ?> <?= !empty($l['admin_név']) ? '(' . h($l['admin_név']) . ')' : '' ?></span>
-            <p style="margin:0.25rem 0 0;"><?= h($l['művelet']) ?><?= !empty($l['részletek']) ? ' – ' . nl2br(h($l['részletek'])) : '' ?></p>
+            <p class="log-item__text"><?= h($l['művelet']) ?><?= !empty($l['részletek']) ? ' – ' . nl2br(h($l['részletek'])) : '' ?></p>
         </div>
         <?php endforeach; ?>
-        <?php if (empty($sablonLogok)): ?><p>Még nincs naplóbejegyzés.</p><?php endif; ?>
+        <?php if (empty($sablonLogok)): ?><p class="help">Még nincs naplóbejegyzés.</p><?php endif; ?>
     </div>
 </div>
+
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>

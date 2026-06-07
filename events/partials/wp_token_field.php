@@ -1,0 +1,73 @@
+<?php
+declare(strict_types=1);
+/**
+ * WordPress-szerű címke / token választó mező.
+ *
+ * @var string $wpTokenId egyedi DOM azonosító
+ * @var string $wpTokenLabel címke szöveg
+ * @var string $wpTokenFieldName hidden input name (pl. tag_ids[])
+ * @var string $wpTokenPlaceholder kereső placeholder
+ * @var string $wpTokenHelp opcionális súgó
+ * @var string|null $wpTokenManageUrl kezelő oldal link
+ * @var string $wpTokenManageLabel link szöveg
+ * @var array<int, array{id:int,name:string}> $wpTokenAll
+ * @var array<int, int> $wpTokenSelected
+ */
+$wpTokenId = $wpTokenId ?? 'wp-token';
+$wpTokenLabel = $wpTokenLabel ?? '';
+$wpTokenFieldName = $wpTokenFieldName ?? 'ids[]';
+$wpTokenPlaceholder = $wpTokenPlaceholder ?? 'Hozzáadás…';
+$wpTokenHelp = $wpTokenHelp ?? '';
+$wpTokenManageUrl = $wpTokenManageUrl ?? null;
+$wpTokenManageLabel = $wpTokenManageLabel ?? 'Szerkesztés';
+$wpTokenAll = $wpTokenAll ?? [];
+$wpTokenSelected = $wpTokenSelected ?? [];
+$wpTokenJson = json_encode(
+    ['all' => array_values($wpTokenAll), 'selected' => array_values($wpTokenSelected)],
+    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+);
+if ($wpTokenJson === false) {
+    $wpTokenJson = '{"all":[],"selected":[]}';
+}
+?>
+<div class="wp-token-field" id="<?= h($wpTokenId) ?>-field">
+    <label class="wp-token-field__label" for="<?= h($wpTokenId) ?>-input"><?= h($wpTokenLabel) ?></label>
+    <?php if ($wpTokenHelp !== ''): ?>
+        <p class="help wp-token-field__help"><?= h($wpTokenHelp) ?></p>
+    <?php endif; ?>
+    <?php if ($wpTokenAll === []): ?>
+        <p class="help">Még nincs elem felvéve.<?php if ($wpTokenManageUrl !== null): ?> <a href="<?= h($wpTokenManageUrl) ?>"><?= h($wpTokenManageLabel) ?></a><?php endif; ?></p>
+    <?php else: ?>
+        <div
+            class="wp-token-input"
+            id="<?= h($wpTokenId) ?>"
+            data-wp-token="1"
+            data-field-name="<?= h($wpTokenFieldName) ?>"
+            data-placeholder="<?= h($wpTokenPlaceholder) ?>"
+        >
+            <div class="wp-token-input__inner" tabindex="-1">
+                <div class="wp-token-input__tokens" aria-live="polite"></div>
+                <input
+                    type="text"
+                    class="wp-token-input__search"
+                    id="<?= h($wpTokenId) ?>-input"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                    role="combobox"
+                >
+            </div>
+            <ul class="wp-token-input__suggestions" role="listbox" hidden></ul>
+            <div class="wp-token-input__hiddens"></div>
+        </div>
+        <div class="wp-token-field__popular" data-wp-token-popular hidden>
+            <span class="wp-token-field__popular-label">Gyakran használt:</span>
+            <span class="wp-token-field__popular-list"></span>
+        </div>
+        <?php if ($wpTokenManageUrl !== null): ?>
+            <p class="wp-token-field__footer"><a href="<?= h($wpTokenManageUrl) ?>"><?= h($wpTokenManageLabel) ?></a></p>
+        <?php endif; ?>
+        <script type="application/json" class="wp-token-input__json"><?= $wpTokenJson ?></script>
+    <?php endif; ?>
+</div>

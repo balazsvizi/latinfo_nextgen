@@ -56,44 +56,16 @@ foreach ($tags as $tid => $tnev) {
     $tagPickerAll[] = ['id' => (int) $tid, 'name' => (string) $tnev];
 }
 usort($tagPickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
-$tagPickerJson = json_encode(
-    ['all' => $tagPickerAll, 'selected' => $selTag],
-    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-);
-if ($tagPickerJson === false) {
-    $tagPickerJson = '{"all":[],"selected":[]}';
-}
 $djPickerAll = [];
 foreach ($djs as $did => $dnev) {
     $djPickerAll[] = ['id' => (int) $did, 'name' => (string) $dnev];
 }
 usort($djPickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
-$djPickerJson = json_encode(
-    ['all' => $djPickerAll, 'selected' => $selDj],
-    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-);
-if ($djPickerJson === false) {
-    $djPickerJson = '{"all":[],"selected":[]}';
-}
 $stylePickerAll = [];
 foreach ($styles as $sid => $snev) {
     $stylePickerAll[] = ['id' => (int) $sid, 'name' => (string) $snev];
 }
 usort($stylePickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
-$mainStylePickerJson = json_encode(
-    ['all' => $stylePickerAll, 'selected' => $selMainStyle],
-    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-);
-if ($mainStylePickerJson === false) {
-    $mainStylePickerJson = '{"all":[],"selected":[]}';
-}
-$supplementaryStylePickerJson = json_encode(
-    ['all' => $stylePickerAll, 'selected' => $selSupplementaryStyle],
-    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-);
-if ($supplementaryStylePickerJson === false) {
-    $supplementaryStylePickerJson = '{"all":[],"selected":[]}';
-}
 $eventpicFiles = events_eventpics_list_files();
 $selectedVenueId = (string) ($e['venue_id'] ?? '');
 $venuePickerAll = [];
@@ -116,9 +88,11 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         ? 'Előnézet az eventpics borító alapján (nincs kitöltött URL).'
         : '');
 ?>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">Szervezők és helyszín</h3>
-    <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;">
+<div class="events-edit-layout">
+<div class="events-edit-main">
+<div class="events-edit-panel">
+    <h3 class="events-edit-panel__title">Szervezők és helyszín</h3>
+    <div class="events-edit-org-venue-grid">
         <fieldset class="form-group events-organizers-fieldset" id="events-org-picker-fieldset"<?= $organizers === [] ? ' data-organizers-empty="1"' : '' ?>>
             <legend>Szervezők</legend>
             <?php if ($organizers === []): ?>
@@ -175,8 +149,8 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         </fieldset>
     </div>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">Alap adatok</h3>
+<div class="events-edit-panel">
+    <h3 class="events-edit-panel__title">Alap adatok</h3>
     <div class="form-row events-form-row-name-slug" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(10rem,14rem);gap:1rem;">
         <div class="form-group">
             <label for="event_name">Esemény neve *</label>
@@ -193,17 +167,9 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
     <label for="event_content">Leírás (HTML) *</label>
     <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="14" required><?= h($e['event_content']) ?></textarea>
 </div>
-<div class="card" style="margin:1rem 0;">
-    <h3 style="margin-top:0;">Adatok</h3>
-    <div class="form-group">
-        <label for="event_status">Státusz *</label>
-        <select id="event_status_data" name="event_status" required>
-            <?php foreach (events_allowed_post_statuses() as $val): ?>
-                <option value="<?= h($val) ?>" <?= ($e['event_status'] === $val) ? 'selected' : '' ?>><?= h(events_post_status_label($val)) ?></option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-<div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+<div class="events-edit-panel">
+    <h3 class="events-edit-panel__title">Időpont és belépő</h3>
+<div class="form-row events-edit-dates-grid">
     <div class="form-group">
         <label for="event_start_date">Kezdő dátum</label>
         <input type="date" id="event_start_date" name="event_start_date" value="<?= h($e['event_start_date']) ?>">
@@ -235,8 +201,8 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
     </div>
 </div>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">További információ</h3>
+<div class="events-edit-panel">
+    <h3 class="events-edit-panel__title">További információ</h3>
     <div class="form-group events-url-open-row">
         <input type="url" id="event_url" name="event_url" value="<?= h($e['event_url']) ?>" maxlength="2000" placeholder="https://" aria-label="További információ URL">
         <?php if (!empty($e['event_url'])): ?>
@@ -244,8 +210,24 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <?php endif; ?>
     </div>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">Kategóriák</h3>
+</div>
+<aside class="events-edit-sidebar">
+<div class="events-edit-panel events-edit-panel--publish">
+    <h3 class="events-edit-panel__title">Közzététel</h3>
+    <div class="form-group">
+        <label for="event_status">Státusz *</label>
+        <select id="event_status_data" name="event_status" required>
+            <?php foreach (events_allowed_post_statuses() as $val): ?>
+                <option value="<?= h($val) ?>" <?= ($e['event_status'] === $val) ? 'selected' : '' ?>><?= h(events_post_status_label($val)) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="form-group">
+        <label><input type="checkbox" name="event_latinfohu_partner" value="1" <?= !empty($e['event_latinfohu_partner']) ? 'checked' : '' ?>> Latinfo.hu partner</label>
+    </div>
+</div>
+<div class="events-edit-panel">
+    <h3 class="events-edit-panel__title">Kategóriák</h3>
     <?php if ($categories === []): ?>
         <p class="help">Nincs kategória felvéve. <a href="<?= h(events_url('categories.php')) ?>">Kategóriák</a> · vagy <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_categories">CSV import</a></p>
     <?php else: ?>
@@ -254,7 +236,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         <div class="events-org-picker-grid">
             <div class="events-org-picker-col">
                 <label class="events-org-picker-label" for="cat-picker-pool">Kiválasztó lista</label>
-                <select id="cat-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
+                <select id="cat-picker-pool" class="events-org-list events-org-list--pool" size="4"></select>
             </div>
             <div class="events-org-picker-btns">
                 <button type="button" class="btn btn-secondary events-org-btn" id="cat-picker-add" title="Hozzáadás">+</button>
@@ -262,7 +244,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
             </div>
             <div class="events-org-picker-col">
                 <label class="events-org-picker-label" for="cat-picker-selected">Kiválasztott</label>
-                <select id="cat-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
+                <select id="cat-picker-selected" class="events-org-list events-org-list--selected" size="4"></select>
             </div>
         </div>
         <div id="cat-picker-hiddens" class="org-picker-hiddens">
@@ -272,119 +254,63 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         </div>
     <?php endif; ?>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">Címkék</h3>
-    <?php if ($tags === []): ?>
-        <p class="help">Még nincs címke felvéve. <a href="<?= h(events_url('tags.php')) ?>">Címkék szerkesztése</a></p>
-    <?php else: ?>
-        <p class="help">Több címke is választható. Felül szűrés, alatta választó lista, középen <strong>+</strong> / <strong>−</strong>, alul a kiválasztottak.</p>
-        <input type="search" id="tag-picker-filter" class="events-org-filter" placeholder="Címke keresése…" autocomplete="off" spellcheck="false">
-        <div class="events-org-picker-grid">
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="tag-picker-pool">Kiválasztó lista</label>
-                <select id="tag-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
-            </div>
-            <div class="events-org-picker-btns">
-                <button type="button" class="btn btn-secondary events-org-btn" id="tag-picker-add" title="Hozzáadás">+</button>
-                <button type="button" class="btn btn-secondary events-org-btn" id="tag-picker-remove" title="Eltávolítás">−</button>
-            </div>
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="tag-picker-selected">Kiválasztott</label>
-                <select id="tag-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
-            </div>
-        </div>
-        <div id="tag-picker-hiddens" class="org-picker-hiddens">
-            <?php foreach ($selTag as $tgid): ?>
-                <input type="hidden" name="tag_ids[]" value="<?= (int) $tgid ?>">
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<div class="events-edit-panel">
+<?php
+$wpTokenId = 'event-tags';
+$wpTokenLabel = 'Címkék';
+$wpTokenFieldName = 'tag_ids[]';
+$wpTokenPlaceholder = 'Címke hozzáadása…';
+$wpTokenHelp = 'Írj be egy nevet, válassz a listából, vagy kattints a gyakran használtakra.';
+$wpTokenManageUrl = events_url('tags.php');
+$wpTokenManageLabel = 'Címkék kezelése';
+$wpTokenAll = $tagPickerAll;
+$wpTokenSelected = $selTag;
+require __DIR__ . '/wp_token_field.php';
+?>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">DJ-k</h3>
-    <?php if ($djs === []): ?>
-        <p class="help">Még nincs DJ felvéve. <a href="<?= h(events_url('djs.php')) ?>">DJ-k szerkesztése</a></p>
-    <?php else: ?>
-        <p class="help">Több DJ is választható. A DJ-k külön entitás, nem címke — nyilvánosan is külön jelennek meg.</p>
-        <input type="search" id="dj-picker-filter" class="events-org-filter" placeholder="DJ keresése…" autocomplete="off" spellcheck="false">
-        <div class="events-org-picker-grid">
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="dj-picker-pool">Kiválasztó lista</label>
-                <select id="dj-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
-            </div>
-            <div class="events-org-picker-btns">
-                <button type="button" class="btn btn-secondary events-org-btn" id="dj-picker-add" title="Hozzáadás">+</button>
-                <button type="button" class="btn btn-secondary events-org-btn" id="dj-picker-remove" title="Eltávolítás">−</button>
-            </div>
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="dj-picker-selected">Kiválasztott</label>
-                <select id="dj-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
-            </div>
-        </div>
-        <div id="dj-picker-hiddens" class="org-picker-hiddens">
-            <?php foreach ($selDj as $dgid): ?>
-                <input type="hidden" name="dj_ids[]" value="<?= (int) $dgid ?>">
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<div class="events-edit-panel">
+<?php
+$wpTokenId = 'event-djs';
+$wpTokenLabel = 'DJ-k';
+$wpTokenFieldName = 'dj_ids[]';
+$wpTokenPlaceholder = 'DJ hozzáadása…';
+$wpTokenHelp = 'A DJ-k külön entitás — nyilvánosan is külön jelennek meg.';
+$wpTokenManageUrl = events_url('djs.php');
+$wpTokenManageLabel = 'DJ-k kezelése';
+$wpTokenAll = $djPickerAll;
+$wpTokenSelected = $selDj;
+require __DIR__ . '/wp_token_field.php';
+?>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">Fő stílusok</h3>
-    <?php if ($styles === []): ?>
-        <p class="help">Még nincs stílus felvéve. <a href="<?= h(events_url('styles.php')) ?>">Stílusok szerkesztése</a></p>
-    <?php else: ?>
-        <p class="help">Több fő stílus is választható. Nyilvánosan megjelennek, de nem kattinthatók.</p>
-        <input type="search" id="mstyle-picker-filter" class="events-org-filter" placeholder="Stílus keresése…" autocomplete="off" spellcheck="false">
-        <div class="events-org-picker-grid">
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="mstyle-picker-pool">Kiválasztó lista</label>
-                <select id="mstyle-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
-            </div>
-            <div class="events-org-picker-btns">
-                <button type="button" class="btn btn-secondary events-org-btn" id="mstyle-picker-add" title="Hozzáadás">+</button>
-                <button type="button" class="btn btn-secondary events-org-btn" id="mstyle-picker-remove" title="Eltávolítás">−</button>
-            </div>
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="mstyle-picker-selected">Kiválasztott</label>
-                <select id="mstyle-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
-            </div>
-        </div>
-        <div id="mstyle-picker-hiddens" class="org-picker-hiddens">
-            <?php foreach ($selMainStyle as $msid): ?>
-                <input type="hidden" name="main_style_ids[]" value="<?= (int) $msid ?>">
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<div class="events-edit-panel">
+<?php
+$wpTokenId = 'event-main-styles';
+$wpTokenLabel = 'Fő stílusok';
+$wpTokenFieldName = 'main_style_ids[]';
+$wpTokenPlaceholder = 'Stílus hozzáadása…';
+$wpTokenHelp = 'Nyilvánosan megjelennek, de nem kattinthatók.';
+$wpTokenManageUrl = events_url('styles.php');
+$wpTokenManageLabel = 'Stílusok kezelése';
+$wpTokenAll = $stylePickerAll;
+$wpTokenSelected = $selMainStyle;
+require __DIR__ . '/wp_token_field.php';
+?>
 </div>
-<div class="card" style="margin-bottom:1rem;">
-    <h3 style="margin-top:0;">Kiegészítő stílusok</h3>
-    <?php if ($styles === []): ?>
-        <p class="help">Még nincs stílus felvéve. <a href="<?= h(events_url('styles.php')) ?>">Stílusok szerkesztése</a></p>
-    <?php else: ?>
-        <p class="help">Több kiegészítő stílus is választható. Nyilvánosan megjelennek, de nem kattinthatók.</p>
-        <input type="search" id="sstyle-picker-filter" class="events-org-filter" placeholder="Stílus keresése…" autocomplete="off" spellcheck="false">
-        <div class="events-org-picker-grid">
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="sstyle-picker-pool">Kiválasztó lista</label>
-                <select id="sstyle-picker-pool" class="events-org-list events-org-list--pool" size="6"></select>
-            </div>
-            <div class="events-org-picker-btns">
-                <button type="button" class="btn btn-secondary events-org-btn" id="sstyle-picker-add" title="Hozzáadás">+</button>
-                <button type="button" class="btn btn-secondary events-org-btn" id="sstyle-picker-remove" title="Eltávolítás">−</button>
-            </div>
-            <div class="events-org-picker-col">
-                <label class="events-org-picker-label" for="sstyle-picker-selected">Kiválasztott</label>
-                <select id="sstyle-picker-selected" class="events-org-list events-org-list--selected" size="6"></select>
-            </div>
-        </div>
-        <div id="sstyle-picker-hiddens" class="org-picker-hiddens">
-            <?php foreach ($selSupplementaryStyle as $ssid): ?>
-                <input type="hidden" name="supplementary_style_ids[]" value="<?= (int) $ssid ?>">
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<div class="events-edit-panel">
+<?php
+$wpTokenId = 'event-supplementary-styles';
+$wpTokenLabel = 'Kiegészítő stílusok';
+$wpTokenFieldName = 'supplementary_style_ids[]';
+$wpTokenPlaceholder = 'Stílus hozzáadása…';
+$wpTokenHelp = 'Kiegészítő stílusok a fő stílusok mellett.';
+$wpTokenManageUrl = events_url('styles.php');
+$wpTokenManageLabel = 'Stílusok kezelése';
+$wpTokenAll = $stylePickerAll;
+$wpTokenSelected = $selSupplementaryStyle;
+require __DIR__ . '/wp_token_field.php';
+?>
 </div>
-<div class="card event-featured-card" style="margin-bottom:1rem;">
+<div class="events-edit-panel event-featured-card">
     <div class="event-featured-card__head">
         <h3 class="event-featured-card__title">Esemény képe</h3>
         <div class="event-featured-card__cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
@@ -416,6 +342,8 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
             </div>
         </div>
     </div>
+</div>
+</aside>
 </div>
 
 <dialog class="eventpics-modal" id="eventpics-modal" aria-labelledby="eventpics-modal-title">
@@ -462,10 +390,6 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 <script type="application/json" id="events-org-picker-json"><?= $orgPickerJson ?></script>
 <script type="application/json" id="events-venue-picker-json"><?= $venuePickerJson ?></script>
 <script type="application/json" id="events-cat-picker-json"><?= $catPickerJson ?></script>
-<script type="application/json" id="events-tag-picker-json"><?= $tagPickerJson ?></script>
-<script type="application/json" id="events-dj-picker-json"><?= $djPickerJson ?></script>
-<script type="application/json" id="events-main-style-picker-json"><?= $mainStylePickerJson ?></script>
-<script type="application/json" id="events-supplementary-style-picker-json"><?= $supplementaryStylePickerJson ?></script>
 <script>
 (function () {
     var orgJsonEl = document.getElementById('events-org-picker-json');
@@ -672,229 +596,6 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         renderCatSelected();
         renderCatPool();
     }
-
-    var tagJsonEl = document.getElementById('events-tag-picker-json');
-    var tPool = document.getElementById('tag-picker-pool');
-    var tSel = document.getElementById('tag-picker-selected');
-    var tFilter = document.getElementById('tag-picker-filter');
-    var tHiddens = document.getElementById('tag-picker-hiddens');
-    var tAdd = document.getElementById('tag-picker-add');
-    var tRemove = document.getElementById('tag-picker-remove');
-    if (tagJsonEl && tPool && tSel && tFilter && tHiddens && tAdd && tRemove) {
-        var tData;
-        try { tData = JSON.parse(tagJsonEl.textContent || '{}'); } catch (e2) { tData = { all: [], selected: [] }; }
-        var tAll = Array.isArray(tData.all) ? tData.all : [];
-        var tPick = Array.isArray(tData.selected) ? tData.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
-        var tNameById = {};
-        tAll.forEach(function (row) { tNameById[row.id] = row.name; });
-        function syncTagHiddens() {
-            tHiddens.innerHTML = '';
-            Array.from(tSel.options).forEach(function (opt) {
-                var inp = document.createElement('input');
-                inp.type = 'hidden';
-                inp.name = 'tag_ids[]';
-                inp.value = opt.value;
-                tHiddens.appendChild(inp);
-            });
-        }
-        function renderTagPool() {
-            var q = (tFilter.value || '').trim().toLowerCase();
-            tPool.innerHTML = '';
-            var taken = {};
-            tPick.forEach(function (id) { taken[id] = true; });
-            tAll.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
-                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
-                var opt = document.createElement('option');
-                opt.value = String(row.id);
-                opt.textContent = row.name + ' (#' + row.id + ')';
-                tPool.appendChild(opt);
-            });
-        }
-        function renderTagSelected() {
-            tSel.innerHTML = '';
-            tPick.forEach(function (id) {
-                var opt = document.createElement('option');
-                opt.value = String(id);
-                opt.textContent = (tNameById[id] || '?') + ' (#' + id + ')';
-                tSel.appendChild(opt);
-            });
-            syncTagHiddens();
-        }
-        function addTag() {
-            var opt = tPool.options[tPool.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            if (!id || tPick.indexOf(id) !== -1) return;
-            tPick.push(id);
-            renderTagSelected();
-            renderTagPool();
-        }
-        function removeTag() {
-            var opt = tSel.options[tSel.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            tPick = tPick.filter(function (x) { return x !== id; });
-            renderTagSelected();
-            renderTagPool();
-        }
-        tFilter.addEventListener('input', renderTagPool);
-        tAdd.addEventListener('click', addTag);
-        tRemove.addEventListener('click', removeTag);
-        tPool.addEventListener('dblclick', addTag);
-        tSel.addEventListener('dblclick', removeTag);
-        renderTagSelected();
-        renderTagPool();
-    }
-
-    var djJsonEl = document.getElementById('events-dj-picker-json');
-    var dPool = document.getElementById('dj-picker-pool');
-    var dSel = document.getElementById('dj-picker-selected');
-    var dFilter = document.getElementById('dj-picker-filter');
-    var dHiddens = document.getElementById('dj-picker-hiddens');
-    var dAdd = document.getElementById('dj-picker-add');
-    var dRemove = document.getElementById('dj-picker-remove');
-    if (djJsonEl && dPool && dSel && dFilter && dHiddens && dAdd && dRemove) {
-        var dData;
-        try { dData = JSON.parse(djJsonEl.textContent || '{}'); } catch (e3) { dData = { all: [], selected: [] }; }
-        var dAll = Array.isArray(dData.all) ? dData.all : [];
-        var dPick = Array.isArray(dData.selected) ? dData.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
-        var dNameById = {};
-        dAll.forEach(function (row) { dNameById[row.id] = row.name; });
-        function syncDjHiddens() {
-            dHiddens.innerHTML = '';
-            Array.from(dSel.options).forEach(function (opt) {
-                var inp = document.createElement('input');
-                inp.type = 'hidden';
-                inp.name = 'dj_ids[]';
-                inp.value = opt.value;
-                dHiddens.appendChild(inp);
-            });
-        }
-        function renderDjPool() {
-            var q = (dFilter.value || '').trim().toLowerCase();
-            dPool.innerHTML = '';
-            var taken = {};
-            dPick.forEach(function (id) { taken[id] = true; });
-            dAll.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
-                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
-                var opt = document.createElement('option');
-                opt.value = String(row.id);
-                opt.textContent = row.name + ' (#' + row.id + ')';
-                dPool.appendChild(opt);
-            });
-        }
-        function renderDjSelected() {
-            dSel.innerHTML = '';
-            dPick.forEach(function (id) {
-                var opt = document.createElement('option');
-                opt.value = String(id);
-                opt.textContent = (dNameById[id] || '?') + ' (#' + id + ')';
-                dSel.appendChild(opt);
-            });
-            syncDjHiddens();
-        }
-        function addDj() {
-            var opt = dPool.options[dPool.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            if (!id || dPick.indexOf(id) !== -1) return;
-            dPick.push(id);
-            renderDjSelected();
-            renderDjPool();
-        }
-        function removeDj() {
-            var opt = dSel.options[dSel.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            dPick = dPick.filter(function (x) { return x !== id; });
-            renderDjSelected();
-            renderDjPool();
-        }
-        dFilter.addEventListener('input', renderDjPool);
-        dAdd.addEventListener('click', addDj);
-        dRemove.addEventListener('click', removeDj);
-        dPool.addEventListener('dblclick', addDj);
-        dSel.addEventListener('dblclick', removeDj);
-        renderDjSelected();
-        renderDjPool();
-    }
-
-    function initStylePicker(jsonId, poolId, selId, filterId, hiddensId, addId, removeId, fieldName) {
-        var jsonEl = document.getElementById(jsonId);
-        var pool = document.getElementById(poolId);
-        var sel = document.getElementById(selId);
-        var filter = document.getElementById(filterId);
-        var hiddens = document.getElementById(hiddensId);
-        var addBtn = document.getElementById(addId);
-        var removeBtn = document.getElementById(removeId);
-        if (!jsonEl || !pool || !sel || !filter || !hiddens || !addBtn || !removeBtn) return;
-        var data;
-        try { data = JSON.parse(jsonEl.textContent || '{}'); } catch (e4) { data = { all: [], selected: [] }; }
-        var all = Array.isArray(data.all) ? data.all : [];
-        var pick = Array.isArray(data.selected) ? data.selected.map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0; }) : [];
-        var nameById = {};
-        all.forEach(function (row) { nameById[row.id] = row.name; });
-        function syncHiddens() {
-            hiddens.innerHTML = '';
-            Array.from(sel.options).forEach(function (opt) {
-                var inp = document.createElement('input');
-                inp.type = 'hidden';
-                inp.name = fieldName;
-                inp.value = opt.value;
-                hiddens.appendChild(inp);
-            });
-        }
-        function renderPool() {
-            var q = (filter.value || '').trim().toLowerCase();
-            pool.innerHTML = '';
-            var taken = {};
-            pick.forEach(function (id) { taken[id] = true; });
-            all.filter(function (row) { return !taken[row.id]; }).forEach(function (row) {
-                if (q !== '' && (row.name + ' ' + row.id).toLowerCase().indexOf(q) === -1) return;
-                var opt = document.createElement('option');
-                opt.value = String(row.id);
-                opt.textContent = row.name + ' (#' + row.id + ')';
-                pool.appendChild(opt);
-            });
-        }
-        function renderSelected() {
-            sel.innerHTML = '';
-            pick.forEach(function (id) {
-                var opt = document.createElement('option');
-                opt.value = String(id);
-                opt.textContent = (nameById[id] || '?') + ' (#' + id + ')';
-                sel.appendChild(opt);
-            });
-            syncHiddens();
-        }
-        function addItem() {
-            var opt = pool.options[pool.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            if (!id || pick.indexOf(id) !== -1) return;
-            pick.push(id);
-            renderSelected();
-            renderPool();
-        }
-        function removeItem() {
-            var opt = sel.options[sel.selectedIndex];
-            if (!opt) return;
-            var id = parseInt(opt.value, 10);
-            pick = pick.filter(function (x) { return x !== id; });
-            renderSelected();
-            renderPool();
-        }
-        filter.addEventListener('input', renderPool);
-        addBtn.addEventListener('click', addItem);
-        removeBtn.addEventListener('click', removeItem);
-        pool.addEventListener('dblclick', addItem);
-        sel.addEventListener('dblclick', removeItem);
-        renderSelected();
-        renderPool();
-    }
-
-    initStylePicker('events-main-style-picker-json', 'mstyle-picker-pool', 'mstyle-picker-selected', 'mstyle-picker-filter', 'mstyle-picker-hiddens', 'mstyle-picker-add', 'mstyle-picker-remove', 'main_style_ids[]');
-    initStylePicker('events-supplementary-style-picker-json', 'sstyle-picker-pool', 'sstyle-picker-selected', 'sstyle-picker-filter', 'sstyle-picker-hiddens', 'sstyle-picker-add', 'sstyle-picker-remove', 'supplementary_style_ids[]');
 })();
 
 (function () {
@@ -1182,3 +883,4 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
     syncMainSummary();
 })();
 </script>
+<?php require __DIR__ . '/wp_token_input_script.php'; ?>

@@ -108,17 +108,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Új esemény';
 require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
-<div class="card">
-    <h2>Új esemény</h2>
+<div class="events-edit-page">
+    <header class="events-edit-header">
+        <div class="events-edit-header__main">
+            <h1 class="events-edit-title">Új esemény</h1>
+            <p class="events-edit-subtitle help">Töltsd ki az alapadatokat, majd mentsd az eseményt.</p>
+        </div>
+        <div class="events-edit-header__actions">
+            <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary btn-sm">Vissza a listához</a>
+        </div>
+    </header>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" class="events-edit-form" id="events-edit-form">
         <?= csrf_input('events_letrehoz') ?>
         <?php require __DIR__ . '/partials/event_fields.php'; ?>
-        <div class="form-actions">
+        <div class="events-edit-form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Mégse</a>
         </div>

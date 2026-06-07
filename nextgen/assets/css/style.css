@@ -2323,6 +2323,268 @@ dialog.eventpics-modal::backdrop {
     display: none;
 }
 
+/* Esemény szerkesztő — WordPress-szerű elrendezés */
+.events-edit-page {
+    max-width: 1280px;
+}
+.events-edit-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+.events-edit-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text);
+}
+.events-edit-subtitle {
+    margin: 0.35rem 0 0;
+}
+.events-edit-header__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+.events-edit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    gap: 1.25rem 1.5rem;
+    align-items: start;
+}
+.events-edit-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+}
+.events-edit-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-width: 0;
+}
+.events-edit-panel {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.events-edit-panel__title {
+    margin: 0 0 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.events-edit-panel--publish select {
+    width: 100%;
+}
+.events-edit-org-venue-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 1rem;
+}
+.events-edit-dates-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1rem;
+}
+.events-edit-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+.events-edit-log {
+    margin-top: 1.5rem;
+}
+.events-edit-log .log-item__text {
+    margin: 0.25rem 0 0;
+}
+.events-edit-sidebar .event-featured-card__head {
+    flex-direction: column;
+    align-items: stretch;
+}
+.events-edit-sidebar .event-featured-card__cover {
+    margin-top: 0.5rem;
+}
+.events-edit-sidebar .events-org-picker-grid {
+    gap: 0.5rem;
+}
+.events-edit-sidebar .events-org-list--pool,
+.events-edit-sidebar .events-org-list--selected {
+    min-height: 5.5rem;
+}
+
+/* WordPress-szerű címke / token mező */
+.wp-token-field {
+    margin: 0;
+}
+.wp-token-field__label {
+    display: block;
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+}
+.wp-token-field__help {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
+}
+.wp-token-field__footer {
+    margin: 0.5rem 0 0;
+    font-size: 0.8125rem;
+}
+.wp-token-field__popular {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+.wp-token-field__popular-label {
+    font-weight: 600;
+    color: var(--text);
+}
+.wp-token-field__popular-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.wp-token-field__popular-link:hover {
+    color: var(--primary-hover, var(--primary));
+}
+.wp-token-input {
+    position: relative;
+}
+.wp-token-input__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.5rem;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    cursor: text;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.wp-token-input__inner:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+.wp-token-input__tokens {
+    display: contents;
+}
+.wp-token-input__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    max-width: 100%;
+    padding: 0.15rem 0.35rem 0.15rem 0.55rem;
+    background: #f0f0f1;
+    border: 1px solid #dcdcde;
+    border-radius: 2px;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: #1d2327;
+}
+.wp-token-input__chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wp-token-input__chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #50575e;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.wp-token-input__chip-remove:hover {
+    background: #dcdcde;
+    color: #1d2327;
+}
+.wp-token-input__search {
+    flex: 1 1 6rem;
+    min-width: 5rem;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0.2rem 0.15rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+.wp-token-input__suggestions {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    max-height: 12rem;
+    overflow-y: auto;
+}
+.wp-token-input__suggestion {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    color: #1d2327;
+}
+.wp-token-input__suggestion:hover,
+.wp-token-input__suggestion.is-active {
+    background: var(--primary-light, #e8f0fe);
+    color: var(--primary);
+}
+.wp-token-input__hiddens {
+    display: none;
+}
+.wp-token-input__json {
+    display: none;
+}
+
+@media (max-width: 960px) {
+    .events-edit-layout {
+        grid-template-columns: 1fr;
+    }
+    .events-edit-sidebar {
+        order: 2;
+    }
+    .events-edit-org-venue-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .toolbar {
     display: flex;
     flex-wrap: wrap;
