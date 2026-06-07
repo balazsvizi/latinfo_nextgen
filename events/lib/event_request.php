@@ -584,6 +584,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
 /**
  * Esemény másolása új létrehozáshoz: minden mező, kivéve időpont (dátum/idő) és további információ URL.
+ * Az egész napos jelölő és piszkozat státusz átmásolódik / beállítódik.
  *
  * @return array<string,mixed>|null forrás DB sor + kapcsolók, vagy null ha nincs ilyen esemény
  */
@@ -609,7 +610,8 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['event_slug'] = '';
     $event['event_start'] = null;
     $event['event_end'] = null;
-    $event['event_allday'] = 0;
+    $event['event_allday'] = !empty($event['event_allday']) ? 1 : 0;
+    $event['event_status'] = events_default_post_status();
     $event['event_url'] = null;
 
     return $event;

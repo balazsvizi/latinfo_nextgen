@@ -38,6 +38,7 @@ $defaults = [
 
 $hiba = '';
 $copyNotice = '';
+$eventFormIsCopy = false;
 $e = events_row_for_form($defaults);
 
 $copyFromId = (int) ($_GET['copy_from'] ?? 0);
@@ -45,10 +46,14 @@ if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     $copied = events_load_event_copy_template($db, $copyFromId);
     if ($copied !== null) {
         $e = events_row_for_form($copied);
-        $copyNotice = 'Esemény másolva. Az időpont és a további információ URL nem került át — add meg őket, majd mentsd.';
+        $eventFormIsCopy = true;
+        $copyNotice = 'Esemény másolva piszkozatként. A dátumok és a további információ URL nem kerültek át — add meg őket, majd mentsd.';
     } else {
         flash('error', 'A másolandó esemény nem található.');
     }
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['is_copy'] ?? '') === '1') {
+    $eventFormIsCopy = true;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -56,6 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
     [$row, $err, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds] = events_row_from_request($db, $defaults, null);
+    if ($eventFormIsCopy) {
+        $saveAction = (string) ($_POST['save_action'] ?? 'draft');
+        $row['event_status'] = $saveAction === 'publish'
+            ? events_public_post_status()
+            : events_default_post_status();
+    }
     if ($err !== null) {
         $hiba = $err;
         $e = events_row_for_form($row);
@@ -141,6 +152,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
           data-entity-create-url="<?= h(events_url('ajax_entity_quick_create.php')) ?>"
           data-entity-create-csrf="<?= h(csrf_token('events_entity_create')) ?>">
         <?= csrf_input('events_letrehoz') ?>
+        <?php if ($eventFormIsCopy): ?><input type="hidden" name="is_copy" value="1"><?php endif; ?>
         <?php
         $eventFormCancelUrl = events_url('events_admin.php');
         require __DIR__ . '/partials/event_fields.php';
