@@ -190,69 +190,84 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
-            <?php if ($eventOrganizers !== [] || $eventCategories !== [] || $eventDjs !== [] || $eventMainStyles !== [] || $eventSupplementaryStyles !== []): ?>
-                <div class="event-hero-meta-row">
-                    <?php if ($eventOrganizers !== []): ?>
-                        <div class="event-hero-meta-row__organizers event-hero-meta-group">
-                            <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_organizers']) ?>">👥</span>
-                            <ul class="event-org-chips event-org-chips--hero" role="list" aria-label="<?= h($T['section_organizers']) ?>">
-                                <?php foreach ($eventOrganizers as $org): ?>
-                                    <li class="event-org-chips__item">
-                                        <a class="event-org-chip" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
+            <?php
+            $hasHeroMetaTop = $eventOrganizers !== [] || $eventMainStyles !== [] || $eventSupplementaryStyles !== [];
+            $hasHeroMetaBottom = $eventCategories !== [] || $eventDjs !== [];
+            ?>
+            <?php if ($hasHeroMetaTop || $hasHeroMetaBottom): ?>
+                <div class="event-hero-meta">
+                    <?php if ($hasHeroMetaTop): ?>
+                        <div class="event-hero-meta__row event-hero-meta__row--top">
+                            <?php if ($eventOrganizers !== []): ?>
+                                <div class="event-hero-meta__slot event-hero-meta__slot--start event-hero-meta-group">
+                                    <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_organizers']) ?>">🎪</span>
+                                    <ul class="event-org-chips event-org-chips--hero" role="list" aria-label="<?= h($T['section_organizers']) ?>">
+                                        <?php foreach ($eventOrganizers as $org): ?>
+                                            <li class="event-org-chips__item">
+                                                <a class="event-org-chip" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($eventMainStyles !== [] || $eventSupplementaryStyles !== []): ?>
+                                <div class="event-hero-meta__slot event-hero-meta__slot--end event-hero-meta-group" role="group" aria-label="<?= h($T['section_main_styles']) ?> / <?= h($T['section_supplementary_styles']) ?>">
+                                    <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_main_styles']) ?>">🎵</span>
+                                    <div class="event-hero-meta__style-chips">
+                                        <?php if ($eventMainStyles !== []): ?>
+                                            <ul class="event-style-chips event-style-chips--hero" role="list" aria-label="<?= h($T['section_main_styles']) ?>">
+                                                <?php foreach ($eventMainStyles as $styleRow): ?>
+                                                    <li class="event-style-chips__item">
+                                                        <span class="event-style-chip event-style-chip--main"><?= h((string) $styleRow['name']) ?></span>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        <?php endif; ?>
+                                        <?php if ($eventSupplementaryStyles !== []): ?>
+                                            <ul class="event-style-chips event-style-chips--hero" role="list" aria-label="<?= h($T['section_supplementary_styles']) ?>">
+                                                <?php foreach ($eventSupplementaryStyles as $styleRow): ?>
+                                                    <li class="event-style-chips__item">
+                                                        <span class="event-style-chip event-style-chip--supplementary"><?= h((string) $styleRow['name']) ?></span>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
-                    <?php if ($eventDjs !== []): ?>
-                        <div class="event-hero-meta-row__djs event-hero-meta-group">
-                            <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_djs']) ?>">🎧</span>
-                            <ul class="event-org-chips event-org-chips--hero event-dj-chips" role="list" aria-label="<?= h($T['section_djs']) ?>">
-                                <?php foreach ($eventDjs as $djRow): ?>
-                                    <li class="event-org-chips__item">
-                                        <a class="event-org-chip event-dj-chip" href="<?= h(events_public_dj_page_url((int) $djRow['id'], $lang)) ?>"><?= h((string) $djRow['name']) ?></a>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    <?php endif; ?>
-                    <?php if ($eventMainStyles !== []): ?>
-                        <div class="event-hero-meta-row__main-styles">
-                            <ul class="event-style-chips event-style-chips--hero" role="list" aria-label="<?= h($T['section_main_styles']) ?>">
-                                <?php foreach ($eventMainStyles as $styleRow): ?>
-                                    <li class="event-style-chips__item">
-                                        <span class="event-style-chip event-style-chip--main"><?= h((string) $styleRow['name']) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    <?php endif; ?>
-                    <?php if ($eventSupplementaryStyles !== []): ?>
-                        <div class="event-hero-meta-row__supplementary-styles">
-                            <ul class="event-style-chips event-style-chips--hero" role="list" aria-label="<?= h($T['section_supplementary_styles']) ?>">
-                                <?php foreach ($eventSupplementaryStyles as $styleRow): ?>
-                                    <li class="event-style-chips__item">
-                                        <span class="event-style-chip event-style-chip--supplementary"><?= h((string) $styleRow['name']) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    <?php endif; ?>
-                    <?php if ($eventCategories !== []): ?>
-                        <div class="event-hero-meta-row__categories event-hero-meta-group" role="group" aria-label="<?= h($T['section_categories']) ?>">
-                            <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_categories']) ?>">📂</span>
-                            <ul class="event-hero-category-pills" role="list">
-                                <?php foreach ($eventCategories as $catRow): ?>
-                                    <?php
-                                    $chipLabel = events_public_category_chip_label($lang, $catRow);
-                                    $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
-                                    $pillStyle = events_public_category_pill_inline_style($chipColor);
-                                    ?>
-                                    <li class="event-hero-category-pills__item">
-                                        <span class="event-hero-category-pill" style="<?= h($pillStyle) ?>"><?= h($chipLabel) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
+                    <?php if ($hasHeroMetaBottom): ?>
+                        <div class="event-hero-meta__row event-hero-meta__row--bottom">
+                            <?php if ($eventCategories !== []): ?>
+                                <div class="event-hero-meta__slot event-hero-meta-group" role="group" aria-label="<?= h($T['section_categories']) ?>">
+                                    <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_categories']) ?>">🔖</span>
+                                    <ul class="event-hero-category-pills event-hero-category-pills--hero" role="list">
+                                        <?php foreach ($eventCategories as $catRow): ?>
+                                            <?php
+                                            $chipLabel = events_public_category_chip_label($lang, $catRow);
+                                            $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
+                                            $pillStyle = events_public_category_pill_inline_style($chipColor);
+                                            ?>
+                                            <li class="event-hero-category-pills__item">
+                                                <span class="event-hero-category-pill" style="<?= h($pillStyle) ?>"><?= h($chipLabel) ?></span>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($eventDjs !== []): ?>
+                                <div class="event-hero-meta__slot event-hero-meta-group">
+                                    <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_djs']) ?>">🎧</span>
+                                    <ul class="event-org-chips event-org-chips--hero event-dj-chips" role="list" aria-label="<?= h($T['section_djs']) ?>">
+                                        <?php foreach ($eventDjs as $djRow): ?>
+                                            <li class="event-org-chips__item">
+                                                <a class="event-org-chip event-dj-chip" href="<?= h(events_public_dj_page_url((int) $djRow['id'], $lang)) ?>"><?= h((string) $djRow['name']) ?></a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>

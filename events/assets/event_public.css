@@ -713,16 +713,49 @@ a.event-meta__card:focus-visible {
     color: var(--li-green-dark);
 }
 
-/* Szervezők + kategóriák egy sorban — megjelenit.php hero (bal / jobbra) */
-.event-hero-meta-row {
+/* Hero meta — megjelenit.php: 1. sor szervező | stílusok, 2. sor kategória + DJ */
+.event-hero-meta {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 0.65rem 1rem;
+    flex-direction: column;
+    gap: 0.55rem;
     margin: 0 0 1rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--li-border);
+}
+
+.event-hero-meta__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+    width: 100%;
+}
+
+.event-hero-meta__row--top {
+    justify-content: flex-start;
+}
+
+.event-hero-meta__row--bottom {
+    justify-content: flex-start;
+}
+
+.event-hero-meta__slot {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.45rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.event-hero-meta__slot--start {
+    flex: 1 1 auto;
+}
+
+.event-hero-meta__slot--end {
+    flex: 0 1 auto;
+    margin-left: auto;
+    justify-content: flex-end;
 }
 
 .event-hero-meta-group {
@@ -740,19 +773,19 @@ a.event-meta__card:focus-visible {
     opacity: 0.88;
 }
 
-.event-hero-meta-row__organizers {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.event-hero-meta-row__categories {
-    flex: 0 1 auto;
-    margin-left: auto;
+.event-hero-meta__style-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem 0.6rem;
     max-width: 100%;
 }
 
-.event-hero-meta-row__categories.event-hero-meta-group {
-    justify-content: flex-end;
+.event-hero-meta__style-chips .event-style-chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.6rem;
 }
 
 .event-style-chips {
@@ -838,6 +871,10 @@ a.event-meta__card:focus-visible {
     flex-direction: row;
     justify-content: flex-end;
     gap: 0.4rem 0.45rem;
+}
+
+.event-hero-category-pills--hero {
+    justify-content: flex-start;
 }
 
 .event-hero-category-pills__item {
