@@ -470,40 +470,27 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     <a class="events-cell-edit" href="<?= h($edit) ?>">–</a>
                                 <?php else: ?>
                                     <a class="events-cell-edit events-cell-edit--meta" href="<?= h($edit) ?>">
-                                        <span class="events-admin-meta-cell">
-                                            <?php if ($eventCats !== []): ?>
-                                                <span class="events-admin-meta-group">
-                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="Kategóriák">📁</span>
-                                                    <span class="events-admin-category-list" role="list">
-                                                        <?php foreach ($eventCats as $catItem): ?>
-                                                            <span class="events-admin-category-chip" role="listitem">
-                                                                <span class="events-category-color-chip__dot" style="background: <?= h($catItem['color']) ?>;" aria-hidden="true"></span>
-                                                                <?= h($catItem['name']) ?>
-                                                            </span>
-                                                        <?php endforeach; ?>
+                                        <span class="events-admin-meta-cell" role="list">
+                                            <?php foreach ($eventCats as $catItem): ?>
+                                                <span class="events-admin-meta-row events-admin-meta-row--category" role="listitem">
+                                                    <span class="events-admin-category-chip">
+                                                        <span class="events-category-color-chip__dot" style="background: <?= h($catItem['color']) ?>;" aria-hidden="true"></span>
+                                                        <?= h($catItem['name']) ?>
                                                     </span>
                                                 </span>
-                                            <?php endif; ?>
-                                            <?php if ($eventTags !== []): ?>
-                                                <span class="events-admin-meta-group">
-                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="Címkék">🏷️</span>
-                                                    <span class="events-admin-tag-list" role="list">
-                                                        <?php foreach ($eventTags as $tagItem): ?>
-                                                            <span class="events-admin-tag-chip" role="listitem"><?= h($tagItem['name']) ?></span>
-                                                        <?php endforeach; ?>
-                                                    </span>
+                                            <?php endforeach; ?>
+                                            <?php foreach ($eventTags as $tagItem): ?>
+                                                <span class="events-admin-meta-row" role="listitem">
+                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="Címke">🏷️</span>
+                                                    <span class="events-admin-tag-chip"><?= h($tagItem['name']) ?></span>
                                                 </span>
-                                            <?php endif; ?>
-                                            <?php if ($eventDjs !== []): ?>
-                                                <span class="events-admin-meta-group">
-                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="DJ-k">🎧</span>
-                                                    <span class="events-admin-dj-list" role="list">
-                                                        <?php foreach ($eventDjs as $djItem): ?>
-                                                            <span class="events-admin-dj-chip" role="listitem"><?= h($djItem['name']) ?></span>
-                                                        <?php endforeach; ?>
-                                                    </span>
+                                            <?php endforeach; ?>
+                                            <?php foreach ($eventDjs as $djItem): ?>
+                                                <span class="events-admin-meta-row" role="listitem">
+                                                    <span class="events-admin-meta-emoji" aria-hidden="true" title="DJ">🎧</span>
+                                                    <span class="events-admin-dj-chip"><?= h($djItem['name']) ?></span>
                                                 </span>
-                                            <?php endif; ?>
+                                            <?php endforeach; ?>
                                         </span>
                                     </a>
                                 <?php endif; ?>
