@@ -429,8 +429,8 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <tr>
                         <th class="events-th-actions" scope="col"><span class="visually-hidden">Műveletek</span></th>
                         <th><?= sort_th('Szervező', 'organizer', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Meta', 'category', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
+                        <th><?= sort_th('Meta', 'category', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Dátum', 'start', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
                         <th class="th-center"><?= sort_th('Megtekintés', 'views', $order, $dir_param, $get_params) ?></th>
@@ -459,6 +459,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                 </div>
                             </td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= ($r['organizer_name'] ?? '') !== '' ? h((string) $r['organizer_name']) : '–' ?></a></td>
+                            <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
                             <td class="events-td-meta">
                                 <?php
                                 $eventCats = $categoriesByEventId[$eid] ?? [];
@@ -511,7 +512,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
                             <td>
                                 <a class="events-cell-edit events-cell-edit--badge" href="<?= h($edit) ?>">
