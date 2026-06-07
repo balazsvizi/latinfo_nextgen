@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/category_locale.php';
-
 /**
  * Admin havi naptár nézet — hónap feloldás, rács, események naphoz rendelése.
  */
@@ -20,16 +18,29 @@ function events_admin_calendar_event_public_url(array $ev): string {
 }
 
 /**
+ * Tömör háttérszín + olvasható szövegszín (naptár blokk).
+ *
  * @param array<int, list<array{color:string}>> $categoriesByEventId
  */
-function events_admin_calendar_event_category_style(array $categoriesByEventId, int $eventId): string {
+function events_admin_calendar_event_block_style(array $categoriesByEventId, int $eventId): string {
     $cats = $categoriesByEventId[$eventId] ?? [];
-    if ($cats === []) {
-        return events_public_category_pill_inline_style('#6d8f63');
+    $hex = '#6d8f63';
+    if ($cats !== []) {
+        $candidate = trim((string) ($cats[0]['color'] ?? '#6d8f63'));
+        if ($candidate !== '') {
+            $hex = $candidate;
+        }
     }
-    $color = trim((string) ($cats[0]['color'] ?? '#6d8f63'));
+    if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)) {
+        $hex = '#6d8f63';
+    }
+    $r = hexdec(substr($hex, 1, 2));
+    $g = hexdec(substr($hex, 3, 2));
+    $b = hexdec(substr($hex, 5, 2));
+    $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+    $textColor = $luminance > 0.62 ? '#1a1a1a' : '#ffffff';
 
-    return events_public_category_pill_inline_style($color !== '' ? $color : '#6d8f63');
+    return sprintf('background-color:%s;color:%s;border-color:%s', $hex, $textColor, $hex);
 }
 
 /**
@@ -180,7 +191,7 @@ function events_admin_calendar_month_label(DateTimeImmutable $monthFirst): strin
     $y = (int) $monthFirst->format('Y');
     $m = (int) $monthFirst->format('n');
 
-    return $y . '. ' . ($huMonths[$m] ?? $monthFirst->format('F'));
+    return ($huMonths[$m] ?? $monthFirst->format('F')) . ' ' . $y;
 }
 
 function events_admin_calendar_event_time_label(array $row): string {
@@ -191,17 +202,40 @@ function events_admin_calendar_event_time_label(array $row): string {
     if ($startRaw === null || $startRaw === '') {
         return '';
     }
-    $ts = strtotime((string) $startRaw);
-    if ($ts === false) {
+    $startTs = strtotime((string) $startRaw);
+    if ($startTs === false) {
         return '';
     }
+    $startTime = date('H:i', $startTs);
+    if ($startTime === '00:00') {
+        $startTime = '';
+    }
 
-    return date('H:i', $ts);
+    $endRaw = $row['event_end'] ?? null;
+    if ($endRaw === null || $endRaw === '') {
+        return $startTime;
+    }
+    $endTs = strtotime((string) $endRaw);
+    if ($endTs === false) {
+        return $startTime;
+    }
+    $endTime = date('H:i', $endTs);
+    if ($endTime === '00:00') {
+        return $startTime;
+    }
+    if ($startTime === '') {
+        return $endTime;
+    }
+    if ($startTime === $endTime) {
+        return $startTime;
+    }
+
+    return $startTime . ' – ' . $endTime;
 }
 
 /**
  * @return list<string>
  */
 function events_admin_calendar_weekday_headers(): array {
-    return ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+    return ['Hét', 'Ked', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'];
 }

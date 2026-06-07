@@ -176,6 +176,7 @@ $editBase = events_url('szerkeszt.php?id=');
 $filterFormAction = events_url('events_admin.php');
 $filterFormHidden = [];
 $filterClearUrl = events_url('events_admin.php');
+$calendarViewUrl = events_url('events_naptar.php') . ($get_params !== [] ? '?' . http_build_query($get_params) : '');
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Események';
@@ -186,15 +187,19 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 
 <div class="card events-admin-card">
     <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form" id="events-admin-filter-form">
-        <div class="events-list-head">
+        <div class="events-list-head events-cal-page__head">
             <h2 class="events-list-title">Események</h2>
             <div class="events-list-actions">
-                <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary">Szűrők törlése</a>
-                <a href="<?= h(events_url('events_naptar.php') . ($get_params !== [] ? '?' . http_build_query($get_params) : '')) ?>" class="btn btn-secondary">Naptár nézet</a>
-                <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary">Új esemény</a>
-                <a href="<?= h(events_url('import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
+                <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
+                <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
+                <a href="<?= h(events_url('import_csv.php')) ?>" class="btn btn-secondary btn-sm">CSV import</a>
             </div>
         </div>
+
+        <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="Nézet választó">
+            <span class="events-cal-view-switch__item is-active" aria-current="page">Lista</span>
+            <a class="events-cal-view-switch__item" href="<?= h($calendarViewUrl) ?>">Hónap</a>
+        </nav>
 
         <?php
         $filterFormHidden = ['order' => $order, 'dir' => $dir_param];

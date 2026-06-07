@@ -62,6 +62,8 @@ $navBaseParams = $filters['get_params'];
 $prevMonthUrl = events_admin_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_admin_calendar_month_url($nextMonthKey, $navBaseParams);
 $todayMonthUrl = events_admin_calendar_month_url((new DateTimeImmutable('today'))->format('Y-m'), $navBaseParams);
+$listViewUrl = events_url('events_admin.php') . ($navBaseParams !== [] ? '?' . http_build_query($navBaseParams) : '');
+
 $filterFormAction = events_url('events_naptar.php');
 $filterFormHidden = ['month' => $monthKey];
 $filterClearUrl = events_url('events_naptar.php?month=' . rawurlencode($monthKey));
@@ -73,26 +75,31 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
-<div class="card events-admin-card">
-    <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form" id="events-calendar-filter-form">
-        <div class="events-list-head">
-            <h2 class="events-list-title">Események – naptár</h2>
+<div class="card events-admin-card events-admin-card--calendar">
+    <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-calendar-filter-form">
+        <div class="events-list-head events-cal-page__head">
+            <h2 class="events-list-title">Események</h2>
             <div class="events-list-actions">
-                <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary">Szűrők törlése</a>
-                <a href="<?= h(events_url('events_admin.php') . ($navBaseParams !== [] ? '?' . http_build_query($navBaseParams) : '')) ?>" class="btn btn-secondary">Lista nézet</a>
-                <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary">Új esemény</a>
+                <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
+                <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
             </div>
         </div>
 
         <?php require __DIR__ . '/partials/admin_event_filters.php'; ?>
 
-        <div class="events-cal-nav" aria-label="Hónap választás">
-            <a class="btn btn-secondary btn-sm events-cal-nav__btn" href="<?= h($prevMonthUrl) ?>" rel="prev">← Előző hónap</a>
-            <div class="events-cal-nav__title-wrap">
-                <h3 class="events-cal-nav__title"><?= h($monthLabel) ?></h3>
-                <a class="events-cal-nav__today" href="<?= h($todayMonthUrl) ?>">Mai hónap</a>
+        <div class="events-cal-toolbar" aria-label="Naptár vezérlők">
+            <div class="events-cal-toolbar__left">
+                <div class="events-cal-toolbar__nav" aria-label="Hónap választás">
+                    <a class="events-cal-toolbar__arrow" href="<?= h($prevMonthUrl) ?>" rel="prev" aria-label="Előző hónap">‹</a>
+                    <a class="events-cal-toolbar__today" href="<?= h($todayMonthUrl) ?>">Ez a hónap</a>
+                    <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="Következő hónap">›</a>
+                </div>
+                <h3 class="events-cal-toolbar__month"><?= h($monthLabel) ?></h3>
             </div>
-            <a class="btn btn-secondary btn-sm events-cal-nav__btn" href="<?= h($nextMonthUrl) ?>" rel="next">Következő hónap →</a>
+            <nav class="events-cal-view-switch" aria-label="Nézet választó">
+                <a class="events-cal-view-switch__item" href="<?= h($listViewUrl) ?>">Lista</a>
+                <span class="events-cal-view-switch__item is-active" aria-current="page">Hónap</span>
+            </nav>
         </div>
 
         <div class="events-cal" role="grid" aria-label="<?= h($monthLabel) ?> naptár">
@@ -125,7 +132,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                             <?php
                                             $eid = (int) ($ev['id'] ?? 0);
                                             $timeLabel = events_admin_calendar_event_time_label($ev);
-                                            $eventStyle = events_admin_calendar_event_category_style($categoriesByEventId, $eid);
+                                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid);
                                             $eventUrl = events_admin_calendar_event_public_url($ev);
                                             ?>
                                             <li class="events-cal__event" role="listitem">
@@ -160,7 +167,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     <?php foreach ($undated as $ev): ?>
                         <?php
                         $eid = (int) ($ev['id'] ?? 0);
-                        $eventStyle = events_admin_calendar_event_category_style($categoriesByEventId, $eid);
+                        $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid);
                         $eventUrl = events_admin_calendar_event_public_url($ev);
                         ?>
                         <li role="listitem">
