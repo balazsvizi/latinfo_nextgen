@@ -7,6 +7,7 @@ require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/category_locale.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 require_once __DIR__ . '/lib/event_public_djs.php';
+require_once __DIR__ . '/lib/event_public_tags.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $T = events_public_megjelenit_strings($lang);
@@ -49,6 +50,7 @@ $eventId = (int) ($event['id'] ?? 0);
 $eventOrganizers = events_public_event_organizers_for_display($db, $eventId);
 $eventCategories = events_public_event_category_rows($db, $eventId);
 $eventDjs = events_public_event_djs_for_display($db, $eventId);
+$eventTags = events_public_event_tags_for_display($db, $eventId);
 
 $venueName = trim((string) ($event['venue_name'] ?? ''));
 $venueSlug = trim((string) ($event['venue_slug'] ?? ''));
@@ -185,7 +187,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
-            <?php if ($eventOrganizers !== [] || $eventCategories !== [] || $eventDjs !== []): ?>
+            <?php if ($eventOrganizers !== [] || $eventCategories !== [] || $eventDjs !== [] || $eventTags !== []): ?>
                 <div class="event-hero-meta-row">
                     <?php if ($eventOrganizers !== []): ?>
                         <div class="event-hero-meta-row__organizers">
@@ -209,20 +211,38 @@ header('Content-Type: text/html; charset=UTF-8');
                             </ul>
                         </div>
                     <?php endif; ?>
-                    <?php if ($eventCategories !== []): ?>
-                        <div class="event-hero-meta-row__categories" role="group" aria-label="<?= h($T['section_categories']) ?>">
-                            <ul class="event-hero-category-pills" role="list">
-                                <?php foreach ($eventCategories as $catRow): ?>
-                                    <?php
-                                    $chipLabel = events_public_category_chip_label($lang, $catRow);
-                                    $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
-                                    $pillStyle = events_public_category_pill_inline_style($chipColor);
-                                    ?>
-                                    <li class="event-hero-category-pills__item">
-                                        <span class="event-hero-category-pill" style="<?= h($pillStyle) ?>"><?= h($chipLabel) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
+                    <?php if ($eventTags !== [] || $eventCategories !== []): ?>
+                        <div class="event-hero-meta-row__aside">
+                            <?php if ($eventTags !== []): ?>
+                                <div class="event-hero-meta-row__tags" role="group" aria-label="<?= h($T['section_tags']) ?>">
+                                    <ul class="event-hero-tag-pills" role="list">
+                                        <?php foreach ($eventTags as $tagRow): ?>
+                                            <li class="event-hero-tag-pills__item">
+                                                <span class="event-hero-tag-pill">
+                                                    <span class="event-hero-tag-pill__icon" aria-hidden="true">🏷️</span>
+                                                    <?= h((string) $tagRow['name']) ?>
+                                                </span>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($eventCategories !== []): ?>
+                                <div class="event-hero-meta-row__categories" role="group" aria-label="<?= h($T['section_categories']) ?>">
+                                    <ul class="event-hero-category-pills" role="list">
+                                        <?php foreach ($eventCategories as $catRow): ?>
+                                            <?php
+                                            $chipLabel = events_public_category_chip_label($lang, $catRow);
+                                            $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
+                                            $pillStyle = events_public_category_pill_inline_style($chipColor);
+                                            ?>
+                                            <li class="event-hero-category-pills__item">
+                                                <span class="event-hero-category-pill" style="<?= h($pillStyle) ?>"><?= h($chipLabel) ?></span>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>

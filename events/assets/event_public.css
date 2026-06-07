@@ -667,10 +667,63 @@ a.event-meta__card:focus-visible {
     min-width: 0;
 }
 
-.event-hero-meta-row__categories {
+.event-hero-meta-row__aside {
     flex: 0 1 auto;
     margin-left: auto;
     max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.45rem;
+}
+
+.event-hero-meta-row__tags {
+    max-width: 100%;
+}
+
+.event-hero-meta-row__categories {
+    flex: 0 1 auto;
+    max-width: 100%;
+}
+
+.event-hero-tag-pills {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.35rem 0.4rem;
+}
+
+.event-hero-tag-pills__item {
+    margin: 0;
+    max-width: 100%;
+}
+
+.event-hero-tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    padding: 0.38rem 0.7rem;
+    font-family: var(--ev-sans);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--li-text-muted);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--li-border);
+    border-radius: 999px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.event-hero-tag-pill__icon {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    line-height: 1;
+    opacity: 0.88;
 }
 
 .event-org-chips {

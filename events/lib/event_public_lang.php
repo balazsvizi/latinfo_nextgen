@@ -59,6 +59,7 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_organizers' => 'Szervezők',
         'section_categories' => 'Kategóriák',
         'section_djs' => 'DJ-k',
+        'section_tags' => 'Címkék',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -83,6 +84,7 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_organizers' => 'Organizers',
         'section_categories' => 'Categories',
         'section_djs' => 'DJs',
+        'section_tags' => 'Tags',
     ];
 
     return $lang === 'en' ? $en : $hu;
