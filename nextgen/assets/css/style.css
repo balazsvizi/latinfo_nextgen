@@ -1014,30 +1014,32 @@ tr:hover td { background: var(--bg); }
     min-width: 10rem;
     max-width: 22rem;
 }
-.events-cell-edit--meta {
-    border-bottom: none;
+.events-admin-meta-empty {
+    color: var(--text-secondary);
 }
 .events-admin-meta-cell {
     display: flex;
     flex-direction: column;
-    gap: 0.28rem;
+    gap: 0.35rem;
 }
-.events-admin-meta-row {
+.events-admin-meta-group {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.35rem;
     min-height: 1.35rem;
 }
-.events-admin-meta-emoji,
-.events-admin-meta-emoji-spacer {
+.events-admin-meta-emoji {
     flex-shrink: 0;
     width: 1.15rem;
-    line-height: 1;
+    line-height: 1.45;
     font-size: 0.9rem;
     text-align: center;
 }
-.events-admin-meta-emoji-spacer {
-    display: inline-block;
+.events-admin-meta-group .events-admin-category-list,
+.events-admin-meta-group .events-admin-tag-list,
+.events-admin-meta-group .events-admin-dj-list {
+    flex: 1;
+    min-width: 0;
 }
 .events-cell-edit--categories {
     border-bottom: none;
@@ -1097,6 +1099,15 @@ tr:hover td { background: var(--bg); }
     background: var(--primary-light, #eef3ec);
     border: 1px solid var(--primary, #6d8f63);
     color: var(--text-primary);
+}
+.events-admin-dj-chip--link {
+    text-decoration: none;
+    transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+.events-admin-dj-chip--link:hover {
+    color: var(--primary);
+    background: #fff;
+    border-color: var(--primary);
 }
 
 .event-status-badge {
