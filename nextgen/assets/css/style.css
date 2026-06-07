@@ -1049,6 +1049,26 @@ tr:hover td { background: var(--bg); }
     border: 1px solid var(--border);
     color: var(--text-secondary);
 }
+.events-cell-edit--djs {
+    border-bottom: none;
+}
+.events-admin-dj-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+.events-admin-dj-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    background: var(--primary-light, #eef3ec);
+    border: 1px solid var(--primary, #6d8f63);
+    color: var(--text-primary);
+}
 
 .event-status-badge {
     display: inline-flex;

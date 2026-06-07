@@ -13,6 +13,7 @@ $f_name = trim($_GET['f_name'] ?? '');
 $f_id = trim($_GET['f_id'] ?? '');
 $f_category = trim($_GET['f_category'] ?? '');
 $f_tag = trim($_GET['f_tag'] ?? '');
+$f_dj = trim($_GET['f_dj'] ?? '');
 $f_start_from = trim($_GET['f_start_from'] ?? '');
 $f_start_to = trim($_GET['f_start_to'] ?? '');
 $f_views_min = trim($_GET['f_views_min'] ?? '');
@@ -30,12 +31,22 @@ if ($tagsAvailable && $f_tag !== '' && ctype_digit($f_tag) && isset($tagOptions[
     $f_tag_id = (int) $f_tag;
 }
 
+$djsAvailable = events_djs_tables_available($db);
+$djOptions = $djsAvailable ? events_load_dj_options($db) : [];
+$f_dj_id = 0;
+if ($djsAvailable && $f_dj !== '' && ctype_digit($f_dj) && isset($djOptions[(int) $f_dj])) {
+    $f_dj_id = (int) $f_dj;
+}
+
 $allowedStatus = array_merge([''], events_allowed_post_statuses());
 $status = isset($_GET['status']) && in_array((string) $_GET['status'], $allowedStatus, true) ? (string) $_GET['status'] : '';
 
 $allowedOrder = ['id', 'organizer', 'category'];
 if ($tagsAvailable) {
     $allowedOrder[] = 'tag';
+}
+if ($djsAvailable) {
+    $allowedOrder[] = 'dj';
 }
 $allowedOrder = array_merge($allowedOrder, ['name', 'start', 'end', 'status', 'views']);
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
@@ -130,6 +141,13 @@ if ($f_tag_id > 0) {
     )';
     $params[] = $f_tag_id;
 }
+if ($f_dj_id > 0) {
+    $where[] = 'EXISTS (
+        SELECT 1 FROM `events_calendar_event_djs` ed2
+        WHERE ed2.event_id = e.id AND ed2.dj_id = ?
+    )';
+    $params[] = $f_dj_id;
+}
 if ($f_name !== '') {
     $where[] = 'e.event_name LIKE ?';
     $params[] = '%' . $f_name . '%';
@@ -168,6 +186,7 @@ $orderSql = match ($order) {
     'organizer' => "( (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) IS NULL) ASC, (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) $dirSql",
     'category' => "( (SELECT MIN(c.name) FROM `events_calendar_event_categories` ec INNER JOIN `events_categories` c ON c.id = ec.category_id WHERE ec.event_id = e.id) IS NULL) ASC, (SELECT MIN(c.name) FROM `events_calendar_event_categories` ec INNER JOIN `events_categories` c ON c.id = ec.category_id WHERE ec.event_id = e.id) $dirSql",
     'tag' => "( (SELECT MIN(t.name) FROM `events_calendar_event_tags` et INNER JOIN `events_tags` t ON t.id = et.tag_id WHERE et.event_id = e.id) IS NULL) ASC, (SELECT MIN(t.name) FROM `events_calendar_event_tags` et INNER JOIN `events_tags` t ON t.id = et.tag_id WHERE et.event_id = e.id) $dirSql",
+    'dj' => "( (SELECT MIN(d.name) FROM `events_calendar_event_djs` ed INNER JOIN `events_djs` d ON d.id = ed.dj_id WHERE ed.event_id = e.id) IS NULL) ASC, (SELECT MIN(d.name) FROM `events_calendar_event_djs` ed INNER JOIN `events_djs` d ON d.id = ed.dj_id WHERE ed.event_id = e.id) $dirSql",
     'name' => "e.event_name $dirSql",
     'start' => "e.event_start IS NULL, e.event_start $dirSql",
     'end' => "e.event_end IS NULL, e.event_end $dirSql",
@@ -193,6 +212,7 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $categoriesByEventId = [];
 $tagsByEventId = [];
+$djsByEventId = [];
 if ($rows !== []) {
     $eventIds = array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
     $ph = implode(',', array_fill(0, count($eventIds), '?'));
@@ -235,6 +255,26 @@ if ($rows !== []) {
             ];
         }
     }
+    if ($djsAvailable) {
+        $djStmt = $db->prepare("
+            SELECT ed.`event_id`, d.`id`, d.`name`
+            FROM `events_calendar_event_djs` ed
+            INNER JOIN `events_djs` d ON d.`id` = ed.`dj_id`
+            WHERE ed.`event_id` IN ({$ph})
+            ORDER BY d.`name` ASC, d.`id` ASC
+        ");
+        $djStmt->execute($eventIds);
+        foreach ($djStmt->fetchAll(PDO::FETCH_ASSOC) as $djRow) {
+            $eid = (int) $djRow['event_id'];
+            if (!isset($djsByEventId[$eid])) {
+                $djsByEventId[$eid] = [];
+            }
+            $djsByEventId[$eid][] = [
+                'id' => (int) $djRow['id'],
+                'name' => (string) $djRow['name'],
+            ];
+        }
+    }
 }
 
 $get_params = array_filter([
@@ -243,6 +283,7 @@ $get_params = array_filter([
     'f_id' => $f_id !== '' ? $f_id : null,
     'f_category' => $f_category_id > 0 ? (string) $f_category_id : null,
     'f_tag' => $f_tag_id > 0 ? (string) $f_tag_id : null,
+    'f_dj' => $f_dj_id > 0 ? (string) $f_dj_id : null,
     'f_start_from' => $f_start_from !== '' ? $f_start_from : null,
     'f_start_to' => $f_start_to !== '' ? $f_start_to : null,
     'f_views_min' => $f_views_min !== '' ? $f_views_min : null,
@@ -321,6 +362,19 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     </div>
                 </div>
                 <?php endif; ?>
+                <?php if ($djsAvailable): ?>
+                <div class="events-filter-field events-filter-field--status">
+                    <label class="events-filter-label" for="ev-f-dj">DJ</label>
+                    <div class="events-filter-select-wrap">
+                        <select class="events-filter-select" name="f_dj" id="ev-f-dj" title="DJ szűrő">
+                            <option value="">Összes DJ</option>
+                            <?php foreach ($djOptions as $did => $dname): ?>
+                                <option value="<?= (int) $did ?>" <?= $f_dj_id === (int) $did ? 'selected' : '' ?>><?= h($dname) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="events-filter-field">
                     <label class="events-filter-label" for="ev-f-name">Esemény neve</label>
                     <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($f_name) ?>" placeholder="Keresés a címben…" autocomplete="off">
@@ -379,6 +433,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         <?php if ($tagsAvailable): ?>
                         <th><?= sort_th('Címkék', 'tag', $order, $dir_param, $get_params) ?></th>
                         <?php endif; ?>
+                        <?php if ($djsAvailable): ?>
+                        <th><?= sort_th('DJ-k', 'dj', $order, $dir_param, $get_params) ?></th>
+                        <?php endif; ?>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Dátum', 'start', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
@@ -435,6 +492,22 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         <span class="events-admin-tag-list" role="list">
                                             <?php foreach ($eventTags as $tagItem): ?>
                                                 <span class="events-admin-tag-chip" role="listitem"><?= h($tagItem['name']) ?></span>
+                                            <?php endforeach; ?>
+                                        </span>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
+                            <?php endif; ?>
+                            <?php if ($djsAvailable): ?>
+                            <td>
+                                <?php $eventDjs = $djsByEventId[$eid] ?? []; ?>
+                                <?php if ($eventDjs === []): ?>
+                                    <a class="events-cell-edit" href="<?= h($edit) ?>">–</a>
+                                <?php else: ?>
+                                    <a class="events-cell-edit events-cell-edit--djs" href="<?= h($edit) ?>">
+                                        <span class="events-admin-dj-list" role="list">
+                                            <?php foreach ($eventDjs as $djItem): ?>
+                                                <span class="events-admin-dj-chip" role="listitem"><?= h($djItem['name']) ?></span>
                                             <?php endforeach; ?>
                                         </span>
                                     </a>
