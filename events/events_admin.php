@@ -294,17 +294,57 @@ $editBase = events_url('szerkeszt.php?id=');
 
 function events_admin_format_datum_cell(array $r): string {
     $allday = !empty($r['event_allday']);
-    $fmt = $allday ? 'Y.m.d.' : 'Y.m.d. H:i';
-    $start = !empty($r['event_start']) ? date($fmt, strtotime((string) $r['event_start'])) : '–';
+    $startRaw = $r['event_start'] ?? null;
     $endRaw = $r['event_end'] ?? null;
+
+    if ($startRaw === null || $startRaw === '') {
+        if ($endRaw === null || $endRaw === '') {
+            return '–';
+        }
+        $endTs = strtotime((string) $endRaw);
+        if ($endTs === false) {
+            return '–';
+        }
+
+        return '– → ' . date($allday ? 'Y.m.d.' : 'Y.m.d. H:i', $endTs);
+    }
+
+    $startTs = strtotime((string) $startRaw);
+    if ($startTs === false) {
+        return '–';
+    }
+
     if ($endRaw === null || $endRaw === '') {
-        return $start;
+        return date($allday ? 'Y.m.d.' : 'Y.m.d. H:i', $startTs);
     }
-    $end = date($fmt, strtotime((string) $endRaw));
-    if ($start === '–' && $end !== '') {
-        return '– → ' . $end;
+
+    $endTs = strtotime((string) $endRaw);
+    if ($endTs === false) {
+        return date($allday ? 'Y.m.d.' : 'Y.m.d. H:i', $startTs);
     }
-    return $start . ' → ' . $end;
+
+    $sameDay = date('Y-m-d', $startTs) === date('Y-m-d', $endTs);
+
+    if ($allday) {
+        if ($sameDay) {
+            return date('Y.m.d.', $startTs);
+        }
+
+        return date('Y.m.d.', $startTs) . ' → ' . date('Y.m.d.', $endTs);
+    }
+
+    if ($sameDay) {
+        $day = date('Y.m.d.', $startTs);
+        $tStart = date('H:i', $startTs);
+        $tEnd = date('H:i', $endTs);
+        if ($tStart === $tEnd) {
+            return $day . ' ' . $tStart;
+        }
+
+        return $day . ' ' . $tStart . ' → ' . $tEnd;
+    }
+
+    return date('Y.m.d. H:i', $startTs) . ' → ' . date('Y.m.d. H:i', $endTs);
 }
 
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -428,10 +468,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 <thead>
                     <tr>
                         <th class="events-th-actions" scope="col"><span class="visually-hidden">Műveletek</span></th>
+                        <th><?= sort_th('Dátum', 'start', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Szervező', 'organizer', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Meta', 'category', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Dátum', 'start', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
                         <th class="th-center"><?= sort_th('Megtekintés', 'views', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
@@ -458,6 +498,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     <?php endif; ?>
                                 </div>
                             </td>
+                            <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= ($r['organizer_name'] ?? '') !== '' ? h((string) $r['organizer_name']) : '–' ?></a></td>
                             <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
                             <td class="events-td-meta">
@@ -512,7 +553,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
                             <td>
                                 <a class="events-cell-edit events-cell-edit--badge" href="<?= h($edit) ?>">
                                     <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
