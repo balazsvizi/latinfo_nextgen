@@ -37,13 +37,13 @@ if ($slug === '') {
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <a class="event-shell-toolbar__events-home" href="<?= h($eventsHome) ?>" aria-label="<?= h($C['events_home_aria']) ?>"><?= h($C['events_home_back']) ?></a>
-        </div>
-    </div>
+<article class="event-public event-public--not-found">
+    <header class="event-public__hero event-public__hero--compact">
+        <?= events_public_render_hero_bar($lang, $S, events_public_home_page_url('hu'), events_public_home_page_url('en'), false) ?>
+    </header>
     <p class="event-not-found-msg"><?= h($lang === 'en' ? 'Venue not found.' : 'Nincs ilyen helyszín.') ?></p>
     <?php $standalone = true; require __DIR__ . '/partials/public_shell_footer.php'; ?>
+</article>
 </div>
 </body>
 </html><?php
@@ -76,13 +76,13 @@ if (!$venue) {
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <a class="event-shell-toolbar__events-home" href="<?= h($eventsHome) ?>" aria-label="<?= h($C['events_home_aria']) ?>"><?= h($C['events_home_back']) ?></a>
-        </div>
-    </div>
+<article class="event-public event-public--not-found">
+    <header class="event-public__hero event-public__hero--compact">
+        <?= events_public_render_hero_bar($lang, $S, events_public_home_page_url('hu'), events_public_home_page_url('en'), false) ?>
+    </header>
     <p class="event-not-found-msg"><?= h($lang === 'en' ? 'Venue not found.' : 'Nincs ilyen helyszín.') ?></p>
     <?php $standalone = true; require __DIR__ . '/partials/public_shell_footer.php'; ?>
+</article>
 </div>
 </body>
 </html><?php
@@ -119,10 +119,9 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <?php require __DIR__ . '/partials/public_shell_toolbar.php'; ?>
-
 <article class="event-public venue-public">
     <header class="event-public__hero">
+        <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <p class="event-public__eyebrow">📍 <?= h($lang === 'en' ? 'Venue' : 'Helyszín') ?></p>
             <h1 class="event-public__title"><?= h($title) ?></h1>

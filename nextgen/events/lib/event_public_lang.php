@@ -670,8 +670,14 @@ function events_public_megjelenit_not_found_html(string $lang): string {
     $eventsHome = events_public_home_page_url($lang);
     $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
-    $logoSrc = events_public_logo_src();
     $fav = events_public_favicon_head_markup();
+    $heroBar = events_public_render_hero_bar(
+        $lang,
+        $T,
+        events_public_home_page_url('hu'),
+        events_public_home_page_url('en'),
+        false
+    );
 
     return '<!DOCTYPE html>
 <html lang="' . h($htmlLang) . '">
@@ -685,16 +691,11 @@ function events_public_megjelenit_not_found_html(string $lang): string {
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
-            <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
-                <img src="' . h($logoSrc) . '" alt="' . h($T['logo_alt']) . '" width="240" height="80" decoding="async">
-            </a>
-        </div>
-    </div>
+<article class="event-public event-public--not-found">
+    <header class="event-public__hero event-public__hero--compact">' . $heroBar . '</header>
     <p class="event-not-found-msg">' . h($T['not_found_body']) . '</p>
     <p class="event-site-line event-site-line--standalone"><a href="' . h($eventsHome) . '">' . h($C['events_home_link']) . '</a><span class="event-site-line__sep" aria-hidden="true">·</span><a href="' . h($latinfoHome) . '">' . h($T['footer_home_link']) . '</a></p>
+</article>
 </div>
 </body>
 </html>';
@@ -710,8 +711,14 @@ function events_public_organizer_not_found_html(string $lang): string {
     $eventsHome = events_public_home_page_url($lang);
     $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
-    $logoSrc = events_public_logo_src();
     $fav = events_public_favicon_head_markup();
+    $heroBar = events_public_render_hero_bar(
+        $lang,
+        $O,
+        events_public_home_page_url('hu'),
+        events_public_home_page_url('en'),
+        false
+    );
 
     return '<!DOCTYPE html>
 <html lang="' . h($htmlLang) . '">
@@ -725,16 +732,11 @@ function events_public_organizer_not_found_html(string $lang): string {
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
-            <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
-                <img src="' . h($logoSrc) . '" alt="' . h($O['logo_alt']) . '" width="240" height="80" decoding="async">
-            </a>
-        </div>
-    </div>
+<article class="event-public event-public--not-found">
+    <header class="event-public__hero event-public__hero--compact">' . $heroBar . '</header>
     <p class="event-not-found-msg">' . h($O['not_found_body']) . '</p>
     <p class="event-site-line event-site-line--standalone"><a href="' . h($eventsHome) . '">' . h($C['events_home_link']) . '</a><span class="event-site-line__sep" aria-hidden="true">·</span><a href="' . h($latinfoHome) . '">' . h($O['footer_home_link']) . '</a></p>
+</article>
 </div>
 </body>
 </html>';
@@ -750,8 +752,14 @@ function events_public_tag_not_found_html(string $lang): string {
     $eventsHome = events_public_home_page_url($lang);
     $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
-    $logoSrc = events_public_logo_src();
     $fav = events_public_favicon_head_markup();
+    $heroBar = events_public_render_hero_bar(
+        $lang,
+        $G,
+        events_public_home_page_url('hu'),
+        events_public_home_page_url('en'),
+        false
+    );
 
     return '<!DOCTYPE html>
 <html lang="' . h($htmlLang) . '">
@@ -765,16 +773,11 @@ function events_public_tag_not_found_html(string $lang): string {
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
-            <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
-                <img src="' . h($logoSrc) . '" alt="' . h($G['logo_alt']) . '" width="240" height="80" decoding="async">
-            </a>
-        </div>
-    </div>
+<article class="event-public event-public--not-found">
+    <header class="event-public__hero event-public__hero--compact">' . $heroBar . '</header>
     <p class="event-not-found-msg">' . h($G['not_found_body']) . '</p>
     <p class="event-site-line event-site-line--standalone"><a href="' . h($eventsHome) . '">' . h($C['events_home_link']) . '</a><span class="event-site-line__sep" aria-hidden="true">·</span><a href="' . h($latinfoHome) . '">' . h($G['footer_home_link']) . '</a></p>
+</article>
 </div>
 </body>
 </html>';

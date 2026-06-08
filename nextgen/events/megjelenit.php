@@ -172,9 +172,9 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <?php require __DIR__ . '/partials/public_shell_toolbar.php'; ?>
 <article class="event-public">
     <header class="event-public__hero">
+        <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <?php
             $hasHeroMetaTop = $eventOrganizers !== [] || $eventMainStyles !== [] || $eventSupplementaryStyles !== [];

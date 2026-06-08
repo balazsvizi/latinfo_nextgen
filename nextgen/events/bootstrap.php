@@ -85,7 +85,27 @@ if (!function_exists('events_public_logo_src')) {
      * Nyilvános esemény oldal logó (latinfo.hu custom-logo, helyi másolat).
      */
     function events_public_logo_src(): string {
-        return events_url('assets/images/latinfo-logo.jpg');
+        return events_url('assets/images/latinfo-logo.png');
+    }
+}
+
+if (!function_exists('events_public_render_hero_bar')) {
+    /**
+     * @param array<string, string> $S
+     */
+    function events_public_render_hero_bar(
+        string $lang,
+        array $S,
+        string $urlHu,
+        string $urlEn,
+        bool $isEventsHome = false,
+        bool $showAdminEdit = false,
+        string $adminEditUrl = ''
+    ): string {
+        ob_start();
+        include __DIR__ . '/partials/public_shell_hero_bar.php';
+
+        return (string) ob_get_clean();
     }
 }
 

@@ -75,9 +75,9 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <?php require __DIR__ . '/partials/public_shell_toolbar.php'; ?>
 <article class="event-public organizer-public">
     <header class="event-public__hero">
+        <?php $S = $O; require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <p class="event-public__eyebrow"><?= h($O['eyebrow']) ?></p>
             <h1 class="event-public__title"><?= h($title) ?></h1>
