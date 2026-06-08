@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
+require_once __DIR__ . '/lib/event_public_djs.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $G = events_public_tag_strings($lang);
@@ -36,6 +37,7 @@ if (!$tag) {
 
 $tagName = (string) ($tag['name'] ?? '');
 $tagTypeRows = events_public_tag_type_rows_for_display($db, $tagId);
+$tagIsDj = events_public_tag_has_type_code($db, $tagId, 'dj');
 $eventsList = events_public_tag_published_events($db, $tagId, events_public_post_status());
 $partitioned = events_public_organizer_partition_events($eventsList);
 $eventsUpcoming = $partitioned['upcoming'];
@@ -122,6 +124,11 @@ header('Content-Type: text/html; charset=UTF-8');
                 </div>
             <?php endif; ?>
             <h1 class="event-public__title"><?= h($title) ?></h1>
+            <?php if ($tagIsDj): ?>
+                <p class="tag-public__nav-link">
+                    <a href="<?= h(events_public_djs_page_url($lang)) ?>">← <?= h($G['all_djs_link']) ?></a>
+                </p>
+            <?php endif; ?>
         </div>
     </header>
 

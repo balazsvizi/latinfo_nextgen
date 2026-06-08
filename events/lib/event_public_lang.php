@@ -59,6 +59,7 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_organizers' => 'Szervezők',
         'section_categories' => 'Kategóriák',
         'section_djs' => 'DJ-k',
+        'all_djs_link' => 'Összes DJ',
         'section_tags' => 'Címkék',
         'section_main_styles' => 'Fő stílusok',
         'section_supplementary_styles' => 'Kiegészítő stílusok',
@@ -86,6 +87,7 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_organizers' => 'Organizers',
         'section_categories' => 'Categories',
         'section_djs' => 'DJs',
+        'all_djs_link' => 'All DJs',
         'section_tags' => 'Tags',
         'section_main_styles' => 'Main styles',
         'section_supplementary_styles' => 'Supplementary styles',
@@ -364,6 +366,7 @@ function events_public_tag_strings(string $lang): array {
         'footer_home_link' => 'Latinfo.hu',
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Címke szerkesztése az adminban',
+        'all_djs_link' => 'Összes DJ',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -384,9 +387,82 @@ function events_public_tag_strings(string $lang): array {
         'footer_home_link' => 'Latinfo.hu',
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this tag in admin',
+        'all_djs_link' => 'All DJs',
     ];
 
     return $lang === 'en' ? $en : $hu;
+}
+
+/**
+ * @return array<string, string>
+ */
+function events_public_djs_strings(string $lang): array {
+    $hu = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'DJ-k',
+        'page_desc' => 'DJ-k és közzétett eseményeik a Latinfo.hu-n.',
+        'eyebrow' => 'DJ-k',
+        'lang_nav' => 'Nyelv',
+        'lang_hu' => 'Magyar',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'footer_home_link' => 'Latinfo.hu',
+        'filter_label' => 'Keresés név szerint',
+        'filter_placeholder' => 'DJ neve…',
+        'sort_label' => 'Rendezés',
+        'sort_name_asc' => 'Név (A→Z)',
+        'sort_name_desc' => 'Név (Z→A)',
+        'sort_events_desc' => 'Események (több→kevesebb)',
+        'sort_events_asc' => 'Események (kevesebb→több)',
+        'sort_upcoming_desc' => 'Aktuális események (több→kevesebb)',
+        'events_total' => 'esemény',
+        'events_upcoming' => 'aktuális',
+        'events_past' => 'lezajlott',
+        'next_event' => 'Következő',
+        'empty' => 'Nincs DJ a listában.',
+        'empty_filter' => 'Nincs találat a szűrésre.',
+        'card_aria' => 'DJ profil megnyitása',
+    ];
+    $en = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'DJs',
+        'page_desc' => 'DJs and their published events on Latinfo.hu.',
+        'eyebrow' => 'DJs',
+        'lang_nav' => 'Language',
+        'lang_hu' => 'Hungarian',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
+        'footer_home_link' => 'Latinfo.hu',
+        'filter_label' => 'Search by name',
+        'filter_placeholder' => 'DJ name…',
+        'sort_label' => 'Sort',
+        'sort_name_asc' => 'Name (A→Z)',
+        'sort_name_desc' => 'Name (Z→A)',
+        'sort_events_desc' => 'Events (most→least)',
+        'sort_events_asc' => 'Events (least→most)',
+        'sort_upcoming_desc' => 'Upcoming events (most→least)',
+        'events_total' => 'events',
+        'events_upcoming' => 'upcoming',
+        'events_past' => 'past',
+        'next_event' => 'Next',
+        'empty' => 'No DJs in the catalog.',
+        'empty_filter' => 'No matches for your search.',
+        'card_aria' => 'Open DJ profile',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+function events_public_djs_page_url(string $lang): string {
+    return events_url('djs.php?' . http_build_query(['lang' => $lang], '', '&', PHP_QUERY_RFC3986));
+}
+
+function events_public_djs_lang_switch_url(string $targetLang): string {
+    return events_public_djs_page_url($targetLang);
 }
 
 /**

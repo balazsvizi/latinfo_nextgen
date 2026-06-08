@@ -270,7 +270,7 @@ header('Content-Type: text/html; charset=UTF-8');
                             <?php endif; ?>
                             <?php if ($eventDjs !== []): ?>
                                 <div class="event-hero-meta__slot event-hero-meta-group">
-                                    <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_djs']) ?>">🎧</span>
+                                    <a class="event-hero-meta-emoji event-hero-meta-emoji--link" href="<?= h(events_public_djs_page_url($lang)) ?>" title="<?= h($T['all_djs_link']) ?>" aria-label="<?= h($T['all_djs_link']) ?>">🎧</a>
                                     <ul class="event-org-chips event-org-chips--hero event-dj-chips" role="list" aria-label="<?= h($T['section_djs']) ?>">
                                         <?php foreach ($eventDjs as $djRow): ?>
                                             <li class="event-org-chips__item">
@@ -278,6 +278,7 @@ header('Content-Type: text/html; charset=UTF-8');
                                             </li>
                                         <?php endforeach; ?>
                                     </ul>
+                                    <a class="event-hero-meta-all-link" href="<?= h(events_public_djs_page_url($lang)) ?>"><?= h($T['all_djs_link']) ?></a>
                                 </div>
                             <?php endif; ?>
                         </div>
