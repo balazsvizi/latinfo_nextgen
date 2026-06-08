@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/event_request.php';
+require_once __DIR__ . '/event_status.php';
+
 /**
  * Admin eseménylista / naptár — közös szűrők és WHERE építés.
  *
