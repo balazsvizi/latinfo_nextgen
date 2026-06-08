@@ -61,6 +61,49 @@ function events_public_filters_from_request(PDO $db): array {
 }
 
 /**
+ * Van-e aktív szűrő (a panel ilyenkor alapból nyitva marad).
+ *
+ * @param array<string, mixed> $filters
+ */
+function events_public_filters_are_active(array $filters): bool {
+    if (trim((string) ($filters['f_organizer'] ?? '')) !== '') {
+        return true;
+    }
+    if (trim((string) ($filters['f_name'] ?? '')) !== '') {
+        return true;
+    }
+    if (trim((string) ($filters['f_venue'] ?? '')) !== '') {
+        return true;
+    }
+    if (trim((string) ($filters['f_city'] ?? '')) !== '') {
+        return true;
+    }
+    if ((int) ($filters['f_category_id'] ?? 0) > 0) {
+        return true;
+    }
+    if ((int) ($filters['f_tag_id'] ?? 0) > 0) {
+        return true;
+    }
+    if ((int) ($filters['f_dj_id'] ?? 0) > 0) {
+        return true;
+    }
+    if ((int) ($filters['f_main_style_id'] ?? 0) > 0) {
+        return true;
+    }
+    if ((int) ($filters['f_supplementary_style_id'] ?? 0) > 0) {
+        return true;
+    }
+    if (trim((string) ($filters['f_start_from'] ?? '')) !== '') {
+        return true;
+    }
+    if (trim((string) ($filters['f_start_to'] ?? '')) !== '') {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * @param array<string, mixed> $filters
  * @return list<array<string, mixed>>
  */

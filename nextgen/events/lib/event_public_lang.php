@@ -470,6 +470,8 @@ function events_public_home_strings(string $lang): array {
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'calendar_aria' => 'Esemény naptár és szűrők',
         'clear_filters' => 'Szűrők törlése',
+        'filters_toggle' => 'Szűrők megnyitása',
+        'filters_active_badge' => 'aktív',
         'filters_aria' => 'Szűrők',
         'filter_organizer' => 'Szervező',
         'filter_organizer_ph' => 'Részlet a névből…',
@@ -518,6 +520,8 @@ function events_public_home_strings(string $lang): array {
         'logo_home_aria' => 'Go to Latinfo.hu home',
         'calendar_aria' => 'Event calendar and filters',
         'clear_filters' => 'Clear filters',
+        'filters_toggle' => 'Show filters',
+        'filters_active_badge' => 'active',
         'filters_aria' => 'Filters',
         'filter_organizer' => 'Organizer',
         'filter_organizer_ph' => 'Part of the name…',
@@ -558,16 +562,27 @@ function events_public_home_strings(string $lang): array {
 }
 
 function events_public_home_page_url(string $lang): string {
-    $q = ['lang' => $lang];
+    $base = events_url(events_public_home_page_script());
+    if ($lang !== 'en') {
+        return $base;
+    }
 
-    return events_url(events_public_home_page_script() . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+    return $base . '?' . http_build_query(['lang' => 'en'], '', '&', PHP_QUERY_RFC3986);
 }
 
 function events_public_home_lang_switch_url(string $targetLang): string {
     $q = $_GET;
-    $q['lang'] = $targetLang;
+    if ($targetLang === 'hu') {
+        unset($q['lang']);
+    } else {
+        $q['lang'] = 'en';
+    }
+    $base = events_url(events_public_home_page_script());
+    if ($q === []) {
+        return $base;
+    }
 
-    return events_url(events_public_home_page_script() . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+    return $base . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
 }
 
 function events_public_djs_page_url(string $lang): string {

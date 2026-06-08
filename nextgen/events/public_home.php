@@ -13,6 +13,7 @@ $D = events_public_home_strings($lang);
 $db = getDb();
 $homeContent = events_public_home_load($db);
 $filters = events_public_filters_from_request($db);
+$filtersActive = events_public_filters_are_active($filters);
 $view = (string) ($filters['view'] ?? 'cal');
 
 [$monthFirst, $monthLast, $monthKey] = events_admin_calendar_resolve_month((string) ($_GET['month'] ?? ''));
@@ -91,7 +92,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page">
+<body class="event-public-page event-public-page--home">
 <div class="event-shell">
     <div class="event-shell-toolbar">
         <div class="event-shell-toolbar__leading">
@@ -122,11 +123,22 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <section class="home-public__main" aria-label="<?= h((string) $D['calendar_aria']) ?>">
         <form method="get" action="<?= h($filterFormAction) ?>" class="home-public__form" id="events-home-filter-form">
-            <div class="home-public__toolbar">
-                <a href="<?= h($filterClearUrl) ?>" class="home-public__clear-filters"><?= h((string) $D['clear_filters']) ?></a>
-            </div>
-
-            <?php require __DIR__ . '/partials/public_event_filters.php'; ?>
+            <details class="home-public__filters-panel" id="home-filters-panel"<?= $filtersActive ? ' open' : '' ?>>
+                <summary class="home-public__filters-summary">
+                    <span class="home-public__filters-summary-text"><?= h((string) $D['filters_toggle']) ?></span>
+                    <?php if ($filtersActive): ?>
+                        <span class="home-public__filters-badge"><?= h((string) $D['filters_active_badge']) ?></span>
+                    <?php endif; ?>
+                </summary>
+                <div class="home-public__filters-body">
+                    <?php if ($filtersActive): ?>
+                        <p class="home-public__filters-actions">
+                            <a href="<?= h($filterClearUrl) ?>" class="home-public__clear-filters"><?= h((string) $D['clear_filters']) ?></a>
+                        </p>
+                    <?php endif; ?>
+                    <?php require __DIR__ . '/partials/public_event_filters.php'; ?>
+                </div>
+            </details>
 
             <?php if ($view === 'cal'): ?>
                 <div class="events-cal-toolbar" aria-label="<?= h((string) $D['cal_controls_aria']) ?>">
