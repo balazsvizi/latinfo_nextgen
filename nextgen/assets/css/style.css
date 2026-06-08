@@ -2416,6 +2416,10 @@ dialog.eventpics-modal::backdrop {
     align-items: center;
 }
 
+.csv-import-sample-link {
+    margin: 0 0 0.75rem;
+}
+
 /* Címke admin tábla: ID oszlop keskeny, de elfér a 6 jegyű ID + szűrő placeholder */
 #events-tags-inline-table {
     table-layout: fixed;

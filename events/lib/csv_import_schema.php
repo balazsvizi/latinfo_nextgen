@@ -8,6 +8,7 @@ declare(strict_types=1);
 function events_csv_import_schema(): array {
     return [
         'events_calendar_events' => [
+            'import_code' => '001',
             'label' => 'Események (`events_calendar_events`)',
             'id_max_import' => 100000,
             'columns' => [
@@ -32,6 +33,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_calendar_event_organizers' => [
+            'import_code' => '002',
             'label' => 'Esemény–szervező (`events_calendar_event_organizers`, ID alapján)',
             'composite_key' => ['event_id', 'organizer_id'],
             'id_max_import' => 0,
@@ -42,6 +44,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_calendar_event_categories' => [
+            'import_code' => '003',
             'label' => 'Esemény–kategória (`events_calendar_event_categories`, ID alapján)',
             'composite_key' => ['event_id', 'category_id'],
             'id_max_import' => 0,
@@ -51,6 +54,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_organizers' => [
+            'import_code' => '004',
             'label' => 'Szervezők (`events_organizers`)',
             'id_max_import' => 100000,
             'columns' => [
@@ -59,6 +63,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_venues' => [
+            'import_code' => '005',
             'label' => 'Helyszínek (`events_venues`)',
             'id_max_import' => 100000,
             'columns' => [
@@ -76,6 +81,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_categories' => [
+            'import_code' => '006',
             'label' => 'Kategóriák (`events_categories`)',
             'id_max_import' => 100000,
             'columns' => [
@@ -90,6 +96,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_tags' => [
+            'import_code' => '007',
             'label' => 'Címkék (`events_tags`)',
             'id_max_import' => 100000,
             'columns' => [
@@ -101,6 +108,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_calendar_event_tags' => [
+            'import_code' => '008',
             'label' => 'Esemény–címke / Event-Tag (`events_calendar_event_tags`, event_id + címke név)',
             'composite_key' => ['event_id', 'tag_id'],
             'id_max_import' => 0,
@@ -112,6 +120,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_styles' => [
+            'import_code' => '009',
             'label' => 'Stílusok (`events_styles`)',
             'id_max_import' => 100000,
             'columns' => [
@@ -122,6 +131,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_calendar_event_main_styles' => [
+            'import_code' => '010',
             'label' => 'Esemény–fő stílus (`events_calendar_event_main_styles`, event_id + style név)',
             'composite_key' => ['event_id', 'style_id'],
             'id_max_import' => 0,
@@ -132,6 +142,7 @@ function events_csv_import_schema(): array {
             ],
         ],
         'events_calendar_event_supplementary_styles' => [
+            'import_code' => '011',
             'label' => 'Esemény–kiegészítő stílus (`events_calendar_event_supplementary_styles`, event_id + style név)',
             'composite_key' => ['event_id', 'style_id'],
             'id_max_import' => 0,

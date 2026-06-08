@@ -7,13 +7,14 @@ require_once __DIR__ . '/lib/csv_import_schema.php';
 require_once __DIR__ . '/lib/csv_import_engine.php';
 require_once __DIR__ . '/lib/import_settings.php';
 require_once __DIR__ . '/lib/import_presets.php';
+require_once __DIR__ . '/lib/csv_import_types.php';
 requireLogin();
 
 $schema = events_csv_import_schema();
+$importTypes = events_csv_import_types();
 $db = getDb();
 events_import_seed_builtin_presets($db);
 $presets = events_import_presets_merged($db);
-$builtinPresets = events_import_builtin_presets();
 $sampleCsvFiles = events_import_sample_csv_files();
 
 $sampleKey = trim((string) ($_GET['sample'] ?? ''));
@@ -27,27 +28,30 @@ if ($sampleKey !== '' && isset($sampleCsvFiles[$sampleKey])) {
 
 $hiba = '';
 $eredmeny = null;
-$table = '';
+$typeId = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_import_csv')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
     $action = (string) ($_POST['action'] ?? 'import');
-    $table = trim((string) ($_POST['target_table'] ?? ''));
+    $typeId = trim((string) ($_POST['target_table'] ?? ''));
+    $typeInfo = events_csv_import_resolve_type($typeId);
+    $dbTable = is_array($typeInfo) ? (string) ($typeInfo['target_table'] ?? '') : '';
 
     if ($action === 'purge_preview') {
-        if (!isset($schema[$table])) {
-            $hiba = 'Érvénytelen cél tábla.';
+        if ($typeInfo === null || $dbTable === '' || !isset($schema[$dbTable])) {
+            $hiba = 'Érvénytelen import típus.';
         } else {
             try {
-                $cnt = events_csv_import_count_rows($db, $table);
+                $cnt = events_csv_import_count_rows($db, $dbTable);
                 $_SESSION['csv_import_purge'] = [
-                    'table' => $table,
+                    'type_id' => $typeId,
+                    'table' => $dbTable,
                     'count' => $cnt,
                     'token' => bin2hex(random_bytes(16)),
                 ];
-                redirect(events_url('import_csv.php?target_table=' . rawurlencode($table) . '&purge_step=confirm'));
+                redirect(events_url('import_csv.php?target_table=' . rawurlencode($typeId) . '&purge_step=confirm'));
             } catch (Throwable $e) {
                 error_log('events import_csv purge_preview hiba: ' . $e->getMessage());
                 $hiba = 'Törlés előnézet hiba történt.';
@@ -56,32 +60,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'purge_cancel') {
         unset($_SESSION['csv_import_purge']);
         $redir = events_url('import_csv.php');
-        if (isset($schema[$table])) {
-            $redir .= '?target_table=' . rawurlencode($table);
+        if ($typeInfo !== null) {
+            $redir .= '?target_table=' . rawurlencode($typeId);
         }
         redirect($redir);
     } elseif ($action === 'purge_execute') {
         $token = (string) ($_POST['purge_token'] ?? '');
         $sess = $_SESSION['csv_import_purge'] ?? null;
-        if (!isset($schema[$table])) {
-            $hiba = 'Érvénytelen cél tábla.';
-        } elseif (!is_array($sess) || ($sess['table'] ?? '') !== $table || !isset($sess['token']) || !hash_equals((string) $sess['token'], $token)) {
+        if ($typeInfo === null || $dbTable === '' || !isset($schema[$dbTable])) {
+            $hiba = 'Érvénytelen import típus.';
+        } elseif (!is_array($sess) || ($sess['type_id'] ?? '') !== $typeId || !isset($sess['token']) || !hash_equals((string) $sess['token'], $token)) {
             $hiba = 'A törlési jóváhagyás érvénytelen vagy lejárt. Indítsd újra az „Összes sor törlése…” lépést.';
             unset($_SESSION['csv_import_purge']);
         } else {
             try {
-                $n = events_csv_import_delete_all_rows($db, $table);
+                $purgeTable = (string) ($sess['table'] ?? $dbTable);
+                $n = events_csv_import_delete_all_rows($db, $purgeTable);
                 unset($_SESSION['csv_import_purge']);
-                rendszer_log('csv_import', null, 'CSV tábla teljes ürítés', $table . ': törölve ' . $n . ' sor');
-                flash('success', 'Törölve: ' . $n . ' sor a „' . $table . '” táblából.');
-                redirect(events_url('import_csv.php?target_table=' . rawurlencode($table)));
+                rendszer_log('csv_import', null, 'CSV tábla teljes ürítés', $purgeTable . ': törölve ' . $n . ' sor');
+                flash('success', 'Törölve: ' . $n . ' sor a „' . $purgeTable . '” táblából.');
+                redirect(events_url('import_csv.php?target_table=' . rawurlencode($typeId)));
             } catch (Throwable $e) {
                 error_log('events import_csv purge_execute hiba: ' . $e->getMessage());
                 $hiba = 'Törlés hiba történt.';
             }
         }
-    } elseif (!isset($schema[$table])) {
-        $hiba = 'Érvénytelen cél tábla.';
+    } elseif ($typeInfo === null || $dbTable === '' || !isset($schema[$dbTable])) {
+        $hiba = 'Érvénytelen import típus.';
     } else {
         $delimiter = (string) ($_POST['delimiter'] ?? ';');
         if (!in_array($delimiter, [',', ';', 'tab'], true)) {
@@ -93,9 +98,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mapPost = [];
         }
         $map = [];
-        foreach ($schema[$table]['columns'] as $col => $_meta) {
-            if (isset($mapPost[$table][$col])) {
-                $map[$col] = (string) $mapPost[$table][$col];
+        foreach ($schema[$dbTable]['columns'] as $col => $_meta) {
+            if (isset($mapPost[$typeId][$col])) {
+                $map[$col] = (string) $mapPost[$typeId][$col];
             }
         }
 
@@ -108,10 +113,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             try {
-                events_import_settings_save($db, $table, $delimiter, $requiredSubstring, $columnMap);
+                events_import_settings_save($db, $typeId, $delimiter, $requiredSubstring, $columnMap);
                 $presets = events_import_presets_merged($db);
-                flash('success', 'Import beállítások elmentve ehhez a cél táblához: ' . $table . '.');
-                redirect(events_url('import_csv.php?target_table=' . rawurlencode($table)));
+                $typeLabel = (string) ($typeInfo['option_label'] ?? $typeId);
+                flash('success', 'Import beállítások elmentve: ' . $typeLabel . '.');
+                redirect(events_url('import_csv.php?target_table=' . rawurlencode($typeId)));
             } catch (Throwable $e) {
                 error_log('events import_csv save_preset hiba: ' . $e->getMessage());
                 $hiba = 'Mentési hiba történt.';
@@ -133,13 +139,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 if ($hiba === '') {
-                    $eredmeny = events_csv_import_run($db, $table, $tmp, $delimiter, $requiredSubstring, $uploadName, $map);
+                    $eredmeny = events_csv_import_run($db, $dbTable, $tmp, $delimiter, $requiredSubstring, $uploadName, $map);
                     $ins = (int) ($eredmeny['inserted'] ?? 0);
                     $upd = (int) ($eredmeny['updated'] ?? 0);
                     $errs = $eredmeny['errors'] ?? [];
                     $skipped = $eredmeny['skipped'] ?? [];
                     if ($ins + $upd > 0 || $skipped !== [] || $errs !== []) {
-                        rendszer_log('csv_import', null, 'CSV import', $table . ': +' . $ins . ' / ~' . $upd . ' sor, kihagyva: ' . count($skipped) . ', hibák: ' . count($errs));
+                        rendszer_log('csv_import', null, 'CSV import', $typeId . ' → ' . $dbTable . ': +' . $ins . ' / ~' . $upd . ' sor, kihagyva: ' . count($skipped) . ', hibák: ' . count($errs));
                     }
                 }
             }
@@ -150,32 +156,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$formTargetTable = trim((string) ($_GET['target_table'] ?? ''));
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($schema[$table])) {
-    $formTargetTable = $table;
+$formTargetType = trim((string) ($_GET['target_table'] ?? ''));
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && events_csv_import_resolve_type($typeId) !== null) {
+    $formTargetType = $typeId;
 }
-if ($formTargetTable === '' || !isset($schema[$formTargetTable])) {
-    foreach ($schema as $k => $_) {
-        $formTargetTable = $k;
+if ($formTargetType === '' || events_csv_import_resolve_type($formTargetType) === null) {
+    foreach ($importTypes as $k => $_) {
+        $formTargetType = $k;
         break;
     }
 }
-$pForm = $presets[$formTargetTable] ?? [];
+$formTypeInfo = events_csv_import_resolve_type($formTargetType) ?? [];
+$formDbTable = (string) ($formTypeInfo['target_table'] ?? '');
+$pForm = $presets[$formTargetType] ?? [];
 $delRaw = (string) ($pForm['delimiter'] ?? ';');
 $delVal = in_array($delRaw, [',', ';', 'tab'], true) ? $delRaw : ';';
 $subVal = (string) ($pForm['required_substring'] ?? '');
+if ($subVal === '') {
+    $subVal = events_csv_import_default_required_substring($formTargetType);
+}
 
 $purgeSess = $_SESSION['csv_import_purge'] ?? null;
 if (isset($_GET['purge_step']) && (string) $_GET['purge_step'] === 'confirm') {
-    if (!is_array($purgeSess) || ($purgeSess['table'] ?? '') !== $formTargetTable) {
+    if (!is_array($purgeSess) || ($purgeSess['type_id'] ?? '') !== $formTargetType) {
         unset($_SESSION['csv_import_purge']);
-        redirect(events_url('import_csv.php?target_table=' . rawurlencode($formTargetTable)));
+        redirect(events_url('import_csv.php?target_table=' . rawurlencode($formTargetType)));
     }
 }
 $purgeSess = $_SESSION['csv_import_purge'] ?? null;
 $showPurgeConfirm = isset($_GET['purge_step']) && (string) $_GET['purge_step'] === 'confirm'
     && is_array($purgeSess)
-    && ($purgeSess['table'] ?? '') === $formTargetTable
+    && ($purgeSess['type_id'] ?? '') === $formTargetType
     && isset($purgeSess['count'], $purgeSess['token']);
 
 $pageTitle = 'CSV import';
@@ -185,9 +196,9 @@ $presetsJson = json_encode($presets, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSO
 if ($presetsJson === false) {
     $presetsJson = '{}';
 }
-$builtinPresetsJson = json_encode($builtinPresets, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-if ($builtinPresetsJson === false) {
-    $builtinPresetsJson = '{}';
+$importTypesJson = json_encode($importTypes, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+if ($importTypesJson === false) {
+    $importTypesJson = '{}';
 }
 ?>
 <div class="card">
@@ -199,7 +210,9 @@ if ($builtinPresetsJson === false) {
         <?php
         $purgeTbl = (string) $purgeSess['table'];
         $purgeCnt = (int) $purgeSess['count'];
-        $purgeLbl = (string) ($schema[$purgeTbl]['label'] ?? $purgeTbl);
+        $purgeTypeId = (string) ($purgeSess['type_id'] ?? $formTargetType);
+        $purgeType = events_csv_import_resolve_type($purgeTypeId);
+        $purgeLbl = is_array($purgeType) ? (string) ($purgeType['option_label'] ?? $purgeTbl) : (string) ($schema[$purgeTbl]['label'] ?? $purgeTbl);
         ?>
         <div class="alert alert-error csv-import-purge-confirm" role="alert">
             <p><strong>Figyelem – visszavonhatatlan törlés</strong></p>
@@ -211,14 +224,14 @@ if ($builtinPresetsJson === false) {
                 <form method="post" style="display:inline;">
                     <?= csrf_input('events_import_csv') ?>
                     <input type="hidden" name="action" value="purge_execute">
-                    <input type="hidden" name="target_table" value="<?= h($purgeTbl) ?>">
+                    <input type="hidden" name="target_table" value="<?= h($purgeTypeId) ?>">
                     <input type="hidden" name="purge_token" value="<?= h((string) $purgeSess['token']) ?>">
                     <button type="submit" class="btn btn-danger" data-purge-count="<?= $purgeCnt ?>">Igen, töröld mind a <?= $purgeCnt ?> sort</button>
                 </form>
                 <form method="post" style="display:inline;">
                     <?= csrf_input('events_import_csv') ?>
                     <input type="hidden" name="action" value="purge_cancel">
-                    <input type="hidden" name="target_table" value="<?= h($purgeTbl) ?>">
+                    <input type="hidden" name="target_table" value="<?= h($purgeTypeId) ?>">
                     <button type="submit" class="btn btn-secondary">Mégse</button>
                 </form>
             </div>
@@ -269,35 +282,17 @@ if ($builtinPresetsJson === false) {
         </div>
     <?php endif; ?>
 
-    <?php if ($builtinPresets !== [] || $sampleCsvFiles !== []): ?>
-    <div class="csv-import-builtin-presets">
-        <h3 class="csv-import-builtin-presets__title">Beépített import sablonok</h3>
-        <ul class="csv-import-builtin-presets__list">
-            <?php foreach ($builtinPresets as $presetId => $preset): ?>
-                <li class="csv-import-builtin-presets__item">
-                    <button type="button" class="btn btn-secondary btn-sm csv-import-builtin-presets__apply" data-builtin-preset="<?= h($presetId) ?>">
-                        <?= h((string) ($preset['label'] ?? $presetId)) ?>
-                    </button>
-                    <?php if (isset($sampleCsvFiles[$presetId])): ?>
-                        <a class="btn btn-secondary btn-sm" href="<?= h(events_url('import_csv.php?sample=' . rawurlencode($presetId))) ?>">Minta CSV</a>
-                    <?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-        <p class="help">A sablon beállítja a cél táblát, elválasztót, fájlnév-szűrőt és oszlop mappinget. A fájlnévben szerepeljen: <code>esemény-címke-DJ</code>.</p>
-    </div>
-    <?php endif; ?>
-
     <form method="post" enctype="multipart/form-data" class="csv-import-form" id="csv-import-form">
         <?= csrf_input('events_import_csv') ?>
         <input type="hidden" name="action" id="import_action" value="import">
         <div class="form-group">
-            <label for="target_table">Cél tábla *</label>
+            <label for="target_table">Import típus *</label>
             <select id="target_table" name="target_table" required>
-                <?php foreach ($schema as $tbl => $info): ?>
-                    <option value="<?= h($tbl) ?>" <?= $formTargetTable === $tbl ? ' selected' : '' ?>><?= h($info['label'] ?? $tbl) ?></option>
+                <?php foreach ($importTypes as $tid => $tinfo): ?>
+                    <option value="<?= h($tid) ?>" <?= $formTargetType === $tid ? ' selected' : '' ?>><?= h((string) ($tinfo['option_label'] ?? $tid)) ?></option>
                 <?php endforeach; ?>
             </select>
+            <p class="help">Minden típushoz 3 jegyű azonosító tartozik (pl. <code>012</code>). A fájlnévben alapból ez a szám szerepel.</p>
         </div>
         <div class="form-group">
             <label for="delimiter">Elválasztó</label>
@@ -309,8 +304,8 @@ if ($builtinPresetsJson === false) {
         </div>
         <div class="form-group">
             <label for="required_substring">Kötelező szövegrészlet a fájlnévben</label>
-            <input type="text" id="required_substring" name="required_substring" value="<?= h($subVal) ?>" maxlength="500" placeholder="pl. import vagy _esemeny_ – üres = nincs ellenőrzés">
-            <p class="help">Ha kitöltöd, csak olyan fájl választható / tölthető fel, amelynek a nevében szerepel ez a szöveg (UTF‑8, a kliensen is ellenőrizzük).</p>
+            <input type="text" id="required_substring" name="required_substring" value="<?= h($subVal) ?>" maxlength="500" placeholder="pl. 012 – üres = nincs ellenőrzés">
+            <p class="help">Alapértelmezés: az import típus 3 jegyű kódja. Üres mező = nincs fájlnév-ellenőrzés.</p>
         </div>
         <div class="form-group">
             <label for="csv_file">CSV fájl</label>
@@ -318,14 +313,25 @@ if ($builtinPresetsJson === false) {
             <p class="help">Import futtatásához kötelező; a beállítások mentéséhez nem kell fájl. A fájlnév követelmény bekapcsolva esetén érvénytelen fájl kiválasztása nem marad meg.</p>
         </div>
 
-        <?php foreach ($schema as $tbl => $info): ?>
+        <?php foreach ($importTypes as $tid => $tinfo): ?>
         <?php
-            $p = $presets[$tbl] ?? null;
+            $tbl = (string) ($tinfo['target_table'] ?? '');
+            if ($tbl === '' || !isset($schema[$tbl])) {
+                continue;
+            }
+            $info = $schema[$tbl];
+            $p = $presets[$tid] ?? null;
             $pMap = is_array($p) ? ($p['map'] ?? []) : [];
+            $samplePresetId = (string) ($tinfo['preset_id'] ?? $tid);
         ?>
-        <div class="csv-mapping-block" data-table="<?= h($tbl) ?>" style="display:none;">
-            <h3>Oszlop mapping: <?= h($info['label'] ?? $tbl) ?></h3>
+        <div class="csv-mapping-block" data-type-id="<?= h($tid) ?>" style="display:none;">
+            <h3>Oszlop mapping: <?= h((string) ($tinfo['option_label'] ?? $tid)) ?></h3>
             <p class="help">A „CSV oszlop neve” pontosan egyezzen a fájl első sorában lévő fejléccel.</p>
+            <?php if (isset($sampleCsvFiles[$samplePresetId])): ?>
+                <p class="csv-import-sample-link">
+                    <a class="btn btn-secondary btn-sm" href="<?= h(events_url('import_csv.php?sample=' . rawurlencode($samplePresetId))) ?>">Minta CSV letöltése</a>
+                </p>
+            <?php endif; ?>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -340,7 +346,7 @@ if ($builtinPresetsJson === false) {
                                 <?php if (!empty($meta['note'])): ?><br><span class="help"><?= h($meta['note']) ?></span><?php endif; ?>
                             </td>
                             <td>
-                                <input type="text" class="csv-map-input" data-tbl="<?= h($tbl) ?>" data-col="<?= h($col) ?>" name="map[<?= h($tbl) ?>][<?= h($col) ?>]" value="<?= h($pMap[$col] ?? '') ?>" placeholder="pl. EventTitle" autocomplete="off">
+                                <input type="text" class="csv-map-input" data-type-id="<?= h($tid) ?>" data-col="<?= h($col) ?>" name="map[<?= h($tid) ?>][<?= h($col) ?>]" value="<?= h($pMap[$col] ?? '') ?>" placeholder="pl. EventTitle" autocomplete="off">
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -351,7 +357,7 @@ if ($builtinPresetsJson === false) {
         <?php endforeach; ?>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-secondary" id="btn-save-preset">Beállítások mentése (cél tábla szerint)</button>
+            <button type="submit" class="btn btn-secondary" id="btn-save-preset">Beállítások mentése (import típus szerint)</button>
             <button type="submit" class="btn btn-primary" id="btn-import">Import futtatása</button>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
         </div>
@@ -359,7 +365,7 @@ if ($builtinPresetsJson === false) {
 
     <div class="csv-import-purge-panel" style="margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--border);">
         <h3 style="margin-top:0;">Teljes tábla ürítése</h3>
-        <p class="help" style="margin-bottom:0.75rem;">A fenti <strong>cél tábla</strong> legördülőben kiválasztott táblából minden sor törlődik (FK-k miatt kapcsolt sorok is törlődhetnek / nullázódhatnak). Először megjelenik a törlendő sorok száma, majd megerősítheted.</p>
+        <p class="help" style="margin-bottom:0.75rem;">A kiválasztott import típushoz tartozó <strong>adatbázis táblából</strong> minden sor törlődik (FK-k miatt kapcsolt sorok is törlődhetnek / nullázódhatnak). Először megjelenik a törlendő sorok száma, majd megerősítheted.</p>
         <form method="post" id="csv-purge-preview-form">
             <?= csrf_input('events_import_csv') ?>
             <input type="hidden" name="action" value="purge_preview">
@@ -371,7 +377,7 @@ if ($builtinPresetsJson === false) {
 <script>
 (function () {
     var PRESETS = <?= $presetsJson ?>;
-    var BUILTIN_PRESETS = <?= $builtinPresetsJson ?>;
+    var IMPORT_TYPES = <?= $importTypesJson ?>;
     var form = document.getElementById('csv-import-form');
     var sel = document.getElementById('target_table');
     var del = document.getElementById('delimiter');
@@ -402,17 +408,22 @@ if ($builtinPresetsJson === false) {
         return true;
     }
 
-    function applyPreset(table) {
-        var p = PRESETS[table] || {};
+    function applyPreset(typeId) {
+        var p = PRESETS[typeId] || {};
+        var t = IMPORT_TYPES[typeId] || {};
         var allowed = { ';': 1, ',': 1, tab: 1 };
         if (del) {
             del.value = (p.delimiter && allowed[p.delimiter]) ? p.delimiter : ';';
         }
         if (sub) {
-            sub.value = typeof p.required_substring === 'string' ? p.required_substring : '';
+            var subVal = typeof p.required_substring === 'string' ? p.required_substring : '';
+            if (!subVal && t.import_code) {
+                subVal = String(t.import_code);
+            }
+            sub.value = subVal;
         }
         var m = p.map || {};
-        document.querySelectorAll('.csv-map-input[data-tbl="' + table + '"]').forEach(function (inp) {
+        document.querySelectorAll('.csv-map-input[data-type-id="' + typeId + '"]').forEach(function (inp) {
             var col = inp.getAttribute('data-col');
             if (!col) return;
             inp.value = m[col] != null ? String(m[col]) : '';
@@ -422,38 +433,10 @@ if ($builtinPresetsJson === false) {
     function syncBlocks() {
         var t = sel.value;
         blocks.forEach(function (b) {
-            b.style.display = b.getAttribute('data-table') === t ? 'block' : 'none';
+            b.style.display = b.getAttribute('data-type-id') === t ? 'block' : 'none';
         });
         applyPreset(t);
     }
-
-    function applyBuiltinPreset(presetId) {
-        var p = BUILTIN_PRESETS[presetId];
-        if (!p || !sel) return;
-        var tbl = p.target_table || '';
-        if (!tbl) return;
-        sel.value = tbl;
-        syncBlocks();
-        if (del) {
-            del.value = p.delimiter || ';';
-        }
-        if (sub) {
-            sub.value = p.required_substring || '';
-        }
-        var m = p.map || {};
-        document.querySelectorAll('.csv-map-input[data-tbl="' + tbl + '"]').forEach(function (inp) {
-            var col = inp.getAttribute('data-col');
-            if (!col) return;
-            inp.value = m[col] != null ? String(m[col]) : '';
-        });
-    }
-
-    document.querySelectorAll('.csv-import-builtin-presets__apply').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var id = btn.getAttribute('data-builtin-preset');
-            if (id) applyBuiltinPreset(id);
-        });
-    });
 
     sel.addEventListener('change', syncBlocks);
     syncBlocks();
