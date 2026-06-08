@@ -2389,6 +2389,33 @@ dialog.eventpics-modal::backdrop {
     margin: 0.75rem 0 0;
 }
 
+.csv-import-builtin-presets {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+}
+.csv-import-builtin-presets__title {
+    margin: 0 0 0.65rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+.csv-import-builtin-presets__list {
+    list-style: none;
+    margin: 0 0 0.65rem;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.65rem;
+}
+.csv-import-builtin-presets__item {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+}
+
 /* Címke admin tábla: ID oszlop keskeny, de elfér a 6 jegyű ID + szűrő placeholder */
 #events-tags-inline-table {
     table-layout: fixed;

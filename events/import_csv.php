@@ -6,11 +6,24 @@ require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
 require_once __DIR__ . '/lib/csv_import_schema.php';
 require_once __DIR__ . '/lib/csv_import_engine.php';
 require_once __DIR__ . '/lib/import_settings.php';
+require_once __DIR__ . '/lib/import_presets.php';
 requireLogin();
 
 $schema = events_csv_import_schema();
 $db = getDb();
-$presets = events_import_settings_load_all($db);
+events_import_seed_builtin_presets($db);
+$presets = events_import_presets_merged($db);
+$builtinPresets = events_import_builtin_presets();
+$sampleCsvFiles = events_import_sample_csv_files();
+
+$sampleKey = trim((string) ($_GET['sample'] ?? ''));
+if ($sampleKey !== '' && isset($sampleCsvFiles[$sampleKey])) {
+    $sample = $sampleCsvFiles[$sampleKey];
+    header('Content-Type: ' . (string) ($sample['mime'] ?? 'text/csv'));
+    header('Content-Disposition: attachment; filename="' . str_replace('"', '', (string) ($sample['filename'] ?? 'minta.csv')) . '"');
+    echo (string) ($sample['content'] ?? '');
+    exit;
+}
 
 $hiba = '';
 $eredmeny = null;
@@ -96,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             try {
                 events_import_settings_save($db, $table, $delimiter, $requiredSubstring, $columnMap);
-                $presets = events_import_settings_load_all($db);
+                $presets = events_import_presets_merged($db);
                 flash('success', 'Import beállítások elmentve ehhez a cél táblához: ' . $table . '.');
                 redirect(events_url('import_csv.php?target_table=' . rawurlencode($table)));
             } catch (Throwable $e) {
@@ -171,6 +184,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 $presetsJson = json_encode($presets, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 if ($presetsJson === false) {
     $presetsJson = '{}';
+}
+$builtinPresetsJson = json_encode($builtinPresets, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+if ($builtinPresetsJson === false) {
+    $builtinPresetsJson = '{}';
 }
 ?>
 <div class="card">
@@ -250,6 +267,25 @@ if ($presetsJson === false) {
                 </ul>
             <?php endif; ?>
         </div>
+    <?php endif; ?>
+
+    <?php if ($builtinPresets !== [] || $sampleCsvFiles !== []): ?>
+    <div class="csv-import-builtin-presets">
+        <h3 class="csv-import-builtin-presets__title">Beépített import sablonok</h3>
+        <ul class="csv-import-builtin-presets__list">
+            <?php foreach ($builtinPresets as $presetId => $preset): ?>
+                <li class="csv-import-builtin-presets__item">
+                    <button type="button" class="btn btn-secondary btn-sm csv-import-builtin-presets__apply" data-builtin-preset="<?= h($presetId) ?>">
+                        <?= h((string) ($preset['label'] ?? $presetId)) ?>
+                    </button>
+                    <?php if (isset($sampleCsvFiles[$presetId])): ?>
+                        <a class="btn btn-secondary btn-sm" href="<?= h(events_url('import_csv.php?sample=' . rawurlencode($presetId))) ?>">Minta CSV</a>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+        <p class="help">A sablon beállítja a cél táblát, elválasztót, fájlnév-szűrőt és oszlop mappinget. A fájlnévben szerepeljen: <code>esemény-címke-DJ</code>.</p>
+    </div>
     <?php endif; ?>
 
     <form method="post" enctype="multipart/form-data" class="csv-import-form" id="csv-import-form">
@@ -335,6 +371,7 @@ if ($presetsJson === false) {
 <script>
 (function () {
     var PRESETS = <?= $presetsJson ?>;
+    var BUILTIN_PRESETS = <?= $builtinPresetsJson ?>;
     var form = document.getElementById('csv-import-form');
     var sel = document.getElementById('target_table');
     var del = document.getElementById('delimiter');
@@ -389,6 +426,34 @@ if ($presetsJson === false) {
         });
         applyPreset(t);
     }
+
+    function applyBuiltinPreset(presetId) {
+        var p = BUILTIN_PRESETS[presetId];
+        if (!p || !sel) return;
+        var tbl = p.target_table || '';
+        if (!tbl) return;
+        sel.value = tbl;
+        syncBlocks();
+        if (del) {
+            del.value = p.delimiter || ';';
+        }
+        if (sub) {
+            sub.value = p.required_substring || '';
+        }
+        var m = p.map || {};
+        document.querySelectorAll('.csv-map-input[data-tbl="' + tbl + '"]').forEach(function (inp) {
+            var col = inp.getAttribute('data-col');
+            if (!col) return;
+            inp.value = m[col] != null ? String(m[col]) : '';
+        });
+    }
+
+    document.querySelectorAll('.csv-import-builtin-presets__apply').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-builtin-preset');
+            if (id) applyBuiltinPreset(id);
+        });
+    });
 
     sel.addEventListener('change', syncBlocks);
     syncBlocks();
