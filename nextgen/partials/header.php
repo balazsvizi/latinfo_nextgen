@@ -91,6 +91,9 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(site_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
                         <li role="none"><a href="<?= h(site_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
                         <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
+                        <?php if (isLoggedIn() && isSuperadmin()): ?>
+                        <li role="none"><a href="<?= h(site_url('events/adatok.php')) ?>" role="menuitem">Adatok</a></li>
+                        <?php endif; ?>
                     </ul>
                 </li>
                 <?php endif; ?>

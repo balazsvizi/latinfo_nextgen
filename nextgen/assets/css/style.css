@@ -2322,6 +2322,73 @@ dialog.eventpics-modal::backdrop {
     margin-top: 1rem;
 }
 
+/* Esemény adattáblák (adatok.php, superadmin) */
+.events-data-admin__intro {
+    margin: 0 0 1.25rem;
+    max-width: 52rem;
+}
+.events-data-group {
+    margin: 0 0 1.75rem;
+}
+.events-data-group__title {
+    margin: 0 0 0.65rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+.events-data-table__count-col {
+    width: 7rem;
+    text-align: right;
+    white-space: nowrap;
+}
+.events-data-table__action-col {
+    width: 8rem;
+    text-align: right;
+    white-space: nowrap;
+}
+.events-data-table__count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+.events-data-table__row--missing td {
+    color: var(--text-muted);
+}
+.events-data-table__missing {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+.events-data-purge-preview-form {
+    margin: 0;
+    display: inline;
+}
+.events-data-purge-confirm {
+    margin: 0 0 1.5rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid #f5c2c7;
+    border-radius: var(--radius);
+    background: #fff5f5;
+}
+.events-data-purge-confirm__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+}
+.events-data-purge-confirm__target {
+    margin: 0 0 0.5rem;
+}
+.events-data-purge-confirm__code {
+    margin-left: 0.35rem;
+    font-size: 0.85em;
+}
+.events-data-purge-confirm__warn {
+    margin: 0 0 1rem;
+}
+.events-data-purge-confirm__form .form-group {
+    max-width: 16rem;
+}
+.events-data-purge-cancel-form {
+    display: inline-block;
+    margin: 0.75rem 0 0;
+}
+
 /* Címke admin tábla: ID oszlop keskeny, de elfér a 6 jegyű ID + szűrő placeholder */
 #events-tags-inline-table {
     table-layout: fixed;
