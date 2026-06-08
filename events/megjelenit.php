@@ -251,10 +251,10 @@ header('Content-Type: text/html; charset=UTF-8');
                             <?php if ($eventTags !== []): ?>
                                 <div class="event-hero-meta__slot event-hero-meta-group" role="group" aria-label="<?= h($T['section_tags']) ?>">
                                     <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_tags']) ?>">🏷️</span>
-                                    <ul class="event-public__tag-pills event-public__tag-pills--hero" role="list">
+                                    <ul class="event-hero-inline-list event-hero-inline-list--tags" role="list">
                                         <?php foreach ($eventTags as $tagRow): ?>
-                                            <li class="event-public__tag-pills__item">
-                                                <a class="event-public__tag-pill" href="<?= h(events_public_tag_page_url((int) $tagRow['id'], $lang)) ?>"><?= h((string) $tagRow['name']) ?></a>
+                                            <li class="event-hero-inline-list__item">
+                                                <a class="event-hero-tag-link" href="<?= h(events_public_tag_page_url((int) $tagRow['id'], $lang)) ?>"><?= h((string) $tagRow['name']) ?></a>
                                             </li>
                                         <?php endforeach; ?>
                                     </ul>

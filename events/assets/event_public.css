@@ -668,30 +668,6 @@ a.event-public__tag-pill:hover {
     gap: 0.4rem 0.45rem;
 }
 
-.event-public__tag-pills--hero .event-public__tag-pill {
-    padding: 0.32rem 0.7rem 0.32rem 0.55rem;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--li-green-dark);
-    background: #fff;
-    border: 1.5px solid var(--li-green);
-    border-radius: 6px;
-    box-shadow: 0 1px 4px rgba(61, 79, 56, 0.1);
-}
-
-.event-public__tag-pills--hero .event-public__tag-pill::before {
-    content: '#';
-    margin-right: 0.12rem;
-    font-weight: 700;
-    color: var(--li-green-muted);
-}
-
-.event-public__tag-pills--hero a.event-public__tag-pill:hover {
-    background: var(--li-green-soft);
-    border-color: var(--li-green-hover);
-    color: var(--li-green-hover);
-}
-
 .event-body {
     font-family: var(--ev-font);
     font-size: 1.0625rem;
@@ -915,6 +891,45 @@ a.event-public__tag-pill:hover {
     font-size: 0.875rem;
     font-weight: 700;
     line-height: 1.35;
+    color: var(--li-green-dark);
+}
+
+.event-hero-category-text::before {
+    content: '';
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    background: var(--event-cat-accent, var(--li-green));
+    vertical-align: 0.05em;
+}
+
+.event-hero-inline-list--tags .event-hero-inline-list__item:not(:last-child)::after {
+    content: '\00a0·\00a0';
+    color: var(--li-text-soft);
+    font-weight: 400;
+}
+
+.event-hero-tag-link {
+    font-family: var(--ev-sans);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--li-green);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.event-hero-tag-link::before {
+    content: '#';
+    color: var(--li-green-muted);
+    font-weight: 700;
+}
+
+.event-hero-tag-link:hover {
+    color: var(--li-green-hover);
+    text-decoration: underline;
+    text-underline-offset: 0.14em;
 }
 
 .event-hero-inline-label {

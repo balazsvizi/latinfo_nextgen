@@ -103,7 +103,7 @@ function events_public_category_pill_inline_style(string $rawHex): string {
 }
 
 /**
- * Nyilvános kategória — színes szöveg (gomb/pill nélkül).
+ * Nyilvános kategória — sötét felirat + színes pont (a DB szín gyakran világos háttérhez való).
  */
 function events_public_category_text_inline_style(string $rawHex): string {
     $hex = strtoupper(trim($rawHex));
@@ -111,5 +111,5 @@ function events_public_category_text_inline_style(string $rawHex): string {
         $hex = '#6D8F63';
     }
 
-    return 'color:' . $hex;
+    return '--event-cat-accent:' . $hex;
 }
