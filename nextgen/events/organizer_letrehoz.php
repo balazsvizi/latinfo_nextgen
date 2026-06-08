@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/entity_quick_create.php';
 requireLogin();
 
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Új szervező';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <div class="card">
@@ -47,4 +47,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </p>
     </form>
 </div>
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

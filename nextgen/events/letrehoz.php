@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 requireLogin();
 
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Új esemény';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 <div class="events-edit-page">
@@ -168,4 +168,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 </div>
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
 <?php if ($eventFormIsCopy): require __DIR__ . '/partials/event_copy_save_script.php'; endif; ?>
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

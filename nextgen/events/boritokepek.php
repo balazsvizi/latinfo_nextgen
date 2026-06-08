@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/eventpics.php';
 requireLogin();
 
@@ -58,11 +58,11 @@ if ($selected !== '') {
 $usage = $selected !== '' ? events_events_using_eventpic($db, $selected) : [];
 $usageCount = count($usage);
 $editBase = events_url('szerkeszt.php?id=');
-$picBase = site_url('events/eventpics/');
+$picBase = events_url('eventpics/');
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Borítóképek';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
@@ -206,4 +206,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 })();
 </script>
 
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

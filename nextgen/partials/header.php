@@ -4,7 +4,7 @@ requireLogin();
 
 $navZone = ng_nav_app_zone();
 if ($navZone === 'events') {
-    $logoHomeUrl = site_url('events/events_admin.php');
+    $logoHomeUrl = nextgen_url('events/events_admin.php');
 } elseif ($navZone === 'nextgen') {
     $logoHomeUrl = nextgen_url('apps.php');
 } else {
@@ -35,7 +35,7 @@ if ($navZone === 'events') {
                 </span>
                 <ul class="nav-submenu" id="submenu-apps-switcher" role="menu">
                     <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance</a></li>
-                    <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
+                    <li role="none"><a href="<?= h(nextgen_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
                     <li role="none"><a href="<?= h(nextgen_url('config/cimkek.php')) ?>" role="menuitem">NextGen</a></li>
                 </ul>
             </div>
@@ -63,23 +63,23 @@ if ($navZone === 'events') {
                 <?php elseif ($navZone === 'events'): ?>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
-                        <a href="<?= h(site_url('events/events_admin.php')) ?>" class="nav-parent-link">Események</a>
+                        <a href="<?= h(nextgen_url('events/events_admin.php')) ?>" class="nav-parent-link">Események</a>
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-app" aria-label="Események almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-events-app" role="menu">
-                        <li role="none"><a href="<?= h(site_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/events_naptar.php')) ?>" role="menuitem">Naptár</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_naptar.php')) ?>" role="menuitem">Naptár</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= h(site_url('events/venues.php')) ?>" class="nav-parent-link">Helyszínek</a>
+                    <a href="<?= h(nextgen_url('events/venues.php')) ?>" class="nav-parent-link">Helyszínek</a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= h(site_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>
+                    <a href="<?= h(nextgen_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>
                 </li>
                 <li role="none" class="nav-item">
-                    <a href="<?= h(site_url('events/styles.php')) ?>" class="nav-parent-link">Stílusok</a>
+                    <a href="<?= h(nextgen_url('events/styles.php')) ?>" class="nav-parent-link">Stílusok</a>
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
@@ -87,14 +87,14 @@ if ($navZone === 'events') {
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-egyeb" aria-label="Egyéb almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
-                        <li role="none"><a href="<?= h(site_url('events/categories.php')) ?>" role="menuitem">Kategóriák</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/tag_types.php')) ?>" role="menuitem">Címke típusok</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
-                        <li role="none"><a href="<?= h(site_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/categories.php')) ?>" role="menuitem">Kategóriák</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/tag_types.php')) ?>" role="menuitem">Címke típusok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
                         <?php if (isLoggedIn() && isSuperadmin()): ?>
-                        <li role="none"><a href="<?= h(site_url('events/adatok.php')) ?>" role="menuitem">Adatok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/adatok.php')) ?>" role="menuitem">Adatok</a></li>
                         <?php endif; ?>
                     </ul>
                 </li>

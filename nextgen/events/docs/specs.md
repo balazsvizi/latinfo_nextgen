@@ -155,7 +155,7 @@ Modern naprakész, felhasználóbarát naptár alkalmazás.
 
 - Majd a megjelenítés így lesz: /eventmappa/ez_az_event_címe
 
-- A program fájlok a /events mappába kerüljenek
+- A program fájlok a /nextgen/events mappába kerüljenek (a WP /events URL-t nem használjuk)
 
 - Config
 -- Eventmappa

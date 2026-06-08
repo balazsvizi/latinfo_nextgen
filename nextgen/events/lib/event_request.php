@@ -74,7 +74,7 @@ function events_featured_image_form_preview_meta(string $featuredUrlField, strin
     $pick = trim($eventpicsPickFilename);
     if ($pick !== '') {
         return [
-            'src' => site_url('events/eventpics/' . rawurlencode($pick)),
+            'src' => events_url('eventpics/' . rawurlencode($pick)),
             'source' => 'eventpic',
             'label' => $pick,
         ];

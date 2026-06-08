@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/style_request.php';
 requireLogin();
 
@@ -11,12 +11,12 @@ $db = getDb();
 if (!events_styles_tables_available($db)) {
     $mainContentClass = 'main-content main-content--fullwidth';
     $pageTitle = 'Stílusok';
-    require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+    require_once dirname(__DIR__) . '/partials/header.php';
     echo '<div class="card events-admin-card">';
     echo '<p class="alert alert-error">Hiányoznak a stílus táblák. Futtasd: <code>events/sql/migration_styles.sql</code></p>';
     echo '<p><a href="' . h(events_url('events_admin.php')) . '" class="btn btn-secondary">Vissza az eseményekhez</a></p>';
     echo '</div>';
-    require_once dirname(__DIR__) . '/nextgen/partials/footer.php';
+    require_once dirname(__DIR__) . '/partials/footer.php';
     exit;
 }
 
@@ -97,7 +97,7 @@ if ($openStyleGroup !== '' && $openStyleGroup !== 'new') {
 }
 
 $pageTitle = 'Stílusok';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
@@ -214,4 +214,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </table>
     </div>
 </div>
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

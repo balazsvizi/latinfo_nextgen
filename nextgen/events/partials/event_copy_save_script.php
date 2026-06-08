@@ -8,7 +8,7 @@
     var urlInp = document.getElementById('event_featured_image_url');
     var pickHidden = document.getElementById('event_featured_image_pick');
     var eventUrlInp = document.getElementById('event_url');
-    var EVENTPICS_PREFIX = '/events/eventpics/';
+    var EVENTPICS_PREFIX = '/nextgen/events/eventpics/';
 
     function effectiveFeaturedImage() {
         if (urlInp) {

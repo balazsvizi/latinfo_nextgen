@@ -33,13 +33,13 @@ function log_entity_url(string $entitás, ?int $entitás_id): ?string {
         'admin' => $p . '/admin/adminok/szerkeszt.php?id=',
         'email_config' => $p . '/admin/email/szerkeszt.php?id=',
         'levélsablon' => $p . '/config/levelsablonok/szerkeszt.php?id=',
-        'esemény' => site_url('events/szerkeszt.php?id='),
-        'helyszín' => site_url('events/venue_szerkeszt.php?id='),
-        'tag' => site_url('events/tags.php?open_tag='),
-        'spec_tag' => site_url('events/tags.php?edit_special='),
-        'dj' => site_url('events/tags.php?open_tag='),
-        'stílus' => site_url('events/styles.php?open_style='),
-        'címke' => site_url('events/tags.php?open_tag='),
+        'esemény' => nextgen_url('events/szerkeszt.php?id='),
+        'helyszín' => nextgen_url('events/venue_szerkeszt.php?id='),
+        'tag' => nextgen_url('events/tags.php?open_tag='),
+        'spec_tag' => nextgen_url('events/tags.php?edit_special='),
+        'dj' => nextgen_url('events/tags.php?open_tag='),
+        'stílus' => nextgen_url('events/styles.php?open_style='),
+        'címke' => nextgen_url('events/tags.php?open_tag='),
         'kontakt_típus' => null, // csak lista, nincs egy tétel oldal
     ];
     $base = $urls[$entitás] ?? null;
@@ -74,7 +74,7 @@ function h(?string $s): string {
  */
 function ng_nav_app_zone(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if (strpos($s, '/events/') !== false) {
+    if (strpos($s, '/nextgen/events/') !== false) {
         return 'events';
     }
     if (strpos($s, '/nextgen/config/') !== false || strpos($s, '/nextgen/admin/') !== false) {
@@ -95,7 +95,7 @@ function ng_nav_app_zone(): string {
  */
 function app_backoffice_area(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if (strpos($s, '/events/') !== false) {
+    if (strpos($s, '/nextgen/events/') !== false) {
         return 'Event Admin';
     }
     if (strpos($s, '/nextgen/apps.php') !== false || str_ends_with($s, '/apps.php')) {

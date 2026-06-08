@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/venue_request.php';
 requireLogin();
 
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Új helyszín';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 <div class="card">
@@ -77,4 +77,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         </div>
     </form>
 </div>
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

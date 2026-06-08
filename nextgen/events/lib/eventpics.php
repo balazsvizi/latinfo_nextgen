@@ -5,11 +5,11 @@ declare(strict_types=1);
  * Event borítókép mappa (megosztott képforrás).
  */
 function events_eventpics_dir_path(): string {
-    return BASE_PATH . '/events/eventpics';
+    return BASE_PATH . '/nextgen/events/eventpics';
 }
 
 function events_eventpics_web_prefix(): string {
-    return '/events/eventpics/';
+    return '/nextgen/events/eventpics/';
 }
 
 function events_eventpics_ensure_dir(): bool {
@@ -191,7 +191,7 @@ function events_events_using_eventpic(PDO $db, string $filename): array {
         SELECT `id`, `event_name`, `event_slug`, `event_featured_image_url`
         FROM `events_calendar_events`
         WHERE `event_featured_image_url` IS NOT NULL AND TRIM(`event_featured_image_url`) != \'\'
-          AND `event_featured_image_url` LIKE \'%/events/eventpics/%\'
+          AND `event_featured_image_url` LIKE \'%/nextgen/events/eventpics/%\'
     ');
     if ($st === false) {
         return [];

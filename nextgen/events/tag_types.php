@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/tag_type.php';
 requireLogin();
 
@@ -11,12 +11,12 @@ $db = getDb();
 if (!events_tag_types_registry_table_available($db)) {
     $mainContentClass = 'main-content main-content--fullwidth';
     $pageTitle = 'Címke típusok';
-    require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+    require_once dirname(__DIR__) . '/partials/header.php';
     echo '<div class="card events-admin-card">';
     echo '<p class="alert alert-error">Hiányzik az <code>events_tag_types</code> tábla. Futtasd: <code>events/sql/migration_tag_types_registry.sql</code></p>';
     echo '<p><a href="' . h(events_url('tags.php')) . '" class="btn btn-secondary">Vissza a címkékhez</a></p>';
     echo '</div>';
-    require_once dirname(__DIR__) . '/nextgen/partials/footer.php';
+    require_once dirname(__DIR__) . '/partials/footer.php';
     exit;
 }
 
@@ -115,7 +115,7 @@ if ($openRaw === 'new') {
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Címke típusok';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
@@ -279,4 +279,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 })();
 </script>
 
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

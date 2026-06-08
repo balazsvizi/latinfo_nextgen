@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Közös betöltés events/*.php számára (nextgen init, nincs kötelező login).
  */
-require_once dirname(__DIR__) . '/nextgen/init.php';
+require_once dirname(__DIR__) . '/init.php';
 require_once __DIR__ . '/lib/slug.php';
 require_once __DIR__ . '/lib/event_status.php';
 require_once __DIR__ . '/lib/html_security.php';
@@ -14,13 +14,13 @@ if (!function_exists('events_url')) {
      * Abszolút URL az events mappa alatti admin / nyilvános PHP fájlokhoz.
      */
     function events_url(string $path = ''): string {
-        return site_url('events/' . ltrim($path, '/'));
+        return nextgen_url('events/' . ltrim($path, '/'));
     }
 }
 
 if (!function_exists('events_public_home_page_script')) {
     /**
-     * Publikus esemény főoldal — egyelőre nem a /events/ gyökér (index.php), hanem külön fájl.
+     * Publikus esemény főoldal — nem a WP /events URL, hanem külön fájl (public_home.php).
      */
     function events_public_home_page_script(): string {
         return 'public_home.php';

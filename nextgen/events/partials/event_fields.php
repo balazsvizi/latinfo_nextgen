@@ -313,7 +313,7 @@ require __DIR__ . '/wp_token_field.php';
         <label>Eventpics borítókép</label>
         <p class="help">Egy képet adhatsz meg. A választó ablakban tallózhatsz vagy feltölthetsz (egyszerre egy fájl). Ugyanaz a fájl több eseménynél is használható.</p>
         <input type="hidden" name="event_featured_image_pick" id="event_featured_image_pick" value="<?= h($eventpicsPick) ?>">
-        <div class="eventpics-form-summary" id="eventpics-form-summary" data-base="<?= h(site_url('events/eventpics/')) ?>">
+        <div class="eventpics-form-summary" id="eventpics-form-summary" data-base="<?= h(events_url('eventpics/')) ?>">
             <div class="eventpics-form-summary__inner eventpics-form-summary__inner--toolbar">
                 <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép (adj meg URL-t vagy válassz eventpics képet).</p>
                 <div class="eventpics-form-summary__actions">
@@ -355,7 +355,7 @@ require __DIR__ . '/wp_token_field.php';
                             title="<?= h($picFile) ?>"
                         >
                             <span class="eventpics-item-check" aria-hidden="true"></span>
-                            <img src="<?= h(site_url('events/eventpics/' . rawurlencode($picFile))) ?>" alt="" loading="lazy" width="150" height="150">
+                            <img src="<?= h(events_url('eventpics/' . rawurlencode($picFile))) ?>" alt="" loading="lazy" width="150" height="150">
                         </button>
                     <?php endforeach; ?>
                 </div>

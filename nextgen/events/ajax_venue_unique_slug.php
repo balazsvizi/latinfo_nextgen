@@ -5,7 +5,7 @@ declare(strict_types=1);
  * JSON: névből egyedi venue slug (szerkesztés: exclude_id = saját rekord).
  */
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 requireLogin();
 
 header('Content-Type: application/json; charset=UTF-8');

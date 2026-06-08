@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 requireLogin();
 
@@ -114,7 +114,7 @@ $sablonLogok = $logStmt->fetchAll();
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('warning')): ?><p class="alert alert-warning"><?= h($s) ?></p><?php endif; ?>
@@ -150,4 +150,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 </div>
 
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

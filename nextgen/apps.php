@@ -28,7 +28,7 @@ try {
         <div class="num">→</div>
         <p>Szervezők, finance_contacts, finance_billing_items, finance_invoices – <code>nextgen/</code></p>
     </a>
-    <a href="<?= h(site_url('events/events_admin.php')) ?>" class="dash-card dash-card-events">
+    <a href="<?= h(nextgen_url('events/events_admin.php')) ?>" class="dash-card dash-card-events">
         <h3>Event Admin</h3>
         <div class="num"><?= $eventCount ?></div>
         <p>Események naptár – <code>events/</code></p>
@@ -45,8 +45,8 @@ try {
     <p>
         <a href="<?= h(nextgen_url('organizers/')) ?>" class="btn btn-secondary">Szervezők</a>
         <a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" class="btn btn-secondary">Számlázandó</a>
-        <a href="<?= h(site_url('events/letrehoz.php')) ?>" class="btn btn-secondary">Új esemény</a>
-        <a href="<?= h(site_url('events/import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
+        <a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" class="btn btn-secondary">Új esemény</a>
+        <a href="<?= h(nextgen_url('events/import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
         <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="btn btn-secondary">NextGen – Címkék</a>
         <a href="<?= h(nextgen_url('admin/log.php')) ?>" class="btn btn-secondary">NextGen – Logok</a>
     </p>

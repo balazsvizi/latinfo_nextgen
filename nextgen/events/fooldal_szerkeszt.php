@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/public_home_content.php';
 requireLogin();
 
@@ -33,7 +33,7 @@ $content = events_public_home_load($db);
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Publikus főoldal szövegei';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
@@ -71,4 +71,4 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
 </div>
 
 <?php require __DIR__ . '/partials/tinymce_script.php'; ?>
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

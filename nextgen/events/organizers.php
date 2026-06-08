@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 requireLogin();
 
 $db = getDb();
@@ -10,7 +10,7 @@ $stmt = $db->query('SELECT id, name FROM events_organizers ORDER BY name ASC, id
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $pageTitle = 'Szervezők';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>

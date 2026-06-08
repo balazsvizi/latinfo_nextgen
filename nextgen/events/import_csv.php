@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/csv_import_schema.php';
 require_once __DIR__ . '/lib/csv_import_engine.php';
 require_once __DIR__ . '/lib/import_settings.php';
@@ -190,7 +190,7 @@ $showPurgeConfirm = isset($_GET['purge_step']) && (string) $_GET['purge_step'] =
     && isset($purgeSess['count'], $purgeSess['token']);
 
 $pageTitle = 'CSV import';
-require_once dirname(__DIR__) . '/nextgen/partials/header.php';
+require_once dirname(__DIR__) . '/partials/header.php';
 
 $presetsJson = json_encode($presets, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 if ($presetsJson === false) {
@@ -479,4 +479,4 @@ if ($importTypesJson === false) {
     }
 })();
 </script>
-<?php require_once dirname(__DIR__) . '/nextgen/partials/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
