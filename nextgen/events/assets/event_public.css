@@ -1578,7 +1578,7 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public__main {
     max-width: none;
     margin: 0;
-    padding: 0 0 2rem;
+    padding: 0 clamp(0.85rem, 2.5vw, 1.35rem) 2rem;
 }
 
 .home-public__filters-panel {
@@ -1947,12 +1947,15 @@ body.event-public-page--home .event-public__hero-inner {
     display: inline-flex;
     align-items: center;
     gap: 1.25rem;
+    flex-shrink: 0;
     margin-left: auto;
+    max-width: 100%;
 }
 
 .home-public .events-cal-view-switch--standalone {
     margin: 0 0 0.85rem;
     margin-left: 0;
+    max-width: 100%;
     padding-bottom: 0.65rem;
     border-bottom: 1px solid var(--li-border);
 }
@@ -2226,6 +2229,30 @@ body.event-public-page--home .event-public__hero-inner {
     }
 }
 
+@media (max-width: 899px) {
+    .home-public .events-cal-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+
+    .home-public .events-cal-toolbar__left {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .home-public .events-cal-view-switch {
+        margin-left: 0;
+        width: 100%;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+
+    .home-public .events-cal-view-switch--standalone {
+        justify-content: flex-end;
+    }
+}
+
 @media (max-width: 639px) {
     body.event-public-page--home .event-shell {
         padding-left: 0.65rem;
@@ -2239,6 +2266,11 @@ body.event-public-page--home .event-public__hero-inner {
 
     body.event-public-page--home .event-public__title {
         font-size: clamp(1.45rem, 7vw, 1.85rem);
+    }
+
+    .home-public__main {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
 
     .home-public__filters-summary {
@@ -2264,12 +2296,6 @@ body.event-public-page--home .event-public__hero-inner {
         width: 100%;
     }
 
-    .home-public .events-cal-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-    }
-
     .home-public .events-cal-toolbar__left {
         flex-direction: column;
         align-items: flex-start;
@@ -2280,13 +2306,8 @@ body.event-public-page--home .event-public__hero-inner {
         font-size: 1.35rem;
     }
 
-    .home-public .events-cal-view-switch {
-        margin-left: 0;
-        justify-content: flex-start;
-    }
-
     .home-public .events-cal {
-        margin: 0 -0.15rem;
+        margin: 0;
         border-radius: var(--ev-radius-sm);
     }
 
