@@ -5,8 +5,8 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/eventpics.php';
 require_once __DIR__ . '/html_security.php';
-require_once __DIR__ . '/dj_request.php';
 require_once __DIR__ . '/style_request.php';
+require_once __DIR__ . '/tag_type.php';
 
 /**
  * Űrlapról: kiemelt kép URL (üres = null), vagy hibaüzenet.
@@ -433,7 +433,7 @@ function events_load_event_category_ids(PDO $db, int $eventId): array {
  * Űrlap → adatbázis mezők + slug egyediség.
  *
  * @param array<string,mixed> $defaults Alapértelmezett értékek (pl. DB sor szerkesztésnél)
- * @return array{0: array<string,mixed>, 1: ?string, 2: list<int>, 3: list<int>, 4: list<int>} [row, hiba, szervező ID-k, kategória ID-k, tag ID-k]
+ * @return array{0: array<string,mixed>, 1: ?string, 2: list<int>, 3: list<int>, 4: list<int>, 5: list<int>, 6: list<int>} [row, hiba, szervező ID-k, kategória ID-k, címke ID-k, fő stílus ID-k, kiegészítő stílus ID-k]
  */
 function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlug): array {
     $row = $defaults;
@@ -473,7 +473,6 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $organizerIds = events_organizer_ids_from_post();
     $categoryIds = events_category_ids_from_post();
     $tagIds = events_tags_tables_available($db) ? events_tag_ids_from_post() : [];
-    $djIds = events_djs_tables_available($db) ? events_dj_ids_from_post() : [];
     $mainStyleIds = events_styles_tables_available($db) ? events_main_style_ids_from_post() : [];
     $supplementaryStyleIds = events_styles_tables_available($db) ? events_supplementary_style_ids_from_post() : [];
 
@@ -486,7 +485,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         $chk = $categoryIds;
         sort($chk);
         if ($existing !== $chk) {
-            return [$row, 'A kiválasztott kategóriák között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+            return [$row, 'A kiválasztott kategóriák között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
         }
     }
 
@@ -499,20 +498,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         $chkT = $tagIds;
         sort($chkT);
         if ($existTags !== $chkT) {
-            return [$row, 'A kiválasztott címkék között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
-        }
-    }
-
-    if ($djIds !== []) {
-        $ph = implode(',', array_fill(0, count($djIds), '?'));
-        $stDjs = $db->prepare("SELECT `id` FROM `events_djs` WHERE `id` IN ({$ph})");
-        $stDjs->execute($djIds);
-        $existDjs = array_map('intval', $stDjs->fetchAll(PDO::FETCH_COLUMN, 0));
-        sort($existDjs);
-        $chkD = $djIds;
-        sort($chkD);
-        if ($existDjs !== $chkD) {
-            return [$row, 'A kiválasztott DJ-k között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+            return [$row, 'A kiválasztott címkék között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
         }
     }
 
@@ -525,7 +511,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         $chkM = $mainStyleIds;
         sort($chkM);
         if ($existMain !== $chkM) {
-            return [$row, 'A kiválasztott fő stílusok között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+            return [$row, 'A kiválasztott fő stílusok között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
         }
     }
 
@@ -538,13 +524,13 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         $chkS = $supplementaryStyleIds;
         sort($chkS);
         if ($existSupp !== $chkS) {
-            return [$row, 'A kiválasztott kiegészítő stílusok között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+            return [$row, 'A kiválasztott kiegészítő stílusok között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
         }
     }
 
     [$eventUrl, $eventUrlErr] = events_normalize_safe_url((string) ($_POST['event_url'] ?? ''), true);
     if ($eventUrlErr !== null) {
-        return [$row, $eventUrlErr, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, $eventUrlErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     $row['event_url'] = $eventUrl;
     if (array_key_exists('event_latinfohu_partner', $_POST)) {
@@ -559,43 +545,43 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
     [$featUrlInput, $featUrlErr] = events_normalize_featured_image_url((string) ($_POST['event_featured_image_url'] ?? ''));
     if ($featUrlErr !== null) {
-        return [$row, $featUrlErr, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, $featUrlErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     [$featPickPath, $featPickErr] = events_eventpics_normalize_selected((string) ($_POST['event_featured_image_pick'] ?? ''));
     if ($featPickErr !== null) {
-        return [$row, $featPickErr, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, $featPickErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     [$featUploadPath, $featUploadErr] = events_eventpics_handle_upload($_FILES['event_featured_image_upload'] ?? null);
     if ($featUploadErr !== null) {
-        return [$row, $featUploadErr, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, $featUploadErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     // Prioritás: URL > friss feltöltés > eventpics kiválasztás.
     $row['event_featured_image_url'] = $featUrlInput ?? $featUploadPath ?? $featPickPath;
 
     if ($row['event_name'] === '') {
-        return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
 
     if ($sd === '') {
-        return [$row, 'A kezdő dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, 'A kezdő dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     if ($ed === '') {
-        return [$row, 'A záró dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, 'A záró dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     if ($row['event_start'] === null) {
-        return [$row, 'Érvénytelen kezdő dátum vagy idő.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, 'Érvénytelen kezdő dátum vagy idő.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     if ($row['event_end'] === null) {
-        return [$row, 'Érvénytelen záró dátum vagy idő.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, 'Érvénytelen záró dátum vagy idő.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
 
     if ($row['event_slug'] === '') {
-        return [$row, 'Az URL slug kötelező. Használd a frissítés gombot a név és kezdő dátum alapján.', $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+        return [$row, 'Az URL slug kötelező. Használd a frissítés gombot a név és kezdő dátum alapján.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
 
     $row['event_slug'] = events_ensure_unique_slug($db, $row['event_slug'], $excludeIdForSlug);
 
-    return [$row, null, $organizerIds, $categoryIds, $tagIds, $djIds, $mainStyleIds, $supplementaryStyleIds];
+    return [$row, null, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
 }
 
 /**
@@ -617,7 +603,6 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['organizer_ids'] = events_load_event_organizer_ids($db, $sourceId);
     $event['category_ids'] = events_load_event_category_ids($db, $sourceId);
     $event['tag_ids'] = events_load_event_tag_ids($db, $sourceId);
-    $event['dj_ids'] = events_load_event_dj_ids($db, $sourceId);
     $event['main_style_ids'] = events_load_event_main_style_ids($db, $sourceId);
     $event['supplementary_style_ids'] = events_load_event_supplementary_style_ids($db, $sourceId);
 
@@ -695,11 +680,6 @@ function events_row_for_form(array $row): array {
         $e['tag_ids'] = [];
     } else {
         $e['tag_ids'] = array_values(array_unique(array_map('intval', $e['tag_ids'])));
-    }
-    if (!isset($e['dj_ids']) || !is_array($e['dj_ids'])) {
-        $e['dj_ids'] = [];
-    } else {
-        $e['dj_ids'] = array_values(array_unique(array_map('intval', $e['dj_ids'])));
     }
     if (!isset($e['main_style_ids']) || !is_array($e['main_style_ids'])) {
         $e['main_style_ids'] = [];

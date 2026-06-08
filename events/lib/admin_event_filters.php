@@ -67,8 +67,8 @@ function events_admin_filters_from_request(PDO $db): array {
         $f_tag_id = (int) $f_tag;
     }
 
-    $djsAvailable = events_djs_tables_available($db);
-    $djOptions = $djsAvailable ? events_load_dj_options($db) : [];
+    $djsAvailable = events_tags_tables_available($db) && events_tag_types_tables_available($db);
+    $djOptions = $djsAvailable ? events_load_tag_options_by_types($db, ['dj']) : [];
     $f_dj_id = 0;
     if ($djsAvailable && $f_dj !== '' && ctype_digit($f_dj) && isset($djOptions[(int) $f_dj])) {
         $f_dj_id = (int) $f_dj;
@@ -174,10 +174,11 @@ function events_admin_filters_from_request(PDO $db): array {
     }
     if ($f_dj_id > 0) {
         $where[] = 'EXISTS (
-            SELECT 1 FROM `events_calendar_event_djs` ed2
-            WHERE ed2.event_id = e.id AND ed2.dj_id = ?
+            SELECT 1 FROM `events_calendar_event_tags` etdj
+            INNER JOIN `events_tag_type_links` ttdj ON ttdj.`tag_id` = etdj.`tag_id` AND ttdj.`tag_type` = ?
+            WHERE etdj.event_id = e.id AND etdj.tag_id = ?
         )';
-        $params[] = $f_dj_id;
+        array_push($params, 'dj', $f_dj_id);
     }
     if ($f_main_style_id > 0) {
         $where[] = 'EXISTS (

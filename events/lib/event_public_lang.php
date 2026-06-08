@@ -97,52 +97,6 @@ function events_public_megjelenit_strings(string $lang): array {
 /**
  * @return array<string, string>
  */
-function events_public_dj_strings(string $lang): array {
-    $hu = [
-        'html_title_suffix' => ' – ',
-        'lang_nav' => 'Nyelv',
-        'lang_hu' => 'Magyar',
-        'lang_en' => 'English',
-        'eyebrow' => 'DJ',
-        'events_heading' => 'Események',
-        'section_upcoming' => 'Aktuális események',
-        'section_past' => 'Már lezajlott események',
-        'upcoming_empty' => 'Nincs következő vagy folyamatban lévő közzétett esemény.',
-        'past_empty' => 'Nincs lezajlott közzétett esemény.',
-        'list_empty' => 'Nincs közzétett esemény ehhez a DJ-hez.',
-        'not_found_title' => 'Nincs ilyen DJ',
-        'not_found_body' => 'Nincs ilyen DJ.',
-        'logo_alt' => 'Latinfo.hu',
-        'logo_home_title' => 'Latinfo.hu kezdőoldala',
-        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
-        'footer_home_link' => 'Latinfo.hu',
-    ];
-    $en = [
-        'html_title_suffix' => ' – ',
-        'lang_nav' => 'Language',
-        'lang_hu' => 'Hungarian',
-        'lang_en' => 'English',
-        'eyebrow' => 'DJ',
-        'events_heading' => 'Events',
-        'section_upcoming' => 'Current & upcoming events',
-        'section_past' => 'Past events',
-        'upcoming_empty' => 'No upcoming or ongoing published events.',
-        'past_empty' => 'No past published events.',
-        'list_empty' => 'No published events for this DJ.',
-        'not_found_title' => 'DJ not found',
-        'not_found_body' => 'There is no DJ with this link.',
-        'logo_alt' => 'Latinfo.hu',
-        'logo_home_title' => 'Latinfo.hu home',
-        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
-        'footer_home_link' => 'Latinfo.hu',
-    ];
-
-    return $lang === 'en' ? $en : $hu;
-}
-
-/**
- * @return array<string, string>
- */
 function events_public_organizer_strings(string $lang): array {
     $hu = [
         'html_title_suffix' => ' – ',
@@ -388,17 +342,6 @@ function events_public_organizer_lang_switch_url(int $organizerId, string $targe
 }
 
 /**
- * Nyilvános DJ-oldal URL.
- */
-function events_public_dj_page_url(int $djId, string $lang): string {
-    return events_url('dj.php?' . http_build_query(['id' => $djId, 'lang' => $lang], '', '&', PHP_QUERY_RFC3986));
-}
-
-function events_public_dj_lang_switch_url(int $djId, string $targetLang): string {
-    return events_url('dj.php?' . http_build_query(['id' => $djId, 'lang' => $targetLang], '', '&', PHP_QUERY_RFC3986));
-}
-
-/**
  * 404 HTML (slug üres / nincs esemény) — ugyanaz a favicon és logó, mint a normál megjelenítőn.
  */
 function events_public_megjelenit_not_found_html(string $lang): string {
@@ -467,43 +410,6 @@ function events_public_organizer_not_found_html(string $lang): string {
     </div>
     <p class="event-not-found-msg">' . h($O['not_found_body']) . '</p>
     <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($O['footer_home_link']) . '</a></p>
-</div>
-</body>
-</html>';
-}
-
-/**
- * 404 HTML — ismeretlen DJ ID (dj.php).
- */
-function events_public_dj_not_found_html(string $lang): string {
-    $D = events_public_dj_strings($lang);
-    $htmlLang = $lang === 'en' ? 'en' : 'hu';
-    $home = LATINFO_PUBLIC_HOME_URL;
-    $cssUrl = events_url('assets/event_public.css');
-    $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
-    $fav = events_public_favicon_head_markup();
-
-    return '<!DOCTYPE html>
-<html lang="' . h($htmlLang) . '">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#6d8f63">
-    <title>' . h($D['not_found_title']) . '</title>
-    ' . $fav . '
-    <link rel="stylesheet" href="' . h($cssUrl) . '">
-</head>
-<body class="event-public-page">
-<div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <a class="event-brand-logo" href="' . h($home) . '" title="' . h($D['logo_home_title']) . '" aria-label="' . h($D['logo_home_aria']) . '">
-                <img src="' . h($logoSrc) . '" alt="' . h($D['logo_alt']) . '" width="180" height="48" decoding="async">
-            </a>
-        </div>
-    </div>
-    <p class="event-not-found-msg">' . h($D['not_found_body']) . '</p>
-    <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($D['footer_home_link']) . '</a></p>
 </div>
 </body>
 </html>';

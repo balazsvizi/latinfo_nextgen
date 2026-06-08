@@ -6,7 +6,7 @@ require_once __DIR__ . '/lib/venue_request.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/category_locale.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
-require_once __DIR__ . '/lib/event_public_djs.php';
+require_once __DIR__ . '/lib/tag_type.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
 require_once __DIR__ . '/lib/event_public_styles.php';
 
@@ -50,8 +50,8 @@ if (!$event) {
 $eventId = (int) ($event['id'] ?? 0);
 $eventOrganizers = events_public_event_organizers_for_display($db, $eventId);
 $eventCategories = events_public_event_category_rows($db, $eventId);
-$eventDjs = events_public_event_djs_for_display($db, $eventId);
-$eventTags = events_public_event_tags_for_display($db, $eventId);
+$eventDjs = events_public_event_tags_by_types($db, $eventId, ['dj']);
+$eventTags = events_public_event_tags_for_display($db, $eventId, ['dj']);
 $eventMainStyles = events_public_event_main_styles_for_display($db, $eventId);
 $eventSupplementaryStyles = events_public_event_supplementary_styles_for_display($db, $eventId);
 
@@ -192,7 +192,7 @@ header('Content-Type: text/html; charset=UTF-8');
         <div class="event-public__hero-inner">
             <?php
             $hasHeroMetaTop = $eventOrganizers !== [] || $eventMainStyles !== [] || $eventSupplementaryStyles !== [];
-            $hasHeroMetaBottom = $eventCategories !== [] || $eventDjs !== [];
+            $hasHeroMetaBottom = $eventCategories !== [] || $eventTags !== [] || $eventDjs !== [];
             ?>
             <?php if ($hasHeroMetaTop || $hasHeroMetaBottom): ?>
                 <div class="event-hero-meta">
@@ -256,13 +256,25 @@ header('Content-Type: text/html; charset=UTF-8');
                                     </ul>
                                 </div>
                             <?php endif; ?>
+                            <?php if ($eventTags !== []): ?>
+                                <div class="event-hero-meta__slot event-hero-meta-group" role="group" aria-label="<?= h($T['section_tags']) ?>">
+                                    <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_tags']) ?>">🏷️</span>
+                                    <ul class="event-public__tag-pills event-public__tag-pills--hero" role="list">
+                                        <?php foreach ($eventTags as $tagRow): ?>
+                                            <li class="event-public__tag-pills__item">
+                                                <span class="event-public__tag-pill"><?= h((string) $tagRow['name']) ?></span>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
                             <?php if ($eventDjs !== []): ?>
                                 <div class="event-hero-meta__slot event-hero-meta-group">
                                     <span class="event-hero-meta-emoji" aria-hidden="true" title="<?= h($T['section_djs']) ?>">🎧</span>
                                     <ul class="event-org-chips event-org-chips--hero event-dj-chips" role="list" aria-label="<?= h($T['section_djs']) ?>">
                                         <?php foreach ($eventDjs as $djRow): ?>
                                             <li class="event-org-chips__item">
-                                                <a class="event-org-chip event-dj-chip" href="<?= h(events_public_dj_page_url((int) $djRow['id'], $lang)) ?>"><?= h((string) $djRow['name']) ?></a>
+                                                <span class="event-org-chip event-dj-chip"><?= h((string) $djRow['name']) ?></span>
                                             </li>
                                         <?php endforeach; ?>
                                     </ul>
@@ -360,21 +372,6 @@ header('Content-Type: text/html; charset=UTF-8');
             <aside class="event-public__admission" aria-label="<?= h($T['meta_price']) ?>">
                 <p class="event-public__admission-label"><?= h($T['meta_price']) ?></p>
                 <p class="event-public__admission-value"><?= h($costText) ?></p>
-            </aside>
-        <?php endif; ?>
-        <?php if ($eventTags !== []): ?>
-            <aside class="event-public__tags" aria-label="<?= h($T['section_tags']) ?>">
-                <p class="event-public__tags-label"><?= h($T['section_tags']) ?></p>
-                <ul class="event-public__tag-pills" role="list">
-                    <?php foreach ($eventTags as $tagRow): ?>
-                        <li class="event-public__tag-pills__item">
-                            <span class="event-public__tag-pill">
-                                <span class="event-public__tag-pill__icon" aria-hidden="true">🏷️</span>
-                                <?= h((string) $tagRow['name']) ?>
-                            </span>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
             </aside>
         <?php endif; ?>
     </div>

@@ -79,9 +79,6 @@ if ($navZone === 'events') {
                     <a href="<?= h(site_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>
                 </li>
                 <li role="none" class="nav-item">
-                    <a href="<?= h(site_url('events/djs.php')) ?>" class="nav-parent-link">DJ-k</a>
-                </li>
-                <li role="none" class="nav-item">
                     <a href="<?= h(site_url('events/styles.php')) ?>" class="nav-parent-link">Stílusok</a>
                 </li>
                 <li class="nav-item has-submenu">

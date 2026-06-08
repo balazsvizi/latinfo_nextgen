@@ -2574,10 +2574,6 @@ dialog.eventpics-modal::backdrop {
     border-left-color: #ca8a04;
     background: linear-gradient(135deg, #fefce8 0%, #fff 60%);
 }
-.events-edit-panel--tone-dj {
-    border-left-color: #db2777;
-    background: linear-gradient(135deg, #fdf2f8 0%, #fff 60%);
-}
 .events-edit-panel--tone-mstyle {
     border-left-color: #4f46e5;
     background: linear-gradient(135deg, #eef2ff 0%, #fff 60%);

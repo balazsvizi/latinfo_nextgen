@@ -5,7 +5,6 @@ declare(strict_types=1);
 /** @var array $categories id => név */
 /** @var array<int, string> $venues id => név (events_load_venue_options) */
 /** @var array<int, string> $tags id => név (events_load_tag_options) */
-/** @var array<int, string> $djs id => név (events_load_dj_options) */
 /** @var array<int, string> $styles id => név (events_load_style_options) */
 if (!isset($organizers) || !is_array($organizers)) {
     $organizers = [];
@@ -19,9 +18,6 @@ if (!isset($categories) || !is_array($categories)) {
 if (!isset($tags) || !is_array($tags)) {
     $tags = [];
 }
-if (!isset($djs) || !is_array($djs)) {
-    $djs = [];
-}
 if (!isset($styles) || !is_array($styles)) {
     $styles = [];
 }
@@ -29,12 +25,10 @@ if (!isset($db) || !($db instanceof PDO)) {
     $db = getDb();
 }
 $tagsAllowCreate = events_tags_tables_available($db);
-$djsAllowCreate = events_djs_tables_available($db);
 $stylesAllowCreate = events_styles_tables_available($db);
 $selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_values(array_unique(array_map('intval', $e['organizer_ids']))) : [];
 $selCat = isset($e['category_ids']) && is_array($e['category_ids']) ? array_values(array_unique(array_map('intval', $e['category_ids']))) : [];
 $selTag = isset($e['tag_ids']) && is_array($e['tag_ids']) ? array_values(array_unique(array_map('intval', $e['tag_ids']))) : [];
-$selDj = isset($e['dj_ids']) && is_array($e['dj_ids']) ? array_values(array_unique(array_map('intval', $e['dj_ids']))) : [];
 $selMainStyle = isset($e['main_style_ids']) && is_array($e['main_style_ids']) ? array_values(array_unique(array_map('intval', $e['main_style_ids']))) : [];
 $selSupplementaryStyle = isset($e['supplementary_style_ids']) && is_array($e['supplementary_style_ids']) ? array_values(array_unique(array_map('intval', $e['supplementary_style_ids']))) : [];
 $orgPickerAll = [];
@@ -51,11 +45,6 @@ foreach ($tags as $tid => $tnev) {
     $tagPickerAll[] = ['id' => (int) $tid, 'name' => (string) $tnev];
 }
 usort($tagPickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
-$djPickerAll = [];
-foreach ($djs as $did => $dnev) {
-    $djPickerAll[] = ['id' => (int) $did, 'name' => (string) $dnev];
-}
-usort($djPickerAll, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 $stylePickerAll = [];
 foreach ($styles as $sid => $snev) {
     $stylePickerAll[] = ['id' => (int) $sid, 'name' => (string) $snev];
@@ -268,25 +257,6 @@ $wpTokenAll = $tagPickerAll;
 $wpTokenSelected = $selTag;
 $wpTokenAllowCreate = $tagsAllowCreate;
 $wpTokenEntityType = 'tag';
-$wpTokenSingle = false;
-$wpTokenShowPopular = false;
-require __DIR__ . '/wp_token_field.php';
-?>
-</div>
-<div class="events-edit-panel events-edit-panel--tone-dj">
-    <h3 class="events-edit-panel__title">DJ-k</h3>
-<?php
-$wpTokenId = 'event-djs';
-$wpTokenLabel = '';
-$wpTokenFieldName = 'dj_ids[]';
-$wpTokenPlaceholder = 'DJ hozzáadása…';
-$wpTokenHelp = 'A DJ-k külön entitás — nyilvánosan is külön jelennek meg.';
-$wpTokenManageUrl = events_url('djs.php');
-$wpTokenManageLabel = 'DJ-k kezelése';
-$wpTokenAll = $djPickerAll;
-$wpTokenSelected = $selDj;
-$wpTokenAllowCreate = $djsAllowCreate;
-$wpTokenEntityType = 'dj';
 $wpTokenSingle = false;
 $wpTokenShowPopular = false;
 require __DIR__ . '/wp_token_field.php';

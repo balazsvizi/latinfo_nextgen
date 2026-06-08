@@ -41,7 +41,7 @@ $orderSql = match ($order) {
     'organizer' => "( (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) IS NULL) ASC, (SELECT MIN(o.name) FROM `events_calendar_event_organizers` eo INNER JOIN `events_organizers` o ON o.id = eo.organizer_id WHERE eo.event_id = e.id) $dirSql",
     'category' => "( (SELECT MIN(c.name) FROM `events_calendar_event_categories` ec INNER JOIN `events_categories` c ON c.id = ec.category_id WHERE ec.event_id = e.id) IS NULL) ASC, (SELECT MIN(c.name) FROM `events_calendar_event_categories` ec INNER JOIN `events_categories` c ON c.id = ec.category_id WHERE ec.event_id = e.id) $dirSql",
     'tag' => "( (SELECT MIN(t.name) FROM `events_calendar_event_tags` et INNER JOIN `events_tags` t ON t.id = et.tag_id WHERE et.event_id = e.id) IS NULL) ASC, (SELECT MIN(t.name) FROM `events_calendar_event_tags` et INNER JOIN `events_tags` t ON t.id = et.tag_id WHERE et.event_id = e.id) $dirSql",
-    'dj' => "( (SELECT MIN(d.name) FROM `events_calendar_event_djs` ed INNER JOIN `events_djs` d ON d.id = ed.dj_id WHERE ed.event_id = e.id) IS NULL) ASC, (SELECT MIN(d.name) FROM `events_calendar_event_djs` ed INNER JOIN `events_djs` d ON d.id = ed.dj_id WHERE ed.event_id = e.id) $dirSql",
+    'dj' => "( (SELECT MIN(tdj.name) FROM `events_calendar_event_tags` etdj INNER JOIN `events_tag_type_links` ttdj ON ttdj.tag_id = etdj.tag_id AND ttdj.tag_type = 'dj' INNER JOIN `events_tags` tdj ON tdj.id = etdj.tag_id WHERE etdj.event_id = e.id) IS NULL) ASC, (SELECT MIN(tdj.name) FROM `events_calendar_event_tags` etdj INNER JOIN `events_tag_type_links` ttdj ON ttdj.tag_id = etdj.tag_id AND ttdj.tag_type = 'dj' INNER JOIN `events_tags` tdj ON tdj.id = etdj.tag_id WHERE etdj.event_id = e.id) $dirSql",
     'name' => "e.event_name $dirSql",
     'start' => "e.event_start IS NULL, e.event_start $dirSql",
     'end' => "e.event_end IS NULL, e.event_end $dirSql",
@@ -114,11 +114,12 @@ if ($rows !== []) {
     }
     if ($djsAvailable) {
         $djStmt = $db->prepare("
-            SELECT ed.`event_id`, d.`id`, d.`name`
-            FROM `events_calendar_event_djs` ed
-            INNER JOIN `events_djs` d ON d.`id` = ed.`dj_id`
-            WHERE ed.`event_id` IN ({$ph})
-            ORDER BY d.`name` ASC, d.`id` ASC
+            SELECT etdj.`event_id`, t.`id`, t.`name`
+            FROM `events_calendar_event_tags` etdj
+            INNER JOIN `events_tag_type_links` ttdj ON ttdj.`tag_id` = etdj.`tag_id` AND ttdj.`tag_type` = 'dj'
+            INNER JOIN `events_tags` t ON t.`id` = etdj.`tag_id`
+            WHERE etdj.`event_id` IN ({$ph})
+            ORDER BY t.`name` ASC, t.`id` ASC
         ");
         $djStmt->execute($eventIds);
         foreach ($djStmt->fetchAll(PDO::FETCH_ASSOC) as $djRow) {
@@ -307,7 +308,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                                         <a
                                                             class="events-admin-dj-chip events-admin-dj-chip--link"
                                                             role="listitem"
-                                                            href="<?= h(events_url('dj.php?id=') . (int) $djItem['id']) ?>"
+                                                            href="<?= h(events_url('tags.php?open_tag=') . (int) $djItem['id']) ?>"
                                                             target="_blank"
                                                             rel="noopener"
                                                         ><?= h($djItem['name']) ?></a>

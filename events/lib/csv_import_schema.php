@@ -95,6 +95,7 @@ function events_csv_import_schema(): array {
             'columns' => [
                 'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥20000). Kitöltve: max 100000, upsert. Ugyanilyen név már létezik → sor kihagyva.'],
                 'name' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'Címke neve (kötelező minden sorban).'],
+                'tag_types' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Opcionális típusok: DJ, Zenekar, Tanár, Művész, Szervező (vesszővel elválasztva)'],
                 'created' => ['type' => 'datetime', 'nullable' => true],
                 'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
             ],
@@ -107,26 +108,7 @@ function events_csv_import_schema(): array {
                 'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
                 'tag_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Címke ID (events_tags.id); üres, ha tag_name van megadva'],
                 'tag_name' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Címke név: meglévő keresés vagy automatikus létrehozás (tag_id helyett vagy mellette)'],
-            ],
-        ],
-        'events_djs' => [
-            'label' => 'DJ-k (`events_djs`)',
-            'id_max_import' => 100000,
-            'columns' => [
-                'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥25000). Kitöltve: max 100000, upsert. Ugyanilyen név már létezik → sor kihagyva.'],
-                'name' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'DJ neve (kötelező minden sorban).'],
-                'created' => ['type' => 'datetime', 'nullable' => true],
-                'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
-            ],
-        ],
-        'events_calendar_event_djs' => [
-            'label' => 'Esemény–DJ (`events_calendar_event_djs`, event_id + DJ név)',
-            'composite_key' => ['event_id', 'dj_id'],
-            'id_max_import' => 0,
-            'columns' => [
-                'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
-                'dj_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'DJ ID (events_djs.id); üres, ha dj_name van megadva'],
-                'dj_name' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'DJ név: meglévő keresés vagy automatikus létrehozás (dj_id helyett vagy mellette)'],
+                'tag_types' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Opcionális: új címke létrehozásakor típusok (DJ, Zenekar, … vesszővel)'],
             ],
         ],
         'events_styles' => [

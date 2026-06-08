@@ -43,3 +43,11 @@ CREATE TABLE IF NOT EXISTS `events_calendar_event_tags` (
     CONSTRAINT `fk_events_evt_event` FOREIGN KEY (`event_id`) REFERENCES `events_calendar_events` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_events_evt_tag` FOREIGN KEY (`tag_id`) REFERENCES `events_tags` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `events_tag_type_links` (
+    `tag_id` INT UNSIGNED NOT NULL,
+    `tag_type` ENUM('dj', 'zenekar', 'tanar', 'muvesz', 'szervezo') NOT NULL,
+    PRIMARY KEY (`tag_id`, `tag_type`),
+    KEY `idx_events_tag_type_links_type` (`tag_type`),
+    CONSTRAINT `fk_events_tag_type_links_tag` FOREIGN KEY (`tag_id`) REFERENCES `events_tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

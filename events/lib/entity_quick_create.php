@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/event_request.php';
-require_once __DIR__ . '/dj_request.php';
 require_once __DIR__ . '/style_request.php';
 require_once __DIR__ . '/venue_request.php';
 
@@ -10,7 +9,7 @@ require_once __DIR__ . '/venue_request.php';
  * @return list<string>
  */
 function events_entity_quick_create_allowed_types(): array {
-    return ['organizer', 'venue', 'category', 'tag', 'dj', 'style'];
+    return ['organizer', 'venue', 'category', 'tag', 'style'];
 }
 
 function events_entity_quick_create_by_name(PDO $db, string $type, string $name): int {
@@ -28,7 +27,6 @@ function events_entity_quick_create_by_name(PDO $db, string $type, string $name)
         'venue' => events_find_or_create_venue_by_name($db, $name),
         'category' => events_find_or_create_category_by_name($db, $name),
         'tag' => events_find_or_create_tag_by_name($db, $name),
-        'dj' => events_find_or_create_dj_by_name($db, $name),
         'style' => events_find_or_create_style_by_name($db, $name),
         default => throw new InvalidArgumentException('Ismeretlen entitás típus.'),
     };

@@ -590,6 +590,17 @@ a.event-meta__card:focus-visible {
     opacity: 0.88;
 }
 
+.event-public__tag-pills--hero {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.45rem;
+}
+
+.event-public__tag-pills--hero .event-public__tag-pill {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.82rem;
+}
+
 .event-body {
     font-family: var(--ev-font);
     font-size: 1.0625rem;
@@ -713,7 +724,7 @@ a.event-meta__card:focus-visible {
     color: var(--li-green-dark);
 }
 
-/* Hero meta — megjelenit.php: 1. sor szervező | stílusok, 2. sor kategória + DJ */
+/* Hero meta — megjelenit.php: 1. sor szervező | stílusok, 2. sor kategória + címkék + DJ */
 .event-hero-meta {
     display: flex;
     flex-direction: column;

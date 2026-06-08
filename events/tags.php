@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/nextgen/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
+require_once __DIR__ . '/lib/tag_type.php';
 requireLogin();
 
 $db = getDb();
@@ -86,6 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('error', 'A címke neve kötelező.');
             redirect(events_url('tags.php?open_tag=') . ($id > 0 ? (string) $id : 'new'));
         }
+        $typeRaw = $_POST['tag_type_codes'] ?? [];
+        $typeCodes = events_tag_type_normalize_codes(is_array($typeRaw) ? $typeRaw : []);
         sort($specIds);
         if ($specIds !== []) {
             $ph = implode(',', array_fill(0, count($specIds), '?'));
@@ -103,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $st = $db->prepare('UPDATE `events_tags` SET `name` = ? WHERE `id` = ?');
                 $st->execute([$name, $id]);
                 events_save_tag_special_memberships($db, $id, $specIds);
+                events_save_tag_types($db, $id, $typeCodes);
                 $db->commit();
             } catch (Throwable $e) {
                 $db->rollBack();
@@ -119,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ins->execute([$name]);
             $newId = (int) $db->lastInsertId();
             events_save_tag_special_memberships($db, $newId, $specIds);
+            events_save_tag_types($db, $newId, $typeCodes);
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();
@@ -283,6 +288,12 @@ while ($row = $stMap->fetch(PDO::FETCH_ASSOC)) {
     $tagSpecialIdsByTag[$tid][] = (int) $row['special_tag_id'];
 }
 
+$tagTypesByTag = [];
+if (events_tag_types_tables_available($db) && $tagsWithSpecials !== []) {
+    $tagIdsForTypes = array_values(array_unique(array_map(static fn (array $tr): int => (int) $tr['id'], $tagsWithSpecials)));
+    $tagTypesByTag = events_load_tag_types_map($db, $tagIdsForTypes);
+}
+
 $openTagRaw = (string) ($_GET['open_tag'] ?? '');
 $openSpecialRaw = (string) ($_GET['open_special'] ?? '');
 $openTagGroup = '';
@@ -335,15 +346,20 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         <button type="button" class="events-inline-sort-btn" data-sort-col="2" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
                     </th>
                     <th scope="col">
+                        <span class="events-inline-th-label">Típusok</span>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="3" data-sort-type="text" aria-label="Rendezés típus szerint">↕</button>
+                    </th>
+                    <th scope="col">
                         <span class="events-inline-th-label">Speciális csoportok</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="3" data-sort-type="text" aria-label="Rendezés csoport szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="4" data-sort-type="text" aria-label="Rendezés csoport szerint">↕</button>
                     </th>
                 </tr>
                 <tr class="events-inline-filter-row">
                     <th class="events-tags-bulk-th"></th>
                     <th><input type="search" class="events-inline-filter-input" data-filter-col="1" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
                     <th><input type="search" class="events-inline-filter-input" data-filter-col="2" placeholder="Szűrés…" aria-label="Szűrés név"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="3" placeholder="Szűrés…" aria-label="Szűrés csoport"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="3" placeholder="Szűrés…" aria-label="Szűrés típus"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="4" placeholder="Szűrés…" aria-label="Szűrés csoport"></th>
                 </tr>
             </thead>
             <tbody>
@@ -356,10 +372,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                 >
                     <td class="events-tags-bulk-td"></td>
                     <td class="events-inline-summary-muted">—</td>
-                    <td colspan="2"><strong>Új címke</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
+                    <td colspan="3"><strong>Új címke</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
                 </tr>
                 <tr class="events-inline-detail" data-expand-group="new" <?= $openTagGroup === 'new' ? '' : 'hidden' ?>>
-                    <td colspan="4">
+                    <td colspan="5">
                         <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                             <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                 <?= csrf_input('events_tags') ?>
@@ -369,6 +385,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     <label for="tag_name_new">Név *</label>
                                     <input type="text" id="tag_name_new" name="name" required maxlength="255" value="">
                                 </div>
+                                <?php
+                                $tagTypeSelected = [];
+                                require __DIR__ . '/partials/tags_types_fieldset.php';
+                                ?>
                                 <fieldset class="form-group events-tags-special-fieldset">
                                     <legend class="events-tags-special-legend">Speciális csoport(ok)</legend>
                                     <?php if ($specials === []): ?>
@@ -397,6 +417,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     $tid = (int) $tr['id'];
                     $specIds = $tagSpecialIdsByTag[$tid] ?? [];
                     $slabel = trim((string) ($tr['specials_label'] ?? ''));
+                    $typeCodesRow = $tagTypesByTag[$tid] ?? [];
+                    $typeLabel = $typeCodesRow !== []
+                        ? implode(', ', array_map(static fn (string $c): string => events_tag_type_label($c), $typeCodesRow))
+                        : '';
                     $isOpen = $openTagGroup !== '' && $openTagGroup === (string) $tid;
                     ?>
                     <tr
@@ -417,10 +441,11 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         </td>
                         <td><?= $tid ?></td>
                         <td><?= h((string) $tr['name']) ?></td>
+                        <td><?= $typeLabel !== '' ? h($typeLabel) : '—' ?></td>
                         <td><?= $slabel !== '' ? h($slabel) : '—' ?></td>
                     </tr>
                     <tr class="events-inline-detail" data-expand-group="<?= $tid ?>" <?= $isOpen ? '' : 'hidden' ?>>
-                        <td colspan="4">
+                        <td colspan="5">
                             <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                                 <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                     <?= csrf_input('events_tags') ?>
@@ -430,6 +455,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         <label for="tag_name_<?= $tid ?>">Név *</label>
                                         <input type="text" id="tag_name_<?= $tid ?>" name="name" required maxlength="255" value="<?= h((string) $tr['name']) ?>">
                                     </div>
+                                    <?php
+                                    $tagTypeSelected = $typeCodesRow;
+                                    require __DIR__ . '/partials/tags_types_fieldset.php';
+                                    ?>
                                     <fieldset class="form-group events-tags-special-fieldset">
                                         <legend class="events-tags-special-legend">Speciális csoport(ok)</legend>
                                         <?php if ($specials === []): ?>
