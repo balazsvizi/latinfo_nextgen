@@ -101,3 +101,15 @@ function events_public_category_pill_inline_style(string $rawHex): string {
         $b
     );
 }
+
+/**
+ * Nyilvános kategória — színes szöveg (gomb/pill nélkül).
+ */
+function events_public_category_text_inline_style(string $rawHex): string {
+    $hex = strtoupper(trim($rawHex));
+    if (!preg_match('/^#[0-9A-F]{6}$/', $hex)) {
+        $hex = '#6D8F63';
+    }
+
+    return 'color:' . $hex;
+}
