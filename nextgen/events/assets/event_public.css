@@ -276,6 +276,26 @@ body.event-public-page {
     min-width: 0;
 }
 
+.event-public__hero-inline-title {
+    margin: 0;
+    font-family: var(--ev-font);
+    font-size: clamp(1.2rem, 3.2vw, 1.55rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--li-green-dark);
+    white-space: nowrap;
+}
+
+body.event-public-page--home .event-public__hero-chrome {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+body.event-public-page--home .event-public__hero {
+    padding-bottom: clamp(0.85rem, 2vw, 1.15rem);
+}
+
 .event-public__hero .event-lang-switch {
     margin-left: auto;
     flex-shrink: 0;

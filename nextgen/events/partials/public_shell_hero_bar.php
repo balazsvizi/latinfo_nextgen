@@ -11,10 +11,12 @@ declare(strict_types=1);
  * @var bool $isEventsHome
  * @var bool $showAdminEdit
  * @var string $adminEditUrl
+ * @var string $heroInlineTitle Opcionális cím a logó mellett (főoldal)
  */
 $isEventsHome = $isEventsHome ?? false;
 $showAdminEdit = $showAdminEdit ?? false;
 $adminEditUrl = $adminEditUrl ?? '';
+$heroInlineTitle = trim((string) ($heroInlineTitle ?? ''));
 $C = events_public_common_nav_strings($lang);
 $eventsHomeUrl = events_public_home_page_url($lang);
 $latinfoLogoSrc = events_public_logo_src();
@@ -33,6 +35,9 @@ $latinfoLogoSrc = events_public_logo_src();
             <a class="event-brand-logo" href="<?= h($eventsHomeUrl) ?>" title="<?= h($C['logo_events_home_title']) ?>" aria-label="<?= h($C['logo_events_home_aria']) ?>">
                 <img src="<?= h($latinfoLogoSrc) ?>" alt="<?= h($S['logo_alt']) ?>" width="240" height="80" decoding="async" fetchpriority="high">
             </a>
+            <?php if ($heroInlineTitle !== ''): ?>
+                <h1 class="event-public__hero-inline-title"><?= h($heroInlineTitle) ?></h1>
+            <?php endif; ?>
         </div>
         <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">
             <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($S['lang_hu']) ?></a>

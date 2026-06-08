@@ -64,6 +64,7 @@ $urlEn = events_public_home_lang_switch_url('en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $D;
 $isEventsHome = true;
+$heroInlineTitle = $title;
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
 $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
 
@@ -95,10 +96,6 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public home-public">
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
-        <div class="event-public__hero-inner">
-            <p class="event-public__eyebrow">📅 <?= h((string) $D['eyebrow']) ?></p>
-            <h1 class="event-public__title"><?= h($title) ?></h1>
-        </div>
     </header>
 
     <?php if ($contentTop !== ''): ?>
