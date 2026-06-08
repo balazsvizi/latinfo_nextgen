@@ -18,6 +18,15 @@ if (!function_exists('events_url')) {
     }
 }
 
+if (!function_exists('events_public_home_page_script')) {
+    /**
+     * Publikus esemény főoldal — egyelőre nem a /events/ gyökér (index.php), hanem külön fájl.
+     */
+    function events_public_home_page_script(): string {
+        return 'public_home.php';
+    }
+}
+
 if (!function_exists('events_public_canonical_url')) {
     /**
      * Cél URL a spec „eventmappa” + slug mintához (SEO canonical; később .htaccess).

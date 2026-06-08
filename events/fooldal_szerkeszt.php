@@ -42,7 +42,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <div class="events-list-head">
         <h2 class="events-list-title">Publikus főoldal szövegei</h2>
         <div class="events-list-actions">
-            <a href="<?= h(events_url('index.php')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Főoldal megtekintése</a>
+            <a href="<?= h(events_url(events_public_home_page_script())) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Előnézet (public_home.php)</a>
         </div>
     </div>
 

@@ -1479,7 +1479,7 @@ a.event-public__tag-pill:hover {
     margin-top: 0.5rem;
 }
 
-/* —— Publikus esemény főoldal (index.php) —— */
+/* —— Publikus esemény főoldal (public_home.php) —— */
 .home-public__cms {
     max-width: 52rem;
     margin: 0 auto 1.5rem;

@@ -20,7 +20,7 @@ function events_public_calendar_event_url(array $ev): string {
  * @param array<string, string> $getParams
  */
 function events_public_calendar_month_url(string $monthKey, array $getParams): string {
-    return events_admin_calendar_month_url($monthKey, $getParams, 'index.php');
+    return events_admin_calendar_month_url($monthKey, $getParams, events_public_home_page_script());
 }
 
 function events_public_calendar_month_label(DateTimeImmutable $monthFirst, string $lang): string {

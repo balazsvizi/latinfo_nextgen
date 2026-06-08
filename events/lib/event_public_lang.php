@@ -560,14 +560,14 @@ function events_public_home_strings(string $lang): array {
 function events_public_home_page_url(string $lang): string {
     $q = ['lang' => $lang];
 
-    return events_url('index.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+    return events_url(events_public_home_page_script() . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
 }
 
 function events_public_home_lang_switch_url(string $targetLang): string {
     $q = $_GET;
     $q['lang'] = $targetLang;
 
-    return events_url('index.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+    return events_url(events_public_home_page_script() . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
 }
 
 function events_public_djs_page_url(string $lang): string {
