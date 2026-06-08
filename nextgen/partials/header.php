@@ -89,6 +89,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
                         <li role="none"><a href="<?= h(site_url('events/categories.php')) ?>" role="menuitem">Kategóriák</a></li>
                         <li role="none"><a href="<?= h(site_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
+                        <li role="none"><a href="<?= h(site_url('events/tag_types.php')) ?>" role="menuitem">Címke típusok</a></li>
                         <li role="none"><a href="<?= h(site_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
                         <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
                         <?php if (isLoggedIn() && isSuperadmin()): ?>

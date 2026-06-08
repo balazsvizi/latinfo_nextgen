@@ -36,10 +36,11 @@ function events_public_tag_published_events(PDO $db, int $tagId, string $publish
  *
  * @param list<string> $typeCodes
  */
-function events_public_tag_eyebrow_label(array $typeCodes, string $lang): string {
-    $typeCodes = events_tag_type_normalize_codes($typeCodes);
+function events_public_tag_eyebrow_label(array $typeCodes, string $lang, ?PDO $db = null): string {
+    $db = $db ?? getDb();
+    $typeCodes = events_tag_type_normalize_codes($typeCodes, $db);
     if (count($typeCodes) === 1) {
-        return events_tag_type_label($typeCodes[0]);
+        return events_tag_type_label($typeCodes[0], $db);
     }
 
     return $lang === 'en' ? 'Tag' : 'Címke';

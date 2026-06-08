@@ -175,7 +175,8 @@ function events_admin_filters_from_request(PDO $db): array {
     if ($f_dj_id > 0) {
         $where[] = 'EXISTS (
             SELECT 1 FROM `events_calendar_event_tags` etdj
-            INNER JOIN `events_tag_type_links` ttdj ON ttdj.`tag_id` = etdj.`tag_id` AND ttdj.`tag_type` = ?
+            INNER JOIN `events_tag_type_links` ttdj ON ttdj.`tag_id` = etdj.`tag_id`
+            INNER JOIN `events_tag_types` tydj ON tydj.`id` = ttdj.`tag_type_id` AND tydj.`code` = ?
             WHERE etdj.event_id = e.id AND etdj.tag_id = ?
         )';
         array_push($params, 'dj', $f_dj_id);

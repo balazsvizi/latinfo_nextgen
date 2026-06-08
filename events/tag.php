@@ -36,7 +36,7 @@ if (!$tag) {
 
 $tagName = (string) ($tag['name'] ?? '');
 $tagTypeCodes = events_load_tag_type_codes($db, $tagId);
-$eyebrow = events_public_tag_eyebrow_label($tagTypeCodes, $lang);
+$eyebrow = events_public_tag_eyebrow_label($tagTypeCodes, $lang, $db);
 $eventsList = events_public_tag_published_events($db, $tagId, events_public_post_status());
 $partitioned = events_public_organizer_partition_events($eventsList);
 $eventsUpcoming = $partitioned['upcoming'];

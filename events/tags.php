@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect(events_url('tags.php?open_tag=') . ($id > 0 ? (string) $id : 'new'));
         }
         $typeRaw = $_POST['tag_type_codes'] ?? [];
-        $typeCodes = events_tag_type_normalize_codes(is_array($typeRaw) ? $typeRaw : []);
+        $typeCodes = events_tag_type_normalize_codes(is_array($typeRaw) ? $typeRaw : [], $db);
 
         if ($id > 0) {
             $db->beginTransaction();
@@ -108,7 +108,8 @@ if (events_tag_types_tables_available($db) && $tagRows !== []) {
     $tagTypesByTag = events_load_tag_types_map($db, $tagIdsForTypes);
 }
 
-$typeDisplayMeta = events_tag_type_display_meta();
+$typeDisplayMeta = events_tag_type_display_meta($db);
+$typeLabelMap = events_tag_type_labels($db);
 
 $openTagRaw = (string) ($_GET['open_tag'] ?? '');
 $openTagGroup = '';
@@ -129,6 +130,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
     <div class="events-list-head">
         <h2 class="events-list-title">Esemény címkék</h2>
         <div class="events-list-actions">
+            <a href="<?= h(events_url('tag_types.php')) ?>" class="btn btn-secondary">Címke típusok</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események listája</a>
         </div>
     </div>
@@ -223,7 +225,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                         ?>
                                         <span class="events-tag-type-pill events-tag-type-pill--<?= h($tone) ?>">
                                             <span class="events-tag-type-pill__icon" aria-hidden="true"><?= $icon ?></span>
-                                            <span class="events-tag-type-pill__label"><?= h(events_tag_type_label($code)) ?></span>
+                                            <span class="events-tag-type-pill__label"><?= h($typeLabelMap[$code] ?? $code) ?></span>
                                         </span>
                                     <?php endforeach; ?>
                                 </span>

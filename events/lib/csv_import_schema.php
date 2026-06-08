@@ -102,7 +102,7 @@ function events_csv_import_schema(): array {
             'columns' => [
                 'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥20000). Kitöltve: max 100000, upsert. Ugyanilyen név már létezik → sor kihagyva.'],
                 'name' => ['type' => 'string', 'max' => 255, 'nullable' => false, 'note' => 'Címke neve (kötelező minden sorban).'],
-                'tag_types' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Opcionális típusok: DJ, Zenekar, Tanár, Művész, Szervező (vesszővel elválasztva)'],
+                'tag_types' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Opcionális típusok (events_tag_types név vagy kód, vesszővel elválasztva)'],
                 'created' => ['type' => 'datetime', 'nullable' => true],
                 'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
             ],
@@ -116,7 +116,7 @@ function events_csv_import_schema(): array {
                 'event_id' => ['type' => 'uint', 'nullable' => false, 'note' => 'Esemény ID (events_calendar_events.id)'],
                 'tag_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Címke ID (events_tags.id); üres, ha tag_name van megadva'],
                 'tag_name' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Címke név: meglévő keresés vagy automatikus létrehozás (tag_id helyett vagy mellette)'],
-                'tag_types' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Opcionális: új címke létrehozásakor típusok (DJ, Zenekar, … vesszővel)'],
+                'tag_types' => ['type' => 'string', 'max' => 255, 'nullable' => true, 'virtual' => true, 'note' => 'Opcionális: új címke létrehozásakor típusok (events_tag_types, vesszővel)'],
             ],
         ],
         'events_styles' => [

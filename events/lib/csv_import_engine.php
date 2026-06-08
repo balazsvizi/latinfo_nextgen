@@ -537,7 +537,7 @@ function events_csv_build_row_values(
         if ($tagTypesRaw !== '') {
             $parsedTypes = events_tag_type_parse_csv_string($tagTypesRaw);
             if ($parsedTypes === []) {
-                return [[], 'Érvénytelen tag_types érték (DJ, Zenekar, Tanár, Művész, Szervező).'];
+                return [[], 'Érvénytelen tag_types érték (' . events_tag_type_allowed_labels_text($db) . ').'];
             }
             $values['_tag_types'] = $parsedTypes;
         }
@@ -623,7 +623,7 @@ function events_csv_build_row_values(
         if ($tagTypesRaw !== '') {
             $parsedTypes = events_tag_type_parse_csv_string($tagTypesRaw);
             if ($parsedTypes === []) {
-                return [[], 'Érvénytelen tag_types érték (DJ, Zenekar, Tanár, Művész, Szervező).'];
+                return [[], 'Érvénytelen tag_types érték (' . events_tag_type_allowed_labels_text($db) . ').'];
             }
             $values['_tag_types'] = $parsedTypes;
         }
@@ -802,11 +802,11 @@ function events_csv_upsert_event_tag_link(PDO $db, array $values): string {
 /**
  * @param array<string, mixed> $values
  */
-function events_csv_enrich_event_tag_row_for_import_type(array $values, ?string $importTypeId): array {
+function events_csv_enrich_event_tag_row_for_import_type(PDO $db, array $values, ?string $importTypeId): array {
     if ($importTypeId === null || $importTypeId === '') {
         return $values;
     }
-    $opts = events_import_type_tag_row_options($importTypeId);
+    $opts = events_import_type_tag_row_options($importTypeId, $db);
     $hasTypes = isset($values['_tag_types']) && is_array($values['_tag_types']) && $values['_tag_types'] !== [];
     if (!$hasTypes && $opts['default_tag_types'] !== []) {
         $values['_tag_types'] = $opts['default_tag_types'];
@@ -1012,7 +1012,7 @@ function events_csv_import_run(
                 } elseif ($table === 'events_calendar_event_supplementary_styles') {
                     $op = events_csv_upsert_event_style_link($db, $vals, 'events_calendar_event_supplementary_styles');
                 } elseif ($table === 'events_calendar_event_tags') {
-                    $vals = events_csv_enrich_event_tag_row_for_import_type($vals, $importTypeId);
+                    $vals = events_csv_enrich_event_tag_row_for_import_type($db, $vals, $importTypeId);
                     $op = events_csv_upsert_event_tag_link($db, $vals);
                 } else {
                     throw new RuntimeException('Nem támogatott composite cél tábla: ' . $table);

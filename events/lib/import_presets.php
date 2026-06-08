@@ -79,7 +79,8 @@ function events_import_sample_csv_files(): array {
 /**
  * @return array{default_tag_types: list<string>, merge_tag_types_on_existing: bool}
  */
-function events_import_type_tag_row_options(string $importTypeId): array {
+function events_import_type_tag_row_options(string $importTypeId, ?PDO $db = null): array {
+    $db = $db ?? getDb();
     $preset = events_import_builtin_presets()[$importTypeId] ?? null;
     if (!is_array($preset)) {
         return ['default_tag_types' => [], 'merge_tag_types_on_existing' => false];
@@ -90,7 +91,7 @@ function events_import_type_tag_row_options(string $importTypeId): array {
     }
 
     return [
-        'default_tag_types' => events_tag_type_normalize_codes($defaults),
+        'default_tag_types' => events_tag_type_normalize_codes($defaults, $db),
         'merge_tag_types_on_existing' => !empty($preset['merge_tag_types_on_existing']),
     ];
 }
