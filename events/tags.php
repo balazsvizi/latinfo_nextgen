@@ -424,6 +424,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     $isOpen = $openTagGroup !== '' && $openTagGroup === (string) $tid;
                     ?>
                     <tr
+                        id="open-tag-<?= $tid ?>"
                         class="events-inline-summary<?= $isOpen ? ' is-active' : '' ?>"
                         data-expand-group="<?= $tid ?>"
                         tabindex="0"
@@ -832,6 +833,19 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         var initial = table.getAttribute('data-initial-open') || '';
         if (initial) {
             setOpen(tbody, initial, true);
+            window.requestAnimationFrame(function () {
+                var anchor = document.getElementById('open-tag-' + initial);
+                if (anchor) {
+                    anchor.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+                var det = queryByGroup(tbody, '.events-inline-detail', initial);
+                if (det) {
+                    var nameInput = det.querySelector('input[type="text"][name="name"]');
+                    if (nameInput) {
+                        try { nameInput.focus({ preventScroll: true }); } catch (e) {}
+                    }
+                }
+            });
         }
 
         tbody.addEventListener('click', function (e) {

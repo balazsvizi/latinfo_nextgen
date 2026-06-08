@@ -250,7 +250,7 @@ $wpTokenId = 'event-tags';
 $wpTokenLabel = '';
 $wpTokenFieldName = 'tag_ids[]';
 $wpTokenPlaceholder = 'Címke hozzáadása…';
-$wpTokenHelp = 'Írj be egy nevet — Enterrel kiválasztod vagy létrehozod.';
+$wpTokenHelp = 'Írj be egy nevet — Enterrel kiválasztod vagy létrehozod. A chipre kattintva a címke szerkesztője nyílik meg.';
 $wpTokenManageUrl = events_url('tags.php');
 $wpTokenManageLabel = 'Címkék kezelése';
 $wpTokenAll = $tagPickerAll;
@@ -259,7 +259,8 @@ $wpTokenAllowCreate = $tagsAllowCreate;
 $wpTokenEntityType = 'tag';
 $wpTokenSingle = false;
 $wpTokenShowPopular = false;
-$wpTokenChipLinkPattern = events_url('tags.php?open_tag={id}');
+$wpTokenChipLinkPattern = events_url('tags.php?open_tag={id}#open-tag-{id}');
+$wpTokenChipLinkNewTab = false;
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>

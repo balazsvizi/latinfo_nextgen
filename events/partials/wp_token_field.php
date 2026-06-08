@@ -17,6 +17,7 @@ declare(strict_types=1);
  * @var bool $wpTokenSingle
  * @var bool $wpTokenShowPopular gyakran használt gyorslinkek
  * @var string|null $wpTokenChipLinkPattern Chip címke link sablon, pl. organizer.php?id={id}
+ * @var bool $wpTokenChipLinkNewTab Chip link új lapon (alapértelmezés: igen)
  * @var bool $wpTokenManageNewTab Kezelés / felvétel link új lapon
  */
 $wpTokenId = $wpTokenId ?? 'wp-token';
@@ -33,6 +34,7 @@ $wpTokenEntityType = $wpTokenEntityType ?? '';
 $wpTokenSingle = $wpTokenSingle ?? false;
 $wpTokenShowPopular = $wpTokenShowPopular ?? false;
 $wpTokenChipLinkPattern = $wpTokenChipLinkPattern ?? null;
+$wpTokenChipLinkNewTab = (bool) ($wpTokenChipLinkNewTab ?? true);
 $wpTokenManageNewTab = !empty($wpTokenManageNewTab);
 $wpTokenJson = json_encode(
     ['all' => array_values($wpTokenAll), 'selected' => array_values($wpTokenSelected)],
@@ -63,6 +65,7 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
             <?= $wpTokenEntityType !== '' ? ' data-entity-type="' . h($wpTokenEntityType) . '"' : '' ?>
             <?= $wpTokenSingle ? ' data-single="1"' : '' ?>
             <?= $wpTokenChipLinkPattern !== null && $wpTokenChipLinkPattern !== '' ? ' data-chip-link-pattern="' . h($wpTokenChipLinkPattern) . '"' : '' ?>
+            <?= $wpTokenChipLinkPattern !== null && $wpTokenChipLinkPattern !== '' && !$wpTokenChipLinkNewTab ? ' data-chip-link-new-tab="0"' : '' ?>
         >
             <script type="application/json" class="wp-token-input__json"><?= $wpTokenJson ?></script>
             <div class="wp-token-input__inner" tabindex="-1">
@@ -92,4 +95,4 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
         <?php endif; ?>
     <?php endif; ?>
 </div>
-<?php unset($wpTokenChipLinkPattern, $wpTokenManageNewTab); ?>
+<?php unset($wpTokenChipLinkPattern, $wpTokenChipLinkNewTab, $wpTokenManageNewTab); ?>

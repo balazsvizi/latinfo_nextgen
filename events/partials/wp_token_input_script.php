@@ -22,6 +22,7 @@
         var entityType = root.getAttribute('data-entity-type') || '';
         var isSingle = root.getAttribute('data-single') === '1';
         var chipLinkPattern = root.getAttribute('data-chip-link-pattern') || '';
+        var chipLinkNewTab = root.getAttribute('data-chip-link-new-tab') !== '0';
         var popularWrap = root.closest('.wp-token-field');
         var popularBox = popularWrap ? popularWrap.querySelector('[data-wp-token-popular]') : null;
         var popularList = popularWrap ? popularWrap.querySelector('.wp-token-field__popular-list') : null;
@@ -79,8 +80,10 @@
                     label = document.createElement('a');
                     label.className = 'wp-token-input__chip-label wp-token-input__chip-link';
                     label.href = chipLinkPattern.replace(/\{id\}/g, String(id));
-                    label.target = '_blank';
-                    label.rel = 'noopener noreferrer';
+                    if (chipLinkNewTab) {
+                        label.target = '_blank';
+                        label.rel = 'noopener noreferrer';
+                    }
                     label.textContent = chipName;
                 } else {
                     label = document.createElement('span');
