@@ -262,7 +262,7 @@ header('Content-Type: text/html; charset=UTF-8');
                                     <ul class="event-public__tag-pills event-public__tag-pills--hero" role="list">
                                         <?php foreach ($eventTags as $tagRow): ?>
                                             <li class="event-public__tag-pills__item">
-                                                <span class="event-public__tag-pill"><?= h((string) $tagRow['name']) ?></span>
+                                                <a class="event-public__tag-pill" href="<?= h(events_public_tag_page_url((int) $tagRow['id'], $lang)) ?>"><?= h((string) $tagRow['name']) ?></a>
                                             </li>
                                         <?php endforeach; ?>
                                     </ul>
@@ -274,7 +274,7 @@ header('Content-Type: text/html; charset=UTF-8');
                                     <ul class="event-org-chips event-org-chips--hero event-dj-chips" role="list" aria-label="<?= h($T['section_djs']) ?>">
                                         <?php foreach ($eventDjs as $djRow): ?>
                                             <li class="event-org-chips__item">
-                                                <span class="event-org-chip event-dj-chip"><?= h((string) $djRow['name']) ?></span>
+                                                <a class="event-org-chip event-dj-chip" href="<?= h(events_public_tag_page_url((int) $djRow['id'], $lang)) ?>"><?= h((string) $djRow['name']) ?></a>
                                             </li>
                                         <?php endforeach; ?>
                                     </ul>

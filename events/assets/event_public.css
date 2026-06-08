@@ -577,10 +577,18 @@ a.event-meta__card:focus-visible {
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.35;
-    color: var(--li-text-muted);
+    color: var(--li-green-dark);
     background: var(--li-green-soft);
-    border: 1px solid var(--li-border);
+    border: 1px solid var(--li-border-strong);
     border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+a.event-public__tag-pill:hover {
+    background: #dce8d6;
+    border-color: var(--li-green-muted);
+    color: var(--li-green-hover);
 }
 
 .event-public__tag-pill__icon {

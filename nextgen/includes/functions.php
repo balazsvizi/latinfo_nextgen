@@ -35,11 +35,11 @@ function log_entity_url(string $entitás, ?int $entitás_id): ?string {
         'levélsablon' => $p . '/config/levelsablonok/szerkeszt.php?id=',
         'esemény' => site_url('events/szerkeszt.php?id='),
         'helyszín' => site_url('events/venue_szerkeszt.php?id='),
-        'tag' => site_url('events/tags.php?edit_tag='),
+        'tag' => site_url('events/tags.php?open_tag='),
         'spec_tag' => site_url('events/tags.php?edit_special='),
         'dj' => site_url('events/tags.php?open_tag='),
         'stílus' => site_url('events/styles.php?open_style='),
-        'címke' => null, // csak lista, nincs egy tétel oldal
+        'címke' => site_url('events/tags.php?open_tag='),
         'kontakt_típus' => null, // csak lista, nincs egy tétel oldal
     ];
     $base = $urls[$entitás] ?? null;

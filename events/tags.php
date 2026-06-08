@@ -477,6 +477,7 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     </fieldset>
                                     <div class="toolbar">
                                         <button type="submit" class="btn btn-primary">Mentés</button>
+                                        <a href="<?= h(events_url('tag.php?id=') . $tid) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>
                                     </div>
                                 </form>
                                 <form method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-delete-form" onsubmit="return confirm('Biztosan törlöd ezt a címkét?');">

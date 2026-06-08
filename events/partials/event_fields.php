@@ -259,6 +259,7 @@ $wpTokenAllowCreate = $tagsAllowCreate;
 $wpTokenEntityType = 'tag';
 $wpTokenSingle = false;
 $wpTokenShowPopular = false;
+$wpTokenChipLinkPattern = events_url('tags.php?open_tag={id}');
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
