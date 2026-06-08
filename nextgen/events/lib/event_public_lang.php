@@ -153,6 +153,39 @@ function events_public_megjelenit_strings(string $lang): array {
 /**
  * @return array<string, string>
  */
+function events_public_venue_strings(string $lang): array {
+    $hu = [
+        'lang_nav' => 'Nyelv',
+        'lang_hu' => 'Magyar',
+        'lang_en' => 'English',
+        'eyebrow' => 'Helyszín',
+        'events_heading' => 'Események',
+        'section_upcoming' => 'Aktuális események',
+        'section_past' => 'Már lezajlott események',
+        'upcoming_empty' => 'Nincs következő vagy folyamatban lévő közzétett esemény.',
+        'past_empty' => 'Nincs lezajlott közzétett esemény.',
+        'list_empty' => 'Nincs közzétett esemény ezen a helyszínen.',
+        'logo_alt' => 'Latinfo.hu',
+        'footer_home_link' => 'Latinfo.hu',
+    ];
+    $en = [
+        'lang_nav' => 'Language',
+        'lang_hu' => 'Hungarian',
+        'lang_en' => 'English',
+        'eyebrow' => 'Venue',
+        'events_heading' => 'Events',
+        'section_upcoming' => 'Current & upcoming events',
+        'section_past' => 'Past events',
+        'upcoming_empty' => 'No upcoming or ongoing published events.',
+        'past_empty' => 'No past published events.',
+        'list_empty' => 'No published events at this venue.',
+        'logo_alt' => 'Latinfo.hu',
+        'footer_home_link' => 'Latinfo.hu',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
 function events_public_organizer_strings(string $lang): array {
     $hu = [
         'html_title_suffix' => ' – ',

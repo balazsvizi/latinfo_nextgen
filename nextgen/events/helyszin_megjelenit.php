@@ -4,19 +4,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/venue_request.php';
+require_once __DIR__ . '/lib/event_public_venues.php';
+require_once __DIR__ . '/lib/event_public_organizers.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
+$V = events_public_venue_strings($lang);
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
 $C = events_public_common_nav_strings($lang);
-$S = [
-    'footer_home_link' => 'Latinfo.hu',
-    'lang_nav' => $lang === 'en' ? 'Language' : 'Nyelv',
-    'lang_hu' => $lang === 'en' ? 'Hungarian' : 'Magyar',
-    'lang_en' => $lang === 'en' ? 'English' : 'English',
-    'logo_alt' => 'Latinfo.hu',
-];
+$S = $V;
 $cssUrl = events_url('assets/event_public.css');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 
@@ -100,6 +97,12 @@ $linkedName = trim((string) ($venue['linked_name'] ?? ''));
 $linkedSlug = trim((string) ($venue['linked_slug'] ?? ''));
 $hasLinked = $linkedName !== '' && $linkedSlug !== '';
 
+$venueId = (int) ($venue['id'] ?? 0);
+$eventsList = events_public_venue_published_events($db, $venueId, events_public_post_status());
+$partitioned = events_public_organizer_partition_events($eventsList);
+$eventsUpcoming = $partitioned['upcoming'];
+$eventsPast = $partitioned['past'];
+
 $urlHu = events_public_venue_lang_switch_url($slug, 'hu');
 $urlEn = events_public_venue_lang_switch_url($slug, 'en');
 
@@ -123,7 +126,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
-            <p class="event-public__eyebrow">📍 <?= h($lang === 'en' ? 'Venue' : 'Helyszín') ?></p>
+            <p class="event-public__eyebrow">📍 <?= h((string) $V['eyebrow']) ?></p>
             <h1 class="event-public__title"><?= h($title) ?></h1>
             <?php if ($hasLinked): ?>
                 <p class="venue-linked-line">
@@ -141,6 +144,13 @@ header('Content-Type: text/html; charset=UTF-8');
             <?= $body ?>
         </div>
     <?php endif; ?>
+
+    <?php
+    $PEszovegek = $V;
+    $sectionIdPrefix = 'venue';
+    $showVenueCity = false;
+    require __DIR__ . '/partials/public_partitioned_events.php';
+    ?>
 
     <footer class="event-public__footer">
         <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>

@@ -1188,9 +1188,37 @@ a.event-public__tag-pill:hover {
 }
 
 /* Szervező eseménylista (organizer.php) */
-.organizer-public__events {
+.organizer-public__events,
+.venue-public__events {
     margin: 0;
     padding: 0 clamp(1.25rem, 4vw, 2rem) 1.5rem;
+}
+
+.venue-body {
+    padding: 0 clamp(1.25rem, 4vw, 2rem) 1.25rem;
+    font-family: var(--ev-sans);
+    color: var(--li-text);
+    line-height: 1.65;
+}
+
+.venue-linked-line,
+.venue-address-line {
+    margin: 0.35rem 0 0;
+    font-family: var(--ev-sans);
+    font-size: 0.9375rem;
+    color: var(--li-text-muted);
+    line-height: 1.5;
+}
+
+.venue-linked-line a {
+    color: var(--li-green);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.venue-linked-line a:hover {
+    color: var(--li-green-hover);
+    text-decoration: underline;
 }
 
 .organizer-public__events-title {
