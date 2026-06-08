@@ -7,6 +7,7 @@ require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/event_request.php';
 require_once __DIR__ . '/style_request.php';
 require_once __DIR__ . '/tag_type.php';
+require_once __DIR__ . '/import_presets.php';
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 /**
@@ -798,6 +799,28 @@ function events_csv_upsert_event_tag_link(PDO $db, array $values): string {
 /**
  * @param array<string,mixed> $values
  */
+/**
+ * @param array<string, mixed> $values
+ */
+function events_csv_enrich_event_tag_row_for_import_type(array $values, ?string $importTypeId): array {
+    if ($importTypeId === null || $importTypeId === '') {
+        return $values;
+    }
+    $opts = events_import_type_tag_row_options($importTypeId);
+    $hasTypes = isset($values['_tag_types']) && is_array($values['_tag_types']) && $values['_tag_types'] !== [];
+    if (!$hasTypes && $opts['default_tag_types'] !== []) {
+        $values['_tag_types'] = $opts['default_tag_types'];
+    }
+    if ($opts['merge_tag_types_on_existing']) {
+        $values['_merge_tag_types'] = true;
+    }
+
+    return $values;
+}
+
+/**
+ * @param array<string, mixed> $values
+ */
 function events_csv_apply_tag_types_to_tag(PDO $db, int $tagId, array $values): void {
     if ($tagId <= 0 || !isset($values['_tag_types']) || !is_array($values['_tag_types'])) {
         return;
@@ -805,6 +828,10 @@ function events_csv_apply_tag_types_to_tag(PDO $db, int $tagId, array $values): 
     $typeCodes = events_tag_type_normalize_codes($values['_tag_types']);
     if ($typeCodes === []) {
         return;
+    }
+    if (!empty($values['_merge_tag_types'])) {
+        $existing = events_load_tag_type_codes($db, $tagId);
+        $typeCodes = events_tag_type_normalize_codes(array_merge($existing, $typeCodes));
     }
     events_save_tag_types($db, $tagId, $typeCodes);
 }
@@ -928,6 +955,7 @@ function events_csv_import_run(
     string $requiredFilenameSubstring,
     string $uploadOriginalName,
     array $map,
+    ?string $importTypeId = null,
 ): array {
     $emptyResult = static fn (array $err, array $skip = []): array => [
         'inserted' => 0,
@@ -984,6 +1012,7 @@ function events_csv_import_run(
                 } elseif ($table === 'events_calendar_event_supplementary_styles') {
                     $op = events_csv_upsert_event_style_link($db, $vals, 'events_calendar_event_supplementary_styles');
                 } elseif ($table === 'events_calendar_event_tags') {
+                    $vals = events_csv_enrich_event_tag_row_for_import_type($vals, $importTypeId);
                     $op = events_csv_upsert_event_tag_link($db, $vals);
                 } else {
                     throw new RuntimeException('Nem támogatott composite cél tábla: ' . $table);

@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 if ($hiba === '') {
-                    $eredmeny = events_csv_import_run($db, $dbTable, $tmp, $delimiter, $requiredSubstring, $uploadName, $map);
+                    $eredmeny = events_csv_import_run($db, $dbTable, $tmp, $delimiter, $requiredSubstring, $uploadName, $map, $typeId);
                     $ins = (int) ($eredmeny['inserted'] ?? 0);
                     $upd = (int) ($eredmeny['updated'] ?? 0);
                     $errs = $eredmeny['errors'] ?? [];

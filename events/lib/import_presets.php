@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/csv_import_schema.php';
+require_once __DIR__ . '/tag_type.php';
 
 /**
  * CSV import beépített presetek és minta fájlok.
@@ -18,6 +19,8 @@ function events_import_builtin_presets(): array {
             'target_table' => 'events_calendar_event_tags',
             'delimiter' => ';',
             'required_substring' => '012',
+            'default_tag_types' => ['dj'],
+            'merge_tag_types_on_existing' => true,
             'map' => [
                 'event_id' => 'event_id',
                 'tag_name' => 'dj_name',
@@ -66,10 +69,29 @@ function events_import_sample_csv_files(): array {
         'esemeny-cimke-dj' => [
             'filename' => '012-esemény-címke-DJ.csv',
             'mime' => 'text/csv; charset=UTF-8',
-            'content' => "event_id;dj_name;tag_types\r\n"
-                . "10001;DJ Példa;DJ\r\n"
-                . "10002;DJ Másik;DJ\r\n",
+            'content' => "event_id;dj_name\r\n"
+                . "10001;DJ Példa\r\n"
+                . "10002;DJ Másik\r\n",
         ],
+    ];
+}
+
+/**
+ * @return array{default_tag_types: list<string>, merge_tag_types_on_existing: bool}
+ */
+function events_import_type_tag_row_options(string $importTypeId): array {
+    $preset = events_import_builtin_presets()[$importTypeId] ?? null;
+    if (!is_array($preset)) {
+        return ['default_tag_types' => [], 'merge_tag_types_on_existing' => false];
+    }
+    $defaults = $preset['default_tag_types'] ?? [];
+    if (!is_array($defaults)) {
+        $defaults = [];
+    }
+
+    return [
+        'default_tag_types' => events_tag_type_normalize_codes($defaults),
+        'merge_tag_types_on_existing' => !empty($preset['merge_tag_types_on_existing']),
     ];
 }
 
