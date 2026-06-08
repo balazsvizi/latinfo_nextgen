@@ -45,8 +45,7 @@ $cssUrl = events_url('assets/event_public.css');
 $urlHu = events_public_organizer_lang_switch_url($organizerId, 'hu');
 $urlEn = events_public_organizer_lang_switch_url($organizerId, 'en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
-$latinfoHomeUrl = LATINFO_PUBLIC_HOME_URL;
-$latinfoLogoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+$S = $O;
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -76,18 +75,7 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <a class="event-brand-logo" href="<?= h($latinfoHomeUrl) ?>" title="<?= h($O['logo_home_title']) ?>" aria-label="<?= h($O['logo_home_aria']) ?>">
-                <img src="<?= h($latinfoLogoSrc) ?>" alt="<?= h($O['logo_alt']) ?>" width="180" height="48" decoding="async" fetchpriority="high">
-            </a>
-        </div>
-        <div class="event-lang-switch" role="navigation" aria-label="<?= h($O['lang_nav']) ?>">
-            <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($O['lang_hu']) ?></a>
-            <span class="event-lang-switch__sep" aria-hidden="true">|</span>
-            <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en"><?= h($O['lang_en']) ?></a>
-        </div>
-    </div>
+    <?php require __DIR__ . '/partials/public_shell_toolbar.php'; ?>
 <article class="event-public organizer-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
@@ -175,9 +163,7 @@ header('Content-Type: text/html; charset=UTF-8');
     </section>
 
     <footer class="event-public__footer">
-        <p class="event-site-line">
-            <a href="<?= h($latinfoHomeUrl) ?>"><?= h($O['footer_home_link']) ?></a>
-        </p>
+        <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>
     </footer>
 </article>
 </div>

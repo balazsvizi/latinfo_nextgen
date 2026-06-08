@@ -58,10 +58,9 @@ $cssUrl = events_url('assets/event_public.css');
 $urlHu = events_public_tag_lang_switch_url($tagId, 'hu');
 $urlEn = events_public_tag_lang_switch_url($tagId, 'en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
-$latinfoHomeUrl = LATINFO_PUBLIC_HOME_URL;
-$latinfoLogoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+$S = $G;
 $showAdminEdit = isLoggedIn();
-$tagEditUrl = events_url('tags.php?open_tag=') . $tagId;
+$adminEditUrl = events_url('tags.php?open_tag=') . $tagId;
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -91,23 +90,7 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-    <div class="event-shell-toolbar">
-        <div class="event-shell-toolbar__leading">
-            <?php if ($showAdminEdit): ?>
-                <a class="event-admin-edit" href="<?= h($tagEditUrl) ?>" title="<?= h($G['admin_edit_title']) ?>" aria-label="<?= h($G['admin_edit_aria']) ?>">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </a>
-            <?php endif; ?>
-            <a class="event-brand-logo" href="<?= h($latinfoHomeUrl) ?>" title="<?= h($G['logo_home_title']) ?>" aria-label="<?= h($G['logo_home_aria']) ?>">
-                <img src="<?= h($latinfoLogoSrc) ?>" alt="<?= h($G['logo_alt']) ?>" width="180" height="48" decoding="async" fetchpriority="high">
-            </a>
-        </div>
-        <div class="event-lang-switch" role="navigation" aria-label="<?= h($G['lang_nav']) ?>">
-            <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($G['lang_hu']) ?></a>
-            <span class="event-lang-switch__sep" aria-hidden="true">|</span>
-            <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en"><?= h($G['lang_en']) ?></a>
-        </div>
-    </div>
+    <?php require __DIR__ . '/partials/public_shell_toolbar.php'; ?>
 <article class="event-public organizer-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
@@ -222,9 +205,7 @@ header('Content-Type: text/html; charset=UTF-8');
     </section>
 
     <footer class="event-public__footer">
-        <p class="event-site-line">
-            <a href="<?= h($latinfoHomeUrl) ?>"><?= h($G['footer_home_link']) ?></a>
-        </p>
+        <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>
     </footer>
 </article>
 </div>

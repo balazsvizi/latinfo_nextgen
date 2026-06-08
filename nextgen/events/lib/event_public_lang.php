@@ -63,6 +63,30 @@ function events_public_send_noindex_header(): void {
 }
 
 /**
+ * Közös navigációs szövegek (esemény főoldal + Latinfo).
+ *
+ * @return array<string, string>
+ */
+function events_public_common_nav_strings(string $lang): array {
+    $hu = [
+        'events_home_link' => 'Esemény naptár',
+        'events_home_back' => '← Esemény naptár',
+        'events_home_aria' => 'Vissza az esemény naptár főoldalára',
+        'logo_events_home_title' => 'Esemény naptár főoldal',
+        'logo_events_home_aria' => 'Ugrás az esemény naptár főoldalára',
+    ];
+    $en = [
+        'events_home_link' => 'Event calendar',
+        'events_home_back' => '← Event calendar',
+        'events_home_aria' => 'Back to the event calendar home',
+        'logo_events_home_title' => 'Event calendar home',
+        'logo_events_home_aria' => 'Go to the event calendar home',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+/**
  * @return array<string, string>
  */
 function events_public_megjelenit_strings(string $lang): array {
@@ -498,6 +522,7 @@ function events_public_home_strings(string $lang): array {
         'logo_alt' => 'Latinfo.hu',
         'logo_home_title' => 'Latinfo.hu kezdőoldala',
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'footer_home_link' => 'Latinfo.hu',
         'calendar_aria' => 'Esemény naptár és szűrők',
         'clear_filters' => 'Szűrők törlése',
         'filters_toggle' => 'Szűrők megnyitása',
@@ -548,6 +573,7 @@ function events_public_home_strings(string $lang): array {
         'logo_alt' => 'Latinfo.hu',
         'logo_home_title' => 'Latinfo.hu home',
         'logo_home_aria' => 'Go to Latinfo.hu home',
+        'footer_home_link' => 'Latinfo.hu',
         'calendar_aria' => 'Event calendar and filters',
         'clear_filters' => 'Clear filters',
         'filters_toggle' => 'Show filters',
@@ -608,6 +634,13 @@ function events_public_home_lang_switch_url(string $targetLang): string {
     return $base . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
 }
 
+function events_public_venue_lang_switch_url(string $slug, string $targetLang): string {
+    return events_url('helyszin_megjelenit.php?' . http_build_query([
+        'slug' => $slug,
+        'lang' => $targetLang,
+    ], '', '&', PHP_QUERY_RFC3986));
+}
+
 function events_public_djs_page_url(string $lang): string {
     return events_url('djs.php?' . http_build_query(['lang' => $lang], '', '&', PHP_QUERY_RFC3986));
 }
@@ -633,7 +666,9 @@ function events_public_tag_lang_switch_url(int $tagId, string $targetLang): stri
 function events_public_megjelenit_not_found_html(string $lang): string {
     $T = events_public_megjelenit_strings($lang);
     $htmlLang = $lang === 'en' ? 'en' : 'hu';
-    $home = LATINFO_PUBLIC_HOME_URL;
+    $latinfoHome = LATINFO_PUBLIC_HOME_URL;
+    $eventsHome = events_public_home_page_url($lang);
+    $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
     $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
     $fav = events_public_favicon_head_markup();
@@ -652,13 +687,14 @@ function events_public_megjelenit_not_found_html(string $lang): string {
 <div class="event-shell">
     <div class="event-shell-toolbar">
         <div class="event-shell-toolbar__leading">
-            <a class="event-brand-logo" href="' . h($home) . '" title="' . h($T['logo_home_title']) . '" aria-label="' . h($T['logo_home_aria']) . '">
+            <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
+            <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
                 <img src="' . h($logoSrc) . '" alt="' . h($T['logo_alt']) . '" width="180" height="48" decoding="async">
             </a>
         </div>
     </div>
     <p class="event-not-found-msg">' . h($T['not_found_body']) . '</p>
-    <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($T['footer_home_link']) . '</a></p>
+    <p class="event-site-line event-site-line--standalone"><a href="' . h($eventsHome) . '">' . h($C['events_home_link']) . '</a><span class="event-site-line__sep" aria-hidden="true">·</span><a href="' . h($latinfoHome) . '">' . h($T['footer_home_link']) . '</a></p>
 </div>
 </body>
 </html>';
@@ -670,7 +706,9 @@ function events_public_megjelenit_not_found_html(string $lang): string {
 function events_public_organizer_not_found_html(string $lang): string {
     $O = events_public_organizer_strings($lang);
     $htmlLang = $lang === 'en' ? 'en' : 'hu';
-    $home = LATINFO_PUBLIC_HOME_URL;
+    $latinfoHome = LATINFO_PUBLIC_HOME_URL;
+    $eventsHome = events_public_home_page_url($lang);
+    $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
     $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
     $fav = events_public_favicon_head_markup();
@@ -689,13 +727,14 @@ function events_public_organizer_not_found_html(string $lang): string {
 <div class="event-shell">
     <div class="event-shell-toolbar">
         <div class="event-shell-toolbar__leading">
-            <a class="event-brand-logo" href="' . h($home) . '" title="' . h($O['logo_home_title']) . '" aria-label="' . h($O['logo_home_aria']) . '">
+            <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
+            <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
                 <img src="' . h($logoSrc) . '" alt="' . h($O['logo_alt']) . '" width="180" height="48" decoding="async">
             </a>
         </div>
     </div>
     <p class="event-not-found-msg">' . h($O['not_found_body']) . '</p>
-    <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($O['footer_home_link']) . '</a></p>
+    <p class="event-site-line event-site-line--standalone"><a href="' . h($eventsHome) . '">' . h($C['events_home_link']) . '</a><span class="event-site-line__sep" aria-hidden="true">·</span><a href="' . h($latinfoHome) . '">' . h($O['footer_home_link']) . '</a></p>
 </div>
 </body>
 </html>';
@@ -707,7 +746,9 @@ function events_public_organizer_not_found_html(string $lang): string {
 function events_public_tag_not_found_html(string $lang): string {
     $G = events_public_tag_strings($lang);
     $htmlLang = $lang === 'en' ? 'en' : 'hu';
-    $home = LATINFO_PUBLIC_HOME_URL;
+    $latinfoHome = LATINFO_PUBLIC_HOME_URL;
+    $eventsHome = events_public_home_page_url($lang);
+    $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
     $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
     $fav = events_public_favicon_head_markup();
@@ -726,13 +767,14 @@ function events_public_tag_not_found_html(string $lang): string {
 <div class="event-shell">
     <div class="event-shell-toolbar">
         <div class="event-shell-toolbar__leading">
-            <a class="event-brand-logo" href="' . h($home) . '" title="' . h($G['logo_home_title']) . '" aria-label="' . h($G['logo_home_aria']) . '">
+            <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
+            <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
                 <img src="' . h($logoSrc) . '" alt="' . h($G['logo_alt']) . '" width="180" height="48" decoding="async">
             </a>
         </div>
     </div>
     <p class="event-not-found-msg">' . h($G['not_found_body']) . '</p>
-    <p class="event-site-line event-site-line--standalone"><a href="' . h($home) . '">' . h($G['footer_home_link']) . '</a></p>
+    <p class="event-site-line event-site-line--standalone"><a href="' . h($eventsHome) . '">' . h($C['events_home_link']) . '</a><span class="event-site-line__sep" aria-hidden="true">·</span><a href="' . h($latinfoHome) . '">' . h($G['footer_home_link']) . '</a></p>
 </div>
 </body>
 </html>';

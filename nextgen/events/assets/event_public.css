@@ -79,6 +79,35 @@ body.event-public-page {
     min-width: 0;
 }
 
+.event-shell-toolbar__events-home {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--li-green);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 0.25rem 0;
+    transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.event-shell-toolbar__events-home:hover {
+    color: var(--li-green-dark, #4d6b45);
+    text-decoration: underline;
+}
+
+.event-shell-toolbar__events-home:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.event-site-line__sep {
+    margin: 0 0.4rem;
+    color: rgba(0, 0, 0, 0.35);
+    user-select: none;
+}
+
 .event-brand-logo {
     display: inline-flex;
     align-items: center;
