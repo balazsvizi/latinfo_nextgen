@@ -168,13 +168,29 @@ function db_table_exists(PDO $db, string $table): bool {
     if (array_key_exists($table, $cache)) {
         return $cache[$table];
     }
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+        $cache[$table] = false;
+
+        return false;
+    }
     try {
-        $stmt = $db->prepare('SHOW TABLES LIKE ?');
+        $stmt = $db->prepare('
+            SELECT 1 FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+            LIMIT 1
+        ');
         $stmt->execute([$table]);
         $cache[$table] = (bool) $stmt->fetchColumn();
     } catch (Throwable $e) {
-        $cache[$table] = false;
+        try {
+            $q = '`' . str_replace('`', '``', $table) . '`';
+            $db->query('SELECT 1 FROM ' . $q . ' LIMIT 1');
+            $cache[$table] = true;
+        } catch (Throwable) {
+            $cache[$table] = false;
+        }
     }
+
     return $cache[$table];
 }
 
