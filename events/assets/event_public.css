@@ -216,6 +216,70 @@ body.event-public-page {
     color: var(--li-green-muted);
 }
 
+.tag-public__types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0 0 0.85rem;
+}
+
+.tag-public__type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.28rem 0.7rem;
+    font-family: var(--ev-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
+    border-radius: 999px;
+    border: 1px solid var(--li-border);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--li-text-muted);
+    white-space: nowrap;
+}
+
+.tag-public__type-pill__icon {
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.tag-public__type-pill--dj {
+    background: #fdf2f8;
+    border-color: #f9a8d4;
+    color: #9d174d;
+}
+
+.tag-public__type-pill--zenekar {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1e40af;
+}
+
+.tag-public__type-pill--tanar {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.tag-public__type-pill--muvesz {
+    background: #faf5ff;
+    border-color: #d8b4fe;
+    color: #6b21a8;
+}
+
+.tag-public__type-pill--szervezo {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #9a3412;
+}
+
+.tag-public__type-pill--default {
+    background: rgba(109, 143, 99, 0.1);
+    border-color: rgba(109, 143, 99, 0.28);
+    color: var(--li-green-dark);
+}
+
 .event-public__title {
     margin: 0;
     font-family: var(--ev-font);
@@ -965,6 +1029,11 @@ a.event-public__tag-pill:hover {
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
+    color: var(--li-text-soft);
+}
+
+.organizer-public__heading-count {
+    font-weight: 600;
     color: var(--li-text-soft);
 }
 

@@ -35,12 +35,14 @@ if (!$tag) {
 }
 
 $tagName = (string) ($tag['name'] ?? '');
-$tagTypeCodes = events_load_tag_type_codes($db, $tagId);
-$eyebrow = events_public_tag_eyebrow_label($tagTypeCodes, $lang, $db);
+$tagTypeRows = events_public_tag_type_rows_for_display($db, $tagId);
 $eventsList = events_public_tag_published_events($db, $tagId, events_public_post_status());
 $partitioned = events_public_organizer_partition_events($eventsList);
 $eventsUpcoming = $partitioned['upcoming'];
 $eventsPast = $partitioned['past'];
+$eventsTotalCount = count($eventsList);
+$eventsUpcomingCount = count($eventsUpcoming);
+$eventsPastCount = count($eventsPast);
 
 $title = $tagName !== '' ? $tagName : ('#' . $tagId);
 $desc = $lang === 'en'
@@ -105,13 +107,29 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public organizer-public">
     <header class="event-public__hero">
         <div class="event-public__hero-inner">
-            <p class="event-public__eyebrow"><?= h($eyebrow) ?></p>
+            <?php if ($tagTypeRows !== []): ?>
+                <div class="tag-public__types" aria-label="<?= h($lang === 'en' ? 'Tag types' : 'Címke típusok') ?>">
+                    <?php foreach ($tagTypeRows as $typeRow): ?>
+                        <?php
+                        $tone = (string) ($typeRow['tone'] ?? 'default');
+                        $icon = (string) ($typeRow['icon'] ?? '🏷️');
+                        ?>
+                        <span class="tag-public__type-pill tag-public__type-pill--<?= h($tone) ?>">
+                            <span class="tag-public__type-pill__icon" aria-hidden="true"><?= $icon ?></span>
+                            <span class="tag-public__type-pill__label"><?= h((string) ($typeRow['name'] ?? '')) ?></span>
+                        </span>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
             <h1 class="event-public__title"><?= h($title) ?></h1>
         </div>
     </header>
 
     <section class="organizer-public__events" aria-labelledby="tag-events-heading">
-        <h2 class="organizer-public__events-title" id="tag-events-heading"><?= h($G['events_heading']) ?></h2>
+        <h2 class="organizer-public__events-title" id="tag-events-heading">
+            <?= h($G['events_heading']) ?>
+            <span class="organizer-public__heading-count">(<?= $eventsTotalCount ?>)</span>
+        </h2>
         <?php if ($eventsList === []): ?>
             <p class="organizer-public__empty"><?= h($G['list_empty']) ?></p>
         <?php else: ?>
@@ -128,7 +146,13 @@ header('Content-Type: text/html; charset=UTF-8');
                 $subsectionTitleClass = 'organizer-public__subsection-title' . ($isPastSection ? ' organizer-public__subsection-title--past' : '');
                 ?>
                 <div class="<?= h($subsectionClass) ?>" id="<?= h((string) $block['id']) ?>">
-                    <h3 class="<?= h($subsectionTitleClass) ?>"><?= h((string) $block['heading']) ?></h3>
+                    <?php
+                    $blockCount = ($block['id'] ?? '') === 'tag-past' ? $eventsPastCount : $eventsUpcomingCount;
+                    ?>
+                    <h3 class="<?= h($subsectionTitleClass) ?>">
+                        <?= h((string) $block['heading']) ?>
+                        <span class="organizer-public__heading-count">(<?= $blockCount ?>)</span>
+                    </h3>
                     <?php if ($block['rows'] === []): ?>
                         <p class="organizer-public__subsection-empty"><?= h((string) $block['empty']) ?></p>
                     <?php else: ?>

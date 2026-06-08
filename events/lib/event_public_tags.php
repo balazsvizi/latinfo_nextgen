@@ -32,6 +32,40 @@ function events_public_tag_published_events(PDO $db, int $tagId, string $publish
 }
 
 /**
+ * Nyilvános címke-oldal hero: típus pill-ek (rendezett, DB név + ikon).
+ *
+ * @return list<array{code: string, name: string, icon: string, tone: string}>
+ */
+function events_public_tag_type_rows_for_display(PDO $db, int $tagId): array {
+    $codes = events_load_tag_type_codes($db, $tagId);
+    if ($codes === []) {
+        return [];
+    }
+    $byCode = [];
+    foreach (events_tag_types_load_registry($db) as $row) {
+        $code = (string) ($row['code'] ?? '');
+        if ($code !== '') {
+            $byCode[$code] = $row;
+        }
+    }
+    $out = [];
+    foreach ($codes as $code) {
+        if (!isset($byCode[$code])) {
+            continue;
+        }
+        $row = $byCode[$code];
+        $out[] = [
+            'code' => $code,
+            'name' => (string) ($row['name'] ?? $code),
+            'icon' => (string) ($row['icon'] ?? '🏷️'),
+            'tone' => (string) ($row['tone'] ?? 'default'),
+        ];
+    }
+
+    return $out;
+}
+
+/**
  * Nyilvános címke-oldal fejléc felirata a típusok alapján (pl. egyetlen DJ → „DJ”).
  *
  * @param list<string> $typeCodes
