@@ -80,6 +80,15 @@ if (!function_exists('events_absolute_url')) {
     }
 }
 
+if (!function_exists('events_public_logo_src')) {
+    /**
+     * Nyilvános esemény oldal logó (latinfo.hu custom-logo, helyi másolat).
+     */
+    function events_public_logo_src(): string {
+        return events_url('assets/images/latinfo-logo.jpg');
+    }
+}
+
 if (!function_exists('events_public_favicon_head_markup')) {
     /**
      * Nyilvános esemény oldal favicon (zöld Latinfo-hang, SVG).

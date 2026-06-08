@@ -17,7 +17,7 @@ $showAdminEdit = $showAdminEdit ?? false;
 $adminEditUrl = $adminEditUrl ?? '';
 $C = events_public_common_nav_strings($lang);
 $eventsHomeUrl = events_public_home_page_url($lang);
-$latinfoLogoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+$latinfoLogoSrc = events_public_logo_src();
 ?>
 <div class="event-shell-toolbar">
     <div class="event-shell-toolbar__leading">
@@ -30,7 +30,7 @@ $latinfoLogoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
             <a class="event-shell-toolbar__events-home" href="<?= h($eventsHomeUrl) ?>" aria-label="<?= h($C['events_home_aria']) ?>"><?= h($C['events_home_back']) ?></a>
         <?php endif; ?>
         <a class="event-brand-logo" href="<?= h($eventsHomeUrl) ?>" title="<?= h($C['logo_events_home_title']) ?>" aria-label="<?= h($C['logo_events_home_aria']) ?>">
-            <img src="<?= h($latinfoLogoSrc) ?>" alt="<?= h($S['logo_alt']) ?>" width="180" height="48" decoding="async" fetchpriority="high">
+            <img src="<?= h($latinfoLogoSrc) ?>" alt="<?= h($S['logo_alt']) ?>" width="240" height="80" decoding="async" fetchpriority="high">
         </a>
     </div>
     <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">

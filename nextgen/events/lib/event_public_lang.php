@@ -670,7 +670,7 @@ function events_public_megjelenit_not_found_html(string $lang): string {
     $eventsHome = events_public_home_page_url($lang);
     $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
-    $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+    $logoSrc = events_public_logo_src();
     $fav = events_public_favicon_head_markup();
 
     return '<!DOCTYPE html>
@@ -689,7 +689,7 @@ function events_public_megjelenit_not_found_html(string $lang): string {
         <div class="event-shell-toolbar__leading">
             <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
             <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
-                <img src="' . h($logoSrc) . '" alt="' . h($T['logo_alt']) . '" width="180" height="48" decoding="async">
+                <img src="' . h($logoSrc) . '" alt="' . h($T['logo_alt']) . '" width="240" height="80" decoding="async">
             </a>
         </div>
     </div>
@@ -710,7 +710,7 @@ function events_public_organizer_not_found_html(string $lang): string {
     $eventsHome = events_public_home_page_url($lang);
     $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
-    $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+    $logoSrc = events_public_logo_src();
     $fav = events_public_favicon_head_markup();
 
     return '<!DOCTYPE html>
@@ -729,7 +729,7 @@ function events_public_organizer_not_found_html(string $lang): string {
         <div class="event-shell-toolbar__leading">
             <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
             <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
-                <img src="' . h($logoSrc) . '" alt="' . h($O['logo_alt']) . '" width="180" height="48" decoding="async">
+                <img src="' . h($logoSrc) . '" alt="' . h($O['logo_alt']) . '" width="240" height="80" decoding="async">
             </a>
         </div>
     </div>
@@ -750,7 +750,7 @@ function events_public_tag_not_found_html(string $lang): string {
     $eventsHome = events_public_home_page_url($lang);
     $C = events_public_common_nav_strings($lang);
     $cssUrl = events_url('assets/event_public.css');
-    $logoSrc = site_url('lanueva/assets/images/logo/latinfo_black.png');
+    $logoSrc = events_public_logo_src();
     $fav = events_public_favicon_head_markup();
 
     return '<!DOCTYPE html>
@@ -769,7 +769,7 @@ function events_public_tag_not_found_html(string $lang): string {
         <div class="event-shell-toolbar__leading">
             <a class="event-shell-toolbar__events-home" href="' . h($eventsHome) . '" aria-label="' . h($C['events_home_aria']) . '">' . h($C['events_home_back']) . '</a>
             <a class="event-brand-logo" href="' . h($eventsHome) . '" title="' . h($C['logo_events_home_title']) . '" aria-label="' . h($C['logo_events_home_aria']) . '">
-                <img src="' . h($logoSrc) . '" alt="' . h($G['logo_alt']) . '" width="180" height="48" decoding="async">
+                <img src="' . h($logoSrc) . '" alt="' . h($G['logo_alt']) . '" width="240" height="80" decoding="async">
             </a>
         </div>
     </div>
