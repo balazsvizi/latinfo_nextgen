@@ -114,15 +114,13 @@ header('Content-Type: text/html; charset=UTF-8');
                 <summary class="home-public__filters-summary">
                     <span class="home-public__filters-summary-text"><?= h((string) $D['filters_toggle']) ?></span>
                     <?php if ($filtersActive): ?>
-                        <span class="home-public__filters-badge"><?= h((string) $D['filters_active_badge']) ?></span>
+                        <span class="home-public__filters-meta">
+                            <span class="home-public__filters-badge"><?= h((string) $D['filters_active_badge']) ?></span>
+                            <a href="<?= h($filterClearUrl) ?>" class="home-public__clear-filters" onclick="event.stopPropagation();"><?= h((string) $D['clear_filters']) ?></a>
+                        </span>
                     <?php endif; ?>
                 </summary>
                 <div class="home-public__filters-body">
-                    <?php if ($filtersActive): ?>
-                        <p class="home-public__filters-actions">
-                            <a href="<?= h($filterClearUrl) ?>" class="home-public__clear-filters"><?= h((string) $D['clear_filters']) ?></a>
-                        </p>
-                    <?php endif; ?>
                     <?php require __DIR__ . '/partials/public_event_filters.php'; ?>
                 </div>
             </details>
