@@ -11,7 +11,7 @@ declare(strict_types=1);
 <div class="events-cal" role="grid" aria-label="<?= h($monthLabel) ?>">
     <div class="events-cal__weekdays" role="row">
         <?php foreach ($weekdayHeaders as $wd): ?>
-            <div class="events-cal__weekday" role="columnheader"><?= h($wd) ?></div>
+            <div class="events-cal__weekday" role="columnheader" title="<?= h($wd) ?>"><?= h($wd) ?></div>
         <?php endforeach; ?>
     </div>
     <div class="events-cal__body">

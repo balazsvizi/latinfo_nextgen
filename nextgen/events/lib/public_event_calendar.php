@@ -36,8 +36,8 @@ function events_public_calendar_month_label(DateTimeImmutable $monthFirst, strin
  */
 function events_public_calendar_weekday_headers(string $lang): array {
     if ($lang === 'en') {
-        return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     }
 
-    return events_admin_calendar_weekday_headers();
+    return ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap'];
 }

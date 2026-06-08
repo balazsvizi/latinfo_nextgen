@@ -1997,14 +1997,18 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public .events-cal__weekday {
-    padding: 0.55rem 0.65rem;
-    font-size: 0.6875rem;
+    min-width: 0;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    text-align: left;
     color: var(--li-text-soft);
     background: #fff;
     border-bottom: 1px solid var(--li-border);
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .home-public .events-cal__body {
@@ -2306,9 +2310,8 @@ body.event-public-page--home .event-public__hero-inner {
     }
 
     .home-public .events-cal__weekday {
-        padding: 0.4rem 0.2rem;
-        font-size: 0.58rem;
-        text-align: center;
+        padding: 0.4rem 0.15rem;
+        font-size: 0.625rem;
     }
 
     .home-public .events-cal__day {
