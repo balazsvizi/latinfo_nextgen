@@ -1762,26 +1762,10 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public .events-date-slider-row .events-date-range-visual {
-    flex: 1 1 220px;
-    min-width: 160px;
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
     margin: 0;
-}
-
-.home-public .events-filter-submit-inline {
-    flex-shrink: 0;
-    white-space: nowrap;
-    padding: 0.55rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    border: none;
-    border-radius: var(--ev-radius-sm);
-    background: var(--li-green);
-    color: #fff;
-    cursor: pointer;
-}
-
-.home-public .events-filter-submit-inline:hover {
-    background: var(--li-green-hover);
 }
 
 .home-public .events-date-range-visual {
@@ -2282,10 +2266,6 @@ body.event-public-page--home .event-public__hero-inner {
     .home-public .events-date-slider-row {
         flex-direction: column;
         align-items: stretch;
-    }
-
-    .home-public .events-filter-submit-inline {
-        width: 100%;
     }
 
     .home-public .events-cal-toolbar__left {

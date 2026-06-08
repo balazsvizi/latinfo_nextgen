@@ -166,5 +166,6 @@ header('Content-Type: text/html; charset=UTF-8');
 </article>
 </div>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
+<?php require __DIR__ . '/partials/public_event_filters_auto_script.php'; ?>
 </body>
 </html>
