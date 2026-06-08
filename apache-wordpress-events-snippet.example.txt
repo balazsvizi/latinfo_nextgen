@@ -1,0 +1,12 @@
+# WordPress + events/ mappa együttélés (public_html/.htaccess)
+#
+# Ha a /events URL-en még mindig a régi WordPress naptár jelenik meg,
+# illeszd be a WordPress „BEGIN WordPress” blokk ELÉ:
+#
+#   # Az events/ PHP mappa elsőbbsége (régi WP /events kikapcsolása)
+#   RewriteEngine On
+#   RewriteRule ^events/?$ events/index.php [L]
+#
+# WordPress adminban érdemes még:
+# - A régi /events oldal / esemény archívum átirányítása vagy draft
+# - The Events Calendar „Events URL” slug ne legyen „events” (ha ütközik)
