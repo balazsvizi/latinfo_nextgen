@@ -453,6 +453,123 @@ function events_public_djs_strings(string $lang): array {
     return $lang === 'en' ? $en : $hu;
 }
 
+/**
+ * @return array<string, string>
+ */
+function events_public_home_strings(string $lang): array {
+    $hu = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Események',
+        'page_desc' => 'Közzétett események naptárban és listában a Latinfo.hu-n.',
+        'eyebrow' => 'Események',
+        'lang_nav' => 'Nyelv',
+        'lang_hu' => 'Magyar',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'calendar_aria' => 'Esemény naptár és szűrők',
+        'clear_filters' => 'Szűrők törlése',
+        'filters_aria' => 'Szűrők',
+        'filter_organizer' => 'Szervező',
+        'filter_organizer_ph' => 'Részlet a névből…',
+        'filter_category' => 'Kategória',
+        'filter_all_categories' => 'Összes kategória',
+        'filter_tag' => 'Címke',
+        'filter_all_tags' => 'Összes címke',
+        'filter_dj' => 'DJ',
+        'filter_all_djs' => 'Összes DJ',
+        'filter_main_style' => 'Fő stílus',
+        'filter_all_main_styles' => 'Összes fő stílus',
+        'filter_supp_style' => 'Kiegészítő stílus',
+        'filter_all_supp_styles' => 'Összes kiegészítő stílus',
+        'filter_venue' => 'Helyszín',
+        'filter_venue_ph' => 'Helyszín neve…',
+        'filter_city' => 'Város',
+        'filter_city_ph' => 'Város neve…',
+        'filter_name' => 'Esemény neve',
+        'filter_name_ph' => 'Keresés a címben…',
+        'filter_date_from' => 'Ettől',
+        'filter_date_to' => 'Eddig',
+        'filter_submit' => 'Szűrés alkalmazása',
+        'cal_controls_aria' => 'Naptár vezérlők',
+        'month_nav_aria' => 'Hónap választás',
+        'prev_month' => 'Előző hónap',
+        'next_month' => 'Következő hónap',
+        'this_month' => 'Ez a hónap',
+        'view_switch_aria' => 'Nézet választó',
+        'view_cal' => 'Naptár',
+        'view_list' => 'Lista',
+        'list_heading' => 'Események',
+        'list_empty' => 'Nincs találat a szűrésre.',
+        'undated_aria' => 'Dátum nélküli események',
+        'undated_title' => 'Dátum nélküli események',
+    ];
+    $en = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Events',
+        'page_desc' => 'Published events in calendar and list view on Latinfo.hu.',
+        'eyebrow' => 'Events',
+        'lang_nav' => 'Language',
+        'lang_hu' => 'Hungarian',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to Latinfo.hu home',
+        'calendar_aria' => 'Event calendar and filters',
+        'clear_filters' => 'Clear filters',
+        'filters_aria' => 'Filters',
+        'filter_organizer' => 'Organizer',
+        'filter_organizer_ph' => 'Part of the name…',
+        'filter_category' => 'Category',
+        'filter_all_categories' => 'All categories',
+        'filter_tag' => 'Tag',
+        'filter_all_tags' => 'All tags',
+        'filter_dj' => 'DJ',
+        'filter_all_djs' => 'All DJs',
+        'filter_main_style' => 'Main style',
+        'filter_all_main_styles' => 'All main styles',
+        'filter_supp_style' => 'Supplementary style',
+        'filter_all_supp_styles' => 'All supplementary styles',
+        'filter_venue' => 'Venue',
+        'filter_venue_ph' => 'Venue name…',
+        'filter_city' => 'City',
+        'filter_city_ph' => 'City name…',
+        'filter_name' => 'Event name',
+        'filter_name_ph' => 'Search in title…',
+        'filter_date_from' => 'From',
+        'filter_date_to' => 'To',
+        'filter_submit' => 'Apply filters',
+        'cal_controls_aria' => 'Calendar controls',
+        'month_nav_aria' => 'Month selection',
+        'prev_month' => 'Previous month',
+        'next_month' => 'Next month',
+        'this_month' => 'This month',
+        'view_switch_aria' => 'View switch',
+        'view_cal' => 'Calendar',
+        'view_list' => 'List',
+        'list_heading' => 'Events',
+        'list_empty' => 'No matches for your filters.',
+        'undated_aria' => 'Events without date',
+        'undated_title' => 'Events without date',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+function events_public_home_page_url(string $lang): string {
+    $q = ['lang' => $lang];
+
+    return events_url('index.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+}
+
+function events_public_home_lang_switch_url(string $targetLang): string {
+    $q = $_GET;
+    $q['lang'] = $targetLang;
+
+    return events_url('index.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+}
+
 function events_public_djs_page_url(string $lang): string {
     return events_url('djs.php?' . http_build_query(['lang' => $lang], '', '&', PHP_QUERY_RFC3986));
 }

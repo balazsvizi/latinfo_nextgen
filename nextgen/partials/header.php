@@ -92,6 +92,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(site_url('events/tag_types.php')) ?>" role="menuitem">Címke típusok</a></li>
                         <li role="none"><a href="<?= h(site_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
                         <li role="none"><a href="<?= h(site_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
+                        <li role="none"><a href="<?= h(site_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
                         <?php if (isLoggedIn() && isSuperadmin()): ?>
                         <li role="none"><a href="<?= h(site_url('events/adatok.php')) ?>" role="menuitem">Adatok</a></li>
                         <?php endif; ?>
