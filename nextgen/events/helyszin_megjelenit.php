@@ -2,7 +2,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/venue_request.php';
+
+events_public_send_noindex_header();
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
 if ($slug === '') {
@@ -51,6 +54,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?= events_public_robots_noindex_head_markup() ?>
     <title><?= h($title) ?> – <?= h(SITE_NAME) ?></title>
     <?php if ($desc !== ''): ?><meta name="description" content="<?= h($desc) ?>"><?php endif; ?>
     <link rel="canonical" href="<?= h($canonical) ?>">

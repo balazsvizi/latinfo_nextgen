@@ -33,6 +33,36 @@ function events_public_resolve_megjelenit_lang(): string {
 }
 
 /**
+ * Belső linkekhez: angolnál kötelező ?lang=en; magyarnál csak ha explicit ?lang=hu van az URL-ben.
+ *
+ * @return array<string, string>
+ */
+function events_public_lang_nav_params(string $lang): array {
+    if ($lang === 'en') {
+        return ['lang' => 'en'];
+    }
+    if (isset($_GET['lang']) && strtolower(trim((string) $_GET['lang'])) === 'hu') {
+        return ['lang' => 'hu'];
+    }
+
+    return [];
+}
+
+/**
+ * Nyilvános esemény oldalak — egyelőre ne indexeljék a keresők.
+ */
+function events_public_robots_noindex_head_markup(): string {
+    return '<meta name="robots" content="noindex, nofollow">' . "\n"
+        . '<meta name="googlebot" content="noindex, nofollow">' . "\n";
+}
+
+function events_public_send_noindex_header(): void {
+    if (!headers_sent()) {
+        header('X-Robots-Tag: noindex, nofollow', true);
+    }
+}
+
+/**
  * @return array<string, string>
  */
 function events_public_megjelenit_strings(string $lang): array {
@@ -572,15 +602,8 @@ function events_public_home_page_url(string $lang): string {
 
 function events_public_home_lang_switch_url(string $targetLang): string {
     $q = $_GET;
-    if ($targetLang === 'hu') {
-        unset($q['lang']);
-    } else {
-        $q['lang'] = 'en';
-    }
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
     $base = events_url(events_public_home_page_script());
-    if ($q === []) {
-        return $base;
-    }
 
     return $base . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
 }
@@ -620,7 +643,7 @@ function events_public_megjelenit_not_found_html(string $lang): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#6d8f63">
+    ' . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
     <title>' . h($T['not_found_title']) . '</title>
     ' . $fav . '
     <link rel="stylesheet" href="' . h($cssUrl) . '">
@@ -657,7 +680,7 @@ function events_public_organizer_not_found_html(string $lang): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#6d8f63">
+    ' . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
     <title>' . h($O['not_found_title']) . '</title>
     ' . $fav . '
     <link rel="stylesheet" href="' . h($cssUrl) . '">
@@ -694,7 +717,7 @@ function events_public_tag_not_found_html(string $lang): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#6d8f63">
+    ' . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
     <title>' . h($G['not_found_title']) . '</title>
     ' . $fav . '
     <link rel="stylesheet" href="' . h($cssUrl) . '">

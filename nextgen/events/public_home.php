@@ -8,7 +8,9 @@ require_once __DIR__ . '/lib/public_event_filters.php';
 require_once __DIR__ . '/lib/public_event_calendar.php';
 
 $lang = events_public_resolve_megjelenit_lang();
+events_public_send_noindex_header();
 $D = events_public_home_strings($lang);
+$langNav = events_public_lang_nav_params($lang);
 
 $db = getDb();
 $homeContent = events_public_home_load($db);
@@ -30,31 +32,26 @@ $undated = $bucket['undated'];
 $gridDays = events_admin_calendar_grid_days($monthFirst, $monthLast);
 $weekdayHeaders = events_public_calendar_weekday_headers($lang);
 
-$navBaseParams = $filters['get_params'];
+$navBaseParams = array_merge($filters['get_params'], $langNav);
 unset($navBaseParams['view']);
 $prevMonthUrl = events_public_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_public_calendar_month_url($nextMonthKey, $navBaseParams);
 $todayMonthUrl = events_public_calendar_month_url((new DateTimeImmutable('today'))->format('Y-m'), $navBaseParams);
 
-$listViewParams = $filters['get_params'];
-$listViewParams['view'] = 'list';
+$listViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'list']);
 $homeScript = events_public_home_page_script();
 $listViewUrl = events_url($homeScript . '?' . http_build_query($listViewParams));
 
-$calViewParams = $filters['get_params'];
+$calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
 unset($calViewParams['view']);
-$calViewParams['month'] = $monthKey;
 $calViewUrl = events_url($homeScript . '?' . http_build_query($calViewParams));
 
 $filterFormAction = events_url($homeScript);
-$filterFormHidden = ['month' => $monthKey];
+$filterFormHidden = array_merge(['month' => $monthKey], $langNav);
 if ($view === 'list') {
     $filterFormHidden['view'] = 'list';
 }
-$filterClearParams = ['month' => $monthKey];
-if ($lang !== 'hu') {
-    $filterClearParams['lang'] = $lang;
-}
+$filterClearParams = array_merge(['month' => $monthKey], $langNav);
 $filterClearUrl = events_url($homeScript . '?' . http_build_query($filterClearParams));
 
 $title = (string) $D['page_title'];
@@ -77,6 +74,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?= events_public_robots_noindex_head_markup() ?>
     <meta name="theme-color" content="#6d8f63">
     <title><?= h($title) ?><?= h($D['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">
