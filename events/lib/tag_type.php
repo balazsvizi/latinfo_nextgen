@@ -31,6 +31,21 @@ function events_tag_type_label(string $code): string {
     return $labels[$code] ?? $code;
 }
 
+/**
+ * Típus megjelenítés (ikon + CSS tone) a címke admin űrlaphoz.
+ *
+ * @return array<string, array{icon: string, tone: string}>
+ */
+function events_tag_type_display_meta(): array {
+    return [
+        'dj' => ['icon' => '🎧', 'tone' => 'dj'],
+        'zenekar' => ['icon' => '🎸', 'tone' => 'zenekar'],
+        'tanar' => ['icon' => '📚', 'tone' => 'tanar'],
+        'muvesz' => ['icon' => '🎨', 'tone' => 'muvesz'],
+        'szervezo' => ['icon' => '🎪', 'tone' => 'szervezo'],
+    ];
+}
+
 function events_tag_type_is_valid(string $code): bool {
     return in_array($code, events_tag_type_codes(), true);
 }

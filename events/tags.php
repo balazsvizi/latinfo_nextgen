@@ -28,84 +28,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(events_url('tags.php'));
     }
 
-    if ($action === 'save_specialtag') {
-        $id = (int) ($_POST['id'] ?? 0);
-        $name = trim((string) ($_POST['name'] ?? ''));
-        if ($name === '') {
-            flash('error', 'A speciális csoport neve kötelező.');
-            redirect(events_url('tags.php?open_special=') . ($id > 0 ? (string) $id : 'new'));
-        }
-        if ($id > 0) {
-            $st = $db->prepare('UPDATE `events_specialtags` SET `name` = ? WHERE `id` = ?');
-            $st->execute([$name, $id]);
-            flash('success', 'Speciális csoport mentve.');
-            rendszer_log('spec_tag', $id, 'Módosítva', $name);
-            redirect(events_url('tags.php'));
-        }
-        $ins = $db->prepare('INSERT INTO `events_specialtags` (`name`) VALUES (?)');
-        $ins->execute([$name]);
-        $newId = (int) $db->lastInsertId();
-        flash('success', 'Speciális csoport létrehozva.');
-        rendszer_log('spec_tag', $newId, 'Létrehozva', $name);
-        redirect(events_url('tags.php'));
-    }
-
-    if ($action === 'delete_specialtag') {
-        $id = (int) ($_POST['id'] ?? 0);
-        if ($id <= 0) {
-            flash('error', 'Érvénytelen azonosító.');
-            redirect(events_url('tags.php'));
-        }
-        $st = $db->prepare('SELECT `name` FROM `events_specialtags` WHERE `id` = ?');
-        $st->execute([$id]);
-        $row = $st->fetch(PDO::FETCH_ASSOC);
-        if (!$row) {
-            flash('error', 'Nem található.');
-            redirect(events_url('tags.php'));
-        }
-        $nm = (string) $row['name'];
-        $db->prepare('DELETE FROM `events_specialtags` WHERE `id` = ?')->execute([$id]);
-        flash('success', 'Speciális csoport törölve.');
-        rendszer_log('spec_tag', $id, 'Törölve', $nm);
-        redirect(events_url('tags.php'));
-    }
-
     if ($action === 'save_tag') {
         $id = (int) ($_POST['id'] ?? 0);
         $name = trim((string) ($_POST['name'] ?? ''));
-        $specRaw = $_POST['special_tag_ids'] ?? [];
-        $specIds = [];
-        if (is_array($specRaw)) {
-            foreach ($specRaw as $v) {
-                $s = (int) $v;
-                if ($s > 0 && !in_array($s, $specIds, true)) {
-                    $specIds[] = $s;
-                }
-            }
-        }
         if ($name === '') {
             flash('error', 'A címke neve kötelező.');
             redirect(events_url('tags.php?open_tag=') . ($id > 0 ? (string) $id : 'new'));
         }
         $typeRaw = $_POST['tag_type_codes'] ?? [];
         $typeCodes = events_tag_type_normalize_codes(is_array($typeRaw) ? $typeRaw : []);
-        sort($specIds);
-        if ($specIds !== []) {
-            $ph = implode(',', array_fill(0, count($specIds), '?'));
-            $chk = $db->prepare("SELECT COUNT(*) FROM `events_specialtags` WHERE `id` IN ({$ph})");
-            $chk->execute($specIds);
-            if ((int) $chk->fetchColumn() !== count($specIds)) {
-                flash('error', 'Érvénytelen speciális csoport lett kijelölve.');
-                redirect(events_url('tags.php?open_tag=') . ($id > 0 ? (string) $id : 'new'));
-            }
-        }
 
         if ($id > 0) {
             $db->beginTransaction();
             try {
                 $st = $db->prepare('UPDATE `events_tags` SET `name` = ? WHERE `id` = ?');
                 $st->execute([$name, $id]);
-                events_save_tag_special_memberships($db, $id, $specIds);
                 events_save_tag_types($db, $id, $typeCodes);
                 $db->commit();
             } catch (Throwable $e) {
@@ -122,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ins = $db->prepare('INSERT INTO `events_tags` (`name`) VALUES (?)');
             $ins->execute([$name]);
             $newId = (int) $db->lastInsertId();
-            events_save_tag_special_memberships($db, $newId, $specIds);
             events_save_tag_types($db, $newId, $typeCodes);
             $db->commit();
         } catch (Throwable $e) {
@@ -161,152 +97,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(events_url('tags.php'));
     }
 
-    if ($action === 'bulk_add_specials_to_tags') {
-        $tagRaw = $_POST['tag_ids'] ?? [];
-        $specRaw = $_POST['bulk_special_tag_ids'] ?? [];
-        $tagIds = [];
-        if (is_array($tagRaw)) {
-            foreach ($tagRaw as $v) {
-                $t = (int) $v;
-                if ($t > 0 && !in_array($t, $tagIds, true)) {
-                    $tagIds[] = $t;
-                }
-            }
-        }
-        $specIds = [];
-        if (is_array($specRaw)) {
-            foreach ($specRaw as $v) {
-                $s = (int) $v;
-                if ($s > 0 && !in_array($s, $specIds, true)) {
-                    $specIds[] = $s;
-                }
-            }
-        }
-        if ($tagIds === []) {
-            flash('error', 'Válassz ki legalább egy címkét a táblázatban.');
-            redirect(events_url('tags.php'));
-        }
-        if ($specIds === []) {
-            flash('error', 'Válassz ki legalább egy speciális csoportot a hozzáadáshoz.');
-            redirect(events_url('tags.php'));
-        }
-        $ph = implode(',', array_fill(0, count($specIds), '?'));
-        $chk = $db->prepare("SELECT COUNT(*) FROM `events_specialtags` WHERE `id` IN ({$ph})");
-        $chk->execute($specIds);
-        if ((int) $chk->fetchColumn() !== count($specIds)) {
-            flash('error', 'Érvénytelen speciális csoport lett kijelölve.');
-            redirect(events_url('tags.php'));
-        }
-        $phTags = implode(',', array_fill(0, count($tagIds), '?'));
-        $chkTags = $db->prepare("SELECT COUNT(*) FROM `events_tags` WHERE `id` IN ({$phTags})");
-        $chkTags->execute($tagIds);
-        if ((int) $chkTags->fetchColumn() !== count($tagIds)) {
-            flash('error', 'Érvénytelen címke lett kijelölve.');
-            redirect(events_url('tags.php'));
-        }
-        $db->beginTransaction();
-        try {
-            foreach ($tagIds as $tid) {
-                events_merge_tag_special_memberships($db, $tid, $specIds);
-            }
-            $db->commit();
-        } catch (Throwable $e) {
-            $db->rollBack();
-            throw $e;
-        }
-        flash('success', 'A kijelölt speciális csoportok hozzá lettek adva ' . count($tagIds) . ' címkéhez.');
-        redirect(events_url('tags.php'));
-    }
-
-    if ($action === 'bulk_remove_specials_from_tags') {
-        $tagRaw = $_POST['tag_ids'] ?? [];
-        $specRaw = $_POST['bulk_remove_special_tag_ids'] ?? [];
-        $tagIds = [];
-        if (is_array($tagRaw)) {
-            foreach ($tagRaw as $v) {
-                $t = (int) $v;
-                if ($t > 0 && !in_array($t, $tagIds, true)) {
-                    $tagIds[] = $t;
-                }
-            }
-        }
-        $specIds = [];
-        if (is_array($specRaw)) {
-            foreach ($specRaw as $v) {
-                $s = (int) $v;
-                if ($s > 0 && !in_array($s, $specIds, true)) {
-                    $specIds[] = $s;
-                }
-            }
-        }
-        if ($tagIds === []) {
-            flash('error', 'Válassz ki legalább egy címkét a táblázatban.');
-            redirect(events_url('tags.php'));
-        }
-        if ($specIds === []) {
-            flash('error', 'Válassz ki legalább egy speciális csoportot az eltávolításhoz.');
-            redirect(events_url('tags.php'));
-        }
-        $ph = implode(',', array_fill(0, count($specIds), '?'));
-        $chk = $db->prepare("SELECT COUNT(*) FROM `events_specialtags` WHERE `id` IN ({$ph})");
-        $chk->execute($specIds);
-        if ((int) $chk->fetchColumn() !== count($specIds)) {
-            flash('error', 'Érvénytelen speciális csoport lett kijelölve.');
-            redirect(events_url('tags.php'));
-        }
-        $phTags = implode(',', array_fill(0, count($tagIds), '?'));
-        $chkTags = $db->prepare("SELECT COUNT(*) FROM `events_tags` WHERE `id` IN ({$phTags})");
-        $chkTags->execute($tagIds);
-        if ((int) $chkTags->fetchColumn() !== count($tagIds)) {
-            flash('error', 'Érvénytelen címke lett kijelölve.');
-            redirect(events_url('tags.php'));
-        }
-        events_remove_special_links_from_tags($db, $tagIds, $specIds);
-        flash('success', 'A kijelölt speciális csoport kapcsolatok törölve lettek a megjelölt címkéknél (' . count($tagIds) . ' címke).');
-        redirect(events_url('tags.php'));
-    }
-
     redirect(events_url('tags.php'));
 }
 
-$specials = $db->query('SELECT `id`, `name` FROM `events_specialtags` ORDER BY `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
-
-$tagsWithSpecials = $db->query('
-    SELECT t.`id`, t.`name`,
-           GROUP_CONCAT(s.`name` ORDER BY s.`name` SEPARATOR ", ") AS `specials_label`
-    FROM `events_tags` t
-    LEFT JOIN `events_special_tags` st ON st.`tag_id` = t.`id`
-    LEFT JOIN `events_specialtags` s ON s.`id` = st.`special_tag_id`
-    GROUP BY t.`id`, t.`name`
-    ORDER BY t.`name` ASC, t.`id` ASC
-')->fetchAll(PDO::FETCH_ASSOC);
-
-$tagSpecialIdsByTag = [];
-$stMap = $db->query('SELECT `tag_id`, `special_tag_id` FROM `events_special_tags` ORDER BY `tag_id` ASC, `special_tag_id` ASC');
-while ($row = $stMap->fetch(PDO::FETCH_ASSOC)) {
-    $tid = (int) $row['tag_id'];
-    $tagSpecialIdsByTag[$tid][] = (int) $row['special_tag_id'];
-}
+$tagRows = $db->query('SELECT `id`, `name` FROM `events_tags` ORDER BY `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
 
 $tagTypesByTag = [];
-if (events_tag_types_tables_available($db) && $tagsWithSpecials !== []) {
-    $tagIdsForTypes = array_values(array_unique(array_map(static fn (array $tr): int => (int) $tr['id'], $tagsWithSpecials)));
+if (events_tag_types_tables_available($db) && $tagRows !== []) {
+    $tagIdsForTypes = array_values(array_unique(array_map(static fn (array $tr): int => (int) $tr['id'], $tagRows)));
     $tagTypesByTag = events_load_tag_types_map($db, $tagIdsForTypes);
 }
 
+$typeDisplayMeta = events_tag_type_display_meta();
+
 $openTagRaw = (string) ($_GET['open_tag'] ?? '');
-$openSpecialRaw = (string) ($_GET['open_special'] ?? '');
 $openTagGroup = '';
 if ($openTagRaw === 'new') {
     $openTagGroup = 'new';
 } elseif ($openTagRaw !== '' && ctype_digit($openTagRaw)) {
     $openTagGroup = (string) (int) $openTagRaw;
-}
-$openSpecialGroup = '';
-if ($openSpecialRaw === 'new') {
-    $openSpecialGroup = 'new';
-} elseif ($openSpecialRaw !== '' && ctype_digit($openSpecialRaw)) {
-    $openSpecialGroup = (string) (int) $openSpecialRaw;
 }
 
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -333,33 +142,23 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         >
             <thead>
                 <tr>
-                    <th scope="col" class="events-tags-bulk-th">
-                        <label class="events-tags-bulk-selectall visually-hidden" for="tags-bulk-select-all">Összes címke kijelölése</label>
-                        <input type="checkbox" id="tags-bulk-select-all" title="Összes címke kijelölése / törlése" aria-label="Összes címke kijelölése">
-                    </th>
                     <th scope="col">
                         <span class="events-inline-th-label">ID</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="1" data-sort-type="int" aria-label="Rendezés ID szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="0" data-sort-type="int" aria-label="Rendezés ID szerint">↕</button>
                     </th>
                     <th scope="col">
                         <span class="events-inline-th-label">Név</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="2" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="1" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
                     </th>
                     <th scope="col">
                         <span class="events-inline-th-label">Típusok</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="3" data-sort-type="text" aria-label="Rendezés típus szerint">↕</button>
-                    </th>
-                    <th scope="col">
-                        <span class="events-inline-th-label">Speciális csoportok</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="4" data-sort-type="text" aria-label="Rendezés csoport szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="2" data-sort-type="text" aria-label="Rendezés típus szerint">↕</button>
                     </th>
                 </tr>
                 <tr class="events-inline-filter-row">
-                    <th class="events-tags-bulk-th"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="1" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="2" placeholder="Szűrés…" aria-label="Szűrés név"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="3" placeholder="Szűrés…" aria-label="Szűrés típus"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="4" placeholder="Szűrés…" aria-label="Szűrés csoport"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="0" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="1" placeholder="Szűrés…" aria-label="Szűrés név"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="2" placeholder="Szűrés…" aria-label="Szűrés típus"></th>
                 </tr>
             </thead>
             <tbody>
@@ -370,12 +169,11 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                     role="button"
                     aria-expanded="<?= $openTagGroup === 'new' ? 'true' : 'false' ?>"
                 >
-                    <td class="events-tags-bulk-td"></td>
                     <td class="events-inline-summary-muted">—</td>
-                    <td colspan="3"><strong>Új címke</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
+                    <td colspan="2"><strong>Új címke</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
                 </tr>
                 <tr class="events-inline-detail" data-expand-group="new" <?= $openTagGroup === 'new' ? '' : 'hidden' ?>>
-                    <td colspan="5">
+                    <td colspan="3">
                         <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                             <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                 <?= csrf_input('events_tags') ?>
@@ -389,22 +187,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                 $tagTypeSelected = [];
                                 require __DIR__ . '/partials/tags_types_fieldset.php';
                                 ?>
-                                <fieldset class="form-group events-tags-special-fieldset">
-                                    <legend class="events-tags-special-legend">Speciális csoport(ok)</legend>
-                                    <?php if ($specials === []): ?>
-                                        <p class="help">Előbb hozz létre speciális csoportot lent, majd mentsd.</p>
-                                    <?php else: ?>
-                                        <div class="events-tags-special-checkboxes">
-                                            <?php foreach ($specials as $sp): ?>
-                                                <?php $sid = (int) $sp['id']; ?>
-                                                <label class="events-tags-special-check-label">
-                                                    <input type="checkbox" name="special_tag_ids[]" value="<?= $sid ?>">
-                                                    <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
-                                                </label>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </fieldset>
                                 <div class="toolbar">
                                     <button type="submit" class="btn btn-primary">Mentés</button>
                                 </div>
@@ -412,15 +194,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         </div>
                     </td>
                 </tr>
-                <?php foreach ($tagsWithSpecials as $tr): ?>
+                <?php foreach ($tagRows as $tr): ?>
                     <?php
                     $tid = (int) $tr['id'];
-                    $specIds = $tagSpecialIdsByTag[$tid] ?? [];
-                    $slabel = trim((string) ($tr['specials_label'] ?? ''));
                     $typeCodesRow = $tagTypesByTag[$tid] ?? [];
-                    $typeLabel = $typeCodesRow !== []
-                        ? implode(', ', array_map(static fn (string $c): string => events_tag_type_label($c), $typeCodesRow))
-                        : '';
                     $isOpen = $openTagGroup !== '' && $openTagGroup === (string) $tid;
                     ?>
                     <tr
@@ -431,22 +208,30 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                         role="button"
                         aria-expanded="<?= $isOpen ? 'true' : 'false' ?>"
                     >
-                        <td class="events-tags-bulk-td">
-                            <input
-                                type="checkbox"
-                                name="tag_ids[]"
-                                value="<?= $tid ?>"
-                                form="tags-bulk-special-form"
-                                aria-label="Kijelölés: <?= h((string) $tr['name']) ?>"
-                            >
-                        </td>
                         <td><?= $tid ?></td>
                         <td><?= h((string) $tr['name']) ?></td>
-                        <td><?= $typeLabel !== '' ? h($typeLabel) : '—' ?></td>
-                        <td><?= $slabel !== '' ? h($slabel) : '—' ?></td>
+                        <td>
+                            <?php if ($typeCodesRow === []): ?>
+                                <span class="events-tag-type-table-empty">—</span>
+                            <?php else: ?>
+                                <span class="events-tag-type-table-pills">
+                                    <?php foreach ($typeCodesRow as $code): ?>
+                                        <?php
+                                        $meta = $typeDisplayMeta[$code] ?? ['icon' => '🏷️', 'tone' => 'default'];
+                                        $tone = (string) ($meta['tone'] ?? 'default');
+                                        $icon = (string) ($meta['icon'] ?? '🏷️');
+                                        ?>
+                                        <span class="events-tag-type-pill events-tag-type-pill--<?= h($tone) ?>">
+                                            <span class="events-tag-type-pill__icon" aria-hidden="true"><?= $icon ?></span>
+                                            <span class="events-tag-type-pill__label"><?= h(events_tag_type_label($code)) ?></span>
+                                        </span>
+                                    <?php endforeach; ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                     <tr class="events-inline-detail" data-expand-group="<?= $tid ?>" <?= $isOpen ? '' : 'hidden' ?>>
-                        <td colspan="5">
+                        <td colspan="3">
                             <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                                 <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                     <?= csrf_input('events_tags') ?>
@@ -460,22 +245,6 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
                                     $tagTypeSelected = $typeCodesRow;
                                     require __DIR__ . '/partials/tags_types_fieldset.php';
                                     ?>
-                                    <fieldset class="form-group events-tags-special-fieldset">
-                                        <legend class="events-tags-special-legend">Speciális csoport(ok)</legend>
-                                        <?php if ($specials === []): ?>
-                                            <p class="help">Nincs definiált speciális csoport.</p>
-                                        <?php else: ?>
-                                            <div class="events-tags-special-checkboxes">
-                                                <?php foreach ($specials as $sp): ?>
-                                                    <?php $sid = (int) $sp['id']; ?>
-                                                    <label class="events-tags-special-check-label">
-                                                        <input type="checkbox" name="special_tag_ids[]" value="<?= $sid ?>" <?= in_array($sid, $specIds, true) ? 'checked' : '' ?>>
-                                                        <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
-                                                    </label>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </fieldset>
                                     <div class="toolbar">
                                         <button type="submit" class="btn btn-primary">Mentés</button>
                                         <a href="<?= h(events_url('tag.php?id=') . $tid) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>
@@ -495,182 +264,10 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
             </tbody>
         </table>
     </div>
-
-    <div class="events-tags-bulk-panel">
-        <form id="tags-bulk-special-form" method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-bulk-form">
-            <?= csrf_input('events_tags') ?>
-            <fieldset class="events-tags-bulk-fieldset">
-                <legend class="events-tags-bulk-legend">Csoportos művelet: speciális csoportok hozzáadása</legend>
-                <p class="help events-tags-bulk-help">Jelöld ki a címkéket a fenti táblázatban, válaszd ki a hozzáadandó speciális csoportokat, majd futtasd a műveletet. A meglévő csoport-hozzárendelések megmaradnak.</p>
-                <?php if ($specials === []): ?>
-                    <p class="help">Ehhez legalább egy speciális csoport szükséges (lent létrehozható).</p>
-                <?php else: ?>
-                    <div class="events-tags-special-checkboxes events-tags-bulk-checkboxes">
-                        <?php foreach ($specials as $sp): ?>
-                            <?php $sid = (int) $sp['id']; ?>
-                            <label class="events-tags-special-check-label">
-                                <input type="checkbox" name="bulk_special_tag_ids[]" value="<?= $sid ?>">
-                                <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                    <div class="toolbar">
-                        <button type="submit" class="btn btn-primary" name="action" value="bulk_add_specials_to_tags">Hozzáadás a kijelöltekhez</button>
-                    </div>
-                <?php endif; ?>
-            </fieldset>
-            <fieldset class="events-tags-bulk-fieldset events-tags-bulk-fieldset--remove">
-                <legend class="events-tags-bulk-legend">Csoportos művelet: speciális csoport hozzárendelés törlése</legend>
-                <p class="help events-tags-bulk-help">A kijelölt címkéknél eltávolítja a megjelölt speciális csoportok kapcsolatát (a címkék és a csoportok megmaradnak).</p>
-                <?php if ($specials === []): ?>
-                    <p class="help">Ehhez legalább egy speciális csoport szükséges (lent létrehozható).</p>
-                <?php else: ?>
-                    <div class="events-tags-special-checkboxes events-tags-bulk-checkboxes">
-                        <?php foreach ($specials as $sp): ?>
-                            <?php $sid = (int) $sp['id']; ?>
-                            <label class="events-tags-special-check-label">
-                                <input type="checkbox" name="bulk_remove_special_tag_ids[]" value="<?= $sid ?>">
-                                <span class="events-tags-special-check-text"><?= h((string) $sp['name']) ?><span class="events-tags-special-id-suffix"> (#<?= $sid ?>)</span></span>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                    <div class="toolbar">
-                        <button type="submit" class="btn btn-secondary" name="action" value="bulk_remove_specials_from_tags" onclick="return confirm('Biztosan eltávolítod a kijelölt speciális csoport kapcsolatokat a megjelölt címkéknél?');">Eltávolítás a kijelöltekről</button>
-                    </div>
-                <?php endif; ?>
-            </fieldset>
-        </form>
-    </div>
-
-    <h3 class="events-tags-section-title">Speciális csoportok szerkesztése</h3>
-    <div class="table-wrap events-admin-table-wrap events-inline-expand-wrap">
-        <table
-            class="events-admin-table events-inline-expand-table"
-            id="events-specialtags-inline-table"
-            data-sticky-group="new"
-            data-initial-open="<?= h($openSpecialGroup) ?>"
-        >
-            <thead>
-                <tr>
-                    <th scope="col">
-                        <span class="events-inline-th-label">ID</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="0" data-sort-type="int" aria-label="Rendezés ID szerint">↕</button>
-                    </th>
-                    <th scope="col">
-                        <span class="events-inline-th-label">Név</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="1" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
-                    </th>
-                </tr>
-                <tr class="events-inline-filter-row">
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="0" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="1" placeholder="Szűrés…" aria-label="Szűrés név"></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr
-                    class="events-inline-summary<?= $openSpecialGroup === 'new' ? ' is-active' : '' ?>"
-                    data-expand-group="new"
-                    tabindex="0"
-                    role="button"
-                    aria-expanded="<?= $openSpecialGroup === 'new' ? 'true' : 'false' ?>"
-                >
-                    <td class="events-inline-summary-muted">—</td>
-                    <td><strong>Új speciális csoport</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
-                </tr>
-                <tr class="events-inline-detail" data-expand-group="new" <?= $openSpecialGroup === 'new' ? '' : 'hidden' ?>>
-                    <td colspan="2">
-                        <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
-                            <form method="post" action="<?= h(events_url('tags.php')) ?>">
-                                <?= csrf_input('events_tags') ?>
-                                <input type="hidden" name="action" value="save_specialtag">
-                                <input type="hidden" name="id" value="0">
-                                <div class="form-group">
-                                    <label for="spec_name_new">Név *</label>
-                                    <input type="text" id="spec_name_new" name="name" required maxlength="255" value="" placeholder="pl. DJ-k, stílusok">
-                                </div>
-                                <div class="toolbar">
-                                    <button type="submit" class="btn btn-primary">Mentés</button>
-                                </div>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                <?php foreach ($specials as $sp): ?>
-                    <?php
-                    $sid = (int) $sp['id'];
-                    $isOpenSp = $openSpecialGroup !== '' && $openSpecialGroup === (string) $sid;
-                    ?>
-                    <tr
-                        class="events-inline-summary<?= $isOpenSp ? ' is-active' : '' ?>"
-                        data-expand-group="<?= $sid ?>"
-                        tabindex="0"
-                        role="button"
-                        aria-expanded="<?= $isOpenSp ? 'true' : 'false' ?>"
-                    >
-                        <td><?= $sid ?></td>
-                        <td><?= h((string) $sp['name']) ?></td>
-                    </tr>
-                    <tr class="events-inline-detail" data-expand-group="<?= $sid ?>" <?= $isOpenSp ? '' : 'hidden' ?>>
-                        <td colspan="2">
-                            <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
-                                <form method="post" action="<?= h(events_url('tags.php')) ?>">
-                                    <?= csrf_input('events_tags') ?>
-                                    <input type="hidden" name="action" value="save_specialtag">
-                                    <input type="hidden" name="id" value="<?= $sid ?>">
-                                    <div class="form-group">
-                                        <label for="spec_name_<?= $sid ?>">Név *</label>
-                                        <input type="text" id="spec_name_<?= $sid ?>" name="name" required maxlength="255" value="<?= h((string) $sp['name']) ?>" placeholder="pl. DJ-k, stílusok">
-                                    </div>
-                                    <div class="toolbar">
-                                        <button type="submit" class="btn btn-primary">Mentés</button>
-                                    </div>
-                                </form>
-                                <form method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-delete-form" onsubmit="return confirm('Biztosan törlöd ezt a speciális csoportot? A címkék kapcsolatai ehhez a csoporthoz törlődnek.');">
-                                    <?= csrf_input('events_tags') ?>
-                                    <input type="hidden" name="action" value="delete_specialtag">
-                                    <input type="hidden" name="id" value="<?= $sid ?>">
-                                    <button type="submit" class="btn btn-secondary">Csoport törlése</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
 </div>
 
 <script>
 (function () {
-    function isSummaryRowVisible(tr) {
-        if (!tr) return false;
-        return tr.style.display !== 'none' && window.getComputedStyle(tr).display !== 'none';
-    }
-
-    function getVisibleTagRowCheckboxes() {
-        var table = document.getElementById('events-tags-inline-table');
-        if (!table) return [];
-        return Array.prototype.slice.call(
-            table.querySelectorAll('tbody .events-inline-summary input[name="tag_ids[]"]')
-        ).filter(function (cb) {
-            return isSummaryRowVisible(cb.closest('tr'));
-        });
-    }
-
-    function syncTagsBulkMaster() {
-        var master = document.getElementById('tags-bulk-select-all');
-        if (!master) return;
-        var vis = getVisibleTagRowCheckboxes();
-        if (vis.length === 0) {
-            master.checked = false;
-            master.indeterminate = false;
-            return;
-        }
-        var nChecked = vis.filter(function (cb) { return cb.checked; }).length;
-        master.checked = nChecked === vis.length;
-        master.indeterminate = nChecked > 0 && nChecked < vis.length;
-    }
-
     /** data-expand-group értékek: csak `new` vagy pozitív egész (biztonságos querySelector). */
     function validExpandGroup(g) {
         return g === 'new' || /^\d+$/.test(String(g));
@@ -885,34 +482,9 @@ require_once dirname(__DIR__) . '/nextgen/partials/header.php';
         });
     }
 
-    ['events-tags-inline-table', 'events-specialtags-inline-table'].forEach(function (id) {
-        var t = document.getElementById(id);
-        if (t) bindExpandTable(t);
-    });
-
-    var bulkMaster = document.getElementById('tags-bulk-select-all');
-    if (bulkMaster) {
-        bulkMaster.addEventListener('change', function () {
-            var on = bulkMaster.checked;
-            getVisibleTagRowCheckboxes().forEach(function (cb) {
-                cb.checked = on;
-            });
-            syncTagsBulkMaster();
-        });
-    }
-
     var tagTableEl = document.getElementById('events-tags-inline-table');
     if (tagTableEl) {
-        var tagTbody = tagTableEl.querySelector('tbody');
-        if (tagTbody) {
-            tagTbody.addEventListener('change', function (e) {
-                var t = e.target;
-                if (t && t.name === 'tag_ids[]') {
-                    syncTagsBulkMaster();
-                }
-            });
-        }
-        syncTagsBulkMaster();
+        bindExpandTable(tagTableEl);
     }
 })();
 </script>

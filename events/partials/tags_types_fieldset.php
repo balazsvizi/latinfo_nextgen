@@ -5,16 +5,33 @@ $tagTypeSelected = $tagTypeSelected ?? [];
 if (!events_tag_types_tables_available($db ?? getDb())) {
     return;
 }
+$typeMeta = events_tag_type_display_meta();
 ?>
-<fieldset class="form-group events-tags-type-fieldset">
-    <legend class="events-tags-type-legend">Típus(ok)</legend>
-    <div class="events-tags-type-checkboxes">
+<fieldset class="form-group events-tag-type-fieldset">
+    <legend class="events-tag-type-fieldset__legend">Típus</legend>
+    <p class="events-tag-type-fieldset__hint">Több is választható. Üresen hagyva általános címke marad.</p>
+    <div class="events-tag-type-picker" role="group" aria-label="Címke típusok">
         <?php foreach (events_tag_type_codes() as $code): ?>
-            <label class="events-tags-type-check-label">
-                <input type="checkbox" name="tag_type_codes[]" value="<?= h($code) ?>" <?= in_array($code, $tagTypeSelected, true) ? 'checked' : '' ?>>
-                <span class="events-tags-type-check-text"><?= h(events_tag_type_label($code)) ?></span>
+            <?php
+            $meta = $typeMeta[$code] ?? ['icon' => '🏷️', 'tone' => 'default'];
+            $tone = (string) ($meta['tone'] ?? 'default');
+            $icon = (string) ($meta['icon'] ?? '🏷️');
+            $isChecked = in_array($code, $tagTypeSelected, true);
+            ?>
+            <label class="events-tag-type-option events-tag-type-option--<?= h($tone) ?>">
+                <input
+                    type="checkbox"
+                    class="events-tag-type-option__input visually-hidden"
+                    name="tag_type_codes[]"
+                    value="<?= h($code) ?>"
+                    <?= $isChecked ? 'checked' : '' ?>
+                >
+                <span class="events-tag-type-option__pill" aria-hidden="true">
+                    <span class="events-tag-type-option__icon"><?= $icon ?></span>
+                    <span class="events-tag-type-option__label"><?= h(events_tag_type_label($code)) ?></span>
+                </span>
+                <span class="visually-hidden"><?= h(events_tag_type_label($code)) ?></span>
             </label>
         <?php endforeach; ?>
     </div>
-    <p class="help">Több típus is választható (pl. DJ + Zenekar). Üresen hagyva általános címke.</p>
 </fieldset>
