@@ -907,159 +907,149 @@ a.event-public__tag-pill:hover {
     color: var(--li-green-dark);
 }
 
-/* Hero meta — megjelenit.php: 1. sor szervező | stílusok, 2. sor kategória + címkék + DJ */
+/* Hero meta — megjelenit.php: címkézett chip rács */
 .event-hero-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    margin: 0 0 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--li-border);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.85rem 1.15rem;
+    margin: 0 0 1.15rem;
+    padding: 1rem 1.1rem;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--li-border);
+    border-radius: var(--ev-radius-sm);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
 }
 
-.event-hero-meta__row {
+.event-hero-meta__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.event-hero-meta__item--wide {
+    grid-column: 1 / -1;
+}
+
+.event-hero-meta__label {
+    font-family: var(--ev-sans);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--li-text-soft);
+    line-height: 1.2;
+}
+
+.event-hero-meta__chips {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.65rem 1rem;
+    gap: 0.4rem 0.5rem;
     width: 100%;
 }
 
-.event-hero-meta__row--top {
-    justify-content: flex-start;
-}
-
-.event-hero-meta__row--bottom {
-    justify-content: flex-start;
-}
-
-.event-hero-meta__slot {
+.event-hero-chip {
     display: inline-flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.45rem;
-    min-width: 0;
     max-width: 100%;
-}
-
-.event-hero-meta__slot--start {
-    flex: 1 1 auto;
-}
-
-.event-hero-meta__slot--end {
-    flex: 0 1 auto;
-    margin-left: auto;
-    justify-content: flex-end;
-}
-
-.event-hero-meta-group {
-    display: inline-flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.45rem;
-    min-width: 0;
-}
-
-.event-hero-meta-emoji {
-    flex-shrink: 0;
-    font-size: 0.82rem;
-    line-height: 1;
-    opacity: 0.88;
-}
-
-/* Hero meta: szöveg / link (szervező, kategória, DJ, stílus) — nem gomb */
-.event-hero-inline-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: inline;
-}
-
-.event-hero-inline-list__item {
-    display: inline;
-    margin: 0;
-}
-
-.event-hero-inline-list__item:not(:last-child)::after {
-    content: ',\00a0';
-    color: var(--li-text-soft);
-    font-weight: 400;
-}
-
-.event-hero-inline-link {
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
     font-family: var(--ev-sans);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--li-green-dark);
-    text-decoration: underline;
-    text-decoration-color: var(--li-border-strong);
-    text-underline-offset: 0.14em;
-    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.event-hero-inline-link:hover {
+.event-hero-chip--link {
+    background: var(--li-green-soft);
+    border: 1px solid var(--li-border);
+    color: var(--li-green-dark);
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.event-hero-chip--link:hover {
+    background: #fff;
+    border-color: var(--li-green-muted);
     color: var(--li-green);
-    text-decoration-color: var(--li-green-muted);
+    transform: translateY(-1px);
 }
 
-.event-hero-category-text {
-    font-family: var(--ev-sans);
-    font-size: 0.875rem;
-    font-weight: 700;
-    line-height: 1.35;
+.event-hero-chip--style {
+    background: #fff;
+    border: 1px solid var(--li-border);
     color: var(--li-green-dark);
 }
 
-.event-hero-category-text::before {
+.event-hero-chip--style-supplementary {
+    font-weight: 500;
+    font-style: italic;
+    color: var(--li-text-muted);
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.event-hero-chip--category {
+    background: #fff;
+    border: 1px solid var(--li-border);
+    font-weight: 700;
+    color: var(--li-green-dark);
+}
+
+.event-hero-chip--category::before {
     content: '';
-    display: inline-block;
-    width: 0.5rem;
-    height: 0.5rem;
+    flex-shrink: 0;
+    width: 0.45rem;
+    height: 0.45rem;
     margin-right: 0.35rem;
     border-radius: 50%;
     background: var(--event-cat-accent, var(--li-green));
-    vertical-align: 0.05em;
 }
 
-.event-hero-inline-list--tags .event-hero-inline-list__item:not(:last-child)::after {
-    content: '\00a0·\00a0';
-    color: var(--li-text-soft);
-    font-weight: 400;
-}
-
-.event-hero-tag-link {
-    font-family: var(--ev-sans);
-    font-size: 0.875rem;
-    font-weight: 600;
+.event-hero-chip--tag {
+    background: transparent;
+    border: none;
+    padding-left: 0.15rem;
+    padding-right: 0.15rem;
     color: var(--li-green);
     text-decoration: none;
     transition: color 0.15s ease;
 }
 
-.event-hero-tag-link::before {
+.event-hero-chip--tag::before {
     content: '#';
+    margin-right: 0.1rem;
     color: var(--li-green-muted);
     font-weight: 700;
 }
 
-.event-hero-tag-link:hover {
+.event-hero-chip--tag:hover {
     color: var(--li-green-hover);
     text-decoration: underline;
-    text-underline-offset: 0.14em;
+    text-underline-offset: 0.12em;
 }
 
-.event-hero-inline-label {
-    font-family: var(--ev-sans);
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--li-green-dark);
-    line-height: 1.35;
+.event-hero-chip--dj::before {
+    content: '🎧';
+    margin-right: 0.3rem;
+    font-size: 0.75rem;
+    line-height: 1;
 }
 
-.event-hero-inline-label--supplementary {
-    font-weight: 500;
-    font-style: italic;
-    color: var(--li-text-muted);
+@media (max-width: 639px) {
+    .event-hero-meta {
+        grid-template-columns: 1fr;
+        padding: 0.9rem 0.95rem;
+        gap: 0.75rem;
+    }
+
+    .event-hero-chip {
+        white-space: normal;
+    }
 }
 
 .event-hero-meta__style-chips {
