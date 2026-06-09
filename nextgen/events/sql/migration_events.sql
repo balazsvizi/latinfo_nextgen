@@ -73,6 +73,8 @@ CREATE TABLE IF NOT EXISTS `events_venues` (
     `address` TEXT NULL COMMENT 'Utca, házszám',
     `latitude` DECIMAL(10, 7) NULL COMMENT 'WGS-84 szélesség',
     `longitude` DECIMAL(10, 7) NULL COMMENT 'WGS-84 hosszúság',
+    `website_url` VARCHAR(2000) NULL COMMENT 'Helyszín weboldala',
+    `google_maps_url` VARCHAR(2000) NULL COMMENT 'Google Maps / térkép link',
     `linked_venue_id` INT UNSIGNED NULL,
     `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

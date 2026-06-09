@@ -451,6 +451,20 @@ function events_csv_build_row_values(
                 $values['longitude'] = $coord['lng'];
             }
         }
+        if (array_key_exists('website_url', $values)) {
+            [$safeUrl, $urlErr] = events_normalize_safe_url((string) ($values['website_url'] ?? ''), false);
+            if ($urlErr !== null) {
+                return [[], $urlErr . ' (website_url)'];
+            }
+            $values['website_url'] = $safeUrl;
+        }
+        if (array_key_exists('google_maps_url', $values)) {
+            [$safeMaps, $mapsErr] = events_normalize_google_maps_url((string) ($values['google_maps_url'] ?? ''));
+            if ($mapsErr !== null) {
+                return [[], $mapsErr . ' (google_maps_url)'];
+            }
+            $values['google_maps_url'] = $safeMaps;
+        }
         if (array_key_exists('linked_venue_id', $values) && $values['linked_venue_id'] !== null) {
             $lid = (int) $values['linked_venue_id'];
             if ($lid <= 0) {

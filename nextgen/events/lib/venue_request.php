@@ -71,6 +71,31 @@ function events_venue_coordinates_from_row(array $r): ?array {
     return ['lat' => $lat, 'lng' => $lng];
 }
 
+/**
+ * @return array{0: ?string, 1: ?string}
+ */
+function events_normalize_google_maps_url(?string $raw): array {
+    [$url, $err] = events_normalize_safe_url($raw, false);
+    if ($err !== null) {
+        return [null, $err];
+    }
+    if ($url === null) {
+        return [null, null];
+    }
+    $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+    $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+    $isGoogleMaps = $host === 'maps.app.goo.gl'
+        || $host === 'goo.gl'
+        || str_ends_with($host, '.google.com')
+        || str_ends_with($host, '.google.hu')
+        || (str_contains($host, 'google.') && str_contains($path, '/maps'));
+    if (!$isGoogleMaps) {
+        return [null, 'A Google Maps link maps.google.com, google.com/maps vagy goo.gl/maps formátumú legyen.'];
+    }
+
+    return [$url, null];
+}
+
 function events_venue_country_nominatim_code(string $country): string {
     $c = mb_strtolower(trim($country), 'UTF-8');
     if ($c === '' || $c === 'magyarország' || $c === 'hungary' || $c === 'hu') {
@@ -193,6 +218,18 @@ function events_venue_row_from_post(PDO $db, array $defaults, ?int $excludeIdFor
     $row['latitude'] = $coord['lat'];
     $row['longitude'] = $coord['lng'];
 
+    [$websiteUrl, $websiteErr] = events_normalize_safe_url((string) ($_POST['website_url'] ?? ''), false);
+    if ($websiteErr !== null) {
+        return [$row, $websiteErr];
+    }
+    $row['website_url'] = $websiteUrl;
+
+    [$mapsUrl, $mapsErr] = events_normalize_google_maps_url((string) ($_POST['google_maps_url'] ?? ''));
+    if ($mapsErr !== null) {
+        return [$row, $mapsErr];
+    }
+    $row['google_maps_url'] = $mapsUrl;
+
     $linkRaw = trim((string) ($_POST['linked_venue_id'] ?? ''));
     $row['linked_venue_id'] = $linkRaw === '' ? null : (int) $linkRaw;
     if ($row['linked_venue_id'] !== null && $row['linked_venue_id'] <= 0) {
@@ -225,7 +262,7 @@ function events_venue_row_from_post(PDO $db, array $defaults, ?int $excludeIdFor
  */
 function events_venue_row_for_form(array $row): array {
     $e = $row;
-    foreach (['name', 'slug', 'description', 'country', 'city', 'postal_code', 'address'] as $k) {
+    foreach (['name', 'slug', 'description', 'country', 'city', 'postal_code', 'address', 'website_url', 'google_maps_url'] as $k) {
         $e[$k] = isset($e[$k]) && $e[$k] !== null ? (string) $e[$k] : '';
     }
     $e['latitude'] = events_venue_format_coord_for_form($e['latitude'] ?? null);

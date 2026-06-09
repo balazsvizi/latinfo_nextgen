@@ -76,6 +76,28 @@ $hasCoords = ($v['latitude'] ?? '') !== '' && ($v['longitude'] ?? '') !== '';
             </div>
         </div>
 
+        <div class="events-edit-panel events-edit-panel--tone-url">
+            <h3 class="events-edit-panel__title">Web</h3>
+            <div class="form-group">
+                <label for="venue_website_url">Weboldal</label>
+                <div class="events-url-open-row">
+                    <input type="url" id="venue_website_url" name="website_url" value="<?= h($v['website_url']) ?>" maxlength="2000" placeholder="https://" autocomplete="url">
+                    <?php if (($v['website_url'] ?? '') !== ''): ?>
+                        <a class="btn btn-secondary events-url-open-btn" href="<?= h($v['website_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="venue_google_maps_url">Google Maps</label>
+                <div class="events-url-open-row">
+                    <input type="url" id="venue_google_maps_url" name="google_maps_url" value="<?= h($v['google_maps_url']) ?>" maxlength="2000" placeholder="https://maps.google.com/… vagy https://maps.app.goo.gl/…" autocomplete="url">
+                    <?php if (($v['google_maps_url'] ?? '') !== ''): ?>
+                        <a class="btn btn-secondary events-url-open-btn" href="<?= h($v['google_maps_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
         <div class="events-edit-panel events-edit-panel--tone-content">
             <h3 class="events-edit-panel__title">Leírás</h3>
             <div class="form-group">

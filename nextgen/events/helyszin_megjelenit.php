@@ -93,6 +93,8 @@ $descRaw = trim(strip_tags($safeVenueBody));
 $desc = function_exists('mb_substr') ? mb_substr($descRaw, 0, 160, 'UTF-8') : substr($descRaw, 0, 160);
 $addrLine = events_venue_address_summary($venue);
 $venueCoords = events_venue_coordinates_from_row($venue);
+$venueWebsiteUrl = trim((string) ($venue['website_url'] ?? ''));
+$venueGoogleMapsUrl = trim((string) ($venue['google_maps_url'] ?? ''));
 
 $linkedName = trim((string) ($venue['linked_name'] ?? ''));
 $linkedSlug = trim((string) ($venue['linked_slug'] ?? ''));
@@ -139,6 +141,13 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php if ($addrLine !== ''): ?>
                 <p class="venue-address-line"><?= nl2br(h($addrLine)) ?></p>
             <?php endif; ?>
+            <?php
+            $linkLabels = [
+                'website' => (string) ($V['venue_website'] ?? 'Weboldal'),
+                'google_maps' => (string) ($V['venue_google_maps'] ?? 'Google Maps'),
+            ];
+            require __DIR__ . '/partials/public_venue_external_links.php';
+            ?>
         </div>
     </header>
     <?php $body = trim($safeVenueBody); ?>

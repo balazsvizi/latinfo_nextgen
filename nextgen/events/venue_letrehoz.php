@@ -18,6 +18,8 @@ $defaults = [
     'address' => '',
     'latitude' => null,
     'longitude' => null,
+    'website_url' => null,
+    'google_maps_url' => null,
     'linked_venue_id' => null,
 ];
 
@@ -42,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $ins = $db->prepare('
-                    INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`, `latitude`, `longitude`, `linked_venue_id`)
-                    VALUES (?,?,?,?,?,?,?,?,?,?)
+                    INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`, `latitude`, `longitude`, `website_url`, `google_maps_url`, `linked_venue_id`)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 ');
                 $ins->execute([
                     $row['name'],
@@ -55,6 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $row['address'] === '' ? null : $row['address'],
                     $row['latitude'],
                     $row['longitude'],
+                    $row['website_url'],
+                    $row['google_maps_url'],
                     $row['linked_venue_id'],
                 ]);
                 $newId = (int) $db->lastInsertId();

@@ -63,7 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         UPDATE `events_venues` SET
                             `name` = ?, `slug` = ?, `description` = ?,
                             `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?,
-                            `latitude` = ?, `longitude` = ?, `linked_venue_id` = ?
+                            `latitude` = ?, `longitude` = ?,
+                            `website_url` = ?, `google_maps_url` = ?,
+                            `linked_venue_id` = ?
                         WHERE `id` = ?
                     ');
                     $upd->execute([
@@ -76,6 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $row['address'] === '' ? null : $row['address'],
                         $row['latitude'],
                         $row['longitude'],
+                        $row['website_url'],
+                        $row['google_maps_url'],
                         $row['linked_venue_id'],
                         $id,
                     ]);

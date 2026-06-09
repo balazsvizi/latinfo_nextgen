@@ -77,6 +77,8 @@ function events_csv_import_schema(): array {
                 'address' => ['type' => 'text', 'nullable' => true, 'note' => 'Utca, házszám'],
                 'latitude' => ['type' => 'decimal', 'nullable' => true, 'note' => 'WGS-84 szélesség'],
                 'longitude' => ['type' => 'decimal', 'nullable' => true, 'note' => 'WGS-84 hosszúság'],
+                'website_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
+                'google_maps_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
                 'linked_venue_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Másik venue ID; nyilvános név linkhez'],
                 'created' => ['type' => 'datetime', 'nullable' => true],
                 'modified' => ['type' => 'datetime', 'nullable' => true, 'note' => 'UPDATE-nél ha nincs a CSV-ben, DB frissít'],
