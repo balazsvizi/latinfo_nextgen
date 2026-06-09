@@ -134,3 +134,123 @@ function events_public_organizer_partition_events(array $rows, ?int $nowTs = nul
 
     return ['upcoming' => $upcoming, 'past' => $past];
 }
+
+/**
+ * Lista nézet: Ma / Hamarosan / Lezajlott (admin + publikus főoldal).
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return array{today: list<array<string, mixed>>, soon: list<array<string, mixed>>, past: list<array<string, mixed>>}
+ */
+function events_public_list_partition_events(array $rows, ?int $nowTs = null): array {
+    require_once __DIR__ . '/admin_event_calendar.php';
+
+    $nowTs = $nowTs ?? time();
+    $todayKey = date('Y-m-d', $nowTs);
+    $today = [];
+    $soon = [];
+    $past = [];
+
+    foreach ($rows as $r) {
+        if (events_public_event_row_is_past($r, $nowTs)) {
+            $past[] = $r;
+            continue;
+        }
+        $range = events_admin_calendar_event_date_range($r);
+        if ($range !== null) {
+            $startKey = $range['start']->format('Y-m-d');
+            $endKey = $range['end']->format('Y-m-d');
+            if ($todayKey >= $startKey && $todayKey <= $endKey) {
+                $today[] = $r;
+                continue;
+            }
+        }
+        $soon[] = $r;
+    }
+
+    usort($today, static function (array $a, array $b): int {
+        $cmp = events_public_event_row_sort_start_ts($a) <=> events_public_event_row_sort_start_ts($b);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
+    });
+    usort($soon, static function (array $a, array $b): int {
+        $cmp = events_public_event_row_sort_start_ts($a) <=> events_public_event_row_sort_start_ts($b);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
+    });
+    usort($past, static function (array $a, array $b): int {
+        $cmp = events_public_event_row_sort_end_or_start_ts($b) <=> events_public_event_row_sort_end_or_start_ts($a);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        return (int) ($b['id'] ?? 0) <=> (int) ($a['id'] ?? 0);
+    });
+
+    return ['today' => $today, 'soon' => $soon, 'past' => $past];
+}
+
+/**
+ * Lista nézet: Ma / Hamarosan / Lezajlott (admin + publikus főoldal).
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return array{today: list<array<string, mixed>>, soon: list<array<string, mixed>>, past: list<array<string, mixed>>}
+ */
+function events_public_list_partition_events(array $rows, ?int $nowTs = null): array {
+    require_once __DIR__ . '/admin_event_calendar.php';
+
+    $nowTs = $nowTs ?? time();
+    $todayKey = date('Y-m-d', $nowTs);
+    $today = [];
+    $soon = [];
+    $past = [];
+
+    foreach ($rows as $r) {
+        if (events_public_event_row_is_past($r, $nowTs)) {
+            $past[] = $r;
+            continue;
+        }
+        $range = events_admin_calendar_event_date_range($r);
+        if ($range !== null) {
+            $startKey = $range['start']->format('Y-m-d');
+            $endKey = $range['end']->format('Y-m-d');
+            if ($todayKey >= $startKey && $todayKey <= $endKey) {
+                $today[] = $r;
+                continue;
+            }
+        }
+        $soon[] = $r;
+    }
+
+    usort($today, static function (array $a, array $b): int {
+        $cmp = events_public_event_row_sort_start_ts($a) <=> events_public_event_row_sort_start_ts($b);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
+    });
+    usort($soon, static function (array $a, array $b): int {
+        $cmp = events_public_event_row_sort_start_ts($a) <=> events_public_event_row_sort_start_ts($b);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
+    });
+    usort($past, static function (array $a, array $b): int {
+        $cmp = events_public_event_row_sort_end_or_start_ts($b) <=> events_public_event_row_sort_end_or_start_ts($a);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        return (int) ($b['id'] ?? 0) <=> (int) ($a['id'] ?? 0);
+    });
+
+    return ['today' => $today, 'soon' => $soon, 'past' => $past];
+}

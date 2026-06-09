@@ -7,6 +7,7 @@ require_once __DIR__ . '/lib/public_home_content.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 require_once __DIR__ . '/lib/public_event_calendar.php';
 require_once __DIR__ . '/lib/calendar_event_preview.php';
+require_once __DIR__ . '/lib/event_public_organizers.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
@@ -25,6 +26,7 @@ $nextMonthKey = $monthFirst->modify('+1 month')->format('Y-m');
 $monthLabel = events_public_calendar_month_label($monthFirst, $lang);
 
 $rows = events_public_fetch_filtered_events($db, $filters);
+$listPartition = events_public_list_partition_events($rows);
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
 $calendarPreviewById = [];
 if ($view === 'cal') {
@@ -148,8 +150,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     <a class="events-cal-view-switch__item" href="<?= h($calViewUrl) ?>"><?= h((string) $D['view_cal']) ?></a>
                     <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_list']) ?></span>
                 </nav>
-                <h2 class="home-public__list-heading"><?= h((string) $D['list_heading']) ?> (<?= count($rows) ?>)</h2>
-                <?php require __DIR__ . '/partials/public_event_list.php'; ?>
+                <?php require __DIR__ . '/partials/public_event_list_partitioned.php'; ?>
             <?php endif; ?>
         </form>
     </section>

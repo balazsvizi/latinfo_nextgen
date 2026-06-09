@@ -718,6 +718,70 @@ tr:hover td { background: var(--bg); }
     gap: 1rem;
     margin-bottom: 1.25rem;
 }
+.events-list-partition-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.65rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    font-size: 1.05rem;
+}
+
+.events-list-partition-nav__link {
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.events-list-partition-nav__link:hover {
+    text-decoration: underline;
+}
+
+.events-list-partition-nav__sep {
+    color: var(--text-muted);
+    user-select: none;
+}
+
+.events-admin-card .events-list-partition-nav {
+    margin: 0 0 1.25rem;
+}
+
+.events-admin-list-section {
+    scroll-margin-top: 1rem;
+}
+
+.events-admin-list-section + .events-admin-list-section {
+    margin-top: 2rem;
+}
+
+.events-admin-list-section__title {
+    margin: 0 0 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--primary-dark, #4a6741);
+}
+
+.events-admin-list-section--past .events-admin-list-section__title {
+    color: var(--text-muted, #6b7280);
+}
+
+.events-admin-list-section__empty {
+    margin: 0 0 0.5rem;
+    color: var(--text-muted, #6b7280);
+    font-size: 0.95rem;
+}
+
+.events-admin-list-section--past .events-admin-table tbody tr {
+    opacity: 0.88;
+}
+
+.events-admin-list-section--past .events-admin-table tbody tr:hover {
+    opacity: 1;
+}
+
 .events-admin-card .events-list-title {
     margin: 0;
     font-size: 1.35rem;
