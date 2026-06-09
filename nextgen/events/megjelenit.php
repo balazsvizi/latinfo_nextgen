@@ -176,7 +176,6 @@ header('Content-Type: text/html; charset=UTF-8');
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
-            <?php require __DIR__ . '/partials/public_event_hero_meta.php'; ?>
             <h1 class="event-public__title"><?= h((string) $event['event_name']) ?></h1>
             <?php if (!empty($event['event_latinfohu_partner'])): ?>
                 <div class="event-public__badges">
@@ -245,6 +244,8 @@ header('Content-Type: text/html; charset=UTF-8');
                     </div>
             </div>
             <?php endif; ?>
+
+            <?php require __DIR__ . '/partials/public_event_hero_meta.php'; ?>
 
             <?php if (!empty($event['event_url'])): ?>
                 <div class="event-cta-wrap">

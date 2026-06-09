@@ -110,12 +110,12 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu kezdőoldala',
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'footer_home_link' => 'Latinfo.hu',
-        'section_organizers' => 'Szervezők',
-        'section_categories' => 'Kategóriák',
-        'section_djs' => 'DJ-k',
+        'section_organizers' => 'Szervező',
+        'section_categories' => 'Kategória',
+        'section_djs' => 'DJ',
         'all_djs_link' => 'Összes DJ',
         'section_tags' => 'Címkék',
-        'section_main_styles' => 'Fő stílusok',
+        'section_main_styles' => 'Stílusok',
         'section_supplementary_styles' => 'Kiegészítő stílusok',
     ];
     $en = [
@@ -138,12 +138,12 @@ function events_public_megjelenit_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu home',
         'logo_home_aria' => 'Go to the Latinfo.hu homepage',
         'footer_home_link' => 'Latinfo.hu',
-        'section_organizers' => 'Organizers',
-        'section_categories' => 'Categories',
-        'section_djs' => 'DJs',
+        'section_organizers' => 'Organizer',
+        'section_categories' => 'Category',
+        'section_djs' => 'DJ',
         'all_djs_link' => 'All DJs',
         'section_tags' => 'Tags',
-        'section_main_styles' => 'Main styles',
+        'section_main_styles' => 'Styles',
         'section_supplementary_styles' => 'Supplementary styles',
     ];
 
