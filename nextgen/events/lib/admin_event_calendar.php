@@ -169,6 +169,191 @@ function events_admin_calendar_effective_end_day(DateTimeImmutable $end): DateTi
 }
 
 /**
+ * @return array{start: DateTimeImmutable, end: DateTimeImmutable, eventStart: DateTimeImmutable}|null
+ */
+function events_admin_calendar_event_date_range(array $row): ?array {
+    $startRaw = $row['event_start'] ?? null;
+    if ($startRaw === null || $startRaw === '') {
+        return null;
+    }
+    try {
+        $eventStart = new DateTimeImmutable((string) $startRaw);
+    } catch (Throwable) {
+        return null;
+    }
+    $endRaw = $row['event_end'] ?? null;
+    try {
+        $end = ($endRaw !== null && $endRaw !== '') ? new DateTimeImmutable((string) $endRaw) : $eventStart;
+    } catch (Throwable) {
+        $end = $eventStart;
+    }
+
+    $rangeStart = $eventStart->setTime(0, 0, 0);
+    if (!empty($row['event_allday'])) {
+        $rangeEnd = $end->setTime(0, 0, 0);
+    } else {
+        $rangeEnd = events_admin_calendar_effective_end_day($end);
+    }
+    if ($rangeEnd < $rangeStart) {
+        $rangeEnd = $rangeStart;
+    }
+
+    return [
+        'start' => $rangeStart,
+        'end' => $rangeEnd,
+        'eventStart' => $eventStart,
+    ];
+}
+
+function events_admin_calendar_is_multi_day_event(array $row): bool {
+    $range = events_admin_calendar_event_date_range($row);
+    if ($range === null) {
+        return false;
+    }
+
+    return $range['start']->format('Y-m-d') < $range['end']->format('Y-m-d');
+}
+
+/**
+ * Heti rács: több napos sávok + napi egyszeri események.
+ *
+ * @param list<array<string, mixed>> $rows
+ * @param list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}> $gridDays
+ * @return list<array{
+ *   days: list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>,
+ *   laneCount: int,
+ *   segments: list<array{event: array<string, mixed>, colStart: int, span: int, lane: int, roundLeft: bool, roundRight: bool, showTime: bool, isPast: bool}>,
+ *   singlesByDay: array<string, list<array<string, mixed>>>
+ * }>
+ */
+function events_admin_calendar_build_week_layouts(
+    array $rows,
+    array $gridDays,
+    DateTimeImmutable $monthFirst,
+    DateTimeImmutable $monthLast
+): array {
+    $monthStart = $monthFirst->setTime(0, 0, 0);
+    $monthEndExclusive = $monthFirst->modify('first day of next month')->setTime(0, 0, 0);
+    $todayKey = (new DateTimeImmutable('today'))->format('Y-m-d');
+    $weeks = [];
+
+    foreach (array_chunk($gridDays, 7) as $weekDays) {
+        if ($weekDays === []) {
+            continue;
+        }
+        $weekStart = $weekDays[0]['date']->setTime(0, 0, 0);
+        $weekEnd = $weekDays[count($weekDays) - 1]['date']->setTime(0, 0, 0);
+        $dayIndexByKey = [];
+        foreach ($weekDays as $idx => $day) {
+            $dayIndexByKey[$day['key']] = $idx;
+        }
+
+        $segments = [];
+        $singlesByDay = [];
+
+        foreach ($rows as $row) {
+            $range = events_admin_calendar_event_date_range($row);
+            if ($range === null) {
+                continue;
+            }
+            if ($range['end'] < $monthStart || $range['start'] >= $monthEndExclusive) {
+                continue;
+            }
+            if (!events_admin_calendar_is_multi_day_event($row)) {
+                $dayKey = $range['start']->format('Y-m-d');
+                if ($range['start'] >= $monthStart && $range['start'] < $monthEndExclusive && isset($dayIndexByKey[$dayKey])) {
+                    if (!isset($singlesByDay[$dayKey])) {
+                        $singlesByDay[$dayKey] = [];
+                    }
+                    $singlesByDay[$dayKey][] = $row;
+                }
+                continue;
+            }
+            if ($range['end'] < $weekStart || $range['start'] > $weekEnd) {
+                continue;
+            }
+
+            $segStart = $range['start'] > $weekStart ? $range['start'] : $weekStart;
+            $segEnd = $range['end'] < $weekEnd ? $range['end'] : $weekEnd;
+            $segStartKey = $segStart->format('Y-m-d');
+            $segEndKey = $segEnd->format('Y-m-d');
+            if (!isset($dayIndexByKey[$segStartKey])) {
+                continue;
+            }
+
+            $colStart = $dayIndexByKey[$segStartKey];
+            $span = (int) $segStart->diff($segEnd)->days + 1;
+            $eventStartKey = $range['start']->format('Y-m-d');
+
+            $segments[] = [
+                'event' => $row,
+                'colStart' => $colStart,
+                'span' => max(1, $span),
+                'lane' => 0,
+                'roundLeft' => $segStartKey === $range['start']->format('Y-m-d'),
+                'roundRight' => $segEndKey === $range['end']->format('Y-m-d'),
+                'showTime' => $segStartKey === $eventStartKey && events_admin_calendar_event_time_label($row) !== '',
+                'isPast' => $segEndKey < $todayKey,
+            ];
+        }
+
+        usort($segments, static function (array $a, array $b): int {
+            if ($a['colStart'] !== $b['colStart']) {
+                return $a['colStart'] <=> $b['colStart'];
+            }
+
+            return $b['span'] <=> $a['span'];
+        });
+
+        $laneEnds = [];
+        foreach ($segments as $idx => $segment) {
+            $colEnd = $segment['colStart'] + $segment['span'];
+            $assignedLane = null;
+            foreach ($laneEnds as $lane => $endCol) {
+                if ($segment['colStart'] >= $endCol) {
+                    $assignedLane = $lane;
+                    $laneEnds[$lane] = $colEnd;
+                    break;
+                }
+            }
+            if ($assignedLane === null) {
+                $assignedLane = count($laneEnds);
+                $laneEnds[] = $colEnd;
+            }
+            $segments[$idx]['lane'] = $assignedLane;
+        }
+
+        foreach ($singlesByDay as $dayKey => $dayRows) {
+            usort($dayRows, static function (array $a, array $b): int {
+                $sa = (string) ($a['event_start'] ?? '');
+                $sb = (string) ($b['event_start'] ?? '');
+                if ($sa === $sb) {
+                    return strcasecmp((string) ($a['event_name'] ?? ''), (string) ($b['event_name'] ?? ''));
+                }
+                if ($sa === '') {
+                    return 1;
+                }
+                if ($sb === '') {
+                    return -1;
+                }
+
+                return $sa <=> $sb;
+            });
+            $singlesByDay[$dayKey] = $dayRows;
+        }
+
+        $weeks[] = [
+            'days' => $weekDays,
+            'laneCount' => count($laneEnds),
+            'segments' => $segments,
+            'singlesByDay' => $singlesByDay,
+        ];
+    }
+
+    return $weeks;
+}
+
+/**
  * @param list<array<string,mixed>> $rows
  * @return array{byDay: array<string, list<array<string,mixed>>>, undated: list<array<string,mixed>>}
  */
@@ -179,33 +364,13 @@ function events_admin_calendar_bucket_events(array $rows, DateTimeImmutable $mon
     $undated = [];
 
     foreach ($rows as $row) {
-        $startRaw = $row['event_start'] ?? null;
-        if ($startRaw === null || $startRaw === '') {
+        $range = events_admin_calendar_event_date_range($row);
+        if ($range === null) {
             $undated[] = $row;
             continue;
         }
-        try {
-            $start = new DateTimeImmutable((string) $startRaw);
-        } catch (Throwable) {
-            $undated[] = $row;
-            continue;
-        }
-        $endRaw = $row['event_end'] ?? null;
-        try {
-            $end = ($endRaw !== null && $endRaw !== '') ? new DateTimeImmutable((string) $endRaw) : $start;
-        } catch (Throwable) {
-            $end = $start;
-        }
-
-        $rangeStart = $start->setTime(0, 0, 0);
-        if (!empty($row['event_allday'])) {
-            $rangeEnd = $end->setTime(0, 0, 0);
-        } else {
-            $rangeEnd = events_admin_calendar_effective_end_day($end);
-        }
-        if ($rangeEnd < $rangeStart) {
-            $rangeEnd = $rangeStart;
-        }
+        $rangeStart = $range['start'];
+        $rangeEnd = $range['end'];
 
         $cursor = $rangeStart;
         $placed = false;

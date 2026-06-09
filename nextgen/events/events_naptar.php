@@ -53,9 +53,9 @@ if ($rows !== []) {
 }
 
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
-$byDay = $bucket['byDay'];
 $undated = $bucket['undated'];
 $gridDays = events_admin_calendar_grid_days($monthFirst, $monthLast);
+$calendarWeeks = events_admin_calendar_build_week_layouts($rows, $gridDays, $monthFirst, $monthLast);
 $weekdayHeaders = events_admin_calendar_weekday_headers();
 
 $navBaseParams = $filters['get_params'];
@@ -110,75 +110,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <span class="events-cal-legend__item events-cal-legend__item--unpublished">Nem közzétett</span>
         </p>
 
-        <div class="events-cal" role="grid" aria-label="<?= h($monthLabel) ?> naptár">
-            <div class="events-cal__weekdays" role="row">
-                <?php foreach ($weekdayHeaders as $wd): ?>
-                    <div class="events-cal__weekday" role="columnheader"><?= h($wd) ?></div>
-                <?php endforeach; ?>
-            </div>
-            <div class="events-cal__body">
-                <?php foreach (array_chunk($gridDays, 7) as $week): ?>
-                    <div class="events-cal__week" role="row">
-                        <?php foreach ($week as $day): ?>
-                            <?php
-                            $dayKey = $day['key'];
-                            $dayNum = (int) $day['date']->format('j');
-                            $dayEvents = $byDay[$dayKey] ?? [];
-                            $dayClasses = 'events-cal__day';
-                            if (!$day['inMonth']) {
-                                $dayClasses .= ' events-cal__day--outside';
-                            }
-                            if ($day['isToday']) {
-                                $dayClasses .= ' events-cal__day--today';
-                            }
-                            if (!empty($day['isPast'])) {
-                                $dayClasses .= ' events-cal__day--past';
-                            }
-                            ?>
-                            <div class="<?= h($dayClasses) ?>" role="gridcell" aria-label="<?= h($day['date']->format('Y. m. d.')) ?>">
-                                <div class="events-cal__day-num"><?= $dayNum ?></div>
-                                <?php if ($dayEvents !== []): ?>
-                                    <ul class="events-cal__events" role="list">
-                                        <?php foreach ($dayEvents as $ev): ?>
-                                            <?php
-                                            $eid = (int) ($ev['id'] ?? 0);
-                                            $isPublished = events_admin_calendar_event_is_published($ev);
-                                            $timeLabel = events_admin_calendar_event_time_label($ev);
-                                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
-                                            $eventUrl = events_admin_calendar_event_public_url($ev);
-                                            $eventStatus = (string) ($ev['event_status'] ?? '');
-                                            $linkClass = 'events-cal__event-link' . ($isPublished ? '' : ' events-cal__event-link--unpublished');
-                                            $statusBadgeClass = events_post_status_badge_class($eventStatus);
-                                            $statusLabel = events_post_status_label($eventStatus);
-                                            $linkTarget = $isPublished ? '_blank' : '_self';
-                                            ?>
-                                            <li class="events-cal__event<?= $isPublished ? '' : ' events-cal__event--unpublished' ?>" role="listitem">
-                                                <a
-                                                    class="<?= h($linkClass) ?>"
-                                                    style="<?= h($eventStyle) ?>"
-                                                    href="<?= h($eventUrl) ?>"
-                                                    target="<?= h($linkTarget) ?>"
-                                                    <?= $isPublished ? 'rel="noopener"' : '' ?>
-                                                    title="<?= h((string) ($ev['event_name'] ?? '')) ?><?= $isPublished ? '' : ' (' . $statusLabel . ')' ?>"
-                                                >
-                                                    <?php if (!$isPublished): ?>
-                                                        <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
-                                                    <?php endif; ?>
-                                                    <?php if ($timeLabel !== ''): ?>
-                                                        <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
-                                                    <?php endif; ?>
-                                                    <span class="events-cal__event-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
-                                                </a>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
+        <?php
+        $calendarPublicPreview = false;
+        $D = ['calendar_grid_aria' => $monthLabel . ' naptár'];
+        require __DIR__ . '/partials/calendar_month_grid.php';
+        ?>
 
         <?php if ($undated !== []): ?>
             <section class="events-cal-undated" aria-label="Dátum nélküli események">

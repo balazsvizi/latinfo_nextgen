@@ -33,9 +33,9 @@ if ($view === 'cal') {
 }
 
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
-$byDay = $bucket['byDay'];
 $undated = $bucket['undated'];
 $gridDays = events_admin_calendar_grid_days($monthFirst, $monthLast);
+$calendarWeeks = events_admin_calendar_build_week_layouts($rows, $gridDays, $monthFirst, $monthLast);
 $weekdayHeaders = events_public_calendar_weekday_headers($lang);
 
 $navBaseParams = array_merge($filters['get_params'], $langNav);

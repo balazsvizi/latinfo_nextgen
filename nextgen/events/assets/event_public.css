@@ -2357,6 +2357,7 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public .events-cal__week {
     gap: 1px;
     background: var(--li-border);
+    overflow: visible;
 }
 
 .home-public .events-cal__day {
@@ -2366,6 +2367,80 @@ body.event-public-page--home .event-public__hero-inner {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+    overflow: visible;
+    position: relative;
+}
+
+.home-public .events-cal__multiday-lanes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.22rem;
+    margin-bottom: 0.2rem;
+    flex-shrink: 0;
+}
+
+.home-public .events-cal__multiday-lane {
+    position: relative;
+    min-height: 1.3rem;
+}
+
+.home-public .events-cal__event-link--bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 0.04rem;
+    width: calc(var(--cal-span) * 100% + max(0px, (var(--cal-span) - 1) * 1px));
+    max-width: none;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    box-shadow: none;
+    transform: none;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--round-left {
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
+    padding-left: 0.62rem;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--round-right {
+    border-top-right-radius: 999px;
+    border-bottom-right-radius: 999px;
+    padding-right: 0.62rem;
+}
+
+.home-public .events-cal__event-link--bar:hover {
+    transform: none;
+    z-index: 4;
+    filter: brightness(1.05);
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--past,
+.home-public .events-cal__day--past .events-cal__event-link--bar {
+    filter: saturate(0.4);
+    opacity: 0.58;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--past:hover,
+.home-public .events-cal__day--past .events-cal__event-link--bar:hover {
+    filter: saturate(0.62) brightness(1.04);
+    opacity: 0.78;
+}
+
+.home-public .events-cal__event-link--bar .events-cal__event-time {
+    font-size: 0.62rem;
+    line-height: 1.15;
+    opacity: 0.92;
+}
+
+.home-public .events-cal__event-link--bar .events-cal__event-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .home-public .events-cal__day--outside {
@@ -2714,6 +2789,22 @@ body.event-public-page--home .event-public__hero-inner {
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+    }
+
+    .home-public .events-cal__event-link--bar .events-cal__event-name {
+        display: block;
+        white-space: nowrap;
+        -webkit-line-clamp: unset;
+        -webkit-box-orient: unset;
+    }
+
+    .home-public .events-cal__multiday-lane {
+        min-height: 1.15rem;
+    }
+
+    .home-public .events-cal__event-link--bar {
+        padding: 0.16rem 0.42rem;
+        font-size: 0.62rem;
     }
 
     .home-public__list {
