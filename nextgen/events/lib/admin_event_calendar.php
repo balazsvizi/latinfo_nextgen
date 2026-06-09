@@ -215,6 +215,50 @@ function events_admin_calendar_is_multi_day_event(array $row): bool {
 }
 
 /**
+ * Naptár rács: befoglaló napok (záró dátum napja is), 06:00-s „éjszakai” szabály nélkül.
+ *
+ * @return array{start: DateTimeImmutable, end: DateTimeImmutable, eventStart: DateTimeImmutable}|null
+ */
+function events_admin_calendar_event_grid_date_range(array $row): ?array {
+    $startRaw = $row['event_start'] ?? null;
+    if ($startRaw === null || $startRaw === '') {
+        return null;
+    }
+    try {
+        $eventStart = new DateTimeImmutable((string) $startRaw);
+    } catch (Throwable) {
+        return null;
+    }
+    $endRaw = $row['event_end'] ?? null;
+    try {
+        $end = ($endRaw !== null && $endRaw !== '') ? new DateTimeImmutable((string) $endRaw) : $eventStart;
+    } catch (Throwable) {
+        $end = $eventStart;
+    }
+
+    $rangeStart = $eventStart->setTime(0, 0, 0);
+    $rangeEnd = $end->setTime(0, 0, 0);
+    if ($rangeEnd < $rangeStart) {
+        $rangeEnd = $rangeStart;
+    }
+
+    return [
+        'start' => $rangeStart,
+        'end' => $rangeEnd,
+        'eventStart' => $eventStart,
+    ];
+}
+
+function events_admin_calendar_is_grid_multi_day_event(array $row): bool {
+    $range = events_admin_calendar_event_grid_date_range($row);
+    if ($range === null) {
+        return false;
+    }
+
+    return $range['start']->format('Y-m-d') < $range['end']->format('Y-m-d');
+}
+
+/**
  * Heti rács: több napos sávok + napi egyszeri események.
  *
  * @param list<array<string, mixed>> $rows
@@ -223,7 +267,6 @@ function events_admin_calendar_is_multi_day_event(array $row): bool {
  *   days: list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>,
  *   laneCount: int,
  *   segments: list<array{event: array<string, mixed>, colStart: int, span: int, lane: int, roundLeft: bool, roundRight: bool, showTime: bool, isPast: bool}>,
- *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, roundLeft: bool, roundRight: bool, connectLeft: bool, connectRight: bool, showTime: bool, showName: bool, isPast: bool}>>,
  *   singlesByDay: array<string, list<array<string, mixed>>>
  * }>
  */
@@ -253,14 +296,14 @@ function events_admin_calendar_build_week_layouts(
         $singlesByDay = [];
 
         foreach ($rows as $row) {
-            $range = events_admin_calendar_event_date_range($row);
+            $range = events_admin_calendar_event_grid_date_range($row);
             if ($range === null) {
                 continue;
             }
             if ($range['end'] < $monthStart || $range['start'] >= $monthEndExclusive) {
                 continue;
             }
-            if (!events_admin_calendar_is_multi_day_event($row)) {
+            if (!events_admin_calendar_is_grid_multi_day_event($row)) {
                 $dayKey = $range['start']->format('Y-m-d');
                 if ($range['start'] >= $monthStart && $range['start'] < $monthEndExclusive && isset($dayIndexByKey[$dayKey])) {
                     if (!isset($singlesByDay[$dayKey])) {
@@ -343,31 +386,10 @@ function events_admin_calendar_build_week_layouts(
             $singlesByDay[$dayKey] = $dayRows;
         }
 
-        $partsByColLane = [];
-        foreach ($segments as $segment) {
-            $span = (int) $segment['span'];
-            $colStart = (int) $segment['colStart'];
-            $lane = (int) $segment['lane'];
-            for ($offset = 0; $offset < $span; $offset++) {
-                $col = $colStart + $offset;
-                $partsByColLane[$col][$lane] = [
-                    'event' => $segment['event'],
-                    'roundLeft' => $offset === 0 && $segment['roundLeft'],
-                    'roundRight' => $offset === ($span - 1) && $segment['roundRight'],
-                    'connectLeft' => $offset > 0,
-                    'connectRight' => $offset < ($span - 1),
-                    'showTime' => $offset === 0 && $segment['showTime'],
-                    'showName' => $offset === 0,
-                    'isPast' => $segment['isPast'],
-                ];
-            }
-        }
-
         $weeks[] = [
             'days' => $weekDays,
             'laneCount' => count($laneEnds),
             'segments' => $segments,
-            'partsByColLane' => $partsByColLane,
             'singlesByDay' => $singlesByDay,
         ];
     }
@@ -386,7 +408,7 @@ function events_admin_calendar_bucket_events(array $rows, DateTimeImmutable $mon
     $undated = [];
 
     foreach ($rows as $row) {
-        $range = events_admin_calendar_event_date_range($row);
+        $range = events_admin_calendar_event_grid_date_range($row);
         if ($range === null) {
             $undated[] = $row;
             continue;

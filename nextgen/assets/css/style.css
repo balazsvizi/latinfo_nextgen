@@ -1325,10 +1325,32 @@ tr:hover td { background: var(--bg); }
     -webkit-overflow-scrolling: touch;
 }
 .events-cal__weekdays,
-.events-cal__week {
+.events-cal__week,
+.events-cal__week-multiday-grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(7.5rem, 1fr));
     min-width: 52rem;
+}
+.events-cal__week-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: #e8ebe6;
+    overflow: visible;
+}
+.events-cal__week-multiday {
+    background: #fff;
+    padding: 0.35rem 0 0;
+}
+.events-cal__week-multiday-grid {
+    grid-auto-rows: minmax(1.35rem, auto);
+    gap: 0.22rem 1px;
+    padding: 0 0.4rem;
+}
+.events-cal__week-multiday-grid .events-cal__event-link--bar {
+    min-width: 0;
+    align-self: stretch;
+    margin: 0;
 }
 .events-cal__weekday {
     padding: 0.55rem 0.65rem;
@@ -1352,6 +1374,9 @@ tr:hover td { background: var(--bg); }
     gap: 1px;
     background: #e8ebe6;
     overflow: visible;
+}
+.events-cal__week-wrap > .events-cal__week {
+    background: #e8ebe6;
 }
 .events-cal__day {
     min-height: 7.5rem;

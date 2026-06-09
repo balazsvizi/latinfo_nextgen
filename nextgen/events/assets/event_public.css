@@ -2325,10 +2325,36 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public .events-cal__weekdays,
-.home-public .events-cal__week {
+.home-public .events-cal__week,
+.home-public .events-cal__week-multiday-grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(7.5rem, 1fr));
     min-width: 52rem;
+}
+
+.home-public .events-cal__week-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--li-border);
+    overflow: visible;
+}
+
+.home-public .events-cal__week-multiday {
+    background: #fff;
+    padding: 0.35rem 0 0;
+}
+
+.home-public .events-cal__week-multiday-grid {
+    grid-auto-rows: minmax(1.35rem, auto);
+    gap: 0.22rem 1px;
+    padding: 0 0.4rem;
+}
+
+.home-public .events-cal__week-multiday-grid .events-cal__event-link--bar {
+    min-width: 0;
+    align-self: stretch;
+    margin: 0;
 }
 
 .home-public .events-cal__weekday {
@@ -2358,6 +2384,10 @@ body.event-public-page--home .event-public__hero-inner {
     gap: 1px;
     background: var(--li-border);
     overflow: visible;
+}
+
+.home-public .events-cal__week-wrap > .events-cal__week {
+    background: var(--li-border);
 }
 
 .home-public .events-cal__day {
