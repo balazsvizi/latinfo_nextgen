@@ -126,6 +126,28 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
         </div>
     </div>
 </div>
+<div class="events-edit-org-venue-grid">
+<div class="events-edit-panel events-edit-panel--tone-venue">
+    <h3 class="events-edit-panel__title">Helyszín</h3>
+<?php
+$wpTokenId = 'event-venue';
+$wpTokenLabel = '';
+$wpTokenFieldName = 'venue_id';
+$wpTokenPlaceholder = 'Helyszín keresése vagy új neve…';
+$wpTokenHelp = 'Válassz meglévő helyszínt, vagy írj be újat — Enterrel hozzáadod. A chipre kattintva a helyszín szerkesztője nyílik meg. Üresen hagyva nem jelenik meg helyszín a nyilvános oldalon.';
+$wpTokenManageUrl = events_url('venue_letrehoz.php');
+$wpTokenManageLabel = 'Új helyszín felvétele';
+$wpTokenManageNewTab = true;
+$wpTokenAll = $venuePickerAll;
+$wpTokenSelected = $selVenue;
+$wpTokenAllowCreate = true;
+$wpTokenEntityType = 'venue';
+$wpTokenSingle = true;
+$wpTokenShowPopular = false;
+$wpTokenChipLinkPattern = events_url('venue_szerkeszt.php?id={id}');
+require __DIR__ . '/wp_token_field.php';
+?>
+</div>
 <div class="events-edit-panel events-edit-panel--tone-org">
     <h3 class="events-edit-panel__title">Szervezők</h3>
 <?php
@@ -147,25 +169,6 @@ $wpTokenChipLinkPattern = events_url('organizer.php?id={id}');
 require __DIR__ . '/wp_token_field.php';
 ?>
 </div>
-<div class="events-edit-panel events-edit-panel--tone-venue">
-    <h3 class="events-edit-panel__title">Helyszín</h3>
-<?php
-$wpTokenId = 'event-venue';
-$wpTokenLabel = '';
-$wpTokenFieldName = 'venue_id';
-$wpTokenPlaceholder = 'Helyszín hozzáadása…';
-$wpTokenHelp = '';
-$wpTokenManageUrl = events_url('venue_letrehoz.php');
-$wpTokenManageLabel = 'Új helyszín felvétele';
-$wpTokenManageNewTab = true;
-$wpTokenAll = $venuePickerAll;
-$wpTokenSelected = $selVenue;
-$wpTokenAllowCreate = true;
-$wpTokenEntityType = 'venue';
-$wpTokenSingle = true;
-$wpTokenShowPopular = false;
-require __DIR__ . '/wp_token_field.php';
-?>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-content">
     <h3 class="events-edit-panel__title">Leírás</h3>
