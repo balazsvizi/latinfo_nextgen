@@ -257,6 +257,14 @@ header('Content-Type: text/html; charset=UTF-8');
                             ];
                             require __DIR__ . '/partials/public_venue_external_links.php';
                             ?>
+                            <?php if (events_venue_has_directions_target($venueCoords, $venueAddrLine, $venueName !== '' ? $venueName : $venueSlug)): ?>
+                                <?php
+                                $venueTitle = $venueName !== '' ? $venueName : $venueSlug;
+                                $directionsLabel = (string) ($T['directions_label'] ?? 'Tervezz útvonalat');
+                                $directionsAria = (string) ($T['directions_aria'] ?? $directionsLabel);
+                                require __DIR__ . '/partials/public_venue_directions.php';
+                                ?>
+                            <?php endif; ?>
                         </div>
                     </div>
             </div>

@@ -1222,6 +1222,14 @@ a.event-public__tag-pill:hover {
     margin-top: 0.55rem;
 }
 
+.event-meta__card--wide .venue-directions {
+    margin-top: 0.75rem;
+}
+
+.event-meta__card--wide .venue-directions__btn {
+    max-width: none;
+}
+
 .venue-external-links__item {
     display: inline-flex;
     align-items: center;
