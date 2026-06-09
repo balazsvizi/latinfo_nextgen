@@ -396,6 +396,19 @@ body.event-public-page--home .event-public__hero {
     color: var(--li-green-dark);
 }
 
+.event-public__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem 1rem;
+}
+
+.event-public__title-row .event-public__title {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
 .event-public__title {
     margin: 0;
     font-family: var(--ev-font);
@@ -405,6 +418,20 @@ body.event-public-page--home .event-public__hero {
     letter-spacing: -0.02em;
     text-wrap: balance;
     color: var(--li-green-dark);
+}
+
+.event-venue-head-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem 0.75rem;
+}
+
+.event-venue-head-row__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-top: 0 !important;
 }
 
 .event-public__badges {
@@ -1222,12 +1249,8 @@ a.event-public__tag-pill:hover {
     margin-top: 0.55rem;
 }
 
-.event-meta__card--wide .venue-directions {
-    margin-top: 0.75rem;
-}
-
-.event-meta__card--wide .venue-directions__btn {
-    max-width: none;
+.event-meta__card--wide .venue-directions--inline {
+    margin-top: 0;
 }
 
 .venue-external-links__item {
@@ -1261,6 +1284,11 @@ a.event-public__tag-pill:hover {
     margin-top: 1rem;
 }
 
+.venue-directions--inline {
+    margin-top: 0;
+    flex: 0 0 auto;
+}
+
 .venue-directions__btn {
     display: inline-flex;
     align-items: center;
@@ -1281,14 +1309,45 @@ a.event-public__tag-pill:hover {
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
+.venue-directions__btn--inline {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    padding: 0.35rem 0.7rem;
+    gap: 0.35rem;
+    border-radius: 999px;
+    border: 1px solid var(--li-border);
+    background: #fff;
+    color: var(--li-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: none;
+    white-space: nowrap;
+}
+
+.venue-directions__btn--inline .venue-directions__icon svg {
+    width: 14px;
+    height: 14px;
+}
+
 .venue-directions__btn:hover {
     border-color: var(--li-green-hover);
     background: #fff;
     color: var(--li-green-hover);
 }
 
+.venue-directions__btn--inline:hover {
+    border-color: var(--li-green-muted);
+    background: var(--li-green-soft);
+    color: var(--li-green-dark);
+}
+
 .venue-directions__btn:active {
     transform: scale(0.99);
+}
+
+.venue-directions__btn--inline:active {
+    transform: none;
 }
 
 .venue-directions__icon {
@@ -1296,11 +1355,20 @@ a.event-public__tag-pill:hover {
     flex-shrink: 0;
 }
 
+.venue-directions__label {
+    line-height: 1.2;
+}
+
 @media (min-width: 640px) {
-    .venue-directions__btn {
+    .venue-directions__btn:not(.venue-directions__btn--inline) {
         width: auto;
         min-width: 14rem;
     }
+}
+
+.event-public__title-row .venue-directions--inline,
+.event-venue-head-row .venue-directions--inline {
+    align-self: center;
 }
 
 .venue-public-map {

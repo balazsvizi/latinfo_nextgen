@@ -106,7 +106,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head">
         <h2 class="events-list-title">Stílusok</h2>
         <div class="events-list-actions">
-            <a href="<?= h(events_url('import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
         </div>
     </div>

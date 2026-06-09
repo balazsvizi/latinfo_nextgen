@@ -42,7 +42,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <p class="toolbar" style="margin-top:1rem;">
         <a href="<?= h(events_url('organizer_letrehoz.php')) ?>" class="btn btn-primary">Új szervező</a>
-        <a href="<?= h(events_url('import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
         <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
     </p>
 </div>

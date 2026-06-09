@@ -97,7 +97,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <div class="events-list-actions">
                 <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
                 <a href="<?= h(events_url('venue_letrehoz.php')) ?>" class="btn btn-primary">Új helyszín</a>
-                <a href="<?= h(events_url('import_csv.php')) ?>?target_table=events_venues" class="btn btn-secondary">CSV import</a>
                 <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
             </div>
         </div>
@@ -115,10 +114,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <div class="events-filter-field">
                     <label class="events-filter-label" for="v-f-id">ID</label>
                     <input class="events-filter-input" type="text" name="f_id" id="v-f-id" value="<?= h($f_id) ?>" placeholder="Pontos vagy részlet" inputmode="numeric" autocomplete="off">
-                </div>
-                <div class="events-filter-field">
-                    <label class="events-filter-label visually-hidden" for="v-f-submit">Szűrés alkalmazása</label>
-                    <button type="submit" class="btn btn-primary" id="v-f-submit">Szűrés</button>
                 </div>
             </div>
         </section>
@@ -176,4 +171,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </form>
 </div>
+<?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

@@ -197,7 +197,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <div class="events-list-actions">
                 <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
                 <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
-                <a href="<?= h(events_url('import_csv.php')) ?>" class="btn btn-secondary btn-sm">CSV import</a>
             </div>
         </div>
 

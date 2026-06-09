@@ -46,7 +46,6 @@ try {
         <a href="<?= h(nextgen_url('organizers/')) ?>" class="btn btn-secondary">Szervezők</a>
         <a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" class="btn btn-secondary">Számlázandó</a>
         <a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" class="btn btn-secondary">Új esemény</a>
-        <a href="<?= h(nextgen_url('events/import_csv.php')) ?>" class="btn btn-secondary">CSV import</a>
         <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="btn btn-secondary">NextGen – Címkék</a>
         <a href="<?= h(nextgen_url('admin/log.php')) ?>" class="btn btn-secondary">NextGen – Logok</a>
     </p>

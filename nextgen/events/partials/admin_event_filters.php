@@ -111,7 +111,6 @@ declare(strict_types=1);
                     <input type="range" class="events-range events-range-from" id="ev-range-from" min="0" max="<?= (int) $filters['daysSpan'] ?>" value="<?= (int) $filters['idxFrom'] ?>" step="1" aria-valuemin="0" aria-valuemax="<?= (int) $filters['daysSpan'] ?>" aria-label="Kezdő nap a tengelyen">
                     <input type="range" class="events-range events-range-to" id="ev-range-to" min="0" max="<?= (int) $filters['daysSpan'] ?>" value="<?= (int) $filters['idxTo'] ?>" step="1" aria-label="Záró nap a tengelyen">
                 </div>
-                <button type="submit" class="btn btn-primary events-filter-submit-inline">Szűrés alkalmazása</button>
             </div>
             <div class="events-date-range-readouts">
                 <div class="events-date-readout">

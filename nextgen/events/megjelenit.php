@@ -235,13 +235,24 @@ header('Content-Type: text/html; charset=UTF-8');
                             <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         </div>
                         <div>
-                            <p class="event-meta__value">
-                                <?php if ($venueSlug !== ''): ?>
-                                    <a class="event-venue-name-link" href="<?= h(events_helyszin_megjelenit_url($venueSlug)) ?>"><?= $venueName !== '' ? h($venueName) : h($venueSlug) ?></a>
-                                <?php else: ?>
-                                    <?= $venueName !== '' ? h($venueName) : '' ?>
+                            <div class="event-venue-head-row">
+                                <p class="event-meta__value event-venue-head-row__name">
+                                    <?php if ($venueSlug !== ''): ?>
+                                        <a class="event-venue-name-link" href="<?= h(events_helyszin_megjelenit_url($venueSlug)) ?>"><?= $venueName !== '' ? h($venueName) : h($venueSlug) ?></a>
+                                    <?php else: ?>
+                                        <?= $venueName !== '' ? h($venueName) : '' ?>
+                                    <?php endif; ?>
+                                </p>
+                                <?php if (events_venue_has_directions_target($venueCoords, $venueAddrLine, $venueName !== '' ? $venueName : $venueSlug)): ?>
+                                    <?php
+                                    $venueTitle = $venueName !== '' ? $venueName : $venueSlug;
+                                    $directionsLabel = (string) ($T['directions_label'] ?? 'Tervezz útvonalat');
+                                    $directionsAria = (string) ($T['directions_aria'] ?? $directionsLabel);
+                                    $directionsVariant = 'inline';
+                                    require __DIR__ . '/partials/public_venue_directions.php';
+                                    ?>
                                 <?php endif; ?>
-                            </p>
+                            </div>
                             <?php if ($venueHasLinked): ?>
                                 <p class="event-meta__value event-meta__value--muted event-venue-linked-p">
                                     <a class="event-venue-sub-link" href="<?= h(events_helyszin_megjelenit_url($venueLinkedSlug)) ?>"><?= h($venueLinkedName) ?></a>
@@ -257,14 +268,6 @@ header('Content-Type: text/html; charset=UTF-8');
                             ];
                             require __DIR__ . '/partials/public_venue_external_links.php';
                             ?>
-                            <?php if (events_venue_has_directions_target($venueCoords, $venueAddrLine, $venueName !== '' ? $venueName : $venueSlug)): ?>
-                                <?php
-                                $venueTitle = $venueName !== '' ? $venueName : $venueSlug;
-                                $directionsLabel = (string) ($T['directions_label'] ?? 'Tervezz útvonalat');
-                                $directionsAria = (string) ($T['directions_aria'] ?? $directionsLabel);
-                                require __DIR__ . '/partials/public_venue_directions.php';
-                                ?>
-                            <?php endif; ?>
                         </div>
                     </div>
             </div>

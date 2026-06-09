@@ -132,7 +132,18 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <p class="event-public__eyebrow">📍 <?= h((string) $V['eyebrow']) ?></p>
-            <h1 class="event-public__title"><?= h($title) ?></h1>
+            <div class="event-public__title-row">
+                <h1 class="event-public__title"><?= h($title) ?></h1>
+                <?php if (events_venue_has_directions_target($venueCoords, $addrLine, $title)): ?>
+                    <?php
+                    $venueTitle = $title;
+                    $directionsLabel = (string) ($V['directions_label'] ?? 'Tervezz útvonalat');
+                    $directionsAria = (string) ($V['directions_aria'] ?? $directionsLabel);
+                    $directionsVariant = 'inline';
+                    require __DIR__ . '/partials/public_venue_directions.php';
+                    ?>
+                <?php endif; ?>
+            </div>
             <?php if ($hasLinked): ?>
                 <p class="venue-linked-line">
                     <a href="<?= h(events_helyszin_megjelenit_url($linkedSlug)) ?>"><?= h($linkedName) ?></a>
@@ -148,14 +159,6 @@ header('Content-Type: text/html; charset=UTF-8');
             ];
             require __DIR__ . '/partials/public_venue_external_links.php';
             ?>
-            <?php if (events_venue_has_directions_target($venueCoords, $addrLine, $title)): ?>
-                <?php
-                $venueTitle = $title;
-                $directionsLabel = (string) ($V['directions_label'] ?? 'Tervezz útvonalat');
-                $directionsAria = (string) ($V['directions_aria'] ?? $directionsLabel);
-                require __DIR__ . '/partials/public_venue_directions.php';
-                ?>
-            <?php endif; ?>
         </div>
     </header>
     <?php $body = trim($safeVenueBody); ?>

@@ -2,9 +2,49 @@
 (function () {
     var shell = document.querySelector('.events-filters-shell');
     if (!shell) return;
+    var form = shell.closest('form');
     var axisMin = shell.getAttribute('data-axis-min');
     var days = parseInt(shell.getAttribute('data-axis-days'), 10) || 0;
-    if (!axisMin || days < 1) return;
+
+    var debounceTimer = null;
+    var rangeTimer = null;
+
+    function submitForm() {
+        if (!form) return;
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
+    }
+
+    function debouncedSubmit(delay) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(submitForm, delay);
+    }
+
+    if (form) {
+        form.querySelectorAll('.events-filter-select').forEach(function (el) {
+            el.addEventListener('change', submitForm);
+        });
+
+        form.querySelectorAll('input.events-filter-input[type="text"], input.events-filter-input[type="search"]').forEach(function (el) {
+            el.addEventListener('input', function () {
+                debouncedSubmit(450);
+            });
+        });
+
+        form.querySelectorAll('input.events-filter-input[type="number"]').forEach(function (el) {
+            el.addEventListener('input', function () {
+                debouncedSubmit(450);
+            });
+            el.addEventListener('change', submitForm);
+        });
+    }
+
+    if (!axisMin || days < 1) {
+        return;
+    }
 
     var axisStart = new Date(axisMin + 'T12:00:00');
     function idxToYmd(idx) {
@@ -70,10 +110,30 @@
         updateFill();
     }
 
-    rFrom.addEventListener('input', syncDatesFromSliders);
-    rTo.addEventListener('input', syncDatesFromSliders);
-    dFrom.addEventListener('change', syncSlidersToDates);
-    dTo.addEventListener('change', syncSlidersToDates);
+    function onRangeInput() {
+        syncDatesFromSliders();
+        clearTimeout(rangeTimer);
+        rangeTimer = setTimeout(submitForm, 500);
+    }
+
+    rFrom.addEventListener('input', onRangeInput);
+    rTo.addEventListener('input', onRangeInput);
+    rFrom.addEventListener('change', function () {
+        syncDatesFromSliders();
+        submitForm();
+    });
+    rTo.addEventListener('change', function () {
+        syncDatesFromSliders();
+        submitForm();
+    });
+    dFrom.addEventListener('change', function () {
+        syncSlidersToDates();
+        submitForm();
+    });
+    dTo.addEventListener('change', function () {
+        syncSlidersToDates();
+        submitForm();
+    });
 
     syncSlidersToDates();
 })();
