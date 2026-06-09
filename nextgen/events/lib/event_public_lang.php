@@ -179,6 +179,8 @@ function events_public_venue_strings(string $lang): array {
         'map_aria' => 'Helyszín a térképen',
         'venue_website' => 'Weboldal',
         'venue_google_maps' => 'Google Maps',
+        'directions_label' => 'Tervezz útvonalat',
+        'directions_aria' => 'Útvonaltervezés a helyszínhez (megnyitás a térképalkalmazásban)',
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Helyszín szerkesztése az adminban',
     ];
@@ -199,6 +201,8 @@ function events_public_venue_strings(string $lang): array {
         'map_aria' => 'Venue on the map',
         'venue_website' => 'Website',
         'venue_google_maps' => 'Google Maps',
+        'directions_label' => 'Get directions',
+        'directions_aria' => 'Plan a route to this venue (opens in maps app)',
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this venue in admin',
     ];

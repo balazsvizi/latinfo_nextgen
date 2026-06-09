@@ -50,6 +50,51 @@ function events_venue_format_coord_for_form(mixed $val): string {
 }
 
 /**
+ * Útvonaltervezés célpontja: GPS előnyben, különben cím, végül név.
+ *
+ * @param array{lat: float, lng: float}|null $coords
+ */
+function events_venue_directions_destination(?array $coords, string $addressLine, string $venueName = ''): ?string {
+    if ($coords !== null) {
+        $lat = events_venue_format_coord_for_form($coords['lat']);
+        $lng = events_venue_format_coord_for_form($coords['lng']);
+        if ($lat !== '' && $lng !== '') {
+            return $lat . ',' . $lng;
+        }
+    }
+    $addr = trim($addressLine);
+    if ($addr !== '') {
+        return $addr;
+    }
+    $name = trim($venueName);
+
+    return $name !== '' ? $name : null;
+}
+
+function events_venue_google_directions_url(?string $destination): ?string {
+    if ($destination === null || $destination === '') {
+        return null;
+    }
+
+    return 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($destination) . '&travelmode=driving';
+}
+
+function events_venue_apple_directions_url(?string $destination): ?string {
+    if ($destination === null || $destination === '') {
+        return null;
+    }
+
+    return 'https://maps.apple.com/?daddr=' . rawurlencode($destination);
+}
+
+/**
+ * @param array{lat: float, lng: float}|null $coords
+ */
+function events_venue_has_directions_target(?array $coords, string $addressLine, string $venueName = ''): bool {
+    return events_venue_directions_destination($coords, $addressLine, $venueName) !== null;
+}
+
+/**
  * @param array<string, mixed> $r
  * @return array{lat: float, lng: float}|null
  */

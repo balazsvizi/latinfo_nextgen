@@ -148,6 +148,14 @@ header('Content-Type: text/html; charset=UTF-8');
             ];
             require __DIR__ . '/partials/public_venue_external_links.php';
             ?>
+            <?php if (events_venue_has_directions_target($venueCoords, $addrLine, $title)): ?>
+                <?php
+                $venueTitle = $title;
+                $directionsLabel = (string) ($V['directions_label'] ?? 'Tervezz útvonalat');
+                $directionsAria = (string) ($V['directions_aria'] ?? $directionsLabel);
+                require __DIR__ . '/partials/public_venue_directions.php';
+                ?>
+            <?php endif; ?>
         </div>
     </header>
     <?php $body = trim($safeVenueBody); ?>

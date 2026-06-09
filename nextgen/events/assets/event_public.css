@@ -1249,6 +1249,52 @@ a.event-public__tag-pill:hover {
     line-height: 1;
 }
 
+.venue-directions {
+    margin-top: 1rem;
+}
+
+.venue-directions__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    max-width: 22rem;
+    padding: 0.8rem 1.15rem;
+    border-radius: var(--ev-radius-sm);
+    border: 1px solid var(--li-green);
+    background: linear-gradient(180deg, #f8fbf6 0%, var(--li-green-soft) 100%);
+    color: var(--li-green-dark);
+    font-family: var(--ev-sans);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--li-shadow);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.venue-directions__btn:hover {
+    border-color: var(--li-green-hover);
+    background: #fff;
+    color: var(--li-green-hover);
+}
+
+.venue-directions__btn:active {
+    transform: scale(0.99);
+}
+
+.venue-directions__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+    .venue-directions__btn {
+        width: auto;
+        min-width: 14rem;
+    }
+}
+
 .venue-public-map {
     padding: 0 clamp(1.25rem, 4vw, 2rem) 1.25rem;
 }
