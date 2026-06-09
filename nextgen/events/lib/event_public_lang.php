@@ -69,18 +69,18 @@ function events_public_send_noindex_header(): void {
  */
 function events_public_common_nav_strings(string $lang): array {
     $hu = [
-        'events_home_link' => 'Esemény naptár',
-        'events_home_back' => '← Esemény naptár',
-        'events_home_aria' => 'Vissza az esemény naptár főoldalára',
-        'logo_events_home_title' => 'Esemény naptár főoldal',
-        'logo_events_home_aria' => 'Ugrás az esemény naptár főoldalára',
+        'events_home_link' => 'Naptár',
+        'events_home_back' => '← Naptár',
+        'events_home_aria' => 'Vissza a naptár főoldalára',
+        'logo_events_home_title' => 'Naptár főoldal',
+        'logo_events_home_aria' => 'Ugrás a naptár főoldalára',
     ];
     $en = [
-        'events_home_link' => 'Event calendar',
-        'events_home_back' => '← Event calendar',
-        'events_home_aria' => 'Back to the event calendar home',
-        'logo_events_home_title' => 'Event calendar home',
-        'logo_events_home_aria' => 'Go to the event calendar home',
+        'events_home_link' => 'Calendar',
+        'events_home_back' => '← Calendar',
+        'events_home_aria' => 'Back to the calendar home',
+        'logo_events_home_title' => 'Calendar home',
+        'logo_events_home_aria' => 'Go to the calendar home',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -556,7 +556,7 @@ function events_public_home_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu kezdőoldala',
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'footer_home_link' => 'Latinfo.hu',
-        'calendar_aria' => 'Esemény naptár és szűrők',
+        'calendar_aria' => 'Naptár és szűrők',
         'clear_filters' => 'Szűrők törlése',
         'filters_toggle' => 'Szűrők megnyitása',
         'filters_active_badge' => 'aktív',
@@ -607,7 +607,7 @@ function events_public_home_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu home',
         'logo_home_aria' => 'Go to Latinfo.hu home',
         'footer_home_link' => 'Latinfo.hu',
-        'calendar_aria' => 'Event calendar and filters',
+        'calendar_aria' => 'Calendar and filters',
         'clear_filters' => 'Clear filters',
         'filters_toggle' => 'Show filters',
         'filters_active_badge' => 'active',
