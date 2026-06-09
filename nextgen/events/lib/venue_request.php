@@ -5,6 +5,93 @@ function events_venue_default_country(): string {
     return 'Magyarország';
 }
 
+function events_leaflet_css_url(): string {
+    return 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+}
+
+function events_leaflet_js_url(): string {
+    return 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+}
+
+/**
+ * @return array{error: string, lat: null, lng: null}|array{error: null, lat: ?float, lng: ?float}
+ */
+function events_venue_parse_coordinates(string $latRaw, string $lngRaw): array {
+    $latT = trim(str_replace(',', '.', $latRaw));
+    $lngT = trim(str_replace(',', '.', $lngRaw));
+    if ($latT === '' && $lngT === '') {
+        return ['error' => null, 'lat' => null, 'lng' => null];
+    }
+    if ($latT === '' || $lngT === '') {
+        return ['error' => 'A szélesség és hosszúság együtt adható meg, vagy mindkettő üres legyen.', 'lat' => null, 'lng' => null];
+    }
+    if (!is_numeric($latT) || !is_numeric($lngT)) {
+        return ['error' => 'A GPS koordináták számok legyenek (pl. 47.4979 és 19.0402).', 'lat' => null, 'lng' => null];
+    }
+    $lat = (float) $latT;
+    $lng = (float) $lngT;
+    if ($lat < -90.0 || $lat > 90.0 || $lng < -180.0 || $lng > 180.0) {
+        return ['error' => 'A GPS koordináták tartományon kívül esnek.', 'lat' => null, 'lng' => null];
+    }
+
+    return ['error' => null, 'lat' => round($lat, 7), 'lng' => round($lng, 7)];
+}
+
+function events_venue_format_coord_for_form(mixed $val): string {
+    if ($val === null || $val === '') {
+        return '';
+    }
+    if (!is_numeric($val)) {
+        return '';
+    }
+    $s = rtrim(rtrim(sprintf('%.7F', (float) $val), '0'), '.');
+
+    return $s === '' ? '0' : $s;
+}
+
+/**
+ * @param array<string, mixed> $r
+ * @return array{lat: float, lng: float}|null
+ */
+function events_venue_coordinates_from_row(array $r): ?array {
+    $latRaw = $r['latitude'] ?? null;
+    $lngRaw = $r['longitude'] ?? null;
+    if ($latRaw === null || $lngRaw === null || $latRaw === '' || $lngRaw === '') {
+        return null;
+    }
+    if (!is_numeric((string) $latRaw) || !is_numeric((string) $lngRaw)) {
+        return null;
+    }
+    $lat = (float) $latRaw;
+    $lng = (float) $lngRaw;
+    if ($lat < -90.0 || $lat > 90.0 || $lng < -180.0 || $lng > 180.0) {
+        return null;
+    }
+
+    return ['lat' => $lat, 'lng' => $lng];
+}
+
+function events_venue_country_nominatim_code(string $country): string {
+    $c = mb_strtolower(trim($country), 'UTF-8');
+    if ($c === '' || $c === 'magyarország' || $c === 'hungary' || $c === 'hu') {
+        return 'hu';
+    }
+    if ($c === 'österreich' || $c === 'austria' || $c === 'at') {
+        return 'at';
+    }
+    if ($c === 'slovensko' || $c === 'slovakia' || $c === 'szlovákia' || $c === 'sk') {
+        return 'sk';
+    }
+    if ($c === 'românia' || $c === 'romania' || $c === 'románia' || $c === 'ro') {
+        return 'ro';
+    }
+    if ($c === 'deutschland' || $c === 'germany' || $c === 'németország' || $c === 'de') {
+        return 'de';
+    }
+
+    return '';
+}
+
 /**
  * Egy soros összefoglaló listához (IRSZ település, utca; opcionálisan ország, ha nem HU).
  *
@@ -96,6 +183,16 @@ function events_venue_row_from_post(PDO $db, array $defaults, ?int $excludeIdFor
     $row['postal_code'] = trim((string) ($_POST['postal_code'] ?? ''));
     $row['address'] = trim((string) ($_POST['address'] ?? ''));
 
+    $coord = events_venue_parse_coordinates(
+        (string) ($_POST['latitude'] ?? ''),
+        (string) ($_POST['longitude'] ?? '')
+    );
+    if ($coord['error'] !== null) {
+        return [$row, $coord['error']];
+    }
+    $row['latitude'] = $coord['lat'];
+    $row['longitude'] = $coord['lng'];
+
     $linkRaw = trim((string) ($_POST['linked_venue_id'] ?? ''));
     $row['linked_venue_id'] = $linkRaw === '' ? null : (int) $linkRaw;
     if ($row['linked_venue_id'] !== null && $row['linked_venue_id'] <= 0) {
@@ -131,6 +228,8 @@ function events_venue_row_for_form(array $row): array {
     foreach (['name', 'slug', 'description', 'country', 'city', 'postal_code', 'address'] as $k) {
         $e[$k] = isset($e[$k]) && $e[$k] !== null ? (string) $e[$k] : '';
     }
+    $e['latitude'] = events_venue_format_coord_for_form($e['latitude'] ?? null);
+    $e['longitude'] = events_venue_format_coord_for_form($e['longitude'] ?? null);
     if (($e['country'] ?? '') === '') {
         $e['country'] = events_venue_default_country();
     }

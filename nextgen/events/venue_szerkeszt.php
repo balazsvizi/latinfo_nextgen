@@ -26,6 +26,10 @@ $venuesLinkOptions = events_load_venue_options_excluding($db, $id);
 $hiba = '';
 $v = events_venue_row_for_form($venue);
 $venueEventCount = events_venue_calendar_event_count($db, $id);
+$venueEditId = $id;
+$venuePublicUrl = events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''));
+$venueFormShowDelete = true;
+$venueFormCancelUrl = events_url('venues.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('venue_szerkeszt')) {
@@ -58,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $upd = $db->prepare('
                         UPDATE `events_venues` SET
                             `name` = ?, `slug` = ?, `description` = ?,
-                            `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?, `linked_venue_id` = ?
+                            `country` = ?, `city` = ?, `postal_code` = ?, `address` = ?,
+                            `latitude` = ?, `longitude` = ?, `linked_venue_id` = ?
                         WHERE `id` = ?
                     ');
                     $upd->execute([
@@ -69,6 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $row['city'] === '' ? null : $row['city'],
                         $row['postal_code'] === '' ? null : $row['postal_code'],
                         $row['address'] === '' ? null : $row['address'],
+                        $row['latitude'],
+                        $row['longitude'],
                         $row['linked_venue_id'],
                         $id,
                     ]);
@@ -85,52 +92,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Helyszín: ' . ($venue['name'] ?? '');
+$mainContentClass = 'main-content main-content--fullwidth';
+$pageTitle = 'Helyszín szerkesztése: ' . ($venue['name'] ?? '');
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
-<div class="card">
-    <h2>Helyszín szerkesztése</h2>
-    <p class="help">Nyilvános oldal: <a href="<?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?>" target="_blank" rel="noopener"><?= h(events_helyszin_megjelenit_url((string) ($v['slug'] ?? ''))) ?></a></p>
-    <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <?php if ($venueEventCount > 0): ?>
-        <p class="help muted" style="margin-bottom:1rem;">A helyszín nem törölhető: <strong><?= (int) $venueEventCount ?></strong> eseményhez van rendelve. Előbb válaszd le a helyszínt az esemény szerkesztőben.</p>
-    <?php endif; ?>
-    <form method="post" class="venue-form venue-form--edit">
-        <?= csrf_input('venue_szerkeszt') ?>
-        <?php require __DIR__ . '/partials/venue_fields.php'; ?>
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary" name="action" value="save">Mentés</button>
-            <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
-            <?php if ($venueEventCount === 0): ?>
-                <button type="submit" class="btn btn-danger" style="margin-left:auto" name="action" value="delete" onclick="return confirm('Biztosan törlöd ezt a helyszínt?');">Törlés</button>
+
+<div class="events-edit-page venue-edit-page">
+    <header class="events-edit-header">
+        <div>
+            <h1 class="events-edit-title"><?= h((string) ($v['name'] !== '' ? $v['name'] : 'Helyszín szerkesztése')) ?></h1>
+            <?php if ($venueEventCount > 0): ?>
+                <p class="help muted events-edit-subtitle"><?= (int) $venueEventCount ?> eseményhez rendelve — törlés előtt válaszd le az eseményeken.</p>
             <?php endif; ?>
         </div>
+        <div class="events-edit-header__actions">
+            <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
+        </div>
+    </header>
+
+    <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
+
+    <form method="post" class="events-edit-form venue-edit-form" id="venue-edit-form">
+        <?= csrf_input('venue_szerkeszt') ?>
+        <?php require __DIR__ . '/partials/venue_fields.php'; ?>
     </form>
 </div>
-<script>
-(function () {
-    var nameEl = document.getElementById('venue_name');
-    var slugEl = document.getElementById('venue_slug');
-    if (!nameEl || !slugEl) return;
-    var ajaxPath = <?= json_encode(events_url('ajax_venue_unique_slug.php'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-    var excludeId = <?= (int) $id ?>;
-    nameEl.addEventListener('blur', function () {
-        if (slugEl.value.trim() !== '') return;
-        var nm = nameEl.value.trim();
-        if (nm === '') return;
-        var u = new URL(ajaxPath, window.location.href);
-        u.searchParams.set('name', nm);
-        u.searchParams.set('exclude_id', String(excludeId));
-        fetch(u.toString(), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (slugEl.value.trim() !== '') return;
-                if (data && data.ok && typeof data.slug === 'string') slugEl.value = data.slug;
-            })
-            .catch(function () {});
-    });
-})();
-</script>
+
+<?php require __DIR__ . '/partials/venue_map_picker.php'; ?>
+<?php require __DIR__ . '/partials/html_editor_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

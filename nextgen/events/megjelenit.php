@@ -31,6 +31,8 @@ $stmt = $db->prepare('
         v.`city` AS `venue_city`,
         v.`postal_code` AS `venue_postal_code`,
         v.`address` AS `venue_address`,
+        v.`latitude` AS `venue_latitude`,
+        v.`longitude` AS `venue_longitude`,
         l.`name` AS `venue_linked_name`,
         l.`slug` AS `venue_linked_slug`
     FROM `events_calendar_events` e
@@ -71,6 +73,10 @@ if ($showVenue) {
 $venueLinkedName = trim((string) ($event['venue_linked_name'] ?? ''));
 $venueLinkedSlug = trim((string) ($event['venue_linked_slug'] ?? ''));
 $venueHasLinked = $venueLinkedName !== '' && $venueLinkedSlug !== '';
+$venueCoords = $showVenue ? events_venue_coordinates_from_row([
+    'latitude' => $event['venue_latitude'] ?? null,
+    'longitude' => $event['venue_longitude'] ?? null,
+]) : null;
 
 $allday = !empty($event['event_allday']);
 $tsStart = !empty($event['event_start']) ? strtotime((string) $event['event_start']) : false;
@@ -243,6 +249,19 @@ header('Content-Type: text/html; charset=UTF-8');
                         </div>
                     </div>
             </div>
+            <?php endif; ?>
+
+            <?php if ($venueCoords !== null): ?>
+                <?php
+                $mapLat = $venueCoords['lat'];
+                $mapLng = $venueCoords['lng'];
+                $mapTitle = $venueName !== '' ? $venueName : $venueSlug;
+                $mapAddress = $venueAddrLine;
+                $mapHeading = $T['map_heading'] ?? 'Térkép';
+                $mapAriaLabel = $T['map_aria'] ?? 'Helyszín a térképen';
+                $mapVariant = 'compact';
+                require __DIR__ . '/partials/public_venue_map.php';
+                ?>
             <?php endif; ?>
 
             <?php require __DIR__ . '/partials/public_event_hero_meta.php'; ?>

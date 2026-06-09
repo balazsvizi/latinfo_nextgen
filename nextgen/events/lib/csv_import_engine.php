@@ -436,6 +436,21 @@ function events_csv_build_row_values(
                 }
             }
         }
+        if (array_key_exists('latitude', $values) || array_key_exists('longitude', $values)) {
+            $coord = events_venue_parse_coordinates(
+                (string) ($values['latitude'] ?? ''),
+                (string) ($values['longitude'] ?? '')
+            );
+            if ($coord['error'] !== null) {
+                return [[], $coord['error']];
+            }
+            if ($coord['lat'] === null) {
+                unset($values['latitude'], $values['longitude']);
+            } else {
+                $values['latitude'] = $coord['lat'];
+                $values['longitude'] = $coord['lng'];
+            }
+        }
         if (array_key_exists('linked_venue_id', $values) && $values['linked_venue_id'] !== null) {
             $lid = (int) $values['linked_venue_id'];
             if ($lid <= 0) {

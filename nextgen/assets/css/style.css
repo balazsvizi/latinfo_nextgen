@@ -3130,9 +3130,142 @@ dialog.eventpics-modal::backdrop {
     color: var(--text-muted);
     margin-top: 0.35rem;
 }
-/* Helyszín szerkesztés: hosszú név a kártya teljes szélességében */
-.venue-form--edit .form-group--venue-name input {
-    max-width: none;
+/* Helyszín szerkesztés — esemény szerkesztőhöz hasonló elrendezés */
+.venue-edit-page .events-edit-title-row.venue-edit-title-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(10rem, 14rem) auto;
+    gap: 0.65rem 0.75rem;
+    align-items: end;
+}
+.venue-edit-name-field,
+.venue-edit-slug-field {
+    margin-bottom: 0;
+}
+.venue-edit-address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+.venue-edit-address-field {
+    grid-column: 1 / -1;
+}
+.venue-edit-map-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border);
+}
+.venue-edit-map-status {
+    font-size: 0.8125rem;
+    color: var(--li-green, #6d8f63);
+    font-weight: 600;
+}
+.venue-edit-map-status--muted {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+.venue-edit-public-link {
+    word-break: break-all;
+}
+.events-edit-form-actions__delete {
+    margin-left: auto;
+}
+.venues-td-map {
+    text-align: center;
+    width: 4rem;
+}
+.events-venue-map-dialog {
+    width: min(42rem, calc(100% - 1.5rem));
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 0;
+    border-radius: var(--radius-md);
+    padding: 0;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+.events-venue-map-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.45);
+}
+.events-venue-map-dialog__head,
+.events-venue-map-dialog__tools,
+.events-venue-map-dialog__foot {
+    padding: 1rem 1.15rem;
+}
+.events-venue-map-dialog__head {
+    border-bottom: 1px solid var(--border);
+}
+.events-venue-map-dialog__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+.events-venue-map-dialog__lead {
+    margin: 0.45rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+.events-venue-map-dialog__tools {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+}
+.events-venue-map-dialog__tool-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+}
+.events-venue-map-dialog__coords {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+.events-venue-map-dialog__map {
+    width: 100%;
+    height: 320px;
+    min-height: 320px;
+    background: #e2e8f0;
+}
+.events-venue-map-dialog__map .leaflet-container {
+    width: 100% !important;
+    height: 320px !important;
+    min-height: 320px !important;
+}
+.events-venue-map-dialog__msg {
+    margin: 0.75rem 1.15rem 0;
+    font-size: 0.875rem;
+    color: #b91c1c;
+}
+.events-venue-map-dialog__foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-elevated);
+}
+.events-venue-map-pin__dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #6d8f63, #56734d);
+    border: 3px solid #fff;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.35);
+}
+@media (max-width: 768px) {
+    .venue-edit-page .events-edit-title-row.venue-edit-title-row {
+        grid-template-columns: 1fr auto;
+    }
+    .venue-edit-slug-field {
+        grid-column: 1 / -1;
+    }
+    .venue-edit-address-grid {
+        grid-template-columns: 1fr;
+    }
 }
 .form-hint {
     font-size: 0.875rem;

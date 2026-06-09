@@ -1211,6 +1211,87 @@ a.event-public__tag-pill:hover {
     text-decoration: underline;
 }
 
+.venue-public-map {
+    padding: 0 clamp(1.25rem, 4vw, 2rem) 1.25rem;
+}
+
+.venue-public-map__heading {
+    margin: 0 0 0.85rem;
+    font-family: var(--ev-font);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--li-green-dark);
+}
+
+.venue-public-map__host {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--ev-radius-sm);
+    border: 1px solid var(--li-border);
+    background: #e8efe5;
+    box-shadow: var(--li-shadow);
+}
+
+.venue-public-map--full .venue-public-map__host {
+    height: min(50vh, 420px);
+    min-height: 280px;
+}
+
+.venue-public-map--compact {
+    padding: 0;
+    margin-top: 0.85rem;
+}
+
+.venue-public-map--compact .venue-public-map__host {
+    height: 220px;
+    min-height: 180px;
+}
+
+.venue-public-map__host .leaflet-container {
+    width: 100%;
+    height: 100%;
+    font-family: var(--ev-sans);
+}
+
+.venue-public-map__attrib {
+    margin: 0.45rem 0 0;
+    text-align: center;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: var(--li-text-soft);
+}
+
+.venue-public-map__attrib a {
+    color: var(--li-green);
+    text-decoration: none;
+}
+
+.venue-public-map__attrib a:hover {
+    text-decoration: underline;
+}
+
+.venue-public-map-pin__dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--li-green), var(--li-green-hover));
+    border: 3px solid #fff;
+    box-shadow: 0 4px 12px rgba(45, 58, 40, 0.28);
+}
+
+.venue-public-map-popup__title {
+    font-weight: 600;
+    color: var(--li-text);
+    line-height: 1.35;
+}
+
+.venue-public-map-popup__addr {
+    margin-top: 0.35rem;
+    font-size: 0.8125rem;
+    color: var(--li-text-muted);
+    line-height: 1.4;
+}
+
 .organizer-public__events-title {
     margin: 0 0 1rem;
     font-family: var(--ev-font);

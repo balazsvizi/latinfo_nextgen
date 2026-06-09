@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS `events_venues` (
     `city` VARCHAR(255) NULL,
     `postal_code` VARCHAR(16) NULL,
     `address` TEXT NULL COMMENT 'Utca, házszám',
+    `latitude` DECIMAL(10, 7) NULL COMMENT 'WGS-84 szélesség',
+    `longitude` DECIMAL(10, 7) NULL COMMENT 'WGS-84 hosszúság',
     `linked_venue_id` INT UNSIGNED NULL,
     `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

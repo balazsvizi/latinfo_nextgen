@@ -92,6 +92,7 @@ $safeVenueBody = events_sanitize_html_fragment((string) ($venue['description'] ?
 $descRaw = trim(strip_tags($safeVenueBody));
 $desc = function_exists('mb_substr') ? mb_substr($descRaw, 0, 160, 'UTF-8') : substr($descRaw, 0, 160);
 $addrLine = events_venue_address_summary($venue);
+$venueCoords = events_venue_coordinates_from_row($venue);
 
 $linkedName = trim((string) ($venue['linked_name'] ?? ''));
 $linkedSlug = trim((string) ($venue['linked_slug'] ?? ''));
@@ -145,6 +146,19 @@ header('Content-Type: text/html; charset=UTF-8');
         <div class="venue-body event-rich-text">
             <?= $body ?>
         </div>
+    <?php endif; ?>
+
+    <?php if ($venueCoords !== null): ?>
+        <?php
+        $mapLat = $venueCoords['lat'];
+        $mapLng = $venueCoords['lng'];
+        $mapTitle = $title;
+        $mapAddress = $addrLine;
+        $mapHeading = (string) ($V['map_heading'] ?? 'Térkép');
+        $mapAriaLabel = (string) ($V['map_aria'] ?? 'Helyszín a térképen');
+        $mapVariant = 'full';
+        require __DIR__ . '/partials/public_venue_map.php';
+        ?>
     <?php endif; ?>
 
     <?php

@@ -52,7 +52,7 @@ $orderSql = match ($order) {
     default => 'v.`name` ASC, v.`id` ASC',
 };
 
-$sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`modified`
+$sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`, v.`modified`
         FROM `events_venues` v
         $whereSql
         ORDER BY $orderSql";
@@ -78,7 +78,7 @@ $excerpt = static function (?string $s, int $max): string {
 };
 
 $hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '';
-$colspan = 4;
+$colspan = 5;
 
 $pageTitle = 'Helyszínek';
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -130,6 +130,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Cím', 'cim', $order, $dir_param, $get_params) ?></th>
+                        <th>Térkép</th>
                         <th><?= sort_th('Módosítva', 'modified', $order, $dir_param, $get_params) ?></th>
                     </tr>
                 </thead>
@@ -165,6 +166,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     $line = events_venue_address_summary($r);
                                     echo $line !== '' ? h($excerpt($line, 200)) : '–';
                                 ?></td>
+                                <td class="venues-td-map"><?= events_venue_coordinates_from_row($r) !== null ? '📍' : '–' ?></td>
                                 <td><?= !empty($r['modified']) ? h((string) $r['modified']) : '–' ?></td>
                             </tr>
                         <?php endforeach; ?>
