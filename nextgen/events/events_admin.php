@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/admin_event_calendar.php';
 requireLogin();
 
 $db = getDb();
@@ -178,7 +179,9 @@ $editBase = events_url('szerkeszt.php?id=');
 $filterFormAction = events_url('events_admin.php');
 $filterFormHidden = [];
 $filterClearUrl = events_url('events_admin.php');
-$calendarViewUrl = events_url('events_naptar.php') . ($get_params !== [] ? '?' . http_build_query($get_params) : '');
+$calendarViewUrl = events_admin_calendar_view_url(events_admin_calendar_view_month_key($filters), $get_params);
+$listViewUrl = events_admin_list_view_url($get_params, ['order' => $order, 'dir' => $dir_param]);
+$activeView = 'list';
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Események';
@@ -198,10 +201,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="Nézet választó">
-            <span class="events-cal-view-switch__item is-active" aria-current="page">Lista</span>
-            <a class="events-cal-view-switch__item" href="<?= h($calendarViewUrl) ?>">Hónap</a>
-        </nav>
+        <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
 
         <?php
         $filterFormHidden = ['order' => $order, 'dir' => $dir_param];

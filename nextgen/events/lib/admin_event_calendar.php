@@ -91,6 +91,46 @@ function events_admin_calendar_month_url(string $monthKey, array $getParams, str
 }
 
 /**
+ * Admin lista nézet URL — szűrők megőrzése, hónap paraméter nélkül.
+ *
+ * @param array<string, string> $getParams
+ * @param array<string, string> $extra pl. order, dir
+ */
+function events_admin_list_view_url(array $getParams, array $extra = []): string {
+    $q = array_merge($getParams, $extra);
+    unset($q['month']);
+    $q = array_filter($q, static fn ($v): bool => $v !== null && $v !== '');
+
+    return $q !== [] ? events_url('events_admin.php?' . http_build_query($q)) : events_url('events_admin.php');
+}
+
+/**
+ * Admin hónap nézet URL — szűrők + aktuális hónap.
+ *
+ * @param array<string, string> $getParams
+ */
+function events_admin_calendar_view_url(string $monthKey, array $getParams): string {
+    return events_admin_calendar_month_url($monthKey, $getParams, 'events_naptar.php');
+}
+
+/**
+ * Hónap kulcs a lista → naptár váltáshoz (dátumszűrő „ettől” vagy mai hónap).
+ *
+ * @param array<string, mixed> $filters events_admin_filters_from_request()
+ */
+function events_admin_calendar_view_month_key(array $filters): string {
+    $from = trim((string) ($filters['f_start_from'] ?? ''));
+    if ($from !== '') {
+        try {
+            return (new DateTimeImmutable($from))->format('Y-m');
+        } catch (Throwable) {
+        }
+    }
+
+    return (new DateTimeImmutable('today'))->format('Y-m');
+}
+
+/**
  * @return list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, key: string}>
  */
 function events_admin_calendar_grid_days(DateTimeImmutable $monthFirst, DateTimeImmutable $monthLast): array {

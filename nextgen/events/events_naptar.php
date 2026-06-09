@@ -62,7 +62,9 @@ $navBaseParams = $filters['get_params'];
 $prevMonthUrl = events_admin_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_admin_calendar_month_url($nextMonthKey, $navBaseParams);
 $todayMonthUrl = events_admin_calendar_month_url((new DateTimeImmutable('today'))->format('Y-m'), $navBaseParams);
-$listViewUrl = events_url('events_admin.php') . ($navBaseParams !== [] ? '?' . http_build_query($navBaseParams) : '');
+$listViewUrl = events_admin_list_view_url($navBaseParams);
+$calendarViewUrl = events_admin_calendar_view_url($monthKey, $navBaseParams);
+$activeView = 'month';
 
 $filterFormAction = events_url('events_naptar.php');
 $filterFormHidden = ['month' => $monthKey];
@@ -89,6 +91,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
+        <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
+
         <?php require __DIR__ . '/partials/admin_event_filters.php'; ?>
 
         <div class="events-cal-toolbar" aria-label="Naptár vezérlők">
@@ -100,10 +104,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
                 <h3 class="events-cal-toolbar__month"><?= h($monthLabel) ?></h3>
             </div>
-            <nav class="events-cal-view-switch" aria-label="Nézet választó">
-                <a class="events-cal-view-switch__item" href="<?= h($listViewUrl) ?>">Lista</a>
-                <span class="events-cal-view-switch__item is-active" aria-current="page">Hónap</span>
-            </nav>
         </div>
         <p class="events-cal-legend" aria-label="Naptár jelmagyarázat">
             <span class="events-cal-legend__item events-cal-legend__item--published">Közzétéve</span>
