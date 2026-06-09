@@ -622,6 +622,10 @@ function events_public_home_strings(string $lang): array {
         'list_empty' => 'Nincs találat a szűrésre.',
         'undated_aria' => 'Dátum nélküli események',
         'undated_title' => 'Dátum nélküli események',
+        'cal_preview_close' => 'Bezárás',
+        'cal_preview_details' => 'Részletek megnyitása',
+        'cal_preview_venue' => 'Helyszín',
+        'cal_preview_organizer' => 'Szervező',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -673,6 +677,10 @@ function events_public_home_strings(string $lang): array {
         'list_empty' => 'No matches for your filters.',
         'undated_aria' => 'Events without date',
         'undated_title' => 'Events without date',
+        'cal_preview_close' => 'Close',
+        'cal_preview_details' => 'Open details',
+        'cal_preview_venue' => 'Venue',
+        'cal_preview_organizer' => 'Organizer',
     ];
 
     return $lang === 'en' ? $en : $hu;

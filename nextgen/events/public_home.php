@@ -6,6 +6,7 @@ require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/public_home_content.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 require_once __DIR__ . '/lib/public_event_calendar.php';
+require_once __DIR__ . '/lib/calendar_event_preview.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
@@ -25,6 +26,11 @@ $monthLabel = events_public_calendar_month_label($monthFirst, $lang);
 
 $rows = events_public_fetch_filtered_events($db, $filters);
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
+$calendarPreviewById = [];
+if ($view === 'cal') {
+    $organizersByEventId = events_calendar_load_organizers_by_event_id($db, $rows);
+    $calendarPreviewById = events_calendar_preview_build_map($rows, $categoriesByEventId, $organizersByEventId);
+}
 
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
 $byDay = $bucket['byDay'];
@@ -159,6 +165,9 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<?php if ($view === 'cal' && $calendarPreviewById !== []): ?>
+<?php require __DIR__ . '/partials/public_calendar_event_preview.php'; ?>
+<?php endif; ?>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
 <?php require __DIR__ . '/partials/public_event_filters_auto_script.php'; ?>
 </body>

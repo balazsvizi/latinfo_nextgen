@@ -46,9 +46,11 @@ declare(strict_types=1);
                                     ?>
                                     <li class="events-cal__event" role="listitem">
                                         <a
-                                            class="events-cal__event-link"
+                                            class="events-cal__event-link js-cal-event-preview"
                                             style="<?= h($eventStyle) ?>"
                                             href="<?= h($eventUrl) ?>"
+                                            data-preview-id="<?= $eid ?>"
+                                            aria-haspopup="dialog"
                                             title="<?= h((string) ($ev['event_name'] ?? '')) ?>"
                                         >
                                             <?php if ($timeLabel !== ''): ?>
@@ -78,7 +80,7 @@ declare(strict_types=1);
                 $eventUrl = events_public_calendar_event_url($ev);
                 ?>
                 <li role="listitem">
-                    <a class="events-cal-undated__link events-cal__event-link" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>">
+                    <a class="events-cal-undated__link events-cal__event-link js-cal-event-preview" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" data-preview-id="<?= $eid ?>" aria-haspopup="dialog">
                         <span class="events-cal__event-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                     </a>
                 </li>

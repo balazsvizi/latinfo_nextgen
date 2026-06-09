@@ -1303,17 +1303,8 @@ tr:hover td { background: var(--bg); }
 .events-cal__day--outside .events-cal__day-num {
     color: #b8beb4;
 }
-.events-cal__day--past:not(.events-cal__day--today) {
-    background: #f4f5f3;
-}
-.events-cal__day--outside.events-cal__day--past:not(.events-cal__day--today) {
-    background: #eef0ec;
-}
-.events-cal__day--past:not(.events-cal__day--today) .events-cal__day-num {
-    color: #a8aea4;
-}
-.events-cal__day--past:not(.events-cal__day--today) .events-cal__event-link {
-    opacity: 0.88;
+.events-cal__day--today {
+    box-shadow: inset 0 4px 0 0 #2d3a28;
 }
 .events-cal__day--today .events-cal__day-num {
     display: inline-flex;
@@ -1364,6 +1355,14 @@ tr:hover td { background: var(--bg); }
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
     text-decoration: none;
+}
+.events-cal__day--past .events-cal__event-link {
+    filter: saturate(0.4);
+    opacity: 0.58;
+}
+.events-cal__day--past .events-cal__event-link:hover {
+    filter: saturate(0.62) brightness(1.04);
+    opacity: 0.78;
 }
 .events-cal__event-link--unpublished {
     border-style: dashed !important;
