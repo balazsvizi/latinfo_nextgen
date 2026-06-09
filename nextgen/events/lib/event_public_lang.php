@@ -167,6 +167,8 @@ function events_public_venue_strings(string $lang): array {
         'list_empty' => 'Nincs közzétett esemény ezen a helyszínen.',
         'logo_alt' => 'Latinfo.hu',
         'footer_home_link' => 'Latinfo.hu',
+        'admin_edit_title' => 'Szerkesztés',
+        'admin_edit_aria' => 'Helyszín szerkesztése az adminban',
     ];
     $en = [
         'lang_nav' => 'Language',
@@ -181,6 +183,8 @@ function events_public_venue_strings(string $lang): array {
         'list_empty' => 'No published events at this venue.',
         'logo_alt' => 'Latinfo.hu',
         'footer_home_link' => 'Latinfo.hu',
+        'admin_edit_title' => 'Edit',
+        'admin_edit_aria' => 'Edit this venue in admin',
     ];
 
     return $lang === 'en' ? $en : $hu;

@@ -105,6 +105,8 @@ $eventsPast = $partitioned['past'];
 
 $urlHu = events_public_venue_lang_switch_url($slug, 'hu');
 $urlEn = events_public_venue_lang_switch_url($slug, 'en');
+$showAdminEdit = isLoggedIn();
+$adminEditUrl = events_url('venue_szerkeszt.php?id=') . $venueId;
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
