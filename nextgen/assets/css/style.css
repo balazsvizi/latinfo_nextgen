@@ -2808,7 +2808,7 @@ dialog.eventpics-modal::backdrop {
 }
 .events-edit-org-venue-grid {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
 }
 .events-edit-dates-grid {
