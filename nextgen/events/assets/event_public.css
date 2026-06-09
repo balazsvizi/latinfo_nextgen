@@ -2385,21 +2385,38 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public .events-cal__event-link--bar {
-    position: absolute;
-    left: 0;
-    top: 0;
+    position: relative;
     z-index: 3;
     display: flex;
     flex-direction: column;
     gap: 0.04rem;
-    width: calc(var(--cal-span) * 100% + max(0px, (var(--cal-span) - 1) * 1px));
+    width: 100%;
     max-width: none;
+    min-height: 1.3rem;
     padding: 0.2rem 0.5rem;
     border-radius: 0;
     white-space: nowrap;
     overflow: hidden;
     box-shadow: none;
     transform: none;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--connect-left {
+    margin-left: -1px;
+    width: calc(100% + 1px);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding-left: 0.5rem;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--connect-right {
+    width: calc(100% + 1px);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--connect-left.events-cal__event-link--connect-right {
+    width: calc(100% + 2px);
 }
 
 .home-public .events-cal__event-link--bar.events-cal__event-link--round-left {
@@ -2412,6 +2429,11 @@ body.event-public-page--home .event-public__hero-inner {
     border-top-right-radius: 999px;
     border-bottom-right-radius: 999px;
     padding-right: 0.62rem;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--continuation {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
 }
 
 .home-public .events-cal__event-link--bar:hover {

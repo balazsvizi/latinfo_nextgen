@@ -223,6 +223,7 @@ function events_admin_calendar_is_multi_day_event(array $row): bool {
  *   days: list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>,
  *   laneCount: int,
  *   segments: list<array{event: array<string, mixed>, colStart: int, span: int, lane: int, roundLeft: bool, roundRight: bool, showTime: bool, isPast: bool}>,
+ *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, roundLeft: bool, roundRight: bool, connectLeft: bool, connectRight: bool, showTime: bool, showName: bool, isPast: bool}>>,
  *   singlesByDay: array<string, list<array<string, mixed>>>
  * }>
  */
@@ -342,10 +343,31 @@ function events_admin_calendar_build_week_layouts(
             $singlesByDay[$dayKey] = $dayRows;
         }
 
+        $partsByColLane = [];
+        foreach ($segments as $segment) {
+            $span = (int) $segment['span'];
+            $colStart = (int) $segment['colStart'];
+            $lane = (int) $segment['lane'];
+            for ($offset = 0; $offset < $span; $offset++) {
+                $col = $colStart + $offset;
+                $partsByColLane[$col][$lane] = [
+                    'event' => $segment['event'],
+                    'roundLeft' => $offset === 0 && $segment['roundLeft'],
+                    'roundRight' => $offset === ($span - 1) && $segment['roundRight'],
+                    'connectLeft' => $offset > 0,
+                    'connectRight' => $offset < ($span - 1),
+                    'showTime' => $offset === 0 && $segment['showTime'],
+                    'showName' => $offset === 0,
+                    'isPast' => $segment['isPast'],
+                ];
+            }
+        }
+
         $weeks[] = [
             'days' => $weekDays,
             'laneCount' => count($laneEnds),
             'segments' => $segments,
+            'partsByColLane' => $partsByColLane,
             'singlesByDay' => $singlesByDay,
         ];
     }
