@@ -9,6 +9,7 @@ require_once __DIR__ . '/event_status.php';
  *
  * @return array{
  *   f_organizer: string,
+ *   f_venue: string,
  *   f_name: string,
  *   f_id: string,
  *   f_category: string,
@@ -46,6 +47,7 @@ require_once __DIR__ . '/event_status.php';
  */
 function events_admin_filters_from_request(PDO $db): array {
     $f_organizer = trim((string) ($_GET['f_organizer'] ?? ''));
+    $f_venue = trim((string) ($_GET['f_venue'] ?? ''));
     $f_name = trim((string) ($_GET['f_name'] ?? ''));
     $f_id = trim((string) ($_GET['f_id'] ?? ''));
     $f_category = trim((string) ($_GET['f_category'] ?? ''));
@@ -161,6 +163,16 @@ function events_admin_filters_from_request(PDO $db): array {
         )';
         $params[] = '%' . $f_organizer . '%';
     }
+    if ($f_venue !== '') {
+        $where[] = 'EXISTS (
+            SELECT 1 FROM `events_venues` vnf
+            WHERE vnf.`id` = e.`venue_id` AND (
+                vnf.`name` LIKE ? OR vnf.`city` LIKE ? OR vnf.`address` LIKE ?
+            )
+        )';
+        $likeVenue = '%' . $f_venue . '%';
+        array_push($params, $likeVenue, $likeVenue, $likeVenue);
+    }
     if ($f_category_id > 0) {
         $where[] = 'EXISTS (
             SELECT 1 FROM `events_calendar_event_categories` ec2
@@ -230,6 +242,7 @@ function events_admin_filters_from_request(PDO $db): array {
 
     $get_params = array_filter([
         'f_organizer' => $f_organizer !== '' ? $f_organizer : null,
+        'f_venue' => $f_venue !== '' ? $f_venue : null,
         'f_name' => $f_name !== '' ? $f_name : null,
         'f_id' => $f_id !== '' ? $f_id : null,
         'f_category' => $f_category_id > 0 ? (string) $f_category_id : null,
@@ -245,6 +258,7 @@ function events_admin_filters_from_request(PDO $db): array {
 
     return [
         'f_organizer' => $f_organizer,
+        'f_venue' => $f_venue,
         'f_name' => $f_name,
         'f_id' => $f_id,
         'f_category' => $f_category,

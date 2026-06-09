@@ -10,7 +10,6 @@ require_once __DIR__ . '/event_status.php';
  * @return array<string, mixed>
  */
 function events_public_filters_from_request(PDO $db): array {
-    $f_venue = trim((string) ($_GET['f_venue'] ?? ''));
     $f_city = trim((string) ($_GET['f_city'] ?? ''));
     $view = isset($_GET['view']) && (string) $_GET['view'] === 'list' ? 'list' : 'cal';
 
@@ -22,13 +21,6 @@ function events_public_filters_from_request(PDO $db): array {
     $filters['where'][] = 'e.event_status = ?';
     $filters['params'][] = events_public_post_status();
 
-    if ($f_venue !== '') {
-        $filters['where'][] = 'EXISTS (
-            SELECT 1 FROM `events_venues` vnf
-            WHERE vnf.`id` = e.`venue_id` AND vnf.`name` LIKE ?
-        )';
-        $filters['params'][] = '%' . $f_venue . '%';
-    }
     if ($f_city !== '') {
         $filters['where'][] = 'EXISTS (
             SELECT 1 FROM `events_venues` vcf
@@ -37,7 +29,6 @@ function events_public_filters_from_request(PDO $db): array {
         $filters['params'][] = '%' . $f_city . '%';
     }
 
-    $filters['f_venue'] = $f_venue;
     $filters['f_city'] = $f_city;
     $filters['status'] = '';
     $filters['f_id'] = '';
@@ -46,9 +37,6 @@ function events_public_filters_from_request(PDO $db): array {
 
     $getParams = $filters['get_params'];
     unset($getParams['status'], $getParams['f_id'], $getParams['f_views_min']);
-    if ($f_venue !== '') {
-        $getParams['f_venue'] = $f_venue;
-    }
     if ($f_city !== '') {
         $getParams['f_city'] = $f_city;
     }

@@ -14,6 +14,10 @@ declare(strict_types=1);
             <label class="events-filter-label" for="ev-f-organizer">Szervező</label>
             <input class="events-filter-input" type="text" name="f_organizer" id="ev-f-organizer" value="<?= h($filters['f_organizer']) ?>" placeholder="Részlet a névből…" autocomplete="off">
         </div>
+        <div class="events-filter-field">
+            <label class="events-filter-label" for="ev-f-venue">Helyszín</label>
+            <input class="events-filter-input" type="text" name="f_venue" id="ev-f-venue" value="<?= h($filters['f_venue']) ?>" placeholder="Név, város vagy cím…" autocomplete="off">
+        </div>
         <div class="events-filter-field events-filter-field--status">
             <label class="events-filter-label" for="ev-f-category">Kategória</label>
             <div class="events-filter-select-wrap">
