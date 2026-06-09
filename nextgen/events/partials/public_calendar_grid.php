@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /** @var string $monthLabel */
 /** @var list<string> $weekdayHeaders */
-/** @var list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, key: string}> $gridDays */
+/** @var list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}> $gridDays */
 /** @var array<string, list<array<string, mixed>>> $byDay */
 /** @var list<array<string, mixed>> $undated */
 /** @var array<int, list<array{color: string}>> $categoriesByEventId */
@@ -28,6 +28,9 @@ declare(strict_types=1);
                     }
                     if ($day['isToday']) {
                         $dayClasses .= ' events-cal__day--today';
+                    }
+                    if (!empty($day['isPast'])) {
+                        $dayClasses .= ' events-cal__day--past';
                     }
                     ?>
                     <div class="<?= h($dayClasses) ?>" role="gridcell" aria-label="<?= h($day['date']->format('Y. m. d.')) ?>">

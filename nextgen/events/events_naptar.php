@@ -131,6 +131,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             if ($day['isToday']) {
                                 $dayClasses .= ' events-cal__day--today';
                             }
+                            if (!empty($day['isPast'])) {
+                                $dayClasses .= ' events-cal__day--past';
+                            }
                             ?>
                             <div class="<?= h($dayClasses) ?>" role="gridcell" aria-label="<?= h($day['date']->format('Y. m. d.')) ?>">
                                 <div class="events-cal__day-num"><?= $dayNum ?></div>

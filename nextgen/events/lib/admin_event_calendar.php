@@ -131,7 +131,7 @@ function events_admin_calendar_view_month_key(array $filters): string {
 }
 
 /**
- * @return list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, key: string}>
+ * @return list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>
  */
 function events_admin_calendar_grid_days(DateTimeImmutable $monthFirst, DateTimeImmutable $monthLast): array {
     $gridStart = $monthFirst->modify('monday this week');
@@ -146,6 +146,7 @@ function events_admin_calendar_grid_days(DateTimeImmutable $monthFirst, DateTime
             'date' => $cursor,
             'inMonth' => str_starts_with($key, $monthKey),
             'isToday' => $key === $todayKey,
+            'isPast' => $key < $todayKey,
             'key' => $key,
         ];
         $cursor = $cursor->modify('+1 day');

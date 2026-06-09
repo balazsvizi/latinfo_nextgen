@@ -1303,6 +1303,18 @@ tr:hover td { background: var(--bg); }
 .events-cal__day--outside .events-cal__day-num {
     color: #b8beb4;
 }
+.events-cal__day--past:not(.events-cal__day--today) {
+    background: #f4f5f3;
+}
+.events-cal__day--outside.events-cal__day--past:not(.events-cal__day--today) {
+    background: #eef0ec;
+}
+.events-cal__day--past:not(.events-cal__day--today) .events-cal__day-num {
+    color: #a8aea4;
+}
+.events-cal__day--past:not(.events-cal__day--today) .events-cal__event-link {
+    opacity: 0.88;
+}
 .events-cal__day--today .events-cal__day-num {
     display: inline-flex;
     align-items: center;
