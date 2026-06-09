@@ -242,6 +242,7 @@ declare(strict_types=1);
         var lngIn = field('venue_longitude');
         if (latIn) latIn.value = fmtCoord(ll.lat);
         if (lngIn) lngIn.value = fmtCoord(ll.lng);
+        document.dispatchEvent(new CustomEvent('venue-coords-updated'));
         closePicker();
     });
 
