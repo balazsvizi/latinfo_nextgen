@@ -34,7 +34,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
             $segments = $week['segments'] ?? [];
             $singlesByDay = $week['singlesByDay'] ?? [];
             ?>
-            <div class="events-cal__week" role="row">
+            <div class="events-cal__week" role="row" style="--cal-lane-count: <?= $laneCount ?>">
                 <?php foreach ($week['days'] as $day): ?>
                     <?php
                     $dayKey = $day['key'];
@@ -99,7 +99,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                     </div>
                 <?php endforeach; ?>
                 <?php if ($laneCount > 0 && $segments !== []): ?>
-                    <div class="events-cal__week-multiday" style="--cal-lane-count: <?= $laneCount ?>">
+                    <div class="events-cal__week-bars">
                         <?php foreach ($segments as $segment): ?>
                             <?php
                             $ev = $segment['event'];
@@ -132,12 +132,13 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                             $barTarget = $calendarPublicPreview || $isPublished ? '_blank' : '_self';
                             $barRel = $barTarget === '_blank' ? 'noopener' : '';
                             $barTitle = (string) ($ev['event_name'] ?? '');
-                            $gridColumn = ((int) $segment['colStart'] + 1) . ' / span ' . max(1, (int) $segment['span']);
-                            $gridRow = (int) $segment['lane'] + 1;
+                            $colStart = (int) $segment['colStart'] + 1;
+                            $colSpan = max(1, (int) $segment['span']);
+                            $lane = (int) $segment['lane'];
                             ?>
                             <a
                                 class="<?= h($barClasses) ?>"
-                                style="<?= h($eventStyle) ?>;grid-column:<?= h($gridColumn) ?>;grid-row:<?= $gridRow ?>"
+                                style="<?= h($eventStyle) ?>;--cal-col-start:<?= $colStart ?>;--cal-span:<?= $colSpan ?>;--cal-lane:<?= $lane ?>"
                                 href="<?= h($eventUrl) ?>"
                                 <?= $calendarPublicPreview ? 'data-preview-id="' . $eid . '" aria-haspopup="dialog"' : '' ?>
                                 target="<?= h($barTarget) ?>"

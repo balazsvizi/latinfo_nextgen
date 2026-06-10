@@ -1320,6 +1320,7 @@ tr:hover td { background: var(--bg); }
     cursor: default;
 }
 .events-cal {
+    --cal-col-template: repeat(7, minmax(7.5rem, 1fr));
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -1327,22 +1328,8 @@ tr:hover td { background: var(--bg); }
 .events-cal__weekdays,
 .events-cal__week {
     display: grid;
-    grid-template-columns: repeat(7, minmax(7.5rem, 1fr));
+    grid-template-columns: var(--cal-col-template);
     min-width: 52rem;
-}
-.events-cal__week-multiday {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: subgrid;
-    grid-auto-rows: minmax(1.35rem, auto);
-    gap: 0.22rem 1px;
-    padding: 0.2rem 0.4rem 0.35rem;
-    background: #fff;
-}
-.events-cal__week-multiday .events-cal__event-link--bar {
-    min-width: 0;
-    align-self: stretch;
-    margin: 0;
 }
 .events-cal__weekday {
     padding: 0.55rem 0.65rem;
@@ -1363,9 +1350,33 @@ tr:hover td { background: var(--bg); }
     background: #e8ebe6;
 }
 .events-cal__week {
+    position: relative;
     gap: 1px;
     background: #e8ebe6;
     overflow: visible;
+    padding-bottom: calc(var(--cal-lane-count, 0) * 1.45rem + max(0, var(--cal-lane-count, 0)) * 0.3rem);
+}
+.events-cal__week-bars {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.3rem;
+    display: grid;
+    grid-template-columns: var(--cal-col-template);
+    grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(1.3rem, auto));
+    column-gap: 1px;
+    row-gap: 0.22rem;
+    pointer-events: none;
+    z-index: 3;
+}
+.events-cal__week-bars .events-cal__event-link--bar {
+    grid-column: var(--cal-col-start) / span var(--cal-span);
+    grid-row: calc(var(--cal-lane) + 1);
+    pointer-events: auto;
+    margin: 0;
+    min-width: 0;
+    width: auto;
+    align-self: stretch;
 }
 .events-cal__day {
     min-height: 7.5rem;
@@ -1377,17 +1388,7 @@ tr:hover td { background: var(--bg); }
     gap: 0.35rem;
     overflow: visible;
     position: relative;
-}
-.events-cal__multiday-lanes {
-    display: flex;
-    flex-direction: column;
-    gap: 0.22rem;
-    margin-bottom: 0.2rem;
-    flex-shrink: 0;
-}
-.events-cal__multiday-lane {
-    position: relative;
-    min-height: 1.3rem;
+    z-index: 1;
 }
 .events-cal__event-link--bar {
     position: relative;
@@ -1405,21 +1406,6 @@ tr:hover td { background: var(--bg); }
     box-shadow: none;
     transform: none;
 }
-.events-cal__event-link--bar.events-cal__event-link--connect-left {
-    margin-left: -1px;
-    width: calc(100% + 1px);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    padding-left: 0.5rem;
-}
-.events-cal__event-link--bar.events-cal__event-link--connect-right {
-    width: calc(100% + 1px);
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-}
-.events-cal__event-link--bar.events-cal__event-link--connect-left.events-cal__event-link--connect-right {
-    width: calc(100% + 2px);
-}
 .events-cal__event-link--bar.events-cal__event-link--round-left {
     border-top-left-radius: 999px;
     border-bottom-left-radius: 999px;
@@ -1429,10 +1415,6 @@ tr:hover td { background: var(--bg); }
     border-top-right-radius: 999px;
     border-bottom-right-radius: 999px;
     padding-right: 0.62rem;
-}
-.events-cal__event-link--bar.events-cal__event-link--continuation {
-    padding-top: 0.2rem;
-    padding-bottom: 0.2rem;
 }
 .events-cal__event-link--bar:hover {
     transform: none;
@@ -1652,21 +1634,28 @@ tr:hover td { background: var(--bg); }
         font-size: 1.35rem;
         width: 100%;
     }
+    .events-cal {
+        --cal-col-template: repeat(7, minmax(2.35rem, 1fr));
+    }
     .events-cal__weekdays,
     .events-cal__week {
         min-width: 0;
-        grid-template-columns: repeat(7, minmax(2.35rem, 1fr));
     }
     .events-cal__day {
         min-height: 5.5rem;
         padding: 0.28rem 0.18rem 0.35rem;
     }
-    .events-cal__week-multiday {
-        padding: 0.18rem 0.18rem 0.28rem;
+    .events-cal__week {
+        padding-bottom: calc(var(--cal-lane-count, 0) * 1.25rem + max(0, var(--cal-lane-count, 0)) * 0.25rem);
+    }
+    .events-cal__week-bars {
+        bottom: 0.2rem;
+        row-gap: 0.18rem;
     }
     .events-cal__event-link--bar {
         padding: 0.16rem 0.35rem;
         font-size: 0.62rem;
+        min-height: 1.15rem;
     }
     .events-cal__event-link--bar .events-cal__event-name {
         white-space: nowrap;
