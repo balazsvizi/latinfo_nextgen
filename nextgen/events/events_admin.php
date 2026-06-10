@@ -6,7 +6,6 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/admin_event_calendar.php';
-require_once __DIR__ . '/lib/event_public_organizers.php';
 requireLogin();
 
 $db = getDb();
@@ -30,7 +29,7 @@ if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, tr
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
 } else {
-    $order = 'start';
+    $order = 'id';
     $dir_param = 'desc';
 }
 
@@ -50,7 +49,7 @@ $orderSql = match ($order) {
     'status' => "e.event_status $dirSql",
     'cal_previews' => "naptar_elonezetek $dirSql",
     'views' => "megtekintesek $dirSql",
-    default => 'e.event_start IS NULL, e.event_start DESC',
+    default => 'e.id DESC',
 };
 
 $sql = "
@@ -68,7 +67,6 @@ $sql = "
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$listPartition = events_public_list_partition_events($rows);
 
 $categoriesByEventId = [];
 $tagsByEventId = [];
@@ -217,7 +215,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         require __DIR__ . '/partials/admin_event_filters.php';
         ?>
 
-        <?php require __DIR__ . '/partials/admin_event_list_partitioned.php'; ?>
+        <?php require __DIR__ . '/partials/admin_event_list_table.php'; ?>
     </form>
 </div>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
