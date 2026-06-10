@@ -56,7 +56,8 @@ $totalCount = count($listPartition['today']) + count($listPartition['soon']) + c
                                 <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                                 <th><?= sort_th('Meta', 'category', $order, $dir_param, $get_params) ?></th>
                                 <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
-                                <th class="th-center"><?= sort_th('Megtekintés', 'views', $order, $dir_param, $get_params) ?></th>
+                                <th class="th-center"><?= sort_th('Előnézet', 'cal_previews', $order, $dir_param, $get_params) ?></th>
+                                <th class="th-center"><?= sort_th('Oldal', 'views', $order, $dir_param, $get_params) ?></th>
                                 <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                             </tr>
                         </thead>

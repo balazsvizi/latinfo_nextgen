@@ -236,7 +236,7 @@ function events_admin_filters_from_request(PDO $db): array {
         $params[] = $status;
     }
     if ($f_views_min !== '' && ctype_digit($f_views_min)) {
-        $where[] = '(SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id) >= ?';
+        $where[] = '(SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = \'page_view\') >= ?';
         $params[] = (int) $f_views_min;
     }
 

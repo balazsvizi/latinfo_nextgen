@@ -102,7 +102,7 @@ function events_calendar_preview_build_map(array $rows, array $categoriesByEvent
             )),
             'accent' => $accent,
             'image' => events_calendar_preview_featured_image_url($ev),
-            'url' => events_public_calendar_event_url($ev),
+            'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
         ];
     }
 

@@ -88,7 +88,7 @@ declare(strict_types=1);
             <input class="events-filter-input" type="text" name="f_id" id="ev-f-id" value="<?= h($filters['f_id']) ?>" placeholder="Pl. 100001" inputmode="numeric" autocomplete="off">
         </div>
         <div class="events-filter-field">
-            <label class="events-filter-label" for="ev-f-views">Min. megtekintés</label>
+            <label class="events-filter-label" for="ev-f-views">Min. oldalmegtekintés</label>
             <input class="events-filter-input" type="number" name="f_views_min" id="ev-f-views" value="<?= h($filters['f_views_min']) ?>" placeholder="0" min="0" step="1">
         </div>
         <div class="events-filter-field events-filter-field--status">

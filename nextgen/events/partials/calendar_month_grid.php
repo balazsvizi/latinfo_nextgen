@@ -4,6 +4,9 @@ declare(strict_types=1);
 if (!function_exists('events_public_calendar_event_url')) {
     require_once __DIR__ . '/../lib/public_event_calendar.php';
 }
+if (!defined('EVENTS_VIEW_SOURCE_CALENDAR')) {
+    require_once __DIR__ . '/../lib/event_view_tracking.php';
+}
 
 /**
  * @var string $monthLabel
@@ -65,7 +68,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                     $timeLabel = events_admin_calendar_event_time_label($ev);
                                     $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
                                     $eventUrl = $calendarPublicPreview
-                                        ? events_public_calendar_event_url($ev)
+                                        ? events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CALENDAR)
                                         : events_admin_calendar_event_public_url($ev);
                                     $linkClass = 'events-cal__event-link';
                                     if ($calendarPublicPreview) {
@@ -111,7 +114,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             $isPublished = events_admin_calendar_event_is_published($ev);
                                             $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
                                             $eventUrl = $calendarPublicPreview
-                                                ? events_public_calendar_event_url($ev)
+                                                ? events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CALENDAR)
                                                 : events_admin_calendar_event_public_url($ev);
                                             $timeLabel = $part['showTime'] ? events_admin_calendar_event_time_label($ev) : '';
                                             $barTitle = (string) ($ev['event_name'] ?? '');

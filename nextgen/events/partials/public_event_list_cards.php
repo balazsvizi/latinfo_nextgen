@@ -1,5 +1,10 @@
 <?php
 declare(strict_types=1);
+
+if (!defined('EVENTS_VIEW_SOURCE_LIST')) {
+    require_once __DIR__ . '/../lib/event_view_tracking.php';
+}
+
 /** @var list<array<string, mixed>> $sectionRows */
 /** @var array<int, list<array{color: string, name: string}>> $categoriesByEventId */
 ?>
@@ -10,7 +15,7 @@ declare(strict_types=1);
         <?php foreach ($sectionRows as $ev): ?>
             <?php
             $eid = (int) ($ev['id'] ?? 0);
-            $eventUrl = events_public_calendar_event_url($ev);
+            $eventUrl = events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_LIST);
             $dateLabel = events_admin_format_datum_cell($ev);
             $venueName = trim((string) ($ev['venue_name'] ?? ''));
             $venueCity = trim((string) ($ev['venue_city'] ?? ''));

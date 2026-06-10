@@ -9,6 +9,7 @@ require_once __DIR__ . '/lib/event_public_organizers.php';
 require_once __DIR__ . '/lib/tag_type.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
 require_once __DIR__ . '/lib/event_public_styles.php';
+require_once __DIR__ . '/lib/event_view_tracking.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
@@ -94,14 +95,8 @@ $cf = $cfRaw !== null && $cfRaw !== '' ? (float) $cfRaw : null;
 $ct = $ctRaw !== null && $ctRaw !== '' ? (float) $ctRaw : null;
 $costText = events_public_megjelenit_cost_text($cf, $ct, $lang);
 
-try {
-    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-    $ipHash = $ip !== '' ? hash('sha256', $ip . '|' . SITE_NAME) : null;
-    $ins = $db->prepare('INSERT INTO `events_calendar_event_views` (`esemény_id`, `ip_hash`) VALUES (?, ?)');
-    $ins->execute([(int) $event['id'], $ipHash]);
-} catch (Throwable $e) {
-    // Megtekintés napló opcionális – ne törjük a megjelenítést
-}
+$pageSource = events_view_tracking_resolve_page_source((string) ($_GET['ref'] ?? ''));
+events_track_event_view($db, (int) $event['id'], EVENTS_VIEW_METRIC_PAGE, $pageSource);
 
 $canonical = events_public_canonical_url($event['event_slug']);
 $title = $event['event_name'];

@@ -25,7 +25,7 @@ if ($tagsAvailable) {
 if ($djsAvailable) {
     $allowedOrder[] = 'dj';
 }
-$allowedOrder = array_merge($allowedOrder, ['name', 'start', 'end', 'status', 'views']);
+$allowedOrder = array_merge($allowedOrder, ['name', 'start', 'end', 'status', 'cal_previews', 'views']);
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -48,6 +48,7 @@ $orderSql = match ($order) {
     'start' => "e.event_start IS NULL, e.event_start $dirSql",
     'end' => "e.event_end IS NULL, e.event_end $dirSql",
     'status' => "e.event_status $dirSql",
+    'cal_previews' => "naptar_elonezetek $dirSql",
     'views' => "megtekintesek $dirSql",
     default => 'e.event_start IS NULL, e.event_start DESC',
 };
@@ -58,7 +59,8 @@ $sql = "
          FROM `events_calendar_event_organizers` eo
          INNER JOIN `events_organizers` o ON o.id = eo.organizer_id
          WHERE eo.event_id = e.id) AS organizer_name,
-        (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id) AS megtekintesek
+        (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view') AS megtekintesek,
+        (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'calendar_preview') AS naptar_elonezetek
     FROM `events_calendar_events` e
     $whereSql
     ORDER BY $orderSql

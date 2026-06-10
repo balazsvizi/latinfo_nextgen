@@ -111,6 +111,7 @@ $badgeClass = events_post_status_badge_class($st);
             <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
         </a>
     </td>
-    <td class="text-center"><a class="events-cell-edit" href="<?= h($edit) ?>"><?= (int) $r['megtekintesek'] ?></a></td>
+    <td class="text-center"><a class="events-cell-edit" href="<?= h($edit) ?>" title="Naptár előnézet megnyitások"><?= (int) ($r['naptar_elonezetek'] ?? 0) ?></a></td>
+    <td class="text-center"><a class="events-cell-edit" href="<?= h($edit) ?>" title="Teljes eseményoldal megtekintések"><?= (int) $r['megtekintesek'] ?></a></td>
     <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= $eid ?></a></td>
 </tr>

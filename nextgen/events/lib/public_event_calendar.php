@@ -2,18 +2,24 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/admin_event_calendar.php';
+require_once __DIR__ . '/event_view_tracking.php';
 
 /**
  * Nyilvános naptár segédek — csak közzétett események linkjei.
  */
 
-function events_public_calendar_event_url(array $ev): string {
+function events_public_calendar_event_url(array $ev, ?string $ref = null): string {
     $slug = trim((string) ($ev['event_slug'] ?? ''));
     if ($slug === '') {
         return '#';
     }
 
-    return events_megjelenit_url($slug);
+    $url = events_megjelenit_url($slug);
+    if ($ref !== null && $ref !== '') {
+        return events_view_tracking_append_ref($url, $ref);
+    }
+
+    return $url;
 }
 
 /**

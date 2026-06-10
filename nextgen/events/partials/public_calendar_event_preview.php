@@ -31,6 +31,7 @@ declare(strict_types=1);
 <script type="application/json" id="events-cal-preview-data"><?= json_encode($calendarPreviewById, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <script>
 (function () {
+    var trackUrl = <?= json_encode(events_url('ajax_event_metric.php'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var dialog = document.getElementById('events-cal-preview');
     var dataEl = document.getElementById('events-cal-preview-data');
     if (!dialog || !dataEl) return;
@@ -70,6 +71,18 @@ declare(strict_types=1);
         }
         wrap.hidden = false;
         el.textContent = t;
+    }
+
+    function trackPreviewOpen(id) {
+        if (!trackUrl || !id) return;
+        var body = new FormData();
+        body.append('event_id', String(id));
+        body.append('metric', 'calendar_preview');
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(trackUrl, body);
+            return;
+        }
+        fetch(trackUrl, { method: 'POST', body: body, keepalive: true }).catch(function () {});
     }
 
     function openPreview(id) {
@@ -127,6 +140,7 @@ declare(strict_types=1);
             dialog.setAttribute('open', 'open');
         }
         document.body.classList.add('events-cal-preview-open');
+        trackPreviewOpen(id);
     }
 
     function closePreview() {
