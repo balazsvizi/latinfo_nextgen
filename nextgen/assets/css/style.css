@@ -1351,27 +1351,15 @@ tr:hover td { background: var(--bg); }
 }
 .events-cal__week {
     --cal-line: #e8ebe6;
+    --cal-bar-lane-h: 1.35rem;
+    --cal-bar-lane-gap: 0.22rem;
     position: relative;
     gap: 1px;
     background: var(--cal-line);
     overflow: visible;
-    padding-bottom: calc(var(--cal-lane-count, 0) * 1.45rem + max(0, var(--cal-lane-count, 0)) * 0.3rem);
-}
-.events-cal__week::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: calc(var(--cal-lane-count, 0) * 1.45rem + max(0, var(--cal-lane-count, 0)) * 0.3rem);
-    pointer-events: none;
-    z-index: 4;
-    background-image: repeating-linear-gradient(
-        to right,
-        transparent 0,
-        transparent calc((100% - 6px) / 7),
-        var(--cal-line) calc((100% - 6px) / 7),
-        var(--cal-line) calc((100% - 6px) / 7 + 1px)
+    padding-bottom: calc(
+        var(--cal-lane-count, 0) * var(--cal-bar-lane-h)
+        + max(0, var(--cal-lane-count, 0) - 1) * var(--cal-bar-lane-gap)
     );
 }
 .events-cal__week-bars {
@@ -1381,12 +1369,13 @@ tr:hover td { background: var(--bg); }
     bottom: 0;
     display: grid;
     grid-template-columns: var(--cal-col-template);
-    grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(1.3rem, auto));
+    grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(var(--cal-bar-lane-h), auto));
     column-gap: 1px;
-    row-gap: 0.22rem;
-    align-content: end;
-    min-height: calc(var(--cal-lane-count, 0) * 1.45rem + max(0, var(--cal-lane-count, 0)) * 0.3rem);
-    padding-bottom: 0.3rem;
+    row-gap: var(--cal-bar-lane-gap);
+    height: calc(
+        var(--cal-lane-count, 0) * var(--cal-bar-lane-h)
+        + max(0, var(--cal-lane-count, 0) - 1) * var(--cal-bar-lane-gap)
+    );
     box-sizing: border-box;
     background: var(--cal-line);
     pointer-events: none;
@@ -1676,12 +1665,8 @@ tr:hover td { background: var(--bg); }
         padding: 0.28rem 0.18rem 0.35rem;
     }
     .events-cal__week {
-        padding-bottom: calc(var(--cal-lane-count, 0) * 1.25rem + max(0, var(--cal-lane-count, 0)) * 0.25rem);
-    }
-    .events-cal__week-bars {
-        min-height: calc(var(--cal-lane-count, 0) * 1.25rem + max(0, var(--cal-lane-count, 0)) * 0.25rem);
-        padding-bottom: 0.2rem;
-        row-gap: 0.18rem;
+        --cal-bar-lane-h: 1.2rem;
+        --cal-bar-lane-gap: 0.18rem;
     }
     .events-cal__event-link--bar {
         padding: 0.16rem 0.35rem;
