@@ -1360,12 +1360,17 @@ tr:hover td { background: var(--bg); }
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0.3rem;
+    bottom: 0;
     display: grid;
     grid-template-columns: var(--cal-col-template);
     grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(1.3rem, auto));
-    column-gap: 1px;
+    column-gap: 0;
     row-gap: 0.22rem;
+    align-content: end;
+    min-height: calc(var(--cal-lane-count, 0) * 1.45rem + max(0, var(--cal-lane-count, 0)) * 0.3rem);
+    padding-bottom: 0.3rem;
+    box-sizing: border-box;
+    background: #fff;
     pointer-events: none;
     z-index: 3;
 }
@@ -1649,7 +1654,8 @@ tr:hover td { background: var(--bg); }
         padding-bottom: calc(var(--cal-lane-count, 0) * 1.25rem + max(0, var(--cal-lane-count, 0)) * 0.25rem);
     }
     .events-cal__week-bars {
-        bottom: 0.2rem;
+        min-height: calc(var(--cal-lane-count, 0) * 1.25rem + max(0, var(--cal-lane-count, 0)) * 0.25rem);
+        padding-bottom: 0.2rem;
         row-gap: 0.18rem;
     }
     .events-cal__event-link--bar {
