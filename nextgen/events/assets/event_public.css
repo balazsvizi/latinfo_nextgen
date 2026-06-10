@@ -1877,6 +1877,7 @@ body.event-public-page--home .event-shell {
 
 body.event-public-page--home .event-public.home-public {
     border-radius: clamp(10px, 1.2vw, var(--ev-radius));
+    overflow: visible;
 }
 
 body.event-public-page--home .event-public__hero {
@@ -2291,10 +2292,13 @@ body.event-public-page--home .event-public__hero-inner {
     display: flex;
     justify-content: flex-end;
     margin: 0.85rem 0 0;
+    position: relative;
+    z-index: 30;
 }
 
 .home-public .events-cal-subscribe__details {
     position: relative;
+    max-width: 100%;
 }
 
 .home-public .events-cal-subscribe__toggle {
@@ -2335,9 +2339,12 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public .events-cal-subscribe__menu {
     position: absolute;
     right: 0;
-    z-index: 20;
-    min-width: 13.5rem;
-    margin: 0.35rem 0 0;
+    bottom: calc(100% + 0.35rem);
+    top: auto;
+    z-index: 100;
+    min-width: min(13.5rem, calc(100vw - 2.5rem));
+    max-width: min(16rem, calc(100vw - 2.5rem));
+    margin: 0;
     padding: 0.35rem 0;
     list-style: none;
     border: 1px solid var(--li-border);
@@ -2978,6 +2985,23 @@ body.event-public-page--home .event-public__hero-inner {
 
     .home-public .events-cal-toolbar__month {
         font-size: 1.35rem;
+    }
+
+    .home-public .events-cal-subscribe__details {
+        width: 100%;
+    }
+
+    .home-public .events-cal-subscribe__toggle {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .home-public .events-cal-subscribe__menu {
+        left: 0;
+        right: 0;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
     }
 
     .home-public .events-cal {
