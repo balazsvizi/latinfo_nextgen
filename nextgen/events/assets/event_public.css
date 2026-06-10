@@ -2360,56 +2360,13 @@ body.event-public-page--home .event-public__hero-inner {
     --cal-line: var(--li-border);
     --cal-bar-lane-h: 1.35rem;
     --cal-bar-lane-gap: 0.22rem;
-    position: relative;
     gap: 1px;
     background: var(--cal-line);
     overflow: visible;
-    padding-bottom: calc(
-        var(--cal-lane-count, 0) * var(--cal-bar-lane-h)
-        + max(0, var(--cal-lane-count, 0) - 1) * var(--cal-bar-lane-gap)
-    );
-}
-
-.home-public .events-cal__week-bars {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-top: 1px solid var(--cal-line);
-    display: grid;
-    grid-template-columns: var(--cal-col-template);
-    grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(var(--cal-bar-lane-h), auto));
-    column-gap: 1px;
-    row-gap: var(--cal-bar-lane-gap);
-    height: calc(
-        var(--cal-lane-count, 0) * var(--cal-bar-lane-h)
-        + max(0, var(--cal-lane-count, 0) - 1) * var(--cal-bar-lane-gap)
-    );
-    box-sizing: border-box;
-    background: var(--cal-line);
-    pointer-events: none;
-    z-index: 3;
-}
-
-.home-public .events-cal__week-bar-bg {
-    background: #fff;
-    min-height: 1.3rem;
-    pointer-events: none;
-}
-
-.home-public .events-cal__week-bars .events-cal__event-link--bar {
-    position: relative;
-    z-index: 1;
-    grid-column: var(--cal-col-start) / span var(--cal-span);
-    grid-row: calc(var(--cal-lane) + 1);
-    pointer-events: auto;
-    margin: 0;
-    min-width: 0;
-    width: auto;
-    align-self: stretch;
 }
 
 .home-public .events-cal__day {
+    --cal-day-pad-x: 0.4rem;
     min-height: 7.5rem;
     padding: 0.45rem 0.4rem 0.5rem;
     background: #fff;
@@ -2419,6 +2376,19 @@ body.event-public-page--home .event-public__hero-inner {
     overflow: visible;
     position: relative;
     z-index: 1;
+}
+
+.home-public .events-cal__multiday-lanes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cal-bar-lane-gap);
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.home-public .events-cal__multiday-lane {
+    min-height: var(--cal-bar-lane-h);
+    position: relative;
 }
 
 .home-public .events-cal__event-link--bar {
@@ -2448,6 +2418,20 @@ body.event-public-page--home .event-public__hero-inner {
     border-top-right-radius: 999px;
     border-bottom-right-radius: 999px;
     padding-right: 0.62rem;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--bar-connect-left {
+    margin-left: calc(-1 * var(--cal-day-pad-x) - 1px);
+    width: calc(100% + var(--cal-day-pad-x) + 1px);
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--bar-connect-right {
+    margin-right: calc(-1 * var(--cal-day-pad-x) - 1px);
+    width: calc(100% + var(--cal-day-pad-x) + 1px);
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--bar-connect-left.events-cal__event-link--bar-connect-right {
+    width: calc(100% + 2 * var(--cal-day-pad-x) + 2px);
 }
 
 .home-public .events-cal__event-link--bar:hover {
@@ -2518,6 +2502,7 @@ body.event-public-page--home .event-public__hero-inner {
     gap: 0.28rem;
     min-width: 0;
     flex: 1 1 auto;
+    min-height: 0;
 }
 
 .home-public .events-cal__event-link {
@@ -2879,6 +2864,7 @@ body.event-public-page--home .event-public__hero-inner {
     }
 
     .home-public .events-cal__day {
+        --cal-day-pad-x: 0.18rem;
         min-height: 4.25rem;
         padding: 0.28rem 0.18rem 0.35rem;
     }

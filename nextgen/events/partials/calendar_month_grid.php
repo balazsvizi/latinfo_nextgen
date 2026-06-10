@@ -11,7 +11,7 @@ if (!function_exists('events_public_calendar_event_url')) {
  * @var list<array{
  *   days: list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>,
  *   laneCount: int,
- *   segments: list<array{event: array<string, mixed>, colStart: int, span: int, lane: int, roundLeft: bool, roundRight: bool, showTime: bool, isPast: bool}>,
+ *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, lane: int, connectLeft: bool, connectRight: bool, roundLeft: bool, roundRight: bool, showTime: bool, showLabel: bool, isPast: bool}>>,
  *   singlesByDay: array<string, list<array<string, mixed>>>
  * }> $calendarWeeks
  * @var array<int, list<array{color: string}>> $categoriesByEventId
@@ -31,15 +31,16 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
         <?php foreach ($calendarWeeks as $week): ?>
             <?php
             $laneCount = (int) ($week['laneCount'] ?? 0);
-            $segments = $week['segments'] ?? [];
+            $partsByColLane = $week['partsByColLane'] ?? [];
             $singlesByDay = $week['singlesByDay'] ?? [];
             ?>
             <div class="events-cal__week" role="row" style="--cal-lane-count: <?= $laneCount ?>">
-                <?php foreach ($week['days'] as $day): ?>
+                <?php foreach ($week['days'] as $colIndex => $day): ?>
                     <?php
                     $dayKey = $day['key'];
                     $dayNum = (int) $day['date']->format('j');
                     $daySingles = $singlesByDay[$dayKey] ?? [];
+                    $dayParts = $partsByColLane[$colIndex] ?? [];
                     $dayClasses = 'events-cal__day';
                     if (!$day['inMonth']) {
                         $dayClasses .= ' events-cal__day--outside';
@@ -96,75 +97,76 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                 <?php endforeach; ?>
                             </ul>
                         <?php endif; ?>
+                        <?php if ($laneCount > 0): ?>
+                            <div class="events-cal__multiday-lanes">
+                                <?php for ($lane = 0; $lane < $laneCount; $lane++): ?>
+                                    <?php $part = $dayParts[$lane] ?? null; ?>
+                                    <div class="events-cal__multiday-lane">
+                                        <?php if ($part !== null): ?>
+                                            <?php
+                                            $ev = $part['event'];
+                                            $eid = (int) ($ev['id'] ?? 0);
+                                            $isPublished = events_admin_calendar_event_is_published($ev);
+                                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
+                                            $eventUrl = $calendarPublicPreview
+                                                ? events_public_calendar_event_url($ev)
+                                                : events_admin_calendar_event_public_url($ev);
+                                            $timeLabel = $part['showTime'] ? events_admin_calendar_event_time_label($ev) : '';
+                                            $barTitle = (string) ($ev['event_name'] ?? '');
+                                            $barClasses = 'events-cal__event-link events-cal__event-link--bar';
+                                            if ($calendarPublicPreview) {
+                                                $barClasses .= ' js-cal-event-preview';
+                                            }
+                                            if (!$isPublished) {
+                                                $barClasses .= ' events-cal__event-link--unpublished';
+                                            }
+                                            if ($part['isPast']) {
+                                                $barClasses .= ' events-cal__event-link--past';
+                                            }
+                                            if ($part['roundLeft']) {
+                                                $barClasses .= ' events-cal__event-link--round-left';
+                                            }
+                                            if ($part['roundRight']) {
+                                                $barClasses .= ' events-cal__event-link--round-right';
+                                            }
+                                            if ($part['connectLeft']) {
+                                                $barClasses .= ' events-cal__event-link--bar-connect-left';
+                                            }
+                                            if ($part['connectRight']) {
+                                                $barClasses .= ' events-cal__event-link--bar-connect-right';
+                                            }
+                                            $eventStatus = (string) ($ev['event_status'] ?? '');
+                                            $statusBadgeClass = events_post_status_badge_class($eventStatus);
+                                            $statusLabel = events_post_status_label($eventStatus);
+                                            $barTarget = $calendarPublicPreview || $isPublished ? '_blank' : '_self';
+                                            $barRel = $barTarget === '_blank' ? 'noopener' : '';
+                                            ?>
+                                            <a
+                                                class="<?= h($barClasses) ?>"
+                                                style="<?= h($eventStyle) ?>"
+                                                href="<?= h($eventUrl) ?>"
+                                                <?= $calendarPublicPreview ? 'data-preview-id="' . $eid . '" aria-haspopup="dialog"' : '' ?>
+                                                target="<?= h($barTarget) ?>"
+                                                <?= $barRel !== '' ? 'rel="' . h($barRel) . '"' : '' ?>
+                                                title="<?= h($barTitle) ?><?= $isPublished ? '' : ' (' . $statusLabel . ')' ?>"
+                                            >
+                                                <?php if ($part['showLabel']): ?>
+                                                    <?php if (!$isPublished && !$calendarPublicPreview): ?>
+                                                        <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
+                                                    <?php endif; ?>
+                                                    <?php if ($timeLabel !== ''): ?>
+                                                        <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
+                                                    <?php endif; ?>
+                                                    <span class="events-cal__event-name"><?= h($barTitle) ?></span>
+                                                <?php endif; ?>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
-                <?php if ($laneCount > 0 && $segments !== []): ?>
-                    <div class="events-cal__week-bars">
-                        <?php for ($bgLane = 0; $bgLane < $laneCount; $bgLane++): ?>
-                            <?php for ($bgCol = 0; $bgCol < 7; $bgCol++): ?>
-                                <div
-                                    class="events-cal__week-bar-bg"
-                                    style="grid-column:<?= $bgCol + 1 ?>;grid-row:<?= $bgLane + 1 ?>"
-                                    aria-hidden="true"
-                                ></div>
-                            <?php endfor; ?>
-                        <?php endfor; ?>
-                        <?php foreach ($segments as $segment): ?>
-                            <?php
-                            $ev = $segment['event'];
-                            $eid = (int) ($ev['id'] ?? 0);
-                            $isPublished = events_admin_calendar_event_is_published($ev);
-                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
-                            $eventUrl = $calendarPublicPreview
-                                ? events_public_calendar_event_url($ev)
-                                : events_admin_calendar_event_public_url($ev);
-                            $timeLabel = $segment['showTime'] ? events_admin_calendar_event_time_label($ev) : '';
-                            $barClasses = 'events-cal__event-link events-cal__event-link--bar';
-                            if ($calendarPublicPreview) {
-                                $barClasses .= ' js-cal-event-preview';
-                            }
-                            if (!$isPublished) {
-                                $barClasses .= ' events-cal__event-link--unpublished';
-                            }
-                            if ($segment['isPast']) {
-                                $barClasses .= ' events-cal__event-link--past';
-                            }
-                            if ($segment['roundLeft']) {
-                                $barClasses .= ' events-cal__event-link--round-left';
-                            }
-                            if ($segment['roundRight']) {
-                                $barClasses .= ' events-cal__event-link--round-right';
-                            }
-                            $eventStatus = (string) ($ev['event_status'] ?? '');
-                            $statusBadgeClass = events_post_status_badge_class($eventStatus);
-                            $statusLabel = events_post_status_label($eventStatus);
-                            $barTarget = $calendarPublicPreview || $isPublished ? '_blank' : '_self';
-                            $barRel = $barTarget === '_blank' ? 'noopener' : '';
-                            $barTitle = (string) ($ev['event_name'] ?? '');
-                            $colStart = (int) $segment['colStart'] + 1;
-                            $colSpan = max(1, (int) $segment['span']);
-                            $lane = (int) $segment['lane'];
-                            ?>
-                            <a
-                                class="<?= h($barClasses) ?>"
-                                style="<?= h($eventStyle) ?>;--cal-col-start:<?= $colStart ?>;--cal-span:<?= $colSpan ?>;--cal-lane:<?= $lane ?>"
-                                href="<?= h($eventUrl) ?>"
-                                <?= $calendarPublicPreview ? 'data-preview-id="' . $eid . '" aria-haspopup="dialog"' : '' ?>
-                                target="<?= h($barTarget) ?>"
-                                <?= $barRel !== '' ? 'rel="' . h($barRel) . '"' : '' ?>
-                                title="<?= h($barTitle) ?><?= $isPublished ? '' : ' (' . $statusLabel . ')' ?>"
-                            >
-                                <?php if (!$isPublished && !$calendarPublicPreview): ?>
-                                    <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
-                                <?php endif; ?>
-                                <?php if ($timeLabel !== ''): ?>
-                                    <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
-                                <?php endif; ?>
-                                <span class="events-cal__event-name"><?= h($barTitle) ?></span>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>

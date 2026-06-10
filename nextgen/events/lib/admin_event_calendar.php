@@ -267,6 +267,7 @@ function events_admin_calendar_is_grid_multi_day_event(array $row): bool {
  *   days: list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>,
  *   laneCount: int,
  *   segments: list<array{event: array<string, mixed>, colStart: int, span: int, lane: int, roundLeft: bool, roundRight: bool, showTime: bool, isPast: bool}>,
+ *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, lane: int, connectLeft: bool, connectRight: bool, roundLeft: bool, roundRight: bool, showTime: bool, showLabel: bool, isPast: bool}>>,
  *   singlesByDay: array<string, list<array<string, mixed>>>
  * }>
  */
@@ -367,6 +368,32 @@ function events_admin_calendar_build_week_layouts(
             $segments[$idx]['lane'] = $assignedLane;
         }
 
+        $partsByColLane = [];
+        foreach ($segments as $segment) {
+            $colStart = (int) $segment['colStart'];
+            $span = max(1, (int) $segment['span']);
+            $lane = (int) $segment['lane'];
+            for ($offset = 0; $offset < $span; $offset++) {
+                $col = $colStart + $offset;
+                $isFirst = $offset === 0;
+                $isLast = $offset === $span - 1;
+                if (!isset($partsByColLane[$col])) {
+                    $partsByColLane[$col] = [];
+                }
+                $partsByColLane[$col][$lane] = [
+                    'event' => $segment['event'],
+                    'lane' => $lane,
+                    'connectLeft' => !$isFirst,
+                    'connectRight' => !$isLast,
+                    'roundLeft' => $isFirst && $segment['roundLeft'],
+                    'roundRight' => $isLast && $segment['roundRight'],
+                    'showTime' => $isFirst && $segment['showTime'],
+                    'showLabel' => $isFirst,
+                    'isPast' => $segment['isPast'],
+                ];
+            }
+        }
+
         foreach ($singlesByDay as $dayKey => $dayRows) {
             usort($dayRows, static function (array $a, array $b): int {
                 $sa = (string) ($a['event_start'] ?? '');
@@ -390,6 +417,7 @@ function events_admin_calendar_build_week_layouts(
             'days' => $weekDays,
             'laneCount' => count($laneEnds),
             'segments' => $segments,
+            'partsByColLane' => $partsByColLane,
             'singlesByDay' => $singlesByDay,
         ];
     }
