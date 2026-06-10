@@ -1345,6 +1345,7 @@ tr:hover td { background: var(--bg); }
 .events-cal__body {
     display: flex;
     flex-direction: column;
+    gap: 1px;
     border: 1px solid #e8ebe6;
     border-top: none;
     background: #e8ebe6;
@@ -1367,6 +1368,7 @@ tr:hover td { background: var(--bg); }
     left: 0;
     right: 0;
     bottom: 0;
+    border-top: 1px solid var(--cal-line);
     display: grid;
     grid-template-columns: var(--cal-col-template);
     grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(var(--cal-bar-lane-h), auto));

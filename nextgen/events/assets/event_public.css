@@ -2350,6 +2350,7 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public .events-cal__body {
     display: flex;
     flex-direction: column;
+    gap: 1px;
     border: 1px solid var(--li-border);
     border-top: none;
     background: var(--li-border);
@@ -2374,6 +2375,7 @@ body.event-public-page--home .event-public__hero-inner {
     left: 0;
     right: 0;
     bottom: 0;
+    border-top: 1px solid var(--cal-line);
     display: grid;
     grid-template-columns: var(--cal-col-template);
     grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(var(--cal-bar-lane-h), auto));
