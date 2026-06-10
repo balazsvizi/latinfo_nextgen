@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
+require_once __DIR__ . '/lib/event_edit_stats.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -112,6 +113,9 @@ $logStmt = $db->prepare('
 $logStmt->execute(['esemény', $id]);
 $sablonLogok = $logStmt->fetchAll();
 
+$statsParams = events_edit_stats_params_from_request($_GET);
+$statsData = events_edit_stats_for_event($db, $id, $statsParams);
+
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
 require_once dirname(__DIR__) . '/partials/header.php';
@@ -148,6 +152,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php if (empty($sablonLogok)): ?><p class="help">Még nincs naplóbejegyzés.</p><?php endif; ?>
     </div>
 </div>
+
+<?php require __DIR__ . '/partials/admin_event_edit_stats.php'; ?>
 
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
