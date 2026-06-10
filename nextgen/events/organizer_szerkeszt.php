@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $publicUrl = events_url('organizer.php?id=') . $id;
 $statsParams = events_edit_stats_params_from_request($_GET);
 $statsData = events_edit_stats_for_organizer($db, $id, $statsParams);
-$statsEventRows = events_edit_stats_organizer_events_in_period($db, $id, $statsParams);
+$statsEventRows = $statsData['event_rows'] ?? [];
 $pageTitle = 'Szervező szerkesztése: ' . $name;
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>

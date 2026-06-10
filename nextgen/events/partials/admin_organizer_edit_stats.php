@@ -4,7 +4,8 @@ declare(strict_types=1);
 /** @var array{date_from: string, date_to: string} $statsParams */
 /** @var array{
  *   table_ready: bool,
- *   totals: array{page_views: int, calendar_previews: int},
+ *   totals: array{page_views: int, calendar_previews: int, events_total?: int, events_with_views?: int},
+ *   event_rows?: list<array<string, mixed>>
  *   chart: array{labels: list<string>, datasets: list<array{label: string, data: list<int>, color: string, total: int}>}
  * } $statsData */
 /** @var list<array<string, mixed>> $statsEventRows */
@@ -15,6 +16,8 @@ $chartPayload = $statsData['chart'] ?? ['labels' => [], 'datasets' => []];
 $hasChart = ($chartPayload['labels'] ?? []) !== [] && ($chartPayload['datasets'] ?? []) !== [];
 $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 $editBase = events_url('szerkeszt.php?id=');
+$eventsTotal = (int) ($statsData['totals']['events_total'] ?? count($statsEventRows));
+$eventsWithViews = (int) ($statsData['totals']['events_with_views'] ?? 0);
 ?>
 <div class="card events-edit-stats events-edit-stats--organizer">
     <h2 class="card-title">Statisztika</h2>
@@ -46,6 +49,11 @@ $editBase = events_url('szerkeszt.php?id=');
     </form>
 
     <div class="events-edit-stats__cards">
+        <div class="events-edit-stats__card">
+            <p class="events-edit-stats__card-label">Események</p>
+            <p class="events-edit-stats__card-value"><?= $eventsWithViews ?> / <?= $eventsTotal ?></p>
+            <p class="events-edit-stats__card-hint">Megjelenített / összes</p>
+        </div>
         <?php foreach ($chartPayload['datasets'] as $dataset): ?>
             <div class="events-edit-stats__card">
                 <p class="events-edit-stats__card-label"><?= h((string) ($dataset['label'] ?? '')) ?></p>
@@ -125,11 +133,11 @@ $editBase = events_url('szerkeszt.php?id=');
         <p class="help events-edit-stats__empty">Nincs naplózott megtekintés a választott időszakban.</p>
     <?php endif; ?>
 
-    <h3 class="events-edit-stats__events-title">Események az időszakban</h3>
-    <p class="events-edit-stats__events-hint">Csak azok az események, amelyek időpontja ebbe az időszakba esik. Megtekintésszámok a fenti stat időszakra vonatkoznak.</p>
+    <h3 class="events-edit-stats__events-title">Események</h3>
+    <p class="events-edit-stats__events-hint">A szervező összes eseménye. Megtekintésszámok a fenti stat időszakra vonatkoznak (ugyanaz, amiből a grafikon készül).</p>
 
     <?php if ($statsEventRows === []): ?>
-        <p class="help events-edit-stats__empty">Nincs ilyen esemény a választott időszakban.</p>
+        <p class="help events-edit-stats__empty">Nincs esemény ehhez a szervezőhöz.</p>
     <?php else: ?>
         <div class="table-wrap events-admin-table-wrap">
             <table class="sortable-table events-admin-table events-edit-stats__events-table">

@@ -308,23 +308,28 @@ function events_edit_stats_for_organizer(PDO $db, int $organizerId, array $param
         return $empty;
     }
 
-    return events_edit_stats_build_result($labels, $pageByDay, $previewByDay, $tableReady);
+    $result = events_edit_stats_build_result($labels, $pageByDay, $previewByDay, $tableReady);
+    $eventsList = events_edit_stats_organizer_events_list($db, $organizerId, $params, $tableReady);
+    $result['totals']['events_total'] = $eventsList['events_total'];
+    $result['totals']['events_with_views'] = $eventsList['events_with_views'];
+    $result['event_rows'] = $eventsList['rows'];
+
+    return $result;
 }
 
 /**
- * Események, amelyek időpontja átfed a megadott időszakkal + megtekintésszámok ugyanabban a stat időszakban.
+ * Szervező összes eseménye + megtekintésszámok a grafikon időszakában.
  *
- * @return list<array<string, mixed>>
+ * @return array{rows: list<array<string, mixed>>, events_total: int, events_with_views: int}
  */
-function events_edit_stats_organizer_events_in_period(PDO $db, int $organizerId, array $params): array
+function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, array $params, ?bool $tableReady = null): array
 {
+    $empty = ['rows' => [], 'events_total' => 0, 'events_with_views' => 0];
     if ($organizerId <= 0) {
-        return [];
+        return $empty;
     }
 
-    $dateFrom = (string) ($params['date_from'] ?? '');
-    $dateTo = (string) ($params['date_to'] ?? '');
-    $tableReady = events_edit_stats_table_ready($db);
+    $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
     $window = events_edit_stats_view_window($params);
 
     $pageMetricSql = $tableReady
@@ -338,9 +343,6 @@ function events_edit_stats_organizer_events_in_period(PDO $db, int $organizerId,
         . ($tableReady ? ",\n            {$previewMetricSql} AS naptar_elonezetek" : '') . "
         FROM `events_calendar_events` e
         INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = e.`id` AND eo.`organizer_id` = ?
-        WHERE COALESCE(DATE(e.`event_start`), DATE(e.`event_end`)) IS NOT NULL
-          AND COALESCE(DATE(e.`event_end`), DATE(e.`event_start`)) >= ?
-          AND COALESCE(DATE(e.`event_start`), DATE(e.`event_end`)) <= ?
         ORDER BY e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
     ";
 
@@ -353,15 +355,27 @@ function events_edit_stats_organizer_events_in_period(PDO $db, int $organizerId,
         $executeParams[] = $window['end_exclusive'];
     }
     $executeParams[] = $organizerId;
-    $executeParams[] = $dateFrom;
-    $executeParams[] = $dateTo;
 
     try {
         $stmt = $db->prepare($sql);
         $stmt->execute($executeParams);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable) {
-        return [];
+        return $empty;
     }
+
+    $eventsTotal = count($rows);
+    $eventsWithViews = 0;
+    foreach ($rows as $row) {
+        $views = (int) ($row['megtekintesek'] ?? 0) + (int) ($row['naptar_elonezetek'] ?? 0);
+        if ($views > 0) {
+            $eventsWithViews++;
+        }
+    }
+
+    return [
+        'rows' => $rows,
+        'events_total' => $eventsTotal,
+        'events_with_views' => $eventsWithViews,
+    ];
 }
