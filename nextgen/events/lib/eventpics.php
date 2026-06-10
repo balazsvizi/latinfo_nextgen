@@ -257,6 +257,52 @@ function events_eventpics_delete_with_clear(PDO $db, string $filename): array {
 }
 
 /**
+ * @param list<int|string> $filenames
+ * @return array{ok: int, skipped: int, failed: int, messages: list<string>, cleared_events: int}
+ */
+function events_eventpics_bulk_delete_with_clear(PDO $db, array $filenames): array
+{
+    $seen = [];
+    $ok = 0;
+    $skipped = 0;
+    $failed = 0;
+    $clearedEvents = 0;
+    $messages = [];
+
+    foreach ($filenames as $rawName) {
+        $fn = trim((string) $rawName);
+        if ($fn === '' || isset($seen[$fn])) {
+            continue;
+        }
+        $seen[$fn] = true;
+
+        if (!events_eventpics_is_safe_filename($fn)) {
+            $skipped++;
+            continue;
+        }
+
+        $usageCount = count(events_events_using_eventpic($db, $fn));
+        [$success, $msg] = events_eventpics_delete_with_clear($db, $fn);
+        if ($success) {
+            $ok++;
+            $clearedEvents += $usageCount;
+            $messages[] = $fn . ': ' . $msg;
+        } else {
+            $failed++;
+            $messages[] = $fn . ': ' . $msg;
+        }
+    }
+
+    return [
+        'ok' => $ok,
+        'skipped' => $skipped,
+        'failed' => $failed,
+        'messages' => $messages,
+        'cleared_events' => $clearedEvents,
+    ];
+}
+
+/**
  * Kiemelt kép admin listához: típus (URL / saját eventpics / nincs) és oszlopok.
  *
  * @return array{

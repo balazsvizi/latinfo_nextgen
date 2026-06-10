@@ -8,10 +8,14 @@ requireLogin();
 
 $db = getDb();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') === 'delete_eventpic') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? '');
     if (!csrf_validate('events_boritokepek')) {
         flash('error', 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.');
-    } else {
+        redirect(events_url('boritokepek.php'));
+    }
+
+    if ($action === 'delete_eventpic') {
         $fn = trim((string) ($_POST['filename'] ?? ''));
         if (!events_eventpics_is_safe_filename($fn)) {
             flash('error', 'Érvénytelen fájlnév.');
@@ -23,16 +27,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') =
                 flash('success', $msg);
                 rendszer_log('eventpics', null, 'Borítókép törölve', $fn);
                 redirect(events_url('boritokepek.php'));
-                exit;
             }
             flash('error', $msg);
             redirect(events_url('boritokepek.php?file=') . rawurlencode($fn));
-            exit;
         }
+    } elseif ($action === 'bulk_delete_eventpics') {
+        if (!isset($_POST['confirm_delete']) || (string) $_POST['confirm_delete'] !== '1') {
+            flash('error', 'A törléshez jelöld be a megerősítő négyzetet.');
+        } else {
+            $names = is_array($_POST['filenames'] ?? null) ? $_POST['filenames'] : [];
+            $result = events_eventpics_bulk_delete_with_clear($db, $names);
+
+            if ($result['ok'] > 0) {
+                rendszer_log('eventpics', null, 'Borítóképek törlése', $result['ok'] . ' fájl');
+                $parts = [$result['ok'] . ' kép törölve'];
+                if ($result['cleared_events'] > 0) {
+                    $parts[] = $result['cleared_events'] . ' esemény borító URL ürítve';
+                }
+                if ($result['failed'] > 0) {
+                    $parts[] = $result['failed'] . ' hiba';
+                }
+                if ($result['skipped'] > 0) {
+                    $parts[] = $result['skipped'] . ' kihagyva';
+                }
+                flash('success', 'Csoportos törlés: ' . implode(', ', $parts) . '.');
+            } elseif ($result['failed'] > 0) {
+                flash('error', 'Csoportos törlés: minden kijelölt képnél hiba történt (' . $result['failed'] . ').');
+            } else {
+                flash('error', 'Nincs törölhető kijelölt kép.');
+            }
+
+            if ($result['failed'] > 0 && $result['messages'] !== []) {
+                $_SESSION['events_boritokepek_bulk_errors'] = array_slice($result['messages'], 0, 12);
+            }
+        }
+    } else {
+        flash('error', 'Ismeretlen művelet.');
     }
-    redirect(events_url('boritokepek.php'));
-    exit;
+
+    $back = events_url('boritokepek.php');
+    $backQ = trim((string) ($_POST['back_q'] ?? ''));
+    if ($backQ !== '') {
+        $back .= '?q=' . rawurlencode($backQ);
+    }
+    redirect($back);
 }
+
+$bulkErrors = $_SESSION['events_boritokepek_bulk_errors'] ?? [];
+unset($_SESSION['events_boritokepek_bulk_errors']);
 
 $allFiles = events_eventpics_list_files();
 $f_q = trim((string) ($_GET['q'] ?? ''));
@@ -66,11 +108,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+<?php if ($bulkErrors !== []): ?>
+    <ul class="events-boritokepek-bulk-errors">
+        <?php foreach ($bulkErrors as $line): ?>
+            <li><?= h((string) $line) ?></li>
+        <?php endforeach; ?>
+    </ul>
+<?php endif; ?>
 
 <div class="card events-boritokepek-card">
     <div class="events-list-head">
         <h2 class="events-list-title">Borítóképek</h2>
-        <p class="help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Válassz egy képet a használat és törlés kezeléséhez. Új képet is feltölthetsz; siker után megnyílik a részletek nézet. A törlés a fájlt eltávolítja a lemezről, és az érintett eseményeknél üresre állítja a kiemelt kép URL mezőt.</p>
+        <p class="help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Válassz egy képet a használat és törlés kezeléséhez, vagy jelölj ki többet csoportos törléshez. Új képet is feltölthetsz; siker után megnyílik a részletek nézet. A törlés a fájlt eltávolítja a lemezről, és az érintett eseményeknél üresre állítja a kiemelt kép URL mezőt.</p>
     </div>
 
     <div class="events-boritokepek-upload">
@@ -93,22 +142,54 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </form>
 
+    <?php if ($files !== []): ?>
+        <form method="post" action="<?= h(events_url('boritokepek.php')) ?>" class="events-boritokepek-bulk" id="boritokepek-bulk-form">
+            <?= csrf_input('events_boritokepek') ?>
+            <input type="hidden" name="action" value="bulk_delete_eventpics">
+            <input type="hidden" name="back_q" value="<?= h($f_q) ?>">
+            <div class="events-boritokepek-bulk__toolbar">
+                <label class="events-boritokepek-bulk__check-all" title="Lista összes képének kijelölése">
+                    <input type="checkbox" id="boritokepek-check-all" aria-label="Lista összes képének kijelölése">
+                    <span>Összes</span>
+                </label>
+                <button type="submit" class="btn btn-secondary" id="boritokepek-bulk-delete-btn" disabled>Kijelöltek törlése</button>
+                <span class="events-boritokepek-bulk__selected" id="boritokepek-selected-label" aria-live="polite">0 kiválasztva</span>
+            </div>
+            <label class="events-boritokepek-bulk__confirm">
+                <input type="checkbox" name="confirm_delete" value="1" id="boritokepek-bulk-confirm">
+                Megerősítem a kijelöltek törlését (a fájlok véglegesen törlődnek, az érintett események borító URL-je üres lesz)
+            </label>
+        </form>
+    <?php endif; ?>
+
     <div class="events-boritokepek-layout">
         <section class="events-boritokepek-grid-wrap" aria-label="Feltöltött képek">
             <?php if ($files === []): ?>
                 <p class="help"><?= $allFiles === [] ? 'Még nincs egy feltöltött kép sem az eventpics mappában.' : 'A szűrésnek nincs találata.' ?></p>
             <?php else: ?>
-                <ul class="events-boritokepek-grid" role="list">
+                <ul class="events-boritokepek-grid" role="list" id="boritokepek-grid">
                     <?php foreach ($files as $pic): ?>
                         <?php
                         $isSel = $selected === $pic;
                         $href = events_url('boritokepek.php?file=' . rawurlencode($pic)) . ($f_q !== '' ? '&q=' . rawurlencode($f_q) : '');
                         ?>
                         <li class="events-boritokepek-grid__cell">
-                            <a class="events-boritokepek-thumb<?= $isSel ? ' is-selected' : '' ?>" href="<?= h($href) ?>">
-                                <img src="<?= h($picBase . rawurlencode($pic)) ?>" alt="" width="160" height="120" loading="lazy" decoding="async">
-                                <span class="events-boritokepek-thumb__name"><?= h($pic) ?></span>
-                            </a>
+                            <div class="events-boritokepek-thumb-wrap">
+                                <label class="events-boritokepek-thumb-check" title="Kijelölés törléshez">
+                                    <input
+                                        type="checkbox"
+                                        class="events-boritokepek-row-check"
+                                        form="boritokepek-bulk-form"
+                                        name="filenames[]"
+                                        value="<?= h($pic) ?>"
+                                        aria-label="Kijelölés: <?= h($pic) ?>"
+                                    >
+                                </label>
+                                <a class="events-boritokepek-thumb<?= $isSel ? ' is-selected' : '' ?>" href="<?= h($href) ?>">
+                                    <img src="<?= h($picBase . rawurlencode($pic)) ?>" alt="" width="160" height="120" loading="lazy" decoding="async">
+                                    <span class="events-boritokepek-thumb__name"><?= h($pic) ?></span>
+                                </a>
+                            </div>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -172,37 +253,101 @@ require_once dirname(__DIR__) . '/partials/header.php';
     var uploadUrl = <?= json_encode(events_url('ajax_eventpic_upload.php'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var listUrl = <?= json_encode(events_url('boritokepek.php'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var csrf = <?= json_encode(csrf_token('events_eventpics'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-    if (!btn || !inp) return;
-    btn.addEventListener('click', function () {
-        if (msg) msg.textContent = '';
-        inp.click();
-    });
-    inp.addEventListener('change', function () {
-        if (!inp.files || !inp.files.length) return;
-        var f = inp.files[0];
-        var fd = new FormData();
-        fd.append('file', f, f.name);
-        fd.append('eventpics_csrf', csrf);
-        if (msg) msg.textContent = 'Feltöltés…';
-        fetch(uploadUrl, { method: 'POST', body: fd, credentials: 'same-origin', headers: { Accept: 'application/json' } })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (!data || !data.ok) {
-                    if (msg) msg.textContent = (data && data.error) ? data.error : 'Feltöltés sikertelen.';
-                    return;
-                }
-                var fn = data.filename ? encodeURIComponent(data.filename) : '';
-                if (fn) {
-                    window.location.href = listUrl + '?file=' + fn;
-                    return;
-                }
-                if (msg) msg.textContent = 'Válasz hibás formátumú.';
-            })
-            .catch(function () {
-                if (msg) msg.textContent = 'Hálózati hiba a feltöltéskor.';
+    if (btn && inp) {
+        btn.addEventListener('click', function () {
+            if (msg) msg.textContent = '';
+            inp.click();
+        });
+        inp.addEventListener('change', function () {
+            if (!inp.files || !inp.files.length) return;
+            var f = inp.files[0];
+            var fd = new FormData();
+            fd.append('file', f, f.name);
+            fd.append('eventpics_csrf', csrf);
+            if (msg) msg.textContent = 'Feltöltés…';
+            fetch(uploadUrl, { method: 'POST', body: fd, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data || !data.ok) {
+                        if (msg) msg.textContent = (data && data.error) ? data.error : 'Feltöltés sikertelen.';
+                        return;
+                    }
+                    var fn = data.filename ? encodeURIComponent(data.filename) : '';
+                    if (fn) {
+                        window.location.href = listUrl + '?file=' + fn;
+                        return;
+                    }
+                    if (msg) msg.textContent = 'Válasz hibás formátumú.';
+                })
+                .catch(function () {
+                    if (msg) msg.textContent = 'Hálózati hiba a feltöltéskor.';
+                });
+            inp.value = '';
+        });
+    }
+
+    var bulkForm = document.getElementById('boritokepek-bulk-form');
+    var grid = document.getElementById('boritokepek-grid');
+    if (!bulkForm || !grid) return;
+
+    var checkAll = document.getElementById('boritokepek-check-all');
+    var bulkBtn = document.getElementById('boritokepek-bulk-delete-btn');
+    var selectedLabel = document.getElementById('boritokepek-selected-label');
+    var bulkConfirm = document.getElementById('boritokepek-bulk-confirm');
+    var rowChecks = Array.prototype.slice.call(grid.querySelectorAll('.events-boritokepek-row-check'));
+
+    function syncBulkUi() {
+        var checked = rowChecks.filter(function (cb) { return cb.checked; }).length;
+        if (selectedLabel) {
+            selectedLabel.textContent = checked + ' kiválasztva';
+        }
+        if (bulkBtn) {
+            bulkBtn.disabled = checked === 0 || !(bulkConfirm && bulkConfirm.checked);
+        }
+        if (checkAll) {
+            checkAll.checked = checked > 0 && checked === rowChecks.length;
+            checkAll.indeterminate = checked > 0 && checked < rowChecks.length;
+        }
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function () {
+            var on = checkAll.checked;
+            rowChecks.forEach(function (cb) {
+                cb.checked = on;
             });
-        inp.value = '';
+            syncBulkUi();
+        });
+    }
+
+    rowChecks.forEach(function (cb) {
+        cb.addEventListener('change', syncBulkUi);
+        cb.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
     });
+
+    if (bulkConfirm) {
+        bulkConfirm.addEventListener('change', syncBulkUi);
+    }
+
+    bulkForm.addEventListener('submit', function (e) {
+        var checked = rowChecks.filter(function (cb) { return cb.checked; }).length;
+        if (checked === 0) {
+            e.preventDefault();
+            return;
+        }
+        if (!bulkConfirm || !bulkConfirm.checked) {
+            e.preventDefault();
+            alert('A törléshez jelöld be a megerősítő négyzetet.');
+            return;
+        }
+        if (!window.confirm('Biztosan törlöd a kijelölt ' + checked + ' képet? Az érintett események borító URL-je üres lesz, a fájlok véglegesen törlődnek.')) {
+            e.preventDefault();
+        }
+    });
+
+    syncBulkUi();
 })();
 </script>
 
