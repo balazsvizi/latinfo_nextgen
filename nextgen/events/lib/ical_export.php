@@ -5,14 +5,23 @@ require_once __DIR__ . '/event_public_lang.php';
 
 function events_ical_calendar_name(): string
 {
-    if (defined('SITE_NAME')) {
-        $name = trim((string) SITE_NAME);
-        if ($name !== '') {
-            return $name;
-        }
+    return 'Latinfo.hu';
+}
+
+/**
+ * Feliratkozási feed URL: stabil, szűrők nélkül (a naptárnév és Google cache miatt).
+ *
+ * @param array<string, string|int> $queryParams
+ * @return array<string, string>
+ */
+function events_ical_subscribe_feed_params(array $queryParams): array
+{
+    $params = [];
+    if (isset($queryParams['lang']) && (string) $queryParams['lang'] === 'en') {
+        $params['lang'] = 'en';
     }
 
-    return 'Latinfo.hu';
+    return $params;
 }
 
 function events_ical_fold_line(string $line): string
@@ -144,18 +153,31 @@ function events_ical_build_calendar(array $events, ?string $calendarName, string
         $calendarName = events_ical_calendar_name();
     }
 
-    $eol = $outlook ? "\r\n" : "\r\n";
+    $eol = "\r\n";
     $now = events_ical_format_utc(new DateTimeImmutable('now', new DateTimeZone('UTC')));
     $escapedName = events_ical_escape_text($calendarName);
+    $homeUrl = events_absolute_url(events_public_home_page_url($lang));
+    $escapedHome = events_ical_escape_text($homeUrl);
+    $escapedDesc = events_ical_escape_text('Események a Latinfo.hu-n');
+
     $lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
-        'PRODID:-//Latinfo.hu//Events Calendar//HU',
+        'PRODID:-//Latinfo.hu//Events//HU',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
-        'X-WR-CALNAME;VALUE=TEXT:' . $escapedName,
-        'X-WR-CALDESC;VALUE=TEXT:' . events_ical_escape_text('Latinfo.hu eseménynaptár'),
     ];
+
+    if (!$outlook) {
+        $lines[] = 'X-WR-CALNAME:' . $escapedName;
+        $lines[] = 'X-WR-CALNAME;VALUE=TEXT:' . $escapedName;
+        $lines[] = 'X-ORIGINAL-URL:' . $escapedHome;
+        $lines[] = 'X-WR-CALDESC:' . $escapedDesc;
+        $lines[] = 'X-WR-CALDESC;VALUE=TEXT:' . $escapedDesc;
+        $lines[] = 'REFRESH-INTERVAL;VALUE=DURATION:PT1H';
+        $lines[] = 'X-PUBLISHED-TTL:PT1H';
+    }
+
     if ($outlook) {
         $lines[] = 'X-MS-OLK-FORCEINSPECTOROPEN:TRUE';
     }
@@ -230,12 +252,10 @@ function events_ical_feed_url(array $queryParams, ?string $variant = null): stri
  */
 function events_ical_subscribe_links(array $queryParams, ?string $calendarName = null, ?string $lang = null): array
 {
-    $calendarName = trim((string) ($calendarName ?? ''));
-    if ($calendarName === '') {
-        $calendarName = events_ical_calendar_name();
-    }
+    $calendarName = events_ical_calendar_name();
+    $subscribeParams = events_ical_subscribe_feed_params($queryParams);
 
-    $feedHttps = events_ical_feed_url($queryParams);
+    $feedHttps = events_ical_feed_url($subscribeParams);
     $feedWebcal = preg_replace('#^https?://#i', 'webcal://', $feedHttps) ?? $feedHttps;
     $encodedWebcal = rawurlencode($feedWebcal);
     $encodedHttps = rawurlencode($feedHttps);
@@ -243,7 +263,7 @@ function events_ical_subscribe_links(array $queryParams, ?string $calendarName =
 
     return [
         'feed' => $feedHttps,
-        'google' => 'https://calendar.google.com/calendar/r?cid=' . $encodedWebcal,
+        'google' => 'https://www.google.com/calendar/render?cid=' . $encodedWebcal,
         'ical' => $feedWebcal,
         'outlook365' => 'https://outlook.office.com/calendar/0/addfromweb?url=' . $encodedHttps . '&name=' . $encodedName,
         'outlook_live' => 'https://outlook.live.com/calendar/0/addfromweb?url=' . $encodedHttps . '&name=' . $encodedName,
