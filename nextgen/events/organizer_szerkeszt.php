@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/event_edit_stats.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -52,6 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $publicUrl = events_url('organizer.php?id=') . $id;
+$statsParams = events_edit_stats_params_from_request($_GET);
+$statsData = events_edit_stats_for_organizer($db, $id, $statsParams);
+$statsEventRows = events_edit_stats_organizer_events_in_period($db, $id, $statsParams);
 $pageTitle = 'Szervező szerkesztése: ' . $name;
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -74,4 +79,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </p>
     </form>
 </div>
+
+<?php require __DIR__ . '/partials/admin_organizer_edit_stats.php'; ?>
+
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

@@ -3216,6 +3216,22 @@ dialog.eventpics-modal::backdrop {
 .events-edit-stats__empty {
     margin: 0;
 }
+.events-edit-stats--organizer {
+    margin-top: 1.5rem;
+}
+.events-edit-stats__events-title {
+    margin: 1.5rem 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+.events-edit-stats__events-hint {
+    margin: 0 0 0.85rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted, #6b7280);
+}
+.events-edit-stats__events-table {
+    margin-top: 0;
+}
 .events-edit-sidebar .event-featured-card__title {
     margin-top: 0;
 }
