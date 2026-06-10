@@ -2360,9 +2360,74 @@ body.event-public-page--home .event-public__hero-inner {
     --cal-line: var(--li-border);
     --cal-bar-lane-h: 1.35rem;
     --cal-bar-lane-gap: 0.22rem;
+    position: relative;
     gap: 1px;
     background: var(--cal-line);
     overflow: visible;
+}
+
+.home-public .events-cal__week-labels {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: var(--cal-col-template);
+    grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(var(--cal-bar-lane-h), auto));
+    column-gap: 1px;
+    row-gap: var(--cal-bar-lane-gap);
+    height: calc(
+        var(--cal-lane-count, 0) * var(--cal-bar-lane-h)
+        + max(0, var(--cal-lane-count, 0) - 1) * var(--cal-bar-lane-gap)
+    );
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.home-public .events-cal__week-bar-label {
+    grid-column: var(--cal-col-start) / span var(--cal-span);
+    grid-row: calc(var(--cal-lane) + 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.04rem;
+    min-width: 0;
+    min-height: var(--cal-bar-lane-h);
+    padding: 0.2rem 0.5rem;
+    background: transparent !important;
+    border: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.15;
+}
+
+.home-public .events-cal__week-bar-label--round-left {
+    padding-left: 0.62rem;
+}
+
+.home-public .events-cal__week-bar-label--round-right {
+    padding-right: 0.62rem;
+}
+
+.home-public .events-cal__week-bar-label--past {
+    opacity: 0.58;
+    filter: saturate(0.4);
+}
+
+.home-public .events-cal__week-bar-label .events-cal__event-time {
+    font-size: 0.62rem;
+    line-height: 1.15;
+    opacity: 0.92;
+    font-weight: 500;
+}
+
+.home-public .events-cal__week-bar-label .events-cal__event-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .home-public .events-cal__day {
@@ -2389,19 +2454,6 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public .events-cal__multiday-lane {
     min-height: var(--cal-bar-lane-h);
     position: relative;
-}
-
-.home-public .events-cal__multiday-lane--head {
-    overflow: visible;
-    z-index: 2;
-}
-
-.home-public .events-cal__day--multiday-head {
-    z-index: 3;
-}
-
-.home-public .events-cal__day--multiday-tail {
-    z-index: 1;
 }
 
 .home-public .events-cal__event-link--bar {
@@ -2474,43 +2526,6 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public .events-cal__event-link--bar .events-cal__event-name {
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.home-public .events-cal__event-link--bar-label-span {
-    overflow: visible;
-    z-index: 5;
-}
-
-.home-public .events-cal__event-link--bar-label-span .events-cal__bar-label {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.04rem;
-    padding-left: 0.62rem;
-    padding-right: 0.5rem;
-    white-space: nowrap;
-    overflow: visible;
-    width: max-content;
-    max-width: none;
-    pointer-events: none;
-    z-index: 2;
-}
-
-.home-public .events-cal__event-link--bar-label-span.events-cal__event-link--round-left .events-cal__bar-label {
-    padding-left: 0.62rem;
-}
-
-.home-public .events-cal__event-link--bar-label-span .events-cal__bar-label .events-cal__event-name {
-    overflow: visible;
-    text-overflow: clip;
-}
-
-.home-public .events-cal__event-link--bar-label-span:hover {
-    z-index: 6;
 }
 
 .home-public .events-cal__day--outside {
