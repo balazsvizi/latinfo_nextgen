@@ -100,6 +100,15 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                 <?php endforeach; ?>
                 <?php if ($laneCount > 0 && $segments !== []): ?>
                     <div class="events-cal__week-bars">
+                        <?php for ($bgLane = 0; $bgLane < $laneCount; $bgLane++): ?>
+                            <?php for ($bgCol = 0; $bgCol < 7; $bgCol++): ?>
+                                <div
+                                    class="events-cal__week-bar-bg"
+                                    style="grid-column:<?= $bgCol + 1 ?>;grid-row:<?= $bgLane + 1 ?>"
+                                    aria-hidden="true"
+                                ></div>
+                            <?php endfor; ?>
+                        <?php endfor; ?>
                         <?php foreach ($segments as $segment): ?>
                             <?php
                             $ev = $segment['event'];
