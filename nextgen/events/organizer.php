@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 
@@ -46,6 +47,8 @@ $urlHu = events_public_organizer_lang_switch_url($organizerId, 'hu');
 $urlEn = events_public_organizer_lang_switch_url($organizerId, 'en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $O;
+$showAdminEdit = isLoggedIn();
+$adminEditUrl = events_url('organizer_szerkeszt.php?id=') . $organizerId;
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>

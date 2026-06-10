@@ -233,6 +233,8 @@ function events_public_organizer_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu kezdőoldala',
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'footer_home_link' => 'Latinfo.hu',
+        'admin_edit_title' => 'Szerkesztés',
+        'admin_edit_aria' => 'Szervező szerkesztése az adminban',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -252,6 +254,8 @@ function events_public_organizer_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu home',
         'logo_home_aria' => 'Go to the Latinfo.hu homepage',
         'footer_home_link' => 'Latinfo.hu',
+        'admin_edit_title' => 'Edit',
+        'admin_edit_aria' => 'Edit this organizer in admin',
     ];
 
     return $lang === 'en' ? $en : $hu;
