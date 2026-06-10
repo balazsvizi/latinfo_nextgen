@@ -349,3 +349,293 @@ function events_featured_image_admin_all_events(PDO $db): array
 
     return $out;
 }
+
+function events_eventpics_is_public_http_host(string $host): bool
+{
+    $host = strtolower(trim($host));
+    if ($host === '' || strcasecmp($host, 'localhost') === 0) {
+        return false;
+    }
+    if (str_ends_with($host, '.local') || str_ends_with($host, '.internal')) {
+        return false;
+    }
+
+    $ips = @gethostbynamel($host);
+    if ($ips === false || $ips === []) {
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            $ips = [$host];
+        } else {
+            return false;
+        }
+    }
+
+    foreach ($ips as $ip) {
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function events_eventpics_resolve_local_image_path(string $url): ?string
+{
+    $raw = trim(html_entity_decode(trim($url), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    $raw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $raw) ?? $raw;
+    if ($raw === '') {
+        return null;
+    }
+
+    $path = parse_url($raw, PHP_URL_PATH);
+    if (!is_string($path) || $path === '') {
+        $path = str_starts_with($raw, '/') ? $raw : null;
+    }
+    if (!is_string($path) || $path === '' || str_contains($path, '..')) {
+        return null;
+    }
+
+    $full = BASE_PATH . $path;
+    $real = realpath($full);
+    $baseReal = realpath(BASE_PATH);
+    if ($real === false || $baseReal === false || !str_starts_with($real, $baseReal . DIRECTORY_SEPARATOR)) {
+        return null;
+    }
+    if (!is_file($real) || !is_readable($real)) {
+        return null;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string) $finfo->file($real);
+    if (!str_starts_with($mime, 'image/')) {
+        return null;
+    }
+
+    return $real;
+}
+
+/**
+ * @return array{0: string, 1: string, 2: int, 3: ?string} [tmpPath, origName, sizeBytes, error]
+ */
+function events_eventpics_download_http_to_temp(string $url): array
+{
+    $tmp = tempnam(sys_get_temp_dir(), 'evpic_');
+    if ($tmp === false) {
+        return ['', '', 0, 'Ideiglenes fájl nem hozható létre.'];
+    }
+
+    $origName = basename((string) parse_url($url, PHP_URL_PATH)) ?: 'image.jpg';
+    $size = 0;
+
+    if (function_exists('curl_init')) {
+        $fp = fopen($tmp, 'wb');
+        if ($fp === false) {
+            @unlink($tmp);
+
+            return ['', '', 0, 'Ideiglenes fájl nem írható.'];
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_FILE => $fp,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 45,
+            CURLOPT_CONNECTTIMEOUT => 12,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_USERAGENT => 'AlatinfoEventpicsImporter/1.0',
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_FAILONERROR => true,
+        ]);
+        $ok = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+        fclose($fp);
+        $size = (int) (@filesize($tmp) ?: 0);
+        if ($ok === false || $httpCode < 200 || $httpCode >= 400) {
+            @unlink($tmp);
+
+            return ['', '', 0, $curlErr !== '' ? 'Letöltési hiba: ' . $curlErr : 'Letöltési hiba (HTTP ' . $httpCode . ').'];
+        }
+    } else {
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 45,
+                'follow_location' => 1,
+                'max_redirects' => 5,
+                'user_agent' => 'AlatinfoEventpicsImporter/1.0',
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+        $data = @file_get_contents($url, false, $ctx);
+        if ($data === false || $data === '') {
+            @unlink($tmp);
+
+            return ['', '', 0, 'A kép letöltése nem sikerült.'];
+        }
+        if (strlen($data) > 8 * 1024 * 1024) {
+            @unlink($tmp);
+
+            return ['', '', 0, 'A borítókép maximum 8 MB lehet.'];
+        }
+        if (@file_put_contents($tmp, $data) === false) {
+            @unlink($tmp);
+
+            return ['', '', 0, 'Az ideiglenes fájl mentése nem sikerült.'];
+        }
+        $size = strlen($data);
+    }
+
+    if ($size <= 0 || $size > 8 * 1024 * 1024) {
+        @unlink($tmp);
+
+        return ['', '', 0, 'A letöltött kép üres vagy nagyobb mint 8 MB.'];
+    }
+
+    return [$tmp, $origName, $size, null];
+}
+
+/**
+ * Kép bemásolása eventpics-be helyi útvonalról vagy HTTP(S) URL-ről.
+ *
+ * @return array{0:?string,1:?string} [webPath, error]
+ */
+function events_eventpics_import_image_source(string $sourceUrl, string $suggestedBaseName): array
+{
+    $local = events_eventpics_resolve_local_image_path($sourceUrl);
+    if ($local !== null) {
+        $size = (int) (@filesize($local) ?: 0);
+
+        return events_eventpics_store_from_tmp($local, basename($local), $size, false);
+    }
+
+    $abs = events_absolute_url($sourceUrl);
+    if (!preg_match('#^https?://#i', $abs) || !events_http_https_url_is_acceptable($abs)) {
+        return [null, 'Érvénytelen vagy nem támogatott kép URL.'];
+    }
+
+    $host = (string) parse_url($abs, PHP_URL_HOST);
+    $reqHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $reqHostBare = preg_replace('/:\d+$/', '', $reqHost) ?? $reqHost;
+    $sameHost = $reqHostBare !== '' && strcasecmp($host, $reqHostBare) === 0;
+    if (!$sameHost && !events_eventpics_is_public_http_host($host)) {
+        return [null, 'A letöltés erről a hosztról nem engedélyezett.'];
+    }
+
+    [$tmp, $origName, $size, $dlErr] = events_eventpics_download_http_to_temp($abs);
+    if ($dlErr !== null) {
+        return [null, $dlErr];
+    }
+
+    $base = preg_replace('/[^a-z0-9]+/i', '-', strtolower($suggestedBaseName));
+    $base = trim((string) $base, '-');
+    if ($base === '') {
+        $base = 'eventpic';
+    }
+
+    try {
+        return events_eventpics_store_from_tmp($tmp, $base . '-' . $origName, $size, false);
+    } finally {
+        @unlink($tmp);
+    }
+}
+
+/**
+ * Egy esemény külső kiemelt kép URL-jét eventpics-re cseréli.
+ *
+ * @return array{0: bool, 1: string, 2: string} [success, message, status: ok|skip|error]
+ */
+function events_featured_image_migrate_url_to_own_for_event(PDO $db, int $eventId): array
+{
+    if ($eventId <= 0) {
+        return [false, 'Érvénytelen esemény azonosító.', 'skip'];
+    }
+
+    try {
+        $stmt = $db->prepare('SELECT `id`, `event_name`, `event_featured_image_url` FROM `events_calendar_events` WHERE `id` = ? LIMIT 1');
+        $stmt->execute([$eventId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        error_log('events_featured_image_migrate_url_to_own_for_event: ' . $e->getMessage());
+
+        return [false, 'Adatbázis hiba.', 'error'];
+    }
+
+    if (!$row) {
+        return [false, 'Esemény nem található.', 'skip'];
+    }
+
+    $meta = events_featured_image_list_meta((string) ($row['event_featured_image_url'] ?? ''));
+    if (($meta['type'] ?? '') === 'own') {
+        return [false, 'Már saját kép.', 'skip'];
+    }
+    if (($meta['type'] ?? '') !== 'url' || ($meta['url'] ?? '') === '') {
+        return [false, 'Nincs átvihető URL kép.', 'skip'];
+    }
+
+    $name = (string) ($row['event_name'] ?? '');
+    $base = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name));
+    $base = trim((string) $base, '-');
+    if ($base === '') {
+        $base = 'event-' . $eventId;
+    }
+
+    [$webPath, $importErr] = events_eventpics_import_image_source((string) $meta['url'], $base);
+    if ($importErr !== null || $webPath === null) {
+        return [false, $importErr ?? 'Import hiba.', 'error'];
+    }
+
+    try {
+        $upd = $db->prepare('UPDATE `events_calendar_events` SET `event_featured_image_url` = ? WHERE `id` = ?');
+        $upd->execute([$webPath, $eventId]);
+    } catch (Throwable $e) {
+        error_log('events_featured_image_migrate_url_to_own update: ' . $e->getMessage());
+
+        return [false, 'Az esemény frissítése nem sikerült.', 'error'];
+    }
+
+    return [true, 'Átállítva: ' . $webPath, 'ok'];
+}
+
+/**
+ * @param list<int|string> $eventIds
+ * @return array{ok: int, skipped: int, failed: int, messages: list<string>}
+ */
+function events_featured_image_bulk_url_to_own(PDO $db, array $eventIds): array
+{
+    $seen = [];
+    $ok = 0;
+    $skipped = 0;
+    $failed = 0;
+    $messages = [];
+
+    foreach ($eventIds as $rawId) {
+        $eventId = (int) $rawId;
+        if ($eventId <= 0 || isset($seen[$eventId])) {
+            continue;
+        }
+        $seen[$eventId] = true;
+
+        [$success, $msg, $status] = events_featured_image_migrate_url_to_own_for_event($db, $eventId);
+        $label = '#' . $eventId . ': ' . $msg;
+        if ($status === 'ok' && $success) {
+            $ok++;
+            $messages[] = $label;
+        } elseif ($status === 'skip') {
+            $skipped++;
+        } else {
+            $failed++;
+            $messages[] = $label;
+        }
+    }
+
+    return [
+        'ok' => $ok,
+        'skipped' => $skipped,
+        'failed' => $failed,
+        'messages' => $messages,
+    ];
+}

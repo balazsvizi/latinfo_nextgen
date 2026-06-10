@@ -7,6 +7,47 @@ require_once __DIR__ . '/lib/eventpics.php';
 requireSuperadmin();
 
 $db = getDb();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_validate('events_kepek_esemenyek')) {
+        flash('error', 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.');
+    } else {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'url_to_own') {
+            $ids = is_array($_POST['event_ids'] ?? null) ? $_POST['event_ids'] : [];
+            $result = events_featured_image_bulk_url_to_own($db, $ids);
+
+            if ($result['ok'] > 0) {
+                rendszer_log('kepek_esemenyek', null, 'URL→Saját', $result['ok'] . ' esemény');
+                $parts = [$result['ok'] . ' sikeres'];
+                if ($result['skipped'] > 0) {
+                    $parts[] = $result['skipped'] . ' kihagyva';
+                }
+                if ($result['failed'] > 0) {
+                    $parts[] = $result['failed'] . ' hiba';
+                }
+                flash('success', 'URL → Saját: ' . implode(', ', $parts) . '.');
+            } elseif ($result['failed'] > 0) {
+                flash('error', 'URL → Saját: minden kijelölt eseménynél hiba történt (' . $result['failed'] . ').');
+            } elseif ($result['skipped'] > 0) {
+                flash('error', 'URL → Saját: nincs átvihető kép a kijelöltek között (' . $result['skipped'] . ' kihagyva).');
+            } else {
+                flash('error', 'Nincs kijelölt esemény.');
+            }
+
+            if ($result['failed'] > 0 && $result['messages'] !== []) {
+                $_SESSION['events_kepek_bulk_errors'] = array_slice($result['messages'], 0, 12);
+            }
+        } else {
+            flash('error', 'Ismeretlen művelet.');
+        }
+    }
+    redirect(events_url('kepek_esemenyek.php'));
+}
+
+$bulkErrors = $_SESSION['events_kepek_bulk_errors'] ?? [];
+unset($_SESSION['events_kepek_bulk_errors']);
+
 $eventRows = events_featured_image_admin_all_events($db);
 $editBase = events_url('szerkeszt.php?id=');
 
@@ -14,6 +55,16 @@ $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Képek–események';
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
+<?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
+<?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+<?php if ($bulkErrors !== []): ?>
+    <ul class="events-kepek-esemenyek__bulk-errors">
+        <?php foreach ($bulkErrors as $line): ?>
+            <li><?= h((string) $line) ?></li>
+        <?php endforeach; ?>
+    </ul>
+<?php endif; ?>
+
 <div class="card events-kepek-esemenyek">
     <h1 class="card-title">Képek–események</h1>
     <p class="help events-kepek-esemenyek__intro">
@@ -24,6 +75,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <?php if ($eventRows === []): ?>
         <p class="help">Nincs esemény az adatbázisban.</p>
     <?php else: ?>
+        <form method="post" action="<?= h(events_url('kepek_esemenyek.php')) ?>" class="events-kepek-esemenyek__bulk" id="events-kepek-bulk-form">
+            <?= csrf_input('events_kepek_esemenyek') ?>
+            <input type="hidden" name="action" value="url_to_own">
+            <div class="events-kepek-esemenyek__toolbar">
+                <button type="submit" class="btn btn-primary" id="events-kepek-btn-url-to-own" disabled>
+                    URL → Saját
+                </button>
+                <span class="events-kepek-esemenyek__selected" id="events-kepek-selected-label" aria-live="polite">0 kiválasztva</span>
+                <span class="events-kepek-esemenyek__toolbar-hint help">A kijelölt URL típusú események képét letölti és eventpics-be menti.</span>
+            </div>
+        </form>
+
         <p class="events-kepek-esemenyek__count" aria-live="polite">
             <strong><span id="events-kepek-visible-count">0</span></strong>
             / <span id="events-kepek-total-count"><?= count($eventRows) ?></span> esemény
@@ -33,12 +96,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <table class="sortable-table events-admin-table events-kepek-esemenyek__table" id="events-kepek-table">
                 <thead>
                     <tr>
+                        <th class="events-kepek-esemenyek__th-check">
+                            <label class="events-kepek-esemenyek__check-all" title="Látható URL sorok kijelölése">
+                                <input type="checkbox" id="events-kepek-check-all" aria-label="Látható URL sorok kijelölése">
+                            </label>
+                        </th>
                         <th>Név</th>
                         <th>Kiemelt kép típus</th>
                         <th>URL</th>
                         <th>Saját link</th>
                     </tr>
                     <tr class="events-kepek-esemenyek__filter-row">
+                        <th><span class="visually-hidden">Kijelölés</span></th>
                         <th>
                             <label class="visually-hidden" for="events-kepek-filter-name">Szűrés név szerint</label>
                             <input type="search" class="events-filter-input events-kepek-esemenyek__filter" id="events-kepek-filter-name" data-filter="name" placeholder="Név…" autocomplete="off">
@@ -74,6 +143,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         $ownDisplay = (string) ($meta['own_link'] ?? '');
                         $urlHref = $urlDisplay !== '' ? events_absolute_url($urlDisplay) : '';
                         $ownHref = $ownDisplay !== '' ? events_absolute_url($ownDisplay) : '';
+                        $isUrlType = ($meta['type'] ?? '') === 'url';
                         ?>
                         <tr
                             data-kepek-row
@@ -81,7 +151,22 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             data-type="<?= h((string) ($meta['search_type'] ?? '')) ?>"
                             data-url="<?= h((string) ($meta['search_url'] ?? '')) ?>"
                             data-own="<?= h((string) ($meta['search_own'] ?? '')) ?>"
+                            data-can-migrate="<?= $isUrlType ? '1' : '0' ?>"
                         >
+                            <td class="events-kepek-esemenyek__td-check">
+                                <?php if ($isUrlType): ?>
+                                    <input
+                                        type="checkbox"
+                                        class="events-kepek-esemenyek__row-check"
+                                        form="events-kepek-bulk-form"
+                                        name="event_ids[]"
+                                        value="<?= $eid ?>"
+                                        aria-label="Kijelölés: <?= h($name) ?>"
+                                    >
+                                <?php else: ?>
+                                    <span class="events-kepek-esemenyek__check-placeholder" aria-hidden="true">—</span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <a class="events-cell-edit" href="<?= h($edit) ?>"><?= h($name) ?></a>
                                 <span class="events-kepek-esemenyek__id">#<?= $eid ?></span>
@@ -104,7 +189,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         </tr>
                     <?php endforeach; ?>
                     <tr id="events-kepek-empty" hidden>
-                        <td colspan="4" class="events-kepek-esemenyek__no-results">Nincs találat a szűrőkre.</td>
+                        <td colspan="5" class="events-kepek-esemenyek__no-results">Nincs találat a szűrőkre.</td>
                     </tr>
                 </tbody>
             </table>
@@ -120,6 +205,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
             var visibleCountEl = document.getElementById('events-kepek-visible-count');
             var filters = Array.prototype.slice.call(document.querySelectorAll('.events-kepek-esemenyek__filter'));
             var searchTimer = null;
+            var bulkForm = document.getElementById('events-kepek-bulk-form');
+            var bulkBtn = document.getElementById('events-kepek-btn-url-to-own');
+            var selectedLabel = document.getElementById('events-kepek-selected-label');
+            var checkAll = document.getElementById('events-kepek-check-all');
 
             function filterValue(key) {
                 var el = document.querySelector('.events-kepek-esemenyek__filter[data-filter="' + key + '"]');
@@ -151,20 +240,62 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 return true;
             }
 
+            function visibleMigratableChecks() {
+                var out = [];
+                rows.forEach(function (row) {
+                    if (row.hidden) return;
+                    if (row.getAttribute('data-can-migrate') !== '1') return;
+                    var cb = row.querySelector('.events-kepek-esemenyek__row-check');
+                    if (cb) out.push(cb);
+                });
+                return out;
+            }
+
+            function syncBulkUi() {
+                var checked = 0;
+                rows.forEach(function (row) {
+                    var cb = row.querySelector('.events-kepek-esemenyek__row-check');
+                    if (cb && cb.checked) checked++;
+                });
+                if (selectedLabel) {
+                    selectedLabel.textContent = checked + ' kiválasztva';
+                }
+                if (bulkBtn) {
+                    bulkBtn.disabled = checked === 0;
+                }
+                if (checkAll) {
+                    var visible = visibleMigratableChecks();
+                    if (visible.length === 0) {
+                        checkAll.checked = false;
+                        checkAll.indeterminate = false;
+                        checkAll.disabled = true;
+                    } else {
+                        checkAll.disabled = false;
+                        var visChecked = visible.filter(function (cb) { return cb.checked; }).length;
+                        checkAll.checked = visChecked === visible.length && visible.length > 0;
+                        checkAll.indeterminate = visChecked > 0 && visChecked < visible.length;
+                    }
+                }
+            }
+
             function applyFilters() {
                 var visible = 0;
                 rows.forEach(function (row) {
                     var show = rowMatches(row);
                     row.hidden = !show;
+                    if (!show) {
+                        var cb = row.querySelector('.events-kepek-esemenyek__row-check');
+                        if (cb) cb.checked = false;
+                    }
                     if (show) visible++;
                 });
                 if (visibleCountEl) visibleCountEl.textContent = String(visible);
                 if (emptyRow) emptyRow.hidden = visible > 0;
+                syncBulkUi();
             }
 
             filters.forEach(function (el) {
-                var isSearch = el.type === 'search' || el.tagName === 'INPUT';
-                if (isSearch && el.type === 'search') {
+                if (el.type === 'search') {
                     el.addEventListener('input', function () {
                         clearTimeout(searchTimer);
                         searchTimer = setTimeout(applyFilters, 120);
@@ -174,6 +305,35 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     el.addEventListener('input', applyFilters);
                 }
             });
+
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    var on = checkAll.checked;
+                    visibleMigratableChecks().forEach(function (cb) {
+                        cb.checked = on;
+                    });
+                    syncBulkUi();
+                });
+            }
+
+            tbody.addEventListener('change', function (e) {
+                if (e.target && e.target.classList.contains('events-kepek-esemenyek__row-check')) {
+                    syncBulkUi();
+                }
+            });
+
+            if (bulkForm) {
+                bulkForm.addEventListener('submit', function (e) {
+                    var checked = tbody.querySelectorAll('.events-kepek-esemenyek__row-check:checked').length;
+                    if (checked === 0) {
+                        e.preventDefault();
+                        return;
+                    }
+                    if (!window.confirm('Biztosan átállítod ' + checked + ' esemény képét URL-ről sajátra? A képek letöltődnek az eventpics mappába.')) {
+                        e.preventDefault();
+                    }
+                });
+            }
 
             applyFilters();
         })();
