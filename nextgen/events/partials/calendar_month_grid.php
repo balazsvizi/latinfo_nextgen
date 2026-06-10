@@ -11,7 +11,7 @@ if (!function_exists('events_public_calendar_event_url')) {
  * @var list<array{
  *   days: list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>,
  *   laneCount: int,
- *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, lane: int, connectLeft: bool, connectRight: bool, roundLeft: bool, roundRight: bool, showTime: bool, showLabel: bool, isPast: bool}>>,
+ *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, lane: int, connectLeft: bool, connectRight: bool, roundLeft: bool, roundRight: bool, showTime: bool, showLabel: bool, labelSpan: int, isPast: bool}>>,
  *   singlesByDay: array<string, list<array<string, mixed>>>
  * }> $calendarWeeks
  * @var array<int, list<array{color: string}>> $categoriesByEventId
@@ -41,7 +41,21 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                     $dayNum = (int) $day['date']->format('j');
                     $daySingles = $singlesByDay[$dayKey] ?? [];
                     $dayParts = $partsByColLane[$colIndex] ?? [];
+                    $hasMultidayHead = false;
+                    $hasMultidayTail = false;
+                    foreach ($dayParts as $lanePart) {
+                        if (!empty($lanePart['showLabel'])) {
+                            $hasMultidayHead = true;
+                        } else {
+                            $hasMultidayTail = true;
+                        }
+                    }
                     $dayClasses = 'events-cal__day';
+                    if ($hasMultidayHead) {
+                        $dayClasses .= ' events-cal__day--multiday-head';
+                    } elseif ($hasMultidayTail) {
+                        $dayClasses .= ' events-cal__day--multiday-tail';
+                    }
                     if (!$day['inMonth']) {
                         $dayClasses .= ' events-cal__day--outside';
                     }
@@ -101,13 +115,22 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                             <div class="events-cal__multiday-lanes">
                                 <?php for ($lane = 0; $lane < $laneCount; $lane++): ?>
                                     <?php $part = $dayParts[$lane] ?? null; ?>
-                                    <div class="events-cal__multiday-lane">
+                                    <?php
+                                    $laneClass = 'events-cal__multiday-lane';
+                                    if ($part !== null && !empty($part['showLabel'])) {
+                                        $laneClass .= ' events-cal__multiday-lane--head';
+                                    }
+                                    ?>
+                                    <div class="<?= h($laneClass) ?>">
                                         <?php if ($part !== null): ?>
                                             <?php
                                             $ev = $part['event'];
                                             $eid = (int) ($ev['id'] ?? 0);
                                             $isPublished = events_admin_calendar_event_is_published($ev);
                                             $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
+                                            if (!empty($part['showLabel'])) {
+                                                $eventStyle .= ';--cal-bar-span:' . max(1, (int) $part['labelSpan']);
+                                            }
                                             $eventUrl = $calendarPublicPreview
                                                 ? events_public_calendar_event_url($ev)
                                                 : events_admin_calendar_event_public_url($ev);
@@ -135,6 +158,9 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             if ($part['connectRight']) {
                                                 $barClasses .= ' events-cal__event-link--bar-connect-right';
                                             }
+                                            if (!empty($part['showLabel'])) {
+                                                $barClasses .= ' events-cal__event-link--bar-label-span';
+                                            }
                                             $eventStatus = (string) ($ev['event_status'] ?? '');
                                             $statusBadgeClass = events_post_status_badge_class($eventStatus);
                                             $statusLabel = events_post_status_label($eventStatus);
@@ -151,13 +177,15 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                                 title="<?= h($barTitle) ?><?= $isPublished ? '' : ' (' . $statusLabel . ')' ?>"
                                             >
                                                 <?php if ($part['showLabel']): ?>
-                                                    <?php if (!$isPublished && !$calendarPublicPreview): ?>
-                                                        <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
-                                                    <?php endif; ?>
-                                                    <?php if ($timeLabel !== ''): ?>
-                                                        <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
-                                                    <?php endif; ?>
-                                                    <span class="events-cal__event-name"><?= h($barTitle) ?></span>
+                                                    <span class="events-cal__bar-label">
+                                                        <?php if (!$isPublished && !$calendarPublicPreview): ?>
+                                                            <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
+                                                        <?php endif; ?>
+                                                        <?php if ($timeLabel !== ''): ?>
+                                                            <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
+                                                        <?php endif; ?>
+                                                        <span class="events-cal__event-name"><?= h($barTitle) ?></span>
+                                                    </span>
                                                 <?php endif; ?>
                                             </a>
                                         <?php endif; ?>

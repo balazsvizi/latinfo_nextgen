@@ -1382,6 +1382,16 @@ tr:hover td { background: var(--bg); }
     min-height: var(--cal-bar-lane-h);
     position: relative;
 }
+.events-cal__multiday-lane--head {
+    overflow: visible;
+    z-index: 2;
+}
+.events-cal__day--multiday-head {
+    z-index: 3;
+}
+.events-cal__day--multiday-tail {
+    z-index: 1;
+}
 .events-cal__event-link--bar {
     position: relative;
     z-index: 3;
@@ -1442,6 +1452,38 @@ tr:hover td { background: var(--bg); }
 .events-cal__event-link--bar .events-cal__event-name {
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.events-cal__event-link--bar-label-span {
+    overflow: visible;
+    z-index: 5;
+}
+.events-cal__event-link--bar-label-span .events-cal__bar-label {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.04rem;
+    padding-left: 0.62rem;
+    padding-right: 0.5rem;
+    white-space: nowrap;
+    overflow: visible;
+    width: max-content;
+    max-width: none;
+    pointer-events: none;
+    z-index: 2;
+}
+.events-cal__event-link--bar-label-span.events-cal__event-link--round-left .events-cal__bar-label {
+    padding-left: 0.62rem;
+}
+.events-cal__event-link--bar-label-span .events-cal__bar-label .events-cal__event-name {
+    overflow: visible;
+    text-overflow: clip;
+}
+.events-cal__event-link--bar-label-span:hover {
+    z-index: 6;
 }
 .events-cal__day--outside {
     background: #fafbfa;

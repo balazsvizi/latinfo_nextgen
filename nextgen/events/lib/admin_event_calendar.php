@@ -267,7 +267,7 @@ function events_admin_calendar_is_grid_multi_day_event(array $row): bool {
  *   days: list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>,
  *   laneCount: int,
  *   segments: list<array{event: array<string, mixed>, colStart: int, span: int, lane: int, roundLeft: bool, roundRight: bool, showTime: bool, isPast: bool}>,
- *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, lane: int, connectLeft: bool, connectRight: bool, roundLeft: bool, roundRight: bool, showTime: bool, showLabel: bool, isPast: bool}>>,
+ *   partsByColLane: array<int, array<int, array{event: array<string, mixed>, lane: int, connectLeft: bool, connectRight: bool, roundLeft: bool, roundRight: bool, showTime: bool, showLabel: bool, labelSpan: int, isPast: bool}>>,
  *   singlesByDay: array<string, list<array<string, mixed>>>
  * }>
  */
@@ -389,6 +389,7 @@ function events_admin_calendar_build_week_layouts(
                     'roundRight' => $isLast && $segment['roundRight'],
                     'showTime' => $isFirst && $segment['showTime'],
                     'showLabel' => $isFirst,
+                    'labelSpan' => $isFirst ? $span : 0,
                     'isPast' => $segment['isPast'],
                 ];
             }
