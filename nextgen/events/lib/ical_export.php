@@ -3,6 +3,18 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/event_public_lang.php';
 
+function events_ical_calendar_name(): string
+{
+    if (defined('SITE_NAME')) {
+        $name = trim((string) SITE_NAME);
+        if ($name !== '') {
+            return $name;
+        }
+    }
+
+    return 'Latinfo.hu';
+}
+
 function events_ical_fold_line(string $line): string
 {
     if (strlen($line) <= 75) {
@@ -125,17 +137,24 @@ function events_ical_plain_description(array $row, string $lang): string
 /**
  * @param list<array<string, mixed>> $events
  */
-function events_ical_build_calendar(array $events, string $calendarName, string $lang, bool $outlook = false): string
+function events_ical_build_calendar(array $events, ?string $calendarName, string $lang, bool $outlook = false): string
 {
+    $calendarName = trim((string) ($calendarName ?? ''));
+    if ($calendarName === '') {
+        $calendarName = events_ical_calendar_name();
+    }
+
     $eol = $outlook ? "\r\n" : "\r\n";
     $now = events_ical_format_utc(new DateTimeImmutable('now', new DateTimeZone('UTC')));
+    $escapedName = events_ical_escape_text($calendarName);
     $lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
-        'PRODID:-//Latinfo.hu//Events//HU',
+        'PRODID:-//Latinfo.hu//Events Calendar//HU',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
-        'X-WR-CALNAME:' . events_ical_escape_text($calendarName),
+        'NAME:' . $escapedName,
+        'X-WR-CALNAME:' . $escapedName,
     ];
     if ($outlook) {
         $lines[] = 'X-MS-OLK-FORCEINSPECTOROPEN:TRUE';
@@ -209,8 +228,13 @@ function events_ical_feed_url(array $queryParams, ?string $variant = null): stri
 /**
  * @param array<string, string|int> $queryParams
  */
-function events_ical_subscribe_links(array $queryParams, string $calendarName, string $lang): array
+function events_ical_subscribe_links(array $queryParams, ?string $calendarName = null, ?string $lang = null): array
 {
+    $calendarName = trim((string) ($calendarName ?? ''));
+    if ($calendarName === '') {
+        $calendarName = events_ical_calendar_name();
+    }
+
     $feedHttps = events_ical_feed_url($queryParams);
     $feedWebcal = preg_replace('#^https?://#i', 'webcal://', $feedHttps) ?? $feedHttps;
     $encodedWebcal = rawurlencode($feedWebcal);

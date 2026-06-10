@@ -14,11 +14,9 @@ $rows = events_public_fetch_filtered_events($db, $filters);
 $outlook = isset($_GET['outlook']) && (string) $_GET['outlook'] === '1';
 $download = isset($_GET['download']) && (string) $_GET['download'] === '1';
 
-$D = events_public_home_strings($lang);
-$calendarName = (string) ($D['page_title'] ?? 'Events');
-$ics = events_ical_build_calendar($rows, $calendarName, $lang, $outlook);
+$ics = events_ical_build_calendar($rows, null, $lang, $outlook);
 
-$filename = $outlook ? 'latinfo-events-outlook.ics' : 'latinfo-events.ics';
+$filename = $outlook ? 'Latinfo.hu-outlook.ics' : 'Latinfo.hu.ics';
 header('Content-Type: text/calendar; charset=utf-8');
 if ($download) {
     header('Content-Disposition: attachment; filename="' . $filename . '"');

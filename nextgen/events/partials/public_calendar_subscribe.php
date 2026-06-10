@@ -6,8 +6,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/lib/ical_export.php';
 
-$calendarName = (string) ($D['page_title'] ?? 'Events');
-$links = events_ical_subscribe_links($icalFeedParams, $calendarName, $lang);
+$links = events_ical_subscribe_links($icalFeedParams);
 $menuId = 'events-cal-subscribe-menu';
 ?>
 <div class="events-cal-subscribe">
