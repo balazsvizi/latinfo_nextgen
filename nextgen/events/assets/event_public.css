@@ -2287,6 +2287,79 @@ body.event-public-page--home .event-public__hero-inner {
     max-width: 100%;
 }
 
+.home-public .events-cal-subscribe {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0.85rem 0 0;
+}
+
+.home-public .events-cal-subscribe__details {
+    position: relative;
+}
+
+.home-public .events-cal-subscribe__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1rem;
+    border: 0;
+    border-radius: 0.35rem;
+    background: #2b6cb0;
+    color: #fff;
+    font-family: var(--ev-font);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.home-public .events-cal-subscribe__toggle::-webkit-details-marker {
+    display: none;
+}
+
+.home-public .events-cal-subscribe__toggle:hover {
+    background: #245a94;
+}
+
+.home-public .events-cal-subscribe__chevron {
+    font-size: 0.75rem;
+    transition: transform 0.15s ease;
+}
+
+.home-public .events-cal-subscribe__details[open] .events-cal-subscribe__chevron {
+    transform: rotate(180deg);
+}
+
+.home-public .events-cal-subscribe__menu {
+    position: absolute;
+    right: 0;
+    z-index: 20;
+    min-width: 13.5rem;
+    margin: 0.35rem 0 0;
+    padding: 0.35rem 0;
+    list-style: none;
+    border: 1px solid var(--li-border);
+    border-radius: 0.35rem;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.home-public .events-cal-subscribe__menu a {
+    display: block;
+    padding: 0.55rem 1rem;
+    color: var(--li-text);
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.home-public .events-cal-subscribe__menu a:hover {
+    background: var(--li-green-soft);
+    color: var(--li-green-dark);
+    text-decoration: none;
+}
+
 .home-public .events-cal-view-switch--standalone {
     display: flex;
     justify-content: flex-end;

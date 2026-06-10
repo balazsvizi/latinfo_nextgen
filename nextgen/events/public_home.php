@@ -62,6 +62,9 @@ if ($view === 'list') {
 $filterClearParams = array_merge(['month' => $monthKey], $langNav);
 $filterClearUrl = events_url($homeScript . '?' . http_build_query($filterClearParams));
 
+$icalFeedParams = array_merge($filters['get_params'], $langNav);
+unset($icalFeedParams['month'], $icalFeedParams['view']);
+
 $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];
 $canonical = events_absolute_url(events_public_home_page_url($lang));
@@ -145,12 +148,14 @@ header('Content-Type: text/html; charset=UTF-8');
                     </nav>
                 </div>
                 <?php require __DIR__ . '/partials/public_calendar_grid.php'; ?>
+                <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
             <?php else: ?>
                 <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
                     <a class="events-cal-view-switch__item" href="<?= h($calViewUrl) ?>"><?= h((string) $D['view_cal']) ?></a>
                     <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_list']) ?></span>
                 </nav>
                 <?php require __DIR__ . '/partials/public_event_list_partitioned.php'; ?>
+                <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
             <?php endif; ?>
         </form>
     </section>

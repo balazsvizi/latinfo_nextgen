@@ -640,6 +640,13 @@ function events_public_home_strings(string $lang): array {
         'cal_preview_details' => 'Részletek megnyitása',
         'cal_preview_venue' => 'Helyszín',
         'cal_preview_organizer' => 'Szervező',
+        'cal_subscribe_toggle' => 'Feliratkozás a naptárra',
+        'cal_subscribe_google' => 'Google Naptár',
+        'cal_subscribe_ical' => 'iCalendar',
+        'cal_subscribe_outlook365' => 'Outlook 365',
+        'cal_subscribe_outlook_live' => 'Outlook Live',
+        'cal_subscribe_export' => '.ics fájl export',
+        'cal_subscribe_export_outlook' => 'Outlook .ics export',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -705,6 +712,13 @@ function events_public_home_strings(string $lang): array {
         'cal_preview_details' => 'Open details',
         'cal_preview_venue' => 'Venue',
         'cal_preview_organizer' => 'Organizer',
+        'cal_subscribe_toggle' => 'Subscribe to calendar',
+        'cal_subscribe_google' => 'Google Calendar',
+        'cal_subscribe_ical' => 'iCalendar',
+        'cal_subscribe_outlook365' => 'Outlook 365',
+        'cal_subscribe_outlook_live' => 'Outlook Live',
+        'cal_subscribe_export' => 'Export .ics file',
+        'cal_subscribe_export_outlook' => 'Export Outlook .ics file',
     ];
 
     return $lang === 'en' ? $en : $hu;
