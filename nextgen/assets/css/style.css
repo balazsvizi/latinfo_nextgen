@@ -1354,6 +1354,7 @@ tr:hover td { background: var(--bg); }
     --cal-line: #e8ebe6;
     --cal-bar-lane-h: 1.35rem;
     --cal-bar-lane-gap: 0.22rem;
+    --cal-day-pad-b: 0.5rem;
     position: relative;
     gap: 1px;
     background: var(--cal-line);
@@ -1363,7 +1364,7 @@ tr:hover td { background: var(--bg); }
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--cal-day-pad-b);
     display: grid;
     grid-template-columns: var(--cal-col-template);
     grid-template-rows: repeat(var(--cal-lane-count, 1), minmax(var(--cal-bar-lane-h), auto));
@@ -1389,6 +1390,7 @@ tr:hover td { background: var(--bg); }
     padding: 0.2rem 0.5rem;
     background: transparent !important;
     border: none;
+    box-sizing: border-box;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1419,7 +1421,7 @@ tr:hover td { background: var(--bg); }
 .events-cal__day {
     --cal-day-pad-x: 0.4rem;
     min-height: 7.5rem;
-    padding: 0.45rem 0.4rem 0.5rem;
+    padding: 0.45rem 0.4rem var(--cal-day-pad-b, 0.5rem);
     background: #fff;
     vertical-align: top;
     display: flex;
@@ -1448,13 +1450,14 @@ tr:hover td { background: var(--bg); }
     gap: 0.04rem;
     width: 100%;
     max-width: none;
-    min-height: 1.3rem;
+    min-height: var(--cal-bar-lane-h);
     padding: 0.2rem 0.5rem;
     border-radius: 0;
     white-space: nowrap;
     overflow: hidden;
     box-shadow: none;
     transform: none;
+    box-sizing: border-box;
 }
 .events-cal__event-link--bar.events-cal__event-link--round-left {
     border-top-left-radius: 999px;
@@ -1706,11 +1709,12 @@ tr:hover td { background: var(--bg); }
     .events-cal__day {
         --cal-day-pad-x: 0.18rem;
         min-height: 5.5rem;
-        padding: 0.28rem 0.18rem 0.35rem;
+        padding: 0.28rem 0.18rem var(--cal-day-pad-b, 0.35rem);
     }
     .events-cal__week {
         --cal-bar-lane-h: 1.2rem;
         --cal-bar-lane-gap: 0.18rem;
+        --cal-day-pad-b: 0.35rem;
     }
     .events-cal__event-link--bar {
         padding: 0.16rem 0.35rem;
