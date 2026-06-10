@@ -153,8 +153,8 @@ function events_ical_build_calendar(array $events, ?string $calendarName, string
         'PRODID:-//Latinfo.hu//Events Calendar//HU',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
-        'NAME:' . $escapedName,
-        'X-WR-CALNAME:' . $escapedName,
+        'X-WR-CALNAME;VALUE=TEXT:' . $escapedName,
+        'X-WR-CALDESC;VALUE=TEXT:' . events_ical_escape_text('Latinfo.hu eseménynaptár'),
     ];
     if ($outlook) {
         $lines[] = 'X-MS-OLK-FORCEINSPECTOROPEN:TRUE';
@@ -243,7 +243,7 @@ function events_ical_subscribe_links(array $queryParams, ?string $calendarName =
 
     return [
         'feed' => $feedHttps,
-        'google' => 'https://www.google.com/calendar/render?cid=' . $encodedWebcal,
+        'google' => 'https://calendar.google.com/calendar/r?cid=' . $encodedWebcal,
         'ical' => $feedWebcal,
         'outlook365' => 'https://outlook.office.com/calendar/0/addfromweb?url=' . $encodedHttps . '&name=' . $encodedName,
         'outlook_live' => 'https://outlook.live.com/calendar/0/addfromweb?url=' . $encodedHttps . '&name=' . $encodedName,
