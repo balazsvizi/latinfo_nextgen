@@ -94,6 +94,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
                         <?php if (isLoggedIn() && isSuperadmin()): ?>
+                        <li role="none"><a href="<?= h(nextgen_url('events/kepek_esemenyek.php')) ?>" role="menuitem">Képek–események</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/adatok.php')) ?>" role="menuitem">Adatok</a></li>
                         <?php endif; ?>
                     </ul>

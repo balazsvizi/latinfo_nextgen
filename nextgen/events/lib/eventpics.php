@@ -255,3 +255,97 @@ function events_eventpics_delete_with_clear(PDO $db, string $filename): array {
         return [false, 'Adatbázis vagy törlési hiba történt.'];
     }
 }
+
+/**
+ * Kiemelt kép admin listához: típus (URL / saját eventpics / nincs) és oszlopok.
+ *
+ * @return array{
+ *   type: 'none'|'url'|'own',
+ *   type_label: string,
+ *   url: string,
+ *   own_link: string,
+ *   search_type: string,
+ *   search_url: string,
+ *   search_own: string
+ * }
+ */
+function events_featured_image_list_meta(?string $featuredUrl): array
+{
+    $raw = trim(html_entity_decode(trim((string) $featuredUrl), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    $raw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $raw) ?? $raw;
+    if ($raw === '') {
+        return [
+            'type' => 'none',
+            'type_label' => '—',
+            'url' => '',
+            'own_link' => '',
+            'search_type' => 'none',
+            'search_url' => '',
+            'search_own' => '',
+        ];
+    }
+
+    $eventpicFile = events_eventpics_extract_selected_from_featured($raw);
+    if ($eventpicFile !== '') {
+        $ownLink = events_eventpics_build_web_path($eventpicFile);
+
+        return [
+            'type' => 'own',
+            'type_label' => 'Saját',
+            'url' => '',
+            'own_link' => $ownLink,
+            'search_type' => 'own',
+            'search_url' => '',
+            'search_own' => mb_strtolower($ownLink . ' ' . $eventpicFile, 'UTF-8'),
+        ];
+    }
+
+    return [
+        'type' => 'url',
+        'type_label' => 'URL',
+        'url' => $raw,
+        'own_link' => '',
+        'search_type' => 'url',
+        'search_url' => mb_strtolower($raw, 'UTF-8'),
+        'search_own' => '',
+    ];
+}
+
+/**
+ * Összes esemény kiemelt kép adatai (admin áttekintés).
+ *
+ * @return list<array{
+ *   id: int,
+ *   event_name: string,
+ *   event_status: string,
+ *   featured_meta: array<string, string>
+ * }>
+ */
+function events_featured_image_admin_all_events(PDO $db): array
+{
+    try {
+        $stmt = $db->query('
+            SELECT `id`, `event_name`, `event_status`, `event_featured_image_url`
+            FROM `events_calendar_events`
+            ORDER BY `event_start` IS NULL, `event_start` DESC, `id` DESC
+        ');
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable $e) {
+        error_log('events_featured_image_admin_all_events: ' . $e->getMessage());
+
+        return [];
+    }
+
+    $out = [];
+    foreach ($rows as $row) {
+        $meta = events_featured_image_list_meta((string) ($row['event_featured_image_url'] ?? ''));
+        $out[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'event_name' => (string) ($row['event_name'] ?? ''),
+            'event_status' => (string) ($row['event_status'] ?? ''),
+            'featured_meta' => $meta,
+        ];
+    }
+
+    return $out;
+}

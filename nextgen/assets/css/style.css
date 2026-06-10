@@ -2578,6 +2578,50 @@ dialog.eventpics-modal::backdrop {
     margin-top: 1rem;
 }
 
+/* Képek–események (superadmin) */
+.events-kepek-esemenyek__intro {
+    margin: 0 0 1rem;
+    max-width: 52rem;
+}
+.events-kepek-esemenyek__count {
+    margin: 0 0 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted, #6b7280);
+}
+.events-kepek-esemenyek__filter-row th {
+    padding-top: 0.35rem;
+    padding-bottom: 0.65rem;
+    vertical-align: top;
+    font-weight: 400;
+}
+.events-kepek-esemenyek__filter {
+    width: 100%;
+    min-width: 0;
+    font-weight: 400;
+}
+.events-kepek-esemenyek__id {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--text-muted, #6b7280);
+}
+.events-kepek-esemenyek__url-cell,
+.events-kepek-esemenyek__own-cell {
+    max-width: 22rem;
+    word-break: break-all;
+}
+.events-kepek-esemenyek__link {
+    font-size: 0.8125rem;
+}
+.events-kepek-esemenyek__empty {
+    color: var(--text-muted, #6b7280);
+}
+.events-kepek-esemenyek__no-results {
+    text-align: center;
+    color: var(--text-muted, #6b7280);
+    font-size: 0.875rem;
+}
+
 /* Esemény adattáblák (adatok.php, superadmin) */
 .events-data-admin__intro {
     margin: 0 0 1.25rem;
