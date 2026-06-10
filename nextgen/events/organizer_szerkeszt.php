@@ -57,6 +57,7 @@ $publicUrl = events_url('organizer.php?id=') . $id;
 $statsParams = events_edit_stats_params_from_request($_GET);
 $statsData = events_edit_stats_for_organizer($db, $id, $statsParams);
 $statsEventRows = $statsData['event_rows'] ?? [];
+$draftRows = $statsData['draft_rows'] ?? [];
 $pageTitle = 'Szervező szerkesztése: ' . $name;
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -80,6 +81,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </form>
 </div>
 
+<?php require __DIR__ . '/partials/admin_organizer_drafts.php'; ?>
 <?php require __DIR__ . '/partials/admin_organizer_edit_stats.php'; ?>
 
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

@@ -313,6 +313,7 @@ function events_edit_stats_for_organizer(PDO $db, int $organizerId, array $param
     $result['totals']['events_total'] = $eventsList['events_total'];
     $result['totals']['events_with_views'] = $eventsList['events_with_views'];
     $result['event_rows'] = $eventsList['rows'];
+    $result['draft_rows'] = $eventsList['draft_rows'];
 
     return $result;
 }
@@ -322,9 +323,35 @@ function events_edit_stats_for_organizer(PDO $db, int $organizerId, array $param
  *
  * @return array{rows: list<array<string, mixed>>, events_total: int, events_with_views: int}
  */
+function events_edit_stats_is_draft_event(array $row): bool
+{
+    $status = (string) ($row['event_status'] ?? '');
+
+    return in_array($status, ['draft', 'auto-draft'], true);
+}
+
+/**
+ * @param list<array<string, mixed>> $rows
+ * @return array{non_draft: list<array<string, mixed>>, drafts: list<array<string, mixed>>}
+ */
+function events_edit_stats_partition_draft_events(array $rows): array
+{
+    $nonDraft = [];
+    $drafts = [];
+    foreach ($rows as $row) {
+        if (events_edit_stats_is_draft_event($row)) {
+            $drafts[] = $row;
+        } else {
+            $nonDraft[] = $row;
+        }
+    }
+
+    return ['non_draft' => $nonDraft, 'drafts' => $drafts];
+}
+
 function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, array $params, ?bool $tableReady = null): array
 {
-    $empty = ['rows' => [], 'events_total' => 0, 'events_with_views' => 0];
+    $empty = ['rows' => [], 'draft_rows' => [], 'events_total' => 0, 'events_with_views' => 0];
     if ($organizerId <= 0) {
         return $empty;
     }
@@ -364,9 +391,12 @@ function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, arra
         return $empty;
     }
 
-    $eventsTotal = count($rows);
+    $partitioned = events_edit_stats_partition_draft_events($rows);
+    $nonDraftRows = $partitioned['non_draft'];
+    $draftRows = $partitioned['drafts'];
+
     $eventsWithViews = 0;
-    foreach ($rows as $row) {
+    foreach ($nonDraftRows as $row) {
         $views = (int) ($row['megtekintesek'] ?? 0) + (int) ($row['naptar_elonezetek'] ?? 0);
         if ($views > 0) {
             $eventsWithViews++;
@@ -374,8 +404,9 @@ function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, arra
     }
 
     return [
-        'rows' => $rows,
-        'events_total' => $eventsTotal,
+        'rows' => $nonDraftRows,
+        'draft_rows' => $draftRows,
+        'events_total' => count($nonDraftRows),
         'events_with_views' => $eventsWithViews,
     ];
 }

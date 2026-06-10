@@ -5,7 +5,8 @@ declare(strict_types=1);
 /** @var array{
  *   table_ready: bool,
  *   totals: array{page_views: int, calendar_previews: int, events_total?: int, events_with_views?: int},
- *   event_rows?: list<array<string, mixed>>
+ *   event_rows?: list<array<string, mixed>>,
+ *   draft_rows?: list<array<string, mixed>>,
  *   chart: array{labels: list<string>, datasets: list<array{label: string, data: list<int>, color: string, total: int}>}
  * } $statsData */
 /** @var list<array<string, mixed>> $statsEventRows */
@@ -18,6 +19,30 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
 $editBase = events_url('szerkeszt.php?id=');
 $eventsTotal = (int) ($statsData['totals']['events_total'] ?? count($statsEventRows));
 $eventsWithViews = (int) ($statsData['totals']['events_with_views'] ?? 0);
+
+$statusOptions = [];
+foreach ($statsEventRows as $row) {
+    $st = (string) ($row['event_status'] ?? '');
+    if ($st !== '') {
+        $statusOptions[$st] = events_post_status_label($st);
+    }
+}
+asort($statusOptions);
+
+/**
+ * @param array<string, mixed> $row
+ */
+$eventDateYmd = static function (array $row, string $key): string {
+    $raw = trim((string) ($row[$key] ?? ''));
+    if ($raw === '') {
+        return '';
+    }
+    try {
+        return (new DateTimeImmutable($raw))->format('Y-m-d');
+    } catch (Throwable) {
+        return '';
+    }
+};
 ?>
 <div class="card events-edit-stats events-edit-stats--organizer">
     <h2 class="card-title">Statisztika</h2>
@@ -134,11 +159,75 @@ $eventsWithViews = (int) ($statsData['totals']['events_with_views'] ?? 0);
     <?php endif; ?>
 
     <h3 class="events-edit-stats__events-title">Események</h3>
-    <p class="events-edit-stats__events-hint">A szervező összes eseménye. Megtekintésszámok a fenti stat időszakra vonatkoznak (ugyanaz, amiből a grafikon készül).</p>
+    <p class="events-edit-stats__events-hint">Alapból a grafikon időszakában megtekintéssel rendelkező események. A piszkozatok külön listában láthatók feljebb.</p>
 
     <?php if ($statsEventRows === []): ?>
-        <p class="help events-edit-stats__empty">Nincs esemény ehhez a szervezőhöz.</p>
+        <p class="help events-edit-stats__empty">Nincs közzétett esemény ehhez a szervezőhöz.</p>
     <?php else: ?>
+        <div class="events-org-stats-list-controls" id="organizer-stats-list-controls">
+            <div class="events-org-stats-list-controls__row">
+                <fieldset class="events-org-stats-fieldset">
+                    <legend>Megjelenítés</legend>
+                    <label class="events-org-stats-radio">
+                        <input type="radio" name="org_stats_scope" value="chart" checked>
+                        Grafikon eseményei
+                    </label>
+                    <label class="events-org-stats-radio">
+                        <input type="radio" name="org_stats_scope" value="all">
+                        Összes esemény
+                    </label>
+                </fieldset>
+                <fieldset class="events-org-stats-fieldset">
+                    <legend>Szűrés</legend>
+                    <label class="events-org-stats-radio">
+                        <input type="radio" name="org_stats_filter_mode" value="mind" checked>
+                        Mind
+                    </label>
+                    <label class="events-org-stats-radio">
+                        <input type="radio" name="org_stats_filter_mode" value="filtered">
+                        Szűrt
+                    </label>
+                </fieldset>
+            </div>
+            <div class="events-org-stats-list-filters" id="organizer-stats-list-filters" hidden>
+                <div class="events-org-stats-list-filters__grid">
+                    <div class="form-group">
+                        <label class="events-filter-label" for="org_stats_filter_search">Név</label>
+                        <input class="events-filter-input" type="search" id="org_stats_filter_search" placeholder="Keresés…" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label class="events-filter-label" for="org_stats_filter_status">Státusz</label>
+                        <select class="events-filter-input" id="org_stats_filter_status">
+                            <option value="">Bármely</option>
+                            <?php foreach ($statusOptions as $statusValue => $statusLabel): ?>
+                                <option value="<?= h($statusValue) ?>"><?= h($statusLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="events-filter-label" for="org_stats_filter_min_page">Min. oldal</label>
+                        <input class="events-filter-input" type="number" id="org_stats_filter_min_page" min="0" step="1" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="events-filter-label" for="org_stats_filter_min_preview">Min. előnézet</label>
+                        <input class="events-filter-input" type="number" id="org_stats_filter_min_preview" min="0" step="1" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="events-filter-label" for="org_stats_filter_event_from">Esemény tól</label>
+                        <input class="events-filter-input" type="date" id="org_stats_filter_event_from">
+                    </div>
+                    <div class="form-group">
+                        <label class="events-filter-label" for="org_stats_filter_event_to">Esemény ig</label>
+                        <input class="events-filter-input" type="date" id="org_stats_filter_event_to">
+                    </div>
+                </div>
+            </div>
+            <p class="events-org-stats-list-count" aria-live="polite">
+                <strong><span id="organizer-stats-visible-count">0</span></strong>
+                / <span id="organizer-stats-total-count"><?= count($statsEventRows) ?></span> esemény
+            </p>
+        </div>
+
         <div class="table-wrap events-admin-table-wrap">
             <table class="sortable-table events-admin-table events-edit-stats__events-table">
                 <thead>
@@ -151,15 +240,33 @@ $eventsWithViews = (int) ($statsData['totals']['events_with_views'] ?? 0);
                         <th class="th-center">Oldal</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="organizer-stats-events-tbody">
                     <?php foreach ($statsEventRows as $row): ?>
                         <?php
                         $eid = (int) ($row['id'] ?? 0);
                         $edit = $editBase . $eid;
                         $st = (string) ($row['event_status'] ?? '');
                         $badgeClass = events_post_status_badge_class($st);
+                        $pageViews = (int) ($row['megtekintesek'] ?? 0);
+                        $previewViews = (int) ($row['naptar_elonezetek'] ?? 0);
+                        $hasViews = ($pageViews + $previewViews) > 0 ? '1' : '0';
+                        $eventStart = $eventDateYmd($row, 'event_start');
+                        $eventEnd = $eventDateYmd($row, 'event_end');
+                        if ($eventEnd === '' && $eventStart !== '') {
+                            $eventEnd = $eventStart;
+                        }
+                        $searchName = mb_strtolower((string) ($row['event_name'] ?? ''), 'UTF-8');
                         ?>
-                        <tr>
+                        <tr
+                            data-org-event-row
+                            data-has-views="<?= $hasViews ?>"
+                            data-status="<?= h($st) ?>"
+                            data-search="<?= h($searchName) ?>"
+                            data-event-start="<?= h($eventStart) ?>"
+                            data-event-end="<?= h($eventEnd) ?>"
+                            data-page-views="<?= $pageViews ?>"
+                            data-preview-views="<?= $previewViews ?>"
+                        >
                             <td class="events-td-actions">
                                 <a href="<?= h($edit) ?>" class="events-icon-action" title="Szerkesztés" aria-label="Szerkesztés">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -172,12 +279,140 @@ $eventsWithViews = (int) ($statsData['totals']['events_with_views'] ?? 0);
                                     <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
                                 </a>
                             </td>
-                            <td class="text-center"><?= (int) ($row['naptar_elonezetek'] ?? 0) ?></td>
-                            <td class="text-center"><?= (int) ($row['megtekintesek'] ?? 0) ?></td>
+                            <td class="text-center"><?= $previewViews ?></td>
+                            <td class="text-center"><?= $pageViews ?></td>
                         </tr>
                     <?php endforeach; ?>
+                    <tr id="organizer-stats-events-empty" hidden>
+                        <td colspan="6" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
+        <script>
+        (function () {
+            var controls = document.getElementById('organizer-stats-list-controls');
+            var tbody = document.getElementById('organizer-stats-events-tbody');
+            if (!controls || !tbody) return;
+
+            var rows = Array.prototype.slice.call(tbody.querySelectorAll('[data-org-event-row]'));
+            var emptyRow = document.getElementById('organizer-stats-events-empty');
+            var visibleCountEl = document.getElementById('organizer-stats-visible-count');
+            var filtersPanel = document.getElementById('organizer-stats-list-filters');
+            var searchInput = document.getElementById('org_stats_filter_search');
+            var statusSelect = document.getElementById('org_stats_filter_status');
+            var minPageInput = document.getElementById('org_stats_filter_min_page');
+            var minPreviewInput = document.getElementById('org_stats_filter_min_preview');
+            var eventFromInput = document.getElementById('org_stats_filter_event_from');
+            var eventToInput = document.getElementById('org_stats_filter_event_to');
+            var searchTimer = null;
+
+            function getScope() {
+                var checked = controls.querySelector('input[name="org_stats_scope"]:checked');
+                return checked ? checked.value : 'chart';
+            }
+
+            function getFilterMode() {
+                var checked = controls.querySelector('input[name="org_stats_filter_mode"]:checked');
+                return checked ? checked.value : 'mind';
+            }
+
+            function parseMin(value) {
+                if (value === '' || value == null) return null;
+                var n = parseInt(value, 10);
+                return isNaN(n) ? null : Math.max(0, n);
+            }
+
+            function eventOverlapsFilter(row, fromYmd, toYmd) {
+                var start = row.getAttribute('data-event-start') || '';
+                var end = row.getAttribute('data-event-end') || start;
+                if (fromYmd && end !== '' && end < fromYmd) return false;
+                if (toYmd && start !== '' && start > toYmd) return false;
+                if ((fromYmd || toYmd) && start === '' && end === '') return false;
+                return true;
+            }
+
+            function rowMatches(row) {
+                if (getScope() === 'chart' && row.getAttribute('data-has-views') !== '1') {
+                    return false;
+                }
+                if (getFilterMode() !== 'filtered') {
+                    return true;
+                }
+
+                var search = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                if (search !== '' && (row.getAttribute('data-search') || '').indexOf(search) === -1) {
+                    return false;
+                }
+
+                var status = statusSelect ? statusSelect.value : '';
+                if (status !== '' && row.getAttribute('data-status') !== status) {
+                    return false;
+                }
+
+                var minPage = minPageInput ? parseMin(minPageInput.value) : null;
+                if (minPage !== null && parseInt(row.getAttribute('data-page-views') || '0', 10) < minPage) {
+                    return false;
+                }
+
+                var minPreview = minPreviewInput ? parseMin(minPreviewInput.value) : null;
+                if (minPreview !== null && parseInt(row.getAttribute('data-preview-views') || '0', 10) < minPreview) {
+                    return false;
+                }
+
+                var eventFrom = eventFromInput ? eventFromInput.value : '';
+                var eventTo = eventToInput ? eventToInput.value : '';
+                if (!eventOverlapsFilter(row, eventFrom, eventTo)) {
+                    return false;
+                }
+
+                return true;
+            }
+
+            function applyFilters() {
+                var visible = 0;
+                rows.forEach(function (row) {
+                    var show = rowMatches(row);
+                    row.hidden = !show;
+                    if (show) visible++;
+                });
+                if (visibleCountEl) visibleCountEl.textContent = String(visible);
+                if (emptyRow) emptyRow.hidden = visible > 0;
+            }
+
+            function syncFiltersPanel() {
+                if (filtersPanel) {
+                    filtersPanel.hidden = getFilterMode() !== 'filtered';
+                }
+            }
+
+            controls.addEventListener('change', function (e) {
+                if (e.target && e.target.name === 'org_stats_filter_mode') {
+                    syncFiltersPanel();
+                }
+                applyFilters();
+            });
+
+            [statusSelect, eventFromInput, eventToInput].forEach(function (el) {
+                if (!el) return;
+                el.addEventListener('change', applyFilters);
+            });
+
+            [minPageInput, minPreviewInput].forEach(function (el) {
+                if (!el) return;
+                el.addEventListener('input', applyFilters);
+            });
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(applyFilters, 120);
+                });
+            }
+
+            syncFiltersPanel();
+            applyFilters();
+        })();
+        </script>
     <?php endif; ?>
 </div>
