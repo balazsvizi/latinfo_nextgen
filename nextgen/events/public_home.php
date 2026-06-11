@@ -75,6 +75,8 @@ $urlEn = events_public_home_lang_switch_url('en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $D;
 $isEventsHome = true;
+$showAdminEdit = isLoggedIn();
+$adminEditUrl = events_url('fooldal_szerkeszt.php');
 $heroInlineTitle = $title;
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
 $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
