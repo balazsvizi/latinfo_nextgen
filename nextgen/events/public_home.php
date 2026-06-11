@@ -76,7 +76,7 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $D;
 $isEventsHome = true;
 $showAdminEdit = isLoggedIn();
-$adminEditUrl = events_url('fooldal_szerkeszt.php');
+$adminEditUrl = events_url('events_admin.php');
 $heroInlineTitle = $title;
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
 $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
