@@ -13,8 +13,14 @@ declare(strict_types=1);
         <div class="events-cal-preview__body">
             <p class="events-cal-preview__meta" id="events-cal-preview-meta"></p>
             <div class="events-cal-preview__change" id="events-cal-preview-change" hidden>
-                <p class="events-cal-preview__change-title" id="events-cal-preview-change-title"></p>
-                <p class="events-cal-preview__change-note" id="events-cal-preview-change-note"></p>
+                <div class="events-cal-preview__change-inner">
+                    <span class="events-cal-preview__change-icon" id="events-cal-preview-change-icon" aria-hidden="true"></span>
+                    <div class="events-cal-preview__change-copy">
+                        <span class="events-cal-preview__change-badge" id="events-cal-preview-change-badge" hidden></span>
+                        <p class="events-cal-preview__change-title" id="events-cal-preview-change-title"></p>
+                        <p class="events-cal-preview__change-note" id="events-cal-preview-change-note"></p>
+                    </div>
+                </div>
             </div>
             <h2 class="events-cal-preview__title" id="events-cal-preview-title"></h2>
             <dl class="events-cal-preview__facts">
@@ -50,6 +56,8 @@ declare(strict_types=1);
     var titleEl = document.getElementById('events-cal-preview-title');
     var metaEl = document.getElementById('events-cal-preview-meta');
     var changeWrap = document.getElementById('events-cal-preview-change');
+    var changeIconEl = document.getElementById('events-cal-preview-change-icon');
+    var changeBadgeEl = document.getElementById('events-cal-preview-change-badge');
     var changeTitleEl = document.getElementById('events-cal-preview-change-title');
     var changeNoteEl = document.getElementById('events-cal-preview-change-note');
     var mediaEl = document.getElementById('events-cal-preview-media');
@@ -105,13 +113,22 @@ declare(strict_types=1);
 
         if (changeWrap && changeTitleEl && changeNoteEl) {
             var change = data.change || null;
-            if (change && (change.typeLabel || change.note)) {
+            if (change && (change.typeLabel || change.note || change.badge)) {
                 changeWrap.hidden = false;
                 changeWrap.className = 'events-cal-preview__change';
                 if (change.type === 'cancelled') {
                     changeWrap.classList.add('events-cal-preview__change--cancelled');
+                    if (changeIconEl) changeIconEl.textContent = '✕';
                 } else if (change.type === 'modified') {
                     changeWrap.classList.add('events-cal-preview__change--modified');
+                    if (changeIconEl) changeIconEl.textContent = '⚠';
+                } else if (changeIconEl) {
+                    changeIconEl.textContent = '⚠';
+                }
+                var badge = (change.badge || '').trim();
+                if (changeBadgeEl) {
+                    changeBadgeEl.textContent = badge;
+                    changeBadgeEl.hidden = badge === '';
                 }
                 changeTitleEl.textContent = change.typeLabel || '';
                 changeTitleEl.hidden = !change.typeLabel;
@@ -120,6 +137,11 @@ declare(strict_types=1);
                 changeNoteEl.hidden = note === '';
             } else {
                 changeWrap.hidden = true;
+                if (changeIconEl) changeIconEl.textContent = '';
+                if (changeBadgeEl) {
+                    changeBadgeEl.textContent = '';
+                    changeBadgeEl.hidden = true;
+                }
                 changeTitleEl.textContent = '';
                 changeNoteEl.textContent = '';
             }

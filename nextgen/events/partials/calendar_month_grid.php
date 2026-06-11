@@ -23,6 +23,7 @@ if (!defined('EVENTS_VIEW_SOURCE_CALENDAR')) {
  * @var array<string, string> $D
  */
 $calendarPublicPreview = $calendarPublicPreview ?? false;
+$calendarLang = $calendarLang ?? 'hu';
 $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
 ?>
 <div class="events-cal" role="grid" aria-label="<?= h($gridAria) ?>">

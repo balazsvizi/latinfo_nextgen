@@ -71,8 +71,14 @@ function events_calendar_load_organizers_by_event_id(PDO $db, array $rows): arra
  * @param array<int, list<string>> $organizersByEventId
  * @return array<int, array<string, mixed>>
  */
-function events_calendar_preview_build_map(array $rows, array $categoriesByEventId, array $organizersByEventId): array
-{
+function events_calendar_preview_build_map(
+    array $rows,
+    array $categoriesByEventId,
+    array $organizersByEventId,
+    string $lang = 'hu'
+): array {
+    require_once __DIR__ . '/event_public_lang.php';
+    $strings = events_public_megjelenit_strings($lang);
     $map = [];
     foreach ($rows as $ev) {
         $eid = (int) ($ev['id'] ?? 0);
@@ -88,7 +94,7 @@ function events_calendar_preview_build_map(array $rows, array $categoriesByEvent
             }
         }
         $organizers = $organizersByEventId[$eid] ?? [];
-        $changePayload = events_event_change_preview_payload($ev);
+        $changePayload = events_event_change_preview_payload($ev, $lang, $strings);
         if ($changePayload !== null) {
             $changeStyle = events_event_change_calendar_block_style($ev);
             if (preg_match('/--events-cal-accent:([^;]+)/', $changeStyle, $m) === 1) {

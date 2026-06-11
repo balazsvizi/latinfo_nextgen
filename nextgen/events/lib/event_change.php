@@ -127,9 +127,19 @@ function events_event_change_public_note(array $event): string
  *
  * @param array<string, mixed> $event
  */
-function events_event_change_calendar_badge_label(array $event): string
+function events_event_change_calendar_badge_label(array $event, string $lang = 'hu'): string
 {
     $type = events_event_change_type($event);
+    if ($lang === 'en') {
+        if ($type === events_event_change_type_cancelled()) {
+            return 'CANCELLED';
+        }
+        if ($type === events_event_change_type_modified()) {
+            return 'CHANGE';
+        }
+
+        return '';
+    }
     if ($type === events_event_change_type_cancelled()) {
         return 'ELMARAD';
     }
@@ -192,22 +202,44 @@ function events_event_change_calendar_block_style(array $event): string
  * Publikus naptár-előnézet adat.
  *
  * @param array<string, mixed> $event
+ * @param array<string, string>|null $strings events_public_megjelenit_strings()
  * @return array{type: string, typeLabel: string, note: string, badge: string}|null
  */
-function events_event_change_preview_payload(array $event): ?array
+function events_event_change_preview_payload(array $event, string $lang = 'hu', ?array $strings = null): ?array
 {
     if (!events_event_change_active($event)) {
         return null;
+    }
+
+    if ($strings === null) {
+        require_once __DIR__ . '/event_public_lang.php';
+        $strings = events_public_megjelenit_strings($lang);
     }
 
     $type = (string) events_event_change_type($event);
 
     return [
         'type' => $type,
-        'typeLabel' => events_event_change_type_label($type),
+        'typeLabel' => events_event_change_public_heading($event, $strings, $lang),
         'note' => events_event_change_public_note($event),
-        'badge' => events_event_change_calendar_badge_label($event),
+        'badge' => events_event_change_calendar_badge_label($event, $lang),
     ];
+}
+
+/**
+ * @param array<string, mixed> $event
+ */
+function events_event_change_notice_icon(array $event): string
+{
+    $type = events_event_change_type($event);
+    if ($type === events_event_change_type_cancelled()) {
+        return '✕';
+    }
+    if ($type === events_event_change_type_modified()) {
+        return '⚠';
+    }
+
+    return '⚠';
 }
 
 /**

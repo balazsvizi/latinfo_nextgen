@@ -31,7 +31,7 @@ $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
 $calendarPreviewById = [];
 if ($view === 'cal') {
     $organizersByEventId = events_calendar_load_organizers_by_event_id($db, $rows);
-    $calendarPreviewById = events_calendar_preview_build_map($rows, $categoriesByEventId, $organizersByEventId);
+    $calendarPreviewById = events_calendar_preview_build_map($rows, $categoriesByEventId, $organizersByEventId, $lang);
 }
 
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
@@ -147,7 +147,10 @@ header('Content-Type: text/html; charset=UTF-8');
                         <a class="events-cal-view-switch__item" href="<?= h($listViewUrl) ?>"><?= h((string) $D['view_list']) ?></a>
                     </nav>
                 </div>
-                <?php require __DIR__ . '/partials/public_calendar_grid.php'; ?>
+                <?php
+                $calendarLang = $lang;
+                require __DIR__ . '/partials/public_calendar_grid.php';
+                ?>
                 <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
             <?php else: ?>
                 <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="<?= h((string) $D['view_switch_aria']) ?>">

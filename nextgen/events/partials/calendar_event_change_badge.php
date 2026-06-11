@@ -7,7 +7,7 @@ if (!function_exists('events_event_change_active')) {
 if (!events_event_change_active($ev)) {
     return;
 }
-$changeBadge = events_event_change_calendar_badge_label($ev);
+$changeBadge = events_event_change_calendar_badge_label($ev, $calendarLang ?? 'hu');
 if ($changeBadge === '') {
     return;
 }

@@ -3324,6 +3324,74 @@ body.events-cal-preview-open {
     border: 1px solid transparent;
 }
 
+.event-change-notice--hero {
+    margin: 0 0 1.15rem;
+    padding: 0;
+    border-width: 2px;
+    border-radius: 0.85rem;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+    overflow: hidden;
+}
+
+.event-change-notice--hero.event-change-notice--cancelled {
+    border-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #7f1d1d;
+}
+
+.event-change-notice--hero.event-change-notice--modified {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #78350f;
+}
+
+.event-change-notice__inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 1rem 1.1rem;
+}
+
+.event-change-notice__icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 999px;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.event-change-notice--cancelled .event-change-notice__icon {
+    color: #dc2626;
+}
+
+.event-change-notice--modified .event-change-notice__icon {
+    color: #d97706;
+}
+
+.event-change-notice__body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.event-change-notice__badge {
+    display: inline-block;
+    margin: 0 0 0.4rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    background: rgba(0, 0, 0, 0.1);
+}
+
 .event-change-notice--cancelled {
     background: #fef2f2;
     border-color: #fecaca;
@@ -3343,46 +3411,109 @@ body.events-cal-preview-open {
     line-height: 1.3;
 }
 
+.event-change-notice--hero .event-change-notice__title {
+    margin-bottom: 0.45rem;
+    font-size: clamp(1.05rem, 3.2vw, 1.35rem);
+    font-weight: 800;
+    line-height: 1.25;
+}
+
 .event-change-notice__text {
     margin: 0;
     font-size: 0.9375rem;
     line-height: 1.5;
 }
 
+.event-change-notice--hero .event-change-notice__text {
+    font-size: 1rem;
+    line-height: 1.55;
+}
+
 .event-change-notice__text:last-child {
     margin-bottom: 0;
 }
 
+.event-public__title--cancelled {
+    text-decoration: line-through;
+    text-decoration-thickness: 3px;
+    text-decoration-color: rgba(220, 38, 38, 0.55);
+    opacity: 0.82;
+}
+
+.home-public .events-cal__event-change-badge {
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+}
+
 /* Naptár előnézet — változás */
 .events-cal-preview__change {
-    margin: 0 0 0.75rem;
-    padding: 0.65rem 0.75rem;
-    border-radius: 0.5rem;
-    border: 1px solid transparent;
+    margin: 0 0 1rem;
+    padding: 0;
+    border-radius: 0.75rem;
+    border: 2px solid transparent;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
 }
 
 .events-cal-preview__change--cancelled {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #991b1b;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #dc2626;
+    color: #7f1d1d;
 }
 
 .events-cal-preview__change--modified {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #92400e;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #f59e0b;
+    color: #78350f;
+}
+
+.events-cal-preview__change-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+}
+
+.events-cal-preview__change-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.events-cal-preview__change-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.events-cal-preview__change-badge {
+    display: inline-block;
+    margin: 0 0 0.35rem;
+    padding: 0.14rem 0.45rem;
+    border-radius: 0.25rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .events-cal-preview__change-title {
-    margin: 0 0 0.25rem;
-    font-size: 0.8125rem;
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    line-height: 1.3;
 }
 
 .events-cal-preview__change-note {
     margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.45;
+    font-size: 0.9375rem;
+    line-height: 1.5;
 }

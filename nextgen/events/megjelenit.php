@@ -182,8 +182,8 @@ header('Content-Type: text/html; charset=UTF-8');
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
-            <h1 class="event-public__title"><?= h((string) $event['event_name']) ?></h1>
             <?php require __DIR__ . '/partials/public_event_change_notice.php'; ?>
+            <h1 class="event-public__title<?= events_event_change_type($event) === events_event_change_type_cancelled() ? ' event-public__title--cancelled' : '' ?>"><?= h((string) $event['event_name']) ?></h1>
             <?php if (!empty($event['event_latinfohu_partner'])): ?>
                 <div class="event-public__badges">
                     <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>

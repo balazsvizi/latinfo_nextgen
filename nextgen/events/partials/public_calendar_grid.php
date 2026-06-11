@@ -18,12 +18,16 @@ require __DIR__ . '/calendar_month_grid.php';
             <?php foreach ($undated as $ev): ?>
                 <?php
                 $eid = (int) ($ev['id'] ?? 0);
-                $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, true);
+                $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, true);
                 $eventUrl = events_public_calendar_event_url($ev);
+                $undatedLinkClass = 'events-cal-undated__link events-cal__event-link js-cal-event-preview';
+                $undatedLinkClass .= events_event_change_calendar_link_class($ev);
+                $undatedNameClass = 'events-cal__event-name' . events_event_change_event_name_class($ev);
                 ?>
                 <li role="listitem">
-                    <a class="events-cal-undated__link events-cal__event-link js-cal-event-preview" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" data-preview-id="<?= $eid ?>" aria-haspopup="dialog">
-                        <span class="events-cal__event-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
+                    <a class="<?= h($undatedLinkClass) ?>" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" data-preview-id="<?= $eid ?>" aria-haspopup="dialog">
+                        <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>
+                        <span class="<?= h($undatedNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                     </a>
                 </li>
             <?php endforeach; ?>
