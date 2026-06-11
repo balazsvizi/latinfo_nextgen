@@ -76,7 +76,14 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $D;
 $isEventsHome = true;
 $showAdminEdit = isLoggedIn();
-$adminEditUrl = events_url('events_admin.php');
+$publicAdminParams = $filters['get_params'];
+if ($view === 'list') {
+    $adminEditUrl = events_admin_list_view_url($publicAdminParams);
+    $S['admin_edit_aria'] = (string) $D['admin_edit_aria_list'];
+} else {
+    $adminEditUrl = events_admin_calendar_view_url($monthKey, $publicAdminParams);
+    $S['admin_edit_aria'] = (string) $D['admin_edit_aria_cal'];
+}
 $heroInlineTitle = $title;
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
 $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
