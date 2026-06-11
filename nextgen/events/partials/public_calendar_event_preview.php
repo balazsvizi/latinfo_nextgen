@@ -12,6 +12,10 @@ declare(strict_types=1);
         </div>
         <div class="events-cal-preview__body">
             <p class="events-cal-preview__meta" id="events-cal-preview-meta"></p>
+            <div class="events-cal-preview__change" id="events-cal-preview-change" hidden>
+                <p class="events-cal-preview__change-title" id="events-cal-preview-change-title"></p>
+                <p class="events-cal-preview__change-note" id="events-cal-preview-change-note"></p>
+            </div>
             <h2 class="events-cal-preview__title" id="events-cal-preview-title"></h2>
             <dl class="events-cal-preview__facts">
                 <div class="events-cal-preview__fact" id="events-cal-preview-venue-wrap" hidden>
@@ -45,6 +49,9 @@ declare(strict_types=1);
 
     var titleEl = document.getElementById('events-cal-preview-title');
     var metaEl = document.getElementById('events-cal-preview-meta');
+    var changeWrap = document.getElementById('events-cal-preview-change');
+    var changeTitleEl = document.getElementById('events-cal-preview-change-title');
+    var changeNoteEl = document.getElementById('events-cal-preview-change-note');
     var mediaEl = document.getElementById('events-cal-preview-media');
     var imgEl = document.getElementById('events-cal-preview-img');
     var venueWrap = document.getElementById('events-cal-preview-venue-wrap');
@@ -95,6 +102,28 @@ declare(strict_types=1);
         else if (data.time) metaParts.push(data.time);
         metaEl.textContent = metaParts.join(' · ');
         metaEl.hidden = metaParts.length === 0;
+
+        if (changeWrap && changeTitleEl && changeNoteEl) {
+            var change = data.change || null;
+            if (change && (change.typeLabel || change.note)) {
+                changeWrap.hidden = false;
+                changeWrap.className = 'events-cal-preview__change';
+                if (change.type === 'cancelled') {
+                    changeWrap.classList.add('events-cal-preview__change--cancelled');
+                } else if (change.type === 'modified') {
+                    changeWrap.classList.add('events-cal-preview__change--modified');
+                }
+                changeTitleEl.textContent = change.typeLabel || '';
+                changeTitleEl.hidden = !change.typeLabel;
+                var note = (change.note || '').trim();
+                changeNoteEl.textContent = note;
+                changeNoteEl.hidden = note === '';
+            } else {
+                changeWrap.hidden = true;
+                changeTitleEl.textContent = '';
+                changeNoteEl.textContent = '';
+            }
+        }
 
         if (data.image) {
             imgEl.src = data.image;

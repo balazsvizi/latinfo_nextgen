@@ -66,7 +66,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                     $eid = (int) ($ev['id'] ?? 0);
                                     $isPublished = events_admin_calendar_event_is_published($ev);
                                     $timeLabel = events_admin_calendar_event_time_label($ev);
-                                    $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
+                                    $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished);
                                     $eventUrl = $calendarPublicPreview
                                         ? events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CALENDAR)
                                         : events_admin_calendar_event_public_url($ev);
@@ -77,6 +77,8 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                     if (!$isPublished) {
                                         $linkClass .= ' events-cal__event-link--unpublished';
                                     }
+                                    $linkClass .= events_event_change_calendar_link_class($ev);
+                                    $eventNameClass = 'events-cal__event-name' . events_event_change_event_name_class($ev);
                                     $eventStatus = (string) ($ev['event_status'] ?? '');
                                     $statusBadgeClass = events_post_status_badge_class($eventStatus);
                                     $statusLabel = events_post_status_label($eventStatus);
@@ -93,10 +95,11 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             <?php if (!$isPublished && !$calendarPublicPreview): ?>
                                                 <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
                                             <?php endif; ?>
+                                            <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>
                                             <?php if ($timeLabel !== ''): ?>
                                                 <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
                                             <?php endif; ?>
-                                            <span class="events-cal__event-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
+                                            <span class="<?= h($eventNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                                         </a>
                                     </li>
                                 <?php endforeach; ?>
@@ -112,7 +115,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             $ev = $part['event'];
                                             $eid = (int) ($ev['id'] ?? 0);
                                             $isPublished = events_admin_calendar_event_is_published($ev);
-                                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
+                                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished);
                                             $eventUrl = $calendarPublicPreview
                                                 ? events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CALENDAR)
                                                 : events_admin_calendar_event_public_url($ev);
@@ -125,6 +128,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             if (!$isPublished) {
                                                 $barClasses .= ' events-cal__event-link--unpublished';
                                             }
+                                            $barClasses .= events_event_change_calendar_link_class($ev);
                                             if ($part['isPast']) {
                                                 $barClasses .= ' events-cal__event-link--past';
                                             }
@@ -170,10 +174,12 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                             $ev = $segment['event'];
                             $eid = (int) ($ev['id'] ?? 0);
                             $isPublished = events_admin_calendar_event_is_published($ev);
-                            $eventStyle = events_admin_calendar_event_block_style($categoriesByEventId, $eid, $isPublished);
+                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished);
                             $barTitle = (string) ($ev['event_name'] ?? '');
                             $timeLabel = $segment['showTime'] ? events_admin_calendar_event_time_label($ev) : '';
                             $labelClasses = 'events-cal__week-bar-label';
+                            $labelClasses .= events_event_change_calendar_link_class($ev);
+                            $barEventNameClass = 'events-cal__event-name' . events_event_change_event_name_class($ev);
                             if ($segment['roundLeft']) {
                                 $labelClasses .= ' events-cal__week-bar-label--round-left';
                             }
@@ -197,10 +203,11 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                 <?php if (!$isPublished && !$calendarPublicPreview): ?>
                                     <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
                                 <?php endif; ?>
+                                <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>
                                 <?php if ($timeLabel !== ''): ?>
                                     <span class="events-cal__event-time"><?= h($timeLabel) ?></span>
                                 <?php endif; ?>
-                                <span class="events-cal__event-name"><?= h($barTitle) ?></span>
+                                <span class="<?= h($barEventNameClass) ?>"><?= h($barTitle) ?></span>
                             </span>
                         <?php endforeach; ?>
                     </div>

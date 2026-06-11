@@ -84,9 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO `events_calendar_events` (
                     event_name, event_slug, event_content, event_status,
                     event_start, event_end, event_allday,
+                    event_change_active, event_change_type, event_change_note,
                     event_cost_from, event_cost_to, event_url, event_featured_image_url, event_latinfohu_partner,
                     venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
@@ -96,6 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_start'],
                 $row['event_end'],
                 $row['event_allday'],
+                $row['event_change_active'],
+                $row['event_change_type'],
+                $row['event_change_note'],
                 $row['event_cost_from'],
                 $row['event_cost_to'],
                 $row['event_url'],

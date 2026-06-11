@@ -3289,3 +3289,100 @@ body.events-cal-preview-open {
         display: none;
     }
 }
+
+/* Esemény változás / elmaradás — naptár */
+.home-public .events-cal__event-change-badge {
+    display: inline-block;
+    margin-bottom: 0.1rem;
+    padding: 0.08rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.home-public .events-cal__event-link--change-cancelled {
+    box-shadow: inset 0 0 0 2px #dc2626;
+}
+
+.home-public .events-cal__event-link--change-modified {
+    box-shadow: inset 0 0 0 2px #f59e0b;
+}
+
+.home-public .events-cal__event-name--cancelled {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+}
+
+/* Esemény változás — publikus oldal */
+.event-change-notice {
+    margin: 0 0 1rem;
+    padding: 0.9rem 1rem;
+    border-radius: 0.65rem;
+    border: 1px solid transparent;
+}
+
+.event-change-notice--cancelled {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.event-change-notice--modified {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+.event-change-notice__title {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.event-change-notice__text {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
+.event-change-notice__text:last-child {
+    margin-bottom: 0;
+}
+
+/* Naptár előnézet — változás */
+.events-cal-preview__change {
+    margin: 0 0 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+}
+
+.events-cal-preview__change--cancelled {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.events-cal-preview__change--modified {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+.events-cal-preview__change-title {
+    margin: 0 0 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.events-cal-preview__change-note {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
+}

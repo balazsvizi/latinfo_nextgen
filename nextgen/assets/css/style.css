@@ -3054,6 +3054,48 @@ dialog.eventpics-modal::backdrop {
     border-left-color: #ea580c;
     background: linear-gradient(135deg, #fff7ed 0%, #fff 60%);
 }
+.events-edit-panel--tone-change {
+    border-left-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2 0%, #fff 55%);
+}
+.events-edit-change-fields {
+    margin-top: 0.75rem;
+}
+.events-edit-change-fields[hidden] {
+    display: none !important;
+}
+.events-cal__event-change-badge {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 0.12rem;
+    padding: 0.06rem 0.38rem;
+    border-radius: 0.2rem;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+    background: rgba(0, 0, 0, 0.14);
+    color: inherit;
+}
+.events-cal__event-link--change-cancelled {
+    box-shadow: inset 0 0 0 2px #dc2626;
+    text-decoration: none;
+}
+.events-cal__event-link--change-modified {
+    box-shadow: inset 0 0 0 2px #f59e0b;
+}
+.events-cal__event-name--cancelled {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+}
+.events-cal__week-bar-label.events-cal__event-link--change-cancelled .events-cal__event-name--cancelled,
+.events-cal__week-bar-label.events-cal__event-link--change-modified .events-cal__event-name {
+    text-decoration: inherit;
+}
+.events-cal__week-bar-label.events-cal__event-link--change-cancelled .events-cal__event-name--cancelled {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+}
 .events-edit-panel--tone-cost {
     border-left-color: #d97706;
     background: linear-gradient(135deg, #fffbeb 0%, #fff 60%);

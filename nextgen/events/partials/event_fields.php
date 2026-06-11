@@ -126,6 +126,47 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
         </div>
     </div>
 </div>
+<div class="events-edit-panel events-edit-panel--tone-change" id="events-edit-change-panel">
+    <div class="events-edit-panel__title-row">
+        <h3 class="events-edit-panel__title">Változás / elmaradás</h3>
+        <label class="events-toggle" for="event_change_active">
+            <input
+                type="checkbox"
+                name="event_change_active"
+                value="1"
+                id="event_change_active"
+                class="events-toggle__input"
+                <?= !empty($e['event_change_active']) ? 'checked' : '' ?>
+            >
+            <span class="events-toggle__ui" aria-hidden="true"></span>
+            <span class="events-toggle__label">Változás jelzése</span>
+        </label>
+    </div>
+    <div class="events-edit-change-fields" id="events-edit-change-fields" <?= empty($e['event_change_active']) ? 'hidden' : '' ?>>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="event_change_type">Típus *</label>
+                <select id="event_change_type" name="event_change_type">
+                    <option value="">— válassz —</option>
+                    <?php foreach (events_event_change_types() as $typeKey => $typeLabel): ?>
+                        <option value="<?= h($typeKey) ?>" <?= ($e['event_change_type'] ?? '') === $typeKey ? 'selected' : '' ?>><?= h($typeLabel) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="event_change_note">Publikus megjegyzés</label>
+            <textarea
+                id="event_change_note"
+                name="event_change_note"
+                rows="3"
+                maxlength="2000"
+                placeholder="Pl. új időpont, másik helyszín, elmaradás oka…"
+            ><?= h((string) ($e['event_change_note'] ?? '')) ?></textarea>
+            <p class="help">A naptárban és az esemény oldalán jelenik meg.</p>
+        </div>
+    </div>
+</div>
 <div class="events-edit-org-venue-grid">
 <div class="events-edit-panel events-edit-panel--tone-venue">
     <h3 class="events-edit-panel__title">Helyszín</h3>
@@ -660,4 +701,5 @@ require __DIR__ . '/wp_token_field.php';
 <?php require __DIR__ . '/wp_token_input_script.php'; ?>
 <?php require __DIR__ . '/event_slug_script.php'; ?>
 <?php require __DIR__ . '/event_allday_script.php'; ?>
+<?php require __DIR__ . '/event_change_script.php'; ?>
 <?php require __DIR__ . '/event_date_copy_script.php'; ?>

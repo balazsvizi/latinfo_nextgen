@@ -123,6 +123,9 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_tags' => 'Címkék',
         'section_main_styles' => 'Stílusok',
         'section_supplementary_styles' => 'Kiegészítő stílusok',
+        'change_notice_aria' => 'Fontos tájékoztatás az eseményről',
+        'change_notice_heading_cancelled' => 'Az esemény elmarad',
+        'change_notice_heading_modified' => 'Változás az eseményben',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -157,6 +160,9 @@ function events_public_megjelenit_strings(string $lang): array {
         'section_tags' => 'Tags',
         'section_main_styles' => 'Styles',
         'section_supplementary_styles' => 'Supplementary styles',
+        'change_notice_aria' => 'Important event notice',
+        'change_notice_heading_cancelled' => 'This event is cancelled',
+        'change_notice_heading_modified' => 'Event update',
     ];
 
     return $lang === 'en' ? $en : $hu;

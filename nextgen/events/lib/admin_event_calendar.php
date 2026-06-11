@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/event_status.php';
+require_once __DIR__ . '/event_change.php';
 
 /**
  * Admin havi naptár nézet — hónap feloldás, rács, események naphoz rendelése.
@@ -58,6 +59,23 @@ function events_admin_calendar_event_block_style(array $categoriesByEventId, int
     $textColor = $luminance > 0.62 ? '#1a1a1a' : '#ffffff';
 
     return sprintf('background-color:%s;color:%s;border-color:%s', $hex, $textColor, $hex);
+}
+
+/**
+ * @param array<int, list<array{color: string}>> $categoriesByEventId
+ * @param array<string, mixed> $event
+ */
+function events_admin_calendar_event_block_style_for_event(
+    array $categoriesByEventId,
+    array $event,
+    bool $isPublished = true
+): string {
+    $changeStyle = events_event_change_calendar_block_style($event);
+    if ($changeStyle !== '') {
+        return $changeStyle;
+    }
+
+    return events_admin_calendar_event_block_style($categoriesByEventId, (int) ($event['id'] ?? 0), $isPublished);
 }
 
 /**

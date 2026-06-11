@@ -7,6 +7,7 @@ require_once __DIR__ . '/eventpics.php';
 require_once __DIR__ . '/html_security.php';
 require_once __DIR__ . '/style_request.php';
 require_once __DIR__ . '/tag_type.php';
+require_once __DIR__ . '/event_change.php';
 
 /**
  * Űrlapról: kiemelt kép URL (üres = null), vagy hibaüzenet.
@@ -361,6 +362,10 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     if ($ed === '' && $sd !== '') {
         $ed = $sd;
     }
+    $changeActive = isset($_POST['event_change_active']);
+    $changeType = trim((string) ($_POST['event_change_type'] ?? ''));
+    $changeNote = events_event_change_normalize_note((string) ($_POST['event_change_note'] ?? ''));
+
     $row['event_allday'] = isset($_POST['event_allday']) ? 1 : 0;
     if ($row['event_allday']) {
         if ($sd !== '') {
@@ -382,6 +387,19 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $tagIds = events_tags_tables_available($db) ? events_tag_ids_from_post() : [];
     $mainStyleIds = events_styles_tables_available($db) ? events_main_style_ids_from_post() : [];
     $supplementaryStyleIds = events_styles_tables_available($db) ? events_supplementary_style_ids_from_post() : [];
+
+    if ($changeActive) {
+        if (!events_event_change_is_valid_type($changeType)) {
+            return [$row, 'Változás esetén válaszd ki a típust (Elmarad vagy Változás).', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
+        }
+        $row['event_change_active'] = 1;
+        $row['event_change_type'] = $changeType;
+        $row['event_change_note'] = $changeNote !== '' ? $changeNote : null;
+    } else {
+        $row['event_change_active'] = 0;
+        $row['event_change_type'] = null;
+        $row['event_change_note'] = null;
+    }
 
     if ($categoryIds !== []) {
         $ph = implode(',', array_fill(0, count($categoryIds), '?'));
@@ -515,6 +533,9 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['event_start'] = null;
     $event['event_end'] = null;
     $event['event_allday'] = !empty($event['event_allday']) ? 1 : 0;
+    $event['event_change_active'] = 0;
+    $event['event_change_type'] = null;
+    $event['event_change_note'] = null;
     $event['event_status'] = events_default_post_status();
     $event['event_url'] = null;
 
@@ -601,6 +622,12 @@ function events_row_for_form(array $row): array {
         $e['event_end_time'] = '';
     }
     $e['event_latinfohu_partner'] = !empty($e['event_latinfohu_partner']);
+    $e['event_change_active'] = !empty($e['event_change_active']);
+    $changeType = isset($e['event_change_type']) ? trim((string) $e['event_change_type']) : '';
+    $e['event_change_type'] = events_event_change_is_valid_type($changeType) ? $changeType : '';
+    $e['event_change_note'] = isset($e['event_change_note']) && $e['event_change_note'] !== null
+        ? (string) $e['event_change_note']
+        : '';
     $st = (string) ($e['event_status'] ?? '');
     if (!events_is_allowed_post_status($st)) {
         $e['event_status'] = events_default_post_status();

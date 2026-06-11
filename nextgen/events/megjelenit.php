@@ -10,6 +10,7 @@ require_once __DIR__ . '/lib/tag_type.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
 require_once __DIR__ . '/lib/event_public_styles.php';
 require_once __DIR__ . '/lib/event_view_tracking.php';
+require_once __DIR__ . '/lib/event_change.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
@@ -182,6 +183,7 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <h1 class="event-public__title"><?= h((string) $event['event_name']) ?></h1>
+            <?php require __DIR__ . '/partials/public_event_change_notice.php'; ?>
             <?php if (!empty($event['event_latinfohu_partner'])): ?>
                 <div class="event-public__badges">
                     <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>

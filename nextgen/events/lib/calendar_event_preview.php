@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/admin_event_calendar.php';
 require_once __DIR__ . '/public_event_calendar.php';
+require_once __DIR__ . '/event_change.php';
 
 /**
  * Naptár esemény előnézet popup — adatok és segédek (nyilvános naptár).
@@ -87,6 +88,13 @@ function events_calendar_preview_build_map(array $rows, array $categoriesByEvent
             }
         }
         $organizers = $organizersByEventId[$eid] ?? [];
+        $changePayload = events_event_change_preview_payload($ev);
+        if ($changePayload !== null) {
+            $changeStyle = events_event_change_calendar_block_style($ev);
+            if (preg_match('/--events-cal-accent:([^;]+)/', $changeStyle, $m) === 1) {
+                $accent = trim($m[1]);
+            }
+        }
         $map[$eid] = [
             'name' => (string) ($ev['event_name'] ?? ''),
             'date' => events_admin_format_datum_cell($ev),
@@ -103,6 +111,7 @@ function events_calendar_preview_build_map(array $rows, array $categoriesByEvent
             'accent' => $accent,
             'image' => events_calendar_preview_featured_image_url($ev),
             'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
+            'change' => $changePayload,
         ];
     }
 
