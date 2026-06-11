@@ -157,7 +157,10 @@ header('Content-Type: text/html; charset=UTF-8');
                     <a class="events-cal-view-switch__item" href="<?= h($calViewUrl) ?>"><?= h((string) $D['view_cal']) ?></a>
                     <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_list']) ?></span>
                 </nav>
-                <?php require __DIR__ . '/partials/public_event_list_partitioned.php'; ?>
+                <?php
+                $listLang = $lang;
+                require __DIR__ . '/partials/public_event_list_partitioned.php';
+                ?>
                 <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
             <?php endif; ?>
         </form>

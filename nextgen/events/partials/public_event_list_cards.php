@@ -31,9 +31,26 @@ if (!defined('EVENTS_VIEW_SOURCE_LIST')) {
             $featRaw = trim(html_entity_decode(trim((string) ($ev['event_featured_image_url'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             $featRaw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $featRaw) ?? $featRaw;
             $featAbs = $featRaw !== '' ? events_absolute_url($featRaw) : '';
+            if (!function_exists('events_event_change_active')) {
+                require_once __DIR__ . '/../lib/event_change.php';
+            }
+            $listLang = $listLang ?? ($lang ?? 'hu');
+            $hasChange = events_event_change_active($ev);
+            $listCardClass = 'home-public__list-card';
+            if ($hasChange) {
+                $listCardClass .= events_event_change_list_card_class($ev);
+                $changeStyle = events_event_change_calendar_block_style($ev);
+                if (preg_match('/--events-cal-accent:([^;]+)/', $changeStyle, $accentMatch) === 1) {
+                    $accent = trim($accentMatch[1]);
+                }
+            }
+            $listNameClass = 'home-public__list-name';
+            if ($hasChange && events_event_change_type($ev) === events_event_change_type_cancelled()) {
+                $listNameClass .= ' home-public__list-name--cancelled';
+            }
             ?>
             <li class="home-public__list-item" role="listitem">
-                <a class="home-public__list-card" href="<?= h($eventUrl) ?>" style="--home-event-accent: <?= h($accent) ?>">
+                <a class="<?= h($listCardClass) ?>" href="<?= h($eventUrl) ?>" style="--home-event-accent: <?= h($accent) ?>">
                     <div class="home-public__list-media">
                         <?php if ($featAbs !== ''): ?>
                             <img
@@ -52,8 +69,9 @@ if (!defined('EVENTS_VIEW_SOURCE_LIST')) {
                         <?php endif; ?>
                     </div>
                     <div class="home-public__list-body">
+                        <?php require __DIR__ . '/public_event_list_change.php'; ?>
                         <span class="home-public__list-date"><?= h($dateLabel) ?></span>
-                        <span class="home-public__list-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
+                        <span class="<?= h($listNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                         <?php if ($venueLine !== ''): ?>
                             <span class="home-public__list-venue"><?= h($venueLine) ?></span>
                         <?php endif; ?>

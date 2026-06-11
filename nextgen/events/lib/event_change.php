@@ -245,6 +245,45 @@ function events_event_change_notice_icon(array $event): string
 /**
  * @param array<string, mixed> $event
  */
+function events_event_change_list_card_class(array $event): string
+{
+    $type = events_event_change_type($event);
+    if ($type === events_event_change_type_cancelled()) {
+        return ' home-public__list-card--change-cancelled';
+    }
+    if ($type === events_event_change_type_modified()) {
+        return ' home-public__list-card--change-modified';
+    }
+
+    return '';
+}
+
+/**
+ * @param array<string, mixed> $event
+ */
+function events_event_change_public_note_excerpt(array $event, int $maxLen = 140): string
+{
+    $note = events_event_change_public_note($event);
+    if ($note === '') {
+        return '';
+    }
+    if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+        if (mb_strlen($note, 'UTF-8') <= $maxLen) {
+            return $note;
+        }
+
+        return rtrim(mb_substr($note, 0, max(1, $maxLen - 1), 'UTF-8')) . '…';
+    }
+    if (strlen($note) <= $maxLen) {
+        return $note;
+    }
+
+    return rtrim(substr($note, 0, max(1, $maxLen - 1))) . '…';
+}
+
+/**
+ * @param array<string, mixed> $event
+ */
 function events_event_change_notice_css_modifier(array $event): string
 {
     $type = events_event_change_type($event);
