@@ -110,8 +110,8 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
                 >→</button>
             </div>
             <div class="form-group">
-                <label for="event_end_date">Záró dátum *</label>
-                <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>" required>
+                <label for="event_end_date">Záró dátum</label>
+                <input type="date" id="event_end_date" name="event_end_date" value="<?= h($e['event_end_date']) ?>">
             </div>
         </div>
         <div class="events-edit-dates-time-row" id="events-edit-dates-time-row">

@@ -358,13 +358,13 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $stt = trim((string) ($_POST['event_start_time'] ?? ''));
     $ed = trim((string) ($_POST['event_end_date'] ?? ''));
     $ett = trim((string) ($_POST['event_end_time'] ?? ''));
+    if ($ed === '' && $sd !== '') {
+        $ed = $sd;
+    }
     $row['event_allday'] = isset($_POST['event_allday']) ? 1 : 0;
     if ($row['event_allday']) {
         if ($sd !== '') {
             $stt = '00:00';
-        }
-        if ($ed === '' && $sd !== '') {
-            $ed = $sd;
         }
         if ($ed !== '') {
             $ett = '23:59';
@@ -471,9 +471,6 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
     if ($sd === '') {
         return [$row, 'A kezdő dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
-    }
-    if ($ed === '') {
-        return [$row, 'A záró dátum kötelező.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     if ($row['event_start'] === null) {
         return [$row, 'Érvénytelen kezdő dátum vagy idő.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
