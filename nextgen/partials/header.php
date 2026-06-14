@@ -129,7 +129,6 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('admin/exporter/')) ?>" role="menuitem">Exporter</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/exporter/connections.php')) ?>" role="menuitem">Exporter kapcsolatok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/backup/')) ?>" role="menuitem">Mentés Google Drive-ra</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('admin/backup/oauth.php')) ?>" role="menuitem">Drive OAuth beállítás</a></li>
                     </ul>
                 </li>
                 <?php endif; ?>

@@ -2,13 +2,41 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../init.php';
+require_once __DIR__ . '/../../includes/google_drive_backup.php';
+
+requireSuperadmin();
+
+$urlIndex = nextgen_url('admin/backup/');
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !empty($_POST['google_logout'])) {
+	if (csrf_validate('backup_drive')) {
+		alatinfo_gdrive_user_session_clear();
+		flash('success', 'Google kijelentkezés megtörtént.');
+	}
+	redirect($urlIndex);
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !empty($_POST['google_login_start'])) {
+	if (!csrf_validate('backup_drive')) {
+		flash('error', 'Biztonsági token érvénytelen. Frissítsd az oldalt, és próbáld újra.');
+		redirect($urlIndex);
+	}
+	$cfgLogin = alatinfo_backup_drive_load_config();
+	if ($cfgLogin === null || ($cfgLogin['auth'] ?? '') !== 'oauth_session') {
+		flash('error', 'Hiányzik az OAuth alkalmazás konfiguráció (GOOGLE_DRIVE_OAUTH_CLIENT_ID / SECRET a config.local.php-ben).');
+		redirect($urlIndex);
+	}
+	$authUrl = alatinfo_gdrive_oauth_authorize_url(
+		(string) $cfgLogin['oauth_client_id'],
+		alatinfo_gdrive_oauth_redirect_uri()
+	);
+	header('Location: ' . $authUrl);
+	exit;
+}
 
 $pageTitle = 'Mentés Google Drive-ra';
 $extraHead = '<link rel="stylesheet" href="' . h(nextgen_url('assets/css/backup-drive.css')) . '">';
 require_once __DIR__ . '/../../partials/header.php';
-
-requireSuperadmin();
-require_once __DIR__ . '/../../includes/google_drive_backup.php';
 
 $testResult = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['backup_test'])) {
@@ -20,18 +48,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['backup_test'])) {
 }
 
 $cfg = alatinfo_backup_drive_load_config();
-$sa_email = '';
-if ($cfg !== null && $cfg['auth'] === 'service_account') {
-	$sa = alatinfo_gdrive_load_service_account($cfg['json_path']);
-	if ($sa !== null) {
-		$sa_email = $sa['client_email'];
-	}
-}
+$googleLoggedIn = alatinfo_gdrive_user_is_logged_in();
+$googleEmail = alatinfo_gdrive_user_session_email();
+$redirectUri = alatinfo_gdrive_oauth_redirect_uri();
 
-$urlIndex = nextgen_url('admin/backup/');
-$urlOauth = nextgen_url('admin/backup/oauth.php');
 $urlStep = nextgen_url('admin/backup/step.php');
 $urlPoll = nextgen_url('admin/backup/poll.php');
+
+$flashSuccess = flash('success');
+$flashError = flash('error');
 
 $backupSteps = array(
 	array('id' => 'auth', 'label' => 'Hitelesítés'),
@@ -45,16 +70,24 @@ $backupSteps = array(
 <div class="backup-drive-wrap card">
 	<header class="backup-drive-header">
 		<h2>Mentés Google Drive-ra</h2>
-		<p class="backup-drive-intro">SQL (adatbázis) + ZIP (projekt fájlok) a VibeBackup Drive mappába.</p>
+		<p class="backup-drive-intro">SQL (adatbázis) + ZIP (projekt fájlok) a VibeBackup Drive mappába. A mentéshez a mappához jogosult Google fiókkal kell bejelentkezni.</p>
 	</header>
+
+	<?php if ($flashSuccess): ?>
+	<p class="msg msg-success"><?= h($flashSuccess) ?></p>
+	<?php endif; ?>
+	<?php if ($flashError): ?>
+	<p class="msg msg-error"><?= h($flashError) ?></p>
+	<?php endif; ?>
 
 	<?php if ($cfg === null) { ?>
 	<div class="backup-drive-card backup-drive-card--warn">
-		<h3 class="backup-drive-card__title">Konfiguráció hiányzik</h3>
+		<h3 class="backup-drive-card__title">Alkalmazás konfiguráció hiányzik</h3>
 		<ul class="backup-drive-list">
-			<li>Környezeti változók vagy <code>secret_folder/google_drive_backup_config.php</code></li>
+			<li>Állítsd be a <code>nextgen/core/config.local.php</code> fájlban:</li>
+			<li><code>GOOGLE_DRIVE_OAUTH_CLIENT_ID</code> és <code>GOOGLE_DRIVE_OAUTH_CLIENT_SECRET</code></li>
+			<li>Opcionális: <code>GOOGLE_DRIVE_BACKUP_FOLDER_ID</code> (alapértelmezés: VibeBackup)</li>
 			<li>Minta: <code>nextgen/includes/google_drive_backup_config.sample.php</code></li>
-			<li>Gmail mappa: <a href="<?= h($urlOauth) ?>">OAuth beállítás</a> (automatikusan menti a secret_folder mappába)</li>
 		</ul>
 	</div>
 	<?php } else { ?>
@@ -67,27 +100,25 @@ $backupSteps = array(
 					<dd><code><?= h($cfg['folder_id']) ?></code></dd>
 				</div>
 				<div class="backup-drive-dl__row">
-					<dt>Hitelesítés</dt>
-					<dd><?= h($cfg['auth'] === 'oauth_refresh' ? 'OAuth (Gmail)' : 'Service account') ?></dd>
+					<dt>Google fiók</dt>
+					<dd>
+						<?php if ($googleLoggedIn): ?>
+							<strong><?= h($googleEmail !== '' ? $googleEmail : 'Bejelentkezve') ?></strong>
+						<?php else: ?>
+							<span style="color:#b45309;">Nincs bejelentkezve</span>
+						<?php endif; ?>
+					</dd>
 				</div>
-				<?php if ($cfg['auth'] === 'service_account') { ?>
-				<div class="backup-drive-dl__row">
-					<dt>Kulcs fájl</dt>
-					<dd><code><?= h($cfg['json_path']) ?></code></dd>
-				</div>
-				<?php if ($sa_email !== '') { ?>
-				<div class="backup-drive-dl__row">
-					<dt>Service account</dt>
-					<dd><code><?= h($sa_email) ?></code></dd>
-				</div>
-				<?php } ?>
-				<?php } ?>
 			</dl>
-			<?php if ($cfg['auth'] === 'oauth_refresh') { ?>
-			<p class="backup-drive-note">Mentés a Gmail fiók tárhelyére. Token: <a href="<?= h($urlOauth) ?>">OAuth beállítás</a>.</p>
-			<?php } elseif ($sa_email !== '') { ?>
-			<p class="backup-drive-note">Személyes Gmail mappán a service account csak olvasni tud – íráshoz <a href="<?= h($urlOauth) ?>">OAuth</a>.</p>
-			<?php } ?>
+			<form method="post" action="<?= h($urlIndex) ?>" style="margin-top:10px;">
+				<?= csrf_input('backup_drive') ?>
+				<?php if ($googleLoggedIn): ?>
+				<button type="submit" name="google_logout" value="1" class="btn btn-secondary">Google kijelentkezés</button>
+				<?php else: ?>
+				<button type="submit" name="google_login_start" value="1" class="btn btn-primary">Bejelentkezés Google-lel</button>
+				<?php endif; ?>
+			</form>
+			<p class="backup-drive-note">A bejelentkező fióknak írási joga kell a mentési mappához. A token csak a böngésző munkamenetében marad – nem kerül fájlba.</p>
 		</section>
 
 		<section class="backup-drive-card">
@@ -95,11 +126,14 @@ $backupSteps = array(
 			<form method="post" action="<?= h($urlIndex) ?>" class="backup-drive-form" id="backup-drive-form">
 				<?= csrf_input('backup_drive') ?>
 				<div class="backup-drive-actions">
-					<button type="submit" name="backup_test" value="1" class="btn btn-secondary" id="backup-drive-test-btn">Kapcsolat tesztelése</button>
-					<button type="button" class="btn btn-primary" id="backup-drive-run-btn">Mentés indítása (Drive)</button>
-					<a href="<?= h($urlOauth) ?>" class="btn btn-secondary backup-drive-actions__link">OAuth beállítás</a>
+					<button type="submit" name="backup_test" value="1" class="btn btn-secondary" id="backup-drive-test-btn"<?= $googleLoggedIn ? '' : ' disabled' ?>>Kapcsolat tesztelése</button>
+					<button type="button" class="btn btn-primary" id="backup-drive-run-btn"<?= $googleLoggedIn ? '' : ' disabled' ?>>Mentés indítása (Drive)</button>
 				</div>
+				<?php if (!$googleLoggedIn): ?>
+				<p class="backup-drive-hint" style="color:#b45309;">Előbb jelentkezz be Google-lel a mappa tulajdonosának (vagy jogosult) fiókjával.</p>
+				<?php else: ?>
 				<p class="backup-drive-hint">A kapcsolatteszt nem készít exportot – token, mappa, <code>teszt.txt</code> olvasás, írási jog.</p>
+				<?php endif; ?>
 			</form>
 		</section>
 	</div>
@@ -148,6 +182,7 @@ $backupSteps = array(
 			<li>SQL: adatbázis export (<code>mysqldump</code> vagy PHP)</li>
 			<li>ZIP: projekt fájlok, kivéve <code>.git</code>, <code>secret_folder</code>, <code>nextgen/vendor</code></li>
 			<li>Fájlnevek: <code>alatinfo_db_*.sql</code>, <code>alatinfo_site_*.zip</code></li>
+			<li>OAuth redirect URI (Cloud Console): <code><?= h($redirectUri) ?></code></li>
 		</ul>
 	</details>
 </div>

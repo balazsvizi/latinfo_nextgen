@@ -34,4 +34,10 @@ return [
 
     // Min. 32 karakter, ajánlott 64 hex
     'EMAIL_ENCRYPT_KEY' => 'change-this-to-a-random-secret-key',
+
+    // Google Drive mentés – OAuth alkalmazás (Web kliens a Cloud Console-ból)
+    // A felhasználói token nem ide kerül: a mentés oldalon Google-bejelentkezés kell.
+    // 'GOOGLE_DRIVE_OAUTH_CLIENT_ID' => '....apps.googleusercontent.com',
+    // 'GOOGLE_DRIVE_OAUTH_CLIENT_SECRET' => 'GOCSPX-...',
+    // 'GOOGLE_DRIVE_BACKUP_FOLDER_ID' => '1BOBSMtZDB10LWKNcJxDWtq6AnFx4W9mJ',
 ];

@@ -126,7 +126,7 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 				alatinfo_backup_drive_json_response(array(
 					'ok' => false,
 					'job_id' => $jobId,
-					'messages' => array('OAuth token kérés sikertelen: ' . $tokenRes['error']),
+					'messages' => array('Google hitelesítés sikertelen: ' . $tokenRes['error'] . ' Jelentkezz be a mappa tulajdonosának fiókjával.'),
 					'progress' => $progress,
 				));
 				return;
@@ -308,7 +308,7 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 			alatinfo_backup_drive_json_response(array(
 				'ok' => false,
 				'job_id' => $jobId,
-				'messages' => array('OAuth token sikertelen: ' . $tokenRes['error']),
+				'messages' => array('Google hitelesítés sikertelen: ' . $tokenRes['error']),
 				'progress' => null,
 			));
 			return;

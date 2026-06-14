@@ -43,29 +43,176 @@ if (!function_exists('alatinfo_backup_project_root')) {
 	}
 }
 
-if (!function_exists('alatinfo_backup_drive_save_oauth_config')) {
-	/**
-	 * @return array{ok:bool,message:string}
-	 */
-	function alatinfo_backup_drive_save_oauth_config(string $clientId, string $clientSecret, string $refreshToken): array
+if (!function_exists('alatinfo_backup_drive_cfg')) {
+	function alatinfo_backup_drive_cfg(string $key, string $default = ''): string
 	{
-		$dir = alatinfo_backup_drive_secret_folder();
-		if (!is_dir($dir) && !@mkdir($dir, 0700, true)) {
-			return array('ok' => false, 'message' => 'A secret_folder mappa létrehozása sikertelen.');
+		$env = getenv($key);
+		if ($env !== false && $env !== '') {
+			return (string) $env;
 		}
-		$content = "<?php\nreturn array(\n"
-			. "\t'auth' => 'oauth_refresh',\n"
-			. "\t'folder_id' => " . var_export(alatinfo_backup_drive_default_folder_id(), true) . ",\n"
-			. "\t'oauth_client_id' => " . var_export($clientId, true) . ",\n"
-			. "\t'oauth_client_secret' => " . var_export($clientSecret, true) . ",\n"
-			. "\t'oauth_refresh_token' => " . var_export($refreshToken, true) . ",\n"
-			. ");\n";
-		$path = alatinfo_backup_drive_config_path();
-		if (@file_put_contents($path, $content, LOCK_EX) === false) {
-			return array('ok' => false, 'message' => 'A konfiguráció mentése sikertelen: ' . $path);
+		static $local = null;
+		if ($local === null) {
+			$local = array();
+			$path = dirname(__DIR__) . '/core/config.local.php';
+			if (is_file($path)) {
+				$tmp = require $path;
+				if (is_array($tmp)) {
+					$local = $tmp;
+				}
+			}
 		}
-		@chmod($path, 0600);
-		return array('ok' => true, 'message' => 'OAuth beállítások mentve: secret_folder/google_drive_backup_config.php');
+		$val = $local[$key] ?? $default;
+		return is_string($val) ? $val : (string) $val;
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_key')) {
+	function alatinfo_gdrive_user_session_key(): string
+	{
+		return 'alatinfo_gdrive_user_auth';
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_get')) {
+	/** @return array<string,mixed>|null */
+	function alatinfo_gdrive_user_session_get(): ?array
+	{
+		if (session_status() !== PHP_SESSION_ACTIVE) {
+			return null;
+		}
+		$data = $_SESSION[alatinfo_gdrive_user_session_key()] ?? null;
+		return is_array($data) ? $data : null;
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_set')) {
+	/** @param array<string,mixed> $auth */
+	function alatinfo_gdrive_user_session_set(array $auth): void
+	{
+		alatinfo_backup_drive_session_ensure();
+		$_SESSION[alatinfo_gdrive_user_session_key()] = $auth;
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_clear')) {
+	function alatinfo_gdrive_user_session_clear(): void
+	{
+		alatinfo_backup_drive_session_ensure();
+		unset($_SESSION[alatinfo_gdrive_user_session_key()]);
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_is_logged_in')) {
+	function alatinfo_gdrive_user_is_logged_in(): bool
+	{
+		return alatinfo_gdrive_user_session_get_access_token() !== null;
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_email')) {
+	function alatinfo_gdrive_user_session_email(): string
+	{
+		$auth = alatinfo_gdrive_user_session_get();
+		return trim((string) ($auth['email'] ?? ''));
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_fetch_user_email')) {
+	function alatinfo_gdrive_fetch_user_email(string $accessToken): string
+	{
+		if (!function_exists('curl_init')) {
+			return '';
+		}
+		$ch = curl_init('https://www.googleapis.com/oauth2/v2/userinfo');
+		curl_setopt_array($ch, array(
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_HTTPHEADER => array('Authorization: Bearer ' . $accessToken),
+			CURLOPT_TIMEOUT => 15,
+		));
+		$body = curl_exec($ch);
+		curl_close($ch);
+		if (!is_string($body)) {
+			return '';
+		}
+		$j = json_decode($body, true);
+		if (!is_array($j)) {
+			return '';
+		}
+		return trim((string) ($j['email'] ?? ''));
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_store_tokens')) {
+	/**
+	 * @param array{ok:bool,refresh_token:string,access_token:string,expires_in:int,error:string} $exchange
+	 */
+	function alatinfo_gdrive_user_session_store_tokens(array $exchange, string $clientId, string $clientSecret): void
+	{
+		$expiresIn = max(60, (int) ($exchange['expires_in'] ?? 3600));
+		$accessToken = trim((string) ($exchange['access_token'] ?? ''));
+		$email = $accessToken !== '' ? alatinfo_gdrive_fetch_user_email($accessToken) : '';
+		$existing = alatinfo_gdrive_user_session_get();
+		$refreshToken = trim((string) ($exchange['refresh_token'] ?? ''));
+		if ($refreshToken === '' && is_array($existing)) {
+			$refreshToken = trim((string) ($existing['refresh_token'] ?? ''));
+		}
+		alatinfo_gdrive_user_session_set(array(
+			'access_token' => $accessToken,
+			'refresh_token' => $refreshToken,
+			'expires_at' => time() + $expiresIn,
+			'client_id' => $clientId,
+			'client_secret' => $clientSecret,
+			'email' => $email,
+		));
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_refresh_access_token')) {
+	function alatinfo_gdrive_user_session_refresh_access_token(): ?string
+	{
+		$auth = alatinfo_gdrive_user_session_get();
+		if ($auth === null) {
+			return null;
+		}
+		$refreshToken = trim((string) ($auth['refresh_token'] ?? ''));
+		$clientId = trim((string) ($auth['client_id'] ?? ''));
+		$clientSecret = trim((string) ($auth['client_secret'] ?? ''));
+		if ($refreshToken === '' || $clientId === '' || $clientSecret === '') {
+			return null;
+		}
+		$cfg = array(
+			'oauth_client_id' => $clientId,
+			'oauth_client_secret' => $clientSecret,
+			'oauth_refresh_token' => $refreshToken,
+		);
+		$res = alatinfo_gdrive_access_token_oauth_refresh_with_detail($cfg);
+		if (!$res['ok'] || $res['token'] === null) {
+			return null;
+		}
+		$expiresIn = 3600;
+		$auth['access_token'] = $res['token'];
+		$auth['expires_at'] = time() + $expiresIn;
+		if ($auth['email'] === '') {
+			$auth['email'] = alatinfo_gdrive_fetch_user_email($res['token']);
+		}
+		alatinfo_gdrive_user_session_set($auth);
+		return $res['token'];
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_session_get_access_token')) {
+	function alatinfo_gdrive_user_session_get_access_token(): ?string
+	{
+		$auth = alatinfo_gdrive_user_session_get();
+		if ($auth === null) {
+			return null;
+		}
+		$token = trim((string) ($auth['access_token'] ?? ''));
+		$expiresAt = (int) ($auth['expires_at'] ?? 0);
+		if ($token !== '' && ($expiresAt === 0 || time() < $expiresAt - 60)) {
+			return $token;
+		}
+		return alatinfo_gdrive_user_session_refresh_access_token();
 	}
 }
 
@@ -106,7 +253,7 @@ if (!function_exists('alatinfo_gdrive_oauth_scopes')) {
 	 */
 	function alatinfo_gdrive_oauth_scopes(): string
 	{
-		return 'https://www.googleapis.com/auth/drive';
+		return 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email';
 	}
 }
 
@@ -346,11 +493,19 @@ if (!function_exists('alatinfo_backup_drive_normalize_config')) {
 			'oauth_refresh_token' => alatinfo_gdrive_oauth_sanitize_credential((string)($raw['oauth_refresh_token'] ?? '')),
 		);
 		if ($cfg['auth'] === '') {
-			if ($cfg['oauth_refresh_token'] !== '' && $cfg['oauth_client_id'] !== '' && $cfg['oauth_client_secret'] !== '') {
+			if ($cfg['oauth_client_id'] !== '' && $cfg['oauth_client_secret'] !== '') {
+				$cfg['auth'] = 'oauth_session';
+			} elseif ($cfg['oauth_refresh_token'] !== '' && $cfg['oauth_client_id'] !== '' && $cfg['oauth_client_secret'] !== '') {
 				$cfg['auth'] = 'oauth_refresh';
 			} else {
 				$cfg['auth'] = 'service_account';
 			}
+		}
+		if ($cfg['auth'] === 'oauth_session') {
+			if ($cfg['oauth_client_id'] === '' || $cfg['oauth_client_secret'] === '') {
+				return null;
+			}
+			return $cfg;
 		}
 		if ($cfg['auth'] === 'oauth_refresh') {
 			if ($cfg['oauth_client_id'] === '' || $cfg['oauth_client_secret'] === '' || $cfg['oauth_refresh_token'] === '') {
@@ -379,7 +534,11 @@ if (!function_exists('alatinfo_backup_drive_load_config')) {
 	 * }|null
 	 */
 	function alatinfo_backup_drive_load_config(): ?array {
-		$raw = array();
+		$raw = array(
+			'folder_id' => alatinfo_backup_drive_cfg('GOOGLE_DRIVE_BACKUP_FOLDER_ID', alatinfo_backup_drive_default_folder_id()),
+			'oauth_client_id' => alatinfo_backup_drive_cfg('GOOGLE_DRIVE_OAUTH_CLIENT_ID'),
+			'oauth_client_secret' => alatinfo_backup_drive_cfg('GOOGLE_DRIVE_OAUTH_CLIENT_SECRET'),
+		);
 		$j = getenv('GOOGLE_DRIVE_BACKUP_SERVICE_ACCOUNT_JSON');
 		$f = getenv('GOOGLE_DRIVE_BACKUP_FOLDER_ID');
 		if (is_string($f) && trim($f) !== '') {
@@ -402,20 +561,20 @@ if (!function_exists('alatinfo_backup_drive_load_config')) {
 					$raw[$cfgKey] = alatinfo_gdrive_oauth_sanitize_credential($v);
 				}
 			}
-			$norm = alatinfo_backup_drive_normalize_config($raw);
-			if ($norm !== null) {
-				return $norm;
-			}
 		}
 		$cfgFile = alatinfo_backup_drive_config_path();
 		if (is_readable($cfgFile)) {
 			/** @noinspection PhpIncludeInspection */
 			$a = include $cfgFile;
 			if (is_array($a)) {
-				return alatinfo_backup_drive_normalize_config($a);
+				foreach ($a as $k => $v) {
+					if (!array_key_exists($k, $raw) || $raw[$k] === '' || $raw[$k] === alatinfo_backup_drive_default_folder_id()) {
+						$raw[$k] = $v;
+					}
+				}
 			}
 		}
-		return null;
+		return alatinfo_backup_drive_normalize_config($raw);
 	}
 }
 
@@ -528,11 +687,9 @@ if (!function_exists('alatinfo_gdrive_oauth_token_error_hints')) {
 		if (strpos($e, 'client secret') !== false || strpos($e, 'invalid_client') !== false) {
 			$hints[] = 'A Client Secret hibás, elavult, vagy nem egyezik a Client ID-val.';
 			$hints[] = 'Cloud Console → Google Auth Platform → Clients → Web kliens → Client secret (GOCSPX-…). Másold újra, ne legyen szóköz/idézőjel a configban.';
-			$hints[] = 'Ha a secretet újrageneráltad: a régi refresh token érvénytelen – admin → OAuth beállítás → jelentkezz be újra, és másold az új refresh tokent is.';
-			$hints[] = 'A refresh tokent ugyanazzal a client_id + client_secret párral kaptad, amit a configba írsz.';
+			$hints[] = 'Jelentkezz ki, majd lépj be újra Google-lel a mentés oldalon.';
 		} elseif (strpos($e, 'invalid_grant') !== false || strpos($e, 'token has been expired') !== false || strpos($e, 'revoked') !== false || strpos($e, 'bad request') !== false) {
-			$hints[] = 'A refresh token hibás, lejárt vagy nem valós (pl. 1//xxxxxxxx placeholder a configban).';
-			$hints[] = 'Admin → OAuth beállítás → Google-bejelentkezés → másold a teljes refresh tokent a configba.';
+			$hints[] = 'A Google munkamenet lejárt – jelentkezz be újra a mappa tulajdonosának fiókjával.';
 		}
 		return $hints;
 	}
@@ -553,6 +710,26 @@ if (!function_exists('alatinfo_gdrive_access_token_for_backup')) {
 	 */
 	function alatinfo_gdrive_access_token_for_backup(array $cfg): array
 	{
+		if (($cfg['auth'] ?? '') === 'oauth_session') {
+			$token = alatinfo_gdrive_user_session_get_access_token();
+			if ($token === null) {
+				return array(
+					'ok' => false,
+					'token' => null,
+					'http_code' => 401,
+					'error' => 'Nincs Google bejelentkezés. Jelentkezz be azzal a fiókkal, amelynek joga van a mentési mappához.',
+					'auth_label' => 'Google (nincs bejelentkezve)',
+				);
+			}
+			$email = alatinfo_gdrive_user_session_email();
+			return array(
+				'ok' => true,
+				'token' => $token,
+				'http_code' => 200,
+				'error' => '',
+				'auth_label' => $email !== '' ? ('Google: ' . $email) : 'Google (bejelentkezve)',
+			);
+		}
 		if (($cfg['auth'] ?? '') === 'oauth_refresh') {
 			$res = alatinfo_gdrive_access_token_oauth_refresh_with_detail($cfg);
 			$res['auth_label'] = 'OAuth (felhasználói fiók)';
@@ -585,7 +762,7 @@ if (!function_exists('alatinfo_gdrive_storage_quota_hints')) {
 	{
 		return array(
 			'Google korlátozás: a service account nem írhat személyes Gmail Saját meghajtó mappába (nincs tárhelye), még Szerkesztő megosztással sem.',
-			'Megoldás (Gmail mappa, pl. VibeBackup): állítsd át OAuth-ra – admin → OAuth beállítás, jelentkezz be a mappa tulajdonos Gmail fiókjával.',
+			'Megoldás (Gmail mappa, pl. VibeBackup): jelentkezz be Google-lel a mappa tulajdonosának fiókjával a mentés oldalon.',
 			'Megoldás (Google Workspace): hozz létre Csapatmeghajtót (Shared Drive), tedd oda a mentési mappát, add hozzá a service accountot Tartalomkezelőként.',
 		);
 	}
@@ -689,7 +866,7 @@ if (!function_exists('alatinfo_gdrive_oauth_exchange_code')) {
 	function alatinfo_gdrive_oauth_exchange_code(string $clientId, string $clientSecret, string $redirectUri, string $code): array
 	{
 		if (!function_exists('curl_init')) {
-			return array('ok' => false, 'refresh_token' => '', 'access_token' => '', 'error' => 'cURL nincs engedélyezve.');
+			return array('ok' => false, 'refresh_token' => '', 'access_token' => '', 'expires_in' => 0, 'error' => 'cURL nincs engedélyezve.');
 		}
 		$ch = curl_init('https://oauth2.googleapis.com/token');
 		curl_setopt_array($ch, array(
@@ -713,17 +890,19 @@ if (!function_exists('alatinfo_gdrive_oauth_exchange_code')) {
 				'ok' => false,
 				'refresh_token' => '',
 				'access_token' => '',
+				'expires_in' => 0,
 				'error' => alatinfo_gdrive_google_error_message(is_string($body) ? $body : ''),
 			);
 		}
 		$j = json_decode($body, true);
 		if (!is_array($j)) {
-			return array('ok' => false, 'refresh_token' => '', 'access_token' => '', 'error' => 'Érvénytelen OAuth válasz.');
+			return array('ok' => false, 'refresh_token' => '', 'access_token' => '', 'expires_in' => 0, 'error' => 'Érvénytelen OAuth válasz.');
 		}
 		return array(
 			'ok' => true,
 			'refresh_token' => trim((string)($j['refresh_token'] ?? '')),
 			'access_token' => trim((string)($j['access_token'] ?? '')),
+			'expires_in' => (int) ($j['expires_in'] ?? 3600),
 			'error' => '',
 		);
 	}
@@ -1079,13 +1258,13 @@ if (!function_exists('alatinfo_backup_test_drive_connection')) {
 
 		$tokenRes = alatinfo_gdrive_access_token_for_backup($cfg);
 		if (!$tokenRes['ok'] || $tokenRes['token'] === null) {
-			$messages[] = 'HIBA: OAuth token sikertelen (HTTP ' . $tokenRes['http_code'] . '): ' . $tokenRes['error'];
-			if ($cfg['auth'] === 'oauth_refresh') {
+			$messages[] = 'HIBA: Google hitelesítés sikertelen (HTTP ' . $tokenRes['http_code'] . '): ' . $tokenRes['error'];
+			if ($cfg['auth'] === 'oauth_session' || $cfg['auth'] === 'oauth_refresh') {
 				foreach (alatinfo_gdrive_oauth_token_error_hints($tokenRes['error']) as $hint) {
 					$messages[] = $hint;
 				}
-				if ($tokenRes['error'] === '' || alatinfo_gdrive_oauth_token_error_hints($tokenRes['error']) === array()) {
-					$messages[] = 'Ellenőrizd az OAuth client ID/secret és refresh token értékeket, vagy generálj újat: admin → OAuth beállítás.';
+				if ($cfg['auth'] === 'oauth_session') {
+					$messages[] = 'Kattints a „Bejelentkezés Google-lel” gombra, és használd a mentési mappához jogosult fiókot.';
 				}
 			} else {
 				$messages[] = 'Ellenőrizd: Google Drive API engedélyezve a Cloud projektben, érvényes JSON kulcs.';
