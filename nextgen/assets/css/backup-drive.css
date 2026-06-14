@@ -1,0 +1,213 @@
+/* Google Drive mentés */
+.backup-drive-wrap {
+	max-width: 52rem;
+	margin: 0 0 1.5rem;
+}
+.backup-drive-header {
+	margin-bottom: 1rem;
+}
+.backup-drive-intro {
+	margin: 0.35rem 0 0;
+	color: #64748b;
+	font-size: 0.95rem;
+}
+.backup-drive-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
+	margin-bottom: 14px;
+}
+.backup-drive-card {
+	background: #fff;
+	border: 1px solid #dde3eb;
+	border-radius: 8px;
+	padding: 14px 16px;
+}
+.backup-drive-card--warn {
+	border-color: #fcd34d;
+	background: #fffbeb;
+}
+.backup-drive-card__title {
+	margin: 0 0 10px;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #1e293b;
+}
+.backup-drive-dl {
+	margin: 0;
+}
+.backup-drive-dl__row {
+	display: grid;
+	grid-template-columns: 7.5rem 1fr;
+	gap: 8px 12px;
+	margin-bottom: 8px;
+	font-size: 0.92rem;
+}
+.backup-drive-dl__row dt {
+	margin: 0;
+	color: #64748b;
+	font-weight: 500;
+}
+.backup-drive-dl__row dd {
+	margin: 0;
+	word-break: break-all;
+}
+.backup-drive-note,
+.backup-drive-hint {
+	margin: 10px 0 0;
+	font-size: 0.86rem;
+	color: #64748b;
+	line-height: 1.45;
+}
+.backup-drive-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+}
+.backup-drive-actions__link {
+	text-decoration: none;
+	display: inline-block;
+}
+.backup-drive-list {
+	margin: 0;
+	padding-left: 1.2rem;
+	font-size: 0.92rem;
+}
+.backup-drive-details {
+	margin-top: 1rem;
+	font-size: 0.88rem;
+	color: #64748b;
+}
+.backup-drive-details summary {
+	cursor: pointer;
+	font-weight: 500;
+	color: #475569;
+}
+.backup-drive-progress__bar-wrap {
+	height: 8px;
+	background: #e2e8f0;
+	border-radius: 999px;
+	overflow: hidden;
+	margin: 8px 0 6px;
+}
+.backup-drive-progress__bar {
+	height: 100%;
+	background: linear-gradient(90deg, #2563eb, #3b82f6);
+	border-radius: 999px;
+	transition: width 0.35s ease;
+}
+.backup-drive-progress__pct {
+	margin: 0;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: #2563eb;
+}
+.backup-drive-progress__status {
+	margin: 4px 0 4px;
+	font-size: 0.92rem;
+	color: #334155;
+}
+.backup-drive-progress__detail {
+	margin: 0 0 12px;
+	font-size: 0.88rem;
+	color: #2563eb;
+	font-weight: 500;
+}
+.backup-drive-steps__main {
+	flex: 1;
+	min-width: 0;
+}
+.backup-drive-steps__subbar {
+	display: block;
+	height: 4px;
+	margin-top: 6px;
+	background: #dbeafe;
+	border-radius: 999px;
+	overflow: hidden;
+}
+.backup-drive-steps__subbar-fill {
+	display: block;
+	height: 100%;
+	width: 0;
+	background: #2563eb;
+	border-radius: 999px;
+	transition: width 0.25s ease;
+}
+.backup-drive-steps {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 6px;
+}
+.backup-drive-steps__item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border-radius: 6px;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	font-size: 0.9rem;
+	color: #64748b;
+}
+.backup-drive-steps__icon {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: #cbd5e1;
+	flex-shrink: 0;
+}
+.backup-drive-steps__item.is-active {
+	border-color: #93c5fd;
+	background: #eff6ff;
+	color: #1e40af;
+	font-weight: 500;
+}
+.backup-drive-steps__item.is-active .backup-drive-steps__icon {
+	background: #2563eb;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+.backup-drive-steps__item.is-done {
+	color: #166534;
+	border-color: #bbf7d0;
+	background: #f0fdf4;
+}
+.backup-drive-steps__item.is-done .backup-drive-steps__icon {
+	background: #22c55e;
+}
+.backup-drive-steps__item.is-error {
+	color: #991b1b;
+	border-color: #fecaca;
+	background: #fef2f2;
+}
+.backup-drive-steps__item.is-error .backup-drive-steps__icon {
+	background: #ef4444;
+}
+.backup-drive-result {
+	margin-top: 14px;
+}
+.backup-drive-result--ok {
+	border-color: #bbf7d0;
+	background: #f0fdf4;
+}
+.backup-drive-result--err {
+	border-color: #fecaca;
+	background: #fef2f2;
+}
+.backup-drive-log {
+	margin: 0;
+	padding-left: 1.2rem;
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+@media (max-width: 768px) {
+	.backup-drive-grid {
+		grid-template-columns: 1fr;
+	}
+	.backup-drive-dl__row {
+		grid-template-columns: 1fr;
+		gap: 2px;
+	}
+}

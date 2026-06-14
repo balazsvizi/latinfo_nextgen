@@ -19,6 +19,7 @@ if ($navZone === 'events') {
     <title><?= h(app_backoffice_brand_line()) ?><?= isset($pageTitle) ? ' – ' . h($pageTitle) : '' ?></title>
     <?php require __DIR__ . '/../includes/favicon_head.php'; ?>
     <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>">
+    <?php if (!empty($extraHead)) { echo $extraHead; } ?>
 </head>
 <body>
 <header class="main-header">
@@ -127,6 +128,8 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('admin/email/')) ?>" role="menuitem">E-mail</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/exporter/')) ?>" role="menuitem">Exporter</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/exporter/connections.php')) ?>" role="menuitem">Exporter kapcsolatok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/backup/')) ?>" role="menuitem">Mentés Google Drive-ra</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/backup/oauth.php')) ?>" role="menuitem">Drive OAuth beállítás</a></li>
                     </ul>
                 </li>
                 <?php endif; ?>

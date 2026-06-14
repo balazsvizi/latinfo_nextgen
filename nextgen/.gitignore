@@ -9,6 +9,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+secret_folder/
 
 # App config (keep templates/example files in git)
 core/config.local.php
