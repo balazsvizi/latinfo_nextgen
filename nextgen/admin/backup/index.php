@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../init.php';
 require_once __DIR__ . '/../../includes/google_drive_backup.php';
+require_once __DIR__ . '/../../includes/google_drive_account.php';
 
 requireSuperadmin();
 
@@ -11,7 +12,7 @@ $urlIndex = nextgen_url('admin/backup/');
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !empty($_POST['google_logout'])) {
 	if (csrf_validate('backup_drive')) {
 		alatinfo_gdrive_user_session_clear();
-		flash('success', 'Google kijelentkezés megtörtént.');
+		flash('success', 'Ideiglenes Google munkamenet törölve. A mentett fiók megmaradt.');
 	}
 	redirect($urlIndex);
 }
@@ -26,6 +27,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !empty($_POST['google_login
 		flash('error', 'Hiányzik az OAuth alkalmazás konfiguráció (GOOGLE_DRIVE_OAUTH_CLIENT_ID / SECRET a config.local.php-ben).');
 		redirect($urlIndex);
 	}
+	require_once __DIR__ . '/../../includes/google_drive_account.php';
+	$remember = !empty($_POST['google_remember']);
+	alatinfo_gdrive_oauth_set_return('backup', $remember);
 	$authUrl = alatinfo_gdrive_oauth_authorize_url(
 		(string) $cfgLogin['oauth_client_id'],
 		alatinfo_gdrive_oauth_redirect_uri()
@@ -49,8 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['backup_test'])) {
 
 $cfg = alatinfo_backup_drive_load_config();
 $googleLoggedIn = alatinfo_gdrive_user_is_logged_in();
-$googleEmail = alatinfo_gdrive_user_session_email();
+$googleEmail = alatinfo_gdrive_user_display_email();
+$savedAccount = alatinfo_gdrive_account_load(alatinfo_gdrive_current_admin_id());
 $redirectUri = alatinfo_gdrive_oauth_redirect_uri();
+$urlSettings = nextgen_url('google_drive_beallitas.php');
 
 $urlStep = nextgen_url('admin/backup/step.php');
 $urlPoll = nextgen_url('admin/backup/poll.php');
@@ -70,7 +76,7 @@ $backupSteps = array(
 <div class="backup-drive-wrap card">
 	<header class="backup-drive-header">
 		<h2>Mentés Google Drive-ra</h2>
-		<p class="backup-drive-intro">SQL (adatbázis) + ZIP (projekt fájlok) a VibeBackup Drive mappába. A mentéshez a mappához jogosult Google fiókkal kell bejelentkezni.</p>
+		<p class="backup-drive-intro">SQL (adatbázis) + ZIP (projekt fájlok) a VibeBackup Drive mappába. A mentéshez a mappához jogosult Google fiók kell – <a href="<?= h($urlSettings) ?>">állítsd be a felhasználói beállításoknál</a>.</p>
 	</header>
 
 	<?php if ($flashSuccess): ?>
@@ -102,23 +108,36 @@ $backupSteps = array(
 				<div class="backup-drive-dl__row">
 					<dt>Google fiók</dt>
 					<dd>
-						<?php if ($googleLoggedIn): ?>
-							<strong><?= h($googleEmail !== '' ? $googleEmail : 'Bejelentkezve') ?></strong>
+						<?php if ($savedAccount !== null): ?>
+							<strong><?= h($savedAccount['email']) ?></strong>
+							<span style="font-size:0.85rem;color:#166534;"> (mentve)</span>
+						<?php elseif ($googleEmail !== ''): ?>
+							<strong><?= h($googleEmail) ?></strong>
+							<span style="font-size:0.85rem;color:#64748b;"> (ideiglenes)</span>
 						<?php else: ?>
-							<span style="color:#b45309;">Nincs bejelentkezve</span>
+							<span style="color:#b45309;">Nincs összekapcsolva</span>
 						<?php endif; ?>
 					</dd>
 				</div>
 			</dl>
+			<p class="backup-drive-note">
+				<a href="<?= h($urlSettings) ?>">Google Drive fiók beállítások</a>
+				<?php if ($savedAccount === null): ?> – itt mentheted el a fiókodat<?php endif; ?>
+			</p>
+			<?php if ($googleLoggedIn && alatinfo_gdrive_user_session_get() !== null): ?>
+			<form method="post" action="<?= h($urlIndex) ?>" style="margin-top:8px;">
+				<?= csrf_input('backup_drive') ?>
+				<button type="submit" name="google_logout" value="1" class="btn btn-secondary btn-sm">Ideiglenes munkamenet törlése</button>
+			</form>
+			<?php elseif ($savedAccount === null): ?>
 			<form method="post" action="<?= h($urlIndex) ?>" style="margin-top:10px;">
 				<?= csrf_input('backup_drive') ?>
-				<?php if ($googleLoggedIn): ?>
-				<button type="submit" name="google_logout" value="1" class="btn btn-secondary">Google kijelentkezés</button>
-				<?php else: ?>
+				<label style="display:block;margin-bottom:0.5rem;font-size:0.9rem;">
+					<input type="checkbox" name="google_remember" value="1" checked> Megjegyzés a felhasználómhoz
+				</label>
 				<button type="submit" name="google_login_start" value="1" class="btn btn-primary">Bejelentkezés Google-lel</button>
-				<?php endif; ?>
 			</form>
-			<p class="backup-drive-note">A bejelentkező fióknak írási joga kell a mentési mappához. A token csak a böngésző munkamenetében marad – nem kerül fájlba.</p>
+			<?php endif; ?>
 		</section>
 
 		<section class="backup-drive-card">
@@ -130,7 +149,7 @@ $backupSteps = array(
 					<button type="button" class="btn btn-primary" id="backup-drive-run-btn"<?= $googleLoggedIn ? '' : ' disabled' ?>>Mentés indítása (Drive)</button>
 				</div>
 				<?php if (!$googleLoggedIn): ?>
-				<p class="backup-drive-hint" style="color:#b45309;">Előbb jelentkezz be Google-lel a mappa tulajdonosának (vagy jogosult) fiókjával.</p>
+				<p class="backup-drive-hint" style="color:#b45309;">Kapcsold össze a Google fiókodat a <a href="<?= h($urlSettings) ?>">beállításoknál</a>, vagy jelentkezz be ideiglenesen.</p>
 				<?php else: ?>
 				<p class="backup-drive-hint">A kapcsolatteszt nem készít exportot – token, mappa, <code>teszt.txt</code> olvasás, írási jog.</p>
 				<?php endif; ?>

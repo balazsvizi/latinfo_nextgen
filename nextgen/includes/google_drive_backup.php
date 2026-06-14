@@ -105,7 +105,78 @@ if (!function_exists('alatinfo_gdrive_user_session_clear')) {
 if (!function_exists('alatinfo_gdrive_user_is_logged_in')) {
 	function alatinfo_gdrive_user_is_logged_in(): bool
 	{
-		return alatinfo_gdrive_user_session_get_access_token() !== null;
+		return alatinfo_gdrive_user_get_access_token() !== null;
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_has_saved_account')) {
+	function alatinfo_gdrive_user_has_saved_account(): bool
+	{
+		if (alatinfo_gdrive_user_session_get() !== null) {
+			return true;
+		}
+		require_once __DIR__ . '/google_drive_account.php';
+		return alatinfo_gdrive_account_has(alatinfo_gdrive_current_admin_id());
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_display_email')) {
+	function alatinfo_gdrive_user_display_email(): string
+	{
+		$email = alatinfo_gdrive_user_session_email();
+		if ($email !== '') {
+			return $email;
+		}
+		require_once __DIR__ . '/google_drive_account.php';
+		$account = alatinfo_gdrive_account_load(alatinfo_gdrive_current_admin_id());
+		return $account !== null ? trim((string) ($account['email'] ?? '')) : '';
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_get_access_token_from_db')) {
+	function alatinfo_gdrive_user_get_access_token_from_db(): ?string
+	{
+		require_once __DIR__ . '/google_drive_account.php';
+		$adminId = alatinfo_gdrive_current_admin_id();
+		if ($adminId <= 0) {
+			return null;
+		}
+		$account = alatinfo_gdrive_account_load($adminId);
+		if ($account === null) {
+			return null;
+		}
+		$cfg = alatinfo_backup_drive_load_config();
+		if ($cfg === null) {
+			return null;
+		}
+		$res = alatinfo_gdrive_access_token_oauth_refresh_with_detail(array(
+			'oauth_client_id' => (string) $cfg['oauth_client_id'],
+			'oauth_client_secret' => (string) $cfg['oauth_client_secret'],
+			'oauth_refresh_token' => (string) $account['refresh_token'],
+		));
+		if (!$res['ok'] || $res['token'] === null) {
+			return null;
+		}
+		alatinfo_gdrive_user_session_set(array(
+			'access_token' => $res['token'],
+			'refresh_token' => (string) $account['refresh_token'],
+			'expires_at' => time() + 3600,
+			'client_id' => (string) $cfg['oauth_client_id'],
+			'client_secret' => (string) $cfg['oauth_client_secret'],
+			'email' => (string) $account['email'],
+		));
+		return $res['token'];
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_user_get_access_token')) {
+	function alatinfo_gdrive_user_get_access_token(): ?string
+	{
+		$sessionToken = alatinfo_gdrive_user_session_get_access_token();
+		if ($sessionToken !== null) {
+			return $sessionToken;
+		}
+		return alatinfo_gdrive_user_get_access_token_from_db();
 	}
 }
 
@@ -711,17 +782,17 @@ if (!function_exists('alatinfo_gdrive_access_token_for_backup')) {
 	function alatinfo_gdrive_access_token_for_backup(array $cfg): array
 	{
 		if (($cfg['auth'] ?? '') === 'oauth_session') {
-			$token = alatinfo_gdrive_user_session_get_access_token();
+			$token = alatinfo_gdrive_user_get_access_token();
 			if ($token === null) {
 				return array(
 					'ok' => false,
 					'token' => null,
 					'http_code' => 401,
-					'error' => 'Nincs Google bejelentkezés. Jelentkezz be azzal a fiókkal, amelynek joga van a mentési mappához.',
+					'error' => 'Nincs összekapcsolt Google fiók. Kapcsold össze a felhasználói beállításoknál, vagy jelentkezz be Google-lel.',
 					'auth_label' => 'Google (nincs bejelentkezve)',
 				);
 			}
-			$email = alatinfo_gdrive_user_session_email();
+			$email = alatinfo_gdrive_user_display_email();
 			return array(
 				'ok' => true,
 				'token' => $token,
@@ -1264,7 +1335,7 @@ if (!function_exists('alatinfo_backup_test_drive_connection')) {
 					$messages[] = $hint;
 				}
 				if ($cfg['auth'] === 'oauth_session') {
-					$messages[] = 'Kattints a „Bejelentkezés Google-lel” gombra, és használd a mentési mappához jogosult fiókot.';
+					$messages[] = 'Kapcsold össze a Google fiókodat: Beállítások → Google Drive fiók, vagy jelentkezz be a mentés oldalon.';
 				}
 			} else {
 				$messages[] = 'Ellenőrizd: Google Drive API engedélyezve a Cloud projektben, érvényes JSON kulcs.';
