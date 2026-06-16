@@ -1831,12 +1831,64 @@ if (!function_exists('alatinfo_backup_drive_job_clear')) {
 		alatinfo_backup_drive_session_ensure();
 		$job = alatinfo_backup_drive_job_get();
 		if ($job !== null && !empty($job['job_id'])) {
-			$path = alatinfo_backup_drive_job_progress_path((string)$job['job_id']);
+			$jobId = (string) $job['job_id'];
+			$path = alatinfo_backup_drive_job_progress_path($jobId);
 			if (is_file($path)) {
 				@unlink($path);
 			}
+			alatinfo_backup_drive_job_clear_cancel_flag($jobId);
 		}
 		unset($_SESSION[alatinfo_backup_drive_job_session_key()]);
+	}
+}
+
+if (!function_exists('alatinfo_backup_drive_job_cancel_path')) {
+	function alatinfo_backup_drive_job_cancel_path(string $jobId): string
+	{
+		$safe = preg_replace('/[^a-f0-9]/', '', strtolower($jobId));
+		return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'alatinfo_bk_cancel_' . $safe . '.flag';
+	}
+}
+
+if (!function_exists('alatinfo_backup_drive_job_request_cancel')) {
+	function alatinfo_backup_drive_job_request_cancel(string $jobId): void
+	{
+		if ($jobId === '') {
+			return;
+		}
+		@file_put_contents(alatinfo_backup_drive_job_cancel_path($jobId), '1', LOCK_EX);
+		alatinfo_backup_drive_session_ensure();
+		$job = alatinfo_backup_drive_job_get();
+		if ($job !== null && (string) ($job['job_id'] ?? '') === $jobId) {
+			$job['cancelled'] = true;
+			alatinfo_backup_drive_job_set($job);
+		}
+	}
+}
+
+if (!function_exists('alatinfo_backup_drive_job_clear_cancel_flag')) {
+	function alatinfo_backup_drive_job_clear_cancel_flag(string $jobId): void
+	{
+		if ($jobId === '') {
+			return;
+		}
+		$path = alatinfo_backup_drive_job_cancel_path($jobId);
+		if (is_file($path)) {
+			@unlink($path);
+		}
+	}
+}
+
+if (!function_exists('alatinfo_backup_drive_job_is_cancelled')) {
+	function alatinfo_backup_drive_job_is_cancelled(string $jobId, ?array $job = null): bool
+	{
+		if ($jobId === '') {
+			return false;
+		}
+		if ($job !== null && !empty($job['cancelled'])) {
+			return true;
+		}
+		return is_file(alatinfo_backup_drive_job_cancel_path($jobId));
 	}
 }
 

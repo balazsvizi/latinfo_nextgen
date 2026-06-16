@@ -63,6 +63,7 @@ $logTableReady = alatinfo_gdrive_backup_log_table_exists();
 
 $urlStep = nextgen_url('admin/backup/step.php');
 $urlPoll = nextgen_url('admin/backup/poll.php');
+$urlCancel = nextgen_url('admin/backup/cancel.php');
 
 $flashSuccess = flash('success');
 $flashError = flash('error');
@@ -169,6 +170,7 @@ $backupSteps = array(
 				<div class="backup-drive-actions">
 					<button type="submit" name="backup_test" value="1" class="btn btn-secondary" id="backup-drive-test-btn"<?= $googleLoggedIn ? '' : ' disabled' ?>>Kapcsolat tesztelése</button>
 					<button type="button" class="btn btn-primary" id="backup-drive-run-btn"<?= $googleLoggedIn ? '' : ' disabled' ?>>Mentés indítása (Drive)</button>
+					<button type="button" class="btn btn-danger" id="backup-drive-stop-btn" hidden>Leállítás</button>
 				</div>
 				<?php if (!$googleLoggedIn): ?>
 				<p class="backup-drive-hint" style="color:#b45309;">Kapcsold össze a Google fiókodat a <a href="<?= h($urlSettings) ?>">beállításoknál</a>, vagy jelentkezz be ideiglenesen.</p>
@@ -296,6 +298,7 @@ $backupSteps = array(
 <script>
 (function () {
 	var runBtn = document.getElementById('backup-drive-run-btn');
+	var stopBtn = document.getElementById('backup-drive-stop-btn');
 	var testBtn = document.getElementById('backup-drive-test-btn');
 	var form = document.getElementById('backup-drive-form');
 	var progressBox = document.getElementById('backup-drive-progress');
@@ -309,6 +312,7 @@ $backupSteps = array(
 	var resultLog = document.getElementById('backup-drive-result-log');
 	var stepUrl = <?= json_encode($urlStep, JSON_UNESCAPED_UNICODE) ?>;
 	var pollUrl = <?= json_encode($urlPoll, JSON_UNESCAPED_UNICODE) ?>;
+	var cancelUrl = <?= json_encode($urlCancel, JSON_UNESCAPED_UNICODE) ?>;
 	var customDateWrap = document.getElementById('backup-date-custom-wrap');
 	var customDateRadio = document.getElementById('backup-date-custom-radio');
 	var includeDbInput = form ? form.querySelector('[name=backup_include_db]') : null;
@@ -381,7 +385,35 @@ $backupSteps = array(
 		if (testBtn) {
 			testBtn.disabled = busy;
 		}
+		if (stopBtn) {
+			stopBtn.hidden = !busy;
+			stopBtn.disabled = false;
+		}
 		runBtn.textContent = busy ? 'Mentés folyamatban…' : 'Mentés indítása (Drive)';
+	}
+
+	var activeRun = {
+		jobId: '',
+		pollTimer: null,
+		abortController: null,
+		userCancelled: false
+	};
+
+	function stopPoll() {
+		if (activeRun.pollTimer !== null) {
+			clearInterval(activeRun.pollTimer);
+			activeRun.pollTimer = null;
+		}
+	}
+
+	function requestCancel() {
+		if (!form || !cancelUrl) {
+			return Promise.resolve();
+		}
+		var fd = new FormData(form);
+		return fetch(cancelUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.catch(function () { return null; });
 	}
 
 	function resetSteps() {
@@ -501,14 +533,19 @@ $backupSteps = array(
 		}
 	}
 
-	function showResult(ok, messages) {
+	function showResult(ok, messages, cancelled) {
 		if (!resultBox || !resultLog || !resultTitle) {
 			return;
 		}
 		resultBox.hidden = false;
 		resultBox.classList.remove('backup-drive-result--ok', 'backup-drive-result--err');
-		resultBox.classList.add(ok ? 'backup-drive-result--ok' : 'backup-drive-result--err');
-		resultTitle.textContent = ok ? 'Mentés sikeres' : 'Mentés sikertelen';
+		if (cancelled) {
+			resultBox.classList.add('backup-drive-result--err');
+			resultTitle.textContent = 'Mentés megszakítva';
+		} else {
+			resultBox.classList.add(ok ? 'backup-drive-result--ok' : 'backup-drive-result--err');
+			resultTitle.textContent = ok ? 'Mentés sikeres' : 'Mentés sikertelen';
+		}
 		resultLog.innerHTML = '';
 		(messages || []).forEach(function (msg) {
 			var li = document.createElement('li');
@@ -529,6 +566,9 @@ $backupSteps = array(
 			showResult(false, ['Egyedi dátum esetén add meg a dátumot.']);
 			return;
 		}
+		activeRun.jobId = '';
+		activeRun.userCancelled = false;
+		activeRun.abortController = new AbortController();
 		setBusy(true);
 		resetSteps();
 		updateStepVisibility();
@@ -537,24 +577,18 @@ $backupSteps = array(
 		}
 		updateProgress({ percent: 0, message: 'Mentés indítása…', step: 'auth' });
 
-		var jobId = '';
 		var allMessages = [];
-		var pollTimer = null;
-
-		function stopPoll() {
-			if (pollTimer !== null) {
-				clearInterval(pollTimer);
-				pollTimer = null;
-			}
-		}
 
 		function startPoll() {
 			stopPoll();
-			if (!jobId) {
+			if (!activeRun.jobId) {
 				return;
 			}
 			function pollOnce() {
-				fetch(pollUrl + '?job_id=' + encodeURIComponent(jobId), { credentials: 'same-origin' })
+				if (activeRun.userCancelled) {
+					return;
+				}
+				fetch(pollUrl + '?job_id=' + encodeURIComponent(activeRun.jobId), { credentials: 'same-origin' })
 					.then(function (r) { return r.json(); })
 					.then(function (j) {
 						if (j && j.progress) {
@@ -564,17 +598,28 @@ $backupSteps = array(
 					.catch(function () {});
 			}
 			pollOnce();
-			pollTimer = setInterval(pollOnce, 400);
+			activeRun.pollTimer = setInterval(pollOnce, 400);
 		}
 
 		function runStep(stepName) {
+			if (activeRun.userCancelled) {
+				return Promise.reject(new Error('user_cancelled'));
+			}
 			var fd = new FormData(form);
 			fd.set('backup_step', stepName);
 			fd.delete('backup_test');
 			if (stepName === 'sql' || stepName === 'zip' || stepName === 'upload_sql' || stepName === 'upload_zip') {
 				startPoll();
 			}
-			return fetch(stepUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+			var fetchOpts = {
+				method: 'POST',
+				body: fd,
+				credentials: 'same-origin'
+			};
+			if (activeRun.abortController) {
+				fetchOpts.signal = activeRun.abortController.signal;
+			}
+			return fetch(stepUrl, fetchOpts)
 				.then(function (resp) {
 					return resp.json().then(function (j) {
 						if (!resp.ok && !j) {
@@ -593,6 +638,16 @@ $backupSteps = array(
 		backupStepsOrder.reduce(function (chain, stepName) {
 			return chain.then(function () {
 				return runStep(stepName).then(function (j) {
+					if (activeRun.userCancelled) {
+						throw new Error('user_cancelled');
+					}
+					if (j && j.cancelled) {
+						activeRun.userCancelled = true;
+						var cancelMsgs = (j.messages && j.messages.length) ? j.messages : ['Megszakítva a felhasználó által.'];
+						showResult(false, allMessages.concat(cancelMsgs), true);
+						updateProgress({ percent: 0, message: 'Megszakítva.', step: 'cleanup' });
+						throw new Error('user_cancelled');
+					}
 					if (!j || !j.ok) {
 						if (j && j.progress) {
 							updateProgress(j.progress);
@@ -602,7 +657,7 @@ $backupSteps = array(
 						throw new Error('step_failed');
 					}
 					if (j.job_id) {
-						jobId = j.job_id;
+						activeRun.jobId = j.job_id;
 					}
 					if (j.progress) {
 						updateProgress(j.progress);
@@ -619,7 +674,7 @@ $backupSteps = array(
 			});
 		}, Promise.resolve())
 			.catch(function (err) {
-				if (err && err.message === 'step_failed') {
+				if (err && (err.message === 'step_failed' || err.message === 'user_cancelled' || err.name === 'AbortError')) {
 					return;
 				}
 				showResult(false, allMessages.concat(['Hálózati vagy szerver hiba: ' + err.message]));
@@ -627,9 +682,34 @@ $backupSteps = array(
 			})
 			.finally(function () {
 				stopPoll();
+				activeRun.abortController = null;
 				setBusy(false);
 			});
 	});
+
+	if (stopBtn) {
+		stopBtn.addEventListener('click', function () {
+			if (activeRun.userCancelled) {
+				return;
+			}
+			activeRun.userCancelled = true;
+			if (stopBtn) {
+				stopBtn.disabled = true;
+			}
+			if (activeRun.abortController) {
+				activeRun.abortController.abort();
+			}
+			stopPoll();
+			updateProgress({ percent: 0, message: 'Leállítás…', step: 'cleanup' });
+			requestCancel().then(function (j) {
+				var msgs = ['Megszakítva a felhasználó által.'];
+				if (j && Array.isArray(j.messages) && j.messages.length) {
+					msgs = j.messages;
+				}
+				showResult(false, msgs, true);
+			});
+		});
+	}
 })();
 </script>
 <?php require_once __DIR__ . '/../../partials/footer.php'; ?>

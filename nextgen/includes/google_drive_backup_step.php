@@ -4,6 +4,85 @@ declare(strict_types=1);
 require_once __DIR__ . '/google_drive_backup.php';
 require_once __DIR__ . '/google_drive_backup_log.php';
 
+if (!function_exists('alatinfo_backup_google_drive_abort_job')) {
+	function alatinfo_backup_google_drive_abort_job(array $job, string $reason): void
+	{
+		$logId = isset($job['log_id']) ? (int) $job['log_id'] : null;
+		$messages = is_array($job['messages'] ?? null) ? $job['messages'] : array();
+		$messages[] = $reason;
+		alatinfo_gdrive_backup_log_append($logId, $reason);
+		alatinfo_gdrive_backup_log_finish($logId, false, $messages);
+		if (!empty($job['tmp']) && is_dir((string) $job['tmp'])) {
+			alatinfo_backup_rrmdir((string) $job['tmp']);
+		}
+		$jobId = (string) ($job['job_id'] ?? '');
+		if ($jobId !== '') {
+			alatinfo_backup_drive_job_clear_cancel_flag($jobId);
+		}
+		alatinfo_backup_drive_job_clear();
+	}
+}
+
+if (!function_exists('alatinfo_backup_google_drive_cancelled_response')) {
+	/** @param list<string> $messages */
+	function alatinfo_backup_google_drive_cancelled_response(array $job, string $reason, array $messages = array()): void
+	{
+		alatinfo_backup_google_drive_abort_job($job, $reason);
+		alatinfo_backup_drive_json_response(array(
+			'ok' => false,
+			'cancelled' => true,
+			'job_id' => (string) ($job['job_id'] ?? ''),
+			'messages' => $messages !== array() ? $messages : array($reason),
+			'progress' => array(
+				'step' => 'cleanup',
+				'message' => $reason,
+				'percent' => 0,
+			),
+		));
+	}
+}
+
+if (!function_exists('alatinfo_backup_google_drive_step_maybe_cancelled')) {
+	function alatinfo_backup_google_drive_step_maybe_cancelled(array $job, string $jobId): bool
+	{
+		if (!alatinfo_backup_drive_job_is_cancelled($jobId, $job)) {
+			return false;
+		}
+		$messages = is_array($job['messages'] ?? null) ? $job['messages'] : array();
+		$messages[] = 'Megszakítva a felhasználó által.';
+		alatinfo_backup_google_drive_cancelled_response($job, 'Megszakítva a felhasználó által.', $messages);
+		return true;
+	}
+}
+
+if (!function_exists('alatinfo_backup_google_drive_handle_cancel')) {
+	function alatinfo_backup_google_drive_handle_cancel(): void
+	{
+		$guard = alatinfo_backup_google_drive_step_guard();
+		if (!$guard['ok']) {
+			alatinfo_backup_drive_json_response(array(
+				'ok' => false,
+				'messages' => array($guard['message']),
+			), $guard['message'] === 'Nincs belépve.' ? 403 : 400);
+			return;
+		}
+		$job = alatinfo_backup_drive_job_get();
+		if ($job === null || empty($job['job_id'])) {
+			alatinfo_backup_drive_json_response(array(
+				'ok' => true,
+				'messages' => array('Nincs futó mentés.'),
+			));
+			return;
+		}
+		$jobId = (string) $job['job_id'];
+		alatinfo_backup_drive_job_request_cancel($jobId);
+		$reason = 'Megszakítva a felhasználó által.';
+		$messages = is_array($job['messages'] ?? null) ? $job['messages'] : array();
+		$messages[] = $reason;
+		alatinfo_backup_google_drive_cancelled_response($job, $reason, $messages);
+	}
+}
+
 if (!function_exists('alatinfo_backup_google_drive_step_guard')) {
 	/** @return array{ok:bool,message:string} */
 	function alatinfo_backup_google_drive_step_guard(): array
@@ -218,6 +297,10 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 		}
 		$jobId = (string)$job['job_id'];
 
+		if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
+			return;
+		}
+
 		if ($step === 'sql') {
 			$logId = isset($job['log_id']) ? (int) $job['log_id'] : null;
 			if (empty($job['include_db'])) {
@@ -243,6 +326,9 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 			);
 			alatinfo_backup_drive_session_release();
 			$dump = alatinfo_backup_export_sql($db, (string)$job['sql_path']);
+			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
+				return;
+			}
 			if (!$dump['ok']) {
 				alatinfo_gdrive_backup_log_append($logId, 'HIBA: ' . $dump['message']);
 				alatinfo_gdrive_backup_log_finish($logId, false, array_merge($job['messages'], array('Adatbázis export sikertelen: ' . $dump['message'])));
@@ -334,6 +420,9 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 				},
 				$minMtime
 			);
+			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
+				return;
+			}
 			if (!$zip['ok']) {
 				alatinfo_gdrive_backup_log_append($logId, 'HIBA: ' . $zip['message']);
 				alatinfo_gdrive_backup_log_finish($logId, false, array_merge($job['messages'], array($zip['message'])));
@@ -432,6 +521,9 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 				'application/sql',
 				alatinfo_backup_drive_upload_progress_callback($jobId, 'upload_sql', 'SQL', 48, 72)
 			);
+			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
+				return;
+			}
 			$stepMessages[] = $r1['message'];
 			alatinfo_gdrive_backup_log_append($logId, $r1['message']);
 			if (!$r1['ok']) {
@@ -508,6 +600,9 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 				'application/zip',
 				alatinfo_backup_drive_upload_progress_callback($jobId, 'upload_zip', 'ZIP', 74, 97)
 			);
+			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
+				return;
+			}
 			$stepMessages[] = $r2['message'];
 			alatinfo_gdrive_backup_log_append($logId, $r2['message']);
 			$job['messages'] = array_merge($job['messages'], $stepMessages);
