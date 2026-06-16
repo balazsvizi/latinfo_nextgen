@@ -89,8 +89,48 @@ function events_csv_filter_map(array $map): array {
 }
 
 /**
- * @param array<string,mixed> $meta
+ * @param array<string,string> $map
+ * @param array<string,string> $csvRow
+ * @param array<string,mixed> $tableSchema
  */
+function events_csv_import_record_id_from_row(array $map, array $csvRow, array $tableSchema): ?string {
+    if (isset($map['id'])) {
+        $header = $map['id'];
+        if (array_key_exists($header, $csvRow)) {
+            $trim = trim((string) $csvRow[$header]);
+            if ($trim !== '') {
+                return $trim;
+            }
+        }
+    }
+    if (!empty($tableSchema['composite_key']) && is_array($tableSchema['composite_key'])) {
+        $parts = [];
+        foreach ($tableSchema['composite_key'] as $col) {
+            if (!isset($map[$col])) {
+                continue;
+            }
+            $header = $map[$col];
+            $value = trim((string) ($csvRow[$header] ?? ''));
+            if ($value !== '') {
+                $parts[] = $col . '=' . $value;
+            }
+        }
+        if ($parts !== []) {
+            return implode(', ', $parts);
+        }
+    }
+
+    return null;
+}
+
+function events_csv_import_skip_message(int $lineNo, string $reason, int|string|null $recordId = null): string {
+    if ($recordId !== null && $recordId !== '' && $recordId !== 0 && $recordId !== '0') {
+        return "Adatsor {$lineNo} (import, rekord ID {$recordId}): kihagyva – {$reason}";
+    }
+
+    return "Adatsor {$lineNo} (import): kihagyva – {$reason}";
+}
+
 /**
  * Virtuális category_ids CSV cella feldolgozása → egyedi pozitív ID-k sorrend szerint.
  *
@@ -1026,9 +1066,10 @@ function events_csv_import_run(
     if (!empty($tableSchema['composite_key'])) {
         foreach ($parsed['rows'] as $csvRow) {
             $lineNo++;
+            $recordIdLabel = events_csv_import_record_id_from_row($map, $csvRow, $tableSchema);
             [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
             if ($err !== null) {
-                $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                 continue;
             }
             try {
@@ -1052,7 +1093,7 @@ function events_csv_import_run(
                     $inserted++;
                 }
             } catch (Throwable $e) {
-                $skipped[] = 'Adatsor ' . $lineNo . ' (import): kihagyva – ' . $e->getMessage();
+                $skipped[] = events_csv_import_skip_message($lineNo, $e->getMessage(), $recordIdLabel);
             }
         }
 
@@ -1069,17 +1110,24 @@ function events_csv_import_run(
                 if ($trim !== '' && ctype_digit($trim)) {
                     $idVal = (int) $trim;
                     if ($idVal > $tableSchema['id_max_import']) {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az ID nem lehet nagyobb, mint {$tableSchema['id_max_import']} (kapott érték: {$idVal}).";
+                        $skipped[] = events_csv_import_skip_message(
+                            $lineNo,
+                            "az ID nem lehet nagyobb, mint {$tableSchema['id_max_import']} (kapott érték: {$idVal})",
+                            (string) $idVal
+                        );
                         continue;
                     }
                 }
             }
         }
+        $recordIdLabel = ($idVal !== null && $idVal > 0)
+            ? (string) $idVal
+            : events_csv_import_record_id_from_row($map, $csvRow, $tableSchema);
 
         try {
             if ($table === 'events_styles') {
                 if (!events_styles_tables_available($db)) {
-                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az events_styles tábla nem elérhető.";
+                    $skipped[] = events_csv_import_skip_message($lineNo, 'az events_styles tábla nem elérhető.', $recordIdLabel);
                     continue;
                 }
                 if ($idVal !== null && $idVal > 0) {
@@ -1087,7 +1135,7 @@ function events_csv_import_run(
                     if ($exists) {
                         [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true, $idVal);
                         if ($err !== null) {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                             continue;
                         }
                         if (array_key_exists('name', $vals)) {
@@ -1096,7 +1144,7 @@ function events_csv_import_run(
                                 $stDup = $db->prepare('SELECT `id` FROM `events_styles` WHERE `name` = ? AND `id` <> ? LIMIT 1');
                                 $stDup->execute([$newName, $idVal]);
                                 if ($stDup->fetchColumn()) {
-                                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$newName}” név már egy másik stílushoz tartozik.";
+                                    $skipped[] = events_csv_import_skip_message($lineNo, 'a „' . $newName . '” név már egy másik stílushoz tartozik.', $recordIdLabel);
                                     continue;
                                 }
                             }
@@ -1105,23 +1153,23 @@ function events_csv_import_run(
                         if ($didUpdate) {
                             $updated++;
                         } else {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező stílus (id={$idVal}), nincs frissítendő mező.";
+                            $skipped[] = events_csv_import_skip_message($lineNo, 'létező stílus (id=' . $idVal . '), nincs frissítendő mező.', $recordIdLabel);
                         }
                     } else {
                         [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                         if ($err !== null) {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                             continue;
                         }
                         $nm = trim((string) ($vals['name'] ?? ''));
                         if ($nm === '') {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                            $skipped[] = events_csv_import_skip_message($lineNo, 'üres név.', $recordIdLabel);
                             continue;
                         }
                         $stName = $db->prepare('SELECT `id` FROM `events_styles` WHERE `name` = ? LIMIT 1');
                         $stName->execute([$nm]);
                         if ($stName->fetchColumn()) {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű stílus már létezik.";
+                            $skipped[] = events_csv_import_skip_message($lineNo, 'a „' . $nm . '” nevű stílus már létezik.', $recordIdLabel);
                             continue;
                         }
                         $vals['id'] = $idVal;
@@ -1131,18 +1179,18 @@ function events_csv_import_run(
                 } else {
                     [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                     if ($err !== null) {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                        $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                         continue;
                     }
                     $nm = trim((string) ($vals['name'] ?? ''));
                     if ($nm === '') {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                        $skipped[] = events_csv_import_skip_message($lineNo, 'üres név.', $recordIdLabel);
                         continue;
                     }
                     $stName = $db->prepare('SELECT `id` FROM `events_styles` WHERE `name` = ? LIMIT 1');
                     $stName->execute([$nm]);
                     if ($stName->fetchColumn()) {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű stílus már létezik.";
+                        $skipped[] = events_csv_import_skip_message($lineNo, 'a „' . $nm . '” nevű stílus már létezik.', $recordIdLabel);
                         continue;
                     }
                     events_csv_do_insert($db, $table, $vals);
@@ -1152,7 +1200,7 @@ function events_csv_import_run(
             }
             if ($table === 'events_tags') {
                 if (!events_tags_tables_available($db)) {
-                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – az events_tags tábla nem elérhető.";
+                    $skipped[] = events_csv_import_skip_message($lineNo, 'az events_tags tábla nem elérhető.', $recordIdLabel);
                     continue;
                 }
                 if ($idVal !== null && $idVal > 0) {
@@ -1160,7 +1208,7 @@ function events_csv_import_run(
                     if ($exists) {
                         [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true, $idVal);
                         if ($err !== null) {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                             continue;
                         }
                         if (array_key_exists('name', $vals)) {
@@ -1169,7 +1217,7 @@ function events_csv_import_run(
                                 $stDup = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? AND `id` <> ? LIMIT 1');
                                 $stDup->execute([$newName, $idVal]);
                                 if ($stDup->fetchColumn()) {
-                                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$newName}” név már egy másik címkéhez tartozik.";
+                                    $skipped[] = events_csv_import_skip_message($lineNo, 'a „' . $newName . '” név már egy másik címkéhez tartozik.', $recordIdLabel);
                                     continue;
                                 }
                             }
@@ -1179,23 +1227,23 @@ function events_csv_import_run(
                         if ($didUpdate) {
                             $updated++;
                         } else {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező címke (id={$idVal}), nincs frissítendő mező.";
+                            $skipped[] = events_csv_import_skip_message($lineNo, 'létező címke (id=' . $idVal . '), nincs frissítendő mező.', $recordIdLabel);
                         }
                     } else {
                         [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                         if ($err !== null) {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                            $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                             continue;
                         }
                         $nm = trim((string) ($vals['name'] ?? ''));
                         if ($nm === '') {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                            $skipped[] = events_csv_import_skip_message($lineNo, 'üres név.', $recordIdLabel);
                             continue;
                         }
                         $stName = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
                         $stName->execute([$nm]);
                         if ($stName->fetchColumn()) {
-                            $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű címke már létezik.";
+                            $skipped[] = events_csv_import_skip_message($lineNo, 'a „' . $nm . '” nevű címke már létezik.', $recordIdLabel);
                             continue;
                         }
                         $vals['id'] = $idVal;
@@ -1206,18 +1254,18 @@ function events_csv_import_run(
                 } else {
                     [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                     if ($err !== null) {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                        $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                         continue;
                     }
                     $nm = trim((string) ($vals['name'] ?? ''));
                     if ($nm === '') {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – üres név.";
+                        $skipped[] = events_csv_import_skip_message($lineNo, 'üres név.', $recordIdLabel);
                         continue;
                     }
                     $stName = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
                     $stName->execute([$nm]);
                     if ($stName->fetchColumn()) {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – a „{$nm}” nevű címke már létezik.";
+                        $skipped[] = events_csv_import_skip_message($lineNo, 'a „' . $nm . '” nevű címke már létezik.', $recordIdLabel);
                         continue;
                     }
                     events_csv_do_insert($db, $table, $vals);
@@ -1232,7 +1280,7 @@ function events_csv_import_run(
                 if ($exists) {
                     [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, true, $idVal);
                     if ($err !== null) {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                        $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                         continue;
                     }
                     $cats = events_csv_take_category_sync_payload($vals);
@@ -1243,12 +1291,16 @@ function events_csv_import_run(
                     if ($didUpdate || $cats !== null) {
                         $updated++;
                     } else {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – létező rekord (id={$idVal}), de nincs frissítendő mező: a mapolt oszlopok CSV értékei üresek, vagy csak `created` / tiltott mezők változnának.";
+                        $skipped[] = events_csv_import_skip_message(
+                            $lineNo,
+                            'létező rekord (id=' . $idVal . '), de nincs frissítendő mező: a mapolt oszlopok CSV értékei üresek, vagy csak `created` / tiltott mezők változnának.',
+                            $recordIdLabel
+                        );
                     }
                 } else {
                     [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                     if ($err !== null) {
-                        $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                        $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                         continue;
                     }
                     $cats = events_csv_take_category_sync_payload($vals);
@@ -1262,7 +1314,7 @@ function events_csv_import_run(
             } else {
                 [$vals, $err] = events_csv_build_row_values($db, $table, $map, $csvRow, $tableSchema, false, null);
                 if ($err !== null) {
-                    $skipped[] = "Adatsor {$lineNo} (import): kihagyva – {$err}";
+                    $skipped[] = events_csv_import_skip_message($lineNo, $err, $recordIdLabel);
                     continue;
                 }
                 $cats = events_csv_take_category_sync_payload($vals);
@@ -1273,7 +1325,7 @@ function events_csv_import_run(
                 $inserted++;
             }
         } catch (Throwable $e) {
-            $skipped[] = 'Adatsor ' . $lineNo . ' (import): kihagyva – ' . $e->getMessage();
+            $skipped[] = events_csv_import_skip_message($lineNo, $e->getMessage(), $recordIdLabel);
         }
     }
 
