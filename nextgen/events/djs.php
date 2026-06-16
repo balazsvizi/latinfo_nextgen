@@ -86,6 +86,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     <?php
                     $djId = (int) ($dj['id'] ?? 0);
                     $djName = (string) ($dj['name'] ?? '');
+                    $total = (int) ($dj['event_total'] ?? 0);
                     $upcoming = (int) ($dj['event_upcoming'] ?? 0);
                     $nextStart = (string) ($dj['next_event_start'] ?? '');
                     $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
@@ -98,13 +99,16 @@ header('Content-Type: text/html; charset=UTF-8');
                     <li
                         class="djs-public__cell"
                         data-name="<?= h($nameSort) ?>"
-                        data-events="<?= $upcoming ?>"
+                        data-events="<?= $total ?>"
                         data-upcoming="<?= $upcoming ?>"
                     >
                         <a class="djs-public__card" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
                             <span class="djs-public__card-icon" aria-hidden="true">🎧</span>
                             <span class="djs-public__card-name"><?= h($djName) ?></span>
                             <span class="djs-public__card-stats">
+                                <span class="djs-public__card-stat djs-public__card-stat--muted">
+                                    <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
+                                </span>
                                 <span class="djs-public__card-stat djs-public__card-stat--upcoming">
                                     <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
                                 </span>

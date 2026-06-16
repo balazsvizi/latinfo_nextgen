@@ -18,6 +18,7 @@ function events_public_tag_has_type_code(PDO $db, int $tagId, string $typeCode):
  * @return list<array{
  *   id: int,
  *   name: string,
+ *   event_total: int,
  *   event_upcoming: int,
  *   next_event_start: ?string
  * }>
@@ -52,6 +53,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus): array {
         $byId[$id] = [
             'id' => $id,
             'name' => (string) ($row['name'] ?? ''),
+            'event_total' => 0,
             'event_upcoming' => 0,
             'next_event_start' => null,
         ];
@@ -76,6 +78,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus): array {
         if (!isset($byId[$tid])) {
             continue;
         }
+        $byId[$tid]['event_total']++;
         if (events_public_event_row_is_past($evRow, $nowTs)) {
             continue;
         }
