@@ -97,6 +97,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(events_url('tags.php'));
     }
 
+    if ($action === 'bulk_set_types') {
+        if (!events_tag_types_tables_available($db)) {
+            flash('error', 'A címke típus táblák nem elérhetők.');
+            redirect(events_url('tags.php'));
+        }
+        $idsRaw = $_POST['tag_ids'] ?? [];
+        $ids = is_array($idsRaw)
+            ? array_values(array_unique(array_filter(array_map('intval', $idsRaw), static fn (int $id): bool => $id > 0)))
+            : [];
+        if ($ids === []) {
+            flash('error', 'Válassz ki legalább egy címkét.');
+            redirect(events_url('tags.php'));
+        }
+        $typeRaw = $_POST['tag_type_codes'] ?? [];
+        $typeCodes = events_tag_type_normalize_codes(is_array($typeRaw) ? $typeRaw : [], $db);
+        $stExists = $db->prepare('SELECT 1 FROM `events_tags` WHERE `id` = ? LIMIT 1');
+        $updated = 0;
+        $db->beginTransaction();
+        try {
+            foreach ($ids as $tagId) {
+                $stExists->execute([$tagId]);
+                if (!$stExists->fetchColumn()) {
+                    continue;
+                }
+                events_save_tag_types($db, $tagId, $typeCodes);
+                $updated++;
+            }
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+        if ($updated === 0) {
+            flash('error', 'Egyetlen kijelölt címke sem található.');
+            redirect(events_url('tags.php'));
+        }
+        flash('success', $updated . ' címke típusa frissítve.');
+        rendszer_log('tag', null, 'Csoportos típus beállítás', $updated . ' címke');
+        redirect(events_url('tags.php'));
+    }
+
     redirect(events_url('tags.php'));
 }
 
@@ -110,6 +151,10 @@ if (events_tag_types_tables_available($db) && $tagRows !== []) {
 
 $typeDisplayMeta = events_tag_type_display_meta($db);
 $typeLabelMap = events_tag_type_labels($db);
+$tagBulkTypesEnabled = events_tag_types_tables_available($db);
+$tagTableColId = $tagBulkTypesEnabled ? 1 : 0;
+$tagTableColName = $tagBulkTypesEnabled ? 2 : 1;
+$tagTableColTypes = $tagBulkTypesEnabled ? 3 : 2;
 
 $openTagRaw = (string) ($_GET['open_tag'] ?? '');
 $openTagGroup = '';
@@ -135,6 +180,22 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </div>
 
+    <?php if ($tagRows !== [] && $tagBulkTypesEnabled): ?>
+    <form method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-bulk" id="events-tags-bulk-form">
+        <?= csrf_input('events_tags') ?>
+        <input type="hidden" name="action" value="bulk_set_types">
+        <div class="events-tags-bulk__toolbar">
+            <span class="events-tags-bulk__selected" id="events-tags-selected-label" aria-live="polite">0 kiválasztva</span>
+            <button type="submit" class="btn btn-primary" id="events-tags-bulk-btn" disabled>Típusok beállítása a kijelölteknek</button>
+        </div>
+        <?php
+        $tagTypeSelected = [];
+        require __DIR__ . '/partials/tags_types_fieldset.php';
+        ?>
+        <p class="help events-tags-bulk__hint">A kiválasztott típusok felülírják a kijelölt címkék eddigi típusait. Üres típus = általános címke (nincs típus).</p>
+    </form>
+    <?php endif; ?>
+
     <div class="table-wrap events-admin-table-wrap events-inline-expand-wrap">
         <table
             class="events-admin-table events-inline-expand-table"
@@ -144,23 +205,31 @@ require_once dirname(__DIR__) . '/partials/header.php';
         >
             <thead>
                 <tr>
+                    <?php if ($tagBulkTypesEnabled): ?>
+                    <th scope="col" class="events-tags-admin__th-check">
+                        <input type="checkbox" id="events-tags-check-all" aria-label="Látható címkék kijelölése" title="Látható címkék kijelölése">
+                    </th>
+                    <?php endif; ?>
                     <th scope="col">
                         <span class="events-inline-th-label">ID</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="0" data-sort-type="int" aria-label="Rendezés ID szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="<?= $tagTableColId ?>" data-sort-type="int" aria-label="Rendezés ID szerint">↕</button>
                     </th>
                     <th scope="col">
                         <span class="events-inline-th-label">Név</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="1" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="<?= $tagTableColName ?>" data-sort-type="text" aria-label="Rendezés név szerint">↕</button>
                     </th>
                     <th scope="col">
                         <span class="events-inline-th-label">Típusok</span>
-                        <button type="button" class="events-inline-sort-btn" data-sort-col="2" data-sort-type="text" aria-label="Rendezés típus szerint">↕</button>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="<?= $tagTableColTypes ?>" data-sort-type="text" aria-label="Rendezés típus szerint">↕</button>
                     </th>
                 </tr>
                 <tr class="events-inline-filter-row">
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="0" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="1" placeholder="Szűrés…" aria-label="Szűrés név"></th>
-                    <th><input type="search" class="events-inline-filter-input" data-filter-col="2" placeholder="Szűrés…" aria-label="Szűrés típus"></th>
+                    <?php if ($tagBulkTypesEnabled): ?>
+                    <th class="events-tags-admin__th-check" aria-hidden="true"></th>
+                    <?php endif; ?>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="<?= $tagTableColId ?>" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="<?= $tagTableColName ?>" placeholder="Szűrés…" aria-label="Szűrés név"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="<?= $tagTableColTypes ?>" placeholder="Szűrés…" aria-label="Szűrés típus"></th>
                 </tr>
             </thead>
             <tbody>
@@ -171,11 +240,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     role="button"
                     aria-expanded="<?= $openTagGroup === 'new' ? 'true' : 'false' ?>"
                 >
+                    <?php if ($tagBulkTypesEnabled): ?>
+                    <td class="events-tags-admin__td-check" aria-hidden="true"></td>
+                    <?php endif; ?>
                     <td class="events-inline-summary-muted">—</td>
                     <td colspan="2"><strong>Új címke</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
                 </tr>
                 <tr class="events-inline-detail" data-expand-group="new" <?= $openTagGroup === 'new' ? '' : 'hidden' ?>>
-                    <td colspan="3">
+                    <td colspan="<?= $tagBulkTypesEnabled ? 4 : 3 ?>">
                         <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                             <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                 <?= csrf_input('events_tags') ?>
@@ -210,6 +282,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         role="button"
                         aria-expanded="<?= $isOpen ? 'true' : 'false' ?>"
                     >
+                        <?php if ($tagBulkTypesEnabled): ?>
+                        <td class="events-tags-admin__td-check">
+                            <input
+                                type="checkbox"
+                                class="events-tags-row-check"
+                                name="tag_ids[]"
+                                value="<?= $tid ?>"
+                                form="events-tags-bulk-form"
+                                aria-label="Kijelölés: <?= h((string) $tr['name']) ?>"
+                            >
+                        </td>
+                        <?php endif; ?>
                         <td><?= $tid ?></td>
                         <td><?= h((string) $tr['name']) ?></td>
                         <td>
@@ -233,7 +317,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         </td>
                     </tr>
                     <tr class="events-inline-detail" data-expand-group="<?= $tid ?>" <?= $isOpen ? '' : 'hidden' ?>>
-                        <td colspan="3">
+                        <td colspan="<?= $tagBulkTypesEnabled ? 4 : 3 ?>">
                             <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                                 <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                     <?= csrf_input('events_tags') ?>
@@ -488,6 +572,66 @@ require_once dirname(__DIR__) . '/partials/header.php';
     if (tagTableEl) {
         bindExpandTable(tagTableEl);
     }
+
+    function tagRowChecks() {
+        return Array.prototype.slice.call(document.querySelectorAll('.events-tags-row-check'));
+    }
+
+    function visibleTagRowChecks() {
+        return tagRowChecks().filter(function (cb) {
+            var sum = cb.closest('.events-inline-summary');
+            return sum && sum.style.display !== 'none';
+        });
+    }
+
+    function syncTagsBulkMaster() {
+        var checks = visibleTagRowChecks();
+        var checked = checks.filter(function (cb) { return cb.checked; });
+        var master = document.getElementById('events-tags-check-all');
+        if (master) {
+            master.checked = checks.length > 0 && checked.length === checks.length;
+            master.indeterminate = checked.length > 0 && checked.length < checks.length;
+        }
+        var label = document.getElementById('events-tags-selected-label');
+        if (label) {
+            label.textContent = checked.length + ' kiválasztva';
+        }
+        var bulkBtn = document.getElementById('events-tags-bulk-btn');
+        if (bulkBtn) {
+            bulkBtn.disabled = checked.length === 0;
+        }
+    }
+
+    var tagsCheckAll = document.getElementById('events-tags-check-all');
+    if (tagsCheckAll) {
+        tagsCheckAll.addEventListener('change', function () {
+            var on = tagsCheckAll.checked;
+            visibleTagRowChecks().forEach(function (cb) {
+                cb.checked = on;
+            });
+            syncTagsBulkMaster();
+        });
+    }
+
+    tagRowChecks().forEach(function (cb) {
+        cb.addEventListener('change', syncTagsBulkMaster);
+    });
+
+    var tagsBulkForm = document.getElementById('events-tags-bulk-form');
+    if (tagsBulkForm) {
+        tagsBulkForm.addEventListener('submit', function (e) {
+            var n = tagRowChecks().filter(function (cb) { return cb.checked; }).length;
+            if (n === 0) {
+                e.preventDefault();
+                return;
+            }
+            if (!window.confirm('Biztosan frissíted a ' + n + ' kijelölt címke típusát? A kiválasztott típusok felülírják a meglévőket.')) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    syncTagsBulkMaster();
 })();
 </script>
 
