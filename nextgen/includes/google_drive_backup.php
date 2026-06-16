@@ -1680,21 +1680,23 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 	/**
 	 * @param array<int,string> $excludeRel
 	 * @param callable(int $fileCount): void|null $onFileProgress
-	 * @return array{ok:bool,path:?string,message:string,file_count:int}
+	 * @return array{ok:bool,path:?string,message:string,file_count:int,skipped:bool}
 	 */
 	function alatinfo_backup_zip_dir(
 		string $rootDir,
 		string $outZip,
 		array $excludeRel = array(),
-		?callable $onFileProgress = null
+		?callable $onFileProgress = null,
+		?int $minMtime = null
 	): array {
 		$fileCount = 0;
+		$skippedByDate = 0;
 		if (!class_exists('ZipArchive')) {
-			return array('ok' => false, 'path' => null, 'message' => 'Nincs ZipArchive kiterjesztés.', 'file_count' => 0);
+			return array('ok' => false, 'path' => null, 'message' => 'Nincs ZipArchive kiterjesztés.', 'file_count' => 0, 'skipped' => false);
 		}
 		$root = realpath($rootDir);
 		if ($root === false) {
-			return array('ok' => false, 'path' => null, 'message' => 'Gyökérkönyvtár nem található.', 'file_count' => 0);
+			return array('ok' => false, 'path' => null, 'message' => 'Gyökérkönyvtár nem található.', 'file_count' => 0, 'skipped' => false);
 		}
 		$ex = array();
 		foreach ($excludeRel as $r) {
@@ -1705,7 +1707,7 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 		}
 		$zip = new ZipArchive();
 		if ($zip->open($outZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-			return array('ok' => false, 'path' => null, 'message' => 'ZIP megnyitása sikertelen.', 'file_count' => 0);
+			return array('ok' => false, 'path' => null, 'message' => 'ZIP megnyitása sikertelen.', 'file_count' => 0, 'skipped' => false);
 		}
 		$it = new RecursiveIteratorIterator(
 			new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
@@ -1724,6 +1726,10 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 			if (alatinfo_backup_rel_excluded($rel, $ex)) {
 				continue;
 			}
+			if ($minMtime !== null && $file->getMTime() < $minMtime) {
+				$skippedByDate++;
+				continue;
+			}
 			$zip->addFile($full, 'site/' . $rel);
 			$fileCount++;
 			if ($onFileProgress !== null) {
@@ -1731,14 +1737,27 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 			}
 		}
 		$zip->close();
+		if ($fileCount === 0) {
+			@unlink($outZip);
+			$msg = 'Nincs a szűrőnek megfelelő fájl.';
+			if ($skippedByDate > 0) {
+				$msg .= ' (' . $skippedByDate . ' fájl kihagyva dátum miatt.)';
+			}
+			return array('ok' => true, 'path' => null, 'message' => $msg, 'file_count' => 0, 'skipped' => true);
+		}
 		if (!is_file($outZip) || filesize($outZip) < 64) {
-			return array('ok' => false, 'path' => null, 'message' => 'ZIP üres vagy túl kicsi.', 'file_count' => $fileCount);
+			return array('ok' => false, 'path' => null, 'message' => 'ZIP üres vagy túl kicsi.', 'file_count' => $fileCount, 'skipped' => false);
+		}
+		$msg = 'ZIP kész (' . $fileCount . ' fájl).';
+		if ($skippedByDate > 0) {
+			$msg .= ' Kihagyva dátum miatt: ' . $skippedByDate . '.';
 		}
 		return array(
 			'ok' => true,
 			'path' => $outZip,
-			'message' => 'ZIP kész (' . $fileCount . ' fájl).',
+			'message' => $msg,
 			'file_count' => $fileCount,
+			'skipped' => false,
 		);
 	}
 }

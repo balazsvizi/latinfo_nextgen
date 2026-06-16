@@ -17,6 +17,94 @@
 	gap: 14px;
 	margin-bottom: 14px;
 }
+.backup-drive-card--wide {
+	grid-column: 1 / -1;
+}
+.backup-drive-fieldset {
+	border: 1px solid #e2e8f0;
+	border-radius: 6px;
+	padding: 10px 12px 12px;
+	margin: 0 0 12px;
+}
+.backup-drive-fieldset legend {
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: #475569;
+	padding: 0 4px;
+}
+.backup-drive-check,
+.backup-drive-radio {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-right: 1rem;
+	margin-bottom: 0.35rem;
+	font-size: 0.92rem;
+	cursor: pointer;
+}
+.backup-drive-date-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 1rem;
+	margin-top: 0.35rem;
+}
+.backup-drive-custom-date {
+	margin: 0.5rem 0 0;
+	font-size: 0.92rem;
+}
+.backup-drive-log-section {
+	margin-top: 14px;
+}
+.backup-drive-log-table-wrap {
+	overflow-x: auto;
+}
+.backup-drive-log-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.88rem;
+}
+.backup-drive-log-table th,
+.backup-drive-log-table td {
+	border: 1px solid #e2e8f0;
+	padding: 6px 8px;
+	text-align: left;
+	vertical-align: top;
+}
+.backup-drive-log-table th {
+	background: #f8fafc;
+	font-weight: 600;
+	color: #475569;
+}
+.backup-drive-status {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+.backup-drive-status--ok {
+	background: #dcfce7;
+	color: #166534;
+}
+.backup-drive-status--err {
+	background: #fee2e2;
+	color: #991b1b;
+}
+.backup-drive-status--run {
+	background: #dbeafe;
+	color: #1e40af;
+}
+.backup-drive-log-pre {
+	margin: 0.35rem 0 0;
+	padding: 8px;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 4px;
+	font-size: 0.78rem;
+	max-height: 12rem;
+	overflow: auto;
+	white-space: pre-wrap;
+}
 .backup-drive-card {
 	background: #fff;
 	border: 1px solid #dde3eb;
