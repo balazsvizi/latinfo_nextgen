@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
+require_once __DIR__ . '/lib/event_log.php';
 requireLogin();
 
 $db = getDb();
@@ -114,7 +115,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             events_save_event_main_styles($db, $newId, $mainStyleIds);
             events_save_event_supplementary_styles($db, $newId, $supplementaryStyleIds);
             $db->commit();
-            rendszer_log('esemény', $newId, 'Létrehozva', $row['event_name']);
+            rendszer_log(
+                'esemény',
+                $newId,
+                'Létrehozva',
+                events_build_log_details($db, $row, $organizerIds, $categoryIds)
+            );
             if ($copyWarnings !== []) {
                 flash('warning', implode(' ', $copyWarnings));
             }

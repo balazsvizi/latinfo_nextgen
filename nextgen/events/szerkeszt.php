@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
+require_once __DIR__ . '/lib/event_log.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
 requireLogin();
 
@@ -86,7 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             events_save_event_main_styles($db, $id, $mainStyleIds);
             events_save_event_supplementary_styles($db, $id, $supplementaryStyleIds);
             $db->commit();
-            rendszer_log('esemény', $id, 'Módosítva', $row['event_name']);
+            rendszer_log(
+                'esemény',
+                $id,
+                'Módosítva',
+                events_build_log_details($db, $row, $organizerIds, $categoryIds)
+            );
             flash('success', 'Mentve.');
             redirect(events_url('szerkeszt.php?id=') . $id);
         } catch (Throwable $ex) {
@@ -144,18 +150,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </form>
 </div>
 
-<div class="events-edit-panel events-edit-log">
-    <h2 class="events-edit-panel__title">Napló</h2>
-    <div class="log-list">
-        <?php foreach ($sablonLogok as $l): ?>
-        <div class="log-item">
-            <span class="log-date"><?= h($l['létrehozva']) ?> <?= !empty($l['admin_név']) ? '(' . h($l['admin_név']) . ')' : '' ?></span>
-            <p class="log-item__text"><?= h($l['művelet']) ?><?= !empty($l['részletek']) ? ' – ' . nl2br(h($l['részletek'])) : '' ?></p>
-        </div>
-        <?php endforeach; ?>
-        <?php if (empty($sablonLogok)): ?><p class="help">Még nincs naplóbejegyzés.</p><?php endif; ?>
-    </div>
-</div>
+<?php require __DIR__ . '/partials/admin_event_edit_log.php'; ?>
 
 <?php require __DIR__ . '/partials/admin_event_edit_stats.php'; ?>
 

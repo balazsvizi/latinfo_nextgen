@@ -3369,6 +3369,14 @@ dialog.eventpics-modal::backdrop {
 .events-edit-log .log-item__text {
     margin: 0.25rem 0 0;
 }
+.events-edit-log .log-item__details {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--text-muted, #4b5563);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    font-weight: normal;
+}
 .events-edit-stats {
     margin-top: 1.5rem;
 }
