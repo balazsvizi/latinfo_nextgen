@@ -14,7 +14,7 @@ $changeNote = events_event_change_public_note($event);
 $changeModifier = events_event_change_notice_css_modifier($event);
 $changeIcon = events_event_change_notice_icon($event);
 $changeBadge = events_event_change_calendar_badge_label($event, $lang);
-if ($changeHeading === '' && $changeNote === '') {
+if ($changeHeading === '' && $changeNote === '' && $changeBadge === '') {
     return;
 }
 ?>

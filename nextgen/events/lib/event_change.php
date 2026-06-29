@@ -70,7 +70,7 @@ function events_event_change_public_heading(array $event, array $strings, string
         return (string) ($strings['change_notice_heading_cancelled'] ?? events_event_change_type_label_public($type, $lang));
     }
     if ($type === events_event_change_type_modified()) {
-        return (string) ($strings['change_notice_heading_modified'] ?? events_event_change_type_label_public($type, $lang));
+        return '';
     }
 
     return '';
