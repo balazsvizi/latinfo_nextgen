@@ -30,5 +30,18 @@
         slugEl.value = buildSlug();
         slugEl.focus();
     });
+
+    var form = slugEl.closest('form');
+    if (form) {
+        form.addEventListener('click', function (e) {
+            var submitter = e.target.closest('button[type="submit"], input[type="submit"]');
+            if (!submitter || !form.contains(submitter)) {
+                return;
+            }
+            if ((slugEl.value || '').trim() === '' && (nameEl.value || '').trim() !== '') {
+                slugEl.value = buildSlug();
+            }
+        }, true);
+    }
 })();
 </script>

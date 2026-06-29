@@ -81,15 +81,25 @@
             }
         });
 
+        function syncEditorToTextarea() {
+            if (sourceMode) {
+                textarea.value = sourceBox.value || '';
+            } else if (editorInstance) {
+                textarea.value = editorInstance.getData();
+            }
+        }
+
         var form = textarea.closest('form');
         if (form) {
-            form.addEventListener('submit', function () {
-                if (editorInstance && !sourceMode) {
-                    textarea.value = editorInstance.getData();
-                } else if (sourceMode) {
-                    textarea.value = sourceBox.value || '';
+            // Capture: a böngésző HTML5 validációja előtt (pl. required a rejtett textarea-n).
+            form.addEventListener('click', function (e) {
+                var submitter = e.target.closest('button[type="submit"], input[type="submit"]');
+                if (!submitter || !form.contains(submitter)) {
+                    return;
                 }
-            });
+                syncEditorToTextarea();
+            }, true);
+            form.addEventListener('submit', syncEditorToTextarea);
         }
 
         if (!hasCk) {

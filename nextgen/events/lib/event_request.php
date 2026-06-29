@@ -498,7 +498,11 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     }
 
     if ($row['event_slug'] === '') {
-        return [$row, 'Az URL slug kötelező. Használd a frissítés gombot a név és kezdő dátum alapján.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
+        $slugBase = events_slugify($row['event_name']);
+        if ($sd !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $sd)) {
+            $slugBase .= '-' . $sd;
+        }
+        $row['event_slug'] = $slugBase;
     }
 
     $row['event_slug'] = events_ensure_unique_slug($db, $row['event_slug'], $excludeIdForSlug);

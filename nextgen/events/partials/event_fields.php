@@ -703,3 +703,4 @@ require __DIR__ . '/wp_token_field.php';
 <?php require __DIR__ . '/event_allday_script.php'; ?>
 <?php require __DIR__ . '/event_change_script.php'; ?>
 <?php require __DIR__ . '/event_date_copy_script.php'; ?>
+<?php require __DIR__ . '/event_form_validation_script.php'; ?>
