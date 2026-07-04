@@ -2368,6 +2368,68 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public .events-cal-view-switch--standalone {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.home-public .events-cal-view-switch-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(109, 143, 99, 0.2);
+}
+
+.home-public .events-cal-view-switch-row__sep {
+    color: #c3c8bc;
+    font-weight: 400;
+    user-select: none;
+}
+
+.home-public .events-cal-view-switch-row .events-cal-view-switch--standalone {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    justify-content: flex-start;
+}
+
+.home-public .events-admin-list-display {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.65rem;
+}
+
+.home-public .events-admin-list-display__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--li-text-muted, #5a6356);
+    margin: 0;
+}
+
+.home-public .events-admin-list-display__select {
+    min-width: 5.5rem;
+}
+
+.home-public .events-admin-list-display__select .events-filter-select {
+    min-height: 2rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.home-public .events-admin-list-display__count {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--li-green-dark, #4a6741);
+    white-space: nowrap;
+}
+
+.home-public .events-cal-view-switch--standalone {
     display: flex;
     justify-content: flex-end;
     width: 100%;

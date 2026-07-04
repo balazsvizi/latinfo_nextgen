@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/public_home_content.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_calendar.php';
 require_once __DIR__ . '/lib/calendar_event_preview.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
@@ -27,6 +28,13 @@ $monthLabel = events_public_calendar_month_label($monthFirst, $lang);
 
 $rows = events_public_fetch_filtered_events($db, $filters);
 $listPartition = events_public_list_partition_events($rows);
+$listPoolCount = 0;
+$listDisplayedCount = 0;
+$listLimitValue = (string) ($filters['list_limit_value'] ?? EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+if ($view === 'list') {
+    $listPoolCount = events_admin_list_pool_count($db, $filters['list_limit']);
+    $listDisplayedCount = count($rows);
+}
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
 $calendarPreviewById = [];
 if ($view === 'cal') {
@@ -162,10 +170,21 @@ header('Content-Type: text/html; charset=UTF-8');
                 ?>
                 <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
             <?php else: ?>
-                <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
-                    <a class="events-cal-view-switch__item" href="<?= h($calViewUrl) ?>"><?= h((string) $D['view_cal']) ?></a>
-                    <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_list']) ?></span>
-                </nav>
+                <div class="events-cal-view-switch-row home-public__view-switch-row">
+                    <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
+                        <a class="events-cal-view-switch__item" href="<?= h($calViewUrl) ?>"><?= h((string) $D['view_cal']) ?></a>
+                        <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_list']) ?></span>
+                    </nav>
+                    <span class="events-cal-view-switch-row__sep" aria-hidden="true">|</span>
+                    <?php
+                    $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
+                    $listLimitInForm = true;
+                    $listLimitLabel = (string) $D['list_display_label'];
+                    $listLimitAllLabel = (string) $D['list_display_all'];
+                    $listCountLabel = events_public_list_count_label($lang, $listDisplayedCount, $listPoolCount);
+                    require __DIR__ . '/partials/admin_list_display_limit.php';
+                    ?>
+                </div>
                 <?php
                 $listLang = $lang;
                 require __DIR__ . '/partials/public_event_list_partitioned.php';

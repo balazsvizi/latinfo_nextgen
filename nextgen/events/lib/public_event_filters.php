@@ -35,13 +35,20 @@ function events_public_filters_from_request(PDO $db): array {
     $filters['f_views_min'] = '';
     $filters['view'] = $view;
 
+    $listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+    $filters['list_limit_value'] = $listLimitParsed['value'];
+    $filters['list_limit'] = $view === 'list' ? $listLimitParsed['sql_limit'] : null;
+
     $getParams = $filters['get_params'];
-    unset($getParams['status'], $getParams['f_id'], $getParams['f_views_min']);
+    unset($getParams['status'], $getParams['f_id'], $getParams['f_views_min'], $getParams['list_limit']);
     if ($f_city !== '') {
         $getParams['f_city'] = $f_city;
     }
     if ($view === 'list') {
         $getParams['view'] = 'list';
+        if ($listLimitParsed['value'] !== (string) EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT) {
+            $getParams['list_limit'] = $listLimitParsed['value'];
+        }
     }
     $filters['get_params'] = $getParams;
 
@@ -97,10 +104,14 @@ function events_public_filters_are_active(array $filters): bool {
  */
 function events_public_fetch_filtered_events(PDO $db, array $filters): array {
     $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
+    $fromSql = '`events_calendar_events` e LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
+    if (($filters['view'] ?? 'cal') === 'list') {
+        $poolFrom = events_admin_list_pool_from_sql($filters['list_limit'] ?? EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+        $fromSql = $poolFrom . ' LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
+    }
     $sql = "
         SELECT e.*, v.`name` AS `venue_name`, v.`city` AS `venue_city`
-        FROM `events_calendar_events` e
-        LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
+        FROM {$fromSql}
         {$whereSql}
         ORDER BY e.event_start IS NULL, e.event_start ASC, e.event_name ASC
     ";
@@ -108,6 +119,16 @@ function events_public_fetch_filtered_events(PDO $db, array $filters): array {
     $stmt->execute($filters['params']);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function events_public_list_count_label(string $lang, int $displayed, int $pool): string {
+    $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
+    $suffix = $lang === 'en' ? ' shown' : ' megjelenítve';
+    if ($displayed < $pool) {
+        return $formatCount($displayed) . ' / ' . $formatCount($pool) . $suffix;
+    }
+
+    return $formatCount($displayed) . $suffix;
 }
 
 /**
