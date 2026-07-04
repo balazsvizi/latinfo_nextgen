@@ -193,6 +193,8 @@ function events_public_venue_strings(string $lang): array {
         'directions_aria' => 'Útvonaltervezés a helyszínhez (megnyitás a térképalkalmazásban)',
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Helyszín szerkesztése az adminban',
+        'list_display_label' => 'Megjelenítve:',
+        'list_display_all' => 'Mind',
     ];
     $en = [
         'lang_nav' => 'Language',
@@ -215,6 +217,8 @@ function events_public_venue_strings(string $lang): array {
         'directions_aria' => 'Plan a route to this venue (opens in maps app)',
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this venue in admin',
+        'list_display_label' => 'Showing:',
+        'list_display_all' => 'All',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -241,6 +245,8 @@ function events_public_organizer_strings(string $lang): array {
         'footer_home_link' => 'Latinfo.hu',
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Szervező szerkesztése az adminban',
+        'list_display_label' => 'Megjelenítve:',
+        'list_display_all' => 'Mind',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -262,6 +268,8 @@ function events_public_organizer_strings(string $lang): array {
         'footer_home_link' => 'Latinfo.hu',
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this organizer in admin',
+        'list_display_label' => 'Showing:',
+        'list_display_all' => 'All',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -460,12 +468,12 @@ function events_public_event_page_url(string $slug, string $lang): string {
 /**
  * Nyilvános szervező-oldal URL.
  */
-function events_public_organizer_page_url(int $organizerId, string $lang): string {
-    return events_url('organizer.php?' . http_build_query(['id' => $organizerId, 'lang' => $lang], '', '&', PHP_QUERY_RFC3986));
+function events_public_organizer_page_url(int $organizerId, string $lang, array $extraParams = []): string {
+    return events_url('organizer.php?' . http_build_query(array_merge(['id' => $organizerId, 'lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
 }
 
-function events_public_organizer_lang_switch_url(int $organizerId, string $targetLang): string {
-    return events_url('organizer.php?' . http_build_query(['id' => $organizerId, 'lang' => $targetLang], '', '&', PHP_QUERY_RFC3986));
+function events_public_organizer_lang_switch_url(int $organizerId, string $targetLang, array $extraParams = []): string {
+    return events_public_organizer_page_url($organizerId, $targetLang, $extraParams);
 }
 
 /**
@@ -492,6 +500,8 @@ function events_public_tag_strings(string $lang): array {
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Címke szerkesztése az adminban',
         'all_djs_link' => 'Összes DJ',
+        'list_display_label' => 'Megjelenítve:',
+        'list_display_all' => 'Mind',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -513,6 +523,8 @@ function events_public_tag_strings(string $lang): array {
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this tag in admin',
         'all_djs_link' => 'All DJs',
+        'list_display_label' => 'Showing:',
+        'list_display_all' => 'All',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -831,11 +843,11 @@ function events_public_home_lang_switch_url(string $targetLang): string {
     return $base . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
 }
 
-function events_public_venue_lang_switch_url(string $slug, string $targetLang): string {
-    return events_url('helyszin_megjelenit.php?' . http_build_query([
+function events_public_venue_lang_switch_url(string $slug, string $targetLang, array $extraParams = []): string {
+    return events_url('helyszin_megjelenit.php?' . http_build_query(array_merge([
         'slug' => $slug,
         'lang' => $targetLang,
-    ], '', '&', PHP_QUERY_RFC3986));
+    ], $extraParams), '', '&', PHP_QUERY_RFC3986));
 }
 
 function events_public_djs_page_url(string $lang, array $extraParams = []): string {
@@ -857,12 +869,12 @@ function events_public_organizers_catalog_lang_switch_url(string $targetLang, ar
 /**
  * Nyilvános címke-oldal URL.
  */
-function events_public_tag_page_url(int $tagId, string $lang): string {
-    return events_url('tag.php?' . http_build_query(['id' => $tagId, 'lang' => $lang], '', '&', PHP_QUERY_RFC3986));
+function events_public_tag_page_url(int $tagId, string $lang, array $extraParams = []): string {
+    return events_url('tag.php?' . http_build_query(array_merge(['id' => $tagId, 'lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
 }
 
-function events_public_tag_lang_switch_url(int $tagId, string $targetLang): string {
-    return events_url('tag.php?' . http_build_query(['id' => $tagId, 'lang' => $targetLang], '', '&', PHP_QUERY_RFC3986));
+function events_public_tag_lang_switch_url(int $tagId, string $targetLang, array $extraParams = []): string {
+    return events_public_tag_page_url($tagId, $targetLang, $extraParams);
 }
 
 /**

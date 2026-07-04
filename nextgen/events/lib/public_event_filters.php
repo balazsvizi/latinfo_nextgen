@@ -139,6 +139,16 @@ function events_public_catalog_get_params(string $listLimitValue): array {
     return $params;
 }
 
+/** @return array<string, string> */
+function events_public_events_list_get_params(string $listLimitValue): array {
+    $params = [];
+    if ($listLimitValue !== (string) EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT) {
+        $params['list_limit'] = $listLimitValue;
+    }
+
+    return $params;
+}
+
 function events_public_list_count_label(string $lang, string $listLimitValue, int $totalInDb): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
     $allLabel = $lang === 'en' ? 'all' : 'összes';

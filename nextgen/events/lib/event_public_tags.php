@@ -13,10 +13,11 @@ require_once __DIR__ . '/event_public_organizers.php';
  *
  * @return list<array<string,mixed>>
  */
-function events_public_tag_published_events(PDO $db, int $tagId, string $publishedStatus): array {
+function events_public_tag_published_events(PDO $db, int $tagId, string $publishedStatus, ?int $listLimit = null): array {
     if ($tagId <= 0 || !events_tags_tables_available($db)) {
         return [];
     }
+    $limitSql = $listLimit === null ? '' : ' LIMIT ' . (int) $listLimit;
     $st = $db->prepare('
         SELECT DISTINCT e.`id`, e.`event_slug`, e.`event_name`, e.`event_featured_image_url`, e.`event_start`, e.`event_end`, e.`event_allday`,
                v.`city` AS `venue_city`
@@ -24,11 +25,26 @@ function events_public_tag_published_events(PDO $db, int $tagId, string $publish
         INNER JOIN `events_calendar_event_tags` et ON et.`event_id` = e.`id`
         LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
         WHERE et.`tag_id` = ? AND e.`event_status` = ?
-        ORDER BY e.`id` DESC
+        ORDER BY e.`id` DESC' . $limitSql . '
     ');
     $st->execute([$tagId, $publishedStatus]);
 
     return $st->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function events_public_tag_published_events_total_count(PDO $db, int $tagId, string $publishedStatus): int {
+    if ($tagId <= 0 || !events_tags_tables_available($db)) {
+        return 0;
+    }
+    $st = $db->prepare('
+        SELECT COUNT(DISTINCT e.`id`)
+        FROM `events_calendar_events` e
+        INNER JOIN `events_calendar_event_tags` et ON et.`event_id` = e.`id`
+        WHERE et.`tag_id` = ? AND e.`event_status` = ?
+    ');
+    $st->execute([$tagId, $publishedStatus]);
+
+    return (int) $st->fetchColumn();
 }
 
 /**

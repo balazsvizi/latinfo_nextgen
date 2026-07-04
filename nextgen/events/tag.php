@@ -5,6 +5,8 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
 require_once __DIR__ . '/lib/event_public_djs.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/public_event_filters.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
@@ -39,7 +41,13 @@ if (!$tag) {
 $tagName = (string) ($tag['name'] ?? '');
 $tagTypeRows = events_public_tag_type_rows_for_display($db, $tagId);
 $tagIsDj = events_public_tag_has_type_code($db, $tagId, 'dj');
-$eventsList = events_public_tag_published_events($db, $tagId, events_public_post_status());
+$publishedStatus = events_public_post_status();
+$listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_public_tag_published_events_total_count($db, $tagId, $publishedStatus);
+$limitParams = events_public_events_list_get_params($listLimitValue);
+$eventsList = events_public_tag_published_events($db, $tagId, $publishedStatus, $list_limit);
 $partitioned = events_public_organizer_partition_events($eventsList);
 $eventsUpcoming = $partitioned['upcoming'];
 $eventsPast = $partitioned['past'];
@@ -53,10 +61,10 @@ $desc = $lang === 'en'
     : ($tagName !== '' ? $tagName . ' címkéjű közzétett események a Latinfo.hu-n.' : 'Közzétett események a Latinfo.hu-n.');
 
 $canonical = events_absolute_url(events_url('tag.php?id=' . $tagId));
-$ogPageUrl = events_absolute_url(events_public_tag_page_url($tagId, $lang));
+$ogPageUrl = events_absolute_url(events_public_tag_page_url($tagId, $lang, $limitParams));
 $cssUrl = events_url('assets/event_public.css');
-$urlHu = events_public_tag_lang_switch_url($tagId, 'hu');
-$urlEn = events_public_tag_lang_switch_url($tagId, 'en');
+$urlHu = events_public_tag_lang_switch_url($tagId, 'hu', $limitParams);
+$urlEn = events_public_tag_lang_switch_url($tagId, 'en', $limitParams);
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $G;
 $showAdminEdit = isLoggedIn();
@@ -126,6 +134,7 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php if ($eventsList === []): ?>
             <p class="organizer-public__empty"><?= h($G['list_empty']) ?></p>
         <?php else: ?>
+            <?php $D = $G; require __DIR__ . '/partials/public_entity_events_display_limit.php'; ?>
             <?php
             $tagEventBlocks = [
                 ['id' => 'tag-upcoming', 'heading' => $G['section_upcoming'], 'rows' => $eventsUpcoming, 'empty' => $G['upcoming_empty']],
@@ -210,5 +219,11 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<?php if ($eventsList !== []): ?>
+<?php
+$listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
+require __DIR__ . '/partials/admin_list_display_limit_script.php';
+?>
+<?php endif; ?>
 </body>
 </html>

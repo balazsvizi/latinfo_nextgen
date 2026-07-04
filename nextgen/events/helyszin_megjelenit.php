@@ -6,6 +6,8 @@ require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/venue_request.php';
 require_once __DIR__ . '/lib/event_public_venues.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/public_event_filters.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
@@ -103,13 +105,19 @@ $linkedSlug = trim((string) ($venue['linked_slug'] ?? ''));
 $hasLinked = $linkedName !== '' && $linkedSlug !== '';
 
 $venueId = (int) ($venue['id'] ?? 0);
-$eventsList = events_public_venue_published_events($db, $venueId, events_public_post_status());
+$publishedStatus = events_public_post_status();
+$listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_public_venue_published_events_total_count($db, $venueId, $publishedStatus);
+$limitParams = events_public_events_list_get_params($listLimitValue);
+$eventsList = events_public_venue_published_events($db, $venueId, $publishedStatus, $list_limit);
 $partitioned = events_public_organizer_partition_events($eventsList);
 $eventsUpcoming = $partitioned['upcoming'];
 $eventsPast = $partitioned['past'];
 
-$urlHu = events_public_venue_lang_switch_url($slug, 'hu');
-$urlEn = events_public_venue_lang_switch_url($slug, 'en');
+$urlHu = events_public_venue_lang_switch_url($slug, 'hu', $limitParams);
+$urlEn = events_public_venue_lang_switch_url($slug, 'en', $limitParams);
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('venue_szerkeszt.php?id=') . $venueId;
 
@@ -188,6 +196,7 @@ header('Content-Type: text/html; charset=UTF-8');
     $PEszovegek = $V;
     $sectionIdPrefix = 'venue';
     $showVenueCity = false;
+    $D = $V;
     require __DIR__ . '/partials/public_partitioned_events.php';
     ?>
 
@@ -196,5 +205,11 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<?php if ($eventsList !== []): ?>
+<?php
+$listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
+require __DIR__ . '/partials/admin_list_display_limit_script.php';
+?>
+<?php endif; ?>
 </body>
 </html>

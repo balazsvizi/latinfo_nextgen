@@ -11,6 +11,9 @@ declare(strict_types=1);
  * @var string $lang
  * @var string $sectionIdPrefix pl. venue, organizer
  * @var bool $showVenueCity
+ * @var string|null $listLimitValue
+ * @var int|null $listTotalInDb
+ * @var array<string, string>|null $D
  */
 $sectionIdPrefix = $sectionIdPrefix ?? 'related';
 $showVenueCity = $showVenueCity ?? true;
@@ -20,6 +23,9 @@ $showVenueCity = $showVenueCity ?? true;
     <?php if ($eventsList === []): ?>
         <p class="organizer-public__empty"><?= h((string) ($PEszovegek['list_empty'] ?? '')) ?></p>
     <?php else: ?>
+        <?php if (isset($listLimitValue) && isset($listTotalInDb)): ?>
+            <?php $D = $D ?? $PEszovegek; require __DIR__ . '/public_entity_events_display_limit.php'; ?>
+        <?php endif; ?>
         <?php
         $eventBlocks = [
             ['id' => $sectionIdPrefix . '-upcoming', 'heading' => $PEszovegek['section_upcoming'] ?? '', 'rows' => $eventsUpcoming, 'empty' => $PEszovegek['upcoming_empty'] ?? ''],

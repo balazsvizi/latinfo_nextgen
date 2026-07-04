@@ -5,6 +5,8 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/public_event_filters.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
@@ -30,7 +32,13 @@ if (!$organizer) {
 }
 
 $orgName = (string) ($organizer['name'] ?? '');
-$eventsList = events_public_organizer_published_events($db, $organizerId, events_public_post_status());
+$publishedStatus = events_public_post_status();
+$listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_public_organizer_published_events_total_count($db, $organizerId, $publishedStatus);
+$limitParams = events_public_events_list_get_params($listLimitValue);
+$eventsList = events_public_organizer_published_events($db, $organizerId, $publishedStatus, $list_limit);
 $partitioned = events_public_organizer_partition_events($eventsList);
 $eventsUpcoming = $partitioned['upcoming'];
 $eventsPast = $partitioned['past'];
@@ -41,10 +49,10 @@ $desc = $lang === 'en'
     : ($orgName !== '' ? $orgName . ' közzétett eseményei a Latinfo.hu-n.' : 'Közzétett események a Latinfo.hu-n.');
 
 $canonical = events_absolute_url(events_url('organizer.php?id=' . $organizerId));
-$ogPageUrl = events_absolute_url(events_public_organizer_page_url($organizerId, $lang));
+$ogPageUrl = events_absolute_url(events_public_organizer_page_url($organizerId, $lang, $limitParams));
 $cssUrl = events_url('assets/event_public.css');
-$urlHu = events_public_organizer_lang_switch_url($organizerId, 'hu');
-$urlEn = events_public_organizer_lang_switch_url($organizerId, 'en');
+$urlHu = events_public_organizer_lang_switch_url($organizerId, 'hu', $limitParams);
+$urlEn = events_public_organizer_lang_switch_url($organizerId, 'en', $limitParams);
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $O;
 $showAdminEdit = isLoggedIn();
@@ -93,6 +101,7 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php if ($eventsList === []): ?>
             <p class="organizer-public__empty"><?= h($O['list_empty']) ?></p>
         <?php else: ?>
+            <?php $D = $O; require __DIR__ . '/partials/public_entity_events_display_limit.php'; ?>
             <?php
             $organizerEventBlocks = [
                 ['id' => 'organizer-upcoming', 'heading' => $O['section_upcoming'], 'rows' => $eventsUpcoming, 'empty' => $O['upcoming_empty']],
@@ -171,5 +180,11 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<?php if ($eventsList !== []): ?>
+<?php
+$listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
+require __DIR__ . '/partials/admin_list_display_limit_script.php';
+?>
+<?php endif; ?>
 </body>
 </html>
