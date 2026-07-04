@@ -28,6 +28,7 @@ if ($listLimitValue !== 'all' && $listTotalCount > $listDisplayedCount) {
         <?php endif; ?>
     </nav>
     <?php if ($activeView === 'list'): ?>
+        <span class="events-cal-view-switch-row__sep" aria-hidden="true">|</span>
         <div class="events-admin-list-display">
             <label class="events-admin-list-display__label" for="ev-list-limit">Megjelenítve:</label>
             <div class="events-filter-select-wrap events-admin-list-display__select">

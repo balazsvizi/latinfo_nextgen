@@ -1297,6 +1297,11 @@ tr:hover td { background: var(--bg); }
     padding-bottom: 0.65rem;
     border-bottom: 1px solid #e8ebe6;
 }
+.events-cal-view-switch-row__sep {
+    color: #c3c8bc;
+    font-weight: 400;
+    user-select: none;
+}
 .events-cal-view-switch-row .events-cal-view-switch--standalone {
     margin: 0;
     padding: 0;
@@ -1307,7 +1312,6 @@ tr:hover td { background: var(--bg); }
     flex-wrap: wrap;
     align-items: center;
     gap: 0.45rem 0.65rem;
-    margin-left: auto;
 }
 .events-admin-list-display__label {
     font-size: 0.875rem;
