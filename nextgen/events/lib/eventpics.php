@@ -213,6 +213,24 @@ function events_events_using_eventpic(PDO $db, string $filename): array {
 }
 
 /**
+ * Eventpics fájl törlése a lemezről, ha már egyetlen esemény sem használja.
+ */
+function events_eventpics_delete_file_if_unused(PDO $db, string $filename): bool {
+    if (!events_eventpics_is_safe_filename($filename)) {
+        return false;
+    }
+    if (events_events_using_eventpic($db, $filename) !== []) {
+        return false;
+    }
+    $path = events_eventpics_dir_path() . '/' . $filename;
+    if (!is_file($path)) {
+        return true;
+    }
+
+    return @unlink($path);
+}
+
+/**
  * Eventpics fájl törlése: előbb az eseményekről leválasztjuk, majd lemez törlés. Sikertelen unlink esetén rollback.
  *
  * @return array{0: bool, 1: string}

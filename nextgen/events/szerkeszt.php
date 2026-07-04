@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/event_log.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
+require_once __DIR__ . '/lib/event_delete.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -36,10 +37,22 @@ $event['supplementary_style_ids'] = events_load_event_supplementary_style_ids($d
 
 $hiba = '';
 $e = events_row_for_form($event);
+$eventFormShowPermanentDelete = (string) ($event['event_status'] ?? '') === 'trash';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
+    } else {
+    $formAction = (string) ($_POST['form_action'] ?? 'save');
+    if ($formAction === 'permanent_delete') {
+        [$deleted, $deleteMsg] = events_permanent_delete_event($db, $id);
+        if (!$deleted) {
+            $hiba = $deleteMsg;
+        } else {
+            rendszer_log('esemény', $id, 'Véglegesen törölve', $deleteMsg);
+            flash('success', 'Az esemény véglegesen törölve.');
+            redirect(events_url('events_admin.php'));
+        }
     } else {
     [$row, $err, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds] = events_row_from_request($db, $event, $id);
     if ($err !== null) {
@@ -108,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $e['main_style_ids'] = $mainStyleIds;
             $e['supplementary_style_ids'] = $supplementaryStyleIds;
         }
+    }
     }
     }
 }
