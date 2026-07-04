@@ -267,6 +267,20 @@ require __DIR__ . '/event_form_actions.php';
             <?php endforeach; ?>
         </select>
     </div>
+    <?php
+    $eventFormShowPermanentDelete = !empty($eventFormShowPermanentDelete);
+    if ($eventFormShowPermanentDelete):
+    ?>
+    <div class="events-edit-panel__danger-zone">
+        <button
+            type="submit"
+            class="btn btn-danger btn-sm events-edit-panel__delete"
+            name="form_action"
+            value="permanent_delete"
+            onclick="return confirm('Biztosan véglegesen törlöd ezt az eseményt? A művelet nem vonható vissza. A kapcsolódó adatok törlődnek; a borítókép csak akkor, ha máshol nem használják.');"
+        >Végleges törlés</button>
+    </div>
+    <?php endif; ?>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-cat">
     <h3 class="events-edit-panel__title">Kategóriák</h3>

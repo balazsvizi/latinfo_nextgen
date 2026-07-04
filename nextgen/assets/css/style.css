@@ -3333,6 +3333,14 @@ dialog.eventpics-modal::backdrop {
 .events-edit-panel--publish select {
     width: 100%;
 }
+.events-edit-panel__danger-zone {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border);
+}
+.events-edit-panel__delete {
+    width: 100%;
+}
 .events-edit-org-venue-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
