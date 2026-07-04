@@ -107,9 +107,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <p class="events-kepek-esemenyek__count" aria-live="polite">
             <strong><span id="events-kepek-visible-count">0</span></strong>
             / <span id="events-kepek-total-count"><?= (int) $listDisplayedCount ?></span> esemény
-            <?php if ($listDisplayedCount < $listPoolCount): ?>
-                <span class="help"> (<?= h(events_admin_list_count_label($listDisplayedCount, $listPoolCount)) ?>)</span>
-            <?php endif; ?>
+            <span class="help"> (<?= h(events_admin_list_count_label($listDisplayedCount, $listLimitValue)) ?>)</span>
         </p>
 
         <div class="table-wrap events-admin-table-wrap">

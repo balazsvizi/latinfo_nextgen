@@ -2,7 +2,6 @@
 declare(strict_types=1);
 /** @var string $listLimitValue */
 /** @var int $listDisplayedCount */
-/** @var int $listPoolCount */
 /** @var bool $listLimitInForm select name= a szülő űrlapban */
 /** @var string $listLimitSelectId */
 /** @var int|null $listLimitDefault */
@@ -12,12 +11,11 @@ declare(strict_types=1);
 $listLimitDefault = $listLimitDefault ?? EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
 $listLimitValue = $listLimitValue ?? (string) $listLimitDefault;
 $listDisplayedCount = $listDisplayedCount ?? 0;
-$listPoolCount = $listPoolCount ?? 0;
 $listLimitInForm = !empty($listLimitInForm);
 $listLimitSelectId = $listLimitSelectId ?? 'ev-list-limit';
 $listLimitLabel = $listLimitLabel ?? 'Megjelenítve:';
 $listLimitAllLabel = $listLimitAllLabel ?? 'Mind';
-$listCountLabel = $listCountLabel ?? events_admin_list_count_label($listDisplayedCount, $listPoolCount);
+$listCountLabel = $listCountLabel ?? events_admin_list_count_label($listDisplayedCount, $listLimitValue);
 $standaloneClass = empty($listLimitStandalone) ? '' : ' events-admin-list-display--standalone';
 ?>
 <div class="events-admin-list-display<?= h($standaloneClass) ?>">

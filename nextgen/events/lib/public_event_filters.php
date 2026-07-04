@@ -121,15 +121,6 @@ function events_public_fetch_filtered_events(PDO $db, array $filters): array {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/** Közzétett események száma a megjelenítési poolban (szűrők nélkül). */
-function events_public_list_pool_count(PDO $db, ?int $listLimit): int {
-    $poolFrom = events_admin_list_pool_from_sql($listLimit);
-    $stmt = $db->prepare('SELECT COUNT(*) FROM ' . $poolFrom . ' WHERE e.`event_status` = ?');
-    $stmt->execute([events_public_post_status()]);
-
-    return (int) $stmt->fetchColumn();
-}
-
 /** Közzétett események száma a poolban, az aktív szűrőkkel. */
 function events_public_list_displayed_count(PDO $db, array $filters): int {
     if (($filters['view'] ?? 'cal') !== 'list') {
@@ -142,14 +133,13 @@ function events_public_list_displayed_count(PDO $db, array $filters): int {
     return events_admin_list_filtered_count($db, $poolFrom, $whereSql, $filters['params']);
 }
 
-function events_public_list_count_label(string $lang, int $displayed, int $pool): string {
+function events_public_list_count_label(string $lang, int $displayed, string $listLimitValue): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
     $suffix = $lang === 'en' ? ' shown' : ' megjelenítve';
-    if ($displayed < $pool) {
-        return $formatCount($displayed) . ' / ' . $formatCount($pool) . $suffix;
-    }
+    $allLabel = $lang === 'en' ? 'all' : 'összes';
+    $limitLabel = $listLimitValue === 'all' ? $allLabel : $formatCount((int) $listLimitValue);
 
-    return $formatCount($displayed) . $suffix;
+    return $formatCount($displayed) . ' / ' . $limitLabel . $suffix;
 }
 
 /**

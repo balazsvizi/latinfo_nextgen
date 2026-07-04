@@ -5,12 +5,10 @@ declare(strict_types=1);
 /** @var 'list'|'month' $activeView */
 /** @var string $listLimitValue */
 /** @var int $listDisplayedCount */
-/** @var int $listPoolCount */
 /** @var int|null $listLimitDefault */
 $listLimitDefault = $listLimitDefault ?? EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
 $listLimitValue = $listLimitValue ?? (string) $listLimitDefault;
 $listDisplayedCount = $listDisplayedCount ?? 0;
-$listPoolCount = $listPoolCount ?? 0;
 ?>
 <div class="events-cal-view-switch-row">
     <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="Nézet választó">

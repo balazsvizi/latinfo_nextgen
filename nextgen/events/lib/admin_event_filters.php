@@ -89,13 +89,11 @@ function events_admin_list_filtered_count(PDO $db, string $fromSql, string $wher
     return (int) $stmt->fetchColumn();
 }
 
-function events_admin_list_count_label(int $displayed, int $pool): string {
+function events_admin_list_count_label(int $displayed, string $listLimitValue): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
-    if ($displayed < $pool) {
-        return $formatCount($displayed) . ' / ' . $formatCount($pool) . ' megjelenítve';
-    }
+    $limitLabel = $listLimitValue === 'all' ? 'összes' : $formatCount((int) $listLimitValue);
 
-    return $formatCount($displayed) . ' megjelenítve';
+    return $formatCount($displayed) . ' / ' . $limitLabel . ' megjelenítve';
 }
 
 /** @param list<mixed> $items */
