@@ -32,8 +32,8 @@ $listPoolCount = 0;
 $listDisplayedCount = 0;
 $listLimitValue = (string) ($filters['list_limit_value'] ?? EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
 if ($view === 'list') {
-    $listPoolCount = events_admin_list_pool_count($db, $filters['list_limit']);
-    $listDisplayedCount = count($rows);
+    $listPoolCount = events_public_list_pool_count($db, $filters['list_limit']);
+    $listDisplayedCount = events_public_list_displayed_count($db, $filters);
 }
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
 $calendarPreviewById = [];
