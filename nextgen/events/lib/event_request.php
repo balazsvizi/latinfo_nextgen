@@ -51,6 +51,20 @@ function events_normalize_featured_image_url(?string $raw): array {
 }
 
 /**
+ * Külső URL (nem eventpics útvonal) — mentési prioritáshoz.
+ */
+function events_featured_image_external_url(?string $normalizedUrl): ?string {
+    if ($normalizedUrl === null || trim($normalizedUrl) === '') {
+        return null;
+    }
+    if (events_eventpics_extract_selected_from_featured($normalizedUrl) !== '') {
+        return null;
+    }
+
+    return $normalizedUrl;
+}
+
+/**
  * Űrlap borító előnézet (URL-first, mint a mentés): nem üres URL mező → abszolút kép URL; különben eventpics.
  *
  * @return array{src: string, source: 'url'|'eventpic'|'none', label: string}
@@ -480,8 +494,9 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     if ($featUploadErr !== null) {
         return [$row, $featUploadErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
-    // Prioritás: URL > friss feltöltés > eventpics kiválasztás.
-    $row['event_featured_image_url'] = $featUrlInput ?? $featUploadPath ?? $featPickPath;
+    // Prioritás: külső URL > friss feltöltés > eventpics kiválasztás (eventpics útvonal az URL mezőben nem számít).
+    $featUrlExternal = events_featured_image_external_url($featUrlInput);
+    $row['event_featured_image_url'] = $featUrlExternal ?? $featUploadPath ?? $featPickPath;
 
     if ($row['event_name'] === '') {
         return [$row, 'Az esemény neve kötelező.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
@@ -595,6 +610,9 @@ function events_row_for_form(array $row): array {
         ? (string) $e['event_featured_image_url']
         : '';
     $e['event_featured_image_pick'] = events_eventpics_extract_selected_from_featured($e['event_featured_image_url']);
+    if ($e['event_featured_image_pick'] !== '') {
+        $e['event_featured_image_url'] = '';
+    }
     if (!isset($e['organizer_ids']) || !is_array($e['organizer_ids'])) {
         $e['organizer_ids'] = [];
     } else {

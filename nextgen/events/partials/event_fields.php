@@ -498,6 +498,17 @@ require __DIR__ . '/wp_token_field.php';
         return t.slice(0, Math.max(0, maxLen - 1)) + '…';
     }
 
+    function isEventpicsUrl(val) {
+        var t = (val || '').trim();
+        if (!t) return false;
+        try {
+            var path = t.indexOf('://') !== -1 ? (new URL(t, window.location.origin)).pathname : t;
+            return /\/nextgen\/events\/eventpics\//i.test(path);
+        } catch (e0) {
+            return /\/nextgen\/events\/eventpics\//i.test(t);
+        }
+    }
+
     function syncMainSummary() {
         var urlTrim = urlInp ? (urlInp.value || '').trim() : '';
         var fn = (hidden.value || '').trim();
@@ -678,6 +689,12 @@ require __DIR__ . '/wp_token_field.php';
     btnCancel.addEventListener('click', closeModal);
     btnOk.addEventListener('click', function () {
         hidden.value = pendingPick;
+        if (urlInp) {
+            var urlTrim = (urlInp.value || '').trim();
+            if (pendingPick || isEventpicsUrl(urlTrim)) {
+                urlInp.value = '';
+            }
+        }
         syncMainSummary();
         closeModal();
     });
@@ -685,13 +702,24 @@ require __DIR__ . '/wp_token_field.php';
         btnClearMain.addEventListener('click', function () {
             hidden.value = '';
             pendingPick = '';
+            if (urlInp && isEventpicsUrl(urlInp.value)) {
+                urlInp.value = '';
+            }
             syncModalSelection();
             syncMainSummary();
         });
     }
 
     if (urlInp) {
-        urlInp.addEventListener('input', syncMainSummary);
+        urlInp.addEventListener('input', function () {
+            var urlTrim = (urlInp.value || '').trim();
+            if (urlTrim && !isEventpicsUrl(urlTrim)) {
+                hidden.value = '';
+                pendingPick = '';
+                syncModalSelection();
+            }
+            syncMainSummary();
+        });
         urlInp.addEventListener('change', syncMainSummary);
     }
 

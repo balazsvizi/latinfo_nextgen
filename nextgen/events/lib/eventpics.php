@@ -165,12 +165,13 @@ function events_eventpics_extract_selected_from_featured(?string $featured): str
         return '';
     }
     $p = parse_url($u, PHP_URL_PATH);
-    $path = is_string($p) ? $p : $u;
-    $prefix = events_eventpics_web_prefix();
-    if (!str_starts_with($path, $prefix)) {
+    $path = is_string($p) && $p !== '' ? $p : $u;
+    $marker = events_eventpics_web_prefix();
+    $pos = strpos($path, $marker);
+    if ($pos === false) {
         return '';
     }
-    $f = substr($path, strlen($prefix));
+    $f = substr($path, $pos + strlen($marker));
     if ($f === '' || !events_eventpics_is_safe_filename($f)) {
         return '';
     }
