@@ -52,7 +52,12 @@ $orderSql = match ($order) {
     default => 'e.id DESC',
 };
 
-$limitSql = $filters['show_all'] ? '' : ' LIMIT ' . EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+$limitSql = $filters['list_limit'] !== null ? ' LIMIT ' . $filters['list_limit'] : '';
+
+$countSql = "SELECT COUNT(*) FROM `events_calendar_events` e $whereSql";
+$countStmt = $db->prepare($countSql);
+$countStmt->execute($params);
+$listTotalCount = (int) $countStmt->fetchColumn();
 
 $sql = "
     SELECT e.*,
@@ -70,6 +75,8 @@ $sql = "
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$listDisplayedCount = count($rows);
+$listLimitValue = $filters['list_limit_value'];
 
 $categoriesByEventId = [];
 $tagsByEventId = [];
@@ -187,7 +194,6 @@ $filterClearUrl = events_url('events_admin.php');
 $calendarViewUrl = events_admin_calendar_view_url(events_admin_calendar_view_month_key($filters), $get_params);
 $listViewUrl = events_admin_list_view_url($get_params, ['order' => $order, 'dir' => $dir_param]);
 $activeView = 'list';
-$showAll = $filters['show_all'];
 $publicPreviewParams = $get_params;
 $publicPreviewParams['month'] = events_admin_calendar_view_month_key($filters);
 $publicHomePreviewUrl = events_url(events_public_home_page_script() . '?' . http_build_query($publicPreviewParams));

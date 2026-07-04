@@ -1302,18 +1302,33 @@ tr:hover td { background: var(--bg); }
     padding: 0;
     border: none;
 }
-.events-admin-list-limit {
+.events-admin-list-display {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.65rem;
     margin-left: auto;
-    gap: 0.45rem;
 }
-.events-admin-list-limit__opt {
-    font-size: 0.8125rem;
+.events-admin-list-display__label {
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-secondary);
-    transition: color 0.15s ease;
+    margin: 0;
 }
-.events-admin-list-limit__opt.is-active {
+.events-admin-list-display__select {
+    min-width: 5.5rem;
+}
+.events-admin-list-display__select .events-filter-select {
+    min-height: 2rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+.events-admin-list-display__count {
+    font-size: 0.875rem;
+    font-weight: 600;
     color: var(--text-primary);
+    white-space: nowrap;
 }
 .events-cal-view-switch {
     display: inline-flex;

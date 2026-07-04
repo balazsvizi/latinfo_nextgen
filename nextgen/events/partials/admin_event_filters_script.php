@@ -28,11 +28,6 @@
             el.addEventListener('change', submitForm);
         });
 
-        var showAllToggle = form.querySelector('#ev-show-all');
-        if (showAllToggle) {
-            showAllToggle.addEventListener('change', submitForm);
-        }
-
         form.querySelectorAll('input.events-filter-input[type="text"], input.events-filter-input[type="search"]').forEach(function (el) {
             el.addEventListener('input', function () {
                 debouncedSubmit(450);

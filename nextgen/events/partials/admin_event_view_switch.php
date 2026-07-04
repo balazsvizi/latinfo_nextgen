@@ -3,8 +3,19 @@ declare(strict_types=1);
 /** @var string $listViewUrl */
 /** @var string $calendarViewUrl */
 /** @var 'list'|'month' $activeView */
-/** @var bool $showAll */
-$showAll = $showAll ?? false;
+/** @var string $listLimitValue */
+/** @var int $listDisplayedCount */
+/** @var int $listTotalCount */
+$listLimitValue = $listLimitValue ?? (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+$listDisplayedCount = $listDisplayedCount ?? 0;
+$listTotalCount = $listTotalCount ?? 0;
+
+$formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
+if ($listLimitValue !== 'all' && $listTotalCount > $listDisplayedCount) {
+    $listCountLabel = $formatCount($listDisplayedCount) . ' / ' . $formatCount($listTotalCount) . ' megjelenítve';
+} else {
+    $listCountLabel = $formatCount($listDisplayedCount) . ' megjelenítve';
+}
 ?>
 <div class="events-cal-view-switch-row">
     <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="Nézet választó">
@@ -17,19 +28,17 @@ $showAll = $showAll ?? false;
         <?php endif; ?>
     </nav>
     <?php if ($activeView === 'list'): ?>
-        <label class="events-admin-list-limit events-toggle" for="ev-show-all" title="Lista méret: legújabb 100 vagy összes esemény">
-            <span class="events-admin-list-limit__opt<?= !$showAll ? ' is-active' : '' ?>" aria-hidden="true">100</span>
-            <input
-                type="checkbox"
-                name="show_all"
-                value="1"
-                id="ev-show-all"
-                class="events-toggle__input"
-                <?= $showAll ? 'checked' : '' ?>
-                aria-label="Összes esemény megjelenítése"
-            >
-            <span class="events-toggle__ui" aria-hidden="true"></span>
-            <span class="events-admin-list-limit__opt<?= $showAll ? ' is-active' : '' ?>" aria-hidden="true">Összes</span>
-        </label>
+        <div class="events-admin-list-display">
+            <label class="events-admin-list-display__label" for="ev-list-limit">Megjelenítve:</label>
+            <div class="events-filter-select-wrap events-admin-list-display__select">
+                <select class="events-filter-select" name="list_limit" id="ev-list-limit" title="Lista méret">
+                    <?php foreach (events_admin_list_limit_options() as $limitOption): ?>
+                        <option value="<?= (int) $limitOption ?>" <?= $listLimitValue === (string) $limitOption ? 'selected' : '' ?>><?= (int) $limitOption ?></option>
+                    <?php endforeach; ?>
+                    <option value="all" <?= $listLimitValue === 'all' ? 'selected' : '' ?>>Mind</option>
+                </select>
+            </div>
+            <span class="events-admin-list-display__count" aria-live="polite"><?= h($listCountLabel) ?></span>
+        </div>
     <?php endif; ?>
 </div>

@@ -6,6 +6,32 @@ require_once __DIR__ . '/event_status.php';
 
 const EVENTS_ADMIN_LIST_DEFAULT_LIMIT = 100;
 
+/** @return list<int> */
+function events_admin_list_limit_options(): array {
+    return [100, 500, 1000, 2000, 5000];
+}
+
+/**
+ * @return array{value: string, sql_limit: int|null}
+ */
+function events_admin_list_limit_from_get(): array {
+    $raw = trim((string) ($_GET['list_limit'] ?? ''));
+    if ($raw === 'all') {
+        return ['value' => 'all', 'sql_limit' => null];
+    }
+    if ($raw !== '' && ctype_digit($raw)) {
+        $n = (int) $raw;
+        if (in_array($n, events_admin_list_limit_options(), true)) {
+            return ['value' => (string) $n, 'sql_limit' => $n];
+        }
+    }
+
+    return [
+        'value' => (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT,
+        'sql_limit' => EVENTS_ADMIN_LIST_DEFAULT_LIMIT,
+    ];
+}
+
 /**
  * Admin eseménylista / naptár — közös szűrők és WHERE építés.
  *
@@ -45,7 +71,7 @@ const EVENTS_ADMIN_LIST_DEFAULT_LIMIT = 100;
  *   daysSpan: int,
  *   idxFrom: int,
  *   idxTo: int,
- *   show_all: bool,
+ *   list_limit_value: string,
  *   list_limit: int|null
  * }
  */
@@ -97,7 +123,9 @@ function events_admin_filters_from_request(PDO $db): array {
     $allowedStatus = array_merge([''], events_allowed_post_statuses());
     $status = isset($_GET['status']) && in_array((string) $_GET['status'], $allowedStatus, true) ? (string) $_GET['status'] : '';
 
-    $show_all = isset($_GET['show_all']) && (string) $_GET['show_all'] === '1';
+    $listLimitParsed = events_admin_list_limit_from_get();
+    $list_limit_value = $listLimitParsed['value'];
+    $list_limit = $listLimitParsed['sql_limit'];
 
     $boundsRow = $db->query('
         SELECT MIN(e.event_start) AS dmin, MAX(e.event_start) AS dmax
@@ -260,7 +288,7 @@ function events_admin_filters_from_request(PDO $db): array {
         'f_start_to' => $f_start_to !== '' ? $f_start_to : null,
         'f_views_min' => $f_views_min !== '' ? $f_views_min : null,
         'status' => $status !== '' ? $status : null,
-        'show_all' => $show_all ? '1' : null,
+        'list_limit' => $list_limit_value !== (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT ? $list_limit_value : null,
     ], static fn ($v): bool => $v !== null && $v !== '');
 
     return [
@@ -299,8 +327,8 @@ function events_admin_filters_from_request(PDO $db): array {
         'daysSpan' => $daysSpan,
         'idxFrom' => $idxFrom,
         'idxTo' => $idxTo,
-        'show_all' => $show_all,
-        'list_limit' => $show_all ? null : EVENTS_ADMIN_LIST_DEFAULT_LIMIT,
+        'list_limit_value' => $list_limit_value,
+        'list_limit' => $list_limit,
     ];
 }
 
