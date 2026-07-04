@@ -97,9 +97,19 @@ function events_admin_table_total_count(PDO $db, string $table): int {
     return (int) $db->query('SELECT COUNT(*) FROM `' . $table . '`')->fetchColumn();
 }
 
+function events_admin_list_display_limit_count(string $listLimitValue, int $totalInDb): int {
+    if ($listLimitValue === 'all') {
+        return $totalInDb;
+    }
+
+    return min((int) $listLimitValue, $totalInDb);
+}
+
 function events_admin_list_count_label(string $listLimitValue, int $totalInDb): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
-    $limitLabel = $listLimitValue === 'all' ? 'összes' : $formatCount((int) $listLimitValue);
+    $limitLabel = $listLimitValue === 'all'
+        ? 'összes'
+        : $formatCount(events_admin_list_display_limit_count($listLimitValue, $totalInDb));
 
     return $limitLabel . ' / ' . $formatCount($totalInDb) . ' megjelenítve';
 }
