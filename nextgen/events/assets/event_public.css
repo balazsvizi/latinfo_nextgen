@@ -177,6 +177,21 @@ body.event-public-page {
     color: var(--li-text-soft);
     font-weight: 400;
     user-select: none;
+    padding: 0 0.05rem;
+}
+
+.event-lang-switch__text--long {
+    display: none;
+}
+
+@media (min-width: 36rem) {
+    .event-lang-switch__text--short {
+        display: none;
+    }
+
+    .event-lang-switch__text--long {
+        display: inline;
+    }
 }
 
 .event-lang-switch__link {

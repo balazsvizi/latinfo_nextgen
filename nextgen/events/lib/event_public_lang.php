@@ -87,6 +87,22 @@ function events_public_common_nav_strings(string $lang): array {
 }
 
 /**
+ * Nyelvváltó link feliratok (rövid mobilon, teljes asztali nézetben).
+ *
+ * @return array{hu_short: string, en_short: string, hu_long: string, en_long: string, hu_aria: string, en_aria: string}
+ */
+function events_public_lang_switch_link_labels(): array {
+    return [
+        'hu_short' => 'Hun',
+        'en_short' => 'Eng',
+        'hu_long' => 'Magyar',
+        'en_long' => 'English',
+        'hu_aria' => 'Magyar',
+        'en_aria' => 'English',
+    ];
+}
+
+/**
  * @return array<string, string>
  */
 function events_public_megjelenit_strings(string $lang): array {

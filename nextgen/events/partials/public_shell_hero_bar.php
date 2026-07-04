@@ -20,6 +20,7 @@ $heroInlineTitle = trim((string) ($heroInlineTitle ?? ''));
 $C = events_public_common_nav_strings($lang);
 $eventsHomeUrl = events_public_home_page_url($lang);
 $latinfoLogoSrc = events_public_logo_src();
+$L = events_public_lang_switch_link_labels();
 ?>
 <div class="event-public__hero-chrome">
     <?php if (!$isEventsHome): ?>
@@ -40,9 +41,15 @@ $latinfoLogoSrc = events_public_logo_src();
             <?php endif; ?>
         </div>
         <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">
-            <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu"><?= h($S['lang_hu']) ?></a>
-            <span class="event-lang-switch__sep" aria-hidden="true">|</span>
-            <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en"><?= h($S['lang_en']) ?></a>
+            <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu" aria-label="<?= h($L['hu_aria']) ?>" title="<?= h($L['hu_aria']) ?>">
+                <span class="event-lang-switch__text event-lang-switch__text--short"><?= h($L['hu_short']) ?></span>
+                <span class="event-lang-switch__text event-lang-switch__text--long"><?= h($L['hu_long']) ?></span>
+            </a>
+            <span class="event-lang-switch__sep" aria-hidden="true">/</span>
+            <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en" aria-label="<?= h($L['en_aria']) ?>" title="<?= h($L['en_aria']) ?>">
+                <span class="event-lang-switch__text event-lang-switch__text--short"><?= h($L['en_short']) ?></span>
+                <span class="event-lang-switch__text event-lang-switch__text--long"><?= h($L['en_long']) ?></span>
+            </a>
         </div>
     </div>
 </div>
