@@ -48,7 +48,7 @@ if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
         $e = events_row_for_form($copied);
         $eventFormIsCopy = true;
         $eventCopySourceFeaturedImage = trim((string) ($e['event_featured_image_url'] ?? ''));
-        $copyNotice = 'Esemény másolva piszkozatként. A dátumok és a további információ URL nem kerültek át — add meg őket, majd mentsd.';
+        $copyNotice = 'Esemény másolva piszkozatként. A további információ URL nem került át — ellenőrizd az adatokat, majd mentsd.';
     } else {
         flash('error', 'A másolandó esemény nem található.');
     }
