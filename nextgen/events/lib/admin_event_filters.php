@@ -105,6 +105,10 @@ function events_admin_list_display_limit_count(string $listLimitValue, int $tota
     return min((int) $listLimitValue, $totalInDb);
 }
 
+function events_admin_list_format_count_compact(int $n): string {
+    return (string) max(0, $n);
+}
+
 function events_admin_list_count_label(string $listLimitValue, int $totalInDb): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
     $displayCount = events_admin_list_display_limit_count($listLimitValue, $totalInDb);

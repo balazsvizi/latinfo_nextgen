@@ -150,7 +150,7 @@ function events_public_events_list_get_params(string $listLimitValue): array {
 }
 
 function events_public_list_count_label(string $lang, string $listLimitValue, int $totalInDb): string {
-    $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
+    $formatCount = static fn (int $n): string => events_admin_list_format_count_compact($n);
     $displayCount = events_admin_list_display_limit_count($listLimitValue, $totalInDb);
     $suffix = $lang === 'en' ? ' shown' : ' megjelenítve';
 

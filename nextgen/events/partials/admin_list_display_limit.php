@@ -18,7 +18,7 @@ $listLimitAllLabel = $listLimitAllLabel ?? 'Mind';
 $listCountSuffix = $listCountSuffix ?? ' megjelenítve';
 $standaloneClass = empty($listLimitStandalone) ? '' : ' events-admin-list-display--standalone';
 $displayCount = events_admin_list_display_limit_count($listLimitValue, $listTotalInDb);
-$formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
+$formatCount = static fn (int $n): string => events_admin_list_format_count_compact($n);
 $countAriaLabel = $formatCount($displayCount) . ' / ' . $formatCount($listTotalInDb) . $listCountSuffix;
 $labelText = rtrim(trim((string) $listLimitLabel), ':');
 ?>

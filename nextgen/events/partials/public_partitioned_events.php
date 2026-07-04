@@ -19,13 +19,15 @@ $sectionIdPrefix = $sectionIdPrefix ?? 'related';
 $showVenueCity = $showVenueCity ?? true;
 ?>
 <section class="organizer-public__events venue-public__events" aria-labelledby="<?= h($sectionIdPrefix) ?>-events-heading">
-    <h2 class="organizer-public__events-title" id="<?= h($sectionIdPrefix) ?>-events-heading"><?= h((string) ($PEszovegek['events_heading'] ?? 'Események')) ?></h2>
+    <div class="organizer-public__events-head">
+        <h2 class="organizer-public__events-title" id="<?= h($sectionIdPrefix) ?>-events-heading"><?= h((string) ($PEszovegek['events_heading'] ?? 'Események')) ?></h2>
+        <?php if ($eventsList !== [] && isset($listLimitValue) && isset($listTotalInDb)): ?>
+            <?php $D = $D ?? $PEszovegek; require __DIR__ . '/public_entity_events_display_limit.php'; ?>
+        <?php endif; ?>
+    </div>
     <?php if ($eventsList === []): ?>
         <p class="organizer-public__empty"><?= h((string) ($PEszovegek['list_empty'] ?? '')) ?></p>
     <?php else: ?>
-        <?php if (isset($listLimitValue) && isset($listTotalInDb)): ?>
-            <?php $D = $D ?? $PEszovegek; require __DIR__ . '/public_entity_events_display_limit.php'; ?>
-        <?php endif; ?>
         <?php
         $eventBlocks = [
             ['id' => $sectionIdPrefix . '-upcoming', 'heading' => $PEszovegek['section_upcoming'] ?? '', 'rows' => $eventsUpcoming, 'empty' => $PEszovegek['upcoming_empty'] ?? ''],

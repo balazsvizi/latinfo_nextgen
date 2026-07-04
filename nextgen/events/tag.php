@@ -127,14 +127,18 @@ header('Content-Type: text/html; charset=UTF-8');
     </header>
 
     <section class="organizer-public__events" aria-labelledby="tag-events-heading">
-        <h2 class="organizer-public__events-title" id="tag-events-heading">
-            <?= h($G['events_heading']) ?>
-            <span class="organizer-public__heading-count">(<?= $eventsTotalCount ?>)</span>
-        </h2>
+        <div class="organizer-public__events-head">
+            <h2 class="organizer-public__events-title" id="tag-events-heading">
+                <?= h($G['events_heading']) ?>
+                <span class="organizer-public__heading-count">(<?= $eventsTotalCount ?>)</span>
+            </h2>
+            <?php if ($eventsList !== []): ?>
+                <?php $D = $G; require __DIR__ . '/partials/public_entity_events_display_limit.php'; ?>
+            <?php endif; ?>
+        </div>
         <?php if ($eventsList === []): ?>
             <p class="organizer-public__empty"><?= h($G['list_empty']) ?></p>
         <?php else: ?>
-            <?php $D = $G; require __DIR__ . '/partials/public_entity_events_display_limit.php'; ?>
             <?php
             $tagEventBlocks = [
                 ['id' => 'tag-upcoming', 'heading' => $G['section_upcoming'], 'rows' => $eventsUpcoming, 'empty' => $G['upcoming_empty']],

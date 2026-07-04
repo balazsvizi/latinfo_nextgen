@@ -5,7 +5,7 @@ declare(strict_types=1);
 /** @var int $listTotalInDb */
 /** @var array<string, string> $D */
 ?>
-<div class="catalog-public__limit-row">
+<div class="catalog-public__limit-row catalog-public__limit-row--events-head">
     <?php
     $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
     $listLimitInForm = false;
