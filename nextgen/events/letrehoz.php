@@ -169,6 +169,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <input type="hidden" name="copy_source_featured_image" id="copy_source_featured_image" value="<?= h($eventCopySourceFeaturedImage) ?>">
         <?php endif; ?>
         <?php
+        $eventFormAutoSlug = true;
         $eventFormCancelUrl = events_url('events_admin.php');
         require __DIR__ . '/partials/event_fields.php';
         $eventFormActionsPlacement = 'footer';

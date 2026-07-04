@@ -67,6 +67,10 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
         : '');
 $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
     && trim((string) ($e['event_slug'] ?? '')) !== '';
+$eventFormAutoSlug = !empty($eventFormAutoSlug);
+$eventSlugRefreshTitle = $eventFormAutoSlug
+    ? 'Slug frissítése (név + mai dátum)'
+    : 'Slug frissítése (név + kezdő dátum)';
 ?>
 <div class="events-edit-layout">
 <div class="events-edit-main">
@@ -75,8 +79,8 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
     <div class="events-edit-title-row">
         <label class="visually-hidden" for="event_name">Esemény neve *</label>
         <input type="text" id="event_name" name="event_name" class="events-edit-name-input" value="<?= h($e['event_name']) ?>" required maxlength="500" placeholder="Esemény címe…">
-        <button type="button" class="btn btn-secondary events-edit-slug-refresh" id="event-slug-refresh" title="Slug frissítése (név + kezdő dátum)" aria-label="Slug frissítése">🔄</button>
-        <input type="text" id="event_slug" name="event_slug" class="events-edit-slug-input" value="<?= h($e['event_slug']) ?>" required maxlength="255" pattern="[a-z0-9][a-z0-9\-]*" title="URL slug — kisbetű, szám és kötőjel" placeholder="url-slug" aria-label="URL slug *">
+        <button type="button" class="btn btn-secondary events-edit-slug-refresh" id="event-slug-refresh" title="<?= h($eventSlugRefreshTitle) ?>" aria-label="Slug frissítése">🔄</button>
+        <input type="text" id="event_slug" name="event_slug" class="events-edit-slug-input" value="<?= h($e['event_slug']) ?>" required maxlength="255" pattern="[a-z0-9][a-z0-9\-]*" title="URL slug — kisbetű, szám és kötőjel" placeholder="url-slug" aria-label="URL slug *" data-auto-slug="<?= $eventFormAutoSlug ? '1' : '0' ?>">
         <?php if ($canPreviewPublic): ?>
             <a href="<?= h(events_megjelenit_url((string) $e['event_slug'])) ?>" class="events-icon-action events-edit-preview-action" title="Nyilvános megtekintés (új lap)" aria-label="Nyilvános megtekintés új lapon" target="_blank" rel="noopener">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
