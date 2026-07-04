@@ -1836,13 +1836,65 @@ a.event-public__tag-pill:hover {
 
 @media (max-width: 640px) {
     .event-public-page .events-admin-list-display--standalone {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.65rem;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem 0.75rem;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .event-public-page .events-admin-list-display--standalone .events-admin-list-display__control {
+        flex: 0 0 auto;
+    }
+
+    .event-public-page .events-admin-list-display--standalone .events-admin-list-display__select {
+        min-width: 0;
+    }
+
+    .event-public-page .events-admin-list-display--standalone .events-admin-list-display__select-input,
+    .event-public-page .events-admin-list-display--standalone .events-admin-list-display__select .events-filter-select {
+        min-height: 2.5rem;
+        min-width: 4.25rem;
+        padding-left: 0.75rem;
+        padding-right: 1.75rem;
     }
 
     .event-public-page .events-admin-list-display--standalone .events-admin-list-display__count {
+        flex: 1 1 auto;
         justify-content: flex-end;
+        gap: 0;
+        min-width: 0;
+    }
+
+    .event-public-page .events-admin-list-display--standalone .events-admin-list-display__count-suffix {
+        display: none;
+    }
+
+    .event-public-page .events-admin-list-display--standalone .events-admin-list-display__count-pill {
+        padding: 0.35rem 0.75rem;
+    }
+
+    .home-public .events-cal-view-switch-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+        padding-bottom: 0.55rem;
+    }
+
+    .home-public .events-cal-view-switch-row__sep {
+        display: none;
+    }
+
+    .home-public .events-cal-view-switch-row .events-admin-list-display {
+        width: 100%;
+        justify-content: space-between;
+        padding: 0.5rem 0.65rem;
+        border-radius: var(--ev-radius-sm);
+    }
+
+    .home-public .events-cal-view-switch-row .events-admin-list-display__count-suffix {
+        display: none;
     }
 }
 
