@@ -24,15 +24,13 @@ $labelText = rtrim(trim((string) $listLimitLabel), ':');
 ?>
 <div class="events-admin-list-display<?= h($standaloneClass) ?>">
     <div class="events-admin-list-display__control">
-        <label class="events-admin-list-display__label" for="<?= h($listLimitSelectId) ?>">
-            <span class="events-admin-list-display__label-text"><?= h($labelText) ?></span>
-        </label>
         <div class="events-filter-select-wrap events-admin-list-display__select">
             <select
                 class="events-filter-select events-admin-list-display__select-input<?= $listLimitInForm ? '' : ' events-list-limit-select' ?>"
                 <?= $listLimitInForm ? 'name="list_limit"' : '' ?>
                 id="<?= h($listLimitSelectId) ?>"
-                title="Lista méret"
+                aria-label="<?= h($labelText) ?>"
+                title="<?= h($labelText) ?>"
                 <?= $listLimitInForm ? '' : ' data-list-limit-select' ?>
             >
                 <?php foreach (events_admin_list_limit_options() as $limitOption): ?>
