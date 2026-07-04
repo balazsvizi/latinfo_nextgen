@@ -23,7 +23,7 @@ function events_public_tag_has_type_code(PDO $db, int $tagId, string $typeCode):
  *   next_event_start: ?string
  * }>
  */
-function events_public_dj_catalog(PDO $db, string $publishedStatus): array {
+function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLimit = null): array {
     if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
         return [];
     }
@@ -32,9 +32,12 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus): array {
         return [];
     }
 
+    require_once __DIR__ . '/admin_event_filters.php';
+    $poolFrom = events_admin_table_pool_from_sql('events_tags', 't', $listLimit);
+
     $st = $db->prepare('
         SELECT t.`id`, t.`name`
-        FROM `events_tags` t
+        FROM ' . $poolFrom . '
         INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
         ORDER BY t.`name` ASC, t.`id` ASC
     ');
@@ -93,4 +96,23 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus): array {
     }
 
     return array_values($byId);
+}
+
+function events_public_dj_total_count(PDO $db): int {
+    if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+        return 0;
+    }
+    $djTypeId = events_tag_type_id_by_code($db, 'dj');
+    if ($djTypeId === null || $djTypeId <= 0) {
+        return 0;
+    }
+
+    $st = $db->prepare('
+        SELECT COUNT(*)
+        FROM `events_tags` t
+        INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
+    ');
+    $st->execute([$djTypeId]);
+
+    return (int) $st->fetchColumn();
 }

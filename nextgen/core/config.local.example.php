@@ -40,4 +40,7 @@ return [
     // 'GOOGLE_DRIVE_OAUTH_CLIENT_ID' => '....apps.googleusercontent.com',
     // 'GOOGLE_DRIVE_OAUTH_CLIENT_SECRET' => 'GOCSPX-...',
     // 'GOOGLE_DRIVE_BACKUP_FOLDER_ID' => '1BOBSMtZDB10LWKNcJxDWtq6AnFx4W9mJ',
+
+    // GA4 mérőazonosító — nyilvános esemény oldalak (üres string = kikapcsolva)
+    // 'GA4_MEASUREMENT_ID' => 'G-RCTY9NEJRJ',
 ];

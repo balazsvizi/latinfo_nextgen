@@ -27,6 +27,7 @@ if ($slug === '') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?= events_public_ga_head_markup() ?>
     <?= events_public_robots_noindex_head_markup() ?>
     <title><?= h($lang === 'en' ? 'Venue not found' : 'Nincs ilyen helyszín') ?></title>
     <?= events_public_favicon_head_markup() ?>
@@ -66,6 +67,7 @@ if (!$venue) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?= events_public_ga_head_markup() ?>
     <?= events_public_robots_noindex_head_markup() ?>
     <title><?= h($lang === 'en' ? 'Venue not found' : 'Nincs ilyen helyszín') ?></title>
     <?= events_public_favicon_head_markup() ?>
@@ -118,6 +120,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?= events_public_ga_head_markup() ?>
     <?= events_public_robots_noindex_head_markup() ?>
     <title><?= h($title) ?> – <?= h(SITE_NAME) ?></title>
     <?php if ($desc !== ''): ?><meta name="description" content="<?= h($desc) ?>"><?php endif; ?>

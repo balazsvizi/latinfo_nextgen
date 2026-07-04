@@ -119,6 +119,11 @@ if (!defined('LATINFO_PUBLIC_HOME_URL')) {
     define('LATINFO_PUBLIC_HOME_URL', $pubHome !== '' ? $pubHome . '/' : 'https://latinfo.hu/');
 }
 
+/** GA4 mérőazonosító (pl. G-XXXXXXXXXX) — nyilvános esemény oldalak. Üresen kikapcsolva. */
+if (!defined('GA4_MEASUREMENT_ID')) {
+    define('GA4_MEASUREMENT_ID', (string) cfg_get('GA4_MEASUREMENT_ID', 'G-RCTY9NEJRJ', $localConfig));
+}
+
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra
 

@@ -120,6 +120,42 @@ if (!function_exists('events_public_favicon_head_markup')) {
     }
 }
 
+if (!function_exists('events_public_ga_measurement_id')) {
+    function events_public_ga_measurement_id(): string {
+        if (!defined('GA4_MEASUREMENT_ID')) {
+            return '';
+        }
+        $id = trim((string) GA4_MEASUREMENT_ID);
+        if ($id === '' || !preg_match('/^G-[A-Z0-9]+$/', $id)) {
+            return '';
+        }
+
+        return $id;
+    }
+}
+
+if (!function_exists('events_public_ga_head_markup')) {
+    /**
+     * Google Analytics 4 (gtag.js) — csak nyilvános esemény oldalak head-jébe.
+     */
+    function events_public_ga_head_markup(): string {
+        $id = events_public_ga_measurement_id();
+        if ($id === '') {
+            return '';
+        }
+        $safeId = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+
+        return '<!-- Google Analytics 4 (GA4) -->' . "\n"
+            . '<script async src="https://www.googletagmanager.com/gtag/js?id=' . $safeId . '"></script>' . "\n"
+            . '<script>' . "\n"
+            . 'window.dataLayer = window.dataLayer || [];' . "\n"
+            . 'function gtag(){dataLayer.push(arguments);}' . "\n"
+            . "gtag('js', new Date());" . "\n"
+            . "gtag('config', '" . $safeId . "');" . "\n"
+            . '</script>' . "\n";
+    }
+}
+
 if (!function_exists('events_categories_name_en_available')) {
     /**
      * Van-e events_categories.name_en oszlop (régi DB-k migráció nélkül működjenek).

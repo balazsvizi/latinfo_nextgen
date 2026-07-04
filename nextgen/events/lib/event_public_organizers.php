@@ -194,3 +194,83 @@ function events_public_list_partition_events(array $rows, ?int $nowTs = null): a
 
     return ['today' => $today, 'soon' => $soon, 'past' => $past];
 }
+
+/**
+ * @return list<array{
+ *   id: int,
+ *   name: string,
+ *   event_total: int,
+ *   event_upcoming: int,
+ *   next_event_start: ?string
+ * }>
+ */
+function events_public_organizer_catalog(PDO $db, string $publishedStatus, ?int $listLimit = null): array {
+    require_once __DIR__ . '/admin_event_filters.php';
+    $poolFrom = events_admin_table_pool_from_sql('events_organizers', 'o', $listLimit);
+
+    $st = $db->query('
+        SELECT o.`id`, o.`name`
+        FROM ' . $poolFrom . '
+        ORDER BY o.`name` ASC, o.`id` ASC
+    ');
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    if ($rows === []) {
+        return [];
+    }
+
+    $byId = [];
+    foreach ($rows as $row) {
+        $id = (int) ($row['id'] ?? 0);
+        if ($id <= 0) {
+            continue;
+        }
+        $byId[$id] = [
+            'id' => $id,
+            'name' => (string) ($row['name'] ?? ''),
+            'event_total' => 0,
+            'event_upcoming' => 0,
+            'next_event_start' => null,
+        ];
+    }
+    if ($byId === []) {
+        return [];
+    }
+
+    $orgIds = array_keys($byId);
+    $ph = implode(',', array_fill(0, count($orgIds), '?'));
+    $evSt = $db->prepare("
+        SELECT eco.`organizer_id`, e.`id`, e.`event_start`, e.`event_end`, e.`event_allday`
+        FROM `events_calendar_event_organizers` eco
+        INNER JOIN `events_calendar_events` e ON e.`id` = eco.`event_id`
+        WHERE eco.`organizer_id` IN ({$ph}) AND e.`event_status` = ?
+    ");
+    $evSt->execute(array_merge($orgIds, [$publishedStatus]));
+    $nowTs = time();
+
+    foreach ($evSt->fetchAll(PDO::FETCH_ASSOC) as $evRow) {
+        $oid = (int) ($evRow['organizer_id'] ?? 0);
+        if (!isset($byId[$oid])) {
+            continue;
+        }
+        $byId[$oid]['event_total']++;
+        if (events_public_event_row_is_past($evRow, $nowTs)) {
+            continue;
+        }
+        $byId[$oid]['event_upcoming']++;
+        $start = (string) ($evRow['event_start'] ?? '');
+        if ($start !== '') {
+            $cur = $byId[$oid]['next_event_start'];
+            if ($cur === null || $start < $cur) {
+                $byId[$oid]['next_event_start'] = $start;
+            }
+        }
+    }
+
+    return array_values($byId);
+}
+
+function events_public_organizer_total_count(PDO $db): int {
+    require_once __DIR__ . '/admin_event_filters.php';
+
+    return events_admin_table_total_count($db, 'events_organizers');
+}

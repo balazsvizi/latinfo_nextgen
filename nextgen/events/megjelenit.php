@@ -149,6 +149,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?= events_public_ga_head_markup() ?>
     <?= events_public_robots_noindex_head_markup() ?>
     <meta name="theme-color" content="#6d8f63">
     <title><?= h((string) $title) ?><?= h($T['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>

@@ -548,6 +548,8 @@ function events_public_djs_strings(string $lang): array {
         'empty' => 'Nincs DJ a listában.',
         'empty_filter' => 'Nincs találat a szűrésre.',
         'card_aria' => 'DJ profil megnyitása',
+        'list_display_label' => 'Megjelenítve:',
+        'list_display_all' => 'Mind',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -575,6 +577,74 @@ function events_public_djs_strings(string $lang): array {
         'empty' => 'No DJs in the catalog.',
         'empty_filter' => 'No matches for your search.',
         'card_aria' => 'Open DJ profile',
+        'list_display_label' => 'Showing:',
+        'list_display_all' => 'All',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+/**
+ * @return array<string, string>
+ */
+function events_public_organizers_catalog_strings(string $lang): array {
+    $hu = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Szervezők',
+        'page_desc' => 'Eseményszervezők és közzétett eseményeik a Latinfo.hu-n.',
+        'eyebrow' => 'Szervezők',
+        'lang_nav' => 'Nyelv',
+        'lang_hu' => 'Magyar',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'footer_home_link' => 'Latinfo.hu',
+        'filter_label' => 'Keresés név szerint',
+        'filter_placeholder' => 'Szervező neve…',
+        'sort_label' => 'Rendezés',
+        'sort_name_asc' => 'Név (A→Z)',
+        'sort_name_desc' => 'Név (Z→A)',
+        'sort_events_desc' => 'Összes esemény (több→kevesebb)',
+        'sort_events_asc' => 'Összes esemény (kevesebb→több)',
+        'sort_upcoming_desc' => 'Aktuális események (több→kevesebb)',
+        'events_total' => 'összes esemény',
+        'events_upcoming' => 'aktuális esemény',
+        'next_event' => 'Következő',
+        'empty' => 'Nincs szervező a listában.',
+        'empty_filter' => 'Nincs találat a szűrésre.',
+        'card_aria' => 'Szervező profil megnyitása',
+        'list_display_label' => 'Megjelenítve:',
+        'list_display_all' => 'Mind',
+    ];
+    $en = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Organizers',
+        'page_desc' => 'Event organizers and their published events on Latinfo.hu.',
+        'eyebrow' => 'Organizers',
+        'lang_nav' => 'Language',
+        'lang_hu' => 'Hungarian',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
+        'footer_home_link' => 'Latinfo.hu',
+        'filter_label' => 'Search by name',
+        'filter_placeholder' => 'Organizer name…',
+        'sort_label' => 'Sort',
+        'sort_name_asc' => 'Name (A→Z)',
+        'sort_name_desc' => 'Name (Z→A)',
+        'sort_events_desc' => 'Total events (most→least)',
+        'sort_events_asc' => 'Total events (least→most)',
+        'sort_upcoming_desc' => 'Upcoming events (most→least)',
+        'events_total' => 'total events',
+        'events_upcoming' => 'upcoming events',
+        'next_event' => 'Next',
+        'empty' => 'No organizers in the catalog.',
+        'empty_filter' => 'No matches for your search.',
+        'card_aria' => 'Open organizer profile',
+        'list_display_label' => 'Showing:',
+        'list_display_all' => 'All',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -768,12 +838,20 @@ function events_public_venue_lang_switch_url(string $slug, string $targetLang): 
     ], '', '&', PHP_QUERY_RFC3986));
 }
 
-function events_public_djs_page_url(string $lang): string {
-    return events_url('djs.php?' . http_build_query(['lang' => $lang], '', '&', PHP_QUERY_RFC3986));
+function events_public_djs_page_url(string $lang, array $extraParams = []): string {
+    return events_url('djs.php?' . http_build_query(array_merge(['lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
 }
 
-function events_public_djs_lang_switch_url(string $targetLang): string {
-    return events_public_djs_page_url($targetLang);
+function events_public_djs_lang_switch_url(string $targetLang, array $extraParams = []): string {
+    return events_public_djs_page_url($targetLang, $extraParams);
+}
+
+function events_public_organizers_catalog_page_url(string $lang, array $extraParams = []): string {
+    return events_url('szervezok.php?' . http_build_query(array_merge(['lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
+}
+
+function events_public_organizers_catalog_lang_switch_url(string $targetLang, array $extraParams = []): string {
+    return events_public_organizers_catalog_page_url($targetLang, $extraParams);
 }
 
 /**
@@ -811,7 +889,7 @@ function events_public_megjelenit_not_found_html(string $lang): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    ' . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
+    ' . events_public_ga_head_markup() . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
     <title>' . h($T['not_found_title']) . '</title>
     ' . $fav . '
     <link rel="stylesheet" href="' . h($cssUrl) . '">
@@ -852,7 +930,7 @@ function events_public_organizer_not_found_html(string $lang): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    ' . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
+    ' . events_public_ga_head_markup() . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
     <title>' . h($O['not_found_title']) . '</title>
     ' . $fav . '
     <link rel="stylesheet" href="' . h($cssUrl) . '">
@@ -893,7 +971,7 @@ function events_public_tag_not_found_html(string $lang): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    ' . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
+    ' . events_public_ga_head_markup() . events_public_robots_noindex_head_markup() . '    <meta name="theme-color" content="#6d8f63">
     <title>' . h($G['not_found_title']) . '</title>
     ' . $fav . '
     <link rel="stylesheet" href="' . h($cssUrl) . '">

@@ -129,6 +129,16 @@ function events_public_published_events_total_count(PDO $db): int {
     return (int) $stmt->fetchColumn();
 }
 
+/** @return array<string, string> */
+function events_public_catalog_get_params(string $listLimitValue): array {
+    $params = [];
+    if ($listLimitValue !== (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT) {
+        $params['list_limit'] = $listLimitValue;
+    }
+
+    return $params;
+}
+
 function events_public_list_count_label(string $lang, string $listLimitValue, int $totalInDb): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
     $allLabel = $lang === 'en' ? 'all' : 'összes';
