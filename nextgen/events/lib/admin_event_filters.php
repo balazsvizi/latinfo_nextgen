@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/event_request.php';
 require_once __DIR__ . '/event_status.php';
 
-const EVENTS_ADMIN_LIST_DEFAULT_LIMIT = 100;
+const EVENTS_ADMIN_LIST_DEFAULT_LIMIT = 2000;
 
 /** @return list<int> */
 function events_admin_list_limit_options(): array {
