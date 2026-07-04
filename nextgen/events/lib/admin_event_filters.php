@@ -33,6 +33,40 @@ function events_admin_list_limit_from_get(): array {
 }
 
 /**
+ * Admin lista — megjelenítési pool FROM klauzula (legújabb N esemény id szerint).
+ */
+function events_admin_list_pool_from_sql(?int $listLimit): string {
+    if ($listLimit === null) {
+        return '`events_calendar_events` e';
+    }
+
+    return '(
+        SELECT e_pool.*
+        FROM `events_calendar_events` e_pool
+        ORDER BY e_pool.`id` DESC
+        LIMIT ' . $listLimit . '
+    ) e';
+}
+
+function events_admin_list_pool_count(PDO $db, ?int $listLimit): int {
+    if ($listLimit === null) {
+        return (int) $db->query('SELECT COUNT(*) FROM `events_calendar_events`')->fetchColumn();
+    }
+
+    $stmt = $db->prepare('
+        SELECT COUNT(*) FROM (
+            SELECT e_pool.`id`
+            FROM `events_calendar_events` e_pool
+            ORDER BY e_pool.`id` DESC
+            LIMIT ?
+        ) pool_ids
+    ');
+    $stmt->execute([$listLimit]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+/**
  * Admin eseménylista / naptár — közös szűrők és WHERE építés.
  *
  * @return array{

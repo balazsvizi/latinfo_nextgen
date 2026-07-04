@@ -35,6 +35,8 @@ if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, tr
 
 $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
 $params = $filters['params'];
+$poolFromSql = events_admin_list_pool_from_sql($filters['list_limit']);
+$listPoolCount = events_admin_list_pool_count($db, $filters['list_limit']);
 
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
@@ -52,12 +54,11 @@ $orderSql = match ($order) {
     default => 'e.id DESC',
 };
 
-$limitSql = $filters['list_limit'] !== null ? ' LIMIT ' . $filters['list_limit'] : '';
-
-$countSql = "SELECT COUNT(*) FROM `events_calendar_events` e $whereSql";
+$countSql = "SELECT COUNT(*) FROM {$poolFromSql} {$whereSql}";
 $countStmt = $db->prepare($countSql);
 $countStmt->execute($params);
-$listTotalCount = (int) $countStmt->fetchColumn();
+$listDisplayedCount = (int) $countStmt->fetchColumn();
+$listLimitValue = $filters['list_limit_value'];
 
 $sql = "
     SELECT e.*,
@@ -67,16 +68,13 @@ $sql = "
          WHERE eo.event_id = e.id) AS organizer_name,
         (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view') AS megtekintesek,
         (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'calendar_preview') AS naptar_elonezetek
-    FROM `events_calendar_events` e
-    $whereSql
-    ORDER BY $orderSql
-    $limitSql
+    FROM {$poolFromSql}
+    {$whereSql}
+    ORDER BY {$orderSql}
 ";
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$listDisplayedCount = count($rows);
-$listLimitValue = $filters['list_limit_value'];
 
 $categoriesByEventId = [];
 $tagsByEventId = [];

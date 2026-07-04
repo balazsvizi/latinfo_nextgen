@@ -5,14 +5,14 @@ declare(strict_types=1);
 /** @var 'list'|'month' $activeView */
 /** @var string $listLimitValue */
 /** @var int $listDisplayedCount */
-/** @var int $listTotalCount */
+/** @var int $listPoolCount */
 $listLimitValue = $listLimitValue ?? (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
 $listDisplayedCount = $listDisplayedCount ?? 0;
-$listTotalCount = $listTotalCount ?? 0;
+$listPoolCount = $listPoolCount ?? 0;
 
 $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
-if ($listLimitValue !== 'all' && $listTotalCount > $listDisplayedCount) {
-    $listCountLabel = $formatCount($listDisplayedCount) . ' / ' . $formatCount($listTotalCount) . ' megjelenítve';
+if ($listDisplayedCount < $listPoolCount) {
+    $listCountLabel = $formatCount($listDisplayedCount) . ' / ' . $formatCount($listPoolCount) . ' megjelenítve';
 } else {
     $listCountLabel = $formatCount($listDisplayedCount) . ' megjelenítve';
 }
