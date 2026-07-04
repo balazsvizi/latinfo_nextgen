@@ -1730,93 +1730,120 @@ a.event-public__tag-pill:hover {
 }
 
 .catalog-public__limit-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem 1.25rem;
-    margin: 0 0 0.85rem;
-    padding-bottom: 0.65rem;
-    border-bottom: 1px solid rgba(109, 143, 99, 0.2);
+    margin: 0 0 1rem;
 }
 
-.djs-public .events-admin-list-display {
+.event-public-page .events-admin-list-display {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.45rem 0.65rem;
+    gap: 0.65rem 1rem;
 }
 
-.djs-public .events-admin-list-display__label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--li-text-muted, #5a6356);
-    margin: 0;
+.event-public-page .events-admin-list-display--standalone {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.72rem 1rem;
+    border: 1px solid var(--li-border);
+    border-radius: var(--ev-radius-sm);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, var(--li-green-soft) 100%);
+    box-shadow: var(--li-shadow);
 }
 
-.djs-public .events-admin-list-display__select {
-    min-width: 5.5rem;
-}
-
-.djs-public .events-admin-list-display__select .events-filter-select {
-    min-height: 2rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    font-size: 0.875rem;
-}
-
-.djs-public .events-admin-list-display__count {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--li-green-dark, #4a6741);
-    white-space: nowrap;
-}
-
-.organizer-public .catalog-public__limit-row,
-.venue-public .catalog-public__limit-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem 1.25rem;
-    margin: 0 0 0.85rem;
-    padding-bottom: 0.65rem;
-    border-bottom: 1px solid rgba(109, 143, 99, 0.2);
-}
-
-.organizer-public .events-admin-list-display,
-.venue-public .events-admin-list-display {
+.event-public-page .events-admin-list-display__control {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.45rem 0.65rem;
+    gap: 0.5rem 0.75rem;
+    min-width: 0;
 }
 
-.organizer-public .events-admin-list-display__label,
-.venue-public .events-admin-list-display__label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--li-text-muted, #5a6356);
+.event-public-page .events-admin-list-display__label {
+    display: inline-flex;
+    align-items: center;
     margin: 0;
+    cursor: pointer;
 }
 
-.organizer-public .events-admin-list-display__select,
-.venue-public .events-admin-list-display__select {
-    min-width: 5.5rem;
+.event-public-page .events-admin-list-display__label-text {
+    font-family: var(--ev-sans);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--li-text-soft);
 }
 
-.organizer-public .events-admin-list-display__select .events-filter-select,
-.venue-public .events-admin-list-display__select .events-filter-select {
-    min-height: 2rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    font-size: 0.875rem;
+.event-public-page .events-admin-list-display__select {
+    min-width: 5.75rem;
 }
 
-.organizer-public .events-admin-list-display__count,
-.venue-public .events-admin-list-display__count {
+.event-public-page .events-admin-list-display__select .events-filter-select,
+.event-public-page .events-admin-list-display__select-input {
+    min-height: 2.125rem;
+    padding: 0.3rem 2rem 0.3rem 0.65rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--li-green-dark, #4a6741);
+    border-radius: 999px;
+    border-color: var(--li-border-strong);
+    background-color: #fff;
+}
+
+.event-public-page .events-admin-list-display__count {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0;
     white-space: nowrap;
+}
+
+.event-public-page .events-admin-list-display__count-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.28rem;
+    padding: 0.28rem 0.62rem;
+    border-radius: 999px;
+    border: 1px solid rgba(109, 143, 99, 0.28);
+    background: rgba(255, 255, 255, 0.88);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.event-public-page .events-admin-list-display__count-num,
+.event-public-page .events-admin-list-display__count-total {
+    font-family: var(--ev-sans);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--li-green-dark);
+}
+
+.event-public-page .events-admin-list-display__count-sep {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--li-text-soft);
+    opacity: 0.75;
+}
+
+.event-public-page .events-admin-list-display__count-suffix {
+    font-family: var(--ev-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--li-text-soft);
+}
+
+@media (max-width: 640px) {
+    .event-public-page .events-admin-list-display--standalone {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+
+    .event-public-page .events-admin-list-display--standalone .events-admin-list-display__count {
+        justify-content: flex-end;
+    }
 }
 
 .djs-public__toolbar {
@@ -2487,36 +2514,11 @@ body.event-public-page--home .event-public__hero-inner {
     justify-content: flex-start;
 }
 
-.home-public .events-admin-list-display {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem 0.65rem;
-}
-
-.home-public .events-admin-list-display__label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--li-text-muted, #5a6356);
-    margin: 0;
-}
-
-.home-public .events-admin-list-display__select {
-    min-width: 5.5rem;
-}
-
-.home-public .events-admin-list-display__select .events-filter-select {
-    min-height: 2rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    font-size: 0.875rem;
-}
-
-.home-public .events-admin-list-display__count {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--li-green-dark, #4a6741);
-    white-space: nowrap;
+.home-public .events-cal-view-switch-row .events-admin-list-display {
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--li-border);
+    background: rgba(255, 255, 255, 0.72);
 }
 
 .home-public .events-cal-view-switch--standalone {

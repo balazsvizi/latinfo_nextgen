@@ -12,7 +12,7 @@ declare(strict_types=1);
     $listLimitStandalone = true;
     $listLimitLabel = (string) ($D['list_display_label'] ?? 'Megjelenítve:');
     $listLimitAllLabel = (string) ($D['list_display_all'] ?? 'Mind');
-    $listCountLabel = events_public_list_count_label($lang, $listLimitValue, $listTotalInDb);
+    $listCountSuffix = $lang === 'en' ? ' shown' : ' megjelenítve';
     require __DIR__ . '/admin_list_display_limit.php';
     ?>
 </div>

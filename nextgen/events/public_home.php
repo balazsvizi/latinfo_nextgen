@@ -180,7 +180,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     $listLimitInForm = true;
                     $listLimitLabel = (string) $D['list_display_label'];
                     $listLimitAllLabel = (string) $D['list_display_all'];
-                    $listCountLabel = events_public_list_count_label($lang, $listLimitValue, $listTotalInDb);
+                    $listCountSuffix = $lang === 'en' ? ' shown' : ' megjelenítve';
                     require __DIR__ . '/partials/admin_list_display_limit.php';
                     ?>
                 </div>
