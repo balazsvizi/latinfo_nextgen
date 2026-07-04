@@ -81,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $listLimitParsed = events_admin_list_limit_from_get();
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_admin_table_total_count($db, 'events_styles');
 $poolFrom = events_admin_table_pool_from_sql('events_styles', 's', $list_limit);
-$listPoolCount = events_admin_table_pool_count($db, 'events_styles', $list_limit);
 
 $styles = $db->query('
     SELECT s.`id`, s.`name`

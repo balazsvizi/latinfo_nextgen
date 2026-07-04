@@ -89,11 +89,19 @@ function events_admin_list_filtered_count(PDO $db, string $fromSql, string $wher
     return (int) $stmt->fetchColumn();
 }
 
-function events_admin_list_count_label(int $displayed, string $listLimitValue): string {
+function events_admin_table_total_count(PDO $db, string $table): int {
+    if (!preg_match('/^events_[a-z0-9_]+$/', $table)) {
+        throw new InvalidArgumentException('Érvénytelen tábla a lista összesítéshez.');
+    }
+
+    return (int) $db->query('SELECT COUNT(*) FROM `' . $table . '`')->fetchColumn();
+}
+
+function events_admin_list_count_label(string $listLimitValue, int $totalInDb): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
     $limitLabel = $listLimitValue === 'all' ? 'összes' : $formatCount((int) $listLimitValue);
 
-    return $formatCount($displayed) . ' / ' . $limitLabel . ' megjelenítve';
+    return $limitLabel . ' / ' . $formatCount($totalInDb) . ' megjelenítve';
 }
 
 /** @param list<mixed> $items */

@@ -12,8 +12,8 @@ $db = getDb();
 $listLimitParsed = events_admin_list_limit_from_get();
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_admin_table_total_count($db, 'events_venues');
 $poolFrom = events_admin_table_pool_from_sql('events_venues', 'v', $list_limit);
-$listPoolCount = events_admin_table_pool_count($db, 'events_venues', $list_limit);
 
 $f_q = trim((string) ($_GET['f_q'] ?? ''));
 $f_city = trim((string) ($_GET['f_city'] ?? ''));

@@ -36,7 +36,6 @@ if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, tr
 $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
 $params = $filters['params'];
 $poolFromSql = events_admin_list_pool_from_sql($filters['list_limit']);
-$listPoolCount = events_admin_list_pool_count($db, $filters['list_limit']);
 
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
@@ -59,6 +58,7 @@ $countStmt = $db->prepare($countSql);
 $countStmt->execute($params);
 $listDisplayedCount = (int) $countStmt->fetchColumn();
 $listLimitValue = $filters['list_limit_value'];
+$listTotalInDb = events_admin_table_total_count($db, 'events_calendar_events');
 
 $sql = "
     SELECT e.*,

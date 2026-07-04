@@ -108,8 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $listLimitParsed = events_admin_list_limit_from_get();
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_admin_table_total_count($db, 'events_tag_types');
 $poolFrom = events_admin_table_pool_from_sql('events_tag_types', 't', $list_limit);
-$listPoolCount = events_admin_table_pool_count($db, 'events_tag_types', $list_limit);
 
 $typeRows = [];
 if (events_tag_types_registry_table_available($db)) {

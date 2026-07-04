@@ -211,8 +211,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $listLimitParsed = events_admin_list_limit_from_get();
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_admin_table_total_count($db, 'events_categories');
 $poolFrom = events_admin_table_pool_from_sql('events_categories', 'c', $list_limit);
-$listPoolCount = events_admin_table_pool_count($db, 'events_categories', $list_limit);
 
 if ($categoriesNameEnOk) {
     $rows = $db->query('SELECT c.`id`, c.`name`, c.`name_en`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified` FROM ' . $poolFrom . ' ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC')->fetchAll(PDO::FETCH_ASSOC);

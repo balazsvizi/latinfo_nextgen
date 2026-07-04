@@ -28,10 +28,10 @@ $monthLabel = events_public_calendar_month_label($monthFirst, $lang);
 
 $rows = events_public_fetch_filtered_events($db, $filters);
 $listPartition = events_public_list_partition_events($rows);
-$listDisplayedCount = 0;
 $listLimitValue = (string) ($filters['list_limit_value'] ?? EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+$listTotalInDb = 0;
 if ($view === 'list') {
-    $listDisplayedCount = events_public_list_displayed_count($db, $filters);
+    $listTotalInDb = events_public_published_events_total_count($db);
 }
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
 $calendarPreviewById = [];
@@ -179,7 +179,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     $listLimitInForm = true;
                     $listLimitLabel = (string) $D['list_display_label'];
                     $listLimitAllLabel = (string) $D['list_display_all'];
-                    $listCountLabel = events_public_list_count_label($lang, $listDisplayedCount, $listLimitValue);
+                    $listCountLabel = events_public_list_count_label($lang, $listLimitValue, $listTotalInDb);
                     require __DIR__ . '/partials/admin_list_display_limit.php';
                     ?>
                 </div>

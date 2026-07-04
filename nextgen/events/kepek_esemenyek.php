@@ -52,7 +52,7 @@ unset($_SESSION['events_kepek_bulk_errors']);
 $listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
-$listPoolCount = events_admin_table_pool_count($db, 'events_calendar_events', $list_limit);
+$listTotalInDb = events_admin_table_total_count($db, 'events_calendar_events');
 
 $eventRows = events_featured_image_admin_all_events($db, $list_limit);
 $listDisplayedCount = count($eventRows);
@@ -107,7 +107,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <p class="events-kepek-esemenyek__count" aria-live="polite">
             <strong><span id="events-kepek-visible-count">0</span></strong>
             / <span id="events-kepek-total-count"><?= (int) $listDisplayedCount ?></span> esemény
-            <span class="help"> (<?= h(events_admin_list_count_label($listDisplayedCount, $listLimitValue)) ?>)</span>
+            <span class="help"> (<?= h(events_admin_list_count_label($listLimitValue, $listTotalInDb)) ?>)</span>
         </p>
 
         <div class="table-wrap events-admin-table-wrap">

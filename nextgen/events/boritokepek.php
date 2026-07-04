@@ -82,6 +82,7 @@ $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
 
 $allFiles = events_eventpics_list_files();
+$listTotalInDb = count($allFiles);
 $listPoolCount = count(events_admin_list_limit_array_pool($allFiles, $list_limit));
 $pooledFiles = events_admin_list_limit_array_pool($allFiles, $list_limit);
 $f_q = trim((string) ($_GET['q'] ?? ''));

@@ -11,8 +11,8 @@ $db = getDb();
 $listLimitParsed = events_admin_list_limit_from_get();
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_admin_table_total_count($db, 'events_organizers');
 $poolFrom = events_admin_table_pool_from_sql('events_organizers', 'o', $list_limit);
-$listPoolCount = events_admin_table_pool_count($db, 'events_organizers', $list_limit);
 
 $stmt = $db->query('SELECT o.`id`, o.`name` FROM ' . $poolFrom . ' ORDER BY o.`name` ASC, o.`id` ASC');
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);

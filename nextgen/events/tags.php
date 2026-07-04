@@ -145,8 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $listLimitParsed = events_admin_list_limit_from_get();
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_admin_table_total_count($db, 'events_tags');
 $poolFrom = events_admin_table_pool_from_sql('events_tags', 't', $list_limit);
-$listPoolCount = events_admin_table_pool_count($db, 'events_tags', $list_limit);
 
 $tagRows = $db->query('
     SELECT t.`id`, t.`name`
