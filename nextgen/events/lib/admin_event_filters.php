@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/event_request.php';
 require_once __DIR__ . '/event_status.php';
 
+const EVENTS_ADMIN_LIST_DEFAULT_LIMIT = 100;
+
 /**
  * Admin eseménylista / naptár — közös szűrők és WHERE építés.
  *
@@ -42,7 +44,9 @@ require_once __DIR__ . '/event_status.php';
  *   axisMaxStr: string,
  *   daysSpan: int,
  *   idxFrom: int,
- *   idxTo: int
+ *   idxTo: int,
+ *   show_all: bool,
+ *   list_limit: int|null
  * }
  */
 function events_admin_filters_from_request(PDO $db): array {
@@ -92,6 +96,8 @@ function events_admin_filters_from_request(PDO $db): array {
 
     $allowedStatus = array_merge([''], events_allowed_post_statuses());
     $status = isset($_GET['status']) && in_array((string) $_GET['status'], $allowedStatus, true) ? (string) $_GET['status'] : '';
+
+    $show_all = isset($_GET['show_all']) && (string) $_GET['show_all'] === '1';
 
     $boundsRow = $db->query('
         SELECT MIN(e.event_start) AS dmin, MAX(e.event_start) AS dmax
@@ -254,6 +260,7 @@ function events_admin_filters_from_request(PDO $db): array {
         'f_start_to' => $f_start_to !== '' ? $f_start_to : null,
         'f_views_min' => $f_views_min !== '' ? $f_views_min : null,
         'status' => $status !== '' ? $status : null,
+        'show_all' => $show_all ? '1' : null,
     ], static fn ($v): bool => $v !== null && $v !== '');
 
     return [
@@ -292,6 +299,8 @@ function events_admin_filters_from_request(PDO $db): array {
         'daysSpan' => $daysSpan,
         'idxFrom' => $idxFrom,
         'idxTo' => $idxTo,
+        'show_all' => $show_all,
+        'list_limit' => $show_all ? null : EVENTS_ADMIN_LIST_DEFAULT_LIMIT,
     ];
 }
 

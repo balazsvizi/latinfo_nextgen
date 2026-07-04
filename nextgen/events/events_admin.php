@@ -52,6 +52,8 @@ $orderSql = match ($order) {
     default => 'e.id DESC',
 };
 
+$limitSql = $filters['show_all'] ? '' : ' LIMIT ' . EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+
 $sql = "
     SELECT e.*,
         (SELECT GROUP_CONCAT(o.name ORDER BY eo.sort_order ASC, o.name ASC SEPARATOR ', ')
@@ -63,6 +65,7 @@ $sql = "
     FROM `events_calendar_events` e
     $whereSql
     ORDER BY $orderSql
+    $limitSql
 ";
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
@@ -184,6 +187,7 @@ $filterClearUrl = events_url('events_admin.php');
 $calendarViewUrl = events_admin_calendar_view_url(events_admin_calendar_view_month_key($filters), $get_params);
 $listViewUrl = events_admin_list_view_url($get_params, ['order' => $order, 'dir' => $dir_param]);
 $activeView = 'list';
+$showAll = $filters['show_all'];
 $publicPreviewParams = $get_params;
 $publicPreviewParams['month'] = events_admin_calendar_view_month_key($filters);
 $publicHomePreviewUrl = events_url(events_public_home_page_script() . '?' . http_build_query($publicPreviewParams));

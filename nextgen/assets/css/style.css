@@ -1288,6 +1288,33 @@ tr:hover td { background: var(--bg); }
     color: var(--text-primary);
     text-transform: lowercase;
 }
+.events-cal-view-switch-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid #e8ebe6;
+}
+.events-cal-view-switch-row .events-cal-view-switch--standalone {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+.events-admin-list-limit {
+    margin-left: auto;
+    gap: 0.45rem;
+}
+.events-admin-list-limit__opt {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: color 0.15s ease;
+}
+.events-admin-list-limit__opt.is-active {
+    color: var(--text-primary);
+}
 .events-cal-view-switch {
     display: inline-flex;
     align-items: center;
