@@ -10,6 +10,7 @@ declare(strict_types=1);
     $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
     $listLimitInForm = false;
     $listLimitStandalone = true;
+    $listLimitInlineHead = true;
     $listLimitLabel = (string) ($D['list_display_label'] ?? 'Megjelenítve:');
     $listLimitAllLabel = (string) ($D['list_display_all'] ?? 'Mind');
     $listCountSuffix = $lang === 'en' ? ' shown' : ' megjelenítve';

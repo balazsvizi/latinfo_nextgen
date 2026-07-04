@@ -8,6 +8,7 @@ declare(strict_types=1);
 /** @var string|null $listLimitLabel */
 /** @var string|null $listLimitAllLabel */
 /** @var string|null $listCountSuffix */
+/** @var bool|null $listLimitInlineHead */
 $listLimitDefault = $listLimitDefault ?? EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
 $listLimitValue = $listLimitValue ?? (string) $listLimitDefault;
 $listTotalInDb = $listTotalInDb ?? 0;
@@ -17,12 +18,13 @@ $listLimitLabel = $listLimitLabel ?? 'Megjelenítve:';
 $listLimitAllLabel = $listLimitAllLabel ?? 'Mind';
 $listCountSuffix = $listCountSuffix ?? ' megjelenítve';
 $standaloneClass = empty($listLimitStandalone) ? '' : ' events-admin-list-display--standalone';
+$inlineHeadClass = !empty($listLimitInlineHead) ? ' events-admin-list-display--inline-head' : '';
 $displayCount = events_admin_list_display_limit_count($listLimitValue, $listTotalInDb);
 $formatCount = static fn (int $n): string => events_admin_list_format_count_compact($n);
 $countAriaLabel = $formatCount($displayCount) . ' / ' . $formatCount($listTotalInDb) . $listCountSuffix;
 $labelText = rtrim(trim((string) $listLimitLabel), ':');
 ?>
-<div class="events-admin-list-display<?= h($standaloneClass) ?>">
+<div class="events-admin-list-display<?= h($standaloneClass . $inlineHeadClass) ?>">
     <div class="events-admin-list-display__control">
         <div class="events-filter-select-wrap events-admin-list-display__select">
             <select
