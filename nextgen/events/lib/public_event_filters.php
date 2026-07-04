@@ -151,12 +151,10 @@ function events_public_events_list_get_params(string $listLimitValue): array {
 
 function events_public_list_count_label(string $lang, string $listLimitValue, int $totalInDb): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
-    $allLabel = $lang === 'en' ? 'all' : 'összes';
-    $limitLabel = $listLimitValue === 'all'
-        ? $allLabel
-        : $formatCount(events_admin_list_display_limit_count($listLimitValue, $totalInDb));
+    $displayCount = events_admin_list_display_limit_count($listLimitValue, $totalInDb);
+    $suffix = $lang === 'en' ? ' shown' : ' megjelenítve';
 
-    return $limitLabel . ' / ' . $formatCount($totalInDb) . ($lang === 'en' ? ' shown' : ' megjelenítve');
+    return $formatCount($displayCount) . ' / ' . $formatCount($totalInDb) . $suffix;
 }
 
 /**

@@ -107,11 +107,9 @@ function events_admin_list_display_limit_count(string $listLimitValue, int $tota
 
 function events_admin_list_count_label(string $listLimitValue, int $totalInDb): string {
     $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
-    $limitLabel = $listLimitValue === 'all'
-        ? 'összes'
-        : $formatCount(events_admin_list_display_limit_count($listLimitValue, $totalInDb));
+    $displayCount = events_admin_list_display_limit_count($listLimitValue, $totalInDb);
 
-    return $limitLabel . ' / ' . $formatCount($totalInDb) . ' megjelenítve';
+    return $formatCount($displayCount) . ' / ' . $formatCount($totalInDb) . ' megjelenítve';
 }
 
 /** @param list<mixed> $items */
