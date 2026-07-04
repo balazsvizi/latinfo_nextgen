@@ -36,34 +36,85 @@ function events_admin_list_limit_from_get(): array {
  * Admin lista — megjelenítési pool FROM klauzula (legújabb N esemény id szerint).
  */
 function events_admin_list_pool_from_sql(?int $listLimit): string {
-    if ($listLimit === null) {
-        return '`events_calendar_events` e';
-    }
-
-    return '(
-        SELECT e_pool.*
-        FROM `events_calendar_events` e_pool
-        ORDER BY e_pool.`id` DESC
-        LIMIT ' . $listLimit . '
-    ) e';
+    return events_admin_table_pool_from_sql('events_calendar_events', 'e', $listLimit);
 }
 
 function events_admin_list_pool_count(PDO $db, ?int $listLimit): int {
+    return events_admin_table_pool_count($db, 'events_calendar_events', $listLimit);
+}
+
+function events_admin_table_pool_from_sql(string $table, string $alias, ?int $listLimit): string {
+    if (!preg_match('/^events_[a-z0-9_]+$/', $table)) {
+        throw new InvalidArgumentException('Érvénytelen tábla a lista poolhoz.');
+    }
     if ($listLimit === null) {
-        return (int) $db->query('SELECT COUNT(*) FROM `events_calendar_events`')->fetchColumn();
+        return "`{$table}` {$alias}";
+    }
+
+    return '(
+        SELECT p.*
+        FROM `' . $table . '` p
+        ORDER BY p.`id` DESC
+        LIMIT ' . $listLimit . '
+    ) ' . $alias;
+}
+
+function events_admin_table_pool_count(PDO $db, string $table, ?int $listLimit): int {
+    if (!preg_match('/^events_[a-z0-9_]+$/', $table)) {
+        throw new InvalidArgumentException('Érvénytelen tábla a lista poolhoz.');
+    }
+    if ($listLimit === null) {
+        return (int) $db->query('SELECT COUNT(*) FROM `' . $table . '`')->fetchColumn();
     }
 
     $stmt = $db->prepare('
         SELECT COUNT(*) FROM (
-            SELECT e_pool.`id`
-            FROM `events_calendar_events` e_pool
-            ORDER BY e_pool.`id` DESC
+            SELECT p.`id`
+            FROM `' . $table . '` p
+            ORDER BY p.`id` DESC
             LIMIT ?
         ) pool_ids
     ');
     $stmt->execute([$listLimit]);
 
     return (int) $stmt->fetchColumn();
+}
+
+function events_admin_list_filtered_count(PDO $db, string $fromSql, string $whereSql, array $params): int {
+    $sql = 'SELECT COUNT(*) FROM ' . $fromSql . ' ' . $whereSql;
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function events_admin_list_count_label(int $displayed, int $pool): string {
+    $formatCount = static fn (int $n): string => number_format($n, 0, '', ' ');
+    if ($displayed < $pool) {
+        return $formatCount($displayed) . ' / ' . $formatCount($pool) . ' megjelenítve';
+    }
+
+    return $formatCount($displayed) . ' megjelenítve';
+}
+
+/** @param list<mixed> $items */
+function events_admin_list_limit_array_pool(array $items, ?int $listLimit): array {
+    if ($listLimit === null) {
+        return $items;
+    }
+
+    return array_slice($items, 0, $listLimit);
+}
+
+function events_admin_list_limit_merge_get_params(array $getParams, string $listLimitValue): array {
+    $out = $getParams;
+    if ($listLimitValue !== (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT) {
+        $out['list_limit'] = $listLimitValue;
+    } else {
+        unset($out['list_limit']);
+    }
+
+    return $out;
 }
 
 /**

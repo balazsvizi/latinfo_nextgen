@@ -138,3 +138,4 @@
     syncSlidersToDates();
 })();
 </script>
+<?php require __DIR__ . '/admin_list_display_limit_script.php'; ?>

@@ -4,9 +4,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/venue_request.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
+
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$poolFrom = events_admin_table_pool_from_sql('events_venues', 'v', $list_limit);
+$listPoolCount = events_admin_table_pool_count($db, 'events_venues', $list_limit);
 
 $f_q = trim((string) ($_GET['f_q'] ?? ''));
 $f_city = trim((string) ($_GET['f_city'] ?? ''));
@@ -53,18 +60,20 @@ $orderSql = match ($order) {
 };
 
 $sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`, v.`modified`
-        FROM `events_venues` v
+        FROM {$poolFrom}
         $whereSql
         ORDER BY $orderSql";
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$listDisplayedCount = count($rows);
 
 $get_params = array_filter([
     'f_q' => $f_q !== '' ? $f_q : null,
     'f_city' => $f_city !== '' ? $f_city : null,
     'f_id' => $f_id !== '' ? $f_id : null,
 ]);
+$get_params = events_admin_list_limit_merge_get_params($get_params, $listLimitValue);
 
 $excerpt = static function (?string $s, int $max): string {
     $s = $s ?? '';
@@ -93,7 +102,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <input type="hidden" name="dir" value="<?= h($dir_param) ?>">
 
         <div class="events-list-head">
-            <h2 class="events-list-title">Helyszínek</h2>
+            <div class="events-list-head__start">
+                <h2 class="events-list-title">Helyszínek</h2>
+                <?php
+                $listLimitInForm = true;
+                $listLimitStandalone = true;
+                require __DIR__ . '/partials/admin_list_display_limit.php';
+                ?>
+            </div>
             <div class="events-list-actions">
                 <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
                 <a href="<?= h(events_url('venue_letrehoz.php')) ?>" class="btn btn-primary">Új helyszín</a>

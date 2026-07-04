@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/eventpics.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
@@ -76,15 +77,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $bulkErrors = $_SESSION['events_boritokepek_bulk_errors'] ?? [];
 unset($_SESSION['events_boritokepek_bulk_errors']);
 
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+
 $allFiles = events_eventpics_list_files();
+$listPoolCount = count(events_admin_list_limit_array_pool($allFiles, $list_limit));
+$pooledFiles = events_admin_list_limit_array_pool($allFiles, $list_limit);
 $f_q = trim((string) ($_GET['q'] ?? ''));
-$files = $allFiles;
+$files = $pooledFiles;
 if ($f_q !== '') {
     $fl = mb_strtolower($f_q, 'UTF-8');
     $files = array_values(array_filter($files, static function (string $f) use ($fl): bool {
         return str_contains(mb_strtolower($f, 'UTF-8'), $fl);
     }));
 }
+$listDisplayedCount = count($files);
 
 $selected = trim((string) ($_GET['file'] ?? ''));
 if ($selected !== '') {
@@ -118,8 +126,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-boritokepek-card">
     <div class="events-list-head">
-        <h2 class="events-list-title">Borítóképek</h2>
-        <p class="help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Válassz egy képet a használat és törlés kezeléséhez, vagy jelölj ki többet csoportos törléshez. Új képet is feltölthetsz; siker után megnyílik a részletek nézet. A törlés a fájlt eltávolítja a lemezről, és az érintett eseményeknél üresre állítja a kiemelt kép URL mezőt.</p>
+        <div class="events-list-head__start">
+            <h2 class="events-list-title">Borítóképek</h2>
+            <?php
+            $listLimitInForm = false;
+            $listLimitStandalone = true;
+            require __DIR__ . '/partials/admin_list_display_limit.php';
+            ?>
+        </div>
+        <p class="help events-list-head__help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Válassz egy képet a használat és törlés kezeléséhez, vagy jelölj ki többet csoportos törléshez. Új képet is feltölthetsz; siker után megnyílik a részletek nézet. A törlés a fájlt eltávolítja a lemezről, és az érintett eseményeknél üresre állítja a kiemelt kép URL mezőt.</p>
     </div>
 
     <div class="events-boritokepek-upload">
@@ -351,4 +366,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 })();
 </script>
 
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

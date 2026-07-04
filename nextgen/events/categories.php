@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
@@ -207,16 +208,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(events_url('categories.php'));
 }
 
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$poolFrom = events_admin_table_pool_from_sql('events_categories', 'c', $list_limit);
+$listPoolCount = events_admin_table_pool_count($db, 'events_categories', $list_limit);
+
 if ($categoriesNameEnOk) {
-    $rows = $db->query('SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` ORDER BY `sort_order` ASC, `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $db->query('SELECT c.`id`, c.`name`, c.`name_en`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified` FROM ' . $poolFrom . ' ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC')->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    $rows = $db->query('SELECT `id`, `name`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` ORDER BY `sort_order` ASC, `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $db->query('SELECT c.`id`, c.`name`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified` FROM ' . $poolFrom . ' ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC')->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as &$r) {
         $r['name_en'] = '';
     }
     unset($r);
 }
 $flat = events_categories_flatten_tree($rows);
+$listDisplayedCount = count($flat);
 $byId = [];
 foreach ($rows as $r) {
     $byId[(int) $r['id']] = $r;
@@ -249,7 +257,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card">
     <div class="events-list-head">
-        <h2 class="events-list-title">Esemény kategóriák</h2>
+        <div class="events-list-head__start">
+            <h2 class="events-list-title">Esemény kategóriák</h2>
+            <?php
+            $listLimitInForm = false;
+            $listLimitStandalone = true;
+            require __DIR__ . '/partials/admin_list_display_limit.php';
+            ?>
+        </div>
         <div class="events-list-actions">
             <a href="<?= h(events_url('categories.php')) ?>" class="btn btn-secondary">Új kategória űrlap</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
@@ -399,4 +414,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 })();
 </script>
 
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

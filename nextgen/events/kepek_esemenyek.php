@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/eventpics.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireSuperadmin();
 
 $db = getDb();
@@ -48,7 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $bulkErrors = $_SESSION['events_kepek_bulk_errors'] ?? [];
 unset($_SESSION['events_kepek_bulk_errors']);
 
-$eventRows = events_featured_image_admin_all_events($db);
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$listPoolCount = events_admin_table_pool_count($db, 'events_calendar_events', $list_limit);
+
+$eventRows = events_featured_image_admin_all_events($db, $list_limit);
+$listDisplayedCount = count($eventRows);
 $editBase = events_url('szerkeszt.php?id=');
 
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -66,7 +73,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php endif; ?>
 
 <div class="card events-kepek-esemenyek">
-    <h1 class="card-title">Képek–események</h1>
+    <div class="events-list-head">
+        <div class="events-list-head__start">
+            <h1 class="events-list-title card-title" style="margin:0;">Képek–események</h1>
+            <?php
+            $listLimitInForm = false;
+            $listLimitStandalone = true;
+            require __DIR__ . '/partials/admin_list_display_limit.php';
+            ?>
+        </div>
+    </div>
     <p class="help events-kepek-esemenyek__intro">
         Az összes esemény kiemelt kép beállítása. A szűrők azonnal frissítik a listát.
         Csak superadmin érheti el.
@@ -89,7 +105,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
         <p class="events-kepek-esemenyek__count" aria-live="polite">
             <strong><span id="events-kepek-visible-count">0</span></strong>
-            / <span id="events-kepek-total-count"><?= count($eventRows) ?></span> esemény
+            / <span id="events-kepek-total-count"><?= (int) $listDisplayedCount ?></span> esemény
+            <?php if ($listDisplayedCount < $listPoolCount): ?>
+                <span class="help"> (<?= h(events_admin_list_count_label($listDisplayedCount, $listPoolCount)) ?>)</span>
+            <?php endif; ?>
         </p>
 
         <div class="table-wrap events-admin-table-wrap">
@@ -341,4 +360,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <?php endif; ?>
 </div>
 
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

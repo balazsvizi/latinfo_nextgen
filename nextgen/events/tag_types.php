@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/tag_type.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
@@ -104,7 +105,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(events_url('tag_types.php'));
 }
 
-$typeRows = events_tag_types_load_registry($db, true);
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$poolFrom = events_admin_table_pool_from_sql('events_tag_types', 't', $list_limit);
+$listPoolCount = events_admin_table_pool_count($db, 'events_tag_types', $list_limit);
+
+$typeRows = [];
+if (events_tag_types_registry_table_available($db)) {
+    events_tag_types_ensure_seeded($db);
+    try {
+        $typeRows = $db->query('
+            SELECT t.`id`, t.`code`, t.`name`, t.`icon`, t.`tone`, t.`sort_order`
+            FROM ' . $poolFrom . '
+            ORDER BY t.`sort_order` ASC, t.`name` ASC, t.`id` ASC
+        ')->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException) {
+        $typeRows = [];
+    }
+}
+$listDisplayedCount = count($typeRows);
 $openRaw = (string) ($_GET['open'] ?? '');
 $openGroup = '';
 if ($openRaw === 'new') {
@@ -122,7 +142,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card events-tag-types-admin">
     <div class="events-list-head">
-        <h2 class="events-list-title">Címke típusok</h2>
+        <div class="events-list-head__start">
+            <h2 class="events-list-title">Címke típusok</h2>
+            <?php
+            $listLimitInForm = false;
+            $listLimitStandalone = true;
+            require __DIR__ . '/partials/admin_list_display_limit.php';
+            ?>
+        </div>
         <div class="events-list-actions">
             <a href="<?= h(events_url('tags.php')) ?>" class="btn btn-secondary">Címkék</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
@@ -279,4 +306,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 })();
 </script>
 
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

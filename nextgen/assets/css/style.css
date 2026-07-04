@@ -718,6 +718,16 @@ tr:hover td { background: var(--bg); }
     gap: 1rem;
     margin-bottom: 1.25rem;
 }
+.events-list-head__start {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    min-width: 0;
+}
+.events-admin-list-display--standalone {
+    margin: 0;
+}
 .events-list-partition-nav {
     display: flex;
     flex-wrap: wrap;
@@ -2180,8 +2190,19 @@ dialog.eventpics-modal::backdrop {
 }
 
 /* Event admin — borítóképek (boritokepek.php) */
+.events-boritokepek-card .events-list-head,
+.events-kepek-esemenyek .events-list-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
 .events-boritokepek-card .events-list-head {
     margin-bottom: 1rem;
+}
+.events-boritokepek-card .events-list-head__help {
+    flex: 1 1 100%;
 }
 .events-boritokepek-upload {
     display: flex;

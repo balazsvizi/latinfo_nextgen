@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/tag_type.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
@@ -141,7 +142,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(events_url('tags.php'));
 }
 
-$tagRows = $db->query('SELECT `id`, `name` FROM `events_tags` ORDER BY `name` ASC, `id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$poolFrom = events_admin_table_pool_from_sql('events_tags', 't', $list_limit);
+$listPoolCount = events_admin_table_pool_count($db, 'events_tags', $list_limit);
+
+$tagRows = $db->query('
+    SELECT t.`id`, t.`name`
+    FROM ' . $poolFrom . '
+    ORDER BY t.`name` ASC, t.`id` ASC
+')->fetchAll(PDO::FETCH_ASSOC);
+$listDisplayedCount = count($tagRows);
 
 $tagTypesByTag = [];
 if (events_tag_types_tables_available($db) && $tagRows !== []) {
@@ -173,7 +185,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card events-tags-admin">
     <div class="events-list-head">
-        <h2 class="events-list-title">Esemény címkék</h2>
+        <div class="events-list-head__start">
+            <h2 class="events-list-title">Esemény címkék</h2>
+            <?php
+            $listLimitInForm = false;
+            $listLimitStandalone = true;
+            require __DIR__ . '/partials/admin_list_display_limit.php';
+            ?>
+        </div>
         <div class="events-list-actions">
             <a href="<?= h(events_url('tag_types.php')) ?>" class="btn btn-secondary">Címke típusok</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események listája</a>
@@ -635,4 +654,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 })();
 </script>
 
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

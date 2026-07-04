@@ -386,13 +386,16 @@ function events_featured_image_list_meta(?string $featuredUrl): array
  *   featured_meta: array<string, string>
  * }>
  */
-function events_featured_image_admin_all_events(PDO $db): array
+function events_featured_image_admin_all_events(PDO $db, ?int $listLimit = null): array
 {
+    require_once __DIR__ . '/admin_event_filters.php';
+    $poolFrom = events_admin_table_pool_from_sql('events_calendar_events', 'e', $listLimit);
+
     try {
         $stmt = $db->query('
-            SELECT `id`, `event_name`, `event_status`, `event_featured_image_url`
-            FROM `events_calendar_events`
-            ORDER BY `event_start` IS NULL, `event_start` DESC, `id` DESC
+            SELECT e.`id`, e.`event_name`, e.`event_status`, e.`event_featured_image_url`
+            FROM ' . $poolFrom . '
+            ORDER BY e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
         ');
         $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
     } catch (Throwable $e) {

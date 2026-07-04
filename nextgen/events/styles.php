@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/style_request.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
@@ -77,11 +78,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(events_url('styles.php'));
 }
 
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$poolFrom = events_admin_table_pool_from_sql('events_styles', 's', $list_limit);
+$listPoolCount = events_admin_table_pool_count($db, 'events_styles', $list_limit);
+
 $styles = $db->query('
     SELECT s.`id`, s.`name`
-    FROM `events_styles` s
+    FROM ' . $poolFrom . '
     ORDER BY s.`name` ASC, s.`id` ASC
 ')->fetchAll(PDO::FETCH_ASSOC);
+$listDisplayedCount = count($styles);
 
 $openStyleRaw = (string) ($_GET['open_style'] ?? '');
 $openStyleGroup = '';
@@ -104,7 +112,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card">
     <div class="events-list-head">
-        <h2 class="events-list-title">Stílusok</h2>
+        <div class="events-list-head__start">
+            <h2 class="events-list-title">Stílusok</h2>
+            <?php
+            $listLimitInForm = false;
+            $listLimitStandalone = true;
+            require __DIR__ . '/partials/admin_list_display_limit.php';
+            ?>
+        </div>
         <div class="events-list-actions">
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
         </div>
@@ -213,4 +228,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </table>
     </div>
 </div>
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

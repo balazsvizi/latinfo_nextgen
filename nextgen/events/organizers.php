@@ -3,11 +3,20 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
-$stmt = $db->query('SELECT id, name FROM events_organizers ORDER BY name ASC, id ASC');
+
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$poolFrom = events_admin_table_pool_from_sql('events_organizers', 'o', $list_limit);
+$listPoolCount = events_admin_table_pool_count($db, 'events_organizers', $list_limit);
+
+$stmt = $db->query('SELECT o.`id`, o.`name` FROM ' . $poolFrom . ' ORDER BY o.`name` ASC, o.`id` ASC');
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$listDisplayedCount = count($rows);
 
 $pageTitle = 'Szervezők';
 require_once dirname(__DIR__) . '/partials/header.php';
@@ -15,8 +24,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
-<div class="card">
-    <h1 class="card-title">Esemény szervezők</h1>
+<div class="card events-admin-card">
+    <div class="events-list-head">
+        <div class="events-list-head__start">
+            <h1 class="events-list-title card-title" style="margin:0;">Esemény szervezők</h1>
+            <?php
+            $listLimitInForm = false;
+            $listLimitStandalone = true;
+            require __DIR__ . '/partials/admin_list_display_limit.php';
+            ?>
+        </div>
+    </div>
     <p class="text-muted" style="margin-bottom:1rem;">A szervezők az esemény űrlapokon és a CSV importban választhatók. Szerkesztő felület később bővíthető.</p>
     <div class="table-wrap">
         <table class="data-table">
@@ -45,3 +63,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
     </p>
 </div>
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
+<?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
