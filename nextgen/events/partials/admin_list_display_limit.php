@@ -5,7 +5,9 @@ declare(strict_types=1);
 /** @var int $listPoolCount */
 /** @var bool $listLimitInForm select name= a szülő űrlapban */
 /** @var string $listLimitSelectId */
-$listLimitValue = $listLimitValue ?? (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+/** @var int|null $listLimitDefault */
+$listLimitDefault = $listLimitDefault ?? EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+$listLimitValue = $listLimitValue ?? (string) $listLimitDefault;
 $listDisplayedCount = $listDisplayedCount ?? 0;
 $listPoolCount = $listPoolCount ?? 0;
 $listLimitInForm = !empty($listLimitInForm);

@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $bulkErrors = $_SESSION['events_kepek_bulk_errors'] ?? [];
 unset($_SESSION['events_kepek_bulk_errors']);
 
-$listLimitParsed = events_admin_list_limit_from_get();
+$listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
 $listPoolCount = events_admin_table_pool_count($db, 'events_calendar_events', $list_limit);
@@ -77,6 +77,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <div class="events-list-head__start">
             <h1 class="events-list-title card-title" style="margin:0;">Képek–események</h1>
             <?php
+            $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
             $listLimitInForm = false;
             $listLimitStandalone = true;
             require __DIR__ . '/partials/admin_list_display_limit.php';
@@ -360,5 +361,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <?php endif; ?>
 </div>
 
-<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
+<?php
+$listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
+require __DIR__ . '/partials/admin_list_display_limit_script.php';
+?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

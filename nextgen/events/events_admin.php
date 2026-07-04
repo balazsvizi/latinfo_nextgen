@@ -216,7 +216,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
+        <?php
+        $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
+        require __DIR__ . '/partials/admin_event_view_switch.php';
+        ?>
 
         <?php
         $filterFormHidden = ['order' => $order, 'dir' => $dir_param];

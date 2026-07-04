@@ -1,3 +1,7 @@
+<?php
+/** @var int|null $listLimitDefault */
+$listLimitDefault = $listLimitDefault ?? EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+?>
 <script>
 (function () {
     document.querySelectorAll('[data-list-limit-select]').forEach(function (sel) {
@@ -17,7 +21,7 @@
             }
             var url = new URL(window.location.href);
             var val = (sel.value || '').trim();
-            if (val === '' || val === '<?= (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT ?>') {
+            if (val === '' || val === '<?= (string) $listLimitDefault ?>') {
                 url.searchParams.delete('list_limit');
             } else {
                 url.searchParams.set('list_limit', val);

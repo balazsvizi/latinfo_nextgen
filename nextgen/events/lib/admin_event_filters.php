@@ -5,16 +5,17 @@ require_once __DIR__ . '/event_request.php';
 require_once __DIR__ . '/event_status.php';
 
 const EVENTS_ADMIN_LIST_DEFAULT_LIMIT = 2000;
+const EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT = 200;
 
 /** @return list<int> */
 function events_admin_list_limit_options(): array {
-    return [100, 500, 1000, 2000, 5000];
+    return [100, 200, 500, 1000, 2000, 5000];
 }
 
 /**
  * @return array{value: string, sql_limit: int|null}
  */
-function events_admin_list_limit_from_get(): array {
+function events_admin_list_limit_from_get(int $defaultLimit = EVENTS_ADMIN_LIST_DEFAULT_LIMIT): array {
     $raw = trim((string) ($_GET['list_limit'] ?? ''));
     if ($raw === 'all') {
         return ['value' => 'all', 'sql_limit' => null];
@@ -27,8 +28,8 @@ function events_admin_list_limit_from_get(): array {
     }
 
     return [
-        'value' => (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT,
-        'sql_limit' => EVENTS_ADMIN_LIST_DEFAULT_LIMIT,
+        'value' => (string) $defaultLimit,
+        'sql_limit' => $defaultLimit,
     ];
 }
 
@@ -106,9 +107,13 @@ function events_admin_list_limit_array_pool(array $items, ?int $listLimit): arra
     return array_slice($items, 0, $listLimit);
 }
 
-function events_admin_list_limit_merge_get_params(array $getParams, string $listLimitValue): array {
+function events_admin_list_limit_merge_get_params(
+    array $getParams,
+    string $listLimitValue,
+    int $defaultLimit = EVENTS_ADMIN_LIST_DEFAULT_LIMIT
+): array {
     $out = $getParams;
-    if ($listLimitValue !== (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT) {
+    if ($listLimitValue !== (string) $defaultLimit) {
         $out['list_limit'] = $listLimitValue;
     } else {
         unset($out['list_limit']);
@@ -208,7 +213,7 @@ function events_admin_filters_from_request(PDO $db): array {
     $allowedStatus = array_merge([''], events_allowed_post_statuses());
     $status = isset($_GET['status']) && in_array((string) $_GET['status'], $allowedStatus, true) ? (string) $_GET['status'] : '';
 
-    $listLimitParsed = events_admin_list_limit_from_get();
+    $listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
     $list_limit_value = $listLimitParsed['value'];
     $list_limit = $listLimitParsed['sql_limit'];
 
@@ -373,7 +378,7 @@ function events_admin_filters_from_request(PDO $db): array {
         'f_start_to' => $f_start_to !== '' ? $f_start_to : null,
         'f_views_min' => $f_views_min !== '' ? $f_views_min : null,
         'status' => $status !== '' ? $status : null,
-        'list_limit' => $list_limit_value !== (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT ? $list_limit_value : null,
+        'list_limit' => $list_limit_value !== (string) EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT ? $list_limit_value : null,
     ], static fn ($v): bool => $v !== null && $v !== '');
 
     return [

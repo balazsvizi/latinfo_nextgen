@@ -6,7 +6,9 @@ declare(strict_types=1);
 /** @var string $listLimitValue */
 /** @var int $listDisplayedCount */
 /** @var int $listPoolCount */
-$listLimitValue = $listLimitValue ?? (string) EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+/** @var int|null $listLimitDefault */
+$listLimitDefault = $listLimitDefault ?? EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
+$listLimitValue = $listLimitValue ?? (string) $listLimitDefault;
 $listDisplayedCount = $listDisplayedCount ?? 0;
 $listPoolCount = $listPoolCount ?? 0;
 ?>
