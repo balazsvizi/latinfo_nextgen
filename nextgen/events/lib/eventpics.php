@@ -213,6 +213,31 @@ function events_events_using_eventpic(PDO $db, string $filename): array {
 }
 
 /**
+ * @return array<string, int> eventpics fájlnév => hány esemény használja
+ */
+function events_eventpics_usage_count_map(PDO $db): array {
+    $st = $db->query('
+        SELECT `event_featured_image_url`
+        FROM `events_calendar_events`
+        WHERE `event_featured_image_url` IS NOT NULL AND TRIM(`event_featured_image_url`) != \'\'
+          AND `event_featured_image_url` LIKE \'%/nextgen/events/eventpics/%\'
+    ');
+    if ($st === false) {
+        return [];
+    }
+    $map = [];
+    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+        $fn = events_eventpics_extract_selected_from_featured((string) ($row['event_featured_image_url'] ?? ''));
+        if ($fn === '') {
+            continue;
+        }
+        $map[$fn] = ($map[$fn] ?? 0) + 1;
+    }
+
+    return $map;
+}
+
+/**
  * Eventpics fájl törlése a lemezről, ha már egyetlen esemény sem használja.
  */
 function events_eventpics_delete_file_if_unused(PDO $db, string $filename): bool {
@@ -231,7 +256,7 @@ function events_eventpics_delete_file_if_unused(PDO $db, string $filename): bool
 }
 
 /**
- * Eventpics fájl törlése: előbb az eseményekről leválasztjuk, majd lemez törlés. Sikertelen unlink esetén rollback.
+ * Eventpics fájl törlése a lemezről. Csak akkor engedélyezett, ha egyetlen esemény sem használja.
  *
  * @return array{0: bool, 1: string}
  */
@@ -244,35 +269,16 @@ function events_eventpics_delete_with_clear(PDO $db, string $filename): array {
         return [false, 'A fájl nem található a lemezen.'];
     }
     $rows = events_events_using_eventpic($db, $filename);
-    $ids = [];
-    foreach ($rows as $r) {
-        $i = (int) ($r['id'] ?? 0);
-        if ($i > 0) {
-            $ids[] = $i;
-        }
+    if ($rows !== []) {
+        $n = count($rows);
+
+        return [false, 'A kép nem törölhető: ' . $n . ' esemény használja. Előbb állítsd át a borítót az érintett eseményeknél.'];
     }
-    try {
-        $db->beginTransaction();
-        if ($ids !== []) {
-            $ph = implode(',', array_fill(0, count($ids), '?'));
-            $db->prepare("UPDATE `events_calendar_events` SET `event_featured_image_url` = NULL WHERE `id` IN ($ph)")->execute($ids);
-        }
-        if (!@unlink($path)) {
-            $db->rollBack();
-
-            return [false, 'A fájl törlése nem sikerült (fájlrendszer). Az események változatlanok maradtak.'];
-        }
-        $db->commit();
-
-        return [true, 'A kép törölve. ' . count($ids) . ' esemény borító URL-je üres lett.'];
-    } catch (Throwable $e) {
-        if ($db->inTransaction()) {
-            $db->rollBack();
-        }
-        error_log('events_eventpics_delete_with_clear: ' . $e->getMessage());
-
-        return [false, 'Adatbázis vagy törlési hiba történt.'];
+    if (!@unlink($path)) {
+        return [false, 'A fájl törlése nem sikerült (fájlrendszer).'];
     }
+
+    return [true, 'A kép törölve.'];
 }
 
 /**
@@ -285,7 +291,6 @@ function events_eventpics_bulk_delete_with_clear(PDO $db, array $filenames): arr
     $ok = 0;
     $skipped = 0;
     $failed = 0;
-    $clearedEvents = 0;
     $messages = [];
 
     foreach ($filenames as $rawName) {
@@ -300,14 +305,16 @@ function events_eventpics_bulk_delete_with_clear(PDO $db, array $filenames): arr
             continue;
         }
 
-        $usageCount = count(events_events_using_eventpic($db, $fn));
         [$success, $msg] = events_eventpics_delete_with_clear($db, $fn);
         if ($success) {
             $ok++;
-            $clearedEvents += $usageCount;
             $messages[] = $fn . ': ' . $msg;
         } else {
-            $failed++;
+            if (str_contains($msg, 'nem törölhető')) {
+                $skipped++;
+            } else {
+                $failed++;
+            }
             $messages[] = $fn . ': ' . $msg;
         }
     }
@@ -317,7 +324,7 @@ function events_eventpics_bulk_delete_with_clear(PDO $db, array $filenames): arr
         'skipped' => $skipped,
         'failed' => $failed,
         'messages' => $messages,
-        'cleared_events' => $clearedEvents,
+        'cleared_events' => 0,
     ];
 }
 

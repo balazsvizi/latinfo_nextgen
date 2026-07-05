@@ -2500,6 +2500,24 @@ dialog.eventpics-modal::backdrop {
     word-break: break-all;
     color: var(--text-muted);
 }
+.events-boritokepek-thumb__usage {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 0.15rem;
+}
+.events-boritokepek-thumb-check input:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+.events-boritokepek-delete__blocked {
+    margin: 1rem 0 0;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: rgba(234, 179, 8, 0.08);
+}
 .events-boritokepek-detail {
     position: sticky;
     top: 1rem;

@@ -42,14 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($result['ok'] > 0) {
                 rendszer_log('eventpics', null, 'Borítóképek törlése', $result['ok'] . ' fájl');
                 $parts = [$result['ok'] . ' kép törölve'];
-                if ($result['cleared_events'] > 0) {
-                    $parts[] = $result['cleared_events'] . ' esemény borító URL ürítve';
-                }
                 if ($result['failed'] > 0) {
                     $parts[] = $result['failed'] . ' hiba';
                 }
                 if ($result['skipped'] > 0) {
-                    $parts[] = $result['skipped'] . ' kihagyva';
+                    $parts[] = $result['skipped'] . ' kihagyva (használatban vagy érvénytelen)';
                 }
                 flash('success', 'Csoportos törlés: ' . implode(', ', $parts) . '.');
             } elseif ($result['failed'] > 0) {
@@ -95,6 +92,8 @@ if ($f_q !== '') {
 }
 $listDisplayedCount = count($files);
 
+$usageCountMap = events_eventpics_usage_count_map($db);
+
 $selected = trim((string) ($_GET['file'] ?? ''));
 if ($selected !== '') {
     if (!events_eventpics_is_safe_filename($selected)) {
@@ -135,7 +134,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             require __DIR__ . '/partials/admin_list_display_limit.php';
             ?>
         </div>
-        <p class="help events-list-head__help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Válassz egy képet a használat és törlés kezeléséhez, vagy jelölj ki többet csoportos törléshez. Új képet is feltölthetsz; siker után megnyílik a részletek nézet. A törlés a fájlt eltávolítja a lemezről, és az érintett eseményeknél üresre állítja a kiemelt kép URL mezőt.</p>
+        <p class="help events-list-head__help" style="margin:0;max-width:40rem;">A feltöltött eventpics képek listája. Minden képnél látszik, hány esemény használja borítóként. Válassz egy képet a részletek és az érintett események megtekintéséhez. Csak olyan kép törölhető, amelyet egyetlen esemény sem használ.</p>
     </div>
 
     <div class="events-boritokepek-upload">
@@ -173,7 +172,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
             <label class="events-boritokepek-bulk__confirm">
                 <input type="checkbox" name="confirm_delete" value="1" id="boritokepek-bulk-confirm">
-                Megerősítem a kijelöltek törlését (a fájlok véglegesen törlődnek, az érintett események borító URL-je üres lesz)
+                Megerősítem a kijelöltek törlését (csak a nem használt képek törlődnek véglegesen)
             </label>
         </form>
     <?php endif; ?>
@@ -187,11 +186,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <?php foreach ($files as $pic): ?>
                         <?php
                         $isSel = $selected === $pic;
+                        $picUsage = $usageCountMap[$pic] ?? 0;
                         $href = events_url('boritokepek.php?file=' . rawurlencode($pic)) . ($f_q !== '' ? '&q=' . rawurlencode($f_q) : '');
                         ?>
                         <li class="events-boritokepek-grid__cell">
                             <div class="events-boritokepek-thumb-wrap">
-                                <label class="events-boritokepek-thumb-check" title="Kijelölés törléshez">
+                                <label class="events-boritokepek-thumb-check" title="<?= $picUsage > 0 ? 'Használatban – nem törölhető' : 'Kijelölés törléshez' ?>">
                                     <input
                                         type="checkbox"
                                         class="events-boritokepek-row-check"
@@ -199,11 +199,13 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                         name="filenames[]"
                                         value="<?= h($pic) ?>"
                                         aria-label="Kijelölés: <?= h($pic) ?>"
+                                        <?= $picUsage > 0 ? 'disabled' : '' ?>
                                     >
                                 </label>
                                 <a class="events-boritokepek-thumb<?= $isSel ? ' is-selected' : '' ?>" href="<?= h($href) ?>">
                                     <img src="<?= h($picBase . rawurlencode($pic)) ?>" alt="" width="160" height="120" loading="lazy" decoding="async">
                                     <span class="events-boritokepek-thumb__name"><?= h($pic) ?></span>
+                                    <span class="events-boritokepek-thumb__usage"><?= (int) $picUsage ?> esemény</span>
                                 </a>
                             </div>
                         </li>
@@ -235,23 +237,21 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     </ul>
                 <?php endif; ?>
 
-                <form method="post" action="<?= h(events_url('boritokepek.php?file=') . rawurlencode($selected)) ?>" class="events-boritokepek-delete" onsubmit="return confirm('Biztosan törlöd ezt a képet? <?= (int) $usageCount ?> esemény borító URL-je üres lesz, a fájl véglegesen törlődik.');">
+                <?php if ($usageCount === 0): ?>
+                <form method="post" action="<?= h(events_url('boritokepek.php?file=') . rawurlencode($selected)) ?>" class="events-boritokepek-delete" onsubmit="return confirm('Biztosan törlöd ezt a képet? A fájl véglegesen törlődik.');">
                     <?= csrf_input('events_boritokepek') ?>
                     <input type="hidden" name="action" value="delete_eventpic">
                     <input type="hidden" name="filename" value="<?= h($selected) ?>">
-                    <p class="events-boritokepek-delete__warn">
-                        <?php if ($usageCount > 0): ?>
-                            Figyelem: a törlés után <strong><?= (int) $usageCount ?></strong> eseménynél nem lesz kitöltve a kiemelt kép (eventpics) URL-je.
-                        <?php else: ?>
-                            Ez a kép jelenleg nincs egyetlen eseményhez sem rendelve az adatbázisban; a fájl így is véglegesen törlődik a lemezről.
-                        <?php endif; ?>
-                    </p>
+                    <p class="events-boritokepek-delete__warn help">Ez a kép jelenleg nincs egyetlen eseményhez sem rendelve; törölhető a lemezről.</p>
                     <label class="events-boritokepek-delete__confirm">
                         <input type="checkbox" name="confirm_delete" value="1" required>
                         Megerősítem a törlést
                     </label>
                     <button type="submit" class="btn btn-secondary" style="margin-top:0.75rem;">Kép törlése</button>
                 </form>
+                <?php else: ?>
+                    <p class="events-boritokepek-delete__blocked help">Ez a kép nem törölhető, amíg <?= (int) $usageCount ?> esemény használja borítóként. Előbb állítsd át vagy töröld a borítót az érintett eseményeknél.</p>
+                <?php endif; ?>
             </aside>
         <?php else: ?>
             <aside class="events-boritokepek-detail events-boritokepek-detail--empty" aria-hidden="true">
@@ -313,7 +313,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
     var rowChecks = Array.prototype.slice.call(grid.querySelectorAll('.events-boritokepek-row-check'));
 
     function syncBulkUi() {
-        var checked = rowChecks.filter(function (cb) { return cb.checked; }).length;
+        var enabledChecks = rowChecks.filter(function (cb) { return !cb.disabled; });
+        var checked = enabledChecks.filter(function (cb) { return cb.checked; }).length;
         if (selectedLabel) {
             selectedLabel.textContent = checked + ' kiválasztva';
         }
@@ -321,8 +322,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
             bulkBtn.disabled = checked === 0 || !(bulkConfirm && bulkConfirm.checked);
         }
         if (checkAll) {
-            checkAll.checked = checked > 0 && checked === rowChecks.length;
-            checkAll.indeterminate = checked > 0 && checked < rowChecks.length;
+            checkAll.checked = checked > 0 && checked === enabledChecks.length && enabledChecks.length > 0;
+            checkAll.indeterminate = checked > 0 && checked < enabledChecks.length;
         }
     }
 
@@ -330,7 +331,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
         checkAll.addEventListener('change', function () {
             var on = checkAll.checked;
             rowChecks.forEach(function (cb) {
-                cb.checked = on;
+                if (!cb.disabled) {
+                    cb.checked = on;
+                }
             });
             syncBulkUi();
         });
@@ -348,7 +351,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     }
 
     bulkForm.addEventListener('submit', function (e) {
-        var checked = rowChecks.filter(function (cb) { return cb.checked; }).length;
+        var checked = rowChecks.filter(function (cb) { return cb.checked && !cb.disabled; }).length;
         if (checked === 0) {
             e.preventDefault();
             return;
@@ -358,7 +361,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             alert('A törléshez jelöld be a megerősítő négyzetet.');
             return;
         }
-        if (!window.confirm('Biztosan törlöd a kijelölt ' + checked + ' képet? Az érintett események borító URL-je üres lesz, a fájlok véglegesen törlődnek.')) {
+        if (!window.confirm('Biztosan törlöd a kijelölt ' + checked + ' képet? Csak a nem használt képek törlődnek véglegesen.')) {
             e.preventDefault();
         }
     });
