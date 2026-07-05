@@ -82,7 +82,19 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
                 >
             </div>
             <ul class="wp-token-input__suggestions" role="listbox" hidden></ul>
-            <div class="wp-token-input__hiddens"></div>
+            <div class="wp-token-input__hiddens">
+                <?php if ($wpTokenSingle): ?>
+                    <?php $wpTokenSingleId = $wpTokenSelected !== [] ? (int) $wpTokenSelected[0] : 0; ?>
+                    <input type="hidden" name="<?= h($wpTokenFieldName) ?>" value="<?= $wpTokenSingleId > 0 ? (string) $wpTokenSingleId : '' ?>">
+                <?php else: ?>
+                    <?php foreach ($wpTokenSelected as $wpTokenSelectedId): ?>
+                        <?php $wpTokenSelectedId = (int) $wpTokenSelectedId; ?>
+                        <?php if ($wpTokenSelectedId > 0): ?>
+                            <input type="hidden" name="<?= h($wpTokenFieldName) ?>" value="<?= (string) $wpTokenSelectedId ?>">
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
         <?php if ($wpTokenShowPopular): ?>
         <div class="wp-token-field__popular" data-wp-token-popular hidden>

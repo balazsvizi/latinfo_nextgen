@@ -48,13 +48,14 @@ if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
         $e = events_row_for_form($copied);
         $eventFormIsCopy = true;
         $eventCopySourceFeaturedImage = trim((string) ($e['event_featured_image_url'] ?? ''));
-        $copyNotice = 'Esemény másolva piszkozatként. A további információ URL nem került át — ellenőrizd az adatokat, majd mentsd.';
+        $copyNotice = 'Esemény másolva piszkozatként. A címkék és stílusok is átkerültek. A további információ URL nem — ellenőrizd az adatokat, majd mentsd.';
     } else {
         flash('error', 'A másolandó esemény nem található.');
     }
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['is_copy'] ?? '') === '1') {
     $eventFormIsCopy = true;
+    $copyFromId = (int) ($_POST['copy_from_id'] ?? $copyFromId);
     $eventCopySourceFeaturedImage = trim((string) ($_POST['copy_source_featured_image'] ?? ''));
 }
 
@@ -166,6 +167,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?= csrf_input('events_letrehoz') ?>
         <?php if ($eventFormIsCopy): ?>
             <input type="hidden" name="is_copy" value="1">
+            <?php if ($copyFromId > 0): ?>
+                <input type="hidden" name="copy_from_id" value="<?= (int) $copyFromId ?>">
+            <?php endif; ?>
             <input type="hidden" name="copy_source_featured_image" id="copy_source_featured_image" value="<?= h($eventCopySourceFeaturedImage) ?>">
         <?php endif; ?>
         <?php

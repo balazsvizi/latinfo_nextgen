@@ -527,7 +527,7 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
 /**
  * Esemény másolása új létrehozáshoz: minden mező, kivéve slug és további információ URL.
- * Az időpont (dátum/idő), egész napos jelölő és piszkozat státusz átmásolódik.
+ * Az időpont (dátum/idő), egész napos jelölő, címkék, stílusok és piszkozat státusz átmásolódik.
  *
  * @return array<string,mixed>|null forrás DB sor + kapcsolók, vagy null ha nincs ilyen esemény
  */
