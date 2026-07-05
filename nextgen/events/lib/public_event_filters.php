@@ -106,7 +106,7 @@ function events_public_fetch_filtered_events(PDO $db, array $filters): array {
     $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
     $fromSql = '`events_calendar_events` e LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
     if (($filters['view'] ?? 'cal') === 'list') {
-        $poolFrom = events_admin_list_pool_from_sql($filters['list_limit'] ?? EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
+        $poolFrom = events_admin_list_pool_from_sql($filters['list_limit']);
         $fromSql = $poolFrom . ' LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
     }
     $sql = "
