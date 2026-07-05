@@ -20,10 +20,10 @@ if (!function_exists('events_url')) {
 
 if (!function_exists('events_public_home_page_script')) {
     /**
-     * Publikus esemény főoldal — nem a WP /events URL, hanem külön fájl (public_home.php).
+     * Publikus esemény főoldal — az events/ gyökér (index.php).
      */
     function events_public_home_page_script(): string {
-        return 'public_home.php';
+        return '';
     }
 }
 

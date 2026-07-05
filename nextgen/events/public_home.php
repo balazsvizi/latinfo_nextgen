@@ -2,6 +2,18 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+
+$entryScript = realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+if ($entryScript !== false && $entryScript === realpath(__FILE__)) {
+    $qs = trim((string) ($_SERVER['QUERY_STRING'] ?? ''));
+    $target = events_url('');
+    if ($qs !== '') {
+        $target .= '?' . $qs;
+    }
+    header('Location: ' . $target, true, 301);
+    exit;
+}
+
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/public_home_content.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
