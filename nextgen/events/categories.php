@@ -500,8 +500,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <thead>
                         <tr>
                             <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
-                            <th><?= sort_th('Szülő', 'parent', $order, $dir_param, $get_params) ?></th>
-                            <th><?= sort_th('Név (HU)', 'name', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Név (HU)', 'parent', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Név (EN)', 'name_en', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Szín', 'color', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Sorrend', 'sort_order', $order, $dir_param, $get_params) ?></th>
@@ -513,7 +512,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <tbody>
                     <?php if ($listRows === []): ?>
                         <tr>
-                            <td colspan="9">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
+                            <td colspan="8">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($listRows as $r): ?>
@@ -525,18 +524,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $isEditing = $form['id'] === $rid;
                             $parentId = isset($r['parent_id']) && $r['parent_id'] !== null ? (int) $r['parent_id'] : 0;
                             $parentName = trim((string) ($r['parent_name'] ?? ''));
+                            $nameHu = (string) ($r['name'] ?? '');
+                            $nameHuDisplay = ($parentId > 0 && $parentName !== '')
+                                ? $parentName . ' › ' . $nameHu
+                                : $nameHu;
                             ?>
                             <tr<?= $isEditing ? ' class="is-selected"' : '' ?>>
                                 <td><?= $rid ?></td>
-                                <td>
-                                    <?php if ($parentId > 0 && $parentName !== ''): ?>
-                                        <a href="<?= h(events_url('categories.php?edit=' . $parentId)) ?>"><?= h($parentName) ?></a>
-                                        <span class="events-categories-parent-id">#<?= $parentId ?></span>
-                                    <?php else: ?>
-                                        —
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= h((string) $r['name']) ?></td>
+                                <td><?= h($nameHuDisplay) ?></td>
                                 <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
                                 <td>
                                     <span class="events-category-color-chip">
