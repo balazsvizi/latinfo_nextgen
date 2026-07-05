@@ -292,7 +292,7 @@ if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, tr
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
 } else {
-    $order = 'sort_order';
+    $order = 'parent';
     $dir_param = 'asc';
 }
 
@@ -312,7 +312,7 @@ $orderSql = match ($order) {
     'color' => "c.`color` $dirSql, c.`name` ASC, c.`id` ASC",
     'sort_order' => "c.`sort_order` $dirSql, c.`name` ASC, c.`id` ASC",
     'modified' => "c.`modified` $dirSql, c.`id` ASC",
-    default => 'c.`sort_order` ASC, c.`name` ASC, c.`id` ASC',
+    default => 'p.`name` IS NULL, p.`name` ASC, c.`name` ASC, c.`id` ASC',
 };
 
 $listSelect = $categoriesNameEnOk
@@ -357,7 +357,7 @@ if ($showSwapTool) {
 if ($editId > 0) {
     $get_params['edit'] = (string) $editId;
 }
-if ($order !== 'sort_order' || $dir_param !== 'asc') {
+if ($order !== 'parent' || $dir_param !== 'asc') {
     $get_params['order'] = $order;
     $get_params['dir'] = $dir_param;
 }
@@ -500,9 +500,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <thead>
                         <tr>
                             <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Szülő', 'parent', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Név (HU)', 'name', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Név (EN)', 'name_en', $order, $dir_param, $get_params) ?></th>
-                            <th><?= sort_th('Szülő', 'parent', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Szín', 'color', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Sorrend', 'sort_order', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Események', 'events', $order, $dir_param, $get_params) ?></th>
@@ -528,8 +528,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             ?>
                             <tr<?= $isEditing ? ' class="is-selected"' : '' ?>>
                                 <td><?= $rid ?></td>
-                                <td><?= h((string) $r['name']) ?></td>
-                                <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
                                 <td>
                                     <?php if ($parentId > 0 && $parentName !== ''): ?>
                                         <a href="<?= h(events_url('categories.php?edit=' . $parentId)) ?>"><?= h($parentName) ?></a>
@@ -538,6 +536,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                         —
                                     <?php endif; ?>
                                 </td>
+                                <td><?= h((string) $r['name']) ?></td>
+                                <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
                                 <td>
                                     <span class="events-category-color-chip">
                                         <span class="events-category-color-chip__dot" style="background: <?= h($color) ?>;"></span>
