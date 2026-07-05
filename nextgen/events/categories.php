@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/category_request.php';
 requireLogin();
 
 $db = getDb();
@@ -257,6 +258,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(events_url('categories.php'));
     }
 
+    if ($action === 'migrate_category_events') {
+        $fromId = (int) ($_POST['from_category_id'] ?? 0);
+        $toId = (int) ($_POST['to_category_id'] ?? 0);
+        if (!isset($_POST['confirm_migrate']) || (string) $_POST['confirm_migrate'] !== '1') {
+            flash('error', 'Az áthelyezéshez jelöld be a megerősítő négyzetet.');
+            $back = $fromId > 0 ? events_url('categories.php?edit=' . $fromId) : events_url('categories.php?tool=swap');
+            redirect($back);
+        }
+
+        [$ok, $msg, $count] = events_category_migrate_all_events($db, $fromId, $toId);
+        if ($ok) {
+            flash('success', $msg);
+            rendszer_log('kategória', $fromId, 'Események áthelyezve', $count . ' kapcsolat → #' . $toId);
+            redirect(events_url('categories.php?edit=') . $fromId);
+        }
+        flash('error', $msg);
+        $back = $fromId > 0 ? events_url('categories.php?edit=' . $fromId) : events_url('categories.php?tool=swap');
+        redirect($back);
+    }
+
     redirect(events_url('categories.php'));
 }
 
@@ -279,6 +300,28 @@ $flat = events_categories_flatten_tree($rows);
 $listDisplayedCount = count($flat);
 $eventCountMap = events_categories_event_count_map($db);
 $childCountMap = events_categories_child_count_map($db);
+
+if ($categoriesNameEnOk) {
+    $allCategoryRows = $db->query('
+        SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `modified`
+        FROM `events_categories`
+        ORDER BY `sort_order` ASC, `name` ASC, `id` ASC
+    ')->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $allCategoryRows = $db->query('
+        SELECT `id`, `name`, `parent_id`, `color`, `sort_order`, `modified`
+        FROM `events_categories`
+        ORDER BY `sort_order` ASC, `name` ASC, `id` ASC
+    ')->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($allCategoryRows as &$acr) {
+        $acr['name_en'] = '';
+    }
+    unset($acr);
+}
+$flatAll = events_categories_flatten_tree($allCategoryRows);
+
+$showSwapTool = isset($_GET['tool']) && (string) $_GET['tool'] === 'swap';
+$swapFromPreset = (int) ($_GET['from'] ?? 0);
 
 $editId = (int) ($_GET['edit'] ?? 0);
 $editRow = null;
@@ -311,6 +354,8 @@ $form = [
 $editEventCount = $form['id'] > 0 ? ($eventCountMap[$form['id']] ?? 0) : 0;
 $editChildCount = $form['id'] > 0 ? ($childCountMap[$form['id']] ?? 0) : 0;
 $editCanDelete = $form['id'] > 0 && $editEventCount === 0 && $editChildCount === 0;
+$editLinkedEvents = $form['id'] > 0 ? events_category_linked_events($db, $form['id']) : [];
+$editBase = events_url('szerkeszt.php?id=');
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Kategóriák';
@@ -333,10 +378,63 @@ require_once dirname(__DIR__) . '/partials/header.php';
             ?>
         </div>
         <div class="events-list-actions">
+            <a href="<?= h(events_url('categories.php?tool=swap')) ?>" class="btn btn-secondary">Kategória cserélő</a>
             <a href="<?= h(events_url('categories.php')) ?>" class="btn btn-secondary">Új kategória űrlap</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
         </div>
     </div>
+
+    <?php if ($showSwapTool): ?>
+        <section class="events-categories-swap" aria-labelledby="categories-swap-title">
+            <h3 id="categories-swap-title" class="events-categories-swap__title">Kategória cserélő</h3>
+            <p class="help">A forrás kategóriához rendelt összes esemény kapcsolata átkerül a cél kategóriába. Ha egy esemény már a cél kategóriában is szerepel, a forrás kapcsolat törlődik (duplikátum nélkül).</p>
+            <form method="post" action="<?= h(events_url('categories.php?tool=swap')) ?>" class="events-categories-swap-form" onsubmit="return confirm('Biztosan áthelyezed az összes eseményt a forrás kategóriából a cél kategóriába?');">
+                <?= csrf_input('events_categories') ?>
+                <input type="hidden" name="action" value="migrate_category_events">
+                <div class="events-categories-swap-form__grid">
+                    <div class="form-group">
+                        <label for="swap_from">Forrás kategória *</label>
+                        <select id="swap_from" name="from_category_id" required>
+                            <option value="">— válassz —</option>
+                            <?php foreach ($flatAll as $r): ?>
+                                <?php
+                                $rid = (int) $r['id'];
+                                $depth = (int) ($r['_depth'] ?? 0);
+                                $prefix = str_repeat('— ', max(0, $depth));
+                                $cnt = $eventCountMap[$rid] ?? 0;
+                                ?>
+                                <option value="<?= $rid ?>" <?= ($swapFromPreset === $rid || ($form['id'] === $rid && $swapFromPreset === 0)) ? 'selected' : '' ?>>
+                                    <?= h($prefix . (string) $r['name'] . ' (#' . $rid . ', ' . $cnt . ' esemény)') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="swap_to">Cél kategória *</label>
+                        <select id="swap_to" name="to_category_id" required>
+                            <option value="">— válassz —</option>
+                            <?php foreach ($flatAll as $r): ?>
+                                <?php
+                                $rid = (int) $r['id'];
+                                $depth = (int) ($r['_depth'] ?? 0);
+                                $prefix = str_repeat('— ', max(0, $depth));
+                                ?>
+                                <option value="<?= $rid ?>"><?= h($prefix . (string) $r['name'] . ' (#' . $rid . ')') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <label class="events-categories-swap-form__confirm">
+                    <input type="checkbox" name="confirm_migrate" value="1" required>
+                    Megerősítem az összes kapcsolat áthelyezését
+                </label>
+                <div class="toolbar">
+                    <button type="submit" class="btn btn-primary">Összes esemény áthelyezése</button>
+                    <a href="<?= h(events_url('categories.php')) ?>" class="btn btn-secondary">Bezárás</a>
+                </div>
+            </form>
+        </section>
+    <?php endif; ?>
 
     <div class="events-categories-layout">
         <section class="events-categories-table-wrap">
@@ -418,7 +516,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <label for="cat_parent">Szülő kategória</label>
                     <select id="cat_parent" name="parent_id">
                         <option value="">— nincs (gyökér szint) —</option>
-                        <?php foreach ($flat as $r): ?>
+                        <?php foreach ($flatAll as $r): ?>
                             <?php
                             $rid = (int) $r['id'];
                             if ($form['id'] > 0 && $rid === (int) $form['id']) {
@@ -462,6 +560,70 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         · Alkategóriák: <strong><?= (int) $editChildCount ?></strong>
                     <?php endif; ?>
                 </p>
+            <?php endif; ?>
+
+            <?php if ($form['id'] > 0 && $editLinkedEvents !== []): ?>
+                <section class="events-categories-events" aria-labelledby="cat-events-title">
+                    <h4 id="cat-events-title" class="events-categories-events__title">Kapcsolt események</h4>
+                    <ul class="events-categories-events__list" role="list">
+                        <?php foreach ($editLinkedEvents as $ev): ?>
+                            <?php
+                            $evId = (int) ($ev['id'] ?? 0);
+                            $evStatus = (string) ($ev['event_status'] ?? '');
+                            $evStart = $ev['event_start'] ?? null;
+                            ?>
+                            <li>
+                                <a href="<?= h($editBase . $evId) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></a>
+                                <span class="events-categories-events__meta">
+                                    #<?= $evId ?>
+                                    · <span class="event-status-badge <?= h(events_post_status_badge_class($evStatus)) ?>"><?= h(events_post_status_label($evStatus)) ?></span>
+                                    <?php if ($evStart !== null && $evStart !== ''): ?>
+                                        · <?= h(substr($evStart, 0, 16)) ?>
+                                    <?php endif; ?>
+                                </span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </section>
+            <?php elseif ($form['id'] > 0): ?>
+                <p class="help events-categories-events__empty">Ehhez a kategóriához nincs esemény rendelve.</p>
+            <?php endif; ?>
+
+            <?php if ($form['id'] > 0 && $editEventCount > 0): ?>
+                <section class="events-categories-migrate" aria-labelledby="cat-migrate-title">
+                    <h4 id="cat-migrate-title" class="events-categories-migrate__title">Kategória cserélő</h4>
+                    <p class="help">Az ehhez a kategóriához rendelt <strong><?= (int) $editEventCount ?></strong> esemény kapcsolata átkerül a cél kategóriába.</p>
+                    <form method="post" action="<?= h(events_url('categories.php?edit=' . (int) $form['id'])) ?>" class="events-categories-migrate-form" onsubmit="return confirm('Biztosan áthelyezed az összes eseményt erről a kategóriáról a kiválasztottra?');">
+                        <?= csrf_input('events_categories') ?>
+                        <input type="hidden" name="action" value="migrate_category_events">
+                        <input type="hidden" name="from_category_id" value="<?= (int) $form['id'] ?>">
+                        <div class="form-group">
+                            <label for="cat_migrate_to">Cél kategória *</label>
+                            <select id="cat_migrate_to" name="to_category_id" required>
+                                <option value="">— válassz —</option>
+                                <?php foreach ($flatAll as $r): ?>
+                                    <?php
+                                    $rid = (int) $r['id'];
+                                    if ($rid === (int) $form['id']) {
+                                        continue;
+                                    }
+                                    $depth = (int) ($r['_depth'] ?? 0);
+                                    $prefix = str_repeat('— ', max(0, $depth));
+                                    ?>
+                                    <option value="<?= $rid ?>"><?= h($prefix . (string) $r['name'] . ' (#' . $rid . ')') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <label class="events-categories-migrate-form__confirm">
+                            <input type="checkbox" name="confirm_migrate" value="1" required>
+                            Megerősítem az áthelyezést
+                        </label>
+                        <div class="toolbar">
+                            <button type="submit" class="btn btn-secondary">Összes esemény áthelyezése</button>
+                            <a class="btn btn-secondary btn-sm" href="<?= h(events_url('categories.php?tool=swap&from=' . (int) $form['id'])) ?>">Nyitás a cserélő eszközben</a>
+                        </div>
+                    </form>
+                </section>
             <?php endif; ?>
 
             <?php if ($editCanDelete): ?>
