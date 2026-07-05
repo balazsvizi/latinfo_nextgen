@@ -565,3 +565,63 @@ function events_admin_calendar_event_time_label(array $row): string {
 function events_admin_calendar_weekday_headers(): array {
     return ['Hét', 'Ked', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'];
 }
+
+/**
+ * Naptár színjelmagyarázat — kategóriák színei (nyilvános súgó popup).
+ *
+ * @return list<array{label: string, color: string}>
+ */
+function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu'): array {
+    require_once __DIR__ . '/category_locale.php';
+
+    $useEn = events_categories_name_en_available($db);
+    if ($useEn) {
+        $sql = '
+            SELECT
+                c.`name`,
+                c.`name_en`,
+                c.`parent_id`,
+                c.`color`,
+                p.`name` AS `parent_name`,
+                p.`name_en` AS `parent_name_en`
+            FROM `events_categories` c
+            LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
+            ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
+        ';
+    } else {
+        $sql = '
+            SELECT
+                c.`name`,
+                \'\' AS `name_en`,
+                c.`parent_id`,
+                c.`color`,
+                p.`name` AS `parent_name`,
+                \'\' AS `parent_name_en`
+            FROM `events_categories` c
+            LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
+            ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
+        ';
+    }
+
+    try {
+        $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        error_log('events_admin_calendar_category_legend_items: ' . $e->getMessage());
+
+        return [];
+    }
+
+    $out = [];
+    foreach ($rows !== false ? $rows : [] as $row) {
+        $hex = strtoupper(trim((string) ($row['color'] ?? '#6D8F63')));
+        if (!preg_match('/^#[0-9A-F]{6}$/', $hex)) {
+            $hex = '#6D8F63';
+        }
+        $out[] = [
+            'label' => events_public_category_chip_label($lang, $row),
+            'color' => $hex,
+        ];
+    }
+
+    return $out;
+}

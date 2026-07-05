@@ -46,10 +46,12 @@ if ($view === 'list') {
     $listTotalInDb = events_public_published_events_total_count($db);
 }
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
+$calendarColorLegend = [];
 $calendarPreviewById = [];
 if ($view === 'cal') {
     $organizersByEventId = events_calendar_load_organizers_by_event_id($db, $rows);
     $calendarPreviewById = events_calendar_preview_build_map($rows, $categoriesByEventId, $organizersByEventId, $lang);
+    $calendarColorLegend = events_admin_calendar_category_legend_items($db, $lang);
 }
 
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
@@ -169,6 +171,10 @@ header('Content-Type: text/html; charset=UTF-8');
                             <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="<?= h((string) $D['next_month']) ?>">›</a>
                         </div>
                         <h2 class="events-cal-toolbar__month"><?= h($monthLabel) ?></h2>
+                        <?php
+                        $calendarColorHelpPart = 'button';
+                        require __DIR__ . '/partials/public_calendar_color_help.php';
+                        ?>
                     </div>
                     <nav class="events-cal-view-switch" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
                         <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_cal']) ?></span>
@@ -219,6 +225,12 @@ header('Content-Type: text/html; charset=UTF-8');
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 <?php if ($view === 'cal' && $calendarPreviewById !== []): ?>
 <?php require __DIR__ . '/partials/public_calendar_event_preview.php'; ?>
+<?php endif; ?>
+<?php if ($view === 'cal'): ?>
+    <?php
+    $calendarColorHelpPart = 'dialog';
+    require __DIR__ . '/partials/public_calendar_color_help.php';
+    ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
 <?php require __DIR__ . '/partials/public_event_filters_auto_script.php'; ?>

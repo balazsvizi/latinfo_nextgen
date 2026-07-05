@@ -765,6 +765,14 @@ function events_public_home_strings(string $lang): array {
         'cal_subscribe_outlook_live' => 'Outlook Live',
         'cal_subscribe_export' => '.ics fájl export',
         'cal_subscribe_export_outlook' => 'Outlook .ics export',
+        'cal_colors_help_btn' => 'Színek',
+        'cal_colors_help_btn_aria' => 'Kategória színek magyarázata',
+        'cal_colors_help_title' => 'Színek a naptárban',
+        'cal_colors_help_intro' => 'Az események háttérszíne a kategóriájukat jelzi. Ha több kategória is tartozik egy eseményhez, az elsődleges (listában első) kategória színe látszik.',
+        'cal_colors_help_scale_aria' => 'Kategória színskála',
+        'cal_colors_help_list_aria' => 'Kategóriák és színeik',
+        'cal_colors_help_default' => 'Alapértelmezett (nincs kategória)',
+        'cal_colors_help_close' => 'Bezárás',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -843,6 +851,14 @@ function events_public_home_strings(string $lang): array {
         'cal_subscribe_outlook_live' => 'Outlook Live',
         'cal_subscribe_export' => 'Export .ics file',
         'cal_subscribe_export_outlook' => 'Export Outlook .ics file',
+        'cal_colors_help_btn' => 'Colours',
+        'cal_colors_help_btn_aria' => 'Category colour legend',
+        'cal_colors_help_title' => 'Calendar colours',
+        'cal_colors_help_intro' => 'Each event block is coloured by its category. If an event has several categories, the primary (first listed) category colour is shown.',
+        'cal_colors_help_scale_aria' => 'Category colour scale',
+        'cal_colors_help_list_aria' => 'Categories and their colours',
+        'cal_colors_help_default' => 'Default (no category)',
+        'cal_colors_help_close' => 'Close',
     ];
 
     return $lang === 'en' ? $en : $hu;
