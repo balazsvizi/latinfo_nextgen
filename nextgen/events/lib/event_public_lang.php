@@ -771,7 +771,6 @@ function events_public_home_strings(string $lang): array {
         'cal_colors_help_intro' => 'Az események háttérszíne a kategóriájukat jelzi. Ha több kategória is tartozik egy eseményhez, az elsődleges (listában első) kategória színe látszik.',
         'cal_colors_help_scale_aria' => 'Kategória színskála',
         'cal_colors_help_list_aria' => 'Kategóriák és színeik',
-        'cal_colors_help_default' => 'Alapértelmezett (nincs kategória)',
         'cal_colors_help_close' => 'Bezárás',
     ];
     $en = [
@@ -857,7 +856,6 @@ function events_public_home_strings(string $lang): array {
         'cal_colors_help_intro' => 'Each event block is coloured by its category. If an event has several categories, the primary (first listed) category colour is shown.',
         'cal_colors_help_scale_aria' => 'Category colour scale',
         'cal_colors_help_list_aria' => 'Categories and their colours',
-        'cal_colors_help_default' => 'Default (no category)',
         'cal_colors_help_close' => 'Close',
     ];
 

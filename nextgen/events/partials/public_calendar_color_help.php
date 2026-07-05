@@ -11,30 +11,21 @@ declare(strict_types=1);
 $calendarColorLegend = $calendarColorLegend ?? [];
 $defaultColor = '#6D8F63';
 $scaleItems = $calendarColorLegend;
-$hasDefaultInLegend = false;
-foreach ($scaleItems as $item) {
-    if (strtoupper((string) ($item['color'] ?? '')) === $defaultColor) {
-        $hasDefaultInLegend = true;
-        break;
-    }
-}
-if (!$hasDefaultInLegend) {
-    $scaleItems[] = [
-        'label' => (string) ($D['cal_colors_help_default'] ?? 'Alapértelmezett'),
-        'color' => $defaultColor,
-    ];
-}
-$scaleCount = max(1, count($scaleItems));
+$scaleCount = count($scaleItems);
 $scaleGradientParts = [];
-foreach ($scaleItems as $idx => $item) {
-    $hexRaw = strtoupper(trim((string) ($item['color'] ?? $defaultColor)));
-    if (!preg_match('/^#[0-9A-F]{6}$/', $hexRaw)) {
-        $hexRaw = $defaultColor;
+if ($scaleCount === 0) {
+    $scaleGradient = $defaultColor;
+} else {
+    foreach ($scaleItems as $idx => $item) {
+        $hexRaw = strtoupper(trim((string) ($item['color'] ?? $defaultColor)));
+        if (!preg_match('/^#[0-9A-F]{6}$/', $hexRaw)) {
+            $hexRaw = $defaultColor;
+        }
+        $pct = $scaleCount <= 1 ? 0 : round(100 * $idx / ($scaleCount - 1), 1);
+        $scaleGradientParts[] = $hexRaw . ' ' . $pct . '%';
     }
-    $pct = $scaleCount <= 1 ? 0 : round(100 * $idx / ($scaleCount - 1), 1);
-    $scaleGradientParts[] = $hexRaw . ' ' . $pct . '%';
+    $scaleGradient = 'linear-gradient(90deg, ' . implode(', ', $scaleGradientParts) . ')';
 }
-$scaleGradient = 'linear-gradient(90deg, ' . implode(', ', $scaleGradientParts) . ')';
 ?>
 <div class="events-cal-color-help-wrap" id="events-cal-color-help-wrap">
     <button
