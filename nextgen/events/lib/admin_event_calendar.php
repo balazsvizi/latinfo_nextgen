@@ -295,8 +295,6 @@ function events_admin_calendar_build_week_layouts(
     DateTimeImmutable $monthFirst,
     DateTimeImmutable $monthLast
 ): array {
-    $monthStart = $monthFirst->setTime(0, 0, 0);
-    $monthEndExclusive = $monthFirst->modify('first day of next month')->setTime(0, 0, 0);
     $todayKey = (new DateTimeImmutable('today'))->format('Y-m-d');
     $weeks = [];
 
@@ -319,20 +317,17 @@ function events_admin_calendar_build_week_layouts(
             if ($range === null) {
                 continue;
             }
-            if ($range['end'] < $monthStart || $range['start'] >= $monthEndExclusive) {
+            if ($range['end'] < $weekStart || $range['start'] > $weekEnd) {
                 continue;
             }
             if (!events_admin_calendar_is_grid_multi_day_event($row)) {
                 $dayKey = $range['start']->format('Y-m-d');
-                if ($range['start'] >= $monthStart && $range['start'] < $monthEndExclusive && isset($dayIndexByKey[$dayKey])) {
+                if (isset($dayIndexByKey[$dayKey])) {
                     if (!isset($singlesByDay[$dayKey])) {
                         $singlesByDay[$dayKey] = [];
                     }
                     $singlesByDay[$dayKey][] = $row;
                 }
-                continue;
-            }
-            if ($range['end'] < $weekStart || $range['start'] > $weekEnd) {
                 continue;
             }
 
