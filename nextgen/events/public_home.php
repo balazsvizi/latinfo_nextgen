@@ -171,15 +171,14 @@ header('Content-Type: text/html; charset=UTF-8');
                             <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="<?= h((string) $D['next_month']) ?>">›</a>
                         </div>
                         <h2 class="events-cal-toolbar__month"><?= h($monthLabel) ?></h2>
-                        <?php
-                        $calendarColorHelpPart = 'button';
-                        require __DIR__ . '/partials/public_calendar_color_help.php';
-                        ?>
                     </div>
-                    <nav class="events-cal-view-switch" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
-                        <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_cal']) ?></span>
-                        <a class="events-cal-view-switch__item" href="<?= h($listViewUrl) ?>"><?= h((string) $D['view_list']) ?></a>
-                    </nav>
+                    <div class="events-cal-toolbar__end">
+                        <?php require __DIR__ . '/partials/public_calendar_color_help.php'; ?>
+                        <nav class="events-cal-view-switch" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
+                            <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_cal']) ?></span>
+                            <a class="events-cal-view-switch__item" href="<?= h($listViewUrl) ?>"><?= h((string) $D['view_list']) ?></a>
+                        </nav>
+                    </div>
                 </div>
                 <?php
                 $calendarLang = $lang;
@@ -225,12 +224,6 @@ header('Content-Type: text/html; charset=UTF-8');
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 <?php if ($view === 'cal' && $calendarPreviewById !== []): ?>
 <?php require __DIR__ . '/partials/public_calendar_event_preview.php'; ?>
-<?php endif; ?>
-<?php if ($view === 'cal'): ?>
-    <?php
-    $calendarColorHelpPart = 'dialog';
-    require __DIR__ . '/partials/public_calendar_color_help.php';
-    ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
 <?php require __DIR__ . '/partials/public_event_filters_auto_script.php'; ?>

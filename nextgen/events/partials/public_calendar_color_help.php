@@ -2,14 +2,12 @@
 declare(strict_types=1);
 
 /**
- * Naptár színjelmagyarázat — gomb a fejlécben + popup (dialog).
+ * Naptár színjelmagyarázat — jobb oldali popover a fejlécben.
  *
  * @var array<string, string> $D
  * @var list<array{label: string, color: string}> $calendarColorLegend
- * @var string $calendarColorHelpPart 'button'|'dialog'
  */
 
-$calendarColorHelpPart = $calendarColorHelpPart ?? 'button';
 $calendarColorLegend = $calendarColorLegend ?? [];
 $defaultColor = '#6D8F63';
 $scaleItems = $calendarColorLegend;
@@ -37,92 +35,102 @@ foreach ($scaleItems as $idx => $item) {
     $scaleGradientParts[] = $hexRaw . ' ' . $pct . '%';
 }
 $scaleGradient = 'linear-gradient(90deg, ' . implode(', ', $scaleGradientParts) . ')';
-
-if ($calendarColorHelpPart === 'button'): ?>
+?>
+<div class="events-cal-color-help-wrap" id="events-cal-color-help-wrap">
     <button
         type="button"
         class="events-cal-color-help-btn"
         id="events-cal-color-help-open"
-        aria-haspopup="dialog"
-        aria-controls="events-cal-color-help"
+        aria-expanded="false"
+        aria-controls="events-cal-color-help-panel"
         title="<?= h((string) ($D['cal_colors_help_btn_aria'] ?? '')) ?>"
     >
         <span class="events-cal-color-help-btn__swatch" style="background: <?= h($scaleGradient) ?>;" aria-hidden="true"></span>
         <span class="events-cal-color-help-btn__label"><?= h((string) ($D['cal_colors_help_btn'] ?? 'Színek')) ?></span>
     </button>
-<?php
-    return;
-endif;
-
-if ($calendarColorHelpPart !== 'dialog') {
-    return;
-}
-?>
-<dialog class="events-cal-color-help" id="events-cal-color-help" aria-labelledby="events-cal-color-help-title">
-    <div class="events-cal-color-help__panel">
-        <header class="events-cal-color-help__head">
-            <h2 class="events-cal-color-help__title" id="events-cal-color-help-title"><?= h((string) ($D['cal_colors_help_title'] ?? '')) ?></h2>
-            <button type="button" class="events-cal-color-help__close" id="events-cal-color-help-close" aria-label="<?= h((string) ($D['cal_colors_help_close'] ?? 'Bezárás')) ?>">×</button>
+    <div
+        class="events-cal-color-help-panel"
+        id="events-cal-color-help-panel"
+        role="dialog"
+        aria-labelledby="events-cal-color-help-title"
+        aria-modal="true"
+        hidden
+    >
+        <header class="events-cal-color-help-panel__head">
+            <button type="button" class="events-cal-color-help-panel__close" id="events-cal-color-help-close" aria-label="<?= h((string) ($D['cal_colors_help_close'] ?? 'Bezárás')) ?>">×</button>
+            <h2 class="events-cal-color-help-panel__title" id="events-cal-color-help-title"><?= h((string) ($D['cal_colors_help_title'] ?? '')) ?></h2>
         </header>
-        <p class="events-cal-color-help__intro help"><?= h((string) ($D['cal_colors_help_intro'] ?? '')) ?></p>
+        <p class="events-cal-color-help-panel__intro"><?= h((string) ($D['cal_colors_help_intro'] ?? '')) ?></p>
         <div
-            class="events-cal-color-help__scale"
+            class="events-cal-color-help-panel__scale"
             role="img"
             aria-label="<?= h((string) ($D['cal_colors_help_scale_aria'] ?? '')) ?>"
             style="--cal-color-scale-count: <?= (int) $scaleCount ?>;"
         >
             <?php foreach ($scaleItems as $item): ?>
                 <?php $hex = h((string) ($item['color'] ?? $defaultColor)); ?>
-                <span class="events-cal-color-help__scale-seg" style="background-color: <?= $hex ?>;" title="<?= h((string) ($item['label'] ?? '')) ?>"></span>
+                <span class="events-cal-color-help-panel__scale-seg" style="background-color: <?= $hex ?>;" title="<?= h((string) ($item['label'] ?? '')) ?>"></span>
             <?php endforeach; ?>
         </div>
-        <ul class="events-cal-color-help__list" role="list" aria-label="<?= h((string) ($D['cal_colors_help_list_aria'] ?? '')) ?>">
+        <ul class="events-cal-color-help-panel__list" role="list" aria-label="<?= h((string) ($D['cal_colors_help_list_aria'] ?? '')) ?>">
             <?php foreach ($scaleItems as $item): ?>
                 <?php $hex = h((string) ($item['color'] ?? $defaultColor)); ?>
-                <li class="events-cal-color-help__item">
-                    <span class="events-cal-color-help__chip" style="background-color: <?= $hex ?>;" aria-hidden="true"></span>
-                    <span class="events-cal-color-help__name"><?= h((string) ($item['label'] ?? '')) ?></span>
-                    <span class="events-cal-color-help__hex"><?= $hex ?></span>
+                <li class="events-cal-color-help-panel__item">
+                    <span class="events-cal-color-help-panel__name"><?= h((string) ($item['label'] ?? '')) ?></span>
+                    <span class="events-cal-color-help-panel__chip" style="background-color: <?= $hex ?>;" aria-hidden="true"></span>
                 </li>
             <?php endforeach; ?>
         </ul>
     </div>
-</dialog>
+</div>
 <script>
 (function () {
+    var wrap = document.getElementById('events-cal-color-help-wrap');
     var openBtn = document.getElementById('events-cal-color-help-open');
-    var dialog = document.getElementById('events-cal-color-help');
+    var panel = document.getElementById('events-cal-color-help-panel');
     var closeBtn = document.getElementById('events-cal-color-help-close');
-    if (!openBtn || !dialog) return;
+    if (!wrap || !openBtn || !panel) return;
+
+    function setOpen(on) {
+        wrap.classList.toggle('is-open', on);
+        openBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+        panel.hidden = !on;
+    }
 
     function openHelp() {
-        if (typeof dialog.showModal === 'function') {
-            dialog.showModal();
-        } else {
-            dialog.setAttribute('open', 'open');
-        }
+        setOpen(true);
     }
 
     function closeHelp() {
-        if (typeof dialog.close === 'function') {
-            dialog.close();
-        } else {
-            dialog.removeAttribute('open');
-        }
+        setOpen(false);
     }
 
-    openBtn.addEventListener('click', openHelp);
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeHelp);
-    }
-    dialog.addEventListener('click', function (e) {
-        if (e.target === dialog) {
+    openBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (wrap.classList.contains('is-open')) {
             closeHelp();
+        } else {
+            openHelp();
         }
     });
-    dialog.addEventListener('cancel', function (e) {
-        e.preventDefault();
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            closeHelp();
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!wrap.classList.contains('is-open')) return;
+        if (wrap.contains(e.target)) return;
         closeHelp();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && wrap.classList.contains('is-open')) {
+            closeHelp();
+        }
     });
 })();
 </script>

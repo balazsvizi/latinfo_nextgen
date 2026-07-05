@@ -2667,6 +2667,19 @@ body.event-public-page--home .event-public__hero-inner {
     text-transform: lowercase;
 }
 
+.home-public .events-cal-toolbar__end {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-shrink: 0;
+    justify-self: end;
+}
+
+.home-public .events-cal-color-help-wrap {
+    position: relative;
+}
+
 .home-public .events-cal-color-help-btn {
     display: inline-flex;
     align-items: center;
@@ -2682,7 +2695,8 @@ body.event-public-page--home .event-public__hero-inner {
     line-height: 1.2;
 }
 
-.home-public .events-cal-color-help-btn:hover {
+.home-public .events-cal-color-help-btn:hover,
+.home-public .events-cal-color-help-wrap.is-open .events-cal-color-help-btn {
     border-color: var(--li-green);
     background: var(--li-green-soft);
     color: var(--li-green-dark);
@@ -2696,118 +2710,116 @@ body.event-public-page--home .event-public__hero-inner {
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
 
-.home-public .events-cal-color-help {
-    padding: 0;
-    border: none;
-    max-width: min(28rem, calc(100vw - 2rem));
-    width: 100%;
-    background: transparent;
-}
-
-.home-public .events-cal-color-help::backdrop {
-    background: rgba(15, 23, 15, 0.45);
-}
-
-.home-public .events-cal-color-help__panel {
-    padding: 1rem 1.1rem 1.15rem;
+.home-public .events-cal-color-help-panel {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    right: 0;
+    z-index: 120;
+    width: min(22rem, calc(100vw - 2rem));
+    padding: 0.95rem 1rem 1rem;
     border: 1px solid var(--li-border);
     border-radius: var(--li-radius, 0.5rem);
-    background: var(--li-bg-elevated, #fff);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+    background: #fff;
+    box-shadow: 0 10px 32px rgba(15, 23, 42, 0.14);
+    text-align: right;
 }
 
-.home-public .events-cal-color-help__head {
+.home-public .events-cal-color-help-panel__head {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: flex-end;
     gap: 0.75rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.45rem;
 }
 
-.home-public .events-cal-color-help__title {
+.home-public .events-cal-color-help-panel__title {
     margin: 0;
-    font-size: 1.05rem;
+    flex: 1;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--li-text);
+    text-align: right;
 }
 
-.home-public .events-cal-color-help__close {
-    flex-shrink: 0;
-    width: 2rem;
-    height: 2rem;
-    border: none;
+.home-public .events-cal-color-help-panel__close {
+    order: -1;
+    margin-right: auto;
+    width: 1.85rem;
+    height: 1.85rem;
+    border: 1px solid var(--li-border);
     border-radius: 0.35rem;
-    background: transparent;
+    background: #fff;
     color: var(--li-text-soft);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     line-height: 1;
     cursor: pointer;
 }
 
-.home-public .events-cal-color-help__close:hover {
+.home-public .events-cal-color-help-panel__close:hover {
+    border-color: var(--li-green);
     background: var(--li-green-soft);
     color: var(--li-green-dark);
 }
 
-.home-public .events-cal-color-help__intro {
-    margin: 0 0 0.85rem;
+.home-public .events-cal-color-help-panel__intro {
+    margin: 0 0 0.75rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--li-text-soft);
+    text-align: right;
 }
 
-.home-public .events-cal-color-help__scale {
+.home-public .events-cal-color-help-panel__scale {
     display: flex;
     width: 100%;
-    height: 1.1rem;
-    margin: 0 0 1rem;
+    height: 0.85rem;
+    margin: 0 0 0.85rem;
     border-radius: 999px;
     overflow: hidden;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
-.home-public .events-cal-color-help__scale-seg {
+.home-public .events-cal-color-help-panel__scale-seg {
     flex: 1 1 calc(100% / var(--cal-color-scale-count, 1));
     min-width: 0;
 }
 
-.home-public .events-cal-color-help__list {
+.home-public .events-cal-color-help-panel__list {
     margin: 0;
     padding: 0;
     list-style: none;
-    max-height: min(16rem, 50vh);
+    max-height: min(15rem, 45vh);
     overflow: auto;
     border: 1px solid var(--li-border);
     border-radius: var(--li-radius-sm, 0.35rem);
 }
 
-.home-public .events-cal-color-help__item {
-    display: grid;
-    grid-template-columns: 1.1rem minmax(0, 1fr) auto;
-    gap: 0.55rem 0.65rem;
+.home-public .events-cal-color-help-panel__item {
+    display: flex;
     align-items: center;
-    padding: 0.45rem 0.65rem;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    padding: 0.42rem 0.65rem;
     border-bottom: 1px solid var(--li-border);
-    font-size: 0.85rem;
-}
-
-.home-public .events-cal-color-help__item:last-child {
-    border-bottom: none;
-}
-
-.home-public .events-cal-color-help__chip {
-    width: 1.1rem;
-    height: 1.1rem;
-    border-radius: 0.25rem;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
-}
-
-.home-public .events-cal-color-help__name {
-    color: var(--li-text);
+    font-size: 0.84rem;
     line-height: 1.3;
 }
 
-.home-public .events-cal-color-help__hex {
-    font-size: 0.72rem;
-    font-variant-numeric: tabular-nums;
-    color: var(--li-text-soft);
+.home-public .events-cal-color-help-panel__item:last-child {
+    border-bottom: none;
+}
+
+.home-public .events-cal-color-help-panel__chip {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.2rem;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.home-public .events-cal-color-help-panel__name {
+    color: var(--li-text);
+    text-align: right;
 }
 
 .home-public .events-cal-view-switch {
@@ -3569,6 +3581,11 @@ body.event-public-page--home .event-public__hero-inner {
 @media (max-width: 899px) {
     .home-public .events-cal-toolbar {
         grid-template-columns: 1fr;
+    }
+
+    .home-public .events-cal-toolbar__end {
+        justify-content: flex-end;
+        width: 100%;
     }
 
     .home-public .events-cal-view-switch {
