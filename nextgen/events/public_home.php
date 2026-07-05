@@ -94,7 +94,7 @@ if ($view === 'list') {
     $adminEditUrl = events_admin_calendar_view_url($monthKey, $publicAdminParams);
     $S['admin_edit_aria'] = (string) $D['admin_edit_aria_cal'];
 }
-$heroInlineTitle = $title;
+$heroInlineTitle = '';
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
 $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
 
@@ -127,6 +127,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public home-public">
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
+        <?php require __DIR__ . '/partials/public_home_renewal_notice.php'; ?>
     </header>
 
     <?php if ($contentTop !== ''): ?>

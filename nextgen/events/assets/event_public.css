@@ -2277,6 +2277,41 @@ body.event-public-page--home .event-public__hero-inner {
     max-width: none;
 }
 
+.home-public__renewal-notice {
+    margin: clamp(0.85rem, 2vw, 1.15rem) 0 0;
+    padding: clamp(0.85rem, 2vw, 1.1rem) clamp(1rem, 2.5vw, 1.35rem);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(109, 143, 99, 0.35);
+    background: linear-gradient(135deg, rgba(109, 143, 99, 0.14) 0%, rgba(109, 143, 99, 0.06) 100%);
+}
+
+.home-public__renewal-notice-title {
+    margin: 0;
+    font-family: var(--ev-font);
+    font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--li-text);
+}
+
+.home-public__renewal-notice-link {
+    color: var(--li-green-dark);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.15em;
+    white-space: nowrap;
+}
+
+.home-public__renewal-notice-link:hover {
+    color: var(--li-green);
+}
+
+.home-public__renewal-notice-link:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 .home-public__cms {
     max-width: 52rem;
     margin: 0 auto 1.5rem;
