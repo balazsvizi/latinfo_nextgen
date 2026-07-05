@@ -493,6 +493,92 @@ body.event-public-page--home .event-public__hero {
     max-width: min(100%, 24rem);
 }
 
+.event-featured__trigger {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    font: inherit;
+    color: inherit;
+}
+
+.event-featured__trigger:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 3px;
+    border-radius: var(--ev-radius-sm);
+}
+
+.event-featured-lightbox {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.event-featured-lightbox::backdrop {
+    background: rgba(15, 23, 15, 0.92);
+}
+
+.event-featured-lightbox__close {
+    position: fixed;
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    z-index: 2;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+}
+
+.event-featured-lightbox__close:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.event-featured-lightbox__close:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.event-featured-lightbox__stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 100dvh;
+    min-height: 100vh;
+    padding: max(3.5rem, calc(env(safe-area-inset-top, 0px) + 2.5rem)) max(1rem, env(safe-area-inset-right, 0px)) max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.event-featured-lightbox__img {
+    display: block;
+    max-width: min(96vw, 100%);
+    max-height: min(92dvh, 92vh);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+    border-radius: var(--ev-radius-sm);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+}
+
+body.event-featured-lightbox-open {
+    overflow: hidden;
+}
+
 .event-datetime-hero {
     margin-top: clamp(1rem, 3vw, 1.35rem);
     padding: 0.9rem 1rem;

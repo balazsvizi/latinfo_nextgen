@@ -142,6 +142,9 @@ function events_public_megjelenit_strings(string $lang): array {
         'change_notice_aria' => 'Fontos tájékoztatás az eseményről',
         'change_notice_heading_cancelled' => 'Az esemény elmarad',
         'change_notice_heading_modified' => 'Változás az eseményben',
+        'featured_image_zoom' => 'Kép megnyitása teljes méretben',
+        'featured_lightbox_close' => 'Bezárás',
+        'featured_lightbox_aria' => 'Esemény képe teljes méretben',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -179,6 +182,9 @@ function events_public_megjelenit_strings(string $lang): array {
         'change_notice_aria' => 'Important event notice',
         'change_notice_heading_cancelled' => 'This event is cancelled',
         'change_notice_heading_modified' => 'Event update',
+        'featured_image_zoom' => 'Open image full size',
+        'featured_lightbox_close' => 'Close',
+        'featured_lightbox_aria' => 'Event image full size',
     ];
 
     return $lang === 'en' ? $en : $hu;

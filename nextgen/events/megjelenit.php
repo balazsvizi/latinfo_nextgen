@@ -193,14 +193,16 @@ header('Content-Type: text/html; charset=UTF-8');
 
             <?php if ($featuredAbsolute !== ''): ?>
                 <figure class="event-featured">
-                    <img
-                        class="event-featured__img"
-                        src="<?= h($featuredAbsolute) ?>"
-                        alt="<?= h((string) $title) ?>"
-                        decoding="async"
-                        fetchpriority="high"
-                        loading="eager"
-                    >
+                    <button type="button" class="event-featured__trigger" aria-label="<?= h((string) ($T['featured_image_zoom'] ?? '')) ?>">
+                        <img
+                            class="event-featured__img"
+                            src="<?= h($featuredAbsolute) ?>"
+                            alt="<?= h((string) $title) ?>"
+                            decoding="async"
+                            fetchpriority="high"
+                            loading="eager"
+                        >
+                    </button>
                 </figure>
             <?php endif; ?>
 
@@ -312,6 +314,9 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<?php if ($featuredAbsolute !== ''): ?>
+    <?php require __DIR__ . '/partials/public_event_featured_lightbox.php'; ?>
+<?php endif; ?>
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 </body>
 </html>
