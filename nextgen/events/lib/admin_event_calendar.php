@@ -574,10 +574,14 @@ function events_admin_calendar_weekday_headers(): array {
 function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu'): array {
     require_once __DIR__ . '/category_locale.php';
 
+    /** @var list<int> */
+    $excludedCategoryIds = [2141, 2142];
+
     $useEn = events_categories_name_en_available($db);
     if ($useEn) {
         $sql = '
             SELECT
+                c.`id`,
                 c.`name`,
                 c.`name_en`,
                 c.`parent_id`,
@@ -586,11 +590,13 @@ function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu
                 p.`name_en` AS `parent_name_en`
             FROM `events_categories` c
             LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
-            ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
+            WHERE c.`id` NOT IN (' . implode(',', array_map('intval', $excludedCategoryIds)) . ')
+            ORDER BY p.`name` IS NULL, p.`name` ASC, c.`name` ASC, c.`id` ASC
         ';
     } else {
         $sql = '
             SELECT
+                c.`id`,
                 c.`name`,
                 \'\' AS `name_en`,
                 c.`parent_id`,
@@ -599,7 +605,8 @@ function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu
                 \'\' AS `parent_name_en`
             FROM `events_categories` c
             LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
-            ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC
+            WHERE c.`id` NOT IN (' . implode(',', array_map('intval', $excludedCategoryIds)) . ')
+            ORDER BY p.`name` IS NULL, p.`name` ASC, c.`name` ASC, c.`id` ASC
         ';
     }
 
@@ -618,7 +625,7 @@ function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu
             $hex = '#6D8F63';
         }
         $out[] = [
-            'label' => events_public_category_chip_label($lang, $row),
+            'label' => events_public_category_legend_label($lang, $row),
             'color' => $hex,
         ];
     }

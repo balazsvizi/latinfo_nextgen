@@ -64,6 +64,28 @@ function events_public_event_category_rows(PDO $db, int $eventId): array {
 }
 
 /**
+ * Naptár színjelmagyarázat felirat: szülő › gyerek, szülő nélkül csak a kategória neve.
+ *
+ * @param array<string,mixed> $row
+ */
+function events_public_category_legend_label(string $lang, array $row): string {
+    $leafLoc = events_category_locale_label(
+        $lang,
+        (string) ($row['name'] ?? ''),
+        (string) ($row['name_en'] ?? '')
+    );
+    $pid = isset($row['parent_id']) && $row['parent_id'] !== null ? (int) $row['parent_id'] : 0;
+    $pHu = trim((string) ($row['parent_name'] ?? ''));
+    if ($pid > 0 && $pHu !== '') {
+        $pEn = (string) ($row['parent_name_en'] ?? '');
+
+        return events_category_locale_label($lang, $pHu, $pEn) . ' › ' . $leafLoc;
+    }
+
+    return $leafLoc;
+}
+
+/**
  * Chipen / listán: szülő létezik és van neve → „Szülő / gyerek” (lokalizálva).
  *
  * @param array<string,mixed> $row events_public_event_category_rows egy eleme
