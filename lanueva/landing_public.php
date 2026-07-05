@@ -163,16 +163,16 @@ $heroImagePath = site_url('lanueva/assets/images/og/lanueva-naptar.png');
                 <span class="ln-title-word-1">Megújult</span>
                 <span class="ln-title-word-2">a naptár!</span>
             </h1>
-            <p class="ln-hero-subtitle">Friss kinézet, könnyebb böngészés – nézd meg a Latinfo.hu eseménynaptárát, és írd meg, hogyan tetszik.</p>
+            <p class="ln-hero-subtitle">Friss kinézet, könnyebb böngészés – nézd meg a Latinfo.hu eseménynaptárat, és írd meg, hogyan tetszik.</p>
             <p class="ln-hero-cta">
-                <a href="<?= h($naptarUrl) ?>" class="ln-btn ln-btn-primary ln-btn-hero">Megnézem a naptárt</a>
+                <a href="<?= h($naptarUrl) ?>" class="ln-btn ln-btn-primary ln-btn-hero">Megnézem a naptárat</a>
             </p>
         </section>
 
         <article class="ln-card ln-card-feedback ln-card-main">
             <div class="ln-card-icon">📅</div>
             <h2 class="ln-card-title">Hogyan tetszik?</h2>
-            <p class="ln-card-desc">Próbáld ki az új naptárt, majd írd meg a tapasztalataidat – mi működik jól, és min javítanál?</p>
+            <p class="ln-card-desc">Próbáld ki az új naptárat, majd írd meg a tapasztalataidat – mi működik jól, és min javítanál?</p>
 
             <?php if ($siker_feedback !== ''): ?>
                 <div class="ln-toast ln-toast-success" role="status"><?= h($siker_feedback) ?></div>
