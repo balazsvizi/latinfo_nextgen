@@ -40,6 +40,9 @@ $L = events_public_lang_switch_link_labels();
                 <h1 class="event-public__hero-inline-title"><?= h($heroInlineTitle) ?></h1>
             <?php endif; ?>
         </div>
+        <?php if ($isEventsHome): ?>
+            <?php require __DIR__ . '/public_home_renewal_notice.php'; ?>
+        <?php endif; ?>
         <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">
             <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu" aria-label="<?= h($L['hu_aria']) ?>" title="<?= h($L['hu_aria']) ?>">
                 <span class="event-lang-switch__text event-lang-switch__text--short"><?= h($L['hu_short']) ?></span>

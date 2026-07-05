@@ -127,7 +127,6 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public home-public">
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
-        <?php require __DIR__ . '/partials/public_home_renewal_notice.php'; ?>
     </header>
 
     <?php if ($contentTop !== ''): ?>
