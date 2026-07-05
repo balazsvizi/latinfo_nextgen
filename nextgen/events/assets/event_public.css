@@ -3721,13 +3721,31 @@ body.event-public-page--home .event-public__hero-inner {
     }
 
     .home-public .events-cal-toolbar__left {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem 0.65rem;
+        width: 100%;
+    }
+
+    .home-public .events-cal-toolbar__nav {
+        flex-shrink: 0;
+    }
+
+    .home-public .events-cal-toolbar__today {
+        padding: 0.3rem 0.55rem;
+        font-size: 0.75rem;
     }
 
     .home-public .events-cal-toolbar__month {
-        font-size: 1.35rem;
+        margin-left: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: clamp(1rem, 4.5vw, 1.25rem);
+        line-height: 1.15;
+        text-align: right;
+        white-space: nowrap;
     }
 
     .home-public .events-cal-subscribe__details {
