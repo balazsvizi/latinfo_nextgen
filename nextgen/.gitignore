@@ -26,6 +26,7 @@ node_modules/
 *.tmp
 *.cache
 
+*.sql
 *.sql.gz
 *.sql.zip
 *.dump

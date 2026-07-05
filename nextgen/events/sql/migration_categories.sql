@@ -10,11 +10,13 @@ CREATE TABLE IF NOT EXISTS `events_categories` (
     `parent_id` INT UNSIGNED NULL,
     `color` VARCHAR(7) NOT NULL DEFAULT '#6d8f63' COMMENT 'Hex szín, pl. #AABBCC',
     `sort_order` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `legend_order` SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Színjelmagyarázat sorrendje a naptárban; 0 = rejtett',
     `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_events_categories_parent` (`parent_id`),
     KEY `idx_events_categories_name` (`name`),
+    KEY `idx_events_categories_legend_order` (`legend_order`, `id`),
     CONSTRAINT `fk_events_categories_parent` FOREIGN KEY (`parent_id`) REFERENCES `events_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

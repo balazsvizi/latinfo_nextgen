@@ -574,10 +574,15 @@ function events_admin_calendar_weekday_headers(): array {
 function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu'): array {
     require_once __DIR__ . '/category_locale.php';
 
-    /** @var list<int> */
-    $excludedCategoryIds = [2141, 2142];
-
     $useEn = events_categories_name_en_available($db);
+    $useLegendOrder = function_exists('events_categories_legend_order_available')
+        && events_categories_legend_order_available($db);
+
+    $legendFilter = $useLegendOrder ? 'WHERE c.`legend_order` > 0' : '';
+    $orderSql = $useLegendOrder
+        ? 'c.`legend_order` ASC, c.`name` ASC, c.`id` ASC'
+        : 'c.`sort_order` ASC, c.`name` ASC, c.`id` ASC';
+
     if ($useEn) {
         $sql = '
             SELECT
@@ -590,8 +595,8 @@ function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu
                 p.`name_en` AS `parent_name_en`
             FROM `events_categories` c
             LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
-            WHERE c.`id` NOT IN (' . implode(',', array_map('intval', $excludedCategoryIds)) . ')
-            ORDER BY p.`name` IS NULL, p.`name` ASC, c.`name` ASC, c.`id` ASC
+            ' . $legendFilter . '
+            ORDER BY ' . $orderSql . '
         ';
     } else {
         $sql = '
@@ -605,8 +610,8 @@ function events_admin_calendar_category_legend_items(PDO $db, string $lang = 'hu
                 \'\' AS `parent_name_en`
             FROM `events_categories` c
             LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
-            WHERE c.`id` NOT IN (' . implode(',', array_map('intval', $excludedCategoryIds)) . ')
-            ORDER BY p.`name` IS NULL, p.`name` ASC, c.`name` ASC, c.`id` ASC
+            ' . $legendFilter . '
+            ORDER BY ' . $orderSql . '
         ';
     }
 

@@ -176,6 +176,26 @@ if (!function_exists('events_categories_name_en_available')) {
     }
 }
 
+if (!function_exists('events_categories_legend_order_available')) {
+    /**
+     * Van-e events_categories.legend_order oszlop (régi DB-k migráció nélkül működjenek).
+     */
+    function events_categories_legend_order_available(PDO $db): bool {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $db->query('SELECT `legend_order` FROM `events_categories` LIMIT 1');
+            $cached = true;
+        } catch (PDOException $e) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+}
+
 if (!function_exists('events_tags_tables_available')) {
     /** Van-e events_tags + esemény–tag kapcsoló (migráció nélkül ne omoljon össze az űrlap). */
     function events_tags_tables_available(PDO $db): bool {

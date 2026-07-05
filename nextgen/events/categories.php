@@ -9,6 +9,7 @@ requireLogin();
 
 $db = getDb();
 $categoriesNameEnOk = events_categories_name_en_available($db);
+$categoriesLegendOrderOk = events_categories_legend_order_available($db);
 
 /**
  * @param list<array<string,mixed>> $rows
@@ -157,6 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $color = strtoupper(trim((string) ($_POST['color'] ?? '#6D8F63')));
         $sortOrderRaw = trim((string) ($_POST['sort_order'] ?? '0'));
         $sortOrder = ctype_digit($sortOrderRaw) ? (int) $sortOrderRaw : 0;
+        $legendOrderRaw = trim((string) ($_POST['legend_order'] ?? '0'));
+        $legendOrder = ctype_digit($legendOrderRaw) ? (int) $legendOrderRaw : 0;
 
         if ($name === '') {
             flash('error', 'A kategória neve kötelező.');
@@ -168,6 +171,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if ($sortOrder < 0 || $sortOrder > 65535) {
             flash('error', 'A sorrend 0 és 65535 közé essen.');
+            redirect(events_url('categories.php') . ($id > 0 ? '?edit=' . $id : ''));
+        }
+        if ($categoriesLegendOrderOk && ($legendOrder < 0 || $legendOrder > 65535)) {
+            flash('error', 'A naptár sorrend 0 és 65535 közé essen.');
             redirect(events_url('categories.php') . ($id > 0 ? '?edit=' . $id : ''));
         }
         if (!preg_match('/^#[0-9A-F]{6}$/', $color)) {
@@ -195,9 +202,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($id > 0) {
-            if ($categoriesNameEnOk) {
+            if ($categoriesNameEnOk && $categoriesLegendOrderOk) {
+                $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `name_en` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ?, `legend_order` = ? WHERE `id` = ?');
+                $st->execute([$name, $nameEn, $parentId, $color, $sortOrder, $legendOrder, $id]);
+            } elseif ($categoriesNameEnOk) {
                 $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `name_en` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ? WHERE `id` = ?');
                 $st->execute([$name, $nameEn, $parentId, $color, $sortOrder, $id]);
+            } elseif ($categoriesLegendOrderOk) {
+                $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ?, `legend_order` = ? WHERE `id` = ?');
+                $st->execute([$name, $parentId, $color, $sortOrder, $legendOrder, $id]);
             } else {
                 $st = $db->prepare('UPDATE `events_categories` SET `name` = ?, `parent_id` = ?, `color` = ?, `sort_order` = ? WHERE `id` = ?');
                 $st->execute([$name, $parentId, $color, $sortOrder, $id]);
@@ -207,9 +220,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect(events_url('categories.php?edit=') . $id);
         }
 
-        if ($categoriesNameEnOk) {
+        if ($categoriesNameEnOk && $categoriesLegendOrderOk) {
+            $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `name_en`, `parent_id`, `color`, `sort_order`, `legend_order`) VALUES (?, ?, ?, ?, ?, ?)');
+            $ins->execute([$name, $nameEn, $parentId, $color, $sortOrder, $legendOrder]);
+        } elseif ($categoriesNameEnOk) {
             $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `name_en`, `parent_id`, `color`, `sort_order`) VALUES (?, ?, ?, ?, ?)');
             $ins->execute([$name, $nameEn, $parentId, $color, $sortOrder]);
+        } elseif ($categoriesLegendOrderOk) {
+            $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `parent_id`, `color`, `sort_order`, `legend_order`) VALUES (?, ?, ?, ?, ?)');
+            $ins->execute([$name, $parentId, $color, $sortOrder, $legendOrder]);
         } else {
             $ins = $db->prepare('INSERT INTO `events_categories` (`name`, `parent_id`, `color`, `sort_order`) VALUES (?, ?, ?, ?)');
             $ins->execute([$name, $parentId, $color, $sortOrder]);
@@ -288,6 +307,9 @@ $listTotalInDb = events_admin_table_total_count($db, 'events_categories');
 $poolFrom = events_admin_table_pool_from_sql('events_categories', 'c', $list_limit);
 
 $allowedOrder = ['id', 'name', 'name_en', 'parent', 'color', 'sort_order', 'events', 'modified'];
+if ($categoriesLegendOrderOk) {
+    $allowedOrder[] = 'legend_order';
+}
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -311,13 +333,14 @@ $orderSql = match ($order) {
     'parent' => "p.`name` IS NULL, p.`name` $dirSql, c.`name` ASC, c.`id` ASC",
     'color' => "c.`color` $dirSql, c.`name` ASC, c.`id` ASC",
     'sort_order' => "c.`sort_order` $dirSql, c.`name` ASC, c.`id` ASC",
+    'legend_order' => "c.`legend_order` $dirSql, c.`name` ASC, c.`id` ASC",
     'modified' => "c.`modified` $dirSql, c.`id` ASC",
     default => 'p.`name` IS NULL, p.`name` ASC, c.`name` ASC, c.`id` ASC',
 };
 
 $listSelect = $categoriesNameEnOk
-    ? 'c.`id`, c.`name`, c.`name_en`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified`, p.`name` AS `parent_name`'
-    : 'c.`id`, c.`name`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified`, p.`name` AS `parent_name`';
+    ? 'c.`id`, c.`name`, c.`name_en`, c.`parent_id`, c.`color`, c.`sort_order`' . ($categoriesLegendOrderOk ? ', c.`legend_order`' : '') . ', c.`modified`, p.`name` AS `parent_name`'
+    : 'c.`id`, c.`name`, c.`parent_id`, c.`color`, c.`sort_order`' . ($categoriesLegendOrderOk ? ', c.`legend_order`' : '') . ', c.`modified`, p.`name` AS `parent_name`';
 
 $listSql = "
     SELECT {$listSelect}
@@ -383,8 +406,12 @@ $flatAll = events_categories_flatten_tree($allCategoryRows);
 
 $editRow = null;
 if ($editId > 0) {
-    if ($categoriesNameEnOk) {
+    if ($categoriesNameEnOk && $categoriesLegendOrderOk) {
+        $stEdit = $db->prepare('SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `legend_order`, `modified` FROM `events_categories` WHERE `id` = ? LIMIT 1');
+    } elseif ($categoriesNameEnOk) {
         $stEdit = $db->prepare('SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` WHERE `id` = ? LIMIT 1');
+    } elseif ($categoriesLegendOrderOk) {
+        $stEdit = $db->prepare('SELECT `id`, `name`, `parent_id`, `color`, `sort_order`, `legend_order`, `modified` FROM `events_categories` WHERE `id` = ? LIMIT 1');
     } else {
         $stEdit = $db->prepare('SELECT `id`, `name`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` WHERE `id` = ? LIMIT 1');
     }
@@ -406,6 +433,7 @@ $form = [
     'parent_id' => $editRow && $editRow['parent_id'] !== null ? (int) $editRow['parent_id'] : 0,
     'color' => $editRow ? (string) $editRow['color'] : '#6D8F63',
     'sort_order' => $editRow ? (int) $editRow['sort_order'] : 0,
+    'legend_order' => $categoriesLegendOrderOk && $editRow ? (int) ($editRow['legend_order'] ?? 0) : 0,
 ];
 
 $editEventCount = $form['id'] > 0 ? ($eventCountMap[$form['id']] ?? 0) : 0;
@@ -420,6 +448,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+<?php if (!$categoriesLegendOrderOk): ?>
+    <p class="alert alert-warning">Az adatbázisban még nincs <code>legend_order</code> oszlop. A naptár színjelmagyarázat sorrendjéhez futtasd: <code>events/sql/migration_categories_legend_order.sql</code></p>
+<?php endif; ?>
 <?php if (!$categoriesNameEnOk): ?>
     <p class="alert alert-warning">Az adatbázisban még nincs <code>name_en</code> oszlop a kategóriáknál. Az oldal így is működik (csak magyar név). A kétnyelvű megjelenítéshez futtasd a szervertől: <code>events/sql/migration_categories_name_en.sql</code></p>
 <?php endif; ?>
@@ -504,6 +535,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <th><?= sort_th('Név (EN)', 'name_en', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Szín', 'color', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Sorrend', 'sort_order', $order, $dir_param, $get_params) ?></th>
+                            <?php if ($categoriesLegendOrderOk): ?>
+                                <th><?= sort_th('Naptár', 'legend_order', $order, $dir_param, $get_params) ?></th>
+                            <?php endif; ?>
                             <th><?= sort_th('Események', 'events', $order, $dir_param, $get_params) ?></th>
                             <th><?= sort_th('Módosítva', 'modified', $order, $dir_param, $get_params) ?></th>
                             <th></th>
@@ -512,7 +546,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <tbody>
                     <?php if ($listRows === []): ?>
                         <tr>
-                            <td colspan="8">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
+                            <td colspan="<?= $categoriesLegendOrderOk ? 9 : 8 ?>">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($listRows as $r): ?>
@@ -540,6 +574,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     </span>
                                 </td>
                                 <td><?= (int) ($r['sort_order'] ?? 0) ?></td>
+                                <?php if ($categoriesLegendOrderOk): ?>
+                                    <td><?= (int) ($r['legend_order'] ?? 0) ?></td>
+                                <?php endif; ?>
                                 <td><?= (int) $rowEventCount ?></td>
                                 <td><?= h((string) ($r['modified'] ?? '')) ?></td>
                                 <td class="events-admin-table__actions">
@@ -604,7 +641,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <div class="form-group">
                     <label for="cat_sort_order">Sorrend</label>
                     <input type="number" id="cat_sort_order" name="sort_order" min="0" max="65535" step="1" value="<?= (int) $form['sort_order'] ?>">
+                    <p class="help">Választólisták és fa nézet sorrendje.</p>
                 </div>
+
+                <?php if ($categoriesLegendOrderOk): ?>
+                <div class="form-group">
+                    <label for="cat_legend_order">Naptár sorrend</label>
+                    <input type="number" id="cat_legend_order" name="legend_order" min="0" max="65535" step="1" value="<?= (int) $form['legend_order'] ?>">
+                    <p class="help">A színjelmagyarázatban megjelenő sorrend. <strong>0</strong> = nem jelenik meg (pl. csak csoportosító szülő kategória).</p>
+                </div>
+                <?php endif; ?>
 
                 <div class="toolbar">
                     <button type="submit" class="btn btn-primary">Mentés</button>
