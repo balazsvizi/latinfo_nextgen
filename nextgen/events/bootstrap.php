@@ -18,9 +18,69 @@ if (!function_exists('events_url')) {
     }
 }
 
+if (!function_exists('events_public_home_path')) {
+    /**
+     * Publikus naptár gyökér útvonal (pl. /events/).
+     */
+    function events_public_home_path(): string {
+        $seg = defined('EVENTS_HOME_PATH') ? EVENTS_HOME_PATH : 'events';
+
+        return rtrim(site_url($seg . '/'), '/') . '/';
+    }
+}
+
+if (!function_exists('events_public_home_url')) {
+    /**
+     * Publikus naptár URL query paraméterekkel.
+     *
+     * @param array<string, scalar|null> $extraParams
+     */
+    function events_public_home_url(string $lang = 'hu', array $extraParams = []): string {
+        $q = [];
+        foreach ($extraParams as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $q[(string) $key] = $value;
+        }
+        if ($lang === 'en') {
+            $q['lang'] = 'en';
+        } else {
+            unset($q['lang']);
+        }
+        $base = events_public_home_path();
+        if ($q === []) {
+            return $base;
+        }
+
+        return $base . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
+    }
+}
+
+if (!function_exists('events_public_append_query')) {
+    /**
+     * @param array<string, scalar|null> $params
+     */
+    function events_public_append_query(string $url, array $params): string {
+        $q = [];
+        foreach ($params as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $q[(string) $key] = $value;
+        }
+        if ($q === []) {
+            return $url;
+        }
+        $sep = str_contains($url, '?') ? '&' : '?';
+
+        return $url . $sep . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
+    }
+}
+
 if (!function_exists('events_public_home_page_script')) {
     /**
-     * Publikus esemény főoldal — az events/ gyökér (index.php).
+     * @deprecated Belső admin útvonal; publikus linkekhez events_public_home_url().
      */
     function events_public_home_page_script(): string {
         return '';
@@ -29,17 +89,54 @@ if (!function_exists('events_public_home_page_script')) {
 
 if (!function_exists('events_public_canonical_url')) {
     /**
-     * Cél URL a spec „eventmappa” + slug mintához (SEO canonical; később .htaccess).
+     * Publikus esemény canonical URL: /event/{slug}/
      */
     function events_public_canonical_url(string $slug): string {
-        $seg = defined('EVENTS_PUBLIC_PATH') ? EVENTS_PUBLIC_PATH : 'esemenyek';
-        return site_url($seg . '/' . rawurlencode($slug));
+        $seg = defined('EVENTS_PUBLIC_PATH') ? EVENTS_PUBLIC_PATH : 'event';
+
+        return rtrim(site_url($seg . '/' . rawurlencode($slug)), '/') . '/';
     }
 }
 
 if (!function_exists('events_megjelenit_url')) {
     function events_megjelenit_url(string $slug): string {
-        return events_url('megjelenit.php?slug=' . rawurlencode($slug));
+        return events_public_canonical_url($slug);
+    }
+}
+
+if (!function_exists('events_public_is_legacy_home_request')) {
+    function events_public_is_legacy_home_request(): bool {
+        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        $path = rtrim($path, '/') ?: '/';
+        if (str_ends_with($path, '/public_home.php')) {
+            return true;
+        }
+
+        return preg_match('#/nextgen/events(?:/index\.php)?$#i', $path) === 1;
+    }
+}
+
+if (!function_exists('events_public_is_legacy_megjelenit_request')) {
+    function events_public_is_legacy_megjelenit_request(): bool {
+        return str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), 'megjelenit.php');
+    }
+}
+
+if (!function_exists('events_public_redirect_to')) {
+    function events_public_redirect_to(string $url, int $code = 301): never {
+        header('Location: ' . $url, true, $code);
+        exit;
+    }
+}
+
+if (!function_exists('events_public_maybe_redirect_legacy_home')) {
+    function events_public_maybe_redirect_legacy_home(string $lang): void {
+        if (!events_public_is_legacy_home_request()) {
+            return;
+        }
+        $q = $_GET;
+        unset($q['lang']);
+        events_public_redirect_to(events_public_home_url($lang, $q));
     }
 }
 

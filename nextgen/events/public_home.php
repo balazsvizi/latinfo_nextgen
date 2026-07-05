@@ -2,19 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-
-$entryScript = realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
-if ($entryScript !== false && $entryScript === realpath(__FILE__)) {
-    $qs = trim((string) ($_SERVER['QUERY_STRING'] ?? ''));
-    $target = events_url('');
-    if ($qs !== '') {
-        $target .= '?' . $qs;
-    }
-    header('Location: ' . $target, true, 301);
-    exit;
-}
-
 require_once __DIR__ . '/lib/event_public_lang.php';
+
+$lang = events_public_resolve_megjelenit_lang();
+events_public_maybe_redirect_legacy_home($lang);
+
 require_once __DIR__ . '/lib/public_home_content.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
@@ -22,7 +14,6 @@ require_once __DIR__ . '/lib/public_event_calendar.php';
 require_once __DIR__ . '/lib/calendar_event_preview.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 
-$lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_header();
 $D = events_public_home_strings($lang);
 $langNav = events_public_lang_nav_params($lang);
@@ -67,20 +58,19 @@ $nextMonthUrl = events_public_calendar_month_url($nextMonthKey, $navBaseParams);
 $todayMonthUrl = events_public_calendar_month_url((new DateTimeImmutable('today'))->format('Y-m'), $navBaseParams);
 
 $listViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'list']);
-$homeScript = events_public_home_page_script();
-$listViewUrl = events_url($homeScript . '?' . http_build_query($listViewParams));
+$listViewUrl = events_public_home_url($lang, $listViewParams);
 
 $calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
 unset($calViewParams['view']);
-$calViewUrl = events_url($homeScript . '?' . http_build_query($calViewParams));
+$calViewUrl = events_public_home_url($lang, $calViewParams);
 
-$filterFormAction = events_url($homeScript);
+$filterFormAction = events_public_home_path();
 $filterFormHidden = array_merge(['month' => $monthKey], $langNav);
 if ($view === 'list') {
     $filterFormHidden['view'] = 'list';
 }
 $filterClearParams = array_merge(['month' => $monthKey], $langNav);
-$filterClearUrl = events_url($homeScript . '?' . http_build_query($filterClearParams));
+$filterClearUrl = events_public_home_url($lang, $filterClearParams);
 
 $icalFeedParams = array_merge($filters['get_params'], $langNav);
 unset($icalFeedParams['month'], $icalFeedParams['view']);

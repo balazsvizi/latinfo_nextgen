@@ -22,8 +22,11 @@ return [
     // 'UPLOAD_PATH' => __DIR__ . '/../uploads/szamlak',
     // 'UPLOAD_URL' => '/nextgen/uploads/szamlak',
 
-    // Nyilvános esemény URL: /{EVENTS_PUBLIC_PATH}/{slug} (canonical). Alap: esemenyek
-    // 'EVENTS_PUBLIC_PATH' => 'esemenyek',
+    // Nyilvános naptár: /{EVENTS_HOME_PATH}/ (alap: events)
+    // 'EVENTS_HOME_PATH' => 'events',
+
+    // Nyilvános esemény: /{EVENTS_PUBLIC_PATH}/{slug}/ (alap: event)
+    // 'EVENTS_PUBLIC_PATH' => 'event',
 
     // Esemény megjelenítő: logó és lábléc „főoldal” link (alap: https://latinfo.hu/)
     // 'LATINFO_PUBLIC_HOME_URL' => 'http://localhost/wordpress',

@@ -194,7 +194,7 @@ $listViewUrl = events_admin_list_view_url($get_params, ['order' => $order, 'dir'
 $activeView = 'list';
 $publicPreviewParams = $get_params;
 $publicPreviewParams['month'] = events_admin_calendar_view_month_key($filters);
-$publicHomePreviewUrl = events_url(events_public_home_page_script() . '?' . http_build_query($publicPreviewParams));
+$publicHomePreviewUrl = events_public_home_url('hu', $publicPreviewParams);
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Események';

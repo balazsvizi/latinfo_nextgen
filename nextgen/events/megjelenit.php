@@ -13,8 +13,6 @@ require_once __DIR__ . '/lib/event_view_tracking.php';
 require_once __DIR__ . '/lib/event_change.php';
 
 $lang = events_public_resolve_megjelenit_lang();
-events_public_send_noindex_header();
-$T = events_public_megjelenit_strings($lang);
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
 if ($slug === '') {
@@ -23,6 +21,22 @@ if ($slug === '') {
     echo events_public_megjelenit_not_found_html($lang);
     exit;
 }
+
+if (events_public_is_legacy_megjelenit_request()) {
+    $legacyParams = [];
+    foreach (['lang', 'ref'] as $param) {
+        if (isset($_GET[$param]) && (string) $_GET[$param] !== '') {
+            $legacyParams[$param] = (string) $_GET[$param];
+        }
+    }
+    $targetLang = ($legacyParams['lang'] ?? $lang) === 'en' ? 'en' : 'hu';
+    $target = events_public_event_page_url($slug, $targetLang);
+    unset($legacyParams['lang']);
+    events_public_redirect_to(events_public_append_query($target, $legacyParams));
+}
+
+events_public_send_noindex_header();
+$T = events_public_megjelenit_strings($lang);
 
 $db = getDb();
 $stmt = $db->prepare('
@@ -99,14 +113,14 @@ $costText = events_public_megjelenit_cost_text($cf, $ct, $lang);
 $pageSource = events_view_tracking_resolve_page_source((string) ($_GET['ref'] ?? ''));
 events_track_event_view($db, (int) $event['id'], EVENTS_VIEW_METRIC_PAGE, $pageSource);
 
-$canonical = events_public_canonical_url($event['event_slug']);
+$canonical = events_absolute_url(events_public_canonical_url((string) $event['event_slug']));
 $title = $event['event_name'];
 $safeEventContent = events_sanitize_html_fragment((string) ($event['event_content'] ?? ''));
 $desc = mb_substr(trim(strip_tags($safeEventContent)), 0, 160, 'UTF-8');
 $featuredRaw = trim(html_entity_decode(trim((string) ($event['event_featured_image_url'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 $featuredRaw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $featuredRaw) ?? $featuredRaw;
 $featuredAbsolute = $featuredRaw !== '' ? events_absolute_url($featuredRaw) : '';
-$ogPageUrl = events_absolute_url(events_url('megjelenit.php?slug=' . rawurlencode($slug)));
+$ogPageUrl = events_absolute_url(events_public_event_page_url($slug, $lang));
 $cssUrl = events_url('assets/event_public.css');
 $urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu');
 $urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');

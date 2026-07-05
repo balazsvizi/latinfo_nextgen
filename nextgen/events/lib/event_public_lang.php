@@ -475,16 +475,22 @@ function events_public_megjelenit_cost_text(?float $cf, ?float $ct, string $lang
  * Ugyanaz az esemény slug, más nyelvi paraméterrel (váltó linkek).
  */
 function events_public_megjelenit_lang_switch_url(string $slug, string $targetLang): string {
-    $q = ['slug' => $slug, 'lang' => $targetLang];
+    if ($targetLang === 'en') {
+        return events_public_append_query(events_megjelenit_url($slug), ['lang' => 'en']);
+    }
 
-    return events_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+    return events_megjelenit_url($slug);
 }
 
 /**
  * Nyilvános eseményoldal URL (slug + nyelv).
  */
 function events_public_event_page_url(string $slug, string $lang): string {
-    return events_url('megjelenit.php?' . http_build_query(['slug' => $slug, 'lang' => $lang], '', '&', PHP_QUERY_RFC3986));
+    if ($lang === 'en') {
+        return events_public_append_query(events_megjelenit_url($slug), ['lang' => 'en']);
+    }
+
+    return events_megjelenit_url($slug);
 }
 
 /**
@@ -863,20 +869,18 @@ function events_public_home_strings(string $lang): array {
 }
 
 function events_public_home_page_url(string $lang): string {
-    $base = events_url(events_public_home_page_script());
-    if ($lang !== 'en') {
-        return $base;
-    }
-
-    return $base . '?' . http_build_query(['lang' => 'en'], '', '&', PHP_QUERY_RFC3986);
+    return events_public_home_url($lang);
 }
 
 function events_public_home_lang_switch_url(string $targetLang): string {
     $q = $_GET;
-    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
-    $base = events_url(events_public_home_page_script());
+    if ($targetLang === 'en') {
+        $q['lang'] = 'en';
+    } else {
+        unset($q['lang']);
+    }
 
-    return $base . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
+    return events_public_home_url($targetLang === 'en' ? 'en' : 'hu', $q);
 }
 
 function events_public_venue_lang_switch_url(string $slug, string $targetLang, array $extraParams = []): string {

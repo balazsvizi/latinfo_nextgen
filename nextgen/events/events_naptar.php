@@ -69,7 +69,7 @@ $activeView = 'month';
 $filterFormAction = events_url('events_naptar.php');
 $filterFormHidden = ['month' => $monthKey];
 $filterClearUrl = events_url('events_naptar.php?month=' . rawurlencode($monthKey));
-$publicHomePreviewUrl = events_url(events_public_home_page_script() . '?month=' . rawurlencode($monthKey));
+$publicHomePreviewUrl = events_public_home_url('hu', ['month' => $monthKey]);
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Események – naptár';

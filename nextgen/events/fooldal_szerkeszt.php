@@ -42,7 +42,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head">
         <h2 class="events-list-title">Publikus főoldal szövegei</h2>
         <div class="events-list-actions">
-            <a href="<?= h(events_url(events_public_home_page_script())) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Előnézet</a>
+            <a href="<?= h(events_public_home_url('hu')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Előnézet</a>
         </div>
     </div>
 

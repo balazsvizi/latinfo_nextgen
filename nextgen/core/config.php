@@ -108,9 +108,14 @@ if (!function_exists('nextgen_url')) {
 define('UPLOAD_PATH', (string) cfg_get('UPLOAD_PATH', BASE_PATH . '/nextgen/uploads/szamlak', $localConfig));
 define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', nextgen_url('uploads/szamlak'), $localConfig));
 
-/** Nyilvános esemény URL szegmens (pl. esemenyek → /esemenyek/slug). Lásd events/docs/specs.md. */
+/** Nyilvános naptár URL szegmens (pl. events → /events/). */
+if (!defined('EVENTS_HOME_PATH')) {
+    define('EVENTS_HOME_PATH', trim((string) cfg_get('EVENTS_HOME_PATH', 'events', $localConfig), '/'));
+}
+
+/** Nyilvános esemény URL szegmens (pl. event → /event/{slug}/). */
 if (!defined('EVENTS_PUBLIC_PATH')) {
-    define('EVENTS_PUBLIC_PATH', trim((string) cfg_get('EVENTS_PUBLIC_PATH', 'esemenyek', $localConfig), '/'));
+    define('EVENTS_PUBLIC_PATH', trim((string) cfg_get('EVENTS_PUBLIC_PATH', 'event', $localConfig), '/'));
 }
 
 /** Nyilvános főoldal (logó / lábléc link a megjelenítőn). Fejlesztői felülírás: config.local.php vagy LATINFO_PUBLIC_HOME_URL env. */

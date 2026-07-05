@@ -26,7 +26,9 @@ function events_public_calendar_event_url(array $ev, ?string $ref = null): strin
  * @param array<string, string> $getParams
  */
 function events_public_calendar_month_url(string $monthKey, array $getParams): string {
-    return events_admin_calendar_month_url($monthKey, $getParams, events_public_home_page_script());
+    $lang = (($getParams['lang'] ?? 'hu') === 'en') ? 'en' : 'hu';
+
+    return events_public_home_url($lang, array_merge($getParams, ['month' => $monthKey]));
 }
 
 function events_public_calendar_month_label(DateTimeImmutable $monthFirst, string $lang): string {
