@@ -2300,50 +2300,39 @@ body.event-public-page--home .event-public__hero-inner {
 
 .home-public__renewal-notice {
     margin: 0;
-    padding: 0.32rem 0.65rem;
     max-width: 100%;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 250, 252, 0.97) 100%) padding-box,
-        linear-gradient(120deg, #ff1654 0%, #e60aad 35%, #00d9ff 70%, #39ff14 100%) border-box;
-    box-shadow: 0 2px 12px rgba(255, 22, 84, 0.12), 0 1px 8px rgba(0, 217, 255, 0.1);
-}
-
-.home-public__renewal-notice-text {
-    margin: 0;
-    font-family: var(--ev-sans);
-    font-size: clamp(0.68rem, 1.55vw, 0.8125rem);
-    font-weight: 600;
-    line-height: 1.35;
-    text-align: center;
-}
-
-.home-public__renewal-notice-prefix {
-    background: linear-gradient(90deg, #c4006a 0%, #ff1654 45%, #0097b2 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 
 .home-public__renewal-notice-link {
-    margin-left: 0.2em;
-    color: #ff1654;
+    display: inline-block;
+    margin: 0;
+    padding: 0.32rem 0.7rem;
+    max-width: 100%;
+    border-radius: 999px;
+    border: 1px solid rgba(57, 255, 20, 0.35);
+    background: linear-gradient(135deg, #0a0e27 0%, #141829 100%);
+    box-shadow: 0 2px 10px rgba(57, 255, 20, 0.15);
+    font-family: var(--ev-sans);
+    font-size: clamp(0.68rem, 1.55vw, 0.8125rem);
     font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
     text-decoration: none;
-    white-space: nowrap;
+    color: #39ff14;
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.55), 0 0 20px rgba(57, 255, 20, 0.25);
+    transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .home-public__renewal-notice-link:hover {
-    color: #e60aad;
-    text-decoration: underline;
-    text-underline-offset: 0.12em;
+    color: #7dff5c;
+    border-color: rgba(125, 255, 92, 0.55);
+    box-shadow: 0 2px 14px rgba(57, 255, 20, 0.28);
+    text-decoration: none;
 }
 
 .home-public__renewal-notice-link:focus-visible {
-    outline: 2px solid #ff1654;
+    outline: 2px solid #39ff14;
     outline-offset: 2px;
-    border-radius: 4px;
 }
 
 @media (max-width: 720px) {
@@ -2369,9 +2358,10 @@ body.event-public-page--home .event-public__hero-inner {
         justify-self: stretch;
     }
 
-    .home-public__renewal-notice {
+    .home-public__renewal-notice-link {
+        display: block;
         border-radius: 0.65rem;
-        padding: 0.4rem 0.7rem;
+        padding: 0.4rem 0.75rem;
     }
 }
 

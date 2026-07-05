@@ -8,9 +8,10 @@ declare(strict_types=1);
  */
 $lanuevaUrl = site_url('lanueva/');
 ?>
-<div class="home-public__renewal-notice" role="note" aria-label="<?= h((string) ($S['renewal_notice_aria'] ?? '')) ?>">
-    <p class="home-public__renewal-notice-text">
-        <span class="home-public__renewal-notice-prefix"><?= h((string) ($S['renewal_notice_prefix'] ?? '')) ?></span>
-        <a class="home-public__renewal-notice-link" href="<?= h($lanuevaUrl) ?>"><?= h((string) ($S['renewal_notice_link'] ?? '')) ?></a>
-    </p>
+<div class="home-public__renewal-notice">
+    <a
+        class="home-public__renewal-notice-link"
+        href="<?= h($lanuevaUrl) ?>"
+        aria-label="<?= h((string) ($S['renewal_notice_aria'] ?? '')) ?>"
+    ><?= h((string) ($S['renewal_notice_text'] ?? '')) ?></a>
 </div>
