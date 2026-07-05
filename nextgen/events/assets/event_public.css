@@ -457,8 +457,10 @@ body.event-public-page--home .event-public__hero {
 }
 
 .event-featured {
+    display: grid;
+    place-items: center;
     margin: clamp(1rem, 3vw, 1.5rem) 0 0;
-    padding: 0;
+    padding: clamp(0.35rem, 1.5vw, 0.75rem);
     border-radius: var(--ev-radius-sm);
     overflow: hidden;
     border: 1px solid var(--li-border);
@@ -468,11 +470,27 @@ body.event-public-page--home .event-public__hero {
 
 .event-featured__img {
     display: block;
-    width: 100%;
+    max-width: 100%;
+    width: auto;
     height: auto;
-    max-height: min(52vh, 22rem);
-    object-fit: cover;
+    max-height: min(72vh, 36rem);
+    margin: 0 auto;
+    object-fit: contain;
     object-position: center;
+}
+
+.event-featured__img.is-portrait {
+    max-width: min(100%, 20rem);
+    max-height: min(72vh, 40rem);
+}
+
+.event-featured__img.is-landscape {
+    width: 100%;
+    max-height: min(52vh, 24rem);
+}
+
+.event-featured__img.is-square {
+    max-width: min(100%, 24rem);
 }
 
 .event-datetime-hero {
@@ -1630,8 +1648,10 @@ a.event-public__tag-pill:hover {
 .event-related-card__img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
     display: block;
+    background: #e8ebe5;
 }
 
 .event-related-card__placeholder {
@@ -3171,8 +3191,14 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public__list-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
     display: block;
+    background: #e8ebe5;
+}
+
+.home-public__list-img.is-portrait {
+    object-fit: contain;
 }
 
 .home-public__list-placeholder {
@@ -3530,18 +3556,36 @@ body.event-public-page--home .event-public__hero-inner {
 
 .events-cal-preview__media {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    min-height: 8rem;
+    max-height: min(48vh, 20rem);
+    padding: 0.5rem;
     background: var(--li-green-soft);
     overflow: hidden;
 }
 
 .events-cal-preview__img {
     display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    max-height: min(44vh, 18rem);
+    margin: 0 auto;
+    object-fit: contain;
     object-position: center;
+}
+
+.events-cal-preview__img.is-portrait {
+    max-width: min(100%, 11rem);
+    max-height: min(48vh, 20rem);
+}
+
+.events-cal-preview__img.is-landscape {
+    width: 100%;
+    max-height: min(40vh, 14rem);
 }
 
 .events-cal-preview__body {

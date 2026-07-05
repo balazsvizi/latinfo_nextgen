@@ -145,8 +145,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                                     class="event-related-card__img"
                                                     src="<?= h($relFeatAbs) ?>"
                                                     alt=""
-                                                    width="640"
-                                                    height="360"
                                                     loading="lazy"
                                                     decoding="async"
                                                 >
@@ -190,5 +188,6 @@ $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
 require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
+<?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 </body>
 </html>

@@ -204,6 +204,7 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 <?php if ($view === 'cal' && $calendarPreviewById !== []): ?>
 <?php require __DIR__ . '/partials/public_calendar_event_preview.php'; ?>
 <?php endif; ?>

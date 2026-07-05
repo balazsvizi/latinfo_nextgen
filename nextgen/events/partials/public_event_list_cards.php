@@ -57,8 +57,6 @@ if (!defined('EVENTS_VIEW_SOURCE_LIST')) {
                                 class="home-public__list-img"
                                 src="<?= h($featAbs) ?>"
                                 alt=""
-                                width="640"
-                                height="360"
                                 loading="lazy"
                                 decoding="async"
                             >

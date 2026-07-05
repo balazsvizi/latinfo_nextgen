@@ -8,7 +8,7 @@ declare(strict_types=1);
         <button type="button" class="events-cal-preview__close" id="events-cal-preview-close" aria-label="<?= h((string) ($D['cal_preview_close'] ?? 'Bezárás')) ?>">×</button>
         <div class="events-cal-preview__handle" aria-hidden="true"></div>
         <div class="events-cal-preview__media" id="events-cal-preview-media" hidden>
-            <img class="events-cal-preview__img" id="events-cal-preview-img" src="" alt="" width="640" height="360" decoding="async">
+            <img class="events-cal-preview__img" id="events-cal-preview-img" src="" alt="" decoding="async">
         </div>
         <div class="events-cal-preview__body">
             <p class="events-cal-preview__meta" id="events-cal-preview-meta"></p>
@@ -151,6 +151,15 @@ declare(strict_types=1);
             imgEl.src = data.image;
             imgEl.alt = data.name || '';
             mediaEl.hidden = false;
+            if (typeof window.eventsApplyImageOrientation === 'function') {
+                if (imgEl.complete && imgEl.naturalWidth) {
+                    window.eventsApplyImageOrientation(imgEl);
+                } else {
+                    imgEl.onload = function () {
+                        window.eventsApplyImageOrientation(imgEl);
+                    };
+                }
+            }
         } else {
             imgEl.removeAttribute('src');
             imgEl.alt = '';

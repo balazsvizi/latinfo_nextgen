@@ -197,8 +197,6 @@ header('Content-Type: text/html; charset=UTF-8');
                         class="event-featured__img"
                         src="<?= h($featuredAbsolute) ?>"
                         alt="<?= h((string) $title) ?>"
-                        width="1200"
-                        height="630"
                         decoding="async"
                         fetchpriority="high"
                         loading="eager"
@@ -314,5 +312,6 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 </body>
 </html>

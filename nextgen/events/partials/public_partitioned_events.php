@@ -67,8 +67,6 @@ $showVenueCity = $showVenueCity ?? true;
                                                 class="event-related-card__img"
                                                 src="<?= h($relFeatAbs) ?>"
                                                 alt=""
-                                                width="640"
-                                                height="360"
                                                 loading="lazy"
                                                 decoding="async"
                                             >
