@@ -2604,6 +2604,26 @@ dialog.eventpics-modal::backdrop {
     padding: 1rem;
     background: var(--bg-elevated);
 }
+.events-admin-table tbody tr.is-selected {
+    background: rgba(109, 143, 99, 0.08);
+}
+.events-admin-table__actions {
+    white-space: nowrap;
+    text-align: right;
+}
+.events-categories-form-meta {
+    margin: 1rem 0 0;
+}
+.events-categories-delete {
+    margin-top: 1rem;
+}
+.events-categories-delete-blocked {
+    margin: 1rem 0 0;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: rgba(234, 179, 8, 0.08);
+}
 .events-category-color-chip {
     display: inline-flex;
     align-items: center;

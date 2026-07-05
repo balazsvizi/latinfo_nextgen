@@ -88,6 +88,58 @@ function events_categories_parent_is_valid(array $parentById, int $categoryId, ?
     return true;
 }
 
+/**
+ * @return array<int, int> category_id => események száma
+ */
+function events_categories_event_count_map(PDO $db): array {
+    $map = [];
+    try {
+        $st = $db->query('
+            SELECT `category_id`, COUNT(*) AS cnt
+            FROM `events_calendar_event_categories`
+            GROUP BY `category_id`
+        ');
+        if ($st === false) {
+            return [];
+        }
+        while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+            $map[(int) ($row['category_id'] ?? 0)] = (int) ($row['cnt'] ?? 0);
+        }
+    } catch (Throwable $e) {
+        error_log('events_categories_event_count_map: ' . $e->getMessage());
+    }
+
+    return $map;
+}
+
+/**
+ * @return array<int, int> parent_id => közvetlen alkategóriák száma
+ */
+function events_categories_child_count_map(PDO $db): array {
+    $map = [];
+    try {
+        $st = $db->query('
+            SELECT `parent_id`, COUNT(*) AS cnt
+            FROM `events_categories`
+            WHERE `parent_id` IS NOT NULL
+            GROUP BY `parent_id`
+        ');
+        if ($st === false) {
+            return [];
+        }
+        while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+            $pid = (int) ($row['parent_id'] ?? 0);
+            if ($pid > 0) {
+                $map[$pid] = (int) ($row['cnt'] ?? 0);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('events_categories_child_count_map: ' . $e->getMessage());
+    }
+
+    return $map;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
     if (!csrf_validate('events_categories')) {
@@ -225,15 +277,26 @@ if ($categoriesNameEnOk) {
 }
 $flat = events_categories_flatten_tree($rows);
 $listDisplayedCount = count($flat);
-$byId = [];
-foreach ($rows as $r) {
-    $byId[(int) $r['id']] = $r;
-}
+$eventCountMap = events_categories_event_count_map($db);
+$childCountMap = events_categories_child_count_map($db);
 
 $editId = (int) ($_GET['edit'] ?? 0);
 $editRow = null;
-if ($editId > 0 && isset($byId[$editId])) {
-    $editRow = $byId[$editId];
+if ($editId > 0) {
+    if ($categoriesNameEnOk) {
+        $stEdit = $db->prepare('SELECT `id`, `name`, `name_en`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` WHERE `id` = ? LIMIT 1');
+    } else {
+        $stEdit = $db->prepare('SELECT `id`, `name`, `parent_id`, `color`, `sort_order`, `modified` FROM `events_categories` WHERE `id` = ? LIMIT 1');
+    }
+    $stEdit->execute([$editId]);
+    $editRow = $stEdit->fetch(PDO::FETCH_ASSOC) ?: null;
+    if ($editRow !== null && !$categoriesNameEnOk) {
+        $editRow['name_en'] = '';
+    }
+    if ($editRow === null) {
+        flash('error', 'A kategória nem található.');
+        redirect(events_url('categories.php'));
+    }
 }
 
 $form = [
@@ -244,6 +307,10 @@ $form = [
     'color' => $editRow ? (string) $editRow['color'] : '#6D8F63',
     'sort_order' => $editRow ? (int) $editRow['sort_order'] : 0,
 ];
+
+$editEventCount = $form['id'] > 0 ? ($eventCountMap[$form['id']] ?? 0) : 0;
+$editChildCount = $form['id'] > 0 ? ($childCountMap[$form['id']] ?? 0) : 0;
+$editCanDelete = $form['id'] > 0 && $editEventCount === 0 && $editChildCount === 0;
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Kategóriák';
@@ -282,13 +349,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <th>Név (EN)</th>
                             <th>Szín</th>
                             <th>Sorrend</th>
+                            <th>Események</th>
                             <th>Módosítva</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if ($flat === []): ?>
                         <tr>
-                            <td colspan="6">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
+                            <td colspan="8">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($flat as $r): ?>
@@ -298,14 +367,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $indent = str_repeat('— ', max(0, $depth));
                             $color = (string) ($r['color'] ?? '#6D8F63');
                             $nameEnCell = trim((string) ($r['name_en'] ?? ''));
+                            $rowEventCount = $eventCountMap[$rid] ?? 0;
+                            $isEditing = $form['id'] === $rid;
                             ?>
-                            <tr>
+                            <tr<?= $isEditing ? ' class="is-selected"' : '' ?>>
                                 <td><?= $rid ?></td>
-                                <td>
-                                    <a class="events-cell-edit" href="<?= h(events_url('categories.php?edit=' . $rid)) ?>">
-                                        <?= h($indent . (string) $r['name']) ?>
-                                    </a>
-                                </td>
+                                <td><?= h($indent . (string) $r['name']) ?></td>
                                 <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
                                 <td>
                                     <span class="events-category-color-chip">
@@ -314,7 +381,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     </span>
                                 </td>
                                 <td><?= (int) ($r['sort_order'] ?? 0) ?></td>
+                                <td><?= (int) $rowEventCount ?></td>
                                 <td><?= h((string) ($r['modified'] ?? '')) ?></td>
+                                <td class="events-admin-table__actions">
+                                    <a class="btn btn-secondary btn-sm" href="<?= h(events_url('categories.php?edit=' . $rid)) ?>">Szerkesztés</a>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -385,13 +456,31 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </form>
 
             <?php if ($form['id'] > 0): ?>
-                <form method="post" action="<?= h(events_url('categories.php?edit=' . (int) $form['id'])) ?>" style="margin-top:1rem;" onsubmit="return confirm('Biztosan törlöd ezt a kategóriát?');">
+                <p class="help events-categories-form-meta">
+                    Kapcsolt események: <strong><?= (int) $editEventCount ?></strong>
+                    <?php if ($editChildCount > 0): ?>
+                        · Alkategóriák: <strong><?= (int) $editChildCount ?></strong>
+                    <?php endif; ?>
+                </p>
+            <?php endif; ?>
+
+            <?php if ($editCanDelete): ?>
+                <form method="post" action="<?= h(events_url('categories.php?edit=' . (int) $form['id'])) ?>" class="events-categories-delete" onsubmit="return confirm('Biztosan törlöd ezt a kategóriát?');">
                     <?= csrf_input('events_categories') ?>
                     <input type="hidden" name="action" value="delete_category">
                     <input type="hidden" name="id" value="<?= (int) $form['id'] ?>">
                     <button type="submit" class="btn btn-secondary">Kategória törlése</button>
                 </form>
-                <p class="help" style="margin-top:0.5rem;">Törlés csak akkor lehetséges, ha nincs alkategória és nincs esemény-hozzárendelés.</p>
+            <?php elseif ($form['id'] > 0): ?>
+                <p class="help events-categories-delete-blocked">
+                    <?php if ($editEventCount > 0 && $editChildCount > 0): ?>
+                        A kategória nem törölhető: <?= (int) $editEventCount ?> esemény és <?= (int) $editChildCount ?> alkategória kapcsolódik hozzá.
+                    <?php elseif ($editEventCount > 0): ?>
+                        A kategória nem törölhető: <?= (int) $editEventCount ?> esemény használja.
+                    <?php else: ?>
+                        A kategória nem törölhető: <?= (int) $editChildCount ?> alkategória tartozik hozzá.
+                    <?php endif; ?>
+                </p>
             <?php endif; ?>
         </aside>
     </div>
