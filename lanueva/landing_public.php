@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
     $ilyen = trim($_POST['ilyen_legyen'] ?? '');
     $ne = trim($_POST['ilyen_ne_legyen'] ?? '');
     if ($ilyen === '' && $ne === '') {
-        $hiba_feedback = 'Írj legalább az egyik mezőbe: mit szeretnél, vagy mit ne.';
+        $hiba_feedback = 'Írd meg legalább röviden, hogyan tetszik a megújult naptár, vagy mit javítanál.';
     } else {
         [$ip, $ua] = landing_client_meta();
         $stmt = $db->prepare('INSERT INTO nextgen_landing_feedback (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (?, ?, NULL, ?, ?)');
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
             $ip,
             $ua,
         ]);
-        flash('landing_ok_feedback', 'Köszönjük a visszajelzést!');
+        flash('landing_ok_feedback', 'Köszönjük! Megkaptuk a naptárral kapcsolatos visszajelzésed.');
         redirect(site_url('lanueva/'));
     }
 }
@@ -63,6 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_notify'])) {
 
 $siker_feedback = (string) (flash('landing_ok_feedback') ?? '');
 $siker_notify = (string) (flash('landing_ok_notify') ?? '');
+
+$naptarUrl = rtrim(site_url(EVENTS_HOME_PATH . '/'), '/') . '/';
 
 $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 if (!$https) {
@@ -104,8 +106,8 @@ $ogImageDims = ($ogImageFs !== '' && is_readable($ogImageFs)) ? @getimagesize($o
 $ogImageW = is_array($ogImageDims) ? (int) $ogImageDims[0] : 0;
 $ogImageH = is_array($ogImageDims) ? (int) $ogImageDims[1] : 0;
 
-$ogTitle = SITE_NAME . ' – La nueva';
-$ogDescription = 'Megújul a Latinfo.hu! Mondd el, milyen legyen a weboldalunk – segíts te is alakítani!';
+$ogTitle = SITE_NAME . ' – Megújult naptár';
+$ogDescription = 'Megújult a Latinfo.hu naptár! Nézd meg, és írd meg, hogyan tetszik – segíts finomhangolni!';
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -134,7 +136,7 @@ $ogDescription = 'Megújul a Latinfo.hu! Mondd el, milyen legyen a weboldalunk �
     <meta property="og:image:width" content="<?= (int) $ogImageW ?>">
     <meta property="og:image:height" content="<?= (int) $ogImageH ?>">
     <?php endif; ?>
-    <meta property="og:image:alt" content="<?= h(SITE_NAME) ?> – La nueva, visszajelzés">
+    <meta property="og:image:alt" content="<?= h(SITE_NAME) ?> – megújult naptár, visszajelzés">
     <?php endif; ?>
     <meta property="og:locale" content="hu_HU">
 
@@ -170,52 +172,53 @@ $ogDescription = 'Megújul a Latinfo.hu! Mondd el, milyen legyen a weboldalunk �
     <main class="ln-container">
         <section class="ln-hero">
             <h1 class="ln-hero-title">
-                <span class="ln-title-word-1">Megújul</span>
-                <span class="ln-title-word-2">a Latinfo.hu!</span>
+                <span class="ln-title-word-1">Megújult</span>
+                <span class="ln-title-word-2">a naptár!</span>
             </h1>
-            <p class="ln-hero-subtitle">Mondd el, milyen legyen a weboldalunk – segíts te is alakítani!</p>
+            <p class="ln-hero-subtitle">Friss kinézet, könnyebb böngészés – nézd meg a Latinfo.hu eseménynaptárát, és írd meg, hogyan tetszik.</p>
+            <p class="ln-hero-cta">
+                <a href="<?= h($naptarUrl) ?>" class="ln-btn ln-btn-primary ln-btn-hero">Megnézem a naptárt</a>
+            </p>
         </section>
 
-        <div class="ln-cards">
-            <article class="ln-card ln-card-feedback">
-                <div class="ln-card-icon">🎺</div>
-                <h2 class="ln-card-title">Visszajelzés</h2>
-                <p class="ln-card-desc">Mit látnál szívesen, és mit hagynál el?</p>
+        <article class="ln-card ln-card-feedback ln-card-main">
+            <div class="ln-card-icon">📅</div>
+            <h2 class="ln-card-title">Hogyan tetszik?</h2>
+            <p class="ln-card-desc">Próbáld ki az új naptárt, majd írd meg a tapasztalataidat – mi működik jól, és min javítanál?</p>
 
-                <?php if ($siker_feedback !== ''): ?>
-                    <div class="ln-toast ln-toast-success" role="status"><?= h($siker_feedback) ?></div>
-                <?php endif; ?>
-                <?php if ($hiba_feedback): ?>
-                    <div class="ln-toast ln-toast-error" role="alert"><?= h($hiba_feedback) ?></div>
-                <?php endif; ?>
+            <?php if ($siker_feedback !== ''): ?>
+                <div class="ln-toast ln-toast-success" role="status"><?= h($siker_feedback) ?></div>
+            <?php endif; ?>
+            <?php if ($hiba_feedback): ?>
+                <div class="ln-toast ln-toast-error" role="alert"><?= h($hiba_feedback) ?></div>
+            <?php endif; ?>
 
-                <form method="post" action="" novalidate class="ln-form">
-                    <input type="hidden" name="landing_feedback" value="1">
-                    <textarea name="ilyen_legyen" placeholder="Funkciók, kinézet, ötletek…" rows="4"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
-                    <textarea name="ilyen_ne_legyen" placeholder="Ami zavar vagy felesleges…" rows="4"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
-                    <button type="submit" class="ln-btn ln-btn-primary">Elküldöm</button>
-                </form>
-            </article>
+            <form method="post" action="" novalidate class="ln-form">
+                <input type="hidden" name="landing_feedback" value="1">
+                <textarea name="ilyen_legyen" placeholder="Mi tetszik? Pl. kinézet, szűrés, mobilnézet…" rows="4"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
+                <textarea name="ilyen_ne_legyen" placeholder="Mit javítanál? Pl. hiányzó funkció, zavaró részlet…" rows="4"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
+                <button type="submit" class="ln-btn ln-btn-primary">Elküldöm a visszajelzést</button>
+            </form>
+        </article>
 
-            <article class="ln-card ln-card-notify">
-                <div class="ln-card-icon">✉</div>
-                <h2 class="ln-card-title">Értesítés induláskor</h2>
-                <p class="ln-card-desc">Add meg az e-mail címed, és értesítünk a latinfo.hu új szolgáltatásairól, fejlesztéseiről.</p>
+        <article class="ln-card ln-card-notify ln-card-notify-below">
+            <div class="ln-card-icon">✉</div>
+            <h2 class="ln-card-title">Értesítés induláskor</h2>
+            <p class="ln-card-desc">Ha szeretnéd, értesítünk e-mailben a Latinfo.hu további újdonságairól és fejlesztéseiről.</p>
 
-                <?php if ($siker_notify !== ''): ?>
-                    <div class="ln-toast ln-toast-success" role="status"><?= h($siker_notify) ?></div>
-                <?php endif; ?>
-                <?php if ($hiba_notify): ?>
-                    <div class="ln-toast ln-toast-error" role="alert"><?= h($hiba_notify) ?></div>
-                <?php endif; ?>
+            <?php if ($siker_notify !== ''): ?>
+                <div class="ln-toast ln-toast-success" role="status"><?= h($siker_notify) ?></div>
+            <?php endif; ?>
+            <?php if ($hiba_notify): ?>
+                <div class="ln-toast ln-toast-error" role="alert"><?= h($hiba_notify) ?></div>
+            <?php endif; ?>
 
-                <form method="post" action="" novalidate class="ln-form">
-                    <input type="hidden" name="landing_notify" value="1">
-                    <input type="email" name="notify_email" placeholder="pelda@email.hu" value="<?= h($_POST['notify_email'] ?? '') ?>">
-                    <button type="submit" class="ln-btn ln-btn-secondary">Feliratkozom</button>
-                </form>
-            </article>
-        </div>
+            <form method="post" action="" novalidate class="ln-form ln-form-inline-notify">
+                <input type="hidden" name="landing_notify" value="1">
+                <input type="email" name="notify_email" placeholder="pelda@email.hu" value="<?= h($_POST['notify_email'] ?? '') ?>">
+                <button type="submit" class="ln-btn ln-btn-secondary">Feliratkozom</button>
+            </form>
+        </article>
 
         <section class="ln-hero-image-section">
             <img src="<?= h(site_url('lanueva/assets/images/og/lanueva-fb2.png')) ?>" alt="Salsa – Latin energia" loading="lazy">

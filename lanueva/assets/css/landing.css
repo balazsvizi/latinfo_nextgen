@@ -151,9 +151,58 @@ body.ln-modern {
 .ln-hero-subtitle {
     font-size: clamp(1rem, 3vw, 1.25rem);
     color: var(--ln-text-dim);
-    max-width: 32rem;
+    max-width: 36rem;
     margin: 0 auto;
     font-weight: 500;
+}
+
+.ln-hero-cta {
+    margin-top: 1.75rem;
+}
+
+.ln-btn-hero {
+    display: inline-block;
+    text-decoration: none;
+}
+
+.ln-card-main {
+    margin-bottom: 1.5rem;
+}
+
+.ln-card-notify-below {
+    margin-top: 0.5rem;
+    padding: 1.5rem 2rem;
+}
+
+.ln-card-notify-below .ln-card-icon {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.ln-card-notify-below .ln-card-title {
+    font-size: 1.15rem;
+}
+
+.ln-card-notify-below .ln-card-desc {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.ln-form-inline-notify {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+.ln-form-inline-notify input[type="email"] {
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.ln-form-inline-notify .ln-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .ln-cards {
@@ -365,11 +414,15 @@ body.ln-modern {
 }
 
 @media (max-width: 640px) {
-    .ln-cards {
-        grid-template-columns: 1fr;
-    }
-
     .ln-hero-title {
         font-size: 2rem;
+    }
+
+    .ln-form-inline-notify {
+        flex-direction: column;
+    }
+
+    .ln-form-inline-notify .ln-btn {
+        width: 100%;
     }
 }
