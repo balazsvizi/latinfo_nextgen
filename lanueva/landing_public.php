@@ -25,7 +25,6 @@ function landing_client_meta(): array {
 }
 
 $hiba_feedback = '';
-$hiba_notify = '';
 
 ensure_landingpage_table($db);
 
@@ -48,21 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_notify'])) {
-    $email = trim($_POST['notify_email'] ?? '');
-    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $hiba_notify = 'Adj meg egy érvényes e-mail címet az értesítéshez.';
-    } else {
-        [$ip, $ua] = landing_client_meta();
-        $stmt = $db->prepare('INSERT INTO nextgen_landing_feedback (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (NULL, NULL, ?, ?, ?)');
-        $stmt->execute([$email, $ip, $ua]);
-        flash('landing_ok_notify', 'Köszönjük! Az e-mail címed elmentve – induláskor értesítünk.');
-        redirect(site_url('lanueva/'));
-    }
-}
-
 $siker_feedback = (string) (flash('landing_ok_feedback') ?? '');
-$siker_notify = (string) (flash('landing_ok_notify') ?? '');
 
 $naptarUrl = rtrim(site_url(EVENTS_HOME_PATH . '/'), '/') . '/';
 
@@ -198,25 +183,6 @@ $ogDescription = 'Megújult a Latinfo.hu naptár! Nézd meg, és írd meg, hogya
                 <textarea name="ilyen_legyen" placeholder="Mi tetszik? Pl. kinézet, szűrés, mobilnézet…" rows="4"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
                 <textarea name="ilyen_ne_legyen" placeholder="Mit javítanál? Pl. hiányzó funkció, zavaró részlet…" rows="4"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
                 <button type="submit" class="ln-btn ln-btn-primary">Elküldöm a visszajelzést</button>
-            </form>
-        </article>
-
-        <article class="ln-card ln-card-notify ln-card-notify-below">
-            <div class="ln-card-icon">✉</div>
-            <h2 class="ln-card-title">Értesítés induláskor</h2>
-            <p class="ln-card-desc">Ha szeretnéd, értesítünk e-mailben a Latinfo.hu további újdonságairól és fejlesztéseiről.</p>
-
-            <?php if ($siker_notify !== ''): ?>
-                <div class="ln-toast ln-toast-success" role="status"><?= h($siker_notify) ?></div>
-            <?php endif; ?>
-            <?php if ($hiba_notify): ?>
-                <div class="ln-toast ln-toast-error" role="alert"><?= h($hiba_notify) ?></div>
-            <?php endif; ?>
-
-            <form method="post" action="" novalidate class="ln-form ln-form-inline-notify">
-                <input type="hidden" name="landing_notify" value="1">
-                <input type="email" name="notify_email" placeholder="pelda@email.hu" value="<?= h($_POST['notify_email'] ?? '') ?>">
-                <button type="submit" class="ln-btn ln-btn-secondary">Feliratkozom</button>
             </form>
         </article>
 

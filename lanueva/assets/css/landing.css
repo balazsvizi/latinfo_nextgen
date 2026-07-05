@@ -169,42 +169,6 @@ body.ln-modern {
     margin-bottom: 1.5rem;
 }
 
-.ln-card-notify-below {
-    margin-top: 0.5rem;
-    padding: 1.5rem 2rem;
-}
-
-.ln-card-notify-below .ln-card-icon {
-    font-size: 1.75rem;
-    margin-bottom: 0.75rem;
-}
-
-.ln-card-notify-below .ln-card-title {
-    font-size: 1.15rem;
-}
-
-.ln-card-notify-below .ln-card-desc {
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.ln-form-inline-notify {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 0.75rem;
-}
-
-.ln-form-inline-notify input[type="email"] {
-    flex: 1 1 14rem;
-    min-width: 0;
-}
-
-.ln-form-inline-notify .ln-btn {
-    flex: 0 0 auto;
-    white-space: nowrap;
-}
-
 .ln-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -271,10 +235,6 @@ body.ln-modern {
     border-color: rgba(255, 22, 84, 0.35);
 }
 
-.ln-card-notify {
-    border-color: rgba(0, 217, 255, 0.35);
-}
-
 .ln-card-icon {
     font-size: 2.5rem;
     margin-bottom: 1rem;
@@ -285,11 +245,6 @@ body.ln-modern {
 .ln-card-feedback .ln-card-icon {
     color: var(--ln-pink);
     text-shadow: 0 0 15px rgba(255, 22, 84, 0.6);
-}
-
-.ln-card-notify .ln-card-icon {
-    color: var(--ln-cyan);
-    text-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
 }
 
 @keyframes bounce {
@@ -337,8 +292,7 @@ body.ln-modern {
     gap: 1rem;
 }
 
-.ln-form textarea,
-.ln-form input[type="email"] {
+.ln-form textarea {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
@@ -349,13 +303,11 @@ body.ln-modern {
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-.ln-form textarea::placeholder,
-.ln-form input::placeholder {
+.ln-form textarea::placeholder {
     color: rgba(255, 255, 255, 0.4);
 }
 
-.ln-form textarea:focus,
-.ln-form input:focus {
+.ln-form textarea:focus {
     outline: none;
     border-color: var(--ln-cyan);
     box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
@@ -416,13 +368,5 @@ body.ln-modern {
 @media (max-width: 640px) {
     .ln-hero-title {
         font-size: 2rem;
-    }
-
-    .ln-form-inline-notify {
-        flex-direction: column;
-    }
-
-    .ln-form-inline-notify .ln-btn {
-        width: 100%;
     }
 }
