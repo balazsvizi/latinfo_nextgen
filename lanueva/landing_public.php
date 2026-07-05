@@ -67,6 +67,7 @@ $landingPublicPath = site_url('lanueva/');
 $ogCanonical = $publicOrigin !== '' ? ($publicOrigin . $landingPublicPath) : '';
 
 $ogCandidates = [
+    __DIR__ . '/assets/images/og/lanueva-naptar.png',
     __DIR__ . '/assets/images/og/lanueva-fb2.png',
     __DIR__ . '/assets/images/og/lanueva-fb.png',
     __DIR__ . '/assets/images/og/nextgen-share.png',
@@ -93,6 +94,8 @@ $ogImageH = is_array($ogImageDims) ? (int) $ogImageDims[1] : 0;
 
 $ogTitle = SITE_NAME . ' – Megújult naptár';
 $ogDescription = 'Megújult a Latinfo.hu naptár! Nézd meg, és írd meg, hogyan tetszik – segíts finomhangolni!';
+
+$heroImagePath = site_url('lanueva/assets/images/og/lanueva-naptar.png');
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -187,7 +190,7 @@ $ogDescription = 'Megújult a Latinfo.hu naptár! Nézd meg, és írd meg, hogya
         </article>
 
         <section class="ln-hero-image-section">
-            <img src="<?= h(site_url('lanueva/assets/images/og/lanueva-fb2.png')) ?>" alt="Salsa – Latin energia" loading="lazy">
+            <img src="<?= h($heroImagePath) ?>" alt="Megújult a Latinfo.hu naptár – neon naptár illusztráció" loading="lazy" width="1536" height="1024">
         </section>
     </main>
 
