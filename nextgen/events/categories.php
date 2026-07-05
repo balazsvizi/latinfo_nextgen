@@ -287,19 +287,80 @@ $listLimitValue = $listLimitParsed['value'];
 $listTotalInDb = events_admin_table_total_count($db, 'events_categories');
 $poolFrom = events_admin_table_pool_from_sql('events_categories', 'c', $list_limit);
 
-if ($categoriesNameEnOk) {
-    $rows = $db->query('SELECT c.`id`, c.`name`, c.`name_en`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified` FROM ' . $poolFrom . ' ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC')->fetchAll(PDO::FETCH_ASSOC);
+$allowedOrder = ['id', 'name', 'name_en', 'parent', 'color', 'sort_order', 'events', 'modified'];
+if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
+    $order = (string) $_GET['order'];
+    $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
 } else {
-    $rows = $db->query('SELECT c.`id`, c.`name`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified` FROM ' . $poolFrom . ' ORDER BY c.`sort_order` ASC, c.`name` ASC, c.`id` ASC')->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($rows as &$r) {
-        $r['name_en'] = '';
-    }
-    unset($r);
+    $order = 'sort_order';
+    $dir_param = 'asc';
 }
-$flat = events_categories_flatten_tree($rows);
-$listDisplayedCount = count($flat);
+
+$showSwapTool = isset($_GET['tool']) && (string) $_GET['tool'] === 'swap';
+$swapFromPreset = (int) ($_GET['from'] ?? 0);
+$editId = (int) ($_GET['edit'] ?? 0);
+
 $eventCountMap = events_categories_event_count_map($db);
 $childCountMap = events_categories_child_count_map($db);
+
+$dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
+$orderSql = match ($order) {
+    'id' => "c.`id` $dirSql",
+    'name' => "c.`name` $dirSql, c.`id` ASC",
+    'name_en' => "c.`name_en` IS NULL, c.`name_en` $dirSql, c.`name` ASC, c.`id` ASC",
+    'parent' => "p.`name` IS NULL, p.`name` $dirSql, c.`name` ASC, c.`id` ASC",
+    'color' => "c.`color` $dirSql, c.`name` ASC, c.`id` ASC",
+    'sort_order' => "c.`sort_order` $dirSql, c.`name` ASC, c.`id` ASC",
+    'modified' => "c.`modified` $dirSql, c.`id` ASC",
+    default => 'c.`sort_order` ASC, c.`name` ASC, c.`id` ASC',
+};
+
+$listSelect = $categoriesNameEnOk
+    ? 'c.`id`, c.`name`, c.`name_en`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified`, p.`name` AS `parent_name`'
+    : 'c.`id`, c.`name`, c.`parent_id`, c.`color`, c.`sort_order`, c.`modified`, p.`name` AS `parent_name`';
+
+$listSql = "
+    SELECT {$listSelect}
+    FROM {$poolFrom}
+    LEFT JOIN `events_categories` p ON p.`id` = c.`parent_id`
+    ORDER BY {$orderSql}
+";
+$listRows = $db->query($listSql)->fetchAll(PDO::FETCH_ASSOC);
+if (!$categoriesNameEnOk) {
+    foreach ($listRows as &$lr) {
+        $lr['name_en'] = '';
+    }
+    unset($lr);
+}
+
+if ($order === 'events') {
+    usort($listRows, static function (array $a, array $b) use ($eventCountMap, $dir_param): int {
+        $ca = $eventCountMap[(int) ($a['id'] ?? 0)] ?? 0;
+        $cb = $eventCountMap[(int) ($b['id'] ?? 0)] ?? 0;
+        if ($ca !== $cb) {
+            return $dir_param === 'asc' ? $ca <=> $cb : $cb <=> $ca;
+        }
+
+        return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+    });
+}
+
+$listDisplayedCount = count($listRows);
+
+$get_params = events_admin_list_limit_merge_get_params([], $listLimitValue);
+if ($showSwapTool) {
+    $get_params['tool'] = 'swap';
+    if ($swapFromPreset > 0) {
+        $get_params['from'] = (string) $swapFromPreset;
+    }
+}
+if ($editId > 0) {
+    $get_params['edit'] = (string) $editId;
+}
+if ($order !== 'sort_order' || $dir_param !== 'asc') {
+    $get_params['order'] = $order;
+    $get_params['dir'] = $dir_param;
+}
 
 if ($categoriesNameEnOk) {
     $allCategoryRows = $db->query('
@@ -320,10 +381,6 @@ if ($categoriesNameEnOk) {
 }
 $flatAll = events_categories_flatten_tree($allCategoryRows);
 
-$showSwapTool = isset($_GET['tool']) && (string) $_GET['tool'] === 'swap';
-$swapFromPreset = (int) ($_GET['from'] ?? 0);
-
-$editId = (int) ($_GET['edit'] ?? 0);
 $editRow = null;
 if ($editId > 0) {
     if ($categoriesNameEnOk) {
@@ -442,36 +499,45 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <table class="sortable-table events-admin-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Név (HU)</th>
-                            <th>Név (EN)</th>
-                            <th>Szín</th>
-                            <th>Sorrend</th>
-                            <th>Események</th>
-                            <th>Módosítva</th>
+                            <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Név (HU)', 'name', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Név (EN)', 'name_en', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Szülő', 'parent', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Szín', 'color', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Sorrend', 'sort_order', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Események', 'events', $order, $dir_param, $get_params) ?></th>
+                            <th><?= sort_th('Módosítva', 'modified', $order, $dir_param, $get_params) ?></th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                    <?php if ($flat === []): ?>
+                    <?php if ($listRows === []): ?>
                         <tr>
-                            <td colspan="8">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
+                            <td colspan="9">Még nincs kategória. Hozz létre egyet a jobb oldalon.</td>
                         </tr>
                     <?php else: ?>
-                        <?php foreach ($flat as $r): ?>
+                        <?php foreach ($listRows as $r): ?>
                             <?php
                             $rid = (int) $r['id'];
-                            $depth = (int) ($r['_depth'] ?? 0);
-                            $indent = str_repeat('— ', max(0, $depth));
                             $color = (string) ($r['color'] ?? '#6D8F63');
                             $nameEnCell = trim((string) ($r['name_en'] ?? ''));
                             $rowEventCount = $eventCountMap[$rid] ?? 0;
                             $isEditing = $form['id'] === $rid;
+                            $parentId = isset($r['parent_id']) && $r['parent_id'] !== null ? (int) $r['parent_id'] : 0;
+                            $parentName = trim((string) ($r['parent_name'] ?? ''));
                             ?>
                             <tr<?= $isEditing ? ' class="is-selected"' : '' ?>>
                                 <td><?= $rid ?></td>
-                                <td><?= h($indent . (string) $r['name']) ?></td>
+                                <td><?= h((string) $r['name']) ?></td>
                                 <td><?= $nameEnCell !== '' ? h($nameEnCell) : '—' ?></td>
+                                <td>
+                                    <?php if ($parentId > 0 && $parentName !== ''): ?>
+                                        <a href="<?= h(events_url('categories.php?edit=' . $parentId)) ?>"><?= h($parentName) ?></a>
+                                        <span class="events-categories-parent-id">#<?= $parentId ?></span>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <span class="events-category-color-chip">
                                         <span class="events-category-color-chip__dot" style="background: <?= h($color) ?>;"></span>

@@ -2698,6 +2698,11 @@ dialog.eventpics-modal::backdrop {
 .events-categories-migrate-form .toolbar {
     margin-top: 0.5rem;
 }
+.events-categories-parent-id {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
 .events-category-color-chip {
     display: inline-flex;
     align-items: center;
