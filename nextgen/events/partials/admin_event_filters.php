@@ -11,15 +11,15 @@ declare(strict_types=1);
     data-idx-to="<?= (int) $filters['idxTo'] ?>">
     <div class="events-filters-grid">
         <div class="events-filter-field">
-            <label class="events-filter-label" for="ev-f-organizer">Szervező</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'organizer')) ?>" for="ev-f-organizer">Szervező</label>
             <input class="events-filter-input" type="text" name="f_organizer" id="ev-f-organizer" value="<?= h($filters['f_organizer']) ?>" placeholder="Részlet a névből…" autocomplete="off">
         </div>
         <div class="events-filter-field">
-            <label class="events-filter-label" for="ev-f-venue">Helyszín</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'venue')) ?>" for="ev-f-venue">Helyszín</label>
             <input class="events-filter-input" type="text" name="f_venue" id="ev-f-venue" value="<?= h($filters['f_venue']) ?>" placeholder="Név, város vagy cím…" autocomplete="off">
         </div>
         <div class="events-filter-field events-filter-field--status">
-            <label class="events-filter-label" for="ev-f-category">Kategória</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'category')) ?>" for="ev-f-category">Kategória</label>
             <div class="events-filter-select-wrap">
                 <select class="events-filter-select" name="f_category" id="ev-f-category" title="Kategória szűrő">
                     <option value="">Összes kategória</option>
@@ -31,7 +31,7 @@ declare(strict_types=1);
         </div>
         <?php if ($filters['tagsAvailable']): ?>
         <div class="events-filter-field events-filter-field--status">
-            <label class="events-filter-label" for="ev-f-tag">Címke</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'tag')) ?>" for="ev-f-tag">Címke</label>
             <div class="events-filter-select-wrap">
                 <select class="events-filter-select" name="f_tag" id="ev-f-tag" title="Címke szűrő">
                     <option value="">Összes címke</option>
@@ -44,7 +44,7 @@ declare(strict_types=1);
         <?php endif; ?>
         <?php if ($filters['djsAvailable']): ?>
         <div class="events-filter-field events-filter-field--status">
-            <label class="events-filter-label" for="ev-f-dj">DJ</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'dj')) ?>" for="ev-f-dj">DJ</label>
             <div class="events-filter-select-wrap">
                 <select class="events-filter-select" name="f_dj" id="ev-f-dj" title="DJ szűrő">
                     <option value="">Összes DJ</option>
@@ -57,7 +57,7 @@ declare(strict_types=1);
         <?php endif; ?>
         <?php if ($filters['stylesAvailable']): ?>
         <div class="events-filter-field events-filter-field--status">
-            <label class="events-filter-label" for="ev-f-main-style">Fő stílus</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'main_style')) ?>" for="ev-f-main-style">Fő stílus</label>
             <div class="events-filter-select-wrap">
                 <select class="events-filter-select" name="f_main_style" id="ev-f-main-style" title="Fő stílus szűrő">
                     <option value="">Összes fő stílus</option>
@@ -68,7 +68,7 @@ declare(strict_types=1);
             </div>
         </div>
         <div class="events-filter-field events-filter-field--status">
-            <label class="events-filter-label" for="ev-f-supplementary-style">Kiegészítő stílus</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'supplementary_style')) ?>" for="ev-f-supplementary-style">Kiegészítő stílus</label>
             <div class="events-filter-select-wrap">
                 <select class="events-filter-select" name="f_supplementary_style" id="ev-f-supplementary-style" title="Kiegészítő stílus szűrő">
                     <option value="">Összes kiegészítő stílus</option>
@@ -80,19 +80,19 @@ declare(strict_types=1);
         </div>
         <?php endif; ?>
         <div class="events-filter-field">
-            <label class="events-filter-label" for="ev-f-name">Esemény neve</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'name')) ?>" for="ev-f-name">Esemény neve</label>
             <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($filters['f_name']) ?>" placeholder="Keresés a címben…" autocomplete="off">
         </div>
         <div class="events-filter-field">
-            <label class="events-filter-label" for="ev-f-id">ID</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'id')) ?>" for="ev-f-id">ID</label>
             <input class="events-filter-input" type="text" name="f_id" id="ev-f-id" value="<?= h($filters['f_id']) ?>" placeholder="Pl. 100001" inputmode="numeric" autocomplete="off">
         </div>
         <div class="events-filter-field">
-            <label class="events-filter-label" for="ev-f-views">Min. oldalmegtekintés</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'views_min')) ?>" for="ev-f-views">Min. oldalmegtekintés</label>
             <input class="events-filter-input" type="number" name="f_views_min" id="ev-f-views" value="<?= h($filters['f_views_min']) ?>" placeholder="0" min="0" step="1">
         </div>
         <div class="events-filter-field events-filter-field--status">
-            <label class="events-filter-label" for="ev-f-status">Státusz</label>
+            <label class="<?= h(events_filter_label_attr_classes($filters, 'status')) ?>" for="ev-f-status">Státusz</label>
             <div class="events-filter-select-wrap">
                 <select class="events-filter-select events-filter-status" name="status" id="ev-f-status" title="Státusz szűrő">
                     <option value="">Összes státusz</option>
@@ -114,11 +114,11 @@ declare(strict_types=1);
             </div>
             <div class="events-date-range-readouts">
                 <div class="events-date-readout">
-                    <span class="events-date-readout-label" id="ev-lbl-from">Ettől</span>
+                    <span class="<?= h(events_filter_label_attr_classes($filters, 'start_from')) ?>" id="ev-lbl-from">Ettől</span>
                     <input class="events-filter-input events-filter-input--date" type="date" name="f_start_from" id="ev-f-start-from" value="<?= h($filters['f_start_from']) ?>">
                 </div>
                 <div class="events-date-readout">
-                    <span class="events-date-readout-label" id="ev-lbl-to">Eddig</span>
+                    <span class="<?= h(events_filter_label_attr_classes($filters, 'start_to')) ?>" id="ev-lbl-to">Eddig</span>
                     <input class="events-filter-input events-filter-input--date" name="f_start_to" id="ev-f-start-to" type="date" value="<?= h($filters['f_start_to']) ?>">
                 </div>
             </div>

@@ -440,6 +440,37 @@ function events_admin_filters_from_request(PDO $db): array {
     ];
 }
 
+/**
+ * Szűrőmező címke osztályai – aktív értéknél piros jelvény (mint a nyilvános „aktív” badge).
+ *
+ * @param array<string, mixed> $filters
+ */
+function events_filter_label_attr_classes(array $filters, string $key): string
+{
+    $active = match ($key) {
+        'organizer' => trim((string) ($filters['f_organizer'] ?? '')) !== '',
+        'venue' => trim((string) ($filters['f_venue'] ?? '')) !== '',
+        'city' => trim((string) ($filters['f_city'] ?? '')) !== '',
+        'name' => trim((string) ($filters['f_name'] ?? '')) !== '',
+        'id' => trim((string) ($filters['f_id'] ?? '')) !== '',
+        'views_min' => trim((string) ($filters['f_views_min'] ?? '')) !== '',
+        'status' => trim((string) ($filters['status'] ?? '')) !== '',
+        'category' => (int) ($filters['f_category_id'] ?? 0) > 0,
+        'tag' => (int) ($filters['f_tag_id'] ?? 0) > 0,
+        'dj' => (int) ($filters['f_dj_id'] ?? 0) > 0,
+        'main_style' => (int) ($filters['f_main_style_id'] ?? 0) > 0,
+        'supplementary_style' => (int) ($filters['f_supplementary_style_id'] ?? 0) > 0,
+        'start_from' => trim((string) ($filters['f_start_from'] ?? '')) !== '',
+        'start_to' => trim((string) ($filters['f_start_to'] ?? '')) !== '',
+        default => false,
+    };
+    $base = in_array($key, ['start_from', 'start_to'], true)
+        ? 'events-date-readout-label'
+        : 'events-filter-label';
+
+    return $base . ($active ? ' events-filter-label--active' : '');
+}
+
 function events_admin_format_datum_cell(array $r): string {
     $allday = !empty($r['event_allday']);
     $startRaw = $r['event_start'] ?? null;
