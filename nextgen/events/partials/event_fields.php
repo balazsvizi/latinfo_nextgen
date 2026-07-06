@@ -251,13 +251,15 @@ $eventFormActionsPlacement = 'sidebar';
 require __DIR__ . '/event_form_actions.php';
 ?>
 <div class="events-edit-sidebar-cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
-    <img
-        id="eventpics-summary-img"
-        class="events-edit-sidebar-cover__img"
-        src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
-        alt="Borító előnézet"
-        decoding="async"
-    >
+    <button type="button" class="events-edit-sidebar-cover__trigger" id="eventpics-summary-trigger" aria-label="Teljes kép megnyitása"<?= $coverPreview['src'] === '' ? ' disabled' : '' ?>>
+        <img
+            id="eventpics-summary-img"
+            class="events-edit-sidebar-cover__img"
+            src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
+            alt="Borító előnézet"
+            decoding="async"
+        >
+    </button>
     <span id="eventpics-summary-name" class="visually-hidden"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
     <span id="eventpics-summary-source" class="visually-hidden"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
 </div>
@@ -389,6 +391,19 @@ require __DIR__ . '/wp_token_field.php';
 </aside>
 </div>
 
+<dialog class="event-edit-cover-lightbox" id="event-edit-cover-lightbox" aria-label="Borítókép">
+    <button type="button" class="event-edit-cover-lightbox__close" id="event-edit-cover-lightbox-close" aria-label="Bezárás">×</button>
+    <div class="event-edit-cover-lightbox__stage">
+        <img
+            class="event-edit-cover-lightbox__img"
+            id="event-edit-cover-lightbox-img"
+            src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
+            alt="Borítókép"
+            decoding="async"
+        >
+    </div>
+</dialog>
+
 <dialog class="eventpics-modal" id="eventpics-modal" aria-labelledby="eventpics-modal-title">
     <div class="eventpics-modal__inner">
         <header class="eventpics-modal__header">
@@ -454,6 +469,10 @@ require __DIR__ . '/wp_token_field.php';
     var sumSource = document.getElementById('eventpics-summary-source');
     var sumEmpty = document.getElementById('eventpics-summary-empty');
     var urlInp = document.getElementById('event_featured_image_url');
+    var coverTrigger = document.getElementById('eventpics-summary-trigger');
+    var coverLightbox = document.getElementById('event-edit-cover-lightbox');
+    var coverLightboxImg = document.getElementById('event-edit-cover-lightbox-img');
+    var coverLightboxClose = document.getElementById('event-edit-cover-lightbox-close');
     if (!dialog || !root || !hidden || !grid || !btnUp || !btnClear || !fileInp || !drop || !btnOpen || !btnOk || !btnCancel) return;
 
     var pendingPick = (hidden.value || '').trim();
@@ -548,6 +567,11 @@ require __DIR__ . '/wp_token_field.php';
             sumImg.removeAttribute('src');
             sumName.textContent = '';
             if (sumSource) sumSource.textContent = '';
+            if (coverTrigger) coverTrigger.disabled = true;
+            if (coverLightboxImg) {
+                coverLightboxImg.removeAttribute('src');
+                coverLightboxImg.alt = 'Borítókép';
+            }
             return;
         }
         sumPreview.hidden = false;
@@ -555,6 +579,54 @@ require __DIR__ . '/wp_token_field.php';
         sumImg.src = src;
         sumName.textContent = nameText;
         if (sumSource) sumSource.textContent = urlTrim ? capUrl : capPic;
+        if (coverTrigger) coverTrigger.disabled = false;
+        if (coverLightboxImg) {
+            coverLightboxImg.src = src;
+            coverLightboxImg.alt = nameText || 'Borítókép';
+        }
+    }
+
+    function openCoverLightbox() {
+        if (!coverLightbox || !sumImg || !sumImg.getAttribute('src')) return;
+        if (coverLightboxImg && sumImg.src) {
+            coverLightboxImg.src = sumImg.src;
+            coverLightboxImg.alt = sumName ? (sumName.textContent || 'Borítókép') : 'Borítókép';
+        }
+        if (typeof coverLightbox.showModal === 'function') {
+            coverLightbox.showModal();
+        } else {
+            coverLightbox.setAttribute('open', 'open');
+        }
+        document.body.classList.add('event-edit-cover-lightbox-open');
+    }
+
+    function closeCoverLightbox() {
+        if (!coverLightbox) return;
+        if (typeof coverLightbox.close === 'function') {
+            coverLightbox.close();
+        } else {
+            coverLightbox.removeAttribute('open');
+        }
+        document.body.classList.remove('event-edit-cover-lightbox-open');
+    }
+
+    if (coverTrigger) {
+        coverTrigger.addEventListener('click', openCoverLightbox);
+    }
+    if (coverLightboxClose) {
+        coverLightboxClose.addEventListener('click', closeCoverLightbox);
+    }
+    if (coverLightbox) {
+        coverLightbox.addEventListener('click', function (e) {
+            if (e.target === coverLightbox) closeCoverLightbox();
+        });
+        coverLightbox.addEventListener('close', function () {
+            document.body.classList.remove('event-edit-cover-lightbox-open');
+        });
+        coverLightbox.addEventListener('cancel', function (e) {
+            e.preventDefault();
+            closeCoverLightbox();
+        });
     }
 
     function hasThumb(filename) {

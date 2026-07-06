@@ -3372,6 +3372,25 @@ dialog.eventpics-modal::backdrop {
     background: #fff;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
+.events-edit-sidebar-cover__trigger {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: zoom-in;
+    font: inherit;
+    color: inherit;
+}
+.events-edit-sidebar-cover__trigger:disabled {
+    cursor: default;
+}
+.events-edit-sidebar-cover__trigger:focus-visible {
+    outline: 2px solid var(--li-green, #6d8f63);
+    outline-offset: 2px;
+    border-radius: var(--radius-md);
+}
 .events-edit-sidebar-cover__img {
     display: block;
     width: 100%;
@@ -3379,9 +3398,68 @@ dialog.eventpics-modal::backdrop {
     max-height: 10rem;
     object-fit: cover;
     vertical-align: middle;
+    pointer-events: none;
 }
 .events-edit-sidebar-cover[hidden] {
     display: none !important;
+}
+.event-edit-cover-lightbox {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+.event-edit-cover-lightbox::backdrop {
+    background: rgba(15, 23, 15, 0.92);
+}
+.event-edit-cover-lightbox__close {
+    position: fixed;
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    z-index: 2;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+}
+.event-edit-cover-lightbox__close:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+.event-edit-cover-lightbox__close:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+.event-edit-cover-lightbox__stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100%;
+    padding: max(3rem, env(safe-area-inset-top, 0px) + 2rem) max(1rem, env(safe-area-inset-right, 0px)) max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+}
+.event-edit-cover-lightbox__img {
+    display: block;
+    max-width: min(96vw, 1200px);
+    max-height: min(92vh, 900px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+}
+body.event-edit-cover-lightbox-open {
+    overflow: hidden;
 }
 .events-edit-preview-action {
     flex-shrink: 0;
@@ -4444,6 +4522,19 @@ dialog.eventpics-modal::backdrop {
 }
 .th-right { text-align: right; }
 .th-center { text-align: center; }
+.th-num,
+.td-num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.events-cell-link {
+    font-weight: 600;
+    text-decoration: none;
+}
+.events-cell-link:hover {
+    text-decoration: underline;
+}
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 
