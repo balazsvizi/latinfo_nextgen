@@ -17,6 +17,21 @@ function events_public_resolve_home_view(string $raw): string
 }
 
 /**
+ * Térkép nézet alapértelmezett dátumtartománya: ma + következő 6 nap (7 nap összesen).
+ *
+ * @return array{from: string, to: string}
+ */
+function events_public_map_default_date_range(): array
+{
+    $today = new DateTimeImmutable('today');
+
+    return [
+        'from' => $today->format('Y-m-d'),
+        'to' => $today->modify('+6 days')->format('Y-m-d'),
+    ];
+}
+
+/**
  * Nyilvános esemény főoldal szűrők — admin mintájára, csak közzétett eseményekkel.
  *
  * @return array<string, mixed>
@@ -27,6 +42,19 @@ function events_public_filters_from_request(PDO $db): array {
 
     $savedGet = $_GET;
     unset($_GET['status'], $_GET['f_id'], $_GET['f_views_min']);
+
+    $mapUsesDefaultDates = false;
+    if (
+        $view === 'map'
+        && !array_key_exists('f_start_from', $savedGet)
+        && !array_key_exists('f_start_to', $savedGet)
+    ) {
+        $mapDefault = events_public_map_default_date_range();
+        $_GET['f_start_from'] = $mapDefault['from'];
+        $_GET['f_start_to'] = $mapDefault['to'];
+        $mapUsesDefaultDates = true;
+    }
+
     $filters = events_admin_filters_from_request($db);
     $_GET = $savedGet;
 
@@ -63,8 +91,12 @@ function events_public_filters_from_request(PDO $db): array {
         }
     } elseif ($view === 'map') {
         $getParams['view'] = 'map';
+        if ($mapUsesDefaultDates) {
+            unset($getParams['f_start_from'], $getParams['f_start_to']);
+        }
     }
     $filters['get_params'] = $getParams;
+    $filters['map_uses_default_dates'] = $mapUsesDefaultDates;
 
     return $filters;
 }
@@ -102,10 +134,10 @@ function events_public_filters_are_active(array $filters): bool {
     if ((int) ($filters['f_supplementary_style_id'] ?? 0) > 0) {
         return true;
     }
-    if (trim((string) ($filters['f_start_from'] ?? '')) !== '') {
+    if (trim((string) ($filters['f_start_from'] ?? '')) !== '' && empty($filters['map_uses_default_dates'])) {
         return true;
     }
-    if (trim((string) ($filters['f_start_to'] ?? '')) !== '') {
+    if (trim((string) ($filters['f_start_to'] ?? '')) !== '' && empty($filters['map_uses_default_dates'])) {
         return true;
     }
 
@@ -119,6 +151,13 @@ function events_public_filters_are_active(array $filters): bool {
  */
 function events_public_filter_label_attr_classes(array $filters, string $key): string
 {
+    if (
+        !empty($filters['map_uses_default_dates'])
+        && in_array($key, ['start_from', 'start_to'], true)
+    ) {
+        return 'events-filter-label';
+    }
+
     return events_filter_label_attr_classes($filters, $key);
 }
 

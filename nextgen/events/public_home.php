@@ -79,6 +79,9 @@ if ($view === 'list') {
     $filterFormHidden['view'] = 'map';
 }
 $filterClearParams = array_merge(['month' => $monthKey], $langNav);
+if ($view === 'map') {
+    $filterClearParams['view'] = 'map';
+}
 $filterClearUrl = events_public_home_url($lang, $filterClearParams);
 
 $icalFeedParams = array_merge($filters['get_params'], $langNav);
@@ -160,7 +163,10 @@ header('Content-Type: text/html; charset=UTF-8');
                     <?php endif; ?>
                 </summary>
                 <div class="home-public__filters-body">
-                    <?php require __DIR__ . '/partials/public_event_filters.php'; ?>
+                    <?php
+                    $hideMapDateFiltersInPanel = ($view === 'map');
+                    require __DIR__ . '/partials/public_event_filters.php';
+                    ?>
                 </div>
             </details>
 
@@ -201,6 +207,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     require __DIR__ . '/partials/public_home_view_switch.php';
                     ?>
                 </div>
+                <?php require __DIR__ . '/partials/public_map_date_filters.php'; ?>
                 <?php require __DIR__ . '/partials/public_home_events_map.php'; ?>
                 <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
             <?php else: ?>

@@ -4,6 +4,8 @@ declare(strict_types=1);
 /** @var string $filterFormAction */
 /** @var array<string, string> $filterFormHidden */
 /** @var array<string, string> $D nyelvi sztringek */
+/** @var bool $hideMapDateFiltersInPanel térkép nézetben a dátum a külön sávban van */
+$hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
 ?>
 <section class="events-filters-shell home-public__filters" aria-label="<?= h((string) ($D['filters_aria'] ?? 'Szűrők')) ?>"
     data-axis-min="<?= h($filters['axisMinStr']) ?>"
@@ -89,6 +91,7 @@ declare(strict_types=1);
             <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($filters['f_name']) ?>" placeholder="<?= h((string) ($D['filter_name_ph'] ?? '')) ?>" autocomplete="off">
         </div>
 
+        <?php if (!$hideMapDateFiltersInPanel): ?>
         <div class="events-filter-field events-filter-field--full">
             <div class="events-date-slider-row">
                 <div class="events-date-range-visual">
@@ -109,6 +112,7 @@ declare(strict_types=1);
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
     <?php foreach ($filterFormHidden as $hiddenName => $hiddenValue): ?>
         <input type="hidden" name="<?= h((string) $hiddenName) ?>" value="<?= h((string) $hiddenValue) ?>">
