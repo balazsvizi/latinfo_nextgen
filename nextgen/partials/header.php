@@ -125,6 +125,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-admin" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('admin/adminok/')) ?>" role="menuitem">Adminok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/log.php')) ?>" role="menuitem">Logok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/cron_log.php')) ?>" role="menuitem">Cron log</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/email/')) ?>" role="menuitem">E-mail</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/exporter/')) ?>" role="menuitem">Exporter</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/exporter/connections.php')) ?>" role="menuitem">Exporter kapcsolatok</a></li>

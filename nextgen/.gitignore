@@ -36,5 +36,5 @@ database/dumps/
 uploads/*
 !uploads/.gitkeep
 !uploads/szamlak/
-uploads/szamlak/*
-!uploads/szamlak/.gitkeep
+data/cron/*
+!data/cron/.gitkeep

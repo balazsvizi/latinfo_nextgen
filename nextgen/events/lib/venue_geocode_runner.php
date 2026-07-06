@@ -69,33 +69,3 @@ function events_venues_geocode_result_summary(array $result): string
 
     return implode(', ', $parts);
 }
-
-function events_cron_token_from_config(): string
-{
-    if (!function_exists('cfg_get')) {
-        return '';
-    }
-
-    $localConfig = [];
-    $localPath = dirname(__DIR__, 2) . '/core/config.local.php';
-    if (is_file($localPath)) {
-        $loaded = require $localPath;
-        if (is_array($loaded)) {
-            $localConfig = $loaded;
-        }
-    }
-
-    return trim((string) cfg_get('EVENTS_CRON_TOKEN', '', $localConfig));
-}
-
-function events_cron_http_token_valid(): bool
-{
-    $expected = events_cron_token_from_config();
-    if ($expected === '') {
-        return false;
-    }
-
-    $provided = trim((string) ($_GET['token'] ?? $_POST['token'] ?? ''));
-
-    return $provided !== '' && hash_equals($expected, $provided);
-}

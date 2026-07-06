@@ -4271,6 +4271,10 @@ dialog.eventpics-modal::backdrop {
     white-space: pre-wrap;
     word-break: break-all;
 }
+.cron-log-view {
+    max-height: 28rem;
+    overflow-y: auto;
+}
 .venues-td-map {
     text-align: center;
     width: 4rem;

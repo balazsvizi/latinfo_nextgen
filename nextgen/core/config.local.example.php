@@ -47,6 +47,8 @@ return [
     // GA4 mérőazonosító — nyilvános esemény oldalak (üres string = kikapcsolva)
     // 'GA4_MEASUREMENT_ID' => 'G-RCTY9NEJRJ',
 
-    // Cron HTTP hívások (pl. helyszín GPS geokódolás: nextgen/events/cron/venue_geocode.php?token=…)
-    // 'EVENTS_CRON_TOKEN' => 'állíts-be-erős-véletlen-token-t',
+    // Cron – központi ütemező (nextgen/cron/run.php)
+    // 'CRON_TOKEN' => 'állíts-be-erős-véletlen-token-min-32-karakter',
+    // 'CRON_ENABLED' => true,
+    // 'CRON_LOG_PATH' => '', // alap: nextgen/data/cron/cron.log
 ];

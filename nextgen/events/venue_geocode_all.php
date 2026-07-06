@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/venue_request.php';
 require_once __DIR__ . '/lib/venue_geocode_runner.php';
+require_once dirname(__DIR__) . '/lib/cron/CronAuth.php';
 requireLogin();
 
 const EVENTS_VENUES_GEOCODE_ALL_SESSION = 'events_venues_geocode_all_run';
@@ -12,8 +13,9 @@ const EVENTS_VENUES_GEOCODE_BATCH_SIZE = EVENTS_VENUE_GEOCODE_DEFAULT_BATCH;
 
 $db = getDb();
 $pendingTotal = events_venues_geocode_candidates_count($db);
-$cronTokenConfigured = events_cron_token_from_config() !== '';
-$cronUrl = events_url('cron/venue_geocode.php');
+$cronTokenConfigured = cron_token_from_config() !== '';
+$cronUrl = nextgen_url('cron/run.php');
+$cronLogUrl = nextgen_url('admin/cron_log.php');
 
 /**
  * @return array{ok: int, fail: int, failed_ids: list<int>}|null
@@ -155,20 +157,21 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <hr class="venues-geocode-run__sep">
 
     <h3 class="venues-geocode-run__subtitle">Cron / CLI (ütemezett futtatás)</h3>
-    <p class="help">Egy cron hívás alapból <strong><?= (int) EVENTS_VENUES_GEOCODE_BATCH_SIZE ?> helyszínt</strong> dolgoz fel. Ismétlődő cronnal végigmegy a teljes populáción.</p>
+    <p class="help">Központi cron futtató: egy hívás alapból <strong><?= (int) EVENTS_VENUES_GEOCODE_BATCH_SIZE ?> helyszínt</strong> dolgoz fel (5 percenként esedékes). Ismétlődő system cronnal végigmegy a teljes populáción.</p>
 
-    <pre class="venues-geocode-run__code">php nextgen/events/cron/venue_geocode.php</pre>
+    <pre class="venues-geocode-run__code">php nextgen/cron/run.php --task=venue_geocode --force</pre>
     <p class="help">Teljes populáció egy CLI futásban (12-es batch-ekben):</p>
-    <pre class="venues-geocode-run__code">php nextgen/events/cron/venue_geocode.php --all</pre>
+    <pre class="venues-geocode-run__code">php nextgen/cron/run.php --task=venue_geocode --force --all</pre>
 
     <?php if ($cronTokenConfigured): ?>
-        <p class="help">HTTP cron példa (token a <code>config.local.php</code> <code>EVENTS_CRON_TOKEN</code> értéke):</p>
-        <pre class="venues-geocode-run__code">curl -sf "<?= h($cronUrl) ?>?token=…"</pre>
+        <p class="help">HTTP cron példa (token a <code>config.local.php</code> <code>CRON_TOKEN</code> értéke):</p>
+        <pre class="venues-geocode-run__code">curl -sf "<?= h($cronUrl) ?>?token=…&amp;task=venue_geocode&amp;force=1"</pre>
     <?php else: ?>
-        <p class="help muted">HTTP cronhoz állíts be <code>EVENTS_CRON_TOKEN</code> értéket a <code>config.local.php</code>-ben (min. 32 karakter ajánlott).</p>
+        <p class="help muted">HTTP cronhoz állíts be <code>CRON_TOKEN</code> értéket a <code>config.local.php</code>-ben (min. 32 karakter ajánlott).</p>
     <?php endif; ?>
 
-    <p class="help">Példa crontab (5 percenként 12 helyszín):</p>
-    <pre class="venues-geocode-run__code">*/5 * * * * cd /path/to/Alatinfo &amp;&amp; php nextgen/events/cron/venue_geocode.php >> logs/venue_geocode.log 2>&1</pre>
+    <p class="help">Példa crontab (percenként ellenőr, a feladat 5 percenként fut):</p>
+    <pre class="venues-geocode-run__code">* * * * * cd /path/to/Alatinfo &amp;&amp; php nextgen/cron/run.php >> nextgen/data/cron/runner.out.log 2>&1</pre>
+    <p class="help">Futás napló: <a href="<?= h($cronLogUrl) ?>">Admin → Cron log</a> (<code>nextgen/data/cron/cron.log</code>)</p>
 </div>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
