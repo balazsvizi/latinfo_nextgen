@@ -2552,6 +2552,27 @@ body.event-public-page--home .event-public__hero-inner {
     margin-bottom: 0.4rem;
 }
 
+.home-public .events-filter-label--active,
+.home-public .events-date-readout-label.events-filter-label--active {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fff;
+    background: #dc2626;
+    border: 1px solid #b91c1c;
+    border-radius: 999px;
+    margin-bottom: 0.4rem;
+}
+
+.home-public .events-date-readout-label.events-filter-label--active {
+    margin-bottom: 0.35rem;
+}
+
 .home-public .events-filter-input,
 .home-public .events-filter-select {
     width: 100%;
