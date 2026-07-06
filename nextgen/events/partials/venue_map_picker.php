@@ -6,17 +6,7 @@ declare(strict_types=1);
 <dialog class="events-venue-map-dialog" id="events-venue-map-dialog">
     <div class="events-venue-map-dialog__head">
         <h3 class="events-venue-map-dialog__title">Helyszín a térképen</h3>
-        <p class="events-venue-map-dialog__lead">A <strong>Javaslat a cím alapján</strong> gomb megkeresi a címet; utána kattintással vagy jelölő húzással pontosíthatsz. Az <strong>Alkalmazás</strong> bemásolja a GPS mezőkbe.</p>
-    </div>
-    <div class="events-venue-map-dialog__tools">
-        <div class="form-group">
-            <label for="events-venue-map-query">Keresendő cím</label>
-            <textarea id="events-venue-map-query" rows="3" maxlength="500" autocomplete="street-address" placeholder="A cím mezőkből indul; itt szabadon módosíthatod."></textarea>
-        </div>
-        <div class="events-venue-map-dialog__tool-row">
-            <button type="button" class="btn btn-secondary btn-sm" id="events-venue-map-suggest">Javaslat a cím alapján</button>
-            <span id="events-venue-map-coords" class="events-venue-map-dialog__coords" aria-live="polite"></span>
-        </div>
+        <p class="events-venue-map-dialog__lead">Kattintással vagy jelölő húzással pontosíthatsz. Az <strong>Alkalmazás</strong> bemásolja a GPS mezőkbe (az inline térkép is automatikusan szinkronizál).</p>
     </div>
     <div id="events-venue-map-host" class="events-venue-map-dialog__map" role="presentation"></div>
     <p id="events-venue-map-msg" class="events-venue-map-dialog__msg" role="alert" hidden></p>
@@ -28,32 +18,38 @@ declare(strict_types=1);
 <script>
 (function () {
     var dialog = document.getElementById('events-venue-map-dialog');
-    var mapEl = document.getElementById('events-venue-map-host');
+    var inlineMapEl = document.getElementById('venue-inline-map-host');
+    var dialogMapEl = document.getElementById('events-venue-map-host');
     var btnOpen = document.getElementById('venue-map-open');
     var btnSuggest = document.getElementById('events-venue-map-suggest');
     var btnCancel = document.getElementById('events-venue-map-cancel');
     var btnApply = document.getElementById('events-venue-map-apply');
     var elCoords = document.getElementById('events-venue-map-coords');
     var elQuery = document.getElementById('events-venue-map-query');
-    var elMsg = document.getElementById('events-venue-map-msg');
-    if (!dialog || !mapEl || !btnOpen || typeof L === 'undefined') return;
+    var elInlineMsg = document.getElementById('venue-inline-map-msg');
+    var elDialogMsg = document.getElementById('events-venue-map-msg');
+    var statusEl = document.getElementById('venue-edit-map-status');
+    if (!inlineMapEl || typeof L === 'undefined') return;
 
-    var map = null;
-    var marker = null;
+    var inlineMap = null;
+    var dialogMap = null;
+    var inlineMarker = null;
+    var dialogMarker = null;
     var pinIcon = null;
+    var markerPos = null;
 
     function field(id) { return document.getElementById(id); }
 
-    function hideMsg() {
-        if (!elMsg) return;
-        elMsg.textContent = '';
-        elMsg.hidden = true;
+    function hideMsg(el) {
+        if (!el) return;
+        el.textContent = '';
+        el.hidden = true;
     }
 
-    function showMsg(text) {
-        if (!elMsg) return;
-        elMsg.textContent = text;
-        elMsg.hidden = false;
+    function showMsg(el, text) {
+        if (!el) return;
+        el.textContent = text;
+        el.hidden = false;
     }
 
     function fmtCoord(n) {
@@ -62,11 +58,22 @@ declare(strict_types=1);
         return s === '' ? '0' : s;
     }
 
-    function updateCoordLabel(lat, lng) {
+    function updateCoordLabel() {
         if (!elCoords) return;
-        elCoords.textContent = (lat != null && lng != null && !isNaN(lat) && !isNaN(lng))
-            ? 'Szélesség: ' + fmtCoord(lat) + ' · Hosszúság: ' + fmtCoord(lng)
-            : '';
+        if (!markerPos) {
+            elCoords.textContent = '';
+            return;
+        }
+        elCoords.textContent = 'Szélesség: ' + fmtCoord(markerPos.lat) + ' · Hosszúság: ' + fmtCoord(markerPos.lng);
+    }
+
+    function updateStatus() {
+        if (!statusEl) return;
+        var hasCoords = markerPos !== null;
+        statusEl.textContent = hasCoords
+            ? 'GPS beállítva'
+            : 'Nincs GPS — jelöld meg a térképen vagy kérj javaslatot';
+        statusEl.classList.toggle('venue-edit-map-status--muted', !hasCoords);
     }
 
     function readGeo() {
@@ -122,36 +129,109 @@ declare(strict_types=1);
         return { lat: la, lng: lo };
     }
 
-    function destroyMap() {
-        if (marker && map) {
-            try { map.removeLayer(marker); } catch (e1) { /* ignore */ }
-        }
-        marker = null;
-        if (map) {
-            try { map.remove(); } catch (e2) { /* ignore */ }
-        }
-        map = null;
-        pinIcon = null;
-    }
-
-    function buildLeafletMap() {
-        destroyMap();
-        pinIcon = L.divIcon({
+    function makePinIcon() {
+        return L.divIcon({
             className: 'events-venue-map-pin',
             html: '<div class="events-venue-map-pin__dot"></div>',
             iconSize: [26, 26],
             iconAnchor: [13, 13]
         });
-        map = L.map(mapEl, { scrollWheelZoom: true, zoomControl: true });
+    }
+
+    function destroyMap(mapRef, markerRef) {
+        if (markerRef.current && mapRef.current) {
+            try { mapRef.current.removeLayer(markerRef.current); } catch (e1) { /* ignore */ }
+        }
+        markerRef.current = null;
+        if (mapRef.current) {
+            try { mapRef.current.remove(); } catch (e2) { /* ignore */ }
+        }
+        mapRef.current = null;
+    }
+
+    var inlineMapRef = { current: null };
+    var dialogMapRef = { current: null };
+    var inlineMarkerRef = { current: null };
+    var dialogMarkerRef = { current: null };
+
+    function buildMap(hostEl, mapRef, markerRef, interactive) {
+        destroyMap(mapRef, markerRef);
+        if (!pinIcon) pinIcon = makePinIcon();
+        var map = L.map(hostEl, { scrollWheelZoom: interactive, zoomControl: true });
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OSM &copy; CARTO',
             subdomains: 'abcd',
             maxZoom: 19
         }).addTo(map);
         map.on('click', function (e) {
-            placeOrMoveMarker(e.latlng.lat, e.latlng.lng);
+            setMarkerPosition(e.latlng.lat, e.latlng.lng, true);
         });
+        mapRef.current = map;
         map.invalidateSize();
+        return map;
+    }
+
+    function ensureMarkerOnMap(map, markerRef, lat, lng) {
+        if (!map) return;
+        if (!markerRef.current) {
+            markerRef.current = L.marker([lat, lng], { draggable: true, icon: pinIcon }).addTo(map);
+            markerRef.current.on('dragend', function () {
+                var ll = markerRef.current.getLatLng();
+                setMarkerPosition(ll.lat, ll.lng, true);
+            });
+        } else {
+            markerRef.current.setLatLng([lat, lng]);
+        }
+    }
+
+    function syncMarkerLayers() {
+        if (markerPos) {
+            ensureMarkerOnMap(inlineMapRef.current, inlineMarkerRef, markerPos.lat, markerPos.lng);
+            ensureMarkerOnMap(dialogMapRef.current, dialogMarkerRef, markerPos.lat, markerPos.lng);
+        } else {
+            if (inlineMarkerRef.current && inlineMapRef.current) inlineMapRef.current.removeLayer(inlineMarkerRef.current);
+            if (dialogMarkerRef.current && dialogMapRef.current) dialogMapRef.current.removeLayer(dialogMarkerRef.current);
+            inlineMarkerRef.current = null;
+            dialogMarkerRef.current = null;
+        }
+    }
+
+    function writeCoordsToInputs() {
+        var latIn = field('venue_latitude');
+        var lngIn = field('venue_longitude');
+        if (!markerPos) {
+            if (latIn) latIn.value = '';
+            if (lngIn) lngIn.value = '';
+        } else {
+            if (latIn) latIn.value = fmtCoord(markerPos.lat);
+            if (lngIn) lngIn.value = fmtCoord(markerPos.lng);
+        }
+        document.dispatchEvent(new CustomEvent('venue-coords-updated'));
+    }
+
+    function setMarkerPosition(lat, lng, writeInputs) {
+        markerPos = { lat: lat, lng: lng };
+        syncMarkerLayers();
+        updateCoordLabel();
+        updateStatus();
+        hideMsg(elInlineMsg);
+        hideMsg(elDialogMsg);
+        if (writeInputs) writeCoordsToInputs();
+    }
+
+    function initInlineMap() {
+        var g = readGeo();
+        var existing = parseExistingCoords(g);
+        buildMap(inlineMapEl, inlineMapRef, inlineMarkerRef, true);
+        if (existing) {
+            inlineMapRef.current.setView([existing.lat, existing.lng], 15);
+            setMarkerPosition(existing.lat, existing.lng, false);
+        } else {
+            inlineMapRef.current.setView([47.2, 19.5], 7);
+        }
+        window.setTimeout(function () {
+            if (inlineMapRef.current) inlineMapRef.current.invalidateSize();
+        }, 120);
     }
 
     function afterDialogPaint(done) {
@@ -162,58 +242,35 @@ declare(strict_types=1);
         });
     }
 
-    function removeMarker() {
-        if (marker && map) map.removeLayer(marker);
-        marker = null;
-    }
-
-    function placeOrMoveMarker(lat, lng) {
-        if (!map) return;
-        if (!marker) {
-            marker = L.marker([lat, lng], { draggable: true, icon: pinIcon }).addTo(map);
-            marker.on('dragend', function () {
-                var ll = marker.getLatLng();
-                updateCoordLabel(ll.lat, ll.lng);
-                hideMsg();
-            });
-        } else {
-            marker.setLatLng([lat, lng]);
-        }
-        updateCoordLabel(lat, lng);
-        hideMsg();
-    }
-
     function openPicker() {
-        hideMsg();
-        updateCoordLabel(null, null);
+        if (!dialog) return;
+        hideMsg(elDialogMsg);
         syncQueryFromFields();
         if (typeof dialog.showModal === 'function') {
             dialog.showModal();
         } else {
             dialog.setAttribute('open', 'open');
         }
-        var existing = parseExistingCoords(readGeo());
         afterDialogPaint(function () {
-            buildLeafletMap();
-            if (!map) return;
-            removeMarker();
-            if (existing) {
-                map.setView([existing.lat, existing.lng], 16);
-                placeOrMoveMarker(existing.lat, existing.lng);
+            buildMap(dialogMapEl, dialogMapRef, dialogMarkerRef, true);
+            if (markerPos) {
+                dialogMapRef.current.setView([markerPos.lat, markerPos.lng], 16);
+                ensureMarkerOnMap(dialogMapRef.current, dialogMarkerRef, markerPos.lat, markerPos.lng);
             } else {
-                map.setView([47.2, 19.5], 7);
+                dialogMapRef.current.setView([47.2, 19.5], 7);
             }
-            map.invalidateSize();
+            dialogMapRef.current.invalidateSize();
         });
     }
 
     function closePicker() {
+        if (!dialog) return;
         if (typeof dialog.close === 'function') {
             dialog.close();
         } else {
             dialog.removeAttribute('open');
         }
-        destroyMap();
+        destroyMap(dialogMapRef, dialogMarkerRef);
     }
 
     function fetchNominatimJson(q, countryCodes2) {
@@ -229,25 +286,9 @@ declare(strict_types=1);
         });
     }
 
-    btnOpen.addEventListener('click', openPicker);
-    if (btnCancel) btnCancel.addEventListener('click', closePicker);
-
-    if (btnApply) btnApply.addEventListener('click', function () {
-        if (!marker) {
-            showMsg('Válassz pontot a térképen (kattintás), vagy kérj javaslatot a cím alapján.');
-            return;
-        }
-        var ll = marker.getLatLng();
-        var latIn = field('venue_latitude');
-        var lngIn = field('venue_longitude');
-        if (latIn) latIn.value = fmtCoord(ll.lat);
-        if (lngIn) lngIn.value = fmtCoord(ll.lng);
-        document.dispatchEvent(new CustomEvent('venue-coords-updated'));
-        closePicker();
-    });
-
-    if (btnSuggest) btnSuggest.addEventListener('click', function () {
-        hideMsg();
+    function runGeocodeSuggest(msgTarget) {
+        hideMsg(elInlineMsg);
+        hideMsg(elDialogMsg);
         var g = readGeo();
         var q = elQuery && elQuery.value ? String(elQuery.value).trim() : '';
         if (!q) {
@@ -255,43 +296,93 @@ declare(strict_types=1);
             if (elQuery) elQuery.value = q;
         }
         if (!q) {
-            showMsg('Töltsd ki a cím mezőket, vagy írj be keresendő címet.');
-            return;
+            showMsg(msgTarget || elInlineMsg, 'Töltsd ki a cím mezőket, vagy írj be keresendő címet.');
+            return Promise.resolve();
         }
         var cc = countryCodeForNominatim(g.country);
-        btnSuggest.disabled = true;
-        var prev = btnSuggest.textContent;
-        btnSuggest.textContent = 'Keresés…';
-        fetchNominatimJson(q, cc)
+        if (btnSuggest) btnSuggest.disabled = true;
+        var prev = btnSuggest ? btnSuggest.textContent : '';
+        if (btnSuggest) btnSuggest.textContent = 'Keresés…';
+        return fetchNominatimJson(q, cc)
             .then(function (arr) {
                 if (arr && arr.length) return arr;
                 return fetchNominatimJson(q, '');
             })
             .then(function (arr) {
                 if (!arr || !arr.length) {
-                    showMsg('Nincs találat ehhez a címhez. Pontosítsd a címet, vagy kattints a térképre.');
+                    showMsg(msgTarget || elInlineMsg, 'Nincs találat ehhez a címhez. Pontosítsd a címet, vagy kattints a térképre.');
                     return;
                 }
                 var la = parseFloat(arr[0].lat);
                 var lo = parseFloat(arr[0].lon);
                 if (isNaN(la) || isNaN(lo)) {
-                    showMsg('Érvénytelen válasz a geokódolótól.');
+                    showMsg(msgTarget || elInlineMsg, 'Érvénytelen válasz a geokódolótól.');
                     return;
                 }
-                if (!map) buildLeafletMap();
-                if (!map) return;
-                map.invalidateSize();
-                map.setView([la, lo], 16);
-                placeOrMoveMarker(la, lo);
-                map.invalidateSize();
+                if (!inlineMapRef.current) initInlineMap();
+                if (inlineMapRef.current) {
+                    inlineMapRef.current.setView([la, lo], 16);
+                    inlineMapRef.current.invalidateSize();
+                }
+                if (dialogMapRef.current) {
+                    dialogMapRef.current.setView([la, lo], 16);
+                    dialogMapRef.current.invalidateSize();
+                }
+                setMarkerPosition(la, lo, true);
             })
             .catch(function () {
-                showMsg('A geokódolás nem sikerült. Próbáld újra, vagy állítsd be kattintással a térképen.');
+                showMsg(msgTarget || elInlineMsg, 'A geokódolás nem sikerült. Próbáld újra, vagy állítsd be kattintással a térképen.');
             })
             .finally(function () {
-                btnSuggest.disabled = false;
-                btnSuggest.textContent = prev;
+                if (btnSuggest) {
+                    btnSuggest.disabled = false;
+                    btnSuggest.textContent = prev;
+                }
             });
+    }
+
+    if (btnOpen) btnOpen.addEventListener('click', openPicker);
+    if (btnCancel) btnCancel.addEventListener('click', closePicker);
+
+    if (btnApply) btnApply.addEventListener('click', function () {
+        if (!markerPos) {
+            showMsg(elDialogMsg, 'Válassz pontot a térképen (kattintás), vagy kérj javaslatot a cím alapján.');
+            return;
+        }
+        writeCoordsToInputs();
+        closePicker();
     });
+
+    if (btnSuggest) btnSuggest.addEventListener('click', function () {
+        runGeocodeSuggest(elInlineMsg);
+    });
+
+    ['venue_address', 'venue_city', 'venue_postal_code', 'venue_country'].forEach(function (id) {
+        var el = field(id);
+        if (!el) return;
+        el.addEventListener('change', syncQueryFromFields);
+        el.addEventListener('blur', syncQueryFromFields);
+    });
+
+    var latIn = field('venue_latitude');
+    var lngIn = field('venue_longitude');
+    function syncFromManualCoords() {
+        var existing = parseExistingCoords(readGeo());
+        if (existing) {
+            markerPos = existing;
+            syncMarkerLayers();
+            updateCoordLabel();
+            updateStatus();
+            if (inlineMapRef.current) {
+                inlineMapRef.current.setView([existing.lat, existing.lng], Math.max(inlineMapRef.current.getZoom(), 14));
+            }
+        }
+    }
+    if (latIn) latIn.addEventListener('change', syncFromManualCoords);
+    if (lngIn) lngIn.addEventListener('change', syncFromManualCoords);
+
+    syncQueryFromFields();
+    updateCoordLabel();
+    initInlineMap();
 })();
 </script>

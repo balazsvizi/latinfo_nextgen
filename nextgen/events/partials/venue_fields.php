@@ -71,16 +71,20 @@ $venueFormShowGeocode = $venueEditId > 0
                     <input type="text" id="venue_longitude" name="longitude" inputmode="decimal" autocomplete="off" value="<?= h($v['longitude']) ?>" placeholder="19.0402">
                 </div>
             </div>
-            <div class="venue-edit-map-actions">
-                <button type="button" class="btn btn-secondary events-venue-map-open" id="venue-map-open">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.25c.621-.288 1.125-1.004 1.125-1.734v-11.25c0-.621-.504-1.125-1.125-1.125h-12.75c-.621 0-1.125.504-1.125 1.125v11.25c0 .73.504 1.443 1.125 1.734l4.875 2.25M21 12.75v-8.25M3 12.75v8.25M3.75 21h16.5M3.75 3h16.5"/></svg>
-                    Térképen: javaslat és pöttyözés
-                </button>
-                <span id="venue-edit-map-status" class="venue-edit-map-status<?= $hasCoords ? '' : ' venue-edit-map-status--muted' ?>"><?= $hasCoords ? 'GPS beállítva' : 'Nincs GPS — mentéskor vagy a gombbal cím alapján kitölthető' ?></span>
-            </div>
-            <div id="venue-edit-map-preview" class="venue-edit-map-preview<?= $hasCoords ? '' : ' is-hidden' ?>" aria-hidden="<?= $hasCoords ? 'false' : 'true' ?>">
-                <p class="venue-edit-map-preview__label">Előnézet (publikus térkép)</p>
-                <div id="venue-edit-map-preview-host" class="venue-edit-map-preview__host" role="img" aria-label="Helyszín előnézete a térképen"></div>
+            <div class="venue-edit-map-panel">
+                <p class="venue-edit-map-panel__lead">Cím alapján keresés (Nominatim), majd kattintás vagy jelölő húzása a térképen. A koordináták automatikusan a mezőkbe kerülnek.</p>
+                <div class="form-group venue-edit-map-panel__query">
+                    <label for="events-venue-map-query">Keresendő cím</label>
+                    <textarea id="events-venue-map-query" rows="2" maxlength="500" autocomplete="street-address" placeholder="A cím mezőkből indul; itt szabadon módosíthatod."></textarea>
+                </div>
+                <div class="venue-edit-map-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" id="events-venue-map-suggest">Javaslat a cím alapján</button>
+                    <button type="button" class="btn btn-secondary btn-sm events-venue-map-open" id="venue-map-open">Nagyítás</button>
+                    <span id="venue-edit-map-status" class="venue-edit-map-status<?= $hasCoords ? '' : ' venue-edit-map-status--muted' ?>"><?= $hasCoords ? 'GPS beállítva' : 'Nincs GPS — jelöld meg a térképen vagy kérj javaslatot' ?></span>
+                    <span id="events-venue-map-coords" class="events-venue-map-dialog__coords" aria-live="polite"></span>
+                </div>
+                <p id="venue-inline-map-msg" class="venue-edit-map-panel__msg" role="alert" hidden></p>
+                <div id="venue-inline-map-host" class="venue-edit-inline-map-host" role="region" aria-label="Helyszín megjelölése a térképen"></div>
             </div>
         </div>
 

@@ -111,6 +111,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <?php require __DIR__ . '/partials/venue_map_picker.php'; ?>
-<?php require __DIR__ . '/partials/venue_edit_map_preview.php'; ?>
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

@@ -4157,9 +4157,44 @@ dialog.eventpics-modal::backdrop {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.65rem 1rem;
-    margin-top: 0.85rem;
-    padding-top: 0.85rem;
+}
+.venue-edit-map-panel {
+    margin-top: 1rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--border);
+}
+.venue-edit-map-panel__lead {
+    margin: 0 0 0.85rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+.venue-edit-map-panel__query {
+    margin-bottom: 0.75rem;
+}
+.venue-edit-map-panel__msg {
+    margin: 0.5rem 0 0;
+    font-size: 0.875rem;
+    color: #b91c1c;
+}
+.venue-edit-inline-map-host {
+    width: 100%;
+    height: 280px;
+    min-height: 220px;
+    margin-top: 0.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: #e2e8f0;
+    overflow: hidden;
+}
+.venue-edit-inline-map-host .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 220px !important;
+    font-family: inherit;
+}
+.venue-edit-inline-map-host .leaflet-control-zoom a {
+    border-radius: 6px !important;
 }
 .venue-edit-map-status {
     font-size: 0.8125rem;
@@ -4295,6 +4330,10 @@ dialog.eventpics-modal::backdrop {
     }
     .venue-edit-address-grid {
         grid-template-columns: 1fr;
+    }
+    .venue-edit-inline-map-host {
+        height: 240px;
+        min-height: 200px;
     }
 }
 .form-hint {
