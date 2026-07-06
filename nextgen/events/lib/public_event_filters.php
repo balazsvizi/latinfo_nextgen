@@ -5,13 +5,25 @@ require_once __DIR__ . '/admin_event_filters.php';
 require_once __DIR__ . '/event_status.php';
 
 /**
+ * Publikus főoldal nézet: naptár, lista vagy térkép.
+ */
+function events_public_resolve_home_view(string $raw): string
+{
+    return match ($raw) {
+        'list' => 'list',
+        'map' => 'map',
+        default => 'cal',
+    };
+}
+
+/**
  * Nyilvános esemény főoldal szűrők — admin mintájára, csak közzétett eseményekkel.
  *
  * @return array<string, mixed>
  */
 function events_public_filters_from_request(PDO $db): array {
     $f_city = trim((string) ($_GET['f_city'] ?? ''));
-    $view = isset($_GET['view']) && (string) $_GET['view'] === 'list' ? 'list' : 'cal';
+    $view = events_public_resolve_home_view((string) ($_GET['view'] ?? 'cal'));
 
     $savedGet = $_GET;
     unset($_GET['status'], $_GET['f_id'], $_GET['f_views_min']);
@@ -49,6 +61,8 @@ function events_public_filters_from_request(PDO $db): array {
         if ($listLimitParsed['value'] !== (string) EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT) {
             $getParams['list_limit'] = $listLimitParsed['value'];
         }
+    } elseif ($view === 'map') {
+        $getParams['view'] = 'map';
     }
     $filters['get_params'] = $getParams;
 
@@ -120,7 +134,13 @@ function events_public_fetch_filtered_events(PDO $db, array $filters): array {
         $fromSql = $poolFrom . ' LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
     }
     $sql = "
-        SELECT e.*, v.`name` AS `venue_name`, v.`city` AS `venue_city`
+        SELECT e.*,
+            v.`name` AS `venue_name`,
+            v.`city` AS `venue_city`,
+            v.`address` AS `venue_address`,
+            v.`postal_code` AS `venue_postal_code`,
+            v.`latitude` AS `venue_latitude`,
+            v.`longitude` AS `venue_longitude`
         FROM {$fromSql}
         {$whereSql}
         ORDER BY e.event_start IS NULL, e.event_start ASC, e.event_name ASC

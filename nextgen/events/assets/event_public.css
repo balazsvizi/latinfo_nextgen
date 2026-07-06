@@ -2952,6 +2952,7 @@ body.event-public-page--home .event-public__hero-inner {
     flex-shrink: 0;
     justify-self: end;
     max-width: 100%;
+    flex-wrap: wrap;
 }
 
 .home-public .events-cal-subscribe {
@@ -3099,6 +3100,162 @@ body.event-public-page--home .event-public__hero-inner {
     font-weight: 700;
     border-bottom-color: var(--li-green);
     cursor: default;
+}
+
+.home-public__map {
+    margin: 0 0 1.25rem;
+}
+
+.home-public__map-stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.65rem 1rem;
+    margin: 0 0 0.85rem;
+}
+
+.home-public__map-stat {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 5.5rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: var(--ev-radius-sm);
+    border: 1px solid var(--li-border);
+    background: linear-gradient(135deg, #fff 0%, var(--li-green-soft) 100%);
+    box-shadow: var(--li-shadow);
+}
+
+.home-public__map-stat--muted {
+    background: #fff;
+}
+
+.home-public__map-stat-value {
+    font-family: var(--ev-font);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--li-green-dark);
+}
+
+.home-public__map-stat-label {
+    margin-top: 0.2rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--li-text-muted);
+}
+
+.home-public__map-hint {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--li-text-muted);
+}
+
+.home-public__map-empty {
+    margin: 0 0 0.85rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--ev-radius-sm);
+    border: 1px dashed var(--li-border);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--li-text-muted);
+    font-size: 0.9375rem;
+}
+
+.home-public__map-frame {
+    position: relative;
+}
+
+.home-public__map-host {
+    height: min(62vh, 520px);
+    min-height: 280px;
+}
+
+.home-public__map-attrib {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.home-public__view-switch-row--map {
+    justify-content: flex-start;
+}
+
+.home-public-map-pin {
+    background: transparent;
+    border: 0;
+}
+
+.home-public-map-pin__dot {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(30, 40, 26, 0.35);
+}
+
+.home-public-map-popup {
+    font-family: var(--ev-sans);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--li-text);
+}
+
+.home-public-map-popup__title {
+    display: block;
+    margin: 0 0 0.35rem;
+    font-family: var(--ev-font);
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--li-green-dark);
+    text-decoration: none;
+}
+
+a.home-public-map-popup__title:hover {
+    color: var(--li-green);
+    text-decoration: underline;
+}
+
+.home-public-map-popup__meta {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+    color: var(--li-text-soft);
+}
+
+.home-public-map-popup__venue {
+    margin: 0 0 0.15rem;
+    font-weight: 600;
+}
+
+.home-public-map-popup__addr {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--li-text-muted);
+}
+
+.home-public .leaflet-popup-content-wrapper {
+    border-radius: var(--ev-radius-sm);
+    border: 1px solid var(--li-border);
+    box-shadow: var(--li-shadow-lg);
+}
+
+.home-public .leaflet-popup-content {
+    margin: 0.75rem 0.9rem;
+}
+
+.home-public .marker-cluster-small,
+.home-public .marker-cluster-medium,
+.home-public .marker-cluster-large {
+    background-color: rgba(109, 143, 99, 0.22);
+}
+
+.home-public .marker-cluster-small div,
+.home-public .marker-cluster-medium div,
+.home-public .marker-cluster-large div {
+    background-color: rgba(45, 74, 62, 0.88);
+    color: #fff;
+    font-weight: 700;
 }
 
 .home-public .events-cal {
@@ -3712,6 +3869,15 @@ body.event-public-page--home .event-public__hero-inner {
 
     .home-public .events-cal-view-switch {
         gap: 1rem;
+    }
+
+    .home-public__map-host {
+        height: min(58vh, 460px);
+        min-height: 240px;
+    }
+
+    .home-public__map-stat-value {
+        font-size: 1.2rem;
     }
 }
 

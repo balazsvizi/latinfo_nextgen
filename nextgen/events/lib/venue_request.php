@@ -13,6 +13,18 @@ function events_leaflet_js_url(): string {
     return 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
 }
 
+function events_leaflet_marker_cluster_css_url(): string {
+    return 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
+}
+
+function events_leaflet_marker_cluster_default_css_url(): string {
+    return 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css';
+}
+
+function events_leaflet_marker_cluster_js_url(): string {
+    return 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';
+}
+
 /**
  * @return array{error: string, lat: null, lng: null}|array{error: null, lat: ?float, lng: ?float}
  */

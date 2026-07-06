@@ -13,6 +13,7 @@ require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_calendar.php';
 require_once __DIR__ . '/lib/calendar_event_preview.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
+require_once __DIR__ . '/lib/public_home_events_map.php';
 
 events_public_send_noindex_header();
 $D = events_public_home_strings($lang);
@@ -37,6 +38,9 @@ if ($view === 'list') {
     $listTotalInDb = events_public_published_events_total_count($db);
 }
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
+$mapPayload = $view === 'map'
+    ? events_public_home_map_payload_from_rows($rows, $categoriesByEventId, $lang)
+    : ['markers' => [], 'skipped' => 0, 'total' => 0];
 $calendarColorLegend = [];
 $calendarPreviewById = [];
 if ($view === 'cal') {
@@ -60,6 +64,9 @@ $todayMonthUrl = events_public_calendar_month_url((new DateTimeImmutable('today'
 $listViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'list']);
 $listViewUrl = events_public_home_url($lang, $listViewParams);
 
+$mapViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'map']);
+$mapViewUrl = events_public_home_url($lang, $mapViewParams);
+
 $calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
 unset($calViewParams['view']);
 $calViewUrl = events_public_home_url($lang, $calViewParams);
@@ -68,6 +75,8 @@ $filterFormAction = events_public_home_path();
 $filterFormHidden = array_merge(['month' => $monthKey], $langNav);
 if ($view === 'list') {
     $filterFormHidden['view'] = 'list';
+} elseif ($view === 'map') {
+    $filterFormHidden['view'] = 'map';
 }
 $filterClearParams = array_merge(['month' => $monthKey], $langNav);
 $filterClearUrl = events_public_home_url($lang, $filterClearParams);
@@ -88,6 +97,9 @@ $isEventsHome = true;
 $showAdminEdit = isLoggedIn();
 $publicAdminParams = $filters['get_params'];
 if ($view === 'list') {
+    $adminEditUrl = events_admin_list_view_url($publicAdminParams);
+    $S['admin_edit_aria'] = (string) $D['admin_edit_aria_list'];
+} elseif ($view === 'map') {
     $adminEditUrl = events_admin_list_view_url($publicAdminParams);
     $S['admin_edit_aria'] = (string) $D['admin_edit_aria_list'];
 } else {
@@ -152,6 +164,13 @@ header('Content-Type: text/html; charset=UTF-8');
                 </div>
             </details>
 
+            <?php
+            $homeActiveView = $view;
+            $homeCalViewUrl = $calViewUrl;
+            $homeListViewUrl = $listViewUrl;
+            $homeMapViewUrl = $mapViewUrl;
+            ?>
+
             <?php if ($view === 'cal'): ?>
                 <div class="events-cal-toolbar" aria-label="<?= h((string) $D['cal_controls_aria']) ?>">
                     <div class="events-cal-toolbar__left">
@@ -164,10 +183,10 @@ header('Content-Type: text/html; charset=UTF-8');
                     </div>
                     <div class="events-cal-toolbar__end">
                         <?php require __DIR__ . '/partials/public_calendar_color_help.php'; ?>
-                        <nav class="events-cal-view-switch" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
-                            <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_cal']) ?></span>
-                            <a class="events-cal-view-switch__item" href="<?= h($listViewUrl) ?>"><?= h((string) $D['view_list']) ?></a>
-                        </nav>
+                        <?php
+                        $homeStandalone = false;
+                        require __DIR__ . '/partials/public_home_view_switch.php';
+                        ?>
                     </div>
                 </div>
                 <?php
@@ -175,12 +194,21 @@ header('Content-Type: text/html; charset=UTF-8');
                 require __DIR__ . '/partials/public_calendar_grid.php';
                 ?>
                 <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
+            <?php elseif ($view === 'map'): ?>
+                <div class="events-cal-view-switch-row home-public__view-switch-row home-public__view-switch-row--map">
+                    <?php
+                    $homeStandalone = true;
+                    require __DIR__ . '/partials/public_home_view_switch.php';
+                    ?>
+                </div>
+                <?php require __DIR__ . '/partials/public_home_events_map.php'; ?>
+                <?php require __DIR__ . '/partials/public_calendar_subscribe.php'; ?>
             <?php else: ?>
                 <div class="events-cal-view-switch-row home-public__view-switch-row">
-                    <nav class="events-cal-view-switch events-cal-view-switch--standalone" aria-label="<?= h((string) $D['view_switch_aria']) ?>">
-                        <a class="events-cal-view-switch__item" href="<?= h($calViewUrl) ?>"><?= h((string) $D['view_cal']) ?></a>
-                        <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h((string) $D['view_list']) ?></span>
-                    </nav>
+                    <?php
+                    $homeStandalone = true;
+                    require __DIR__ . '/partials/public_home_view_switch.php';
+                    ?>
                     <span class="events-cal-view-switch-row__sep" aria-hidden="true">|</span>
                     <?php
                     $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
