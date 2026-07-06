@@ -132,6 +132,18 @@ function events_admin_calendar_view_url(string $monthKey, array $getParams): str
 }
 
 /**
+ * Admin térkép nézet URL — szűrők megőrzése, hónap paraméter nélkül.
+ *
+ * @param array<string, string> $getParams
+ */
+function events_admin_map_view_url(array $getParams): string {
+    $q = array_filter($getParams, static fn ($v): bool => $v !== null && $v !== '');
+    unset($q['month']);
+
+    return $q !== [] ? events_url('events_terkep.php?' . http_build_query($q)) : events_url('events_terkep.php');
+}
+
+/**
  * Hónap kulcs a lista → naptár váltáshoz (dátumszűrő „ettől” vagy mai hónap).
  *
  * @param array<string, mixed> $filters events_admin_filters_from_request()

@@ -3154,6 +3154,11 @@ body.event-public-page--home .event-public__hero-inner {
     color: var(--li-text-muted);
 }
 
+.home-public__map-hint--pending {
+    color: var(--li-text);
+    font-style: italic;
+}
+
 .home-public__map-empty {
     margin: 0 0 0.85rem;
     padding: 0.85rem 1rem;

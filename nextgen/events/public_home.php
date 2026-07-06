@@ -40,7 +40,7 @@ if ($view === 'list') {
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $rows);
 $mapPayload = $view === 'map'
     ? events_public_home_map_payload_from_rows($rows, $categoriesByEventId, $lang)
-    : ['markers' => [], 'skipped' => 0, 'total' => 0];
+    : ['markers' => [], 'geocode_jobs' => [], 'skipped' => 0, 'pending' => 0, 'total' => 0];
 $calendarColorLegend = [];
 $calendarPreviewById = [];
 if ($view === 'cal') {

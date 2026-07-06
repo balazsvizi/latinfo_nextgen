@@ -139,6 +139,7 @@ function events_public_fetch_filtered_events(PDO $db, array $filters): array {
             v.`city` AS `venue_city`,
             v.`address` AS `venue_address`,
             v.`postal_code` AS `venue_postal_code`,
+            v.`country` AS `venue_country`,
             v.`latitude` AS `venue_latitude`,
             v.`longitude` AS `venue_longitude`
         FROM {$fromSql}

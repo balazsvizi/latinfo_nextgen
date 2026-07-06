@@ -471,6 +471,35 @@ function events_filter_label_attr_classes(array $filters, string $key): string
     return $base . ($active ? ' events-filter-label--active' : '');
 }
 
+/**
+ * Szűrt események helyszín koordinátákkal (admin térkép nézet).
+ *
+ * @param array<string, mixed> $filters
+ * @return list<array<string, mixed>>
+ */
+function events_admin_fetch_filtered_events_with_venue(PDO $db, array $filters): array
+{
+    $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
+    $sql = "
+        SELECT e.*,
+            v.`name` AS `venue_name`,
+            v.`city` AS `venue_city`,
+            v.`address` AS `venue_address`,
+            v.`postal_code` AS `venue_postal_code`,
+            v.`country` AS `venue_country`,
+            v.`latitude` AS `venue_latitude`,
+            v.`longitude` AS `venue_longitude`
+        FROM `events_calendar_events` e
+        LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
+        {$whereSql}
+        ORDER BY e.event_start IS NULL, e.event_start ASC, e.event_name ASC
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute($filters['params']);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+}
+
 function events_admin_format_datum_cell(array $r): string {
     $allday = !empty($r['event_allday']);
     $startRaw = $r['event_start'] ?? null;

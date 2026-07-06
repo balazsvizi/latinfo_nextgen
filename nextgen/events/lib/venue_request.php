@@ -175,6 +175,31 @@ function events_venue_country_nominatim_code(string $country): string {
 }
 
 /**
+ * Nominatim keresőszöveg helyszín mezőkből (venue szerkesztő / térkép geokódolás).
+ *
+ * @param array<string, mixed> $r address, city, postal_code, country
+ */
+function events_venue_geocode_query(array $r): string {
+    $parts = [];
+    $address = trim((string) ($r['address'] ?? ''));
+    $city = trim((string) ($r['city'] ?? ''));
+    $postal = trim((string) ($r['postal_code'] ?? ''));
+    $country = trim((string) ($r['country'] ?? ''));
+    if ($address !== '') {
+        $parts[] = $address;
+    }
+    $cityLine = trim($postal . ' ' . $city);
+    if ($cityLine !== '') {
+        $parts[] = $cityLine;
+    }
+    if ($country !== '') {
+        $parts[] = $country;
+    }
+
+    return implode(', ', $parts);
+}
+
+/**
  * Egy soros összefoglaló listához (IRSZ település, utca; opcionálisan ország, ha nem HU).
  *
  * @param array<string, mixed> $r
