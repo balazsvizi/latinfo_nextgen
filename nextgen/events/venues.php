@@ -18,8 +18,12 @@ $poolFrom = events_admin_table_pool_from_sql('events_venues', 'v', $list_limit);
 $f_q = trim((string) ($_GET['f_q'] ?? ''));
 $f_city = trim((string) ($_GET['f_city'] ?? ''));
 $f_id = trim((string) ($_GET['f_id'] ?? ''));
+$f_map = trim((string) ($_GET['f_map'] ?? ''));
+if (!in_array($f_map, ['', 'yes', 'no'], true)) {
+    $f_map = '';
+}
 
-$allowedOrder = ['id', 'name', 'cim', 'modified'];
+$allowedOrder = ['id', 'name', 'cim', 'map', 'modified'];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -49,12 +53,20 @@ if ($f_id !== '') {
     }
 }
 
+$coordsSql = events_venue_sql_has_valid_coordinates('v');
+if ($f_map === 'yes') {
+    $where[] = $coordsSql;
+} elseif ($f_map === 'no') {
+    $where[] = 'NOT ' . $coordsSql;
+}
+
 $whereSql = $where !== [] ? 'WHERE ' . implode(' AND ', $where) : '';
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
     'id' => "v.`id` $dirSql",
     'name' => "v.`name` $dirSql",
     'cim' => "v.`city` IS NULL, v.`city` $dirSql, v.`postal_code` IS NULL, v.`postal_code` $dirSql, v.`address` IS NULL, v.`address` $dirSql",
+    'map' => '(CASE WHEN ' . $coordsSql . ' THEN 1 ELSE 0 END) ' . $dirSql . ', v.`name` ASC',
     'modified' => "v.`modified` $dirSql",
     default => 'v.`name` ASC, v.`id` ASC',
 };
@@ -73,6 +85,7 @@ $get_params = array_filter([
     'f_q' => $f_q !== '' ? $f_q : null,
     'f_city' => $f_city !== '' ? $f_city : null,
     'f_id' => $f_id !== '' ? $f_id : null,
+    'f_map' => $f_map !== '' ? $f_map : null,
 ]);
 $get_params = events_admin_list_limit_merge_get_params($get_params, $listLimitValue);
 
@@ -87,7 +100,7 @@ $excerpt = static function (?string $s, int $max): string {
     return $s;
 };
 
-$hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '';
+$hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '' || $f_map !== '';
 $colspan = 5;
 
 $pageTitle = 'Helyszínek';
@@ -138,6 +151,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <label class="events-filter-label" for="v-f-id">ID</label>
                     <input class="events-filter-input" type="text" name="f_id" id="v-f-id" value="<?= h($f_id) ?>" placeholder="Pontos vagy részlet" inputmode="numeric" autocomplete="off">
                 </div>
+                <div class="events-filter-field events-filter-field--status">
+                    <label class="events-filter-label<?= $f_map !== '' ? ' events-filter-label--active' : '' ?>" for="v-f-map">Térkép (GPS)</label>
+                    <div class="events-filter-select-wrap">
+                        <select class="events-filter-select" name="f_map" id="v-f-map" title="Térkép (GPS)">
+                            <option value=""<?= $f_map === '' ? ' selected' : '' ?>>Összes</option>
+                            <option value="yes"<?= $f_map === 'yes' ? ' selected' : '' ?>>Van GPS – térképen</option>
+                            <option value="no"<?= $f_map === 'no' ? ' selected' : '' ?>>Nincs GPS</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -148,7 +171,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Cím', 'cim', $order, $dir_param, $get_params) ?></th>
-                        <th>Térkép</th>
+                        <th class="th-center"><?= sort_th('Térkép', 'map', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Módosítva', 'modified', $order, $dir_param, $get_params) ?></th>
                     </tr>
                 </thead>

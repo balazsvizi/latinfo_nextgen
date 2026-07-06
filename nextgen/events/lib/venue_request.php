@@ -500,6 +500,20 @@ function events_venue_apply_geocode_if_needed(array $row): array
     return $row;
 }
 
+/**
+ * SQL kifejezés: érvényes WGS-84 koordináták vannak-e (lista szűrés / rendezés).
+ */
+function events_venue_sql_has_valid_coordinates(string $alias = 'v'): string
+{
+    $p = $alias !== '' ? $alias . '.' : '';
+
+    return '(' . $p . '`latitude` IS NOT NULL AND ' . $p . '`longitude` IS NOT NULL'
+        . ' AND TRIM(CAST(' . $p . '`latitude` AS CHAR)) != \'\''
+        . ' AND TRIM(CAST(' . $p . '`longitude` AS CHAR)) != \'\''
+        . ' AND CAST(' . $p . '`latitude` AS DECIMAL(12,7)) BETWEEN -90 AND 90'
+        . ' AND CAST(' . $p . '`longitude` AS DECIMAL(12,7)) BETWEEN -180 AND 180)';
+}
+
 function events_venues_geocode_candidates_where_sql(): string
 {
     return "
