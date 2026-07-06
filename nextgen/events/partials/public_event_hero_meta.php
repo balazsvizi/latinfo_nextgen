@@ -9,7 +9,7 @@ declare(strict_types=1);
  * @var list<array{id:int,name:string}> $eventOrganizers
  * @var list<array{name:string}> $eventMainStyles
  * @var list<array{name:string}> $eventSupplementaryStyles
- * @var list<array{color:string,name:string}> $eventCategories
+ * @var list<array{id:int,color:string,name:string}> $eventCategories
  * @var list<array{id:int,name:string}> $eventTags
  * @var list<array{id:int,name:string}> $eventDjs
  */
@@ -55,11 +55,16 @@ if (!$hasOrganizers && !$hasStyles && !$hasCategories && !$hasTags && !$hasDjs) 
             <div class="event-hero-meta__chips">
                 <?php foreach ($eventCategories as $catRow): ?>
                     <?php
+                    $catId = (int) ($catRow['id'] ?? 0);
                     $chipLabel = events_public_category_chip_label($lang, $catRow);
                     $chipColor = trim((string) ($catRow['color'] ?? '#6d8f63'));
                     $textStyle = events_public_category_text_inline_style($chipColor);
                     ?>
-                    <span class="event-hero-chip event-hero-chip--category" style="<?= h($textStyle) ?>"><?= h($chipLabel) ?></span>
+                    <?php if ($catId > 0): ?>
+                        <a class="event-hero-chip event-hero-chip--category event-hero-chip--category-link" href="<?= h(events_public_category_calendar_url($catId, $lang)) ?>" style="<?= h($textStyle) ?>" title="<?= h($chipLabel) ?>"><?= h($chipLabel) ?></a>
+                    <?php else: ?>
+                        <span class="event-hero-chip event-hero-chip--category" style="<?= h($textStyle) ?>"><?= h($chipLabel) ?></span>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </div>
         </div>

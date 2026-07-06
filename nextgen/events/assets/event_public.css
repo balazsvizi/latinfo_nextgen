@@ -1156,6 +1156,19 @@ a.event-public__tag-pill:hover {
     background: var(--event-cat-accent, var(--li-green));
 }
 
+a.event-hero-chip--category-link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+a.event-hero-chip--category-link:hover {
+    background: #fff;
+    border-color: var(--event-cat-accent, var(--li-green-muted));
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(45, 74, 62, 0.12);
+}
+
 .event-hero-chip--tag {
     background: transparent;
     border: none;

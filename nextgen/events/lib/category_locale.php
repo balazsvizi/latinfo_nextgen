@@ -135,3 +135,15 @@ function events_public_category_text_inline_style(string $rawHex): string {
 
     return '--event-cat-accent:' . $hex;
 }
+
+/**
+ * Nyilvános naptár főoldal URL kategória szűréssel (/?f_category=…).
+ */
+function events_public_category_calendar_url(int $categoryId, string $lang, array $extraParams = []): string
+{
+    if ($categoryId <= 0) {
+        return events_public_home_url($lang, $extraParams);
+    }
+
+    return events_public_home_url($lang, array_merge(['f_category' => $categoryId], $extraParams));
+}
