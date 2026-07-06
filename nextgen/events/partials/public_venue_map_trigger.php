@@ -19,7 +19,8 @@ $mapShowAria = trim((string) ($mapShowAria ?? 'Térkép megnyitása'));
     aria-haspopup="dialog"
 >
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-        <circle cx="12" cy="10" r="3"/>
+        <polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21 1 6"/>
+        <line x1="8" y1="3" x2="8" y2="18"/>
+        <line x1="16" y1="6" x2="16" y2="21"/>
     </svg>
 </button>
