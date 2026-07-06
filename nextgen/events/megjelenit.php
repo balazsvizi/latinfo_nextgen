@@ -271,7 +271,26 @@ header('Content-Type: text/html; charset=UTF-8');
                                 </p>
                             <?php endif; ?>
                             <?php if ($venueAddrLine !== ''): ?>
-                                <p class="event-meta__value event-meta__value--muted event-venue-addr-p"><?= nl2br(h($venueAddrLine)) ?></p>
+                                <p class="event-meta__value event-meta__value--muted event-venue-addr-p">
+                                    <span class="event-venue-addr-row">
+                                        <span class="event-venue-addr-row__text"><?= nl2br(h($venueAddrLine)) ?></span>
+                                        <?php if ($venueCoords !== null): ?>
+                                            <?php
+                                            $mapDialogId = 'event-venue-map-dialog';
+                                            $mapShowAria = (string) ($T['map_show_aria'] ?? 'Térkép megnyitása');
+                                            require __DIR__ . '/partials/public_venue_map_trigger.php';
+                                            ?>
+                                        <?php endif; ?>
+                                    </span>
+                                </p>
+                            <?php elseif ($venueCoords !== null): ?>
+                                <p class="event-meta__value event-meta__value--muted event-venue-addr-p">
+                                    <?php
+                                    $mapDialogId = 'event-venue-map-dialog';
+                                    $mapShowAria = (string) ($T['map_show_aria'] ?? 'Térkép megnyitása');
+                                    require __DIR__ . '/partials/public_venue_map_trigger.php';
+                                    ?>
+                                </p>
                             <?php endif; ?>
                             <?php
                             $linkLabels = [
@@ -283,19 +302,6 @@ header('Content-Type: text/html; charset=UTF-8');
                         </div>
                     </div>
             </div>
-            <?php endif; ?>
-
-            <?php if ($venueCoords !== null): ?>
-                <?php
-                $mapLat = $venueCoords['lat'];
-                $mapLng = $venueCoords['lng'];
-                $mapTitle = $venueName !== '' ? $venueName : $venueSlug;
-                $mapAddress = $venueAddrLine;
-                $mapHeading = $T['map_heading'] ?? 'Térkép';
-                $mapAriaLabel = $T['map_aria'] ?? 'Helyszín a térképen';
-                $mapVariant = 'compact';
-                require __DIR__ . '/partials/public_venue_map.php';
-                ?>
             <?php endif; ?>
 
             <?php require __DIR__ . '/partials/public_event_hero_meta.php'; ?>
@@ -330,6 +336,19 @@ header('Content-Type: text/html; charset=UTF-8');
 </div>
 <?php if ($featuredAbsolute !== ''): ?>
     <?php require __DIR__ . '/partials/public_event_featured_lightbox.php'; ?>
+<?php endif; ?>
+<?php if ($venueCoords !== null): ?>
+    <?php
+    $mapLat = $venueCoords['lat'];
+    $mapLng = $venueCoords['lng'];
+    $mapTitle = $venueName !== '' ? $venueName : $venueSlug;
+    $mapAddress = $venueAddrLine;
+    $mapHeading = $T['map_heading'] ?? 'Térkép';
+    $mapAriaLabel = $T['map_aria'] ?? 'Helyszín a térképen';
+    $mapCloseLabel = $T['map_popup_close'] ?? 'Bezárás';
+    $mapDialogId = 'event-venue-map-dialog';
+    require __DIR__ . '/partials/public_venue_map_popup.php';
+    ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 </body>

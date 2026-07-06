@@ -769,6 +769,149 @@ a.event-meta__card:focus-visible {
     margin-top: 0.45rem !important;
 }
 
+.event-venue-addr-row {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    max-width: 100%;
+}
+
+.event-venue-addr-row__text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.event-venue-map-trigger {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin: -0.15rem 0 0;
+    padding: 0;
+    border: 1px solid var(--li-border);
+    border-radius: var(--ev-radius-sm);
+    background: #fff;
+    color: var(--li-green);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.event-venue-map-trigger:hover {
+    background: var(--li-green-pale, #eef4eb);
+    border-color: var(--li-green);
+    color: var(--li-green-hover);
+}
+
+.event-venue-map-trigger:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
+.venue-public-map-dialog {
+    width: min(42rem, calc(100vw - 1.5rem));
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100vh - 1.5rem);
+    margin: auto;
+    padding: 0;
+    border: none;
+    border-radius: var(--ev-radius-md);
+    background: transparent;
+    overflow: visible;
+}
+
+.venue-public-map-dialog::backdrop {
+    background: rgba(15, 23, 15, 0.72);
+}
+
+.venue-public-map-dialog__sheet {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 1.5rem);
+    border-radius: var(--ev-radius-md);
+    background: #fff;
+    box-shadow: 0 16px 48px rgba(15, 23, 42, 0.22);
+    overflow: hidden;
+}
+
+.venue-public-map-dialog__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--li-border);
+}
+
+.venue-public-map-dialog__title {
+    margin: 0;
+    font-family: var(--ev-font);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--li-green-dark);
+}
+
+.venue-public-map-dialog__close {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--li-text-soft);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.venue-public-map-dialog__close:hover {
+    background: var(--li-green-pale, #eef4eb);
+    color: var(--li-green-dark);
+}
+
+.venue-public-map-dialog__close:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
+.venue-public-map-dialog__map {
+    width: 100%;
+    height: min(52vh, 420px);
+    min-height: 240px;
+    background: #e8efe5;
+}
+
+.venue-public-map-dialog__map .leaflet-container {
+    width: 100%;
+    height: 100%;
+    font-family: var(--ev-sans);
+}
+
+.venue-public-map-dialog__attrib {
+    margin: 0;
+    padding: 0.5rem 0.85rem 0.75rem;
+    text-align: center;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: var(--li-text-soft);
+    border-top: 1px solid var(--li-border);
+}
+
+.venue-public-map-dialog__attrib a {
+    color: var(--li-green);
+    text-decoration: none;
+}
+
+.venue-public-map-dialog__attrib a:hover {
+    text-decoration: underline;
+}
+
+body.venue-public-map-dialog-open {
+    overflow: hidden;
+}
+
 .event-meta__card--wide {
     grid-column: 1 / -1;
 }
