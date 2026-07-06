@@ -4,13 +4,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/venue_request.php';
+require_once __DIR__ . '/lib/venue_geocode_runner.php';
 requireLogin();
 
 const EVENTS_VENUES_GEOCODE_ALL_SESSION = 'events_venues_geocode_all_run';
-const EVENTS_VENUES_GEOCODE_BATCH_SIZE = 12;
+const EVENTS_VENUES_GEOCODE_BATCH_SIZE = EVENTS_VENUE_GEOCODE_DEFAULT_BATCH;
 
 $db = getDb();
 $pendingTotal = events_venues_geocode_candidates_count($db);
+$cronTokenConfigured = events_cron_token_from_config() !== '';
+$cronUrl = events_url('cron/venue_geocode.php');
 
 /**
  * @return array{ok: int, fail: int, failed_ids: list<int>}|null
@@ -64,14 +67,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $run = ['ok' => 0, 'fail' => 0, 'failed_ids' => []];
     }
 
-    $batch = events_venues_geocode_batch($db, EVENTS_VENUES_GEOCODE_BATCH_SIZE, $run['failed_ids']);
-    $run['ok'] += $batch['ok'];
-    $run['fail'] += $batch['fail'];
-    $run['failed_ids'] = array_values(array_unique(array_merge($run['failed_ids'], $batch['failed_ids'])));
-
-    $remaining = (int) $batch['remaining'];
-    $stillPending = events_venues_fetch_geocode_candidates($db, 1, $run['failed_ids']);
-    $done = $remaining === 0 || $stillPending === [];
+    $batchResult = events_venues_geocode_run_batches(
+        $db,
+        EVENTS_VENUES_GEOCODE_BATCH_SIZE,
+        1,
+        $run['failed_ids']
+    );
+    $run['ok'] += $batchResult['ok'];
+    $run['fail'] += $batchResult['fail'];
+    $run['failed_ids'] = $batchResult['failed_ids'];
+    $remaining = (int) $batchResult['remaining'];
+    $done = (bool) $batchResult['done'];
 
     if ($done) {
         events_venues_geocode_all_session_clear();
@@ -93,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ?>
     <div class="card events-admin-card venues-geocode-run">
         <h2 class="events-list-title">GPS geokódolás folyamatban</h2>
-        <p class="help">A helyszínek cím alapján kerülnek feldolgozásra (OpenStreetMap Nominatim). Kérlek ne zárd be az oldalt – a folyamat automatikusan folytatódik.</p>
+        <p class="help">A helyszínek cím alapján kerülnek feldolgozásra (OpenStreetMap Nominatim), <?= (int) EVENTS_VENUES_GEOCODE_BATCH_SIZE ?>-es batch-ekben. Kérlek ne zárd be az oldalt – a folyamat automatikusan folytatódik.</p>
         <ul class="venues-geocode-run__stats">
             <li><strong><?= (int) $run['ok'] ?></strong> sikeres mentés</li>
             <li><strong><?= (int) $run['fail'] ?></strong> sikertelen</li>
@@ -131,19 +137,38 @@ require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <div class="card events-admin-card venues-geocode-run">
     <h2 class="events-list-title">GPS koordináták cím alapján</h2>
-    <p class="help">Végigmegy az összes helyszínen, ahol van cím, de még nincs GPS koordináta. A találatok automatikusan mentésre kerülnek. A folyamat batch-ekben fut (Nominatim sebességkorlát miatt).</p>
+    <p class="help">Végigmegy az összes helyszínen, ahol van cím, de még nincs GPS koordináta. A találatok automatikusan mentésre kerülnek. A folyamat <?= (int) EVENTS_VENUES_GEOCODE_BATCH_SIZE ?>-es batch-ekben fut (Nominatim sebességkorlát miatt).</p>
 
     <?php if ($pendingTotal === 0): ?>
         <p class="alert alert-success">Minden geokódolható helyszínnek már van GPS koordinátája.</p>
         <p><a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Vissza a helyszínekhez</a></p>
     <?php else: ?>
         <p><strong><?= (int) $pendingTotal ?></strong> helyszín vár geokódolásra (van cím, nincs GPS).</p>
-        <p class="help">Becsült idő: kb. <?= (int) ceil($pendingTotal * 1.2 / 60) ?> perc (<?= (int) EVENTS_VENUES_GEOCODE_BATCH_SIZE ?> helyszín / batch).</p>
-        <form method="post" action="<?= h(events_url('venue_geocode_all.php')) ?>" onsubmit="return confirm('Elindítod az összes hiányzó helyszín geokódolását? Ez <?= (int) $pendingTotal ?> címet dolgoz fel.');">
+        <p class="help">Becsült idő (böngészős futás): kb. <?= (int) ceil($pendingTotal * 1.2 / 60) ?> perc.</p>
+        <form method="post" action="<?= h(events_url('venue_geocode_all.php')) ?>" onsubmit="return confirm('Elindítod az összes hiányzó helyszín geokódolását? Ez <?= (int) $pendingTotal ?> címet dolgoz fel, <?= (int) EVENTS_VENUES_GEOCODE_BATCH_SIZE ?>-esével.');">
             <?= csrf_input('venues_geocode_all') ?>
-            <button type="submit" class="btn btn-primary">Összes geokódolása indítása</button>
+            <button type="submit" class="btn btn-primary">Összes geokódolása indítása (böngésző)</button>
             <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Mégse</a>
         </form>
     <?php endif; ?>
+
+    <hr class="venues-geocode-run__sep">
+
+    <h3 class="venues-geocode-run__subtitle">Cron / CLI (ütemezett futtatás)</h3>
+    <p class="help">Egy cron hívás alapból <strong><?= (int) EVENTS_VENUES_GEOCODE_BATCH_SIZE ?> helyszínt</strong> dolgoz fel. Ismétlődő cronnal végigmegy a teljes populáción.</p>
+
+    <pre class="venues-geocode-run__code">php nextgen/events/cron/venue_geocode.php</pre>
+    <p class="help">Teljes populáció egy CLI futásban (12-es batch-ekben):</p>
+    <pre class="venues-geocode-run__code">php nextgen/events/cron/venue_geocode.php --all</pre>
+
+    <?php if ($cronTokenConfigured): ?>
+        <p class="help">HTTP cron példa (token a <code>config.local.php</code> <code>EVENTS_CRON_TOKEN</code> értéke):</p>
+        <pre class="venues-geocode-run__code">curl -sf "<?= h($cronUrl) ?>?token=…"</pre>
+    <?php else: ?>
+        <p class="help muted">HTTP cronhoz állíts be <code>EVENTS_CRON_TOKEN</code> értéket a <code>config.local.php</code>-ben (min. 32 karakter ajánlott).</p>
+    <?php endif; ?>
+
+    <p class="help">Példa crontab (5 percenként 12 helyszín):</p>
+    <pre class="venues-geocode-run__code">*/5 * * * * cd /path/to/Alatinfo &amp;&amp; php nextgen/events/cron/venue_geocode.php >> logs/venue_geocode.log 2>&1</pre>
 </div>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
