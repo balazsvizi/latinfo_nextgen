@@ -236,6 +236,10 @@ if (!function_exists('events_public_ga_head_markup')) {
      * Google Analytics 4 (gtag.js) — csak nyilvános esemény oldalak head-jébe.
      */
     function events_public_ga_head_markup(): string {
+        if (function_exists('isLoggedIn') && isLoggedIn()) {
+            return '';
+        }
+
         $id = events_public_ga_measurement_id();
         if ($id === '') {
             return '';

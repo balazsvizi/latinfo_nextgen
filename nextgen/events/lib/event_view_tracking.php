@@ -59,8 +59,20 @@ function events_view_tracking_is_published_event(PDO $db, int $eventId): bool
     return (bool) $stmt->fetchColumn();
 }
 
+/**
+ * Admin munkamenetben nem rögzítünk megtekintést (saját számláló).
+ */
+function events_view_tracking_should_record(): bool
+{
+    return !(function_exists('isLoggedIn') && isLoggedIn());
+}
+
 function events_track_event_view(PDO $db, int $eventId, string $metricType, ?string $source = null): void
 {
+    if (!events_view_tracking_should_record()) {
+        return;
+    }
+
     if ($eventId <= 0 || !in_array($metricType, events_view_metric_types(), true)) {
         return;
     }
