@@ -59,6 +59,5 @@
     });
 })();
 </script>
-<?php require __DIR__ . '/superadmin_php_debug_bar.php'; ?>
 </body>
 </html>

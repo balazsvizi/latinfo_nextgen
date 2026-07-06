@@ -26,10 +26,51 @@ function isLoggedIn(): bool {
 }
 
 /**
+ * Admin szint a sessionből, szükség esetén DB-ből frissítve (régi sessionök).
+ */
+function ng_admin_szint_resolved(): ?string
+{
+    static $resolved = null;
+    if ($resolved !== null) {
+        return $resolved === '' ? null : $resolved;
+    }
+    $resolved = '';
+    if (!isLoggedIn()) {
+        return null;
+    }
+    $szint = (string) ($_SESSION['admin_szint'] ?? '');
+    if ($szint === 'superadmin' || $szint === 'admin') {
+        $resolved = $szint;
+
+        return $szint;
+    }
+    try {
+        $db = getDb();
+        $stmt = $db->prepare('SELECT szint FROM nextgen_admins WHERE id = ? AND aktív = 1 LIMIT 1');
+        $stmt->execute([(int) $_SESSION['admin_id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            $szint = isset($row['szint']) && $row['szint'] === 'superadmin' ? 'superadmin' : 'admin';
+            $_SESSION['admin_szint'] = $szint;
+            $resolved = $szint;
+
+            return $szint;
+        }
+    } catch (Throwable) {
+        $_SESSION['admin_szint'] = 'admin';
+        $resolved = 'admin';
+
+        return 'admin';
+    }
+
+    return null;
+}
+
+/**
  * Superadmin-e a bejelentkezett felhasználó (Admin menü, admin kezelés)
  */
 function isSuperadmin(): bool {
-    return ($_SESSION['admin_szint'] ?? '') === 'superadmin';
+    return ng_admin_szint_resolved() === 'superadmin';
 }
 
 /**
@@ -83,3 +124,6 @@ function logout(): void {
     }
     session_destroy();
 }
+
+require_once __DIR__ . '/superadmin_php_debug_bar.php';
+ng_register_superadmin_php_debug_bar_output_buffer();
