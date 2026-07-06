@@ -800,6 +800,9 @@ tr:hover td { background: var(--bg); }
     align-items: center;
     gap: 0.5rem;
 }
+.events-admin-card .events-inline-form {
+    display: contents;
+}
 
 .events-filters-shell {
     margin-bottom: 1.5rem;

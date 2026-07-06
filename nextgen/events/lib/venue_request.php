@@ -359,3 +359,218 @@ function events_venue_row_for_form(array $row): array {
     }
     return $e;
 }
+
+function events_venue_nominatim_user_agent(): string
+{
+    $site = defined('SITE_NAME') ? (string) SITE_NAME : 'Latinfo';
+
+    return preg_replace('/\s+/', '', $site) . 'Events/1.0 (venue geocoding)';
+}
+
+function events_venue_nominatim_throttle(): void
+{
+    $dir = dirname(__DIR__) . '/data';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $path = $dir . '/.nominatim_throttle';
+    $now = microtime(true);
+    if (is_file($path)) {
+        $last = (float) trim((string) file_get_contents($path));
+        $wait = 1.1 - ($now - $last);
+        if ($wait > 0) {
+            usleep((int) round($wait * 1_000_000));
+        }
+    }
+    @file_put_contents($path, (string) microtime(true));
+}
+
+/**
+ * @return array{lat: float, lng: float}|null
+ */
+function events_venue_geocode_nominatim(string $query, string $countryCode = ''): ?array
+{
+    $query = trim($query);
+    if ($query === '') {
+        return null;
+    }
+
+    events_venue_nominatim_throttle();
+
+    $params = [
+        'format' => 'json',
+        'limit' => '1',
+        'q' => $query,
+    ];
+    if (strlen($countryCode) === 2) {
+        $params['countrycodes'] = strtolower($countryCode);
+    }
+
+    $url = 'https://nominatim.openstreetmap.org/search?' . http_build_query($params);
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => implode("\r\n", [
+                'User-Agent: ' . events_venue_nominatim_user_agent(),
+                'Accept: application/json',
+                'Accept-Language: hu,en;q=0.8',
+            ]),
+            'timeout' => 20,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $raw = @file_get_contents($url, false, $context);
+    if ($raw === false || $raw === '') {
+        error_log('events venue geocode: nominatim request failed for ' . $query);
+
+        return null;
+    }
+
+    try {
+        $data = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    } catch (Throwable $ex) {
+        error_log('events venue geocode: invalid json for ' . $query . ' – ' . $ex->getMessage());
+
+        return null;
+    }
+
+    if (!is_array($data) || $data === []) {
+        return null;
+    }
+
+    $hit = $data[0] ?? null;
+    if (!is_array($hit)) {
+        return null;
+    }
+
+    $latRaw = $hit['lat'] ?? null;
+    $lngRaw = $hit['lon'] ?? null;
+    if (!is_numeric((string) $latRaw) || !is_numeric((string) $lngRaw)) {
+        return null;
+    }
+
+    $lat = (float) $latRaw;
+    $lng = (float) $lngRaw;
+    if ($lat < -90.0 || $lat > 90.0 || $lng < -180.0 || $lng > 180.0) {
+        return null;
+    }
+
+    return ['lat' => round($lat, 7), 'lng' => round($lng, 7)];
+}
+
+/**
+ * Cím alapján kitölti a koordinátákat, ha üresek.
+ *
+ * @param array<string, mixed> $row country, city, postal_code, address, latitude, longitude
+ * @return array<string, mixed>
+ */
+function events_venue_apply_geocode_if_needed(array $row): array
+{
+    if (events_venue_coordinates_from_row([
+        'latitude' => $row['latitude'] ?? null,
+        'longitude' => $row['longitude'] ?? null,
+    ]) !== null) {
+        return $row;
+    }
+
+    $venueFields = [
+        'address' => (string) ($row['address'] ?? ''),
+        'city' => (string) ($row['city'] ?? ''),
+        'postal_code' => (string) ($row['postal_code'] ?? ''),
+        'country' => (string) ($row['country'] ?? ''),
+    ];
+    $query = events_venue_geocode_query($venueFields);
+    if ($query === '') {
+        return $row;
+    }
+
+    $countryCode = events_venue_country_nominatim_code($venueFields['country']);
+    $coords = events_venue_geocode_nominatim($query, $countryCode);
+    if ($coords === null && $countryCode !== '') {
+        $coords = events_venue_geocode_nominatim($query, '');
+    }
+    if ($coords === null) {
+        return $row;
+    }
+
+    $row['latitude'] = $coords['lat'];
+    $row['longitude'] = $coords['lng'];
+
+    return $row;
+}
+
+function events_venues_geocode_candidates_where_sql(): string
+{
+    return "
+        (
+            v.`latitude` IS NULL OR v.`longitude` IS NULL
+            OR TRIM(CAST(v.`latitude` AS CHAR)) = '' OR TRIM(CAST(v.`longitude` AS CHAR)) = ''
+        )
+        AND (
+            (v.`address` IS NOT NULL AND TRIM(v.`address`) != '')
+            OR (v.`city` IS NOT NULL AND TRIM(v.`city`) != '')
+        )
+    ";
+}
+
+function events_venues_geocode_candidates_count(PDO $db): int
+{
+    $sql = 'SELECT COUNT(*) FROM `events_venues` v WHERE ' . events_venues_geocode_candidates_where_sql();
+    $count = $db->query($sql)->fetchColumn();
+
+    return (int) $count;
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function events_venues_fetch_geocode_candidates(PDO $db, int $limit = 12): array
+{
+    $limit = max(1, min(25, $limit));
+    $sql = '
+        SELECT v.`id`, v.`name`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`
+        FROM `events_venues` v
+        WHERE ' . events_venues_geocode_candidates_where_sql() . '
+        ORDER BY v.`id` ASC
+        LIMIT ' . $limit;
+    $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
+    return is_array($rows) ? $rows : [];
+}
+
+function events_venue_geocode_and_save(PDO $db, int $venueId): bool
+{
+    if ($venueId <= 0) {
+        return false;
+    }
+
+    $st = $db->prepare('
+        SELECT `id`, `name`, `country`, `city`, `postal_code`, `address`, `latitude`, `longitude`
+        FROM `events_venues`
+        WHERE `id` = ?
+        LIMIT 1
+    ');
+    $st->execute([$venueId]);
+    $venue = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$venue) {
+        return false;
+    }
+
+    $updated = events_venue_apply_geocode_if_needed($venue);
+    if (events_venue_coordinates_from_row([
+        'latitude' => $updated['latitude'] ?? null,
+        'longitude' => $updated['longitude'] ?? null,
+    ]) === null) {
+        return false;
+    }
+
+    $upd = $db->prepare('UPDATE `events_venues` SET `latitude` = ?, `longitude` = ? WHERE `id` = ?');
+    $upd->execute([
+        $updated['latitude'],
+        $updated['longitude'],
+        $venueId,
+    ]);
+
+    return true;
+}

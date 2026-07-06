@@ -37,12 +37,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('venue_letrehoz')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-        [$row, $err] = events_venue_row_from_post($db, $defaults, null);
-        if ($err !== null) {
-            $hiba = $err;
-            $v = events_venue_row_for_form($row);
-        } else {
-            try {
+            [$row, $err] = events_venue_row_from_post($db, $defaults, null);
+            if ($err !== null) {
+                $hiba = $err;
+                $v = events_venue_row_for_form($row);
+            } else {
+                $coordsBefore = events_venue_coordinates_from_row([
+                    'latitude' => $row['latitude'] ?? null,
+                    'longitude' => $row['longitude'] ?? null,
+                ]);
+                $row = events_venue_apply_geocode_if_needed($row);
+                $geocodedOnSave = $coordsBefore === null && events_venue_coordinates_from_row([
+                    'latitude' => $row['latitude'] ?? null,
+                    'longitude' => $row['longitude'] ?? null,
+                ]) !== null;
+                try {
                 $ins = $db->prepare('
                     INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`, `latitude`, `longitude`, `website_url`, `google_maps_url`, `linked_venue_id`)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
@@ -63,7 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 $newId = (int) $db->lastInsertId();
                 rendszer_log('helyszín', $newId, 'Létrehozva', $row['name']);
-                flash('success', 'Helyszín létrehozva.');
+                flash('success', $geocodedOnSave
+                    ? 'Helyszín létrehozva. A GPS koordináta cím alapján került beállításra.'
+                    : 'Helyszín létrehozva.');
                 redirect(events_url('venue_szerkeszt.php?id=') . $newId);
             } catch (Throwable $ex) {
                 error_log('events venue_letrehoz mentesi hiba: ' . $ex->getMessage());
@@ -84,7 +95,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <header class="events-edit-header">
         <div>
             <h1 class="events-edit-title">Új helyszín</h1>
-            <p class="help muted events-edit-subtitle">Adj meg nevet és címet; a térképen állíthatod be a GPS pontot.</p>
+            <p class="help muted events-edit-subtitle">Adj meg nevet és címet; mentéskor a GPS automatikusan kitöltődhet a cím alapján, vagy a térképen állíthatod be.</p>
         </div>
         <div class="events-edit-header__actions">
             <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Vissza a listához</a>

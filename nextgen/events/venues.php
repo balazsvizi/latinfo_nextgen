@@ -67,6 +67,7 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $listDisplayedCount = count($rows);
+$missingCoordsCount = events_venues_geocode_candidates_count($db);
 
 $get_params = array_filter([
     'f_q' => $f_q !== '' ? $f_q : null,
@@ -112,6 +113,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
             <div class="events-list-actions">
                 <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
+                <?php if ($missingCoordsCount > 0): ?>
+                    <form method="post" action="<?= h(events_url('venue_geocode_missing.php')) ?>" class="events-inline-form" onsubmit="return confirm('GPS koordináta kerül a cím alapján a hiányzó helyszínekhez (egyszerre max. 12). Folytatod?');">
+                        <?= csrf_input('venues_geocode') ?>
+                        <button type="submit" class="btn btn-secondary">GPS cím alapján (<?= (int) $missingCoordsCount ?>)</button>
+                    </form>
+                <?php endif; ?>
                 <a href="<?= h(events_url('venue_letrehoz.php')) ?>" class="btn btn-primary">Új helyszín</a>
                 <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
             </div>

@@ -52,12 +52,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hiba = 'Törlési hiba történt. Kérlek próbáld újra.';
                 }
             }
+        } elseif ($action === 'geocode') {
+            if (events_venue_geocode_and_save($db, $id)) {
+                rendszer_log('helyszín', $id, 'GPS geokódolás', (string) ($venue['name'] ?? ''));
+                flash('success', 'GPS koordináta cím alapján mentve.');
+            } else {
+                flash('error', 'Nem sikerült geokódolni a címet. Ellenőrizd a cím mezőket, vagy állítsd be a pontot a térképen.');
+            }
+            redirect(events_url('venue_szerkeszt.php?id=') . $id);
         } else {
             [$row, $err] = events_venue_row_from_post($db, $venue, $id);
             if ($err !== null) {
                 $hiba = $err;
                 $v = events_venue_row_for_form($row);
             } else {
+                $coordsBefore = events_venue_coordinates_from_row([
+                    'latitude' => $row['latitude'] ?? null,
+                    'longitude' => $row['longitude'] ?? null,
+                ]);
+                $row = events_venue_apply_geocode_if_needed($row);
+                $geocodedOnSave = $coordsBefore === null && events_venue_coordinates_from_row([
+                    'latitude' => $row['latitude'] ?? null,
+                    'longitude' => $row['longitude'] ?? null,
+                ]) !== null;
                 try {
                     $upd = $db->prepare('
                         UPDATE `events_venues` SET
@@ -84,7 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $id,
                     ]);
                     rendszer_log('helyszín', $id, 'Módosítva', $row['name']);
-                    flash('success', 'Mentve.');
+                    flash('success', $geocodedOnSave
+                        ? 'Mentve. A GPS koordináta cím alapján került beállításra.'
+                        : 'Mentve.');
                     redirect(events_url('venue_szerkeszt.php?id=') . $id);
                 } catch (Throwable $ex) {
                     error_log('events venue_szerkeszt mentesi hiba: ' . $ex->getMessage());

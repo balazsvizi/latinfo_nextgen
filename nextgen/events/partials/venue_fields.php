@@ -12,6 +12,14 @@ if (!isset($venuesLinkOptions) || !is_array($venuesLinkOptions)) {
 $venueEditId = (int) ($venueEditId ?? 0);
 $venuePublicUrl = isset($venuePublicUrl) && $venuePublicUrl !== '' ? (string) $venuePublicUrl : null;
 $hasCoords = ($v['latitude'] ?? '') !== '' && ($v['longitude'] ?? '') !== '';
+$venueFormShowGeocode = $venueEditId > 0
+    && !$hasCoords
+    && events_venue_geocode_query([
+        'address' => (string) ($v['address'] ?? ''),
+        'city' => (string) ($v['city'] ?? ''),
+        'postal_code' => (string) ($v['postal_code'] ?? ''),
+        'country' => (string) ($v['country'] ?? ''),
+    ]) !== '';
 ?>
 <div class="events-edit-layout venue-edit-layout">
     <div class="events-edit-main">
@@ -68,7 +76,7 @@ $hasCoords = ($v['latitude'] ?? '') !== '' && ($v['longitude'] ?? '') !== '';
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.25c.621-.288 1.125-1.004 1.125-1.734v-11.25c0-.621-.504-1.125-1.125-1.125h-12.75c-.621 0-1.125.504-1.125 1.125v11.25c0 .73.504 1.443 1.125 1.734l4.875 2.25M21 12.75v-8.25M3 12.75v8.25M3.75 21h16.5M3.75 3h16.5"/></svg>
                     Térképen: javaslat és pöttyözés
                 </button>
-                <span id="venue-edit-map-status" class="venue-edit-map-status<?= $hasCoords ? '' : ' venue-edit-map-status--muted' ?>"><?= $hasCoords ? 'GPS beállítva' : 'Nincs GPS — a nyilvános térkép nem jelenik meg' ?></span>
+                <span id="venue-edit-map-status" class="venue-edit-map-status<?= $hasCoords ? '' : ' venue-edit-map-status--muted' ?>"><?= $hasCoords ? 'GPS beállítva' : 'Nincs GPS — mentéskor vagy a gombbal cím alapján kitölthető' ?></span>
             </div>
             <div id="venue-edit-map-preview" class="venue-edit-map-preview<?= $hasCoords ? '' : ' is-hidden' ?>" aria-hidden="<?= $hasCoords ? 'false' : 'true' ?>">
                 <p class="venue-edit-map-preview__label">Előnézet (publikus térkép)</p>
