@@ -135,12 +135,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <div class="events-list-actions">
                 <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
                 <?php if ($missingCoordsCount > 0): ?>
+                    <a href="<?= h(events_url('venue_geocode_all.php')) ?>" class="btn btn-primary">Összes geokódolása (<?= (int) $missingCoordsCount ?>)</a>
                     <button
                         type="submit"
                         form="venues-geocode-form"
                         class="btn btn-secondary"
-                        onclick="return confirm('GPS koordináta kerül a cím alapján a hiányzó helyszínekhez (egyszerre max. 12). Folytatod?');"
-                    >GPS cím alapján (<?= (int) $missingCoordsCount ?>)</button>
+                        title="Csak a következő 12 helyszín"
+                        onclick="return confirm('A következő legfeljebb 12 helyszín GPS koordinátája kerül mentésre cím alapján. Folytatod?');"
+                    >Következő 12</button>
                 <?php endif; ?>
                 <a href="<?= h(events_url('venue_letrehoz.php')) ?>" class="btn btn-primary">Új helyszín</a>
                 <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>

@@ -537,20 +537,61 @@ function events_venues_geocode_candidates_count(PDO $db): int
 }
 
 /**
+ * @param list<int> $excludeIds ezen futás alatt már sikertelen ID-k (újrapróbálás nélkül)
  * @return list<array<string, mixed>>
  */
-function events_venues_fetch_geocode_candidates(PDO $db, int $limit = 12): array
+function events_venues_fetch_geocode_candidates(PDO $db, int $limit = 12, array $excludeIds = []): array
 {
     $limit = max(1, min(25, $limit));
+    $excludeIds = array_values(array_unique(array_filter(array_map('intval', $excludeIds), static fn (int $id): bool => $id > 0)));
+    $excludeSql = '';
+    if ($excludeIds !== []) {
+        $excludeSql = ' AND v.`id` NOT IN (' . implode(',', $excludeIds) . ')';
+    }
     $sql = '
         SELECT v.`id`, v.`name`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`
         FROM `events_venues` v
-        WHERE ' . events_venues_geocode_candidates_where_sql() . '
+        WHERE ' . events_venues_geocode_candidates_where_sql() . $excludeSql . '
         ORDER BY v.`id` ASC
         LIMIT ' . $limit;
     $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
     return is_array($rows) ? $rows : [];
+}
+
+/**
+ * Egy batch geokódolás (Nominatim throttle a hívások között).
+ *
+ * @param list<int> $excludeIds
+ * @return array{ok: int, fail: int, failed_ids: list<int>, remaining: int}
+ */
+function events_venues_geocode_batch(PDO $db, int $batchSize = 12, array $excludeIds = []): array
+{
+    $candidates = events_venues_fetch_geocode_candidates($db, $batchSize, $excludeIds);
+    $ok = 0;
+    $fail = 0;
+    $failedIds = [];
+
+    foreach ($candidates as $candidate) {
+        $venueId = (int) ($candidate['id'] ?? 0);
+        if ($venueId <= 0) {
+            continue;
+        }
+        if (events_venue_geocode_and_save($db, $venueId)) {
+            $ok++;
+            rendszer_log('helyszín', $venueId, 'GPS geokódolás', (string) ($candidate['name'] ?? ''));
+        } else {
+            $fail++;
+            $failedIds[] = $venueId;
+        }
+    }
+
+    return [
+        'ok' => $ok,
+        'fail' => $fail,
+        'failed_ids' => $failedIds,
+        'remaining' => events_venues_geocode_candidates_count($db),
+    ];
 }
 
 function events_venue_geocode_and_save(PDO $db, int $venueId): bool

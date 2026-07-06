@@ -4238,6 +4238,16 @@ dialog.eventpics-modal::backdrop {
 .events-edit-form-actions__delete {
     margin-left: auto;
 }
+.venues-geocode-run__stats {
+    margin: 1rem 0;
+    padding-left: 1.25rem;
+    line-height: 1.6;
+}
+.venues-geocode-run__hint {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
 .venues-td-map {
     text-align: center;
     width: 4rem;
