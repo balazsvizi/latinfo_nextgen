@@ -13,7 +13,6 @@ $listLimitParsed = events_admin_list_limit_from_get();
 $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
 $listTotalInDb = events_admin_table_total_count($db, 'events_venues');
-$poolFrom = events_admin_table_pool_from_sql('events_venues', 'v', $list_limit);
 
 $f_q = trim((string) ($_GET['f_q'] ?? ''));
 $f_city = trim((string) ($_GET['f_city'] ?? ''));
@@ -72,9 +71,12 @@ $orderSql = match ($order) {
 };
 
 $sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`, v.`modified`
-        FROM {$poolFrom}
+        FROM `events_venues` v
         $whereSql
         ORDER BY $orderSql";
+if ($list_limit !== null) {
+    $sql .= ' LIMIT ' . (int) $list_limit;
+}
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -110,6 +112,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
+<?php if ($missingCoordsCount > 0): ?>
+<form method="post" action="<?= h(events_url('venue_geocode_missing.php')) ?>" id="venues-geocode-form" class="visually-hidden" aria-hidden="true">
+    <?= csrf_input('venues_geocode') ?>
+</form>
+<?php endif; ?>
+
 <div class="card events-admin-card">
     <form method="get" action="<?= h(events_url('venues.php')) ?>" class="events-admin-form" id="venues-filter-form">
         <input type="hidden" name="order" value="<?= h($order) ?>">
@@ -127,10 +135,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <div class="events-list-actions">
                 <a href="<?= h(events_url('venues.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
                 <?php if ($missingCoordsCount > 0): ?>
-                    <form method="post" action="<?= h(events_url('venue_geocode_missing.php')) ?>" class="events-inline-form" onsubmit="return confirm('GPS koordináta kerül a cím alapján a hiányzó helyszínekhez (egyszerre max. 12). Folytatod?');">
-                        <?= csrf_input('venues_geocode') ?>
-                        <button type="submit" class="btn btn-secondary">GPS cím alapján (<?= (int) $missingCoordsCount ?>)</button>
-                    </form>
+                    <button
+                        type="submit"
+                        form="venues-geocode-form"
+                        class="btn btn-secondary"
+                        onclick="return confirm('GPS koordináta kerül a cím alapján a hiányzó helyszínekhez (egyszerre max. 12). Folytatod?');"
+                    >GPS cím alapján (<?= (int) $missingCoordsCount ?>)</button>
                 <?php endif; ?>
                 <a href="<?= h(events_url('venue_letrehoz.php')) ?>" class="btn btn-primary">Új helyszín</a>
                 <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
@@ -217,5 +227,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </form>
 </div>
-<?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
+<?php require __DIR__ . '/partials/venues_filter_script.php'; ?>
+<?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
