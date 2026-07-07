@@ -145,6 +145,33 @@ function pm_tools_icon_copy(): string
         . '</svg>';
 }
 
+function pm_tools_render_note_rows_html(array $notes): string
+{
+    if ($notes === []) {
+        return '<div class="pm-tools-note-row">'
+            . '<textarea class="pm-note-input" rows="2" placeholder="Jegyzet…"></textarea>'
+            . '<textarea class="pm-response-input" rows="2" placeholder="Válasz…"></textarea>'
+            . '<button type="button" class="pm-tools-row-del" title="Sor törlése">&times;</button>'
+            . '</div>';
+    }
+
+    $html = '';
+    foreach ($notes as $note) {
+        $noteText = (string) ($note['note_text'] ?? '');
+        $responseText = (string) ($note['response_text'] ?? '');
+        $isUnanswered = PmTools::noteRowIsUnanswered($noteText, $responseText);
+        $rowClass = $isUnanswered ? ' pm-tools-note-row is-unanswered-row' : ' pm-tools-note-row';
+        $responseClass = $isUnanswered ? ' pm-response-input is-unanswered' : ' pm-response-input';
+        $html .= '<div class="' . trim($rowClass) . '">'
+            . '<textarea class="pm-note-input" rows="2">' . h($noteText) . '</textarea>'
+            . '<textarea class="' . trim($responseClass) . '" rows="2" placeholder="Válasz…">' . h($responseText) . '</textarea>'
+            . '<button type="button" class="pm-tools-row-del" title="Sor törlése">&times;</button>'
+            . '</div>';
+    }
+
+    return $html;
+}
+
 function pm_tools_render_widget_html(): string
 {
     try {
@@ -165,86 +192,69 @@ function pm_tools_render_widget_html(): string
     $apiUrl = pm_tools_api_url();
     $assetCss = h(pm_tools_asset_url('css/pmtools.css'));
     $assetJs = h(pm_tools_asset_url('js/pmtools.js'));
+    $notesBtnClass = 'pm-tools-icon-btn' . ($unansweredCount > 0 ? ' has-unanswered-notes' : '');
+    $purposeHtml = trim($purpose) !== ''
+        ? '<p class="pm-tools-purpose-text"><span>Mire jó</span>' . h($purpose) . '</p>'
+        : '';
 
-    ob_start();
-    ?>
-<link rel="stylesheet" href="<?= $assetCss ?>">
-<div id="pm-tools-root"
-     data-page-id="<?= $pageId ?>"
-     data-php-path="<?= h($phpPath) ?>"
-     data-csrf="<?= h($csrf) ?>"
-     data-api="<?= h($apiUrl) ?>">
-    <div class="pm-tools-badge-wrap">
-        <button type="button" class="pm-tools-icon-btn<?= $unansweredCount > 0 ? ' has-unanswered-notes' : '' ?>" id="pm-tools-notes-btn" title="Jegyzetek – <?= h($phpPath) ?>" aria-label="Jegyzetek megnyitása: <?= h($phpPath) ?>">
-            <?= pm_tools_icon_notes() ?>
-        </button>
-        <button type="button" class="pm-tools-icon-btn pm-tools-copy-btn" id="pm-tools-copy-badge" data-copy="<?= h($phpPath) ?>" title="Másolás: <?= h($phpPath) ?>" aria-label="PHP útvonal másolása: <?= h($phpPath) ?>">
-            <?= pm_tools_icon_copy() ?>
-        </button>
-    </div>
-    <div class="pm-tools-overlay" id="pm-tools-overlay" hidden>
-        <div class="pm-tools-modal" role="dialog" aria-labelledby="pm-tools-modal-title">
-            <header class="pm-tools-modal-head">
-                <div>
-                    <h2 id="pm-tools-modal-title"><?= h($displayName) ?></h2>
-                    <div class="pm-tools-modal-path-row">
-                        <p class="pm-tools-modal-path"><?= h($phpPath) ?></p>
-                        <button type="button" class="pm-tools-icon-btn pm-tools-copy-btn pm-tools-copy-btn--modal" data-copy="<?= h($phpPath) ?>" title="PHP útvonal másolása" aria-label="PHP útvonal másolása">
-                            <?= pm_tools_icon_copy() ?>
-                        </button>
-                    </div>
-                </div>
-                <button type="button" class="pm-tools-close" id="pm-tools-close" aria-label="Bezárás">&times;</button>
-            </header>
-            <div class="pm-tools-modal-body">
-                <label class="pm-tools-field">
-                    <span>Név</span>
-                    <input type="text" id="pm-tools-name" value="<?= h($displayName) ?>">
-                </label>
-                <?php if (trim($purpose) !== ''): ?>
-                <p class="pm-tools-purpose-text"><span>Mire jó</span><?= h($purpose) ?></p>
-                <?php endif; ?>
-                <div class="pm-tools-notes-wrap">
-                    <div class="pm-tools-notes-head">
-                        <span>Jegyzet</span>
-                        <span>Válasz</span>
-                        <span></span>
-                    </div>
-                    <div id="pm-tools-notes-rows">
-                        <?php if ($notes === []): ?>
-                        <div class="pm-tools-note-row">
-                            <textarea class="pm-note-input" rows="2" placeholder="Jegyzet…"></textarea>
-                            <textarea class="pm-response-input" rows="2" placeholder="Válasz…"></textarea>
-                            <button type="button" class="pm-tools-row-del" title="Sor törlése">&times;</button>
-                        </div>
-                        <?php else: ?>
-                        <?php foreach ($notes as $note): ?>
-                        <?php
-                        $noteText = (string) $note['note_text'];
-                        $responseText = (string) $note['response_text'];
-                        $isUnanswered = PmTools::noteRowIsUnanswered($noteText, $responseText);
-                        ?>
-                        <div class="pm-tools-note-row<?= $isUnanswered ? ' is-unanswered-row' : '' ?>">
-                            <textarea class="pm-note-input" rows="2"><?= h($noteText) ?></textarea>
-                            <textarea class="pm-response-input<?= $isUnanswered ? ' is-unanswered' : '' ?>" rows="2" placeholder="Válasz…"><?= h($responseText) ?></textarea>
-                            <button type="button" class="pm-tools-row-del" title="Sor törlése">&times;</button>
-                        </div>
-                        <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                    <button type="button" class="pm-tools-add-row" id="pm-tools-add-row">+ Új sor hozzáadása</button>
-                </div>
-            </div>
-            <footer class="pm-tools-modal-foot">
-                <span class="pm-tools-status" id="pm-tools-status"></span>
-                <button type="button" class="pm-tools-btn pm-tools-btn-primary" id="pm-tools-save">Mentés</button>
-            </footer>
-        </div>
-    </div>
-</div>
-<script src="<?= $assetJs ?>" defer></script>
-    <?php
-    return (string) ob_get_clean();
+    return '<link rel="stylesheet" href="' . $assetCss . '">'
+        . '<div id="pm-tools-root"'
+        . ' data-page-id="' . $pageId . '"'
+        . ' data-php-path="' . h($phpPath) . '"'
+        . ' data-csrf="' . h($csrf) . '"'
+        . ' data-api="' . h($apiUrl) . '">'
+        . '<div class="pm-tools-badge-wrap">'
+        . '<button type="button" class="' . h($notesBtnClass) . '" id="pm-tools-notes-btn"'
+        . ' title="Jegyzetek – ' . h($phpPath) . '"'
+        . ' aria-label="Jegyzetek megnyitása: ' . h($phpPath) . '">'
+        . pm_tools_icon_notes()
+        . '</button>'
+        . '<button type="button" class="pm-tools-icon-btn pm-tools-copy-btn" id="pm-tools-copy-badge"'
+        . ' data-copy="' . h($phpPath) . '"'
+        . ' title="Másolás: ' . h($phpPath) . '"'
+        . ' aria-label="PHP útvonal másolása: ' . h($phpPath) . '">'
+        . pm_tools_icon_copy()
+        . '</button>'
+        . '</div>'
+        . '<div class="pm-tools-overlay" id="pm-tools-overlay" hidden>'
+        . '<div class="pm-tools-modal" role="dialog" aria-labelledby="pm-tools-modal-title">'
+        . '<header class="pm-tools-modal-head">'
+        . '<div>'
+        . '<h2 id="pm-tools-modal-title">' . h($displayName) . '</h2>'
+        . '<div class="pm-tools-modal-path-row">'
+        . '<p class="pm-tools-modal-path">' . h($phpPath) . '</p>'
+        . '<button type="button" class="pm-tools-icon-btn pm-tools-copy-btn pm-tools-copy-btn--modal"'
+        . ' data-copy="' . h($phpPath) . '" title="PHP útvonal másolása" aria-label="PHP útvonal másolása">'
+        . pm_tools_icon_copy()
+        . '</button>'
+        . '</div>'
+        . '</div>'
+        . '<button type="button" class="pm-tools-close" id="pm-tools-close" aria-label="Bezárás">&times;</button>'
+        . '</header>'
+        . '<div class="pm-tools-modal-body">'
+        . '<label class="pm-tools-field">'
+        . '<span>Név</span>'
+        . '<input type="text" id="pm-tools-name" value="' . h($displayName) . '">'
+        . '</label>'
+        . $purposeHtml
+        . '<div class="pm-tools-notes-wrap">'
+        . '<div class="pm-tools-notes-head">'
+        . '<span>Jegyzet</span><span>Válasz</span><span></span>'
+        . '</div>'
+        . '<div id="pm-tools-notes-rows">'
+        . pm_tools_render_note_rows_html($notes)
+        . '</div>'
+        . '<button type="button" class="pm-tools-add-row" id="pm-tools-add-row">+ Új sor hozzáadása</button>'
+        . '</div>'
+        . '</div>'
+        . '<footer class="pm-tools-modal-foot">'
+        . '<span class="pm-tools-status" id="pm-tools-status"></span>'
+        . '<button type="button" class="pm-tools-btn pm-tools-btn-primary" id="pm-tools-save">Mentés</button>'
+        . '</footer>'
+        . '</div>'
+        . '</div>'
+        . '</div>'
+        . '<script src="' . $assetJs . '" defer></script>';
 }
 
 function pm_tools_render_footer(): void
