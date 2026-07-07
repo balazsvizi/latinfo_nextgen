@@ -419,6 +419,9 @@ function nextgen_partner_selectable_events_organizers(PDO $db): array
  */
 function nextgen_partner_selectable_djs(PDO $db): array
 {
+    if (!function_exists('events_tags_tables_available')) {
+        require_once dirname(__DIR__, 2) . '/events/bootstrap.php';
+    }
     if (!function_exists('events_tag_type_id_by_code')) {
         require_once dirname(__DIR__, 2) . '/events/lib/tag_type.php';
     }
