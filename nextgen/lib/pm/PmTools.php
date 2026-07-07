@@ -5,8 +5,16 @@ require_once __DIR__ . '/page_catalog.php';
 
 final class PmTools
 {
+    private static bool $schemaEnsured = false;
+
+    private static ?bool $overlayEnabledCache = null;
+
     public static function ensureSchema(PDO $pdo): void
     {
+        if (self::$schemaEnsured) {
+            return;
+        }
+
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS `nextgen_pm_settings` (
                 `key` VARCHAR(64) NOT NULL,
@@ -41,16 +49,24 @@ final class PmTools
 
         $stmt = $pdo->prepare('INSERT IGNORE INTO `nextgen_pm_settings` (`key`, `value`) VALUES (:key, :value)');
         $stmt->execute([':key' => 'overlay_enabled', ':value' => '1']);
+
+        self::$schemaEnsured = true;
     }
 
     public static function isOverlayEnabled(PDO $pdo): bool
     {
+        if (self::$overlayEnabledCache !== null) {
+            return self::$overlayEnabledCache;
+        }
+
         self::ensureSchema($pdo);
         $stmt = $pdo->prepare('SELECT value FROM `nextgen_pm_settings` WHERE `key` = :key');
         $stmt->execute([':key' => 'overlay_enabled']);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return ($row['value'] ?? '0') === '1';
+        self::$overlayEnabledCache = ($row['value'] ?? '0') === '1';
+
+        return self::$overlayEnabledCache;
     }
 
     public static function setOverlayEnabled(PDO $pdo, bool $enabled): void
@@ -64,6 +80,8 @@ final class PmTools
             ':key' => 'overlay_enabled',
             ':value' => $enabled ? '1' : '0',
         ]);
+
+        self::$overlayEnabledCache = $enabled;
     }
 
     public static function normalizePhpPath(string $path): string
@@ -186,7 +204,53 @@ final class PmTools
 
     public static function countTotalUnansweredPages(PDO $pdo): int
     {
-        return count(self::listPagesWithNotes($pdo, true));
+        self::ensureSchema($pdo);
+        $sql = 'SELECT COUNT(DISTINCT p.id)
+                FROM `nextgen_pm_pages` p
+                INNER JOIN `nextgen_pm_page_notes` n ON n.page_id = p.id
+                WHERE TRIM(n.note_text) != \'\' AND TRIM(n.response_text) = \'\'';
+
+        return (int) $pdo->query($sql)->fetchColumn();
+    }
+
+    /** @param list<array<string,mixed>> $notes */
+    public static function countUnansweredFromNotes(array $notes): int
+    {
+        $count = 0;
+        foreach ($notes as $note) {
+            if (!is_array($note)) {
+                continue;
+            }
+            if (self::noteRowIsUnanswered(
+                (string) ($note['note_text'] ?? ''),
+                (string) ($note['response_text'] ?? '')
+            )) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Widgethez: oldal + jegyzetek egy kérésben, min. query számmal.
+     *
+     * @return array{page: array<string,mixed>, notes: list<array<string,mixed>>}|null
+     */
+    public static function loadWidgetData(PDO $pdo, string $phpPath): ?array
+    {
+        try {
+            $page = self::getOrCreatePage($pdo, $phpPath);
+            $pageId = (int) ($page['id'] ?? 0);
+            if ($pageId <= 0) {
+                return null;
+            }
+            $notes = self::listNotesForPage($pdo, $pageId);
+
+            return ['page' => $page, 'notes' => $notes];
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     public static function noteRowIsUnanswered(string $noteText, string $responseText): bool

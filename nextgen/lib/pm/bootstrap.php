@@ -85,28 +85,38 @@ function pm_tools_should_skip_request(): bool
 
 function pm_tools_should_inject(): bool
 {
-    if (pm_tools_should_skip_request()) {
-        return false;
+    return pm_tools_inject_active();
+}
+
+function pm_tools_inject_active(): bool
+{
+    static $active = null;
+    if ($active !== null) {
+        return $active;
     }
-    if (!pm_tools_has_access()) {
-        return false;
+
+    if (pm_tools_should_skip_request() || !pm_tools_has_access()) {
+        return $active = false;
     }
+
     try {
-        return PmTools::isOverlayEnabled(pm_tools_db());
+        return $active = PmTools::isOverlayEnabled(pm_tools_db());
     } catch (Throwable) {
-        return false;
+        return $active = false;
     }
 }
 
 /** @return array{overlay:bool,admin:bool,active:bool} */
 function pm_tools_status(): array
 {
-    $overlay = false;
-    try {
-        $overlay = PmTools::isOverlayEnabled(pm_tools_db());
-    } catch (Throwable) {
-    }
     $admin = pm_tools_has_access();
+    $overlay = false;
+    if ($admin) {
+        try {
+            $overlay = PmTools::isOverlayEnabled(pm_tools_db());
+        } catch (Throwable) {
+        }
+    }
 
     return [
         'overlay' => $overlay,
@@ -117,13 +127,19 @@ function pm_tools_status(): array
 
 function pm_tools_unanswered_badge_count(): int
 {
-    if (!pm_tools_has_access()) {
-        return 0;
+    static $count = null;
+    if ($count !== null) {
+        return $count;
     }
+
+    if (!pm_tools_has_access()) {
+        return $count = 0;
+    }
+
     try {
-        return PmTools::countTotalUnansweredPages(pm_tools_db());
+        return $count = PmTools::countTotalUnansweredPages(pm_tools_db());
     } catch (Throwable) {
-        return 0;
+        return $count = 0;
     }
 }
 
@@ -174,17 +190,22 @@ function pm_tools_render_note_rows_html(array $notes): string
 
 function pm_tools_render_widget_html(): string
 {
-    try {
-        $pdo = pm_tools_db();
-        $phpPath = pm_tools_current_php_path();
-        $page = PmTools::getOrCreatePage($pdo, $phpPath);
-        $notes = PmTools::listNotesForPage($pdo, (int) $page['id']);
-    } catch (Throwable) {
-        return '';
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
     }
 
+    $pdo = pm_tools_db();
+    $phpPath = pm_tools_current_php_path();
+    $data = PmTools::loadWidgetData($pdo, $phpPath);
+    if ($data === null) {
+        return $cached = '';
+    }
+
+    $page = $data['page'];
+    $notes = $data['notes'];
     $pageId = (int) $page['id'];
-    $unansweredCount = PmTools::countUnansweredNotes($pdo, $pageId);
+    $unansweredCount = PmTools::countUnansweredFromNotes($notes);
     $catalog = PmTools::catalogMeta($phpPath);
     $displayName = $catalog['display_name'] ?? (string) ($page['display_name'] ?? basename($phpPath));
     $purpose = $catalog['purpose'] ?? (string) ($page['purpose'] ?? '');
@@ -197,7 +218,7 @@ function pm_tools_render_widget_html(): string
         ? '<p class="pm-tools-purpose-text"><span>Mire jó</span>' . h($purpose) . '</p>'
         : '';
 
-    return '<link rel="stylesheet" href="' . $assetCss . '">'
+    return $cached = '<link rel="stylesheet" href="' . $assetCss . '">'
         . '<div id="pm-tools-root"'
         . ' data-page-id="' . $pageId . '"'
         . ' data-php-path="' . h($phpPath) . '"'
@@ -259,7 +280,7 @@ function pm_tools_render_widget_html(): string
 
 function pm_tools_render_footer(): void
 {
-    if (!pm_tools_should_inject()) {
+    if (!pm_tools_inject_active()) {
         return;
     }
     echo pm_tools_render_widget_html();
@@ -277,7 +298,7 @@ function pm_tools_register_footer_output_buffer(): void
         if ($buffer === '' || stripos($buffer, '</body>') === false) {
             return $buffer;
         }
-        if (!pm_tools_should_inject()) {
+        if (!pm_tools_inject_active()) {
             return $buffer;
         }
         $widget = pm_tools_render_widget_html();
