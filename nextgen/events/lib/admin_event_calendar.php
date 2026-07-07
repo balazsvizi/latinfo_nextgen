@@ -68,11 +68,14 @@ function events_admin_calendar_event_block_style(array $categoriesByEventId, int
 function events_admin_calendar_event_block_style_for_event(
     array $categoriesByEventId,
     array $event,
-    bool $isPublished = true
+    bool $isPublished = true,
+    bool $highlightChange = true
 ): string {
-    $changeStyle = events_event_change_calendar_block_style($event);
-    if ($changeStyle !== '') {
-        return $changeStyle;
+    if ($highlightChange) {
+        $changeStyle = events_event_change_calendar_block_style($event);
+        if ($changeStyle !== '') {
+            return $changeStyle;
+        }
     }
 
     return events_admin_calendar_event_block_style($categoriesByEventId, (int) ($event['id'] ?? 0), $isPublished);

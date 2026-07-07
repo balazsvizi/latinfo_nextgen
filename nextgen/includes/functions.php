@@ -105,6 +105,9 @@ function app_backoffice_area(): string {
     if (strpos($s, '/config/') !== false) {
         return 'Config';
     }
+    if (strpos($s, '/admin/pm/') !== false) {
+        return 'PM';
+    }
     if (strpos($s, '/admin/') !== false) {
         return 'Admin';
     }

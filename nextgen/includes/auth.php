@@ -125,5 +125,3 @@ function logout(): void {
     session_destroy();
 }
 
-require_once __DIR__ . '/superadmin_php_debug_bar.php';
-ng_register_superadmin_php_debug_bar_output_buffer();

@@ -116,7 +116,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             $ev = $part['event'];
                                             $eid = (int) ($ev['id'] ?? 0);
                                             $isPublished = events_admin_calendar_event_is_published($ev);
-                                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished);
+                                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished, false);
                                             $eventUrl = $calendarPublicPreview
                                                 ? events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CALENDAR)
                                                 : events_admin_calendar_event_public_url($ev);
@@ -129,7 +129,6 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             if (!$isPublished) {
                                                 $barClasses .= ' events-cal__event-link--unpublished';
                                             }
-                                            $barClasses .= events_event_change_calendar_link_class($ev);
                                             if ($part['isPast']) {
                                                 $barClasses .= ' events-cal__event-link--past';
                                             }
@@ -175,11 +174,10 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                             $ev = $segment['event'];
                             $eid = (int) ($ev['id'] ?? 0);
                             $isPublished = events_admin_calendar_event_is_published($ev);
-                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished);
+                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished, false);
                             $barTitle = (string) ($ev['event_name'] ?? '');
                             $timeLabel = $segment['showTime'] ? events_admin_calendar_event_time_label($ev) : '';
                             $labelClasses = 'events-cal__week-bar-label';
-                            $labelClasses .= events_event_change_calendar_link_class($ev);
                             $barEventNameClass = 'events-cal__event-name' . events_event_change_event_name_class($ev);
                             if ($segment['roundLeft']) {
                                 $labelClasses .= ' events-cal__week-bar-label--round-left';

@@ -120,6 +120,13 @@ if ($navZone === 'events') {
                     </ul>
                 </li>
                 <?php if (isLoggedIn() && isSuperadmin()): ?>
+                <?php
+                require_once __DIR__ . '/../lib/pm/bootstrap.php';
+                $pmUnansweredCount = pm_tools_unanswered_badge_count();
+                ?>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('admin/pm/')) ?>" class="nav-parent-link">PM<?php if ($pmUnansweredCount > 0): ?><span class="nav-pm-badge"><?= (int) $pmUnansweredCount ?></span><?php endif; ?></a>
+                </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('admin/adminok/')) ?>" class="nav-parent-link">Admin</a>
