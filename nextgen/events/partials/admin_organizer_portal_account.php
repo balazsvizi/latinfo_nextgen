@@ -4,7 +4,7 @@ declare(strict_types=1);
 /** @var PDO $db */
 /** @var string $portalHiba */
 
-require_once dirname(__DIR__, 2) . '/lib/organizer_accounts.php';
+require_once dirname(__DIR__) . '/lib/organizer_accounts.php';
 
 $portalAccount = events_organizer_account_by_organizer_id($db, $id);
 $tableReady = events_organizer_accounts_table_ready($db);
