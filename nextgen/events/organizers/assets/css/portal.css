@@ -1,0 +1,149 @@
+/* Szervezői portál – elkülönült megjelenés a backoffice-tól */
+
+.organizers-portal-login-page,
+.szervezo-login-page {
+    background: linear-gradient(145deg, #1a3d2e 0%, #2d5a45 50%, #3d6b4f 100%);
+}
+
+.szervezo-portal-body {
+    background: #f4f7f5;
+    min-height: 100vh;
+}
+
+.szervezo-header {
+    background: linear-gradient(135deg, #1a3d2e 0%, #2d5a45 100%);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(26, 61, 46, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.szervezo-header__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.szervezo-header__brand {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.szervezo-header__site {
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: -0.02em;
+}
+
+.szervezo-header__area {
+    font-weight: 500;
+    font-size: 0.9375rem;
+    opacity: 0.85;
+}
+
+.szervezo-header__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem 1rem;
+    flex-wrap: wrap;
+}
+
+.szervezo-header__link {
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.szervezo-header__link:hover,
+.szervezo-header__link.is-active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.szervezo-header__user {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    padding: 0 0.25rem;
+}
+
+.szervezo-header__logout {
+    opacity: 0.75;
+}
+
+.szervezo-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+}
+
+.szervezo-footer {
+    margin-top: auto;
+    border-top: 1px solid #d8e4dc;
+    background: #eef3ef;
+}
+
+.szervezo-profile-card {
+    margin-bottom: 1.5rem;
+}
+
+.szervezo-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem 1.5rem;
+}
+
+.szervezo-profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.szervezo-profile-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.szervezo-profile-value {
+    font-size: 1rem;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.szervezo-profile-value a {
+    color: var(--primary);
+}
+
+.szervezo-dash-cards {
+    margin-bottom: 1.5rem;
+}
+
+.szervezo-dash-card .num.szervezo-dash-card__date {
+    font-size: 1.25rem;
+    line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+    .szervezo-header__inner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .szervezo-header__nav {
+        width: 100%;
+    }
+}

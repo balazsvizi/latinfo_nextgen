@@ -3895,6 +3895,20 @@ body.event-edit-cover-lightbox-open {
 .events-edit-stats--organizer {
     margin-top: 1.5rem;
 }
+.szervezo-admin-portal-meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem 1.25rem;
+    margin: 0 0 1.25rem;
+}
+.szervezo-admin-portal-meta dt {
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+.szervezo-admin-portal-meta dd {
+    margin: 0;
+}
 .events-edit-stats__events-title {
     margin: 1.5rem 0 0.35rem;
     font-size: 1rem;
