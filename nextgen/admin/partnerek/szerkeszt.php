@@ -40,12 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hiba = (string) ($deleteResult['error'] ?? 'Törlés sikertelen.');
             }
         } elseif ($action === 'password') {
-            $result = nextgen_partner_update_password($db, $id, (string) ($_POST['jelszo'] ?? ''));
-            if ($result['ok']) {
-                flash('success', 'Jelszó frissítve.');
-                redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+            $jelszo = (string) ($_POST['jelszo'] ?? '');
+            if ($jelszo === '') {
+                $hiba = 'Add meg az új jelszót.';
+            } else {
+                $requireChange = !empty($_POST['jelszo_csere_kotelezo']);
+                $result = nextgen_partner_update_password($db, $id, $jelszo, $requireChange);
+                if ($result['ok']) {
+                    flash('success', 'Jelszó frissítve.');
+                    redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                }
+                $hiba = (string) ($result['error'] ?? 'Jelszó mentése sikertelen.');
             }
-            $hiba = (string) ($result['error'] ?? 'Jelszó mentése sikertelen.');
         } elseif ($action === 'toggle') {
             $active = empty($partner['aktív']);
             $result = nextgen_partner_set_active($db, $id, $active);
@@ -104,7 +110,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
     <p class="toolbar">
         <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary btn-sm">← Lista</a>
         <a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php?partner_id=') . $id) ?>" class="btn btn-secondary btn-sm">Üzenetek</a>
-        <a href="<?= h(nextgen_url('partner/login.php')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
+        <a href="<?= h(partner_url('')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
     </p>
 
     <form method="post" class="venue-form">
@@ -176,13 +182,22 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 
 <div class="card">
     <h3>Jelszó és státusz</h3>
+    <?php if (!empty($partner['jelszó_csere_kötelező'])): ?>
+        <p class="alert alert-warning">A partnernek kötelező új jelszót beállítania a következő belépéskor.</p>
+    <?php endif; ?>
     <form method="post" class="venue-form">
         <?= csrf_input('partner_admin_edit') ?>
         <input type="hidden" name="id" value="<?= $id ?>">
         <input type="hidden" name="_action" value="password">
         <div class="form-group">
             <label for="jelszo">Új jelszó</label>
-            <input type="password" id="jelszo" name="jelszo" minlength="8" autocomplete="new-password">
+            <input type="password" id="jelszo" name="jelszo" minlength="8" required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="jelszo_csere_kotelezo" value="1"<?= !empty($partner['jelszó_csere_kötelező']) ? ' checked' : '' ?>>
+                Kötelező új jelszó megadása a következő belépéskor
+            </label>
         </div>
         <p class="toolbar"><button type="submit" class="btn btn-secondary btn-sm">Jelszó újraállítása</button></p>
     </form>

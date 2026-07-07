@@ -80,7 +80,7 @@ $partnerActivityLogGlobal = true;
         <a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" class="btn btn-secondary btn-sm">
             Üzenetek<?= $unread > 0 ? ' (' . $unread . ')' : '' ?>
         </a>
-        <a href="<?= h(nextgen_url('partner/login.php')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
+        <a href="<?= h(partner_url('')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
     </p>
     <div class="table-wrap">
         <table class="sortable-table">

@@ -9,15 +9,8 @@ require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 
 $portalAccount = events_organizer_account_by_organizer_id($db, $id);
 $tableReady = nextgen_partners_table_ready($db);
-$partnerUrl = function_exists('partner_url') ? partner_url('login.php') : nextgen_url('partner/login.php');
+$partnerUrl = partner_url('');
 $hiba = $portalHiba ?? '';
-
-if (!function_exists('partner_url')) {
-    function partner_url(string $path = ''): string
-    {
-        return nextgen_url('partner/' . ltrim($path, '/'));
-    }
-}
 ?>
 <div class="card szervezo-admin-portal-card">
     <h2 class="card-title">Partner fiók</h2>

@@ -8,6 +8,7 @@ require_once $nextgenRoot . '/core/database.php';
 require_once $nextgenRoot . '/includes/functions.php';
 require_once $nextgenRoot . '/lib/partner/partners.php';
 require_once $nextgenRoot . '/lib/partner/messages.php';
+require_once $nextgenRoot . '/lib/partner/password_reset.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params(0, '/');
@@ -26,13 +27,6 @@ if (!function_exists('events_url')) {
     function events_url(string $path = ''): string
     {
         return nextgen_url('events/' . ltrim($path, '/'));
-    }
-}
-
-if (!function_exists('partner_url')) {
-    function partner_url(string $path = ''): string
-    {
-        return nextgen_url('partner/' . ltrim($path, '/'));
     }
 }
 

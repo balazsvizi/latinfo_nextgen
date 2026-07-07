@@ -18,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string) ($_POST['email'] ?? ''),
             (string) ($_POST['jelszo'] ?? ''),
             (string) ($_POST['telefon'] ?? ''),
-            (string) ($_POST['egyeb_kontakt'] ?? '')
+            (string) ($_POST['egyeb_kontakt'] ?? ''),
+            !empty($_POST['jelszo_csere_kotelezo'])
         );
         if ($result['ok']) {
             $pid = (int) $result['id'];
@@ -56,6 +57,12 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <div class="form-group">
             <label for="jelszo">Jelszó *</label>
             <input type="password" id="jelszo" name="jelszo" required minlength="8" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="jelszo_csere_kotelezo" value="1"<?= !empty($_POST['jelszo_csere_kotelezo']) ? ' checked' : '' ?>>
+                Kötelező új jelszó megadása az első belépéskor
+            </label>
         </div>
         <p class="toolbar">
             <button type="submit" class="btn btn-primary">Létrehozás</button>

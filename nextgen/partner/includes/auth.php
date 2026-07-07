@@ -6,11 +6,36 @@ function partner_is_logged_in(): bool
     return !empty($_SESSION['partner_id']);
 }
 
+function partner_login_url(): string
+{
+    return partner_url('login.php');
+}
+
 function partner_require_login(): void
 {
     if (!partner_is_logged_in()) {
         $_SESSION['_partner_redirect_after_login'] = $_SERVER['REQUEST_URI'] ?? '';
-        redirect(partner_url('login.php'));
+        redirect(partner_login_url());
+    }
+    partner_require_password_change_if_needed();
+}
+
+function partner_require_password_change_if_needed(): void
+{
+    if (empty($_SESSION['partner_id'])) {
+        return;
+    }
+
+    $allowed = ['jelszo_kotelezo.php', 'logout.php'];
+    $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (in_array($script, $allowed, true)) {
+        return;
+    }
+
+    $db = getDb();
+    $partner = partner_current($db);
+    if ($partner !== null && nextgen_partner_must_change_password($partner)) {
+        redirect(partner_url('jelszo_kotelezo.php'));
     }
 }
 
@@ -40,6 +65,7 @@ function partner_login(string $email, string $password): bool
     $_SESSION['partner_id'] = (int) $partner['id'];
     $_SESSION['partner_nev'] = (string) ($partner['név'] ?? '');
     $_SESSION['partner_email'] = (string) ($partner['email'] ?? '');
+    $_SESSION['partner_must_change_password'] = nextgen_partner_must_change_password($partner);
     session_regenerate_id(true);
 
     nextgen_partner_log(getDb(), (int) $partner['id'], 'Bejelentkezés');
@@ -53,7 +79,12 @@ function partner_logout(): void
     if ($partnerId > 0 && function_exists('nextgen_partner_log')) {
         nextgen_partner_log(getDb(), $partnerId, 'Kijelentkezés');
     }
-    unset($_SESSION['partner_id'], $_SESSION['partner_nev'], $_SESSION['partner_email']);
+    unset(
+        $_SESSION['partner_id'],
+        $_SESSION['partner_nev'],
+        $_SESSION['partner_email'],
+        $_SESSION['partner_must_change_password']
+    );
 }
 
 /**
@@ -83,6 +114,7 @@ function partner_refresh_session_from_db(PDO $db): void
     }
     $_SESSION['partner_nev'] = (string) ($partner['név'] ?? '');
     $_SESSION['partner_email'] = (string) ($partner['email'] ?? '');
+    $_SESSION['partner_must_change_password'] = nextgen_partner_must_change_password($partner);
 }
 
 function partner_require_organizer_access(PDO $db, int $organizerId): void

@@ -19,6 +19,60 @@ function nextgen_partners_table_ready(PDO $db): bool
     return $cached;
 }
 
+function nextgen_partner_password_reset_table_ready(PDO $db): bool
+{
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    try {
+        $db->query('SELECT 1 FROM `nextgen_partner_password_reset_tokens` LIMIT 1');
+        $cached = true;
+    } catch (Throwable) {
+        $cached = false;
+    }
+
+    return $cached;
+}
+
+function nextgen_partner_ensure_password_schema(PDO $db): bool
+{
+    if (!nextgen_partners_table_ready($db)) {
+        return false;
+    }
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'jelszó_csere_kötelező'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `jelszó_csere_kötelező` TINYINT(1) NOT NULL DEFAULT 0 AFTER `aktív`');
+        }
+        if (!nextgen_partner_password_reset_table_ready($db)) {
+            $db->exec('
+                CREATE TABLE IF NOT EXISTS `nextgen_partner_password_reset_tokens` (
+                    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    `partner_id` INT UNSIGNED NOT NULL,
+                    `token_hash` VARCHAR(255) NOT NULL,
+                    `lejárat` DATETIME NOT NULL,
+                    `felhasználva` DATETIME NULL DEFAULT NULL,
+                    `létrehozva` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    KEY `idx_partner_reset_partner` (`partner_id`, `létrehozva`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+        }
+
+        return true;
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_ensure_password_schema: ' . $ex->getMessage());
+
+        return false;
+    }
+}
+
+function nextgen_partner_must_change_password(array $partner): bool
+{
+    return !empty($partner['jelszó_csere_kötelező']);
+}
+
 /**
  * @return array<string, mixed>|null
  */
@@ -100,7 +154,8 @@ function nextgen_partner_create(
     string $email,
     string $password,
     ?string $telefon = null,
-    ?string $egyebKontakt = null
+    ?string $egyebKontakt = null,
+    bool $requireChangeOnLogin = false
 ): array {
     if (!nextgen_partners_table_ready($db)) {
         return ['ok' => false, 'error' => 'A partner tábla még nincs telepítve. Futtasd: partner/sql/migration_partners.sql'];
@@ -124,10 +179,11 @@ function nextgen_partner_create(
     $egyebKontakt = $egyebKontakt !== null ? trim($egyebKontakt) : '';
 
     try {
+        nextgen_partner_ensure_password_schema($db);
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $db->prepare('
-            INSERT INTO `nextgen_partners` (`név`, `email`, `telefon`, `egyéb_kontakt`, `jelszó_hash`, `aktív`)
-            VALUES (?, ?, ?, ?, ?, 1)
+            INSERT INTO `nextgen_partners` (`név`, `email`, `telefon`, `egyéb_kontakt`, `jelszó_hash`, `aktív`, `jelszó_csere_kötelező`)
+            VALUES (?, ?, ?, ?, ?, 1, ?)
         ');
         $stmt->execute([
             $nev,
@@ -135,10 +191,12 @@ function nextgen_partner_create(
             $telefon !== '' ? $telefon : null,
             $egyebKontakt !== '' ? $egyebKontakt : null,
             $hash,
+            $requireChangeOnLogin ? 1 : 0,
         ]);
 
         $partnerId = (int) $db->lastInsertId();
-        nextgen_partner_log($db, $partnerId, 'Partner létrehozva', $email);
+        $logDetail = $email . ($requireChangeOnLogin ? ' (kötelező jelszócsere)' : '');
+        nextgen_partner_log($db, $partnerId, 'Partner létrehozva', $logDetail);
 
         return ['ok' => true, 'id' => $partnerId];
     } catch (Throwable $ex) {
@@ -205,8 +263,12 @@ function nextgen_partner_update_profile(
 /**
  * @return array{ok: true}|array{ok: false, error: string}
  */
-function nextgen_partner_update_password(PDO $db, int $partnerId, string $password): array
-{
+function nextgen_partner_update_password(
+    PDO $db,
+    int $partnerId,
+    string $password,
+    ?bool $requireChangeOnLogin = false
+): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
     }
@@ -214,11 +276,17 @@ function nextgen_partner_update_password(PDO $db, int $partnerId, string $passwo
         return ['ok' => false, 'error' => 'A jelszónak legalább 8 karakter hosszúnak kell lennie.'];
     }
     try {
+        nextgen_partner_ensure_password_schema($db);
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('UPDATE `nextgen_partners` SET `jelszó_hash` = ? WHERE `id` = ?');
-        $stmt->execute([$hash, $partnerId]);
+        $stmt = $db->prepare('
+            UPDATE `nextgen_partners`
+            SET `jelszó_hash` = ?, `jelszó_csere_kötelező` = ?
+            WHERE `id` = ?
+        ');
+        $stmt->execute([$hash, $requireChangeOnLogin ? 1 : 0, $partnerId]);
 
-        nextgen_partner_log($db, $partnerId, 'Jelszó módosítva');
+        $logDetail = $requireChangeOnLogin ? 'Kötelező csere a következő belépéskor' : null;
+        nextgen_partner_log($db, $partnerId, 'Jelszó módosítva', $logDetail);
 
         return ['ok' => true];
     } catch (Throwable $ex) {
@@ -451,6 +519,9 @@ function nextgen_partner_delete(PDO $db, int $partnerId): array
         $db->prepare('DELETE FROM `nextgen_partner_finance_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
         if (nextgen_partner_activity_log_table_ready($db)) {
             $db->prepare('DELETE FROM `nextgen_partner_activity_log` WHERE `partner_id` = ?')->execute([$partnerId]);
+        }
+        if (nextgen_partner_password_reset_table_ready($db)) {
+            $db->prepare('DELETE FROM `nextgen_partner_password_reset_tokens` WHERE `partner_id` = ?')->execute([$partnerId]);
         }
         $db->prepare('DELETE FROM `nextgen_partners` WHERE `id` = ?')->execute([$partnerId]);
 

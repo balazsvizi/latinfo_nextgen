@@ -74,6 +74,11 @@ if (!defined('NEXTGEN_WEB')) {
     define('NEXTGEN_WEB', $nextgenWeb);
 }
 
+/** Partner portál URL szegmens (pl. partners → /partners/). */
+if (!defined('PARTNERS_PATH')) {
+    define('PARTNERS_PATH', trim((string) cfg_get('PARTNERS_PATH', 'partners', $localConfig), '/'));
+}
+
 if (!function_exists('site_url')) {
     /**
      * Webes útvonal a domain gyökérétől, BASE_URL előtaggal (alkönyvtárban futó telepítés).
@@ -105,6 +110,31 @@ if (!function_exists('nextgen_url')) {
         return $base . $mid . $suffix;
     }
 }
+
+if (!function_exists('partner_url')) {
+  /**
+   * Partner portál URL (pl. /partners/, /partners/index.php).
+   */
+    function partner_url(string $path = ''): string
+    {
+        $path = ltrim($path, '/');
+        if ($path === 'login.php') {
+            $path = '';
+        }
+        $segment = defined('PARTNERS_PATH') && PARTNERS_PATH !== '' ? PARTNERS_PATH : 'partners';
+        $base = site_url($segment . '/');
+
+        return $path === '' ? rtrim($base, '/') . '/' : rtrim($base, '/') . '/' . $path;
+    }
+}
+
+if (!function_exists('partner_asset_url')) {
+    function partner_asset_url(string $path): string
+    {
+        return partner_url(ltrim($path, '/'));
+    }
+}
+
 define('UPLOAD_PATH', (string) cfg_get('UPLOAD_PATH', BASE_PATH . '/nextgen/uploads/szamlak', $localConfig));
 define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', nextgen_url('uploads/szamlak'), $localConfig));
 
