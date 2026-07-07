@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$nextgenRoot = dirname(__DIR__, 2);
+$nextgenRoot = dirname(__DIR__);
 
 require_once $nextgenRoot . '/core/config.php';
 require_once $nextgenRoot . '/core/database.php';
