@@ -40,7 +40,30 @@ final class PmTools
         );
 
         $stmt = $pdo->prepare('INSERT IGNORE INTO `nextgen_pm_settings` (`key`, `value`) VALUES (:key, :value)');
-        $stmt->execute([':key' => 'overlay_enabled', ':value' => '0']);
+        $stmt->execute([':key' => 'overlay_enabled', ':value' => '1']);
+    }
+
+    public static function isOverlayEnabled(PDO $pdo): bool
+    {
+        self::ensureSchema($pdo);
+        $stmt = $pdo->prepare('SELECT value FROM `nextgen_pm_settings` WHERE `key` = :key');
+        $stmt->execute([':key' => 'overlay_enabled']);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return ($row['value'] ?? '0') === '1';
+    }
+
+    public static function setOverlayEnabled(PDO $pdo, bool $enabled): void
+    {
+        self::ensureSchema($pdo);
+        $stmt = $pdo->prepare(
+            'INSERT INTO `nextgen_pm_settings` (`key`, `value`) VALUES (:key, :value)
+             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)'
+        );
+        $stmt->execute([
+            ':key' => 'overlay_enabled',
+            ':value' => $enabled ? '1' : '0',
+        ]);
     }
 
     public static function normalizePhpPath(string $path): string

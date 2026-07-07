@@ -125,3 +125,6 @@ function logout(): void {
     session_destroy();
 }
 
+require_once __DIR__ . '/../lib/pm/bootstrap.php';
+pm_tools_register_footer_output_buffer();
+

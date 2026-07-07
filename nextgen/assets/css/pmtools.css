@@ -1,3 +1,242 @@
+.pm-tools-badge-wrap {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 99990;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: #7c3aed;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.45);
+    border-radius: 10px;
+}
+
+.pm-tools-icon-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+}
+
+.pm-tools-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.pm-tools-icon-btn.is-copied {
+    background: #16a34a;
+}
+
+.pm-tools-icon-btn.has-unanswered-notes {
+    background: #fef3c7;
+    color: #92400e;
+    box-shadow: inset 0 0 0 1px #fbbf24;
+}
+
+.pm-tools-icon-btn.has-unanswered-notes:hover {
+    background: #fde68a;
+}
+
+.pm-tools-icon {
+    display: block;
+}
+
+.pm-tools-copy-btn--modal {
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.pm-tools-copy-btn--modal:hover {
+    background: #e2e8f0;
+}
+
+.pm-tools-copy-btn--modal.is-copied {
+    background: #16a34a;
+    color: #fff;
+}
+
+.pm-tools-modal-path-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.pm-tools-modal-path-row .pm-tools-modal-path {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.pm-tools-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.pm-tools-overlay[hidden] {
+    display: none;
+}
+
+.pm-tools-modal {
+    width: min(720px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+}
+
+.pm-tools-modal-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.pm-tools-modal-head h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #0f172a;
+}
+
+.pm-tools-modal-path {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    color: #64748b;
+    word-break: break-all;
+}
+
+.pm-tools-close {
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.pm-tools-close:hover {
+    color: #0f172a;
+}
+
+.pm-tools-modal-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pm-tools-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pm-tools-field span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.pm-tools-field input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font: inherit;
+}
+
+.pm-tools-modal-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pm-tools-status {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.pm-tools-status.is-ok {
+    color: #166534;
+}
+
+.pm-tools-status.is-err {
+    color: #b91c1c;
+}
+
+.pm-tools-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pm-tools-btn-primary {
+    background: #7c3aed;
+    color: #fff;
+}
+
+.pm-tools-btn-primary:hover {
+    background: #6d28d9;
+}
+
+.pm-tools-purpose-text {
+    margin: 0;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    color: #475569;
+    line-height: 1.45;
+}
+
+.pm-tools-purpose-text span {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.pm-admin-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.pm-admin-toggle input[type="checkbox"] {
+    width: 44px;
+    height: 24px;
+    accent-color: #7c3aed;
+    cursor: pointer;
+}
+
 .pm-tools-notes-wrap {
     border: 1px solid #e2e8f0;
     border-radius: 8px;

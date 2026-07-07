@@ -15,6 +15,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         redirect($url);
     }
 
+    if (isset($_POST['toggle_overlay'])) {
+        $enabled = !empty($_POST['overlay_enabled']);
+        PmTools::setOverlayEnabled($pdo, $enabled);
+        flash('success', $enabled ? 'Oldal jelölő bekapcsolva.' : 'Oldal jelölő kikapcsolva.');
+        redirect($url);
+    }
+
     if (!empty($_POST['scan_php'])) {
         $added = PmTools::scanPhpFiles($pdo, BASE_PATH);
         flash('success', $added > 0
@@ -32,6 +39,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 }
 
 PmTools::syncCatalogMetadata($pdo);
+
+$overlayEnabled = PmTools::isOverlayEnabled($pdo);
 
 $showAll = !empty($_GET['all']);
 $unansweredOnly = !$showAll && !empty($_GET['unanswered']);
@@ -62,7 +71,22 @@ $apiUrl = pm_tools_api_url();
 $currentPath = pm_tools_current_php_path();
 ?>
 <h1>PM Tools</h1>
-<p>Prototípus jegyzetek PHP oldalakhoz. Az oldalak jegyzetei itt, a központi admin felületen kezelhetők.</p>
+<p>Prototípus jegyzetek PHP oldalakhoz. A központi admin felületen és a jobb alsó sarokban lévő jelölőn keresztül is kezelhetők.</p>
+
+<?php
+$pmStatus = pm_tools_status();
+?>
+<div class="card" style="border-left:4px solid <?= $pmStatus['active'] ? '#16a34a' : '#f59e0b' ?>;">
+    <h2 style="margin-top:0;font-size:1rem;">Hol látod a jelölőt?</h2>
+    <p style="margin:0 0 10px;">Jobb alsó sarokban egy <strong style="color:#7c3aed;">lila gomb</strong> jelenik meg (jegyzet + másolás). Erre kattintva nyílik a jegyzet popup.</p>
+    <ul style="margin:0;padding-left:1.2rem;line-height:1.7;">
+        <li><?= $pmStatus['overlay'] ? '✅' : '❌' ?> <strong>PHP oldal jelölő bekapcsolva</strong> – az alábbi kapcsoló</li>
+        <li><?= $pmStatus['admin'] ? '✅' : '❌' ?> <strong>Superadmin jogosultság</strong></li>
+    </ul>
+    <?php if (!$pmStatus['active']): ?>
+    <p style="margin:12px 0 0;color:#92400e;">A fenti két feltétel mindkettője kell – utána bármely backoffice oldalon megjelenik a jelölő.</p>
+    <?php endif; ?>
+</div>
 
 <?php if ($flashSuccess): ?>
 <p class="msg msg-success"><?= h($flashSuccess) ?></p>
@@ -72,7 +96,15 @@ $currentPath = pm_tools_current_php_path();
 <?php endif; ?>
 
 <div class="card">
-    <form method="post" style="margin-bottom:8px;">
+    <form method="post" class="pm-admin-toggle">
+        <?= csrf_input('pmtools_settings') ?>
+        <input type="hidden" name="toggle_overlay" value="1">
+        <input type="checkbox" name="overlay_enabled" value="1" id="overlay_enabled"
+            <?= $overlayEnabled ? 'checked' : '' ?>
+            onchange="this.form.submit()">
+        <label for="overlay_enabled"><strong>PHP oldal jelölő</strong> – jobb alul megjelenő másolás és jegyzet popup</label>
+    </form>
+    <form method="post" style="margin-top:8px;">
         <?= csrf_input('pmtools_settings') ?>
         <button type="submit" name="scan_php" value="1" class="btn btn-secondary btn-sm">PHP fájlok beolvasása</button>
         <span style="font-size:0.88rem;color:#64748b;margin-left:8px;">Új .php fájlok felvétele a projektből (<?= (int) $allRegisteredCount ?> regisztrált)</span>

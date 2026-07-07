@@ -37,6 +37,49 @@
         if (type) el.classList.add(type === 'ok' ? 'is-ok' : 'is-err');
     }
 
+    function copyToClipboard(text, btn) {
+        function onSuccess() {
+            if (!btn) return;
+            btn.classList.add('is-copied');
+            window.setTimeout(function () {
+                btn.classList.remove('is-copied');
+            }, 1500);
+        }
+
+        function fallbackCopy() {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                if (document.execCommand('copy')) {
+                    onSuccess();
+                }
+            } finally {
+                document.body.removeChild(ta);
+            }
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(fallbackCopy);
+        } else {
+            fallbackCopy();
+        }
+    }
+
+    function bindCopyButtons(root) {
+        qsa('.pm-tools-copy-btn', root).forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const text = btn.dataset.copy || '';
+                if (text) copyToClipboard(text, btn);
+            });
+        });
+    }
+
     function savePage(root, statusEl, extra) {
         const api = root.dataset.api;
         const csrf = root.dataset.csrf;
@@ -70,6 +113,19 @@
         });
     }
 
+    function refreshNotesBtnUnanswered(container, notesBtn) {
+        if (!container || !notesBtn) return;
+        let hasUnanswered = false;
+        qsa('.pm-tools-note-row', container).forEach(function (row) {
+            const noteEl = qs('.pm-note-input', row);
+            const respEl = qs('.pm-response-input', row);
+            if (noteEl && respEl && noteEl.value.trim() !== '' && respEl.value.trim() === '') {
+                hasUnanswered = true;
+            }
+        });
+        notesBtn.classList.toggle('has-unanswered-notes', hasUnanswered);
+    }
+
     function refreshUnansweredRow(row) {
         const noteEl = qs('.pm-note-input', row);
         const respEl = qs('.pm-response-input', row);
@@ -79,20 +135,22 @@
         row.classList.toggle('is-unanswered-row', unanswered);
     }
 
-    function bindUnansweredStyles(container) {
+    function bindUnansweredStyles(container, notesBtn) {
         if (!container) return;
         qsa('.pm-tools-note-row', container).forEach(refreshUnansweredRow);
+        refreshNotesBtnUnanswered(container, notesBtn);
         if (container.dataset.unansweredBound) return;
         container.dataset.unansweredBound = '1';
         container.addEventListener('input', function (e) {
             const row = e.target.closest('.pm-tools-note-row');
             if (row && container.contains(row)) {
                 refreshUnansweredRow(row);
+                refreshNotesBtnUnanswered(container, notesBtn);
             }
         });
     }
 
-    function bindRowDelete(container) {
+    function bindRowDelete(container, notesBtn) {
         container.addEventListener('click', function (e) {
             const btn = e.target.closest('.pm-tools-row-del');
             if (!btn) return;
@@ -105,6 +163,56 @@
                 qs('.pm-response-input', row).value = '';
                 refreshUnansweredRow(row);
             }
+            refreshNotesBtnUnanswered(container, notesBtn);
+        });
+    }
+
+    function initWidget() {
+        const root = qs('#pm-tools-root');
+        if (!root) return;
+
+        const overlay = qs('#pm-tools-overlay', root);
+        const notesBtn = qs('#pm-tools-notes-btn', root);
+        const closeBtn = qs('#pm-tools-close', root);
+        const addRowBtn = qs('#pm-tools-add-row', root);
+        const saveBtn = qs('#pm-tools-save', root);
+        const notesContainer = qs('#pm-tools-notes-rows', root);
+        const statusEl = qs('#pm-tools-status', root);
+        const nameInput = qs('#pm-tools-name', root);
+
+        bindRowDelete(notesContainer, notesBtn);
+        bindCopyButtons(root);
+        bindUnansweredStyles(notesContainer, notesBtn);
+
+        notesBtn.addEventListener('click', function () {
+            overlay.hidden = false;
+        });
+
+        closeBtn.addEventListener('click', function () {
+            overlay.hidden = true;
+        });
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) overlay.hidden = true;
+        });
+
+        addRowBtn.addEventListener('click', function () {
+            notesContainer.appendChild(createNoteRow('', ''));
+            bindUnansweredStyles(notesContainer, notesBtn);
+        });
+
+        saveBtn.addEventListener('click', function () {
+            setStatus(statusEl, 'Mentés…', null);
+            savePage(root, statusEl, {
+                display_name: nameInput.value,
+                purpose: '',
+                notes: collectRows(notesContainer),
+                onSaved: function () {
+                    const title = qs('#pm-tools-modal-title', root);
+                    if (title) title.textContent = nameInput.value.trim() || root.dataset.phpPath;
+                    refreshNotesBtnUnanswered(notesContainer, notesBtn);
+                },
+            });
         });
     }
 
@@ -123,12 +231,12 @@
             const statusEl = qs('.pm-admin-card-status', card);
             const nameInput = qs('.pm-admin-name', card);
 
-            bindRowDelete(notesContainer);
-            bindUnansweredStyles(notesContainer);
+            bindRowDelete(notesContainer, null);
+            bindUnansweredStyles(notesContainer, null);
 
             addRowBtn.addEventListener('click', function () {
                 notesContainer.appendChild(createNoteRow('', ''));
-                bindUnansweredStyles(notesContainer);
+                bindUnansweredStyles(notesContainer, null);
             });
 
             saveBtn.addEventListener('click', function () {
@@ -143,5 +251,8 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', initAdminCards);
+    document.addEventListener('DOMContentLoaded', function () {
+        initWidget();
+        initAdminCards();
+    });
 })();
