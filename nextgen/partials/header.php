@@ -79,6 +79,9 @@ if ($navZone === 'events') {
                 <li class="nav-item">
                     <a href="<?= h(nextgen_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>
                 </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="nav-parent-link">Partnerek</a>
+                </li>
                 <li role="none" class="nav-item">
                     <a href="<?= h(nextgen_url('events/styles.php')) ?>" class="nav-parent-link">Stílusok</a>
                 </li>
@@ -123,6 +126,8 @@ if ($navZone === 'events') {
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="admin" aria-label="Almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-admin" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Partnerek</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Partner üzenetek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/adminok/')) ?>" role="menuitem">Adminok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/log.php')) ?>" role="menuitem">Logok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/cron_log.php')) ?>" role="menuitem">Cron log</a></li>

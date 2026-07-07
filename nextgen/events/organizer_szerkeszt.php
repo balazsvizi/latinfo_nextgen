@@ -5,7 +5,6 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
-require_once __DIR__ . '/lib/organizer_accounts_admin.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -24,13 +23,9 @@ if (!$organizer) {
 }
 
 $hiba = '';
-$portalHiba = events_organizer_portal_account_handle_post($db, $id);
-if ($portalHiba !== '') {
-    $hiba = $portalHiba;
-}
 $name = (string) ($organizer['name'] ?? '');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_portal_action'] ?? '') === '') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('organizer_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {

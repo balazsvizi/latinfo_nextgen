@@ -5,81 +5,50 @@ declare(strict_types=1);
 /** @var string $portalHiba */
 
 require_once dirname(__DIR__) . '/lib/organizer_accounts.php';
+require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 
 $portalAccount = events_organizer_account_by_organizer_id($db, $id);
-$tableReady = events_organizer_accounts_table_ready($db);
-$portalUrl = organizers_portal_url('login.php');
+$tableReady = nextgen_partners_table_ready($db);
+$partnerUrl = function_exists('partner_url') ? partner_url('login.php') : nextgen_url('partner/login.php');
 $hiba = $portalHiba ?? '';
+
+if (!function_exists('partner_url')) {
+    function partner_url(string $path = ''): string
+    {
+        return nextgen_url('partner/' . ltrim($path, '/'));
+    }
+}
 ?>
 <div class="card szervezo-admin-portal-card">
-    <h2 class="card-title">Szervezői portál fiók</h2>
-    <p class="help">A szervező a <a href="<?= h($portalUrl) ?>" target="_blank" rel="noopener"><?= h($portalUrl) ?></a> címen éri el a saját kezdőoldalát (események, statisztikák).</p>
+    <h2 class="card-title">Partner fiók</h2>
+    <p class="help">
+        A szervezői portál az egységes <strong>Partner portálba</strong> költözött:
+        <a href="<?= h($partnerUrl) ?>" target="_blank" rel="noopener"><?= h($partnerUrl) ?></a>
+    </p>
+    <p class="help">
+        Partner felvétel és szervező hozzárendelés:
+        <a href="<?= h(nextgen_url('admin/partnerek/')) ?>">Admin → Partnerek</a>
+        <?php if ($tableReady): ?>
+            · <a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php')) ?>">szerkesztés</a>
+        <?php endif; ?>
+    </p>
 
     <?php if (!$tableReady): ?>
         <p class="alert alert-warning">
-            A portál fiók tábla még nincs telepítve. Futtasd:
-            <code>nextgen/events/organizers/sql/migration_organizer_accounts.sql</code>
+            Futtasd: <code>nextgen/partner/sql/migration_partners.sql</code>
+            (a régi <code>events_organizer_accounts</code> adatokat is átmigrálja).
+        </p>
+    <?php elseif ($portalAccount !== null): ?>
+        <p class="alert alert-warning">
+            Ehhez a szervezőhöz még létezik régi portál fiók (<code><?= h((string) $portalAccount['email']) ?></code>).
+            Hozd létre vagy rendeld hozzá a partnert az admin felületen, majd a régi fiók helyett a partner portált használd.
         </p>
     <?php elseif ($hiba !== ''): ?>
         <p class="alert alert-error"><?= h($hiba) ?></p>
     <?php endif; ?>
 
-    <?php if ($tableReady && $portalAccount !== null): ?>
-        <dl class="szervezo-admin-portal-meta">
-            <dt>E-mail</dt>
-            <dd><?= h((string) $portalAccount['email']) ?></dd>
-            <?php if (trim((string) ($portalAccount['név'] ?? '')) !== ''): ?>
-                <dt>Megjelenített név</dt>
-                <dd><?= h((string) $portalAccount['név']) ?></dd>
-            <?php endif; ?>
-            <dt>Státusz</dt>
-            <dd><?= !empty($portalAccount['aktív']) ? 'Aktív' : 'Inaktív' ?></dd>
-            <dt>Létrehozva</dt>
-            <dd><?= h((string) ($portalAccount['létrehozva'] ?? '')) ?></dd>
-        </dl>
-
-        <form method="post" class="venue-form szervezo-admin-portal-form">
-            <?= csrf_input('organizer_portal_account') ?>
-            <input type="hidden" name="_portal_action" value="reset_password">
-            <input type="hidden" name="id" value="<?= (int) $id ?>">
-            <div class="form-group">
-                <label for="portal_jelszo_reset">Új jelszó</label>
-                <input type="password" id="portal_jelszo_reset" name="portal_jelszo" required minlength="8" autocomplete="new-password">
-            </div>
-            <p class="toolbar">
-                <button type="submit" class="btn btn-secondary btn-sm">Jelszó újraállítása</button>
-            </p>
-        </form>
-
-        <form method="post" class="toolbar" style="margin-top:0.5rem;">
-            <?= csrf_input('organizer_portal_account') ?>
-            <input type="hidden" name="_portal_action" value="toggle_active">
-            <input type="hidden" name="id" value="<?= (int) $id ?>">
-            <button type="submit" class="btn btn-secondary btn-sm">
-                <?= !empty($portalAccount['aktív']) ? 'Fiók deaktiválása' : 'Fiók aktiválása' ?>
-            </button>
-        </form>
-    <?php elseif ($tableReady): ?>
-        <form method="post" class="venue-form szervezo-admin-portal-form">
-            <?= csrf_input('organizer_portal_account') ?>
-            <input type="hidden" name="_portal_action" value="create_account">
-            <input type="hidden" name="id" value="<?= (int) $id ?>">
-            <div class="form-group">
-                <label for="portal_email">E-mail cím *</label>
-                <input type="email" id="portal_email" name="portal_email" required autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label for="portal_nev">Megjelenített név</label>
-                <input type="text" id="portal_nev" name="portal_nev" maxlength="255" placeholder="Opcionális">
-            </div>
-            <div class="form-group">
-                <label for="portal_jelszo">Jelszó *</label>
-                <input type="password" id="portal_jelszo" name="portal_jelszo" required minlength="8" autocomplete="new-password">
-                <p class="help">Legalább 8 karakter. A szervező ezzel jelentkezik be a portálra.</p>
-            </div>
-            <p class="toolbar">
-                <button type="submit" class="btn btn-primary">Portál fiók létrehozása</button>
-            </p>
-        </form>
-    <?php endif; ?>
+    <p class="toolbar">
+        <a href="<?= h(nextgen_url('admin/partnerek/letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új partner</a>
+        <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary btn-sm">Partner lista</a>
+    </p>
 </div>
