@@ -3631,6 +3631,37 @@ a.home-public-map-popup__title:hover {
     width: calc(100% + 2 * var(--cal-day-pad-x) + 2px);
 }
 
+/* Több napos változás/elmaradás sáv: folytonos keret (inset box-shadow helyett) */
+.home-public .events-cal__event-link--bar.events-cal__event-link--change-cancelled {
+    box-shadow: none;
+    border: 2px solid transparent;
+    border-top-color: #dc2626;
+    border-bottom-color: #dc2626;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--change-cancelled.events-cal__event-link--round-left {
+    border-left-color: #dc2626;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--change-cancelled.events-cal__event-link--round-right {
+    border-right-color: #dc2626;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--change-modified {
+    box-shadow: none;
+    border: 2px solid transparent;
+    border-top-color: #f59e0b;
+    border-bottom-color: #f59e0b;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--change-modified.events-cal__event-link--round-left {
+    border-left-color: #f59e0b;
+}
+
+.home-public .events-cal__event-link--bar.events-cal__event-link--change-modified.events-cal__event-link--round-right {
+    border-right-color: #f59e0b;
+}
+
 .home-public .events-cal__event-link--bar:hover {
     transform: none;
     z-index: 4;
@@ -4485,12 +4516,40 @@ body.events-cal-preview-open {
     background: rgba(0, 0, 0, 0.12);
 }
 
-.home-public .events-cal__event-link--change-cancelled {
+.home-public .events-cal__event-link--change-cancelled:not(.events-cal__event-link--bar) {
     box-shadow: inset 0 0 0 2px #dc2626;
 }
 
-.home-public .events-cal__event-link--change-modified {
+.home-public .events-cal__event-link--change-modified:not(.events-cal__event-link--bar) {
     box-shadow: inset 0 0 0 2px #f59e0b;
+}
+
+.home-public .events-cal__week-bar-label.events-cal__event-link--change-cancelled,
+.home-public .events-cal__week-bar-label.events-cal__event-link--change-modified {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.home-public .events-cal__week-bar-label .events-cal__event-change-badge {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.home-public .events-cal__week-bar-label.events-cal__event-link--change-cancelled .events-cal__event-name--cancelled,
+.home-public .events-cal__week-bar-label.events-cal__event-link--change-modified .events-cal__event-name {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.home-public .events-cal__week-bar-label.events-cal__event-link--change-cancelled .events-cal__event-name--cancelled {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+}
+
+.home-public .events-cal__week-bar-label .events-cal__event-time {
+    flex-shrink: 0;
 }
 
 .home-public .events-cal__event-name--cancelled {
