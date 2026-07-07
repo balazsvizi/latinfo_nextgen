@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/partners.php';
+require_once __DIR__ . '/activity_log.php';
 
 /**
  * finance_contact_id oszlop a visszakövethető migrációhoz.
@@ -107,6 +108,9 @@ function nextgen_partner_migrate_from_finance_contacts(PDO $db): array
                 $result['skipped']++;
                 $linked = nextgen_partner_migrate_link_finance_organizers($db, $partnerId, $contactId);
                 $result['linked'] += $linked;
+                if ($linked > 0) {
+                    nextgen_partner_log($db, $partnerId, 'Finance migráció: hozzárendelések frissítve', $linked . ' szervező');
+                }
 
                 continue;
             }
@@ -176,6 +180,7 @@ function nextgen_partner_migrate_from_finance_contacts(PDO $db): array
                         $partnerId,
                     ]);
                     $result['merged']++;
+                    nextgen_partner_log($db, $partnerId, 'Finance kontakt egyesítve', 'finance_contacts #' . $contactId);
                 } else {
                     $loginEmail = nextgen_partner_migrate_synthetic_email($contactId);
                     if ($rawEmail !== '') {
@@ -272,7 +277,12 @@ function nextgen_partner_migrate_insert_partner(
         $passwordHash,
     ]);
 
-    return (int) $db->lastInsertId();
+    $partnerId = (int) $db->lastInsertId();
+    if ($partnerId > 0) {
+        nextgen_partner_log($db, $partnerId, 'Finance kontakt migrálva', 'finance_contacts #' . $contactId, 'system', null);
+    }
+
+    return $partnerId;
 }
 
 function nextgen_partner_migrate_link_finance_organizers(PDO $db, int $partnerId, int $contactId): int

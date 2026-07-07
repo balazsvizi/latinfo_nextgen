@@ -42,11 +42,17 @@ function partner_login(string $email, string $password): bool
     $_SESSION['partner_email'] = (string) ($partner['email'] ?? '');
     session_regenerate_id(true);
 
+    nextgen_partner_log(getDb(), (int) $partner['id'], 'Bejelentkezés');
+
     return true;
 }
 
 function partner_logout(): void
 {
+    $partnerId = (int) ($_SESSION['partner_id'] ?? 0);
+    if ($partnerId > 0 && function_exists('nextgen_partner_log')) {
+        nextgen_partner_log(getDb(), $partnerId, 'Kijelentkezés');
+    }
     unset($_SESSION['partner_id'], $_SESSION['partner_nev'], $_SESSION['partner_email']);
 }
 

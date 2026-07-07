@@ -5,6 +5,7 @@ require_once dirname(__DIR__, 2) . '/init.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/migrate_finance_contacts.php';
+require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 requireLogin();
 
 $db = getDb();
@@ -43,11 +44,15 @@ $partners = nextgen_partners_list($db, $kereso !== '' ? $kereso : null);
 $tableReady = nextgen_partners_table_ready($db);
 $unread = nextgen_partner_unread_reply_count($db);
 $financeMigrateStatus = nextgen_partner_finance_contacts_migration_status($db);
+$partnerActivityLog = nextgen_partner_activity_log_recent($db, 40);
+$partnerActivityLogGlobal = true;
 ?>
 <div class="card">
     <h2>Partnerek</h2>
     <?php if (!$tableReady): ?>
         <p class="alert alert-warning">Futtasd: <code>partner/sql/migration_partners.sql</code></p>
+    <?php elseif (!nextgen_partner_activity_log_table_ready($db)): ?>
+        <p class="alert alert-warning">Partner napló: futtasd <code>partner/sql/migration_partner_activity_log.sql</code></p>
     <?php endif; ?>
     <?php if ($migrateFlash): ?>
         <p class="alert alert-<?= $migrateFlash['type'] === 'success' ? 'success' : 'danger' ?>">
@@ -116,4 +121,5 @@ $financeMigrateStatus = nextgen_partner_finance_contacts_migration_status($db);
         <p class="help">Nincs partner.</p>
     <?php endif; ?>
 </div>
+<?php require __DIR__ . '/partials/activity_log.php'; ?>
 <?php require_once dirname(__DIR__, 2) . '/partials/footer.php'; ?>

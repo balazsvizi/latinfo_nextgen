@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/partners.php';
+
 function nextgen_partner_messages_table_ready(PDO $db): bool
 {
     static $cached = null;
@@ -63,7 +65,11 @@ function nextgen_partner_message_send_partner(PDO $db, int $partnerId, string $m
         ');
         $stmt->execute([$partnerId, $partnerId, $message]);
 
-        return ['ok' => true, 'id' => (int) $db->lastInsertId()];
+        $messageId = (int) $db->lastInsertId();
+        $preview = mb_strlen($message) > 120 ? mb_substr($message, 0, 120) . '…' : $message;
+        nextgen_partner_log($db, $partnerId, 'Üzenet küldve (partner)', $preview);
+
+        return ['ok' => true, 'id' => $messageId];
     } catch (Throwable $ex) {
         error_log('nextgen_partner_message_send_partner: ' . $ex->getMessage());
 
@@ -93,7 +99,11 @@ function nextgen_partner_message_send_admin(PDO $db, int $partnerId, int $adminI
         ');
         $stmt->execute([$partnerId, $adminId, $message]);
 
-        return ['ok' => true, 'id' => (int) $db->lastInsertId()];
+        $messageId = (int) $db->lastInsertId();
+        $preview = mb_strlen($message) > 120 ? mb_substr($message, 0, 120) . '…' : $message;
+        nextgen_partner_log($db, $partnerId, 'Üzenet küldve (admin)', $preview);
+
+        return ['ok' => true, 'id' => $messageId];
     } catch (Throwable $ex) {
         error_log('nextgen_partner_message_send_admin: ' . $ex->getMessage());
 
@@ -110,8 +120,16 @@ function nextgen_partner_message_mark_no_reply(PDO $db, int $messageId): array
         return ['ok' => false, 'error' => 'Érvénytelen üzenet.'];
     }
     try {
+        $msgStmt = $db->prepare('SELECT `partner_id` FROM `nextgen_partner_messages` WHERE `id` = ? LIMIT 1');
+        $msgStmt->execute([$messageId]);
+        $partnerId = (int) ($msgStmt->fetchColumn() ?: 0);
+
         $stmt = $db->prepare('UPDATE `nextgen_partner_messages` SET `nincs_valasz` = 1 WHERE `id` = ?');
         $stmt->execute([$messageId]);
+
+        if ($partnerId > 0) {
+            nextgen_partner_log($db, $partnerId, 'Üzenet megjelölve: nem kell válaszolni', 'Üzenet #' . $messageId);
+        }
 
         return ['ok' => true];
     } catch (Throwable) {

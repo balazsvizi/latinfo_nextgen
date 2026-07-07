@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/activity_log.php';
+
 function nextgen_partners_table_ready(PDO $db): bool
 {
     static $cached = null;
@@ -135,7 +137,10 @@ function nextgen_partner_create(
             $hash,
         ]);
 
-        return ['ok' => true, 'id' => (int) $db->lastInsertId()];
+        $partnerId = (int) $db->lastInsertId();
+        nextgen_partner_log($db, $partnerId, 'Partner létrehozva', $email);
+
+        return ['ok' => true, 'id' => $partnerId];
     } catch (Throwable $ex) {
         error_log('nextgen_partner_create: ' . $ex->getMessage());
 
@@ -187,6 +192,8 @@ function nextgen_partner_update_profile(
             $partnerId,
         ]);
 
+        nextgen_partner_log($db, $partnerId, 'Profil módosítva', $email);
+
         return ['ok' => true];
     } catch (Throwable $ex) {
         error_log('nextgen_partner_update_profile: ' . $ex->getMessage());
@@ -211,6 +218,8 @@ function nextgen_partner_update_password(PDO $db, int $partnerId, string $passwo
         $stmt = $db->prepare('UPDATE `nextgen_partners` SET `jelszó_hash` = ? WHERE `id` = ?');
         $stmt->execute([$hash, $partnerId]);
 
+        nextgen_partner_log($db, $partnerId, 'Jelszó módosítva');
+
         return ['ok' => true];
     } catch (Throwable $ex) {
         error_log('nextgen_partner_update_password: ' . $ex->getMessage());
@@ -230,6 +239,8 @@ function nextgen_partner_set_active(PDO $db, int $partnerId, bool $active): arra
     try {
         $stmt = $db->prepare('UPDATE `nextgen_partners` SET `aktív` = ? WHERE `id` = ?');
         $stmt->execute([$active ? 1 : 0, $partnerId]);
+
+        nextgen_partner_log($db, $partnerId, $active ? 'Partner aktiválva' : 'Partner deaktiválva');
 
         return ['ok' => true];
     } catch (Throwable $ex) {
@@ -391,6 +402,14 @@ function nextgen_partner_sync_assignments(
 
         $db->commit();
 
+        $summary = sprintf(
+            '%d esemény szervező, %d DJ, %d finance szervező',
+            count($organizerIds),
+            count($djTagIds),
+            count($financeOrganizerIds)
+        );
+        nextgen_partner_log($db, $partnerId, 'Hozzárendelések módosítva', $summary);
+
         return ['ok' => true];
     } catch (Throwable $ex) {
         if ($db->inTransaction()) {
@@ -399,6 +418,54 @@ function nextgen_partner_sync_assignments(
         error_log('nextgen_partner_sync_assignments: ' . $ex->getMessage());
 
         return ['ok' => false, 'error' => 'Hozzárendelések mentése sikertelen.'];
+    }
+}
+
+/**
+ * @return array{ok: true}|array{ok: false, error: string}
+ */
+function nextgen_partner_delete(PDO $db, int $partnerId): array
+{
+    if ($partnerId <= 0 || !nextgen_partners_table_ready($db)) {
+        return ['ok' => false, 'error' => 'Érvénytelen partner.'];
+    }
+
+    $partner = nextgen_partner_by_id($db, $partnerId);
+    if ($partner === null) {
+        return ['ok' => false, 'error' => 'Partner nem található.'];
+    }
+
+    $snapshot = sprintf(
+        'ID: %d, név: %s, e-mail: %s',
+        $partnerId,
+        (string) ($partner['név'] ?? ''),
+        (string) ($partner['email'] ?? '')
+    );
+
+    try {
+        $db->beginTransaction();
+
+        $db->prepare('DELETE FROM `nextgen_partner_messages` WHERE `partner_id` = ?')->execute([$partnerId]);
+        $db->prepare('DELETE FROM `nextgen_partner_events_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
+        $db->prepare('DELETE FROM `nextgen_partner_djs` WHERE `partner_id` = ?')->execute([$partnerId]);
+        $db->prepare('DELETE FROM `nextgen_partner_finance_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
+        if (nextgen_partner_activity_log_table_ready($db)) {
+            $db->prepare('DELETE FROM `nextgen_partner_activity_log` WHERE `partner_id` = ?')->execute([$partnerId]);
+        }
+        $db->prepare('DELETE FROM `nextgen_partners` WHERE `id` = ?')->execute([$partnerId]);
+
+        $db->commit();
+
+        rendszer_log('partner', $partnerId, 'Törölve', $snapshot);
+
+        return ['ok' => true];
+    } catch (Throwable $ex) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('nextgen_partner_delete: ' . $ex->getMessage());
+
+        return ['ok' => false, 'error' => 'Partner törlése sikertelen.'];
     }
 }
 

@@ -41,6 +41,7 @@ function log_entity_url(string $entitás, ?int $entitás_id): ?string {
         'stílus' => nextgen_url('events/styles.php?open_style='),
         'címke' => nextgen_url('events/tags.php?open_tag='),
         'kontakt_típus' => null, // csak lista, nincs egy tétel oldal
+        'partner' => nextgen_url('admin/partnerek/szerkeszt.php?id='),
     ];
     $base = $urls[$entitás] ?? null;
     return $base !== null ? $base . $entitás_id : null;

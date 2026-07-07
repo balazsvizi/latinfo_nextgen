@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/init.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
+require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 requireLogin();
 
 $db = getDb();
@@ -41,6 +42,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 $threads = nextgen_partner_messages_inbox_threads($db);
 $selectedPartner = $partnerId > 0 ? nextgen_partner_by_id($db, $partnerId) : null;
 $threadMessages = $partnerId > 0 ? nextgen_partner_messages_for_partner($db, $partnerId) : [];
+$partnerActivityLog = $partnerId > 0 ? nextgen_partner_activity_log_for_partner($db, $partnerId) : [];
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
@@ -118,6 +120,13 @@ $threadMessages = $partnerId > 0 ? nextgen_partner_messages_for_partner($db, $pa
         <p class="toolbar"><button type="submit" class="btn btn-primary">Küldés</button></p>
     </form>
 </div>
+<?php endif; ?>
+
+<?php if ($partnerId > 0): ?>
+<?php
+$partnerActivityLogGlobal = false;
+require __DIR__ . '/partials/activity_log.php';
+?>
 <?php endif; ?>
 
 <?php require_once dirname(__DIR__, 2) . '/partials/footer.php'; ?>

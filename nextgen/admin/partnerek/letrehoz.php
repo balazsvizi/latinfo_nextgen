@@ -22,7 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         if ($result['ok']) {
             $pid = (int) $result['id'];
-            rendszer_log('partner', $pid, 'Létrehozva', (string) ($_POST['email'] ?? ''));
             flash('success', 'Partner létrehozva.');
             redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $pid);
         }
