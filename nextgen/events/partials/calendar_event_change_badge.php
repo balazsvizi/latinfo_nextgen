@@ -12,4 +12,4 @@ if ($changeBadge === '') {
     return;
 }
 ?>
-<span class="events-cal__event-change-badge"><?= h($changeBadge) ?></span>
+<span class="events-cal__event-change-badge<?= events_event_change_calendar_badge_class($ev) ?>"><?= h($changeBadge) ?></span>

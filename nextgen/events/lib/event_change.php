@@ -163,6 +163,24 @@ function events_event_change_event_name_class(array $event): string
 }
 
 /**
+ * Naptár badge módosító osztály (színezéshez).
+ *
+ * @param array<string, mixed> $event
+ */
+function events_event_change_calendar_badge_class(array $event): string
+{
+    $type = events_event_change_type($event);
+    if ($type === events_event_change_type_cancelled()) {
+        return ' events-cal__event-change-badge--cancelled';
+    }
+    if ($type === events_event_change_type_modified()) {
+        return ' events-cal__event-change-badge--modified';
+    }
+
+    return '';
+}
+
+/**
  * Naptár link / blokk módosító osztályok.
  *
  * @param array<string, mixed> $event

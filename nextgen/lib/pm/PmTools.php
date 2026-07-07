@@ -46,6 +46,10 @@ final class PmTools
     public static function normalizePhpPath(string $path): string
     {
         $path = str_replace('\\', '/', trim($path));
+        $base = rtrim(defined('BASE_URL') ? (string) BASE_URL : '', '/');
+        if ($base !== '' && str_starts_with($path, $base)) {
+            $path = substr($path, strlen($base));
+        }
         if ($path === '') {
             return '/';
         }
