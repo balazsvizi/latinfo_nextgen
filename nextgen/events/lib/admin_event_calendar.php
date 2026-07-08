@@ -181,6 +181,8 @@ function events_admin_calendar_month_key_from_event(array $event): string {
 }
 
 /**
+ * @return list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>
+ */
 function events_admin_calendar_grid_days(DateTimeImmutable $monthFirst, DateTimeImmutable $monthLast): array {
     $gridStart = $monthFirst->modify('monday this week');
     $gridEnd = $monthLast->modify('sunday this week');
