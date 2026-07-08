@@ -20,7 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string) ($_POST['telefon'] ?? ''),
             (string) ($_POST['egyeb_kontakt'] ?? ''),
             !empty($_POST['jelszo_csere_kotelezo']),
-            (string) ($_POST['egyeb_info'] ?? '')
+            (string) ($_POST['egyeb_info'] ?? ''),
+            (string) ($_POST['kieg_info'] ?? '')
         );
         if ($result['ok']) {
             $pid = (int) $result['id'];
@@ -39,9 +40,15 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
     <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post" class="venue-form">
         <?= csrf_input('partner_admin_create') ?>
-        <div class="form-group">
-            <label for="nev">Név *</label>
-            <input type="text" id="nev" name="nev" value="<?= h($_POST['nev'] ?? '') ?>" required maxlength="255">
+        <div class="form-row partner-name-row">
+            <div class="form-group">
+                <label for="nev">Név *</label>
+                <input type="text" id="nev" name="nev" value="<?= h($_POST['nev'] ?? '') ?>" required maxlength="255">
+            </div>
+            <div class="form-group">
+                <label for="kieg_info">Kieg. infó</label>
+                <input type="text" id="kieg_info" name="kieg_info" value="<?= h($_POST['kieg_info'] ?? '') ?>" maxlength="255" placeholder="pl. cég, szerepkör…">
+            </div>
         </div>
         <div class="form-group">
             <label for="email">E-mail *</label>
@@ -60,8 +67,9 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             <textarea id="egyeb_info" name="egyeb_info" rows="4" placeholder="Belső megjegyzések, egyéb információk a partnerről…"><?= h($_POST['egyeb_info'] ?? '') ?></textarea>
         </div>
         <div class="form-group">
-            <label for="jelszo">Jelszó *</label>
-            <input type="password" id="jelszo" name="jelszo" required minlength="8" autocomplete="new-password">
+            <label for="jelszo">Jelszó</label>
+            <input type="password" id="jelszo" name="jelszo" minlength="8" autocomplete="new-password">
+            <p class="help">Opcionális. Ha üresen hagyod, később állítható be a szerkesztő oldalon.</p>
         </div>
         <div class="form-group">
             <label>

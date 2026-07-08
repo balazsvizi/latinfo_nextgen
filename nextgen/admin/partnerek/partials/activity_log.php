@@ -15,7 +15,11 @@ $partnerActivityLogGlobal = $partnerActivityLogGlobal ?? false;
                 <?php if ($partnerActivityLogGlobal): ?>
                     ·
                     <a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) ($l['partner_id'] ?? 0)) ?>">
-                        <?= h((string) ($l['target_partner_nev'] ?? '')) ?>
+                        <?php
+                        $partnerListNev = (string) ($l['target_partner_nev'] ?? '');
+                        $partnerListKieg = (string) ($l['target_partner_kieg_info'] ?? '');
+                        require __DIR__ . '/partner_list_name.php';
+                        ?>
                     </a>
                 <?php endif; ?>
             </span>

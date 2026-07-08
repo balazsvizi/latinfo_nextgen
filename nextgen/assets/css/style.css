@@ -4104,6 +4104,22 @@ body.event-edit-cover-lightbox-open {
 .partner-admin-assign-section__actions {
     margin-top: 0.75rem;
 }
+.partner-name-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: end;
+}
+.partner-kieg-info {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.9em;
+}
+@media (max-width: 640px) {
+    .partner-name-row {
+        grid-template-columns: 1fr;
+    }
+}
 .partner-assign-row {
     display: flex;
     gap: 0.65rem;

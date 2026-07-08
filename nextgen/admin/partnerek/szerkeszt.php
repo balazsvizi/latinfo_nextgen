@@ -76,7 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string) ($_POST['email'] ?? ''),
                 (string) ($_POST['telefon'] ?? ''),
                 (string) ($_POST['egyeb_kontakt'] ?? ''),
-                (string) ($_POST['egyeb_info'] ?? '')
+                (string) ($_POST['egyeb_info'] ?? ''),
+                (string) ($_POST['kieg_info'] ?? '')
             );
             if (!$result['ok']) {
                 $hiba = (string) ($result['error'] ?? 'Profil mentése sikertelen.');
@@ -168,9 +169,15 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <?= csrf_input('partner_admin_edit') ?>
         <input type="hidden" name="id" value="<?= $id ?>">
         <input type="hidden" name="_action" value="save">
-        <div class="form-group">
-            <label for="nev">Név *</label>
-            <input type="text" id="nev" name="nev" value="<?= h((string) ($partner['név'] ?? '')) ?>" required>
+        <div class="form-row partner-name-row">
+            <div class="form-group">
+                <label for="nev">Név *</label>
+                <input type="text" id="nev" name="nev" value="<?= h((string) ($partner['név'] ?? '')) ?>" required maxlength="255">
+            </div>
+            <div class="form-group">
+                <label for="kieg_info">Kieg. infó</label>
+                <input type="text" id="kieg_info" name="kieg_info" value="<?= h((string) ($partner['kieg_info'] ?? '')) ?>" maxlength="255" placeholder="pl. cég, szerepkör…">
+            </div>
         </div>
         <div class="form-group">
             <label for="email">E-mail *</label>
@@ -269,7 +276,7 @@ require __DIR__ . '/partials/partner_dj_assign_row.php';
         <input type="hidden" name="_action" value="password">
         <div class="form-group">
             <label for="jelszo">Új jelszó</label>
-            <input type="password" id="jelszo" name="jelszo" minlength="8" required autocomplete="new-password">
+            <input type="password" id="jelszo" name="jelszo" minlength="8" autocomplete="new-password">
         </div>
         <div class="form-group">
             <label>

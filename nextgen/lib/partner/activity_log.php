@@ -115,6 +115,7 @@ function nextgen_partner_activity_log_recent(PDO $db, int $limit = 50): array
         $stmt = $db->query("
             SELECT l.*,
                 pt.`név` AS target_partner_nev,
+                pt.`kieg_info` AS target_partner_kieg_info,
                 pt.`email` AS target_partner_email,
                 a.`név` AS admin_nev,
                 p.`név` AS partner_nev

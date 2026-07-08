@@ -73,7 +73,7 @@ $partnerActivityLogGlobal = true;
     <?php endif; ?>
     <p class="toolbar">
         <form method="get" style="display:inline-flex;gap:0.5rem;flex-wrap:wrap;">
-            <input type="search" name="kereso" placeholder="Név, e-mail, ID…" value="<?= h($kereso) ?>">
+            <input type="search" name="kereso" placeholder="Név, kieg. infó, e-mail, ID…" value="<?= h($kereso) ?>">
             <button type="submit" class="btn btn-secondary btn-sm">Keresés</button>
         </form>
         <a href="<?= h(nextgen_url('admin/partnerek/letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új partner</a>
@@ -101,7 +101,7 @@ $partnerActivityLogGlobal = true;
                 <?php foreach ($partners as $p): ?>
                 <tr>
                     <td><?= (int) $p['id'] ?></td>
-                    <td><?= h((string) ($p['név'] ?? '')) ?></td>
+                    <td><?php $partner = $p; require __DIR__ . '/partials/partner_list_name.php'; ?></td>
                     <td><?= h((string) ($p['email'] ?? '')) ?></td>
                     <td><?= h((string) ($p['telefon'] ?? '')) ?></td>
                     <td class="text-center"><?= (int) ($p['organizer_count'] ?? 0) ?></td>

@@ -150,6 +150,7 @@ function nextgen_partner_messages_inbox_threads(PDO $db): array
             SELECT
                 p.`id` AS partner_id,
                 p.`név` AS partner_nev,
+                p.`kieg_info` AS partner_kieg_info,
                 p.`email` AS partner_email,
                 p.`aktív` AS partner_aktiv,
                 MAX(m.`létrehozva`) AS last_at,
@@ -161,7 +162,7 @@ function nextgen_partner_messages_inbox_threads(PDO $db): array
                 ) AS last_message_id
             FROM `nextgen_partners` p
             INNER JOIN `nextgen_partner_messages` m ON m.`partner_id` = p.`id`
-            GROUP BY p.`id`, p.`név`, p.`email`, p.`aktív`
+            GROUP BY p.`id`, p.`név`, p.`kieg_info`, p.`email`, p.`aktív`
             ORDER BY last_at DESC
         ');
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -183,6 +184,7 @@ function nextgen_partner_messages_inbox_threads(PDO $db): array
             $threads[] = [
                 'partner_id' => (int) $row['partner_id'],
                 'partner_nev' => (string) ($row['partner_nev'] ?? ''),
+                'partner_kieg_info' => (string) ($row['partner_kieg_info'] ?? ''),
                 'partner_email' => (string) ($row['partner_email'] ?? ''),
                 'last_at' => (string) ($row['last_at'] ?? ''),
                 'last_message' => $lastMsg,

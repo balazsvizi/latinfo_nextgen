@@ -79,6 +79,11 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
             $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `egyéb_info` TEXT NULL DEFAULT NULL AFTER `egyéb_kontakt`');
         }
 
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'kieg_info'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `kieg_info` VARCHAR(255) NULL DEFAULT NULL AFTER `név`');
+        }
+
         $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partner_events_organizers` LIKE 'role_type'");
         if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
             $db->exec("
@@ -219,6 +224,16 @@ function nextgen_partner_dj_role_label(string $roleType): string
     return $labels[$roleType] ?? $roleType;
 }
 
+function nextgen_partner_kieg_info_from_row(array $row): string
+{
+    return trim((string) ($row['kieg_info'] ?? $row['partner_kieg_info'] ?? ''));
+}
+
+function nextgen_partner_nev_from_row(array $row): string
+{
+    return trim((string) ($row['név'] ?? $row['partner_nev'] ?? ''));
+}
+
 function nextgen_partner_must_change_password(array $partner): bool
 {
     return !empty($partner['jelszó_csere_kötelező']);
@@ -275,8 +290,8 @@ function nextgen_partners_list(PDO $db, ?string $search = null): array
     $params = [];
     if ($search !== null && trim($search) !== '') {
         $like = '%' . trim($search) . '%';
-        $where = 'WHERE (p.`név` LIKE ? OR p.`email` LIKE ? OR CAST(p.`id` AS CHAR) LIKE ?)';
-        $params = [$like, $like, $like];
+        $where = 'WHERE (p.`név` LIKE ? OR p.`kieg_info` LIKE ? OR p.`email` LIKE ? OR CAST(p.`id` AS CHAR) LIKE ?)';
+        $params = [$like, $like, $like, $like];
     }
     try {
         $stmt = $db->prepare("
@@ -307,7 +322,8 @@ function nextgen_partner_create(
     ?string $telefon = null,
     ?string $egyebKontakt = null,
     bool $requireChangeOnLogin = false,
-    ?string $egyebInfo = null
+    ?string $egyebInfo = null,
+    ?string $kiegInfo = null
 ): array {
     if (!nextgen_partners_table_ready($db)) {
         return ['ok' => false, 'error' => 'A partner tábla még nincs telepítve. Futtasd: partner/sql/migration_partners.sql'];
@@ -321,7 +337,8 @@ function nextgen_partner_create(
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         return ['ok' => false, 'error' => 'Érvényes e-mail cím szükséges.'];
     }
-    if (strlen($password) < 8) {
+    $password = trim($password);
+    if ($password !== '' && strlen($password) < 8) {
         return ['ok' => false, 'error' => 'A jelszónak legalább 8 karakter hosszúnak kell lennie.'];
     }
     if (nextgen_partner_by_email($db, $email) !== null) {
@@ -331,16 +348,23 @@ function nextgen_partner_create(
     $telefon = $telefon !== null ? trim($telefon) : '';
     $egyebKontakt = $egyebKontakt !== null ? trim($egyebKontakt) : '';
     $egyebInfo = $egyebInfo !== null ? trim($egyebInfo) : '';
+    $kiegInfo = $kiegInfo !== null ? trim($kiegInfo) : '';
+    if (mb_strlen($kiegInfo, 'UTF-8') > 255) {
+        return ['ok' => false, 'error' => 'A kiegészítő infó legfeljebb 255 karakter lehet.'];
+    }
 
     try {
         nextgen_partner_ensure_password_schema($db);
-        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $hash = $password !== ''
+            ? password_hash($password, PASSWORD_DEFAULT)
+            : password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
         $stmt = $db->prepare('
-            INSERT INTO `nextgen_partners` (`név`, `email`, `telefon`, `egyéb_kontakt`, `egyéb_info`, `jelszó_hash`, `aktív`, `jelszó_csere_kötelező`)
-            VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+            INSERT INTO `nextgen_partners` (`név`, `kieg_info`, `email`, `telefon`, `egyéb_kontakt`, `egyéb_info`, `jelszó_hash`, `aktív`, `jelszó_csere_kötelező`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
         ');
         $stmt->execute([
             $nev,
+            $kiegInfo !== '' ? $kiegInfo : null,
             $email,
             $telefon !== '' ? $telefon : null,
             $egyebKontakt !== '' ? $egyebKontakt : null,
@@ -351,6 +375,9 @@ function nextgen_partner_create(
 
         $partnerId = (int) $db->lastInsertId();
         $logDetail = $email . ($requireChangeOnLogin ? ' (kötelező jelszócsere)' : '');
+        if ($password === '') {
+            $logDetail .= ' (jelszó később állítható be)';
+        }
         nextgen_partner_log($db, $partnerId, 'Partner létrehozva', $logDetail);
 
         return ['ok' => true, 'id' => $partnerId];
@@ -371,7 +398,8 @@ function nextgen_partner_update_profile(
     string $email,
     ?string $telefon,
     ?string $egyebKontakt,
-    ?string $egyebInfo = null
+    ?string $egyebInfo = null,
+    ?string $kiegInfo = null
 ): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
@@ -388,6 +416,10 @@ function nextgen_partner_update_profile(
     $telefon = $telefon !== null ? trim($telefon) : '';
     $egyebKontakt = $egyebKontakt !== null ? trim($egyebKontakt) : '';
     $egyebInfo = $egyebInfo !== null ? trim($egyebInfo) : '';
+    $kiegInfo = $kiegInfo !== null ? trim($kiegInfo) : '';
+    if (mb_strlen($kiegInfo, 'UTF-8') > 255) {
+        return ['ok' => false, 'error' => 'A kiegészítő infó legfeljebb 255 karakter lehet.'];
+    }
 
     try {
         $dup = $db->prepare('SELECT `id` FROM `nextgen_partners` WHERE `email` = ? AND `id` <> ? LIMIT 1');
@@ -397,11 +429,12 @@ function nextgen_partner_update_profile(
         }
         $stmt = $db->prepare('
             UPDATE `nextgen_partners`
-            SET `név` = ?, `email` = ?, `telefon` = ?, `egyéb_kontakt` = ?, `egyéb_info` = ?
+            SET `név` = ?, `kieg_info` = ?, `email` = ?, `telefon` = ?, `egyéb_kontakt` = ?, `egyéb_info` = ?
             WHERE `id` = ?
         ');
         $stmt->execute([
             $nev,
+            $kiegInfo !== '' ? $kiegInfo : null,
             $email,
             $telefon !== '' ? $telefon : null,
             $egyebKontakt !== '' ? $egyebKontakt : null,

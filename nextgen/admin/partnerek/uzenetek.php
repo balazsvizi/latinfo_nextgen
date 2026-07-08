@@ -67,7 +67,11 @@ $partnerActivityLog = $partnerId > 0 ? nextgen_partner_activity_log_for_partner(
                     <div>
                         <strong>
                             <a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php?partner_id=') . $tid) ?>">
-                                <?= h((string) ($thread['partner_nev'] ?? '')) ?>
+                                <?php
+                                $partnerListNev = (string) ($thread['partner_nev'] ?? '');
+                                $partnerListKieg = (string) ($thread['partner_kieg_info'] ?? '');
+                                require __DIR__ . '/partials/partner_list_name.php';
+                                ?>
                             </a>
                         </strong>
                         <span class="text-muted"> – <?= h((string) ($thread['partner_email'] ?? '')) ?></span>
@@ -85,7 +89,7 @@ $partnerActivityLog = $partnerId > 0 ? nextgen_partner_activity_log_for_partner(
 
 <?php if ($selectedPartner !== null): ?>
 <div class="card partner-inbox-thread">
-    <h2>Üzenetek: <?= h((string) ($selectedPartner['név'] ?? '')) ?></h2>
+    <h2>Üzenetek: <?php $partner = $selectedPartner; require __DIR__ . '/partials/partner_list_name.php'; ?></h2>
     <div class="partner-messages-list">
         <?php foreach ($threadMessages as $msg): ?>
             <?php
