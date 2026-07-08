@@ -971,6 +971,67 @@ body.venue-public-map-dialog-open {
     background: var(--li-card);
 }
 
+/* Esemény részletező (megjelenit) — külön lekerekített fehér tartalomdoboz */
+.event-public--detail {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.event-public--detail .event-public__hero {
+    border-radius: var(--ev-radius);
+    border: 1px solid var(--li-border);
+    box-shadow: var(--li-shadow-lg);
+}
+
+.event-public--detail .event-public__content {
+    margin-top: clamp(0.65rem, 2vw, 1rem);
+    padding: 0;
+    border-radius: var(--ev-radius);
+    border: 1px solid var(--li-border);
+    box-shadow: var(--li-shadow-lg);
+    overflow: hidden;
+}
+
+.event-public--detail .event-public__content-main {
+    padding: clamp(1.5rem, 4vw, 2.25rem) clamp(1.25rem, 4vw, 2rem) clamp(2rem, 5vw, 2.75rem);
+}
+
+.event-public--detail .event-external-info-notice {
+    max-width: none;
+    margin: 0;
+    padding: 0.5rem clamp(1rem, 3vw, 1.35rem);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    text-align: center;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    background: linear-gradient(180deg, rgba(109, 143, 99, 0.14) 0%, rgba(109, 143, 99, 0.06) 100%);
+}
+
+.event-public--detail .event-external-info-notice--top {
+    border-top: none;
+    border-bottom: 1px solid rgba(109, 143, 99, 0.22);
+}
+
+.event-public--detail .event-external-info-notice--bottom {
+    border-top: 1px solid rgba(109, 143, 99, 0.22);
+    border-bottom: none;
+}
+
+.event-public__footer--shell {
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 4vw, 1.5rem) 0;
+    margin-top: clamp(0.5rem, 1.5vw, 0.85rem);
+}
+
+.event-public__footer--shell .event-site-line {
+    margin: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
 .event-external-info-notice {
     max-width: 65ch;
     margin: 0 0 clamp(1rem, 2.5vw, 1.35rem);

@@ -195,7 +195,7 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-<article class="event-public">
+<article class="event-public event-public--detail">
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
@@ -323,24 +323,26 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php if ($eventExternalUrl !== ''): ?>
             <?php $placement = 'top'; require __DIR__ . '/partials/public_event_external_info_notice.php'; ?>
         <?php endif; ?>
-        <div class="event-body">
-            <?= $safeEventContent ?>
+        <div class="event-public__content-main">
+            <div class="event-body">
+                <?= $safeEventContent ?>
+            </div>
+            <?php if ($costText !== null): ?>
+                <aside class="event-public__admission" aria-label="<?= h($T['meta_price']) ?>">
+                    <p class="event-public__admission-label"><?= h($T['meta_price']) ?></p>
+                    <p class="event-public__admission-value"><?= h($costText) ?></p>
+                </aside>
+            <?php endif; ?>
         </div>
         <?php if ($eventExternalUrl !== ''): ?>
             <?php $placement = 'bottom'; require __DIR__ . '/partials/public_event_external_info_notice.php'; ?>
         <?php endif; ?>
-        <?php if ($costText !== null): ?>
-            <aside class="event-public__admission" aria-label="<?= h($T['meta_price']) ?>">
-                <p class="event-public__admission-label"><?= h($T['meta_price']) ?></p>
-                <p class="event-public__admission-value"><?= h($costText) ?></p>
-            </aside>
-        <?php endif; ?>
     </div>
-
-    <footer class="event-public__footer">
-        <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>
-    </footer>
 </article>
+
+<footer class="event-public__footer event-public__footer--shell">
+    <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>
+</footer>
 </div>
 <?php if ($featuredAbsolute !== ''): ?>
     <?php require __DIR__ . '/partials/public_event_featured_lightbox.php'; ?>
