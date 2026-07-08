@@ -21,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string) ($_POST['egyeb_kontakt'] ?? ''),
             !empty($_POST['jelszo_csere_kotelezo']),
             (string) ($_POST['egyeb_info'] ?? ''),
-            (string) ($_POST['kieg_info'] ?? '')
+            (string) ($_POST['kieg_info'] ?? ''),
+            (string) ($_POST['telepules'] ?? '')
         );
         if ($result['ok']) {
             $pid = (int) $result['id'];
@@ -57,6 +58,10 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <div class="form-group">
             <label for="telefon">Telefon</label>
             <input type="text" id="telefon" name="telefon" value="<?= h($_POST['telefon'] ?? '') ?>" maxlength="64">
+        </div>
+        <div class="form-group">
+            <label for="telepules">Település</label>
+            <input type="text" id="telepules" name="telepules" value="<?= h($_POST['telepules'] ?? '') ?>" maxlength="128" placeholder="pl. Budapest">
         </div>
         <div class="form-group">
             <label for="egyeb_kontakt">Egyéb kontakt</label>

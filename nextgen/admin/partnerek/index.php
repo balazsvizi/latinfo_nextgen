@@ -42,7 +42,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 
 $kereso = trim((string) ($_GET['kereso'] ?? ''));
 $order = isset($_GET['order']) && in_array((string) $_GET['order'], [
-    'id', 'nev', 'organizer_count', 'dj_count', 'finance_count', 'aktiv', 'letrehozva',
+    'id', 'nev', 'telepules', 'organizer_count', 'dj_count', 'finance_count', 'aktiv', 'letrehozva',
 ], true) ? (string) $_GET['order'] : 'letrehozva';
 if (isset($_GET['dir'])) {
     $dirParam = $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -89,7 +89,7 @@ $partnerActivityLogGlobal = true;
     <?php endif; ?>
     <p class="toolbar">
         <form method="get" style="display:inline-flex;gap:0.5rem;flex-wrap:wrap;">
-            <input type="search" name="kereso" placeholder="Név, kieg. infó, e-mail, ID…" value="<?= h($kereso) ?>">
+            <input type="search" name="kereso" placeholder="Név, település, kieg. infó, e-mail, ID…" value="<?= h($kereso) ?>">
             <?php if ($order !== 'letrehozva'): ?>
                 <input type="hidden" name="order" value="<?= h($order) ?>">
             <?php endif; ?>
@@ -110,6 +110,7 @@ $partnerActivityLogGlobal = true;
                 <tr>
                     <th class="th-num"><?= sort_th('ID', 'id', $order, $dirParam, $getParams) ?></th>
                     <th class="th-partner-nev"><?= sort_th('Név', 'nev', $order, $dirParam, $getParams) ?></th>
+                    <th><?= sort_th('Település', 'telepules', $order, $dirParam, $getParams) ?></th>
                     <th class="text-center"><?= sort_th('Szervezők', 'organizer_count', $order, $dirParam, $getParams) ?></th>
                     <th class="text-center"><?= sort_th('DJ-k', 'dj_count', $order, $dirParam, $getParams) ?></th>
                     <th class="text-center"><?= sort_th('Finance', 'finance_count', $order, $dirParam, $getParams) ?></th>
@@ -120,7 +121,10 @@ $partnerActivityLogGlobal = true;
             </thead>
             <tbody>
                 <?php foreach ($partners as $p): ?>
-                <?php $partnerEditUrl = nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $p['id']; ?>
+                <?php
+                $partnerEditUrl = nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $p['id'];
+                $partnerTelepules = nextgen_partner_telepules_from_row($p);
+                ?>
                 <tr>
                     <td class="text-muted"><?= (int) $p['id'] ?></td>
                     <td class="td-partner-nev">
@@ -130,6 +134,7 @@ $partnerActivityLogGlobal = true;
                         require __DIR__ . '/partials/partner_list_name.php';
                         ?>
                     </td>
+                    <td><?= $partnerTelepules !== '' ? h($partnerTelepules) : '–' ?></td>
                     <td class="text-center"><?= (int) ($p['organizer_count'] ?? 0) ?></td>
                     <td class="text-center"><?= (int) ($p['dj_count'] ?? 0) ?></td>
                     <td class="text-center"><?= (int) ($p['finance_count'] ?? 0) ?></td>

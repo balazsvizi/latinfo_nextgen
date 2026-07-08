@@ -77,7 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string) ($_POST['telefon'] ?? ''),
                 (string) ($_POST['egyeb_kontakt'] ?? ''),
                 (string) ($_POST['egyeb_info'] ?? ''),
-                (string) ($_POST['kieg_info'] ?? '')
+                (string) ($_POST['kieg_info'] ?? ''),
+                (string) ($_POST['telepules'] ?? '')
             );
             if (!$result['ok']) {
                 $hiba = (string) ($result['error'] ?? 'Profil mentése sikertelen.');
@@ -186,6 +187,10 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <div class="form-group">
             <label for="telefon">Telefon</label>
             <input type="text" id="telefon" name="telefon" value="<?= h((string) ($partner['telefon'] ?? '')) ?>">
+        </div>
+        <div class="form-group">
+            <label for="telepules">Település</label>
+            <input type="text" id="telepules" name="telepules" value="<?= h((string) ($partner['település'] ?? '')) ?>" maxlength="128" placeholder="pl. Budapest">
         </div>
         <div class="form-group">
             <label for="egyeb_kontakt">Egyéb kontakt</label>
