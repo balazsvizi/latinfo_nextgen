@@ -207,16 +207,24 @@ require __DIR__ . '/wp_token_field.php';
 $eventFormActionsPlacement = 'sidebar';
 require __DIR__ . '/event_form_actions.php';
 ?>
-<div class="events-edit-sidebar-cover" id="eventpics-summary-preview"<?= $coverPreview['source'] === 'none' ? ' hidden' : '' ?>>
-    <button type="button" class="events-edit-sidebar-cover__trigger" id="eventpics-summary-trigger" aria-label="Teljes kép megnyitása"<?= $coverPreview['src'] === '' ? ' disabled' : '' ?>>
-        <img
-            id="eventpics-summary-img"
-            class="events-edit-sidebar-cover__img"
-            src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
-            alt="Borító előnézet"
-            decoding="async"
-        >
-    </button>
+<div class="events-edit-sidebar-cover" id="eventpics-summary-preview">
+    <div class="events-edit-sidebar-cover__media">
+        <button type="button" class="events-edit-sidebar-cover__trigger" id="eventpics-summary-trigger" aria-label="Teljes kép megnyitása"<?= $coverPreview['src'] === '' ? ' disabled' : '' ?>>
+            <img
+                id="eventpics-summary-img"
+                class="events-edit-sidebar-cover__img"
+                src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
+                alt="Borító előnézet"
+                decoding="async"
+                <?= $coverPreview['src'] === '' ? 'hidden' : '' ?>
+            >
+        </button>
+        <div class="events-edit-sidebar-cover__placeholder" id="eventpics-cover-placeholder"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép</div>
+        <div class="events-edit-sidebar-cover__toolbar">
+            <button type="button" class="btn btn-secondary btn-sm" id="eventpics-cover-gallery" title="Borítókép választása a galériában">Galéria</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="eventpics-cover-upload" title="Kép feltöltése és beállítása borítóként">Feltöltés</button>
+        </div>
+    </div>
     <span id="eventpics-summary-name" class="visually-hidden"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>
     <span id="eventpics-summary-source" class="visually-hidden"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
 </div>
@@ -245,9 +253,9 @@ require __DIR__ . '/event_form_actions.php';
     <?php endif; ?>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-change" id="events-edit-change-panel">
-    <div class="events-edit-panel__title-row">
+    <div class="events-edit-panel__title-row events-edit-panel__title-row--change">
         <h3 class="events-edit-panel__title">Változás / elmaradás</h3>
-        <label class="events-toggle" for="event_change_active">
+        <label class="events-toggle events-toggle--inline" for="event_change_active" aria-label="Változás jelzése">
             <input
                 type="checkbox"
                 name="event_change_active"
@@ -257,7 +265,6 @@ require __DIR__ . '/event_form_actions.php';
                 <?= !empty($e['event_change_active']) ? 'checked' : '' ?>
             >
             <span class="events-toggle__ui" aria-hidden="true"></span>
-            <span class="events-toggle__label">Változás jelzése</span>
         </label>
     </div>
     <div class="events-edit-change-fields" id="events-edit-change-fields" <?= empty($e['event_change_active']) ? 'hidden' : '' ?>>
@@ -372,14 +379,13 @@ require __DIR__ . '/wp_token_field.php';
     </div>
     <div class="form-group eventpics-media-block">
         <label>Eventpics borítókép</label>
-        <p class="help">Egy képet adhatsz meg. A választó ablakban tallózhatsz vagy feltölthetsz (egyszerre egy fájl). Ugyanaz a fájl több eseménynél is használható.</p>
+        <p class="help">A jobb oldali borítóképnél a <strong>Galéria</strong> megnyitja a választót, a <strong>Feltöltés</strong> közvetlenül feltölt és beállítja a képet.</p>
         <input type="hidden" name="event_featured_image_pick" id="event_featured_image_pick" value="<?= h($eventpicsPick) ?>">
         <div class="eventpics-form-summary" id="eventpics-form-summary" data-base="<?= h(events_url('eventpics/')) ?>">
             <div class="eventpics-form-summary__inner eventpics-form-summary__inner--toolbar">
                 <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép (adj meg URL-t vagy válassz eventpics képet).</p>
                 <div class="eventpics-form-summary__actions">
-                    <button type="button" class="btn btn-primary" id="eventpics-open-modal">Borítókép választása…</button>
-                    <button type="button" class="btn btn-secondary" id="eventpics-clear-main">Törlés</button>
+                    <button type="button" class="btn btn-secondary" id="eventpics-clear-main">Borítókép törlése</button>
                 </div>
             </div>
         </div>
@@ -454,7 +460,8 @@ require __DIR__ . '/wp_token_field.php';
     var drop = document.getElementById('eventpics-dropzone');
     var msg = document.getElementById('eventpics-msg');
     var filter = document.getElementById('eventpics-filter');
-    var btnOpen = document.getElementById('eventpics-open-modal');
+    var btnOpen = document.getElementById('eventpics-cover-gallery');
+    var btnCoverUpload = document.getElementById('eventpics-cover-upload');
     var btnClearMain = document.getElementById('eventpics-clear-main');
     var btnOk = document.getElementById('eventpics-modal-ok');
     var btnCancel = document.getElementById('eventpics-modal-cancel');
@@ -470,9 +477,11 @@ require __DIR__ . '/wp_token_field.php';
     var coverLightbox = document.getElementById('event-edit-cover-lightbox');
     var coverLightboxImg = document.getElementById('event-edit-cover-lightbox-img');
     var coverLightboxClose = document.getElementById('event-edit-cover-lightbox-close');
-    if (!dialog || !root || !hidden || !grid || !btnUp || !btnClear || !fileInp || !drop || !btnOpen || !btnOk || !btnCancel) return;
+    var coverPlaceholder = document.getElementById('eventpics-cover-placeholder');
+    if (!dialog || !root || !hidden || !grid || !btnUp || !btnClear || !fileInp || !drop || !btnOpen || !btnCoverUpload || !btnOk || !btnCancel) return;
 
     var pendingPick = (hidden.value || '').trim();
+    var directUploadApply = false;
 
     function setMsg(t, isErr) {
         if (!msg) return;
@@ -559,9 +568,10 @@ require __DIR__ . '/wp_token_field.php';
             nameText = fn;
         }
         if (src === '') {
-            sumPreview.hidden = true;
             sumEmpty.hidden = false;
             sumImg.removeAttribute('src');
+            sumImg.hidden = true;
+            if (coverPlaceholder) coverPlaceholder.hidden = false;
             sumName.textContent = '';
             if (sumSource) sumSource.textContent = '';
             if (coverTrigger) coverTrigger.disabled = true;
@@ -571,8 +581,9 @@ require __DIR__ . '/wp_token_field.php';
             }
             return;
         }
-        sumPreview.hidden = false;
         sumEmpty.hidden = true;
+        sumImg.hidden = false;
+        if (coverPlaceholder) coverPlaceholder.hidden = true;
         sumImg.src = src;
         sumName.textContent = nameText;
         if (sumSource) sumSource.textContent = urlTrim ? capUrl : capPic;
@@ -669,7 +680,29 @@ require __DIR__ . '/wp_token_field.php';
         setMsg('');
     });
 
-    btnUp.addEventListener('click', function () { fileInp.click(); });
+    function applyPickToForm(filename) {
+        var fn = (filename || '').trim();
+        hidden.value = fn;
+        pendingPick = fn;
+        if (urlInp) {
+            var urlTrim = (urlInp.value || '').trim();
+            if (fn !== '' || isEventpicsUrl(urlTrim)) {
+                urlInp.value = '';
+            }
+        }
+        syncModalSelection();
+        syncMainSummary();
+    }
+
+    btnUp.addEventListener('click', function () {
+        directUploadApply = false;
+        fileInp.click();
+    });
+
+    btnCoverUpload.addEventListener('click', function () {
+        directUploadApply = true;
+        fileInp.click();
+    });
 
     if (filter) {
         filter.addEventListener('input', function () {
@@ -703,25 +736,37 @@ require __DIR__ . '/wp_token_field.php';
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!data || !data.ok) {
+                    directUploadApply = false;
                     setMsg((data && data.error) ? data.error : 'Feltöltés sikertelen.', true);
                     return;
                 }
                 addThumb(data.filename, data.thumb_url || data.url);
                 pendingPick = data.filename;
                 syncModalSelection();
-                setMsg('Feltöltve. Nyomd meg a „Kiválasztás” gombot a mentéshez.', false);
                 fileInp.value = '';
                 if (filter) {
                     filter.value = '';
                     filter.dispatchEvent(new Event('input', { bubbles: true }));
                 }
+                if (directUploadApply) {
+                    directUploadApply = false;
+                    applyPickToForm(data.filename);
+                    setMsg('');
+                    return;
+                }
+                setMsg('Feltöltve. Nyomd meg a „Kiválasztás” gombot a mentéshez.', false);
             })
             .catch(function () {
+                directUploadApply = false;
                 setMsg('Hálózati hiba a feltöltéskor.', true);
             });
     }
 
     fileInp.addEventListener('change', function () {
+        if (!fileInp.files || !fileInp.files.length) {
+            directUploadApply = false;
+            return;
+        }
         uploadFiles(fileInp.files);
     });
 
@@ -775,14 +820,7 @@ require __DIR__ . '/wp_token_field.php';
     if (btnX) btnX.addEventListener('click', closeModal);
     btnCancel.addEventListener('click', closeModal);
     btnOk.addEventListener('click', function () {
-        hidden.value = pendingPick;
-        if (urlInp) {
-            var urlTrim = (urlInp.value || '').trim();
-            if (pendingPick || isEventpicsUrl(urlTrim)) {
-                urlInp.value = '';
-            }
-        }
-        syncMainSummary();
+        applyPickToForm(pendingPick);
         closeModal();
     });
     if (btnClearMain) {

@@ -3418,6 +3418,36 @@ dialog.eventpics-modal::backdrop {
     background: #fff;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
+.events-edit-sidebar-cover__media {
+    display: flex;
+    flex-direction: column;
+}
+.events-edit-sidebar-cover__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 5.5rem;
+    padding: 0.85rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    text-align: center;
+    background: #f8fafc;
+}
+.events-edit-sidebar-cover__placeholder[hidden] {
+    display: none !important;
+}
+.events-edit-sidebar-cover__toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    padding: 0.45rem;
+    border-top: 1px solid var(--border);
+    background: #fff;
+}
+.events-edit-sidebar-cover__toolbar .btn {
+    width: 100%;
+    justify-content: center;
+}
 .events-edit-sidebar-cover__trigger {
     display: block;
     width: 100%;
@@ -3445,6 +3475,9 @@ dialog.eventpics-modal::backdrop {
     object-fit: cover;
     vertical-align: middle;
     pointer-events: none;
+}
+.events-edit-sidebar-cover__img[hidden] {
+    display: none !important;
 }
 .events-edit-sidebar-cover[hidden] {
     display: none !important;
@@ -3523,6 +3556,12 @@ body.event-edit-cover-lightbox-open {
 }
 .events-edit-panel__title-row--datetime {
     margin-bottom: 0.85rem;
+}
+.events-edit-panel__title-row--change {
+    gap: 0.45rem;
+}
+.events-edit-panel__title-row--change .events-toggle--inline {
+    gap: 0;
 }
 .events-edit-main {
     display: flex;
