@@ -485,11 +485,15 @@ function events_public_megjelenit_cost_text(?float $cf, ?float $ct, string $lang
  * Ugyanaz az esemény slug, más nyelvi paraméterrel (váltó linkek).
  */
 function events_public_megjelenit_lang_switch_url(string $slug, string $targetLang): string {
-    if ($targetLang === 'en') {
-        return events_public_append_query(events_megjelenit_url($slug), ['lang' => 'en']);
+    $lang = $targetLang === 'en' ? 'en' : 'hu';
+    $q = ['lang' => $lang];
+    foreach (['ref'] as $param) {
+        if (isset($_GET[$param]) && (string) $_GET[$param] !== '') {
+            $q[$param] = (string) $_GET[$param];
+        }
     }
 
-    return events_megjelenit_url($slug);
+    return events_public_append_query(events_megjelenit_url($slug), $q);
 }
 
 /**
@@ -914,13 +918,9 @@ function events_public_home_page_url(string $lang): string {
 
 function events_public_home_lang_switch_url(string $targetLang): string {
     $q = $_GET;
-    if ($targetLang === 'en') {
-        $q['lang'] = 'en';
-    } else {
-        unset($q['lang']);
-    }
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
 
-    return events_public_home_url($targetLang === 'en' ? 'en' : 'hu', $q);
+    return events_public_append_query(rtrim(events_public_home_path(), '/'), $q);
 }
 
 function events_public_venue_lang_switch_url(string $slug, string $targetLang, array $extraParams = []): string {
@@ -971,8 +971,8 @@ function events_public_megjelenit_not_found_html(string $lang): string {
     $heroBar = events_public_render_hero_bar(
         $lang,
         $T,
-        events_public_home_page_url('hu'),
-        events_public_home_page_url('en'),
+        events_public_home_lang_switch_url('hu'),
+        events_public_home_lang_switch_url('en'),
         false
     );
 
@@ -1012,8 +1012,8 @@ function events_public_organizer_not_found_html(string $lang): string {
     $heroBar = events_public_render_hero_bar(
         $lang,
         $O,
-        events_public_home_page_url('hu'),
-        events_public_home_page_url('en'),
+        events_public_home_lang_switch_url('hu'),
+        events_public_home_lang_switch_url('en'),
         false
     );
 
@@ -1053,8 +1053,8 @@ function events_public_tag_not_found_html(string $lang): string {
     $heroBar = events_public_render_hero_bar(
         $lang,
         $G,
-        events_public_home_page_url('hu'),
-        events_public_home_page_url('en'),
+        events_public_home_lang_switch_url('hu'),
+        events_public_home_lang_switch_url('en'),
         false
     );
 

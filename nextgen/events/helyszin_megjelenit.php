@@ -39,7 +39,7 @@ if ($slug === '') {
 <div class="event-shell">
 <article class="event-public event-public--not-found">
     <header class="event-public__hero event-public__hero--compact">
-        <?= events_public_render_hero_bar($lang, $S, events_public_home_page_url('hu'), events_public_home_page_url('en'), false) ?>
+        <?= events_public_render_hero_bar($lang, $S, events_public_home_lang_switch_url('hu'), events_public_home_lang_switch_url('en'), false) ?>
     </header>
     <p class="event-not-found-msg"><?= h($lang === 'en' ? 'Venue not found.' : 'Nincs ilyen helyszín.') ?></p>
     <?php $standalone = true; require __DIR__ . '/partials/public_shell_footer.php'; ?>
@@ -79,7 +79,7 @@ if (!$venue) {
 <div class="event-shell">
 <article class="event-public event-public--not-found">
     <header class="event-public__hero event-public__hero--compact">
-        <?= events_public_render_hero_bar($lang, $S, events_public_home_page_url('hu'), events_public_home_page_url('en'), false) ?>
+        <?= events_public_render_hero_bar($lang, $S, events_public_home_lang_switch_url('hu'), events_public_home_lang_switch_url('en'), false) ?>
     </header>
     <p class="event-not-found-msg"><?= h($lang === 'en' ? 'Venue not found.' : 'Nincs ilyen helyszín.') ?></p>
     <?php $standalone = true; require __DIR__ . '/partials/public_shell_footer.php'; ?>
