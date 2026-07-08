@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string) ($_POST['jelszo'] ?? ''),
             (string) ($_POST['telefon'] ?? ''),
             (string) ($_POST['egyeb_kontakt'] ?? ''),
-            !empty($_POST['jelszo_csere_kotelezo'])
+            !empty($_POST['jelszo_csere_kotelezo']),
+            (string) ($_POST['egyeb_info'] ?? '')
         );
         if ($result['ok']) {
             $pid = (int) $result['id'];
@@ -53,6 +54,10 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <div class="form-group">
             <label for="egyeb_kontakt">Egyéb kontakt</label>
             <textarea id="egyeb_kontakt" name="egyeb_kontakt" rows="3"><?= h($_POST['egyeb_kontakt'] ?? '') ?></textarea>
+        </div>
+        <div class="form-group">
+            <label for="egyeb_info">Egyéb infó</label>
+            <textarea id="egyeb_info" name="egyeb_info" rows="4" placeholder="Belső megjegyzések, egyéb információk a partnerről…"><?= h($_POST['egyeb_info'] ?? '') ?></textarea>
         </div>
         <div class="form-group">
             <label for="jelszo">Jelszó *</label>

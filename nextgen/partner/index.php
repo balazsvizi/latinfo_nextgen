@@ -68,10 +68,21 @@ require_once __DIR__ . '/partials/header.php';
     <h2 class="card-title">Szervezőid</h2>
     <div class="partner-entity-list">
         <?php foreach ($organizers as $org): ?>
+            <?php
+            $orgRole = nextgen_partner_organizer_role_label((string) ($org['role_type'] ?? 'event'));
+            $orgNote = trim((string) ($org['role_note'] ?? ''));
+            ?>
             <a class="partner-entity-card" href="<?= h(partner_url('szervezo.php?id=') . (int) $org['id']) ?>">
                 <div>
                     <p class="partner-entity-card__title"><?= h((string) ($org['name'] ?? '')) ?></p>
-                    <p class="partner-entity-card__meta">Dashboard és statisztikák</p>
+                    <p class="partner-entity-card__meta">
+                        <span class="partner-role-badge"><?= h($orgRole) ?></span>
+                        <?php if ($orgNote !== ''): ?>
+                            · <?= h($orgNote) ?>
+                        <?php else: ?>
+                            · Dashboard és statisztikák
+                        <?php endif; ?>
+                    </p>
                 </div>
                 <span aria-hidden="true">→</span>
             </a>

@@ -60,12 +60,163 @@ function nextgen_partner_ensure_password_schema(PDO $db): bool
             ');
         }
 
-        return true;
+        return nextgen_partner_ensure_extended_schema($db);
     } catch (Throwable $ex) {
         error_log('nextgen_partner_ensure_password_schema: ' . $ex->getMessage());
 
         return false;
     }
+}
+
+function nextgen_partner_ensure_extended_schema(PDO $db): bool
+{
+    if (!nextgen_partners_table_ready($db)) {
+        return false;
+    }
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'egyéb_info'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `egyéb_info` TEXT NULL DEFAULT NULL AFTER `egyéb_kontakt`');
+        }
+
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partner_events_organizers` LIKE 'role_type'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec("
+                ALTER TABLE `nextgen_partner_events_organizers`
+                ADD COLUMN `role_type` VARCHAR(16) NOT NULL DEFAULT 'event' AFTER `organizer_id`,
+                ADD COLUMN `role_note` VARCHAR(500) NULL DEFAULT NULL AFTER `role_type`
+            ");
+        }
+
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partner_djs` LIKE 'role_type'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec("
+                ALTER TABLE `nextgen_partner_djs`
+                ADD COLUMN `role_type` VARCHAR(16) NOT NULL DEFAULT 'dj' AFTER `tag_id`,
+                ADD COLUMN `role_note` VARCHAR(500) NULL DEFAULT NULL AFTER `role_type`
+            ");
+        }
+
+        return true;
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_ensure_extended_schema: ' . $ex->getMessage());
+
+        return false;
+    }
+}
+
+/**
+ * @return array<string, string>
+ */
+function nextgen_partner_organizer_role_labels(): array
+{
+    return [
+        'event' => 'Event',
+        'finance' => 'Finance',
+        'boss' => 'Boss',
+        'other' => 'Other',
+    ];
+}
+
+/**
+ * @return array<string, string>
+ */
+function nextgen_partner_dj_role_labels(): array
+{
+    return [
+        'dj' => 'DJ',
+        'other' => 'Egyéb',
+    ];
+}
+
+/**
+ * @return list<array{organizer_id: int, role_type: string, role_note: ?string}>
+ */
+function nextgen_partner_organizer_rows_from_post(mixed $raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+    $validRoles = array_keys(nextgen_partner_organizer_role_labels());
+    $rows = [];
+    $seen = [];
+    foreach ($raw as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $organizerId = (int) ($row['organizer_id'] ?? 0);
+        if ($organizerId <= 0 || isset($seen[$organizerId])) {
+            continue;
+        }
+        $seen[$organizerId] = true;
+        $roleType = strtolower(trim((string) ($row['role_type'] ?? 'event')));
+        if (!in_array($roleType, $validRoles, true)) {
+            $roleType = 'event';
+        }
+        $roleNote = trim((string) ($row['role_note'] ?? ''));
+        if ($roleType !== 'other') {
+            $roleNote = '';
+        }
+        $rows[] = [
+            'organizer_id' => $organizerId,
+            'role_type' => $roleType,
+            'role_note' => $roleNote !== '' ? $roleNote : null,
+        ];
+    }
+
+    return $rows;
+}
+
+/**
+ * @return list<array{tag_id: int, role_type: string, role_note: ?string}>
+ */
+function nextgen_partner_dj_rows_from_post(mixed $raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+    $validRoles = array_keys(nextgen_partner_dj_role_labels());
+    $rows = [];
+    $seen = [];
+    foreach ($raw as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $tagId = (int) ($row['tag_id'] ?? 0);
+        if ($tagId <= 0 || isset($seen[$tagId])) {
+            continue;
+        }
+        $seen[$tagId] = true;
+        $roleType = strtolower(trim((string) ($row['role_type'] ?? 'dj')));
+        if (!in_array($roleType, $validRoles, true)) {
+            $roleType = 'dj';
+        }
+        $roleNote = trim((string) ($row['role_note'] ?? ''));
+        if ($roleType !== 'other') {
+            $roleNote = '';
+        }
+        $rows[] = [
+            'tag_id' => $tagId,
+            'role_type' => $roleType,
+            'role_note' => $roleNote !== '' ? $roleNote : null,
+        ];
+    }
+
+    return $rows;
+}
+
+function nextgen_partner_organizer_role_label(string $roleType): string
+{
+    $labels = nextgen_partner_organizer_role_labels();
+
+    return $labels[$roleType] ?? $roleType;
+}
+
+function nextgen_partner_dj_role_label(string $roleType): string
+{
+    $labels = nextgen_partner_dj_role_labels();
+
+    return $labels[$roleType] ?? $roleType;
 }
 
 function nextgen_partner_must_change_password(array $partner): bool
@@ -155,11 +306,13 @@ function nextgen_partner_create(
     string $password,
     ?string $telefon = null,
     ?string $egyebKontakt = null,
-    bool $requireChangeOnLogin = false
+    bool $requireChangeOnLogin = false,
+    ?string $egyebInfo = null
 ): array {
     if (!nextgen_partners_table_ready($db)) {
         return ['ok' => false, 'error' => 'A partner tábla még nincs telepítve. Futtasd: partner/sql/migration_partners.sql'];
     }
+    nextgen_partner_ensure_extended_schema($db);
     $nev = trim($nev);
     $email = trim($email);
     if ($nev === '') {
@@ -177,19 +330,21 @@ function nextgen_partner_create(
 
     $telefon = $telefon !== null ? trim($telefon) : '';
     $egyebKontakt = $egyebKontakt !== null ? trim($egyebKontakt) : '';
+    $egyebInfo = $egyebInfo !== null ? trim($egyebInfo) : '';
 
     try {
         nextgen_partner_ensure_password_schema($db);
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $db->prepare('
-            INSERT INTO `nextgen_partners` (`név`, `email`, `telefon`, `egyéb_kontakt`, `jelszó_hash`, `aktív`, `jelszó_csere_kötelező`)
-            VALUES (?, ?, ?, ?, ?, 1, ?)
+            INSERT INTO `nextgen_partners` (`név`, `email`, `telefon`, `egyéb_kontakt`, `egyéb_info`, `jelszó_hash`, `aktív`, `jelszó_csere_kötelező`)
+            VALUES (?, ?, ?, ?, ?, ?, 1, ?)
         ');
         $stmt->execute([
             $nev,
             $email,
             $telefon !== '' ? $telefon : null,
             $egyebKontakt !== '' ? $egyebKontakt : null,
+            $egyebInfo !== '' ? $egyebInfo : null,
             $hash,
             $requireChangeOnLogin ? 1 : 0,
         ]);
@@ -215,11 +370,13 @@ function nextgen_partner_update_profile(
     string $nev,
     string $email,
     ?string $telefon,
-    ?string $egyebKontakt
+    ?string $egyebKontakt,
+    ?string $egyebInfo = null
 ): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
     }
+    nextgen_partner_ensure_extended_schema($db);
     $nev = trim($nev);
     $email = trim($email);
     if ($nev === '') {
@@ -230,6 +387,7 @@ function nextgen_partner_update_profile(
     }
     $telefon = $telefon !== null ? trim($telefon) : '';
     $egyebKontakt = $egyebKontakt !== null ? trim($egyebKontakt) : '';
+    $egyebInfo = $egyebInfo !== null ? trim($egyebInfo) : '';
 
     try {
         $dup = $db->prepare('SELECT `id` FROM `nextgen_partners` WHERE `email` = ? AND `id` <> ? LIMIT 1');
@@ -239,7 +397,7 @@ function nextgen_partner_update_profile(
         }
         $stmt = $db->prepare('
             UPDATE `nextgen_partners`
-            SET `név` = ?, `email` = ?, `telefon` = ?, `egyéb_kontakt` = ?
+            SET `név` = ?, `email` = ?, `telefon` = ?, `egyéb_kontakt` = ?, `egyéb_info` = ?
             WHERE `id` = ?
         ');
         $stmt->execute([
@@ -247,6 +405,7 @@ function nextgen_partner_update_profile(
             $email,
             $telefon !== '' ? $telefon : null,
             $egyebKontakt !== '' ? $egyebKontakt : null,
+            $egyebInfo !== '' ? $egyebInfo : null,
             $partnerId,
         ]);
 
@@ -326,7 +485,7 @@ function nextgen_partner_events_organizers(PDO $db, int $partnerId): array
     }
     try {
         $stmt = $db->prepare('
-            SELECT o.`id`, o.`name`, po.`sort_order`
+            SELECT o.`id`, o.`name`, po.`sort_order`, po.`role_type`, po.`role_note`
             FROM `nextgen_partner_events_organizers` po
             INNER JOIN `events_organizers` o ON o.`id` = po.`organizer_id`
             WHERE po.`partner_id` = ?
@@ -350,7 +509,7 @@ function nextgen_partner_djs(PDO $db, int $partnerId): array
     }
     try {
         $stmt = $db->prepare('
-            SELECT t.`id`, t.`name`, pd.`sort_order`
+            SELECT t.`id`, t.`name`, pd.`sort_order`, pd.`role_type`, pd.`role_note`
             FROM `nextgen_partner_djs` pd
             INNER JOIN `events_tags` t ON t.`id` = pd.`tag_id`
             WHERE pd.`partner_id` = ?
@@ -427,55 +586,58 @@ function nextgen_partner_can_access_dj(PDO $db, int $partnerId, int $tagId): boo
 }
 
 /**
- * @param list<int> $organizerIds
- * @param list<int> $djTagIds
- * @param list<int> $financeOrganizerIds
+ * @param list<array{organizer_id: int, role_type: string, role_note: ?string}> $organizerRows
+ * @param list<array{tag_id: int, role_type: string, role_note: ?string}> $djRows
  * @return array{ok: true}|array{ok: false, error: string}
  */
 function nextgen_partner_sync_assignments(
     PDO $db,
     int $partnerId,
-    array $organizerIds,
-    array $djTagIds,
-    array $financeOrganizerIds
+    array $organizerRows,
+    array $djRows
 ): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
     }
 
-    $organizerIds = array_values(array_unique(array_filter(array_map('intval', $organizerIds), static fn (int $id): bool => $id > 0)));
-    $djTagIds = array_values(array_unique(array_filter(array_map('intval', $djTagIds), static fn (int $id): bool => $id > 0)));
-    $financeOrganizerIds = array_values(array_unique(array_filter(array_map('intval', $financeOrganizerIds), static fn (int $id): bool => $id > 0)));
+    nextgen_partner_ensure_extended_schema($db);
 
     try {
         $db->beginTransaction();
 
         $db->prepare('DELETE FROM `nextgen_partner_events_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
-        $insOrg = $db->prepare('INSERT INTO `nextgen_partner_events_organizers` (`partner_id`, `organizer_id`, `sort_order`) VALUES (?, ?, ?)');
-        foreach ($organizerIds as $i => $oid) {
-            $insOrg->execute([$partnerId, $oid, $i]);
+        $insOrg = $db->prepare('
+            INSERT INTO `nextgen_partner_events_organizers` (`partner_id`, `organizer_id`, `role_type`, `role_note`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?)
+        ');
+        foreach ($organizerRows as $i => $row) {
+            $insOrg->execute([
+                $partnerId,
+                (int) $row['organizer_id'],
+                (string) $row['role_type'],
+                $row['role_note'] ?? null,
+                $i,
+            ]);
         }
 
         $db->prepare('DELETE FROM `nextgen_partner_djs` WHERE `partner_id` = ?')->execute([$partnerId]);
-        $insDj = $db->prepare('INSERT INTO `nextgen_partner_djs` (`partner_id`, `tag_id`, `sort_order`) VALUES (?, ?, ?)');
-        foreach ($djTagIds as $i => $tid) {
-            $insDj->execute([$partnerId, $tid, $i]);
-        }
-
-        $db->prepare('DELETE FROM `nextgen_partner_finance_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
-        $insFin = $db->prepare('INSERT INTO `nextgen_partner_finance_organizers` (`partner_id`, `finance_organizer_id`) VALUES (?, ?)');
-        foreach ($financeOrganizerIds as $fid) {
-            $insFin->execute([$partnerId, $fid]);
+        $insDj = $db->prepare('
+            INSERT INTO `nextgen_partner_djs` (`partner_id`, `tag_id`, `role_type`, `role_note`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?)
+        ');
+        foreach ($djRows as $i => $row) {
+            $insDj->execute([
+                $partnerId,
+                (int) $row['tag_id'],
+                (string) $row['role_type'],
+                $row['role_note'] ?? null,
+                $i,
+            ]);
         }
 
         $db->commit();
 
-        $summary = sprintf(
-            '%d esemény szervező, %d DJ, %d finance szervező',
-            count($organizerIds),
-            count($djTagIds),
-            count($financeOrganizerIds)
-        );
+        $summary = sprintf('%d esemény szervező, %d DJ', count($organizerRows), count($djRows));
         nextgen_partner_log($db, $partnerId, 'Hozzárendelések módosítva', $summary);
 
         return ['ok' => true];

@@ -2,12 +2,15 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/init.php';
+require_once dirname(__DIR__, 2) . '/events/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 requireLogin();
 
 $db = getDb();
+nextgen_partner_ensure_extended_schema($db);
+
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 if ($id <= 0) {
     flash('error', 'Hiányzó azonosító.');
@@ -21,6 +24,11 @@ if ($partner === null) {
 }
 
 $hiba = '';
+$organizerRoleLabels = nextgen_partner_organizer_role_labels();
+$djRoleLabels = nextgen_partner_dj_role_labels();
+$partnerOrganizerChipLinkPattern = events_url('organizer.php?id={id}');
+$partnerOrganizerManageUrl = events_url('organizer_letrehoz.php');
+$partnerDjChipLinkPattern = events_url('tags.php?open_tag={id}#open-tag-{id}');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('partner_admin_edit')) {
@@ -67,15 +75,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string) ($_POST['nev'] ?? ''),
                 (string) ($_POST['email'] ?? ''),
                 (string) ($_POST['telefon'] ?? ''),
-                (string) ($_POST['egyeb_kontakt'] ?? '')
+                (string) ($_POST['egyeb_kontakt'] ?? ''),
+                (string) ($_POST['egyeb_info'] ?? '')
             );
             if (!$result['ok']) {
                 $hiba = (string) ($result['error'] ?? 'Profil mentése sikertelen.');
             } else {
-                $organizerIds = array_map('intval', (array) ($_POST['organizer_ids'] ?? []));
-                $djIds = array_map('intval', (array) ($_POST['dj_ids'] ?? []));
-                $financeIds = array_map('intval', (array) ($_POST['finance_ids'] ?? []));
-                $assignResult = nextgen_partner_sync_assignments($db, $id, $organizerIds, $djIds, $financeIds);
+                $organizerRows = nextgen_partner_organizer_rows_from_post($_POST['organizer_rows'] ?? []);
+                $djRows = nextgen_partner_dj_rows_from_post($_POST['dj_rows'] ?? []);
+                $assignResult = nextgen_partner_sync_assignments($db, $id, $organizerRows, $djRows);
                 if ($assignResult['ok']) {
                     flash('success', 'Mentve.');
                     redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
@@ -89,14 +97,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $assignedOrganizers = nextgen_partner_events_organizers($db, $id);
 $assignedDjs = nextgen_partner_djs($db, $id);
-$assignedFinance = nextgen_partner_finance_organizers($db, $id);
-$assignedOrgIds = array_map(static fn (array $r): int => (int) $r['id'], $assignedOrganizers);
-$assignedDjIds = array_map(static fn (array $r): int => (int) $r['id'], $assignedDjs);
-$assignedFinanceIds = array_map(static fn (array $r): int => (int) $r['id'], $assignedFinance);
+
+$organizerRowsForForm = [];
+$djRowsForForm = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'save') === 'save' && $hiba !== '') {
+    foreach ((array) ($_POST['organizer_rows'] ?? []) as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $organizerRowsForForm[] = [
+            'organizer_id' => (int) ($row['organizer_id'] ?? 0),
+            'role_type' => (string) ($row['role_type'] ?? 'event'),
+            'role_note' => (string) ($row['role_note'] ?? ''),
+        ];
+    }
+    foreach ((array) ($_POST['dj_rows'] ?? []) as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $djRowsForForm[] = [
+            'tag_id' => (int) ($row['tag_id'] ?? 0),
+            'role_type' => (string) ($row['role_type'] ?? 'dj'),
+            'role_note' => (string) ($row['role_note'] ?? ''),
+        ];
+    }
+} else {
+    foreach ($assignedOrganizers as $row) {
+        $organizerRowsForForm[] = [
+            'organizer_id' => (int) ($row['id'] ?? 0),
+            'role_type' => (string) ($row['role_type'] ?? 'event'),
+            'role_note' => (string) ($row['role_note'] ?? ''),
+        ];
+    }
+    foreach ($assignedDjs as $row) {
+        $djRowsForForm[] = [
+            'tag_id' => (int) ($row['id'] ?? 0),
+            'role_type' => (string) ($row['role_type'] ?? 'dj'),
+            'role_note' => (string) ($row['role_note'] ?? ''),
+        ];
+    }
+}
+
+if ($organizerRowsForForm === []) {
+    $organizerRowsForForm[] = ['organizer_id' => 0, 'role_type' => 'event', 'role_note' => ''];
+}
+if ($djRowsForForm === []) {
+    $djRowsForForm[] = ['tag_id' => 0, 'role_type' => 'dj', 'role_note' => ''];
+}
 
 $allOrganizers = nextgen_partner_selectable_events_organizers($db);
 $allDjs = nextgen_partner_selectable_djs($db);
-$allFinance = nextgen_partner_selectable_finance_organizers($db);
 $partnerActivityLog = nextgen_partner_activity_log_for_partner($db, $id);
 
 $pageTitle = 'Partner: ' . (string) ($partner['név'] ?? '');
@@ -113,7 +164,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <a href="<?= h(partner_url('')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
     </p>
 
-    <form method="post" class="venue-form">
+    <form method="post" class="venue-form" id="partner-admin-edit-form">
         <?= csrf_input('partner_admin_edit') ?>
         <input type="hidden" name="id" value="<?= $id ?>">
         <input type="hidden" name="_action" value="save">
@@ -133,52 +184,79 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             <label for="egyeb_kontakt">Egyéb kontakt</label>
             <textarea id="egyeb_kontakt" name="egyeb_kontakt" rows="3"><?= h((string) ($partner['egyéb_kontakt'] ?? '')) ?></textarea>
         </div>
+        <div class="form-group">
+            <label for="egyeb_info">Egyéb infó</label>
+            <textarea id="egyeb_info" name="egyeb_info" rows="4" placeholder="Belső megjegyzések, egyéb információk a partnerről…"><?= h((string) ($partner['egyéb_info'] ?? '')) ?></textarea>
+        </div>
 
         <h3>Hozzárendelések</h3>
-        <div class="partner-admin-assign-grid">
-            <div>
+
+        <section class="partner-admin-assign-section">
+            <div class="partner-admin-assign-section__head">
                 <h4>Esemény szervezők</h4>
-                <div class="partner-admin-checkbox-list">
-                    <?php foreach ($allOrganizers as $row): ?>
-                        <?php $oid = (int) ($row['id'] ?? 0); ?>
-                        <label>
-                            <input type="checkbox" name="organizer_ids[]" value="<?= $oid ?>"<?= in_array($oid, $assignedOrgIds, true) ? ' checked' : '' ?>>
-                            <span><?= h((string) ($row['name'] ?? '')) ?> <span class="text-muted">(#<?= $oid ?>)</span></span>
-                        </label>
-                    <?php endforeach; ?>
-                </div>
+                <p class="help">Válaszd ki a szervezőt, majd add meg a partner jellegét. Több sorban több szervező is hozzárendelhető.</p>
             </div>
-            <div>
-                <h4>DJ oldalak</h4>
-                <div class="partner-admin-checkbox-list">
-                    <?php foreach ($allDjs as $row): ?>
-                        <?php $tid = (int) ($row['id'] ?? 0); ?>
-                        <label>
-                            <input type="checkbox" name="dj_ids[]" value="<?= $tid ?>"<?= in_array($tid, $assignedDjIds, true) ? ' checked' : '' ?>>
-                            <span><?= h((string) ($row['name'] ?? '')) ?> <span class="text-muted">(#<?= $tid ?>)</span></span>
-                        </label>
-                    <?php endforeach; ?>
-                </div>
+            <div id="partner-organizer-rows" class="partner-admin-assign-rows">
+                <?php foreach ($organizerRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
+                    <?php
+                    $partnerAssignAllOrganizers = $allOrganizers;
+                    $partnerOrganizerRoleLabels = $organizerRoleLabels;
+                    require __DIR__ . '/partials/partner_organizer_assign_row.php';
+                    ?>
+                <?php endforeach; ?>
             </div>
-            <div>
-                <h4>Finance szervezők</h4>
-                <div class="partner-admin-checkbox-list">
-                    <?php foreach ($allFinance as $row): ?>
-                        <?php $fid = (int) ($row['id'] ?? 0); ?>
-                        <label>
-                            <input type="checkbox" name="finance_ids[]" value="<?= $fid ?>"<?= in_array($fid, $assignedFinanceIds, true) ? ' checked' : '' ?>>
-                            <span><?= h((string) ($row['name'] ?? '')) ?> <span class="text-muted">(#<?= $fid ?>)</span></span>
-                        </label>
-                    <?php endforeach; ?>
-                </div>
+            <p class="toolbar partner-admin-assign-section__actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="partner-organizer-add">+ Szervező sor</button>
+                <?php if ($partnerOrganizerManageUrl !== null): ?>
+                    <a href="<?= h($partnerOrganizerManageUrl) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">Új szervező felvétele</a>
+                <?php endif; ?>
+            </p>
+        </section>
+
+        <section class="partner-admin-assign-section">
+            <div class="partner-admin-assign-section__head">
+                <h4>DJ-k</h4>
+                <p class="help">DJ oldal kiválasztása és partner jelleg (DJ vagy Egyéb).</p>
             </div>
-        </div>
+            <div id="partner-dj-rows" class="partner-admin-assign-rows">
+                <?php foreach ($djRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
+                    <?php
+                    $partnerAssignAllDjs = $allDjs;
+                    $partnerDjRoleLabels = $djRoleLabels;
+                    require __DIR__ . '/partials/partner_dj_assign_row.php';
+                    ?>
+                <?php endforeach; ?>
+            </div>
+            <p class="toolbar partner-admin-assign-section__actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="partner-dj-add">+ DJ sor</button>
+            </p>
+        </section>
 
         <p class="toolbar" style="margin-top:1rem;">
             <button type="submit" class="btn btn-primary">Mentés</button>
         </p>
     </form>
 </div>
+
+<template id="partner-organizer-row-template">
+<?php
+$partnerAssignRowIndex = '__INDEX__';
+$partnerAssignRow = ['organizer_id' => 0, 'role_type' => 'event', 'role_note' => ''];
+$partnerAssignAllOrganizers = $allOrganizers;
+$partnerOrganizerRoleLabels = $organizerRoleLabels;
+require __DIR__ . '/partials/partner_organizer_assign_row.php';
+?>
+</template>
+
+<template id="partner-dj-row-template">
+<?php
+$partnerAssignRowIndex = '__INDEX__';
+$partnerAssignRow = ['tag_id' => 0, 'role_type' => 'dj', 'role_note' => ''];
+$partnerAssignAllDjs = $allDjs;
+$partnerDjRoleLabels = $djRoleLabels;
+require __DIR__ . '/partials/partner_dj_assign_row.php';
+?>
+</template>
 
 <div class="card">
     <h3>Jelszó és státusz</h3>
@@ -228,5 +306,8 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 $partnerActivityLogGlobal = false;
 require __DIR__ . '/partials/activity_log.php';
 ?>
+
+<?php require dirname(__DIR__, 2) . '/events/partials/wp_token_input_script.php'; ?>
+<?php require __DIR__ . '/partials/partner_assignment_script.php'; ?>
 
 <?php require_once dirname(__DIR__, 2) . '/partials/footer.php'; ?>

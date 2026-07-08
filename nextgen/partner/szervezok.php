@@ -26,11 +26,20 @@ require_once __DIR__ . '/partials/header.php';
                 <?php
                 $oid = (int) ($org['id'] ?? 0);
                 $publicUrl = events_url('organizer.php?id=') . $oid;
+                $orgRole = nextgen_partner_organizer_role_label((string) ($org['role_type'] ?? 'event'));
+                $orgNote = trim((string) ($org['role_note'] ?? ''));
                 ?>
                 <a class="partner-entity-card" href="<?= h(partner_url('szervezo.php?id=') . $oid) ?>">
                     <div>
                         <p class="partner-entity-card__title"><?= h((string) ($org['name'] ?? '')) ?></p>
-                        <p class="partner-entity-card__meta">Nyilvános: <?= h($publicUrl) ?></p>
+                        <p class="partner-entity-card__meta">
+                            <span class="partner-role-badge"><?= h($orgRole) ?></span>
+                            <?php if ($orgNote !== ''): ?>
+                                · <?= h($orgNote) ?>
+                            <?php else: ?>
+                                · Nyilvános: <?= h($publicUrl) ?>
+                            <?php endif; ?>
+                        </p>
                     </div>
                     <span aria-hidden="true">→</span>
                 </a>

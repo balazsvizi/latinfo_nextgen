@@ -31,6 +31,7 @@
             jsonEl = fieldWrap ? fieldWrap.querySelector('.wp-token-input__json') : null;
         }
         if (!jsonEl || !tokensEl || !searchEl || !suggEl || !hiddensEl) return;
+        if (root.getAttribute('data-wp-token-initialized') === '1') return;
 
         var data;
         try { data = JSON.parse(jsonEl.textContent || '{}'); } catch (e) { data = { all: [], selected: [] }; }
@@ -368,8 +369,10 @@
         }
 
         renderTokens();
+        root.setAttribute('data-wp-token-initialized', '1');
     }
 
-    document.querySelectorAll('[data-wp-token]').forEach(initWpToken);
-})();
+        document.querySelectorAll('[data-wp-token]').forEach(initWpToken);
+        window.initWpTokenInput = initWpToken;
+    })();
 </script>

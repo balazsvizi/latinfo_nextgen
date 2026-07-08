@@ -26,6 +26,8 @@ require_once __DIR__ . '/partials/header.php';
                 <?php
                 $tagId = (int) ($dj['id'] ?? 0);
                 $publicUrl = events_url('tag.php?id=') . $tagId;
+                $djRole = nextgen_partner_dj_role_label((string) ($dj['role_type'] ?? 'dj'));
+                $djNote = trim((string) ($dj['role_note'] ?? ''));
                 $catalog = events_public_dj_catalog($db, $publishedStatus);
                 $stats = null;
                 foreach ($catalog as $row) {
@@ -39,11 +41,14 @@ require_once __DIR__ . '/partials/header.php';
                     <div>
                         <p class="partner-entity-card__title"><?= h((string) ($dj['name'] ?? '')) ?></p>
                         <p class="partner-entity-card__meta">
-                            <?php if ($stats !== null): ?>
-                                <?= (int) ($stats['event_total'] ?? 0) ?> esemény,
+                            <span class="partner-role-badge"><?= h($djRole) ?></span>
+                            <?php if ($djNote !== ''): ?>
+                                · <?= h($djNote) ?>
+                            <?php elseif ($stats !== null): ?>
+                                · <?= (int) ($stats['event_total'] ?? 0) ?> esemény,
                                 <?= (int) ($stats['event_upcoming'] ?? 0) ?> közelgő
                             <?php else: ?>
-                                Nyilvános DJ oldal
+                                · Nyilvános DJ oldal
                             <?php endif; ?>
                         </p>
                     </div>
