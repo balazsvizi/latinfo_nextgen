@@ -209,20 +209,26 @@ require __DIR__ . '/event_form_actions.php';
 ?>
 <div class="events-edit-sidebar-cover" id="eventpics-summary-preview">
     <div class="events-edit-sidebar-cover__media">
-        <button type="button" class="events-edit-sidebar-cover__trigger" id="eventpics-summary-trigger" aria-label="Teljes kép megnyitása"<?= $coverPreview['src'] === '' ? ' disabled' : '' ?>>
-            <img
-                id="eventpics-summary-img"
-                class="events-edit-sidebar-cover__img"
-                src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
-                alt="Borító előnézet"
-                decoding="async"
-                <?= $coverPreview['src'] === '' ? 'hidden' : '' ?>
-            >
-        </button>
-        <div class="events-edit-sidebar-cover__placeholder" id="eventpics-cover-placeholder"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép</div>
-        <div class="events-edit-sidebar-cover__toolbar">
-            <button type="button" class="btn btn-secondary btn-sm" id="eventpics-cover-gallery" title="Borítókép választása a galériában">Galéria</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="eventpics-cover-upload" title="Kép feltöltése és beállítása borítóként">Feltöltés</button>
+        <div class="events-edit-sidebar-cover__frame">
+            <button type="button" class="events-edit-sidebar-cover__trigger" id="eventpics-summary-trigger" aria-label="Teljes kép megnyitása"<?= $coverPreview['src'] === '' ? ' disabled' : '' ?>>
+                <img
+                    id="eventpics-summary-img"
+                    class="events-edit-sidebar-cover__img"
+                    src="<?= $coverPreview['src'] !== '' ? h($coverPreview['src']) : '' ?>"
+                    alt="Borító előnézet"
+                    decoding="async"
+                    <?= $coverPreview['src'] === '' ? 'hidden' : '' ?>
+                >
+            </button>
+            <div class="events-edit-sidebar-cover__placeholder" id="eventpics-cover-placeholder"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép</div>
+            <div class="events-edit-sidebar-cover__toolbar">
+                <button type="button" class="events-edit-sidebar-cover__tool" id="eventpics-cover-gallery" title="Galéria" aria-label="Borítókép választása a galériában">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                </button>
+                <button type="button" class="events-edit-sidebar-cover__tool" id="eventpics-cover-upload" title="Feltöltés" aria-label="Kép feltöltése és beállítása borítóként">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 8l4-4 4 4"/><path stroke-linecap="round" d="M4 20h16"/></svg>
+                </button>
+            </div>
         </div>
     </div>
     <span id="eventpics-summary-name" class="visually-hidden"><?= $coverPreview['label'] !== '' ? h($coverPreview['label']) : '' ?></span>

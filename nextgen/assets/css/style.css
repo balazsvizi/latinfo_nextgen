@@ -3419,16 +3419,22 @@ dialog.eventpics-modal::backdrop {
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 .events-edit-sidebar-cover__media {
-    display: flex;
-    flex-direction: column;
+    display: block;
+}
+.events-edit-sidebar-cover__frame {
+    position: relative;
+    min-height: 5.5rem;
+    background: #f8fafc;
 }
 .events-edit-sidebar-cover__placeholder {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 5.5rem;
-    padding: 0.85rem;
-    font-size: 0.8125rem;
+    padding: 0.85rem 2.5rem 0.85rem 0.85rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     text-align: center;
     background: #f8fafc;
@@ -3437,18 +3443,44 @@ dialog.eventpics-modal::backdrop {
     display: none !important;
 }
 .events-edit-sidebar-cover__toolbar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-    padding: 0.45rem;
-    border-top: 1px solid var(--border);
-    background: #fff;
+    position: absolute;
+    right: 0.35rem;
+    bottom: 0.35rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0;
+    border: none;
+    background: transparent;
 }
-.events-edit-sidebar-cover__toolbar .btn {
-    width: 100%;
+.events-edit-sidebar-cover__tool {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #334155;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.events-edit-sidebar-cover__tool:hover {
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+.events-edit-sidebar-cover__tool:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 .events-edit-sidebar-cover__trigger {
+    position: relative;
+    z-index: 1;
     display: block;
     width: 100%;
     margin: 0;
