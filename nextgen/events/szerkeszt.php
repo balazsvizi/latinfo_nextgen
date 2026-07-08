@@ -7,6 +7,7 @@ require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/event_log.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
 require_once __DIR__ . '/lib/event_delete.php';
+require_once __DIR__ . '/lib/admin_event_calendar.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -140,12 +141,24 @@ $sablonLogok = $logStmt->fetchAll();
 $statsParams = events_edit_stats_params_from_request($_GET);
 $statsData = events_edit_stats_for_event($db, $id, $statsParams);
 
+$eventEditMonthKey = events_admin_calendar_month_key_from_event($event);
+$eventEditBackCalendarUrl = events_admin_calendar_view_url($eventEditMonthKey, []);
+$eventEditPublicCalendarUrl = events_public_home_url('hu', ['month' => $eventEditMonthKey]);
+$eventEditCopyUrl = events_url('letrehoz.php?copy_from=') . $id;
+$eventEditPreviewUrl = null;
+if ((string) ($event['event_status'] ?? '') === events_public_post_status()
+    && trim((string) ($event['event_slug'] ?? '')) !== '') {
+    $eventEditPreviewUrl = events_megjelenit_url((string) $event['event_slug']);
+}
+
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('warning')): ?><p class="alert alert-warning"><?= h($s) ?></p><?php endif; ?>
+
+<?php require __DIR__ . '/partials/admin_event_edit_float_tools.php'; ?>
 
 <div class="events-edit-page">
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>

@@ -164,8 +164,23 @@ function events_admin_calendar_view_month_key(array $filters): string {
 }
 
 /**
- * @return list<array{date: DateTimeImmutable, inMonth: bool, isToday: bool, isPast: bool, key: string}>
+ * Hónap kulcs az esemény kezdő dátumából (vagy mai hónap).
+ *
+ * @param array<string, mixed> $event
  */
+function events_admin_calendar_month_key_from_event(array $event): string {
+    $start = trim((string) ($event['event_start'] ?? ''));
+    if ($start !== '') {
+        try {
+            return (new DateTimeImmutable($start))->format('Y-m');
+        } catch (Throwable) {
+        }
+    }
+
+    return (new DateTimeImmutable('today'))->format('Y-m');
+}
+
+/**
 function events_admin_calendar_grid_days(DateTimeImmutable $monthFirst, DateTimeImmutable $monthLast): array {
     $gridStart = $monthFirst->modify('monday this week');
     $gridEnd = $monthLast->modify('sunday this week');

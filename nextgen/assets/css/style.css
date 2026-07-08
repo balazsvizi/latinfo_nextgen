@@ -3333,6 +3333,29 @@ dialog.eventpics-modal::backdrop {
 .events-edit-page {
     max-width: 1280px;
 }
+
+.events-edit-float-tools {
+    position: fixed;
+    top: calc(var(--header-h) + 0.45rem);
+    left: max(0.5rem, env(safe-area-inset-left, 0px));
+    z-index: 95;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.28rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+}
+
+.events-edit-float-tools__btn {
+    width: 2rem;
+    height: 2rem;
+    border-radius: calc(var(--radius-md) - 2px);
+}
+
 .events-edit-header {
     display: flex;
     flex-wrap: wrap;
