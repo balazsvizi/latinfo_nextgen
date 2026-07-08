@@ -37,23 +37,77 @@
             + String(d.getDate()).padStart(2, '0');
     }
 
-    function buildSlug(useToday) {
-        var base = slugifyClient(nameEl.value || '');
-        var date = '';
-        if (useToday) {
-            date = todayYmd();
-        } else if (dateEl && dateEl.value) {
-            date = dateEl.value.trim();
+    function resolveSlugDate() {
+        if (dateEl && dateEl.value) {
+            var fromField = dateEl.value.trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(fromField)) {
+                return fromField;
+            }
         }
-        if (date !== '' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        if (autoSlug) {
+            return todayYmd();
+        }
+        return '';
+    }
+
+    function buildSlug() {
+        var base = slugifyClient(nameEl.value || '');
+        var date = resolveSlugDate();
+        if (date !== '') {
             return base + '-' + date;
         }
         return base;
     }
 
+    function copySlugToClipboard(text) {
+        if (!text) return;
+
+        function onSuccess() {
+            if (!btn) return;
+            var prevTitle = btn.getAttribute('title') || '';
+            btn.classList.add('is-copied');
+            btn.setAttribute('title', 'Slug a vágólapon');
+            window.setTimeout(function () {
+                btn.classList.remove('is-copied');
+                btn.setAttribute('title', prevTitle);
+            }, 1500);
+        }
+
+        function fallbackCopy() {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                if (document.execCommand('copy')) {
+                    onSuccess();
+                }
+            } finally {
+                document.body.removeChild(ta);
+            }
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(fallbackCopy);
+        } else {
+            fallbackCopy();
+        }
+    }
+
+    function applyGeneratedSlug(copyToClipboard) {
+        var slug = buildSlug();
+        slugEl.value = slug;
+        if (copyToClipboard) {
+            copySlugToClipboard(slug);
+        }
+    }
+
     function applyAutoSlug() {
         if (!autoSlug || slugTouched) return;
-        slugEl.value = buildSlug(true);
+        applyGeneratedSlug(false);
     }
 
     slugEl.addEventListener('input', function () {
@@ -69,7 +123,7 @@
 
     if (btn) {
         btn.addEventListener('click', function () {
-            slugEl.value = buildSlug(autoSlug);
+            applyGeneratedSlug(true);
             if (autoSlug) {
                 slugTouched = false;
             }
@@ -94,7 +148,7 @@
                 return;
             }
             if ((slugEl.value || '').trim() === '' && (nameEl.value || '').trim() !== '') {
-                slugEl.value = buildSlug(autoSlug);
+                slugEl.value = buildSlug();
             } else if ((slugEl.value || '').trim() !== '') {
                 slugEl.value = normalizeSlugInput(slugEl.value);
             }

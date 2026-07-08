@@ -68,9 +68,7 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
 $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
     && trim((string) ($e['event_slug'] ?? '')) !== '';
 $eventFormAutoSlug = !empty($eventFormAutoSlug);
-$eventSlugRefreshTitle = $eventFormAutoSlug
-    ? 'Slug frissítése (név + mai dátum)'
-    : 'Slug frissítése (név + kezdő dátum)';
+$eventSlugRefreshTitle = 'Slug frissítése (név + kezdő dátum), vágólapra másolva';
 ?>
 <div class="events-edit-layout">
 <div class="events-edit-main">
@@ -130,45 +128,13 @@ $eventSlugRefreshTitle = $eventFormAutoSlug
         </div>
     </div>
 </div>
-<div class="events-edit-panel events-edit-panel--tone-change" id="events-edit-change-panel">
-    <div class="events-edit-panel__title-row">
-        <h3 class="events-edit-panel__title">Változás / elmaradás</h3>
-        <label class="events-toggle" for="event_change_active">
-            <input
-                type="checkbox"
-                name="event_change_active"
-                value="1"
-                id="event_change_active"
-                class="events-toggle__input"
-                <?= !empty($e['event_change_active']) ? 'checked' : '' ?>
-            >
-            <span class="events-toggle__ui" aria-hidden="true"></span>
-            <span class="events-toggle__label">Változás jelzése</span>
-        </label>
-    </div>
-    <div class="events-edit-change-fields" id="events-edit-change-fields" <?= empty($e['event_change_active']) ? 'hidden' : '' ?>>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="event_change_type">Típus *</label>
-                <select id="event_change_type" name="event_change_type">
-                    <option value="">— válassz —</option>
-                    <?php foreach (events_event_change_types() as $typeKey => $typeLabel): ?>
-                        <option value="<?= h($typeKey) ?>" <?= ($e['event_change_type'] ?? '') === $typeKey ? 'selected' : '' ?>><?= h($typeLabel) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="event_change_note">Publikus megjegyzés</label>
-            <textarea
-                id="event_change_note"
-                name="event_change_note"
-                rows="3"
-                maxlength="2000"
-                placeholder="Pl. új időpont, másik helyszín, elmaradás oka…"
-            ><?= h((string) ($e['event_change_note'] ?? '')) ?></textarea>
-            <p class="help">A naptárban és az esemény oldalán jelenik meg.</p>
-        </div>
+<div class="events-edit-panel events-edit-panel--tone-url">
+    <h3 class="events-edit-panel__title">További információ</h3>
+    <div class="form-group events-url-open-row">
+        <input type="url" id="event_url" name="event_url" value="<?= h($e['event_url']) ?>" maxlength="2000" placeholder="https://" aria-label="További információ URL">
+        <?php if (!empty($e['event_url'])): ?>
+            <a class="btn btn-secondary events-url-open-btn" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a>
+        <?php endif; ?>
     </div>
 </div>
 <div class="events-edit-org-venue-grid">
@@ -235,15 +201,6 @@ require __DIR__ . '/wp_token_field.php';
         </div>
     </div>
 </div>
-<div class="events-edit-panel events-edit-panel--tone-url">
-    <h3 class="events-edit-panel__title">További információ</h3>
-    <div class="form-group events-url-open-row">
-        <input type="url" id="event_url" name="event_url" value="<?= h($e['event_url']) ?>" maxlength="2000" placeholder="https://" aria-label="További információ URL">
-        <?php if (!empty($e['event_url'])): ?>
-            <a class="btn btn-secondary events-url-open-btn" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a>
-        <?php endif; ?>
-    </div>
-</div>
 </div>
 <aside class="events-edit-sidebar">
 <?php
@@ -264,10 +221,9 @@ require __DIR__ . '/event_form_actions.php';
     <span id="eventpics-summary-source" class="visually-hidden"><?= $coverPreviewCaption !== '' ? h($coverPreviewCaption) : '' ?></span>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-publish events-edit-panel--publish">
-    <h3 class="events-edit-panel__title">Közzététel</h3>
-    <div class="form-group">
-        <label for="event_status">Státusz *</label>
-        <select id="event_status_data" name="event_status" required>
+    <div class="form-group events-edit-panel__status-only">
+        <label class="visually-hidden" for="event_status_data">Státusz</label>
+        <select id="event_status_data" name="event_status" required aria-label="Státusz">
             <?php foreach (events_allowed_post_statuses() as $val): ?>
                 <option value="<?= h($val) ?>" <?= ($e['event_status'] === $val) ? 'selected' : '' ?>><?= h(events_post_status_label($val)) ?></option>
             <?php endforeach; ?>
@@ -287,6 +243,47 @@ require __DIR__ . '/event_form_actions.php';
         >Végleges törlés</button>
     </div>
     <?php endif; ?>
+</div>
+<div class="events-edit-panel events-edit-panel--tone-change" id="events-edit-change-panel">
+    <div class="events-edit-panel__title-row">
+        <h3 class="events-edit-panel__title">Változás / elmaradás</h3>
+        <label class="events-toggle" for="event_change_active">
+            <input
+                type="checkbox"
+                name="event_change_active"
+                value="1"
+                id="event_change_active"
+                class="events-toggle__input"
+                <?= !empty($e['event_change_active']) ? 'checked' : '' ?>
+            >
+            <span class="events-toggle__ui" aria-hidden="true"></span>
+            <span class="events-toggle__label">Változás jelzése</span>
+        </label>
+    </div>
+    <div class="events-edit-change-fields" id="events-edit-change-fields" <?= empty($e['event_change_active']) ? 'hidden' : '' ?>>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="event_change_type">Típus *</label>
+                <select id="event_change_type" name="event_change_type">
+                    <option value="">— válassz —</option>
+                    <?php foreach (events_event_change_types() as $typeKey => $typeLabel): ?>
+                        <option value="<?= h($typeKey) ?>" <?= ($e['event_change_type'] ?? '') === $typeKey ? 'selected' : '' ?>><?= h($typeLabel) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="event_change_note">Publikus megjegyzés</label>
+            <textarea
+                id="event_change_note"
+                name="event_change_note"
+                rows="3"
+                maxlength="2000"
+                placeholder="Pl. új időpont, másik helyszín, elmaradás oka…"
+            ><?= h((string) ($e['event_change_note'] ?? '')) ?></textarea>
+            <p class="help">A naptárban és az esemény oldalán jelenik meg.</p>
+        </div>
+    </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-cat">
     <h3 class="events-edit-panel__title">Kategóriák</h3>
