@@ -102,6 +102,23 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
             ");
         }
 
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'létrehozva'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `létrehozva` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+            if (nextgen_partner_activity_log_table_ready($db)) {
+                $db->exec("
+                    UPDATE `nextgen_partners` p
+                    INNER JOIN (
+                        SELECT `partner_id`, MIN(`létrehozva`) AS created_at
+                        FROM `nextgen_partner_activity_log`
+                        WHERE `esemény` IN ('Partner létrehozva', 'Finance kontakt migrálva')
+                        GROUP BY `partner_id`
+                    ) log ON log.`partner_id` = p.`id`
+                    SET p.`létrehozva` = log.created_at
+                ");
+            }
+        }
+
         return true;
     } catch (Throwable $ex) {
         error_log('nextgen_partner_ensure_extended_schema: ' . $ex->getMessage());
@@ -135,6 +152,76 @@ function nextgen_partner_dj_role_labels(): array
 }
 
 /**
+ * @return list<array{organizer_id: int, role_types: list<string>, role_note: string}>
+ */
+function nextgen_partner_group_organizer_assignments_for_form(array $rows): array
+{
+    $grouped = [];
+    foreach ($rows as $row) {
+        $organizerId = (int) ($row['id'] ?? $row['organizer_id'] ?? 0);
+        if ($organizerId <= 0) {
+            continue;
+        }
+        if (!isset($grouped[$organizerId])) {
+            $grouped[$organizerId] = [
+                'organizer_id' => $organizerId,
+                'name' => (string) ($row['name'] ?? ''),
+                'role_types' => [],
+                'role_note' => '',
+            ];
+        }
+        $roleType = strtolower(trim((string) ($row['role_type'] ?? '')));
+        $validRoles = array_keys(nextgen_partner_organizer_role_labels());
+        if ($roleType !== '' && in_array($roleType, $validRoles, true) && !in_array($roleType, $grouped[$organizerId]['role_types'], true)) {
+            $grouped[$organizerId]['role_types'][] = $roleType;
+        }
+        if ($roleType === 'other') {
+            $note = trim((string) ($row['role_note'] ?? ''));
+            if ($note !== '') {
+                $grouped[$organizerId]['role_note'] = $note;
+            }
+        }
+    }
+
+    return array_values($grouped);
+}
+
+/**
+ * @return list<array{tag_id: int, role_types: list<string>, role_note: string}>
+ */
+function nextgen_partner_group_dj_assignments_for_form(array $rows): array
+{
+    $grouped = [];
+    foreach ($rows as $row) {
+        $tagId = (int) ($row['id'] ?? $row['tag_id'] ?? 0);
+        if ($tagId <= 0) {
+            continue;
+        }
+        if (!isset($grouped[$tagId])) {
+            $grouped[$tagId] = [
+                'tag_id' => $tagId,
+                'name' => (string) ($row['name'] ?? ''),
+                'role_types' => [],
+                'role_note' => '',
+            ];
+        }
+        $roleType = strtolower(trim((string) ($row['role_type'] ?? '')));
+        $validRoles = array_keys(nextgen_partner_dj_role_labels());
+        if ($roleType !== '' && in_array($roleType, $validRoles, true) && !in_array($roleType, $grouped[$tagId]['role_types'], true)) {
+            $grouped[$tagId]['role_types'][] = $roleType;
+        }
+        if ($roleType === 'other') {
+            $note = trim((string) ($row['role_note'] ?? ''));
+            if ($note !== '') {
+                $grouped[$tagId]['role_note'] = $note;
+            }
+        }
+    }
+
+    return array_values($grouped);
+}
+
+/**
  * @return list<array{organizer_id: int, role_type: string, role_note: ?string}>
  */
 function nextgen_partner_organizer_rows_from_post(mixed $raw): array
@@ -143,7 +230,7 @@ function nextgen_partner_organizer_rows_from_post(mixed $raw): array
         return [];
     }
     $validRoles = array_keys(nextgen_partner_organizer_role_labels());
-    $rows = [];
+    $flat = [];
     $seen = [];
     foreach ($raw as $row) {
         if (!is_array($row)) {
@@ -154,22 +241,41 @@ function nextgen_partner_organizer_rows_from_post(mixed $raw): array
             continue;
         }
         $seen[$organizerId] = true;
-        $roleType = strtolower(trim((string) ($row['role_type'] ?? 'event')));
-        if (!in_array($roleType, $validRoles, true)) {
-            $roleType = 'event';
+
+        $roleTypes = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            foreach ($row['role_types'] as $roleType) {
+                $roleType = strtolower(trim((string) $roleType));
+                if (in_array($roleType, $validRoles, true) && !in_array($roleType, $roleTypes, true)) {
+                    $roleTypes[] = $roleType;
+                }
+            }
         }
+        if ($roleTypes === []) {
+            $legacyRole = strtolower(trim((string) ($row['role_type'] ?? '')));
+            if (in_array($legacyRole, $validRoles, true)) {
+                $roleTypes[] = $legacyRole;
+            }
+        }
+        if ($roleTypes === []) {
+            $roleTypes = ['event'];
+        }
+
         $roleNote = trim((string) ($row['role_note'] ?? ''));
-        if ($roleType !== 'other') {
+        if (!in_array('other', $roleTypes, true)) {
             $roleNote = '';
         }
-        $rows[] = [
-            'organizer_id' => $organizerId,
-            'role_type' => $roleType,
-            'role_note' => $roleNote !== '' ? $roleNote : null,
-        ];
+
+        foreach ($roleTypes as $roleType) {
+            $flat[] = [
+                'organizer_id' => $organizerId,
+                'role_type' => $roleType,
+                'role_note' => $roleType === 'other' && $roleNote !== '' ? $roleNote : null,
+            ];
+        }
     }
 
-    return $rows;
+    return $flat;
 }
 
 /**
@@ -181,7 +287,7 @@ function nextgen_partner_dj_rows_from_post(mixed $raw): array
         return [];
     }
     $validRoles = array_keys(nextgen_partner_dj_role_labels());
-    $rows = [];
+    $flat = [];
     $seen = [];
     foreach ($raw as $row) {
         if (!is_array($row)) {
@@ -192,22 +298,41 @@ function nextgen_partner_dj_rows_from_post(mixed $raw): array
             continue;
         }
         $seen[$tagId] = true;
-        $roleType = strtolower(trim((string) ($row['role_type'] ?? 'dj')));
-        if (!in_array($roleType, $validRoles, true)) {
-            $roleType = 'dj';
+
+        $roleTypes = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            foreach ($row['role_types'] as $roleType) {
+                $roleType = strtolower(trim((string) $roleType));
+                if (in_array($roleType, $validRoles, true) && !in_array($roleType, $roleTypes, true)) {
+                    $roleTypes[] = $roleType;
+                }
+            }
         }
+        if ($roleTypes === []) {
+            $legacyRole = strtolower(trim((string) ($row['role_type'] ?? '')));
+            if (in_array($legacyRole, $validRoles, true)) {
+                $roleTypes[] = $legacyRole;
+            }
+        }
+        if ($roleTypes === []) {
+            $roleTypes = ['dj'];
+        }
+
         $roleNote = trim((string) ($row['role_note'] ?? ''));
-        if ($roleType !== 'other') {
+        if (!in_array('other', $roleTypes, true)) {
             $roleNote = '';
         }
-        $rows[] = [
-            'tag_id' => $tagId,
-            'role_type' => $roleType,
-            'role_note' => $roleNote !== '' ? $roleNote : null,
-        ];
+
+        foreach ($roleTypes as $roleType) {
+            $flat[] = [
+                'tag_id' => $tagId,
+                'role_type' => $roleType,
+                'role_note' => $roleType === 'other' && $roleNote !== '' ? $roleNote : null,
+            ];
+        }
     }
 
-    return $rows;
+    return $flat;
 }
 
 function nextgen_partner_organizer_role_label(string $roleType): string
@@ -232,6 +357,17 @@ function nextgen_partner_kieg_info_from_row(array $row): string
 function nextgen_partner_nev_from_row(array $row): string
 {
     return trim((string) ($row['név'] ?? $row['partner_nev'] ?? ''));
+}
+
+function nextgen_partner_format_created_at(mixed $raw): string
+{
+    $value = trim((string) $raw);
+    if ($value === '') {
+        return '–';
+    }
+    $ts = strtotime($value);
+
+    return $ts !== false ? date('Y.m.d H:i', $ts) : $value;
 }
 
 function nextgen_partner_must_change_password(array $partner): bool
@@ -281,11 +417,38 @@ function nextgen_partner_by_email(PDO $db, string $email): ?array
 /**
  * @return list<array<string, mixed>>
  */
-function nextgen_partners_list(PDO $db, ?string $search = null): array
-{
+function nextgen_partners_list(
+    PDO $db,
+    ?string $search = null,
+    string $order = 'letrehozva',
+    string $dir = 'desc'
+): array {
     if (!nextgen_partners_table_ready($db)) {
         return [];
     }
+    nextgen_partner_ensure_extended_schema($db);
+
+    $allowedOrders = [
+        'id' => 'p.`id`',
+        'nev' => 'p.`név`',
+        'email' => 'p.`email`',
+        'telefon' => 'p.`telefon`',
+        'organizer_count' => 'organizer_count',
+        'dj_count' => 'dj_count',
+        'finance_count' => 'finance_count',
+        'aktiv' => 'p.`aktív`',
+        'letrehozva' => 'p.`létrehozva`',
+    ];
+    if (!isset($allowedOrders[$order])) {
+        $order = 'letrehozva';
+    }
+    $direction = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
+    if ($order === 'nev') {
+        $orderSql = 'p.`név` ' . $direction . ', p.`kieg_info` ' . $direction . ', p.`id` ' . $direction;
+    } else {
+        $orderSql = $allowedOrders[$order] . ' ' . $direction . ', p.`id` ' . $direction;
+    }
+
     $where = '';
     $params = [];
     if ($search !== null && trim($search) !== '') {
@@ -296,12 +459,12 @@ function nextgen_partners_list(PDO $db, ?string $search = null): array
     try {
         $stmt = $db->prepare("
             SELECT p.*,
-                (SELECT COUNT(*) FROM `nextgen_partner_events_organizers` po WHERE po.`partner_id` = p.`id`) AS organizer_count,
-                (SELECT COUNT(*) FROM `nextgen_partner_djs` pd WHERE pd.`partner_id` = p.`id`) AS dj_count,
+                (SELECT COUNT(DISTINCT po.`organizer_id`) FROM `nextgen_partner_events_organizers` po WHERE po.`partner_id` = p.`id`) AS organizer_count,
+                (SELECT COUNT(DISTINCT pd.`tag_id`) FROM `nextgen_partner_djs` pd WHERE pd.`partner_id` = p.`id`) AS dj_count,
                 (SELECT COUNT(*) FROM `nextgen_partner_finance_organizers` pf WHERE pf.`partner_id` = p.`id`) AS finance_count
             FROM `nextgen_partners` p
             {$where}
-            ORDER BY p.`név` ASC, p.`id` ASC
+            ORDER BY {$orderSql}
         ");
         $stmt->execute($params);
 
@@ -670,7 +833,13 @@ function nextgen_partner_sync_assignments(
 
         $db->commit();
 
-        $summary = sprintf('%d esemény szervező, %d DJ', count($organizerRows), count($djRows));
+        $summary = sprintf(
+            '%d esemény szervező, %d DJ (%d szervező-szerep, %d DJ-szerep)',
+            count(array_unique(array_map(static fn (array $r): int => (int) $r['organizer_id'], $organizerRows))),
+            count(array_unique(array_map(static fn (array $r): int => (int) $r['tag_id'], $djRows))),
+            count($organizerRows),
+            count($djRows)
+        );
         nextgen_partner_log($db, $partnerId, 'Hozzárendelések módosítva', $summary);
 
         return ['ok' => true];

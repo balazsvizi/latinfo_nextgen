@@ -6,7 +6,7 @@ partner_require_login();
 
 $db = getDb();
 $partnerId = partner_current_id();
-$organizers = nextgen_partner_events_organizers($db, $partnerId);
+$organizers = nextgen_partner_group_organizer_assignments_for_form(nextgen_partner_events_organizers($db, $partnerId));
 
 $pageTitle = 'Szervezők';
 $activeNav = 'organizers';
@@ -24,16 +24,23 @@ require_once __DIR__ . '/partials/header.php';
         <div class="partner-entity-list">
             <?php foreach ($organizers as $org): ?>
                 <?php
-                $oid = (int) ($org['id'] ?? 0);
+                $oid = (int) ($org['organizer_id'] ?? $org['id'] ?? 0);
                 $publicUrl = events_url('organizer.php?id=') . $oid;
-                $orgRole = nextgen_partner_organizer_role_label((string) ($org['role_type'] ?? 'event'));
+                $roleTypes = $org['role_types'] ?? [];
+                if (!is_array($roleTypes) || $roleTypes === []) {
+                    $roleTypes = ['event'];
+                }
                 $orgNote = trim((string) ($org['role_note'] ?? ''));
                 ?>
                 <a class="partner-entity-card" href="<?= h(partner_url('szervezo.php?id=') . $oid) ?>">
                     <div>
                         <p class="partner-entity-card__title"><?= h((string) ($org['name'] ?? '')) ?></p>
                         <p class="partner-entity-card__meta">
-                            <span class="partner-role-badge"><?= h($orgRole) ?></span>
+                            <span class="partner-role-badges">
+                                <?php foreach ($roleTypes as $roleType): ?>
+                                    <span class="partner-role-badge"><?= h(nextgen_partner_organizer_role_label((string) $roleType)) ?></span>
+                                <?php endforeach; ?>
+                            </span>
                             <?php if ($orgNote !== ''): ?>
                                 · <?= h($orgNote) ?>
                             <?php else: ?>

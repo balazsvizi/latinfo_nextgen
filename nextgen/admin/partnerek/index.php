@@ -9,6 +9,7 @@ require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 requireLogin();
 
 $db = getDb();
+nextgen_partner_ensure_extended_schema($db);
 $migrateFlash = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'migrate_finance_contacts') {
@@ -40,7 +41,22 @@ $pageTitle = 'Partnerek';
 require_once dirname(__DIR__, 2) . '/partials/header.php';
 
 $kereso = trim((string) ($_GET['kereso'] ?? ''));
-$partners = nextgen_partners_list($db, $kereso !== '' ? $kereso : null);
+$order = isset($_GET['order']) && in_array((string) $_GET['order'], [
+    'id', 'nev', 'email', 'telefon', 'organizer_count', 'dj_count', 'finance_count', 'aktiv', 'letrehozva',
+], true) ? (string) $_GET['order'] : 'letrehozva';
+if (isset($_GET['dir'])) {
+    $dirParam = $_GET['dir'] === 'asc' ? 'asc' : 'desc';
+} elseif (isset($_GET['order'])) {
+    $dirParam = 'asc';
+} else {
+    $dirParam = 'desc';
+}
+$getParams = array_filter([
+    'kereso' => $kereso !== '' ? $kereso : null,
+    'order' => $order !== 'letrehozva' ? $order : null,
+    'dir' => !($order === 'letrehozva' && $dirParam === 'desc') ? $dirParam : null,
+], static fn ($v): bool => $v !== null && $v !== '');
+$partners = nextgen_partners_list($db, $kereso !== '' ? $kereso : null, $order, $dirParam);
 $tableReady = nextgen_partners_table_ready($db);
 $unread = nextgen_partner_unread_reply_count($db);
 $financeMigrateStatus = nextgen_partner_finance_contacts_migration_status($db);
@@ -74,6 +90,12 @@ $partnerActivityLogGlobal = true;
     <p class="toolbar">
         <form method="get" style="display:inline-flex;gap:0.5rem;flex-wrap:wrap;">
             <input type="search" name="kereso" placeholder="Név, kieg. infó, e-mail, ID…" value="<?= h($kereso) ?>">
+            <?php if ($order !== 'letrehozva'): ?>
+                <input type="hidden" name="order" value="<?= h($order) ?>">
+            <?php endif; ?>
+            <?php if (!($order === 'letrehozva' && $dirParam === 'desc')): ?>
+                <input type="hidden" name="dir" value="<?= h($dirParam) ?>">
+            <?php endif; ?>
             <button type="submit" class="btn btn-secondary btn-sm">Keresés</button>
         </form>
         <a href="<?= h(nextgen_url('admin/partnerek/letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új partner</a>
@@ -86,14 +108,15 @@ $partnerActivityLogGlobal = true;
         <table class="sortable-table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Név</th>
-                    <th>E-mail</th>
-                    <th>Telefon</th>
-                    <th>Szervezők</th>
-                    <th>DJ-k</th>
-                    <th>Finance</th>
-                    <th>Státusz</th>
+                    <th><?= sort_th('ID', 'id', $order, $dirParam, $getParams) ?></th>
+                    <th><?= sort_th('Név', 'nev', $order, $dirParam, $getParams) ?></th>
+                    <th><?= sort_th('E-mail', 'email', $order, $dirParam, $getParams) ?></th>
+                    <th><?= sort_th('Telefon', 'telefon', $order, $dirParam, $getParams) ?></th>
+                    <th class="text-center"><?= sort_th('Szervezők', 'organizer_count', $order, $dirParam, $getParams) ?></th>
+                    <th class="text-center"><?= sort_th('DJ-k', 'dj_count', $order, $dirParam, $getParams) ?></th>
+                    <th class="text-center"><?= sort_th('Finance', 'finance_count', $order, $dirParam, $getParams) ?></th>
+                    <th><?= sort_th('Bekerült', 'letrehozva', $order, $dirParam, $getParams) ?></th>
+                    <th><?= sort_th('Státusz', 'aktiv', $order, $dirParam, $getParams) ?></th>
                     <th>Műveletek</th>
                 </tr>
             </thead>
@@ -107,6 +130,7 @@ $partnerActivityLogGlobal = true;
                     <td class="text-center"><?= (int) ($p['organizer_count'] ?? 0) ?></td>
                     <td class="text-center"><?= (int) ($p['dj_count'] ?? 0) ?></td>
                     <td class="text-center"><?= (int) ($p['finance_count'] ?? 0) ?></td>
+                    <td class="text-nowrap"><?= h(nextgen_partner_format_created_at($p['létrehozva'] ?? '')) ?></td>
                     <td><?= !empty($p['aktív']) ? 'Aktív' : 'Inaktív' ?></td>
                     <td class="actions">
                         <a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $p['id']) ?>" class="btn btn-sm btn-secondary">Szerkeszt</a>

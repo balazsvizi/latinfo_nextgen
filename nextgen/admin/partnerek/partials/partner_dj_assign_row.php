@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Partner – egy DJ hozzárendelési sor.
  *
  * @var int $partnerAssignRowIndex
- * @var array{tag_id?: int, role_type?: string, role_note?: string, name?: string} $partnerAssignRow
+ * @var array{tag_id?: int, role_types?: list<string>, role_type?: string, role_note?: string, name?: string} $partnerAssignRow
  * @var list<array{id:int,name:string}> $partnerAssignAllDjs
  * @var array<string, string> $partnerDjRoleLabels
  * @var string $partnerDjChipLinkPattern
@@ -15,9 +15,15 @@ $partnerAssignRow = $partnerAssignRow ?? [];
 $partnerAssignAllDjs = $partnerAssignAllDjs ?? [];
 $partnerDjRoleLabels = $partnerDjRoleLabels ?? nextgen_partner_dj_role_labels();
 $selectedTagId = (int) ($partnerAssignRow['tag_id'] ?? 0);
-$selectedRole = (string) ($partnerAssignRow['role_type'] ?? 'dj');
-if (!isset($partnerDjRoleLabels[$selectedRole])) {
-    $selectedRole = 'dj';
+$selectedRoles = $partnerAssignRow['role_types'] ?? [];
+if (!is_array($selectedRoles)) {
+    $selectedRoles = [];
+}
+if ($selectedRoles === [] && isset($partnerAssignRow['role_type'])) {
+    $selectedRoles = [(string) $partnerAssignRow['role_type']];
+}
+if ($selectedRoles === []) {
+    $selectedRoles = ['dj'];
 }
 $roleNote = (string) ($partnerAssignRow['role_note'] ?? '');
 $wpTokenId = 'partner-dj-token-' . $partnerAssignRowIndex;
@@ -36,26 +42,29 @@ $wpTokenSingle = true;
 $wpTokenShowPopular = false;
 $wpTokenChipLinkPattern = $partnerDjChipLinkPattern ?? '';
 $wpTokenChipLinkNewTab = true;
+$showOtherNote = in_array('other', $selectedRoles, true);
 ?>
 <div class="partner-assign-row" data-partner-assign-row="dj">
     <div class="partner-assign-row__main">
         <div class="partner-assign-row__picker">
             <?php require dirname(__DIR__, 3) . '/events/partials/wp_token_field.php'; ?>
         </div>
-        <div class="partner-assign-row__role">
-            <label class="visually-hidden" for="partner-dj-role-<?= $partnerAssignRowIndex ?>">Partner jelleg</label>
-            <select
-                id="partner-dj-role-<?= $partnerAssignRowIndex ?>"
-                name="dj_rows[<?= $partnerAssignRowIndex ?>][role_type]"
-                class="partner-assign-row__role-select"
-                data-partner-role-select
-            >
-                <?php foreach ($partnerDjRoleLabels as $roleValue => $roleLabel): ?>
-                    <option value="<?= h($roleValue) ?>"<?= $selectedRole === $roleValue ? ' selected' : '' ?>><?= h($roleLabel) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="partner-assign-row__note" data-partner-role-note-wrap<?= $selectedRole === 'other' ? '' : ' hidden' ?>>
+        <fieldset class="partner-assign-row__roles" data-partner-role-checkboxes>
+            <legend class="partner-assign-row__roles-label">Partner jelleg</legend>
+            <?php foreach ($partnerDjRoleLabels as $roleValue => $roleLabel): ?>
+                <label class="partner-assign-row__role-check">
+                    <input
+                        type="checkbox"
+                        name="dj_rows[<?= $partnerAssignRowIndex ?>][role_types][]"
+                        value="<?= h($roleValue) ?>"
+                        data-partner-role-value="<?= h($roleValue) ?>"
+                        <?= in_array($roleValue, $selectedRoles, true) ? ' checked' : '' ?>
+                    >
+                    <span><?= h($roleLabel) ?></span>
+                </label>
+            <?php endforeach; ?>
+        </fieldset>
+        <div class="partner-assign-row__note" data-partner-role-note-wrap<?= $showOtherNote ? '' : ' hidden' ?>>
             <label class="visually-hidden" for="partner-dj-note-<?= $partnerAssignRowIndex ?>">Megjegyzés</label>
             <input
                 type="text"

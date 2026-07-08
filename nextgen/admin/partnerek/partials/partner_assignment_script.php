@@ -65,27 +65,53 @@ declare(strict_types=1);
         });
     }
 
-    function bindRoleSelect(row) {
-        var select = row.querySelector('[data-partner-role-select]');
+    function bindRoleCheckboxes(row) {
+        var roleFieldset = row.querySelector('[data-partner-role-checkboxes]');
         var noteWrap = row.querySelector('[data-partner-role-note-wrap]');
-        if (!select || !noteWrap) {
+        if (!roleFieldset || !noteWrap) {
             return;
         }
+        var checkboxes = roleFieldset.querySelectorAll('input[type="checkbox"][data-partner-role-value]');
         function syncNoteVisibility() {
-            var isOther = select.value === 'other';
-            noteWrap.hidden = !isOther;
-            if (!isOther) {
+            var otherChecked = false;
+            checkboxes.forEach(function (cb) {
+                if (cb.checked && cb.getAttribute('data-partner-role-value') === 'other') {
+                    otherChecked = true;
+                }
+            });
+            noteWrap.hidden = !otherChecked;
+            if (!otherChecked) {
                 var noteInput = noteWrap.querySelector('input');
                 if (noteInput) {
                     noteInput.value = '';
                 }
             }
         }
-        select.addEventListener('change', syncNoteVisibility);
+        checkboxes.forEach(function (cb) {
+            cb.addEventListener('change', syncNoteVisibility);
+        });
         syncNoteVisibility();
     }
 
-    function bindRemove(row, container, rowSelector, namePrefix) {
+    function resetRoleCheckboxes(row, defaultRole) {
+        var roleFieldset = row.querySelector('[data-partner-role-checkboxes]');
+        if (!roleFieldset) {
+            return;
+        }
+        roleFieldset.querySelectorAll('input[type="checkbox"][data-partner-role-value]').forEach(function (cb) {
+            cb.checked = cb.getAttribute('data-partner-role-value') === defaultRole;
+        });
+        var noteWrap = row.querySelector('[data-partner-role-note-wrap]');
+        if (noteWrap) {
+            noteWrap.hidden = true;
+            var noteInput = noteWrap.querySelector('input');
+            if (noteInput) {
+                noteInput.value = '';
+            }
+        }
+    }
+
+    function bindRemove(row, container, rowSelector, namePrefix, defaultRole) {
         var btn = row.querySelector('[data-partner-assign-remove]');
         if (!btn) {
             return;
@@ -112,11 +138,7 @@ declare(strict_types=1);
                         search.value = '';
                     }
                 });
-                var roleSelect = row.querySelector('[data-partner-role-select]');
-                if (roleSelect) {
-                    roleSelect.selectedIndex = 0;
-                    roleSelect.dispatchEvent(new Event('change'));
-                }
+                resetRoleCheckboxes(row, defaultRole);
                 return;
             }
             row.remove();
@@ -134,8 +156,8 @@ declare(strict_types=1);
 
         container.querySelectorAll(options.rowSelector).forEach(function (row) {
             initTokenInRow(row);
-            bindRoleSelect(row);
-            bindRemove(row, container, options.rowSelector, options.namePrefix);
+            bindRoleCheckboxes(row);
+            bindRemove(row, container, options.rowSelector, options.namePrefix, options.defaultRole);
         });
 
         addBtn.addEventListener('click', function () {
@@ -150,8 +172,8 @@ declare(strict_types=1);
             container.appendChild(row);
             reindexRows(container, options.rowSelector, options.namePrefix);
             initTokenInRow(row);
-            bindRoleSelect(row);
-            bindRemove(row, container, options.rowSelector, options.namePrefix);
+            bindRoleCheckboxes(row);
+            bindRemove(row, container, options.rowSelector, options.namePrefix, options.defaultRole);
         });
     }
 
@@ -160,7 +182,8 @@ declare(strict_types=1);
         addButtonId: 'partner-organizer-add',
         templateId: 'partner-organizer-row-template',
         rowSelector: '[data-partner-assign-row="organizer"]',
-        namePrefix: 'organizer_rows'
+        namePrefix: 'organizer_rows',
+        defaultRole: 'event'
     });
 
     setupSection({
@@ -168,7 +191,8 @@ declare(strict_types=1);
         addButtonId: 'partner-dj-add',
         templateId: 'partner-dj-row-template',
         rowSelector: '[data-partner-assign-row="dj"]',
-        namePrefix: 'dj_rows'
+        namePrefix: 'dj_rows',
+        defaultRole: 'dj'
     });
 })();
 </script>

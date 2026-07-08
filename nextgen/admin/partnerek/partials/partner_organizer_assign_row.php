@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Partner – egy esemény szervező hozzárendelési sor.
  *
  * @var int $partnerAssignRowIndex
- * @var array{organizer_id?: int, role_type?: string, role_note?: string, name?: string} $partnerAssignRow
+ * @var array{organizer_id?: int, role_types?: list<string>, role_type?: string, role_note?: string, name?: string} $partnerAssignRow
  * @var list<array{id:int,name:string}> $partnerAssignAllOrganizers
  * @var array<string, string> $partnerOrganizerRoleLabels
  * @var string $partnerOrganizerChipLinkPattern
@@ -16,9 +16,15 @@ $partnerAssignRow = $partnerAssignRow ?? [];
 $partnerAssignAllOrganizers = $partnerAssignAllOrganizers ?? [];
 $partnerOrganizerRoleLabels = $partnerOrganizerRoleLabels ?? nextgen_partner_organizer_role_labels();
 $selectedOrganizerId = (int) ($partnerAssignRow['organizer_id'] ?? 0);
-$selectedRole = (string) ($partnerAssignRow['role_type'] ?? 'event');
-if (!isset($partnerOrganizerRoleLabels[$selectedRole])) {
-    $selectedRole = 'event';
+$selectedRoles = $partnerAssignRow['role_types'] ?? [];
+if (!is_array($selectedRoles)) {
+    $selectedRoles = [];
+}
+if ($selectedRoles === [] && isset($partnerAssignRow['role_type'])) {
+    $selectedRoles = [(string) $partnerAssignRow['role_type']];
+}
+if ($selectedRoles === []) {
+    $selectedRoles = ['event'];
 }
 $roleNote = (string) ($partnerAssignRow['role_note'] ?? '');
 $wpTokenId = 'partner-org-token-' . $partnerAssignRowIndex;
@@ -37,26 +43,29 @@ $wpTokenSingle = true;
 $wpTokenShowPopular = false;
 $wpTokenChipLinkPattern = $partnerOrganizerChipLinkPattern ?? '';
 $wpTokenChipLinkNewTab = true;
+$showOtherNote = in_array('other', $selectedRoles, true);
 ?>
 <div class="partner-assign-row" data-partner-assign-row="organizer">
     <div class="partner-assign-row__main">
         <div class="partner-assign-row__picker">
             <?php require dirname(__DIR__, 3) . '/events/partials/wp_token_field.php'; ?>
         </div>
-        <div class="partner-assign-row__role">
-            <label class="visually-hidden" for="partner-org-role-<?= $partnerAssignRowIndex ?>">Partner jelleg</label>
-            <select
-                id="partner-org-role-<?= $partnerAssignRowIndex ?>"
-                name="organizer_rows[<?= $partnerAssignRowIndex ?>][role_type]"
-                class="partner-assign-row__role-select"
-                data-partner-role-select
-            >
-                <?php foreach ($partnerOrganizerRoleLabels as $roleValue => $roleLabel): ?>
-                    <option value="<?= h($roleValue) ?>"<?= $selectedRole === $roleValue ? ' selected' : '' ?>><?= h($roleLabel) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="partner-assign-row__note" data-partner-role-note-wrap<?= $selectedRole === 'other' ? '' : ' hidden' ?>>
+        <fieldset class="partner-assign-row__roles" data-partner-role-checkboxes>
+            <legend class="partner-assign-row__roles-label">Partner jelleg</legend>
+            <?php foreach ($partnerOrganizerRoleLabels as $roleValue => $roleLabel): ?>
+                <label class="partner-assign-row__role-check">
+                    <input
+                        type="checkbox"
+                        name="organizer_rows[<?= $partnerAssignRowIndex ?>][role_types][]"
+                        value="<?= h($roleValue) ?>"
+                        data-partner-role-value="<?= h($roleValue) ?>"
+                        <?= in_array($roleValue, $selectedRoles, true) ? ' checked' : '' ?>
+                    >
+                    <span><?= h($roleLabel) ?></span>
+                </label>
+            <?php endforeach; ?>
+        </fieldset>
+        <div class="partner-assign-row__note" data-partner-role-note-wrap<?= $showOtherNote ? '' : ' hidden' ?>>
             <label class="visually-hidden" for="partner-org-note-<?= $partnerAssignRowIndex ?>">Megjegyzés</label>
             <input
                 type="text"

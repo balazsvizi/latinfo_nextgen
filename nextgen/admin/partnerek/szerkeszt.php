@@ -107,9 +107,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
         if (!is_array($row)) {
             continue;
         }
+        $roleTypes = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            $roleTypes = array_values(array_map('strval', $row['role_types']));
+        } elseif (isset($row['role_type'])) {
+            $roleTypes = [(string) $row['role_type']];
+        }
         $organizerRowsForForm[] = [
             'organizer_id' => (int) ($row['organizer_id'] ?? 0),
-            'role_type' => (string) ($row['role_type'] ?? 'event'),
+            'role_types' => $roleTypes,
             'role_note' => (string) ($row['role_note'] ?? ''),
         ];
     }
@@ -117,34 +123,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
         if (!is_array($row)) {
             continue;
         }
+        $roleTypes = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            $roleTypes = array_values(array_map('strval', $row['role_types']));
+        } elseif (isset($row['role_type'])) {
+            $roleTypes = [(string) $row['role_type']];
+        }
         $djRowsForForm[] = [
             'tag_id' => (int) ($row['tag_id'] ?? 0),
-            'role_type' => (string) ($row['role_type'] ?? 'dj'),
+            'role_types' => $roleTypes,
             'role_note' => (string) ($row['role_note'] ?? ''),
         ];
     }
 } else {
-    foreach ($assignedOrganizers as $row) {
-        $organizerRowsForForm[] = [
-            'organizer_id' => (int) ($row['id'] ?? 0),
-            'role_type' => (string) ($row['role_type'] ?? 'event'),
-            'role_note' => (string) ($row['role_note'] ?? ''),
-        ];
-    }
-    foreach ($assignedDjs as $row) {
-        $djRowsForForm[] = [
-            'tag_id' => (int) ($row['id'] ?? 0),
-            'role_type' => (string) ($row['role_type'] ?? 'dj'),
-            'role_note' => (string) ($row['role_note'] ?? ''),
-        ];
-    }
+    $organizerRowsForForm = nextgen_partner_group_organizer_assignments_for_form($assignedOrganizers);
+    $djRowsForForm = nextgen_partner_group_dj_assignments_for_form($assignedDjs);
 }
 
 if ($organizerRowsForForm === []) {
-    $organizerRowsForForm[] = ['organizer_id' => 0, 'role_type' => 'event', 'role_note' => ''];
+    $organizerRowsForForm[] = ['organizer_id' => 0, 'role_types' => ['event'], 'role_note' => ''];
 }
 if ($djRowsForForm === []) {
-    $djRowsForForm[] = ['tag_id' => 0, 'role_type' => 'dj', 'role_note' => ''];
+    $djRowsForForm[] = ['tag_id' => 0, 'role_types' => ['dj'], 'role_note' => ''];
 }
 
 $allOrganizers = nextgen_partner_selectable_events_organizers($db);
@@ -248,7 +248,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 <template id="partner-organizer-row-template">
 <?php
 $partnerAssignRowIndex = '__INDEX__';
-$partnerAssignRow = ['organizer_id' => 0, 'role_type' => 'event', 'role_note' => ''];
+$partnerAssignRow = ['organizer_id' => 0, 'role_types' => ['event'], 'role_note' => ''];
 $partnerAssignAllOrganizers = $allOrganizers;
 $partnerOrganizerRoleLabels = $organizerRoleLabels;
 require __DIR__ . '/partials/partner_organizer_assign_row.php';
@@ -258,7 +258,7 @@ require __DIR__ . '/partials/partner_organizer_assign_row.php';
 <template id="partner-dj-row-template">
 <?php
 $partnerAssignRowIndex = '__INDEX__';
-$partnerAssignRow = ['tag_id' => 0, 'role_type' => 'dj', 'role_note' => ''];
+$partnerAssignRow = ['tag_id' => 0, 'role_types' => ['dj'], 'role_note' => ''];
 $partnerAssignAllDjs = $allDjs;
 $partnerDjRoleLabels = $djRoleLabels;
 require __DIR__ . '/partials/partner_dj_assign_row.php';

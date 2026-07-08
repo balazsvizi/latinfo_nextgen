@@ -4133,14 +4133,43 @@ body.event-edit-cover-lightbox-open {
     flex: 1;
     min-width: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(8rem, 0.6fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.4fr) minmax(10rem, 0.9fr) minmax(0, 1fr);
     gap: 0.65rem;
     align-items: start;
 }
 .partner-assign-row__picker .wp-token-field {
     margin: 0;
 }
-.partner-assign-row__role-select,
+.partner-assign-row__roles {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+.partner-assign-row__roles-label {
+    display: block;
+    margin: 0 0 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.partner-assign-row__role-check {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0 0.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+.partner-assign-row__role-check:last-child {
+    margin-bottom: 0;
+}
+.partner-assign-row__role-check input {
+    margin: 0;
+    flex-shrink: 0;
+}
 .partner-assign-row__note-input {
     width: 100%;
     min-height: 2.5rem;
