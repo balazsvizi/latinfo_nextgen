@@ -124,7 +124,11 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
             }
         }
 
-        nextgen_partner_ensure_assignment_unique_indexes($db);
+        try {
+            nextgen_partner_ensure_assignment_unique_indexes($db);
+        } catch (Throwable $indexEx) {
+            error_log('nextgen_partner_ensure_assignment_unique_indexes: ' . $indexEx->getMessage());
+        }
 
         return true;
     } catch (Throwable $ex) {
@@ -202,39 +206,142 @@ function nextgen_partner_has_unique_index_columns(PDO $db, string $table, array 
     return false;
 }
 
+/**
+ * @return list<string>
+ */
+function nextgen_partner_table_primary_key_columns(PDO $db, string $table): array
+{
+    try {
+        $stmt = $db->query('SHOW INDEX FROM `' . str_replace('`', '', $table) . "` WHERE Key_name = 'PRIMARY'");
+    } catch (Throwable) {
+        return [];
+    }
+
+    $columns = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $columns[(int) ($row['Seq_in_index'] ?? 0)] = (string) ($row['Column_name'] ?? '');
+    }
+    ksort($columns);
+
+    return array_values($columns);
+}
+
+function nextgen_partner_table_has_column(PDO $db, string $table, string $column): bool
+{
+    try {
+        $stmt = $db->prepare('SHOW COLUMNS FROM `' . str_replace('`', '', $table) . '` LIKE ?');
+        $stmt->execute([$column]);
+    } catch (Throwable) {
+        return false;
+    }
+
+    return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+function nextgen_partner_drop_unique_index(PDO $db, string $table, string $keyName): void
+{
+    try {
+        $safeTable = str_replace('`', '', $table);
+        $safeKey = str_replace('`', '', $keyName);
+        $db->exec('ALTER TABLE `' . $safeTable . '` DROP INDEX `' . $safeKey . '`');
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_drop_unique_index: ' . $ex->getMessage());
+    }
+}
+
+function nextgen_partner_drop_legacy_assignment_uniques(PDO $db, string $table, string $entityColumn): void
+{
+    foreach (nextgen_partner_table_unique_indexes($db, $table) as $keyName => $indexColumns) {
+        if (in_array('role_type', $indexColumns, true)) {
+            continue;
+        }
+        if (!in_array('partner_id', $indexColumns, true) || !in_array($entityColumn, $indexColumns, true)) {
+            continue;
+        }
+        if (count($indexColumns) !== 2) {
+            continue;
+        }
+        nextgen_partner_drop_unique_index($db, $table, $keyName);
+    }
+}
+
+/**
+ * @param list<string> $columns
+ */
+function nextgen_partner_add_unique_index(PDO $db, string $table, string $indexName, array $columns): void
+{
+    if (nextgen_partner_has_unique_index_columns($db, $table, $columns)) {
+        return;
+    }
+
+    $safeTable = str_replace('`', '', $table);
+    $safeIndex = str_replace('`', '', $indexName);
+    $columnList = implode('`, `', $columns);
+    try {
+        $db->exec(
+            'ALTER TABLE `' . $safeTable . '`'
+            . ' ADD UNIQUE INDEX `' . $safeIndex . '` (`' . $columnList . '`)'
+        );
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_add_unique_index: ' . $ex->getMessage());
+    }
+}
+
+function nextgen_partner_migrate_assignment_table_for_multi_role(PDO $db, string $table, string $entityColumn, string $indexName): void
+{
+    $safeTable = str_replace('`', '', $table);
+    try {
+        $db->query('SELECT 1 FROM `' . $safeTable . '` LIMIT 1');
+    } catch (Throwable) {
+        return;
+    }
+
+    if (!nextgen_partner_table_has_column($db, $safeTable, 'role_type')) {
+        return;
+    }
+
+    $pkColumns = nextgen_partner_table_primary_key_columns($db, $safeTable);
+    $sortedPk = $pkColumns;
+    sort($sortedPk);
+    $legacyPk = ['partner_id', $entityColumn];
+    sort($legacyPk);
+
+    if ($sortedPk === $legacyPk) {
+        try {
+            $db->exec("
+                ALTER TABLE `{$safeTable}`
+                DROP PRIMARY KEY,
+                ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
+                ADD PRIMARY KEY (`id`)
+            ");
+        } catch (Throwable $ex) {
+            error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK: ' . $ex->getMessage());
+        }
+    }
+
+    nextgen_partner_drop_legacy_assignment_uniques($db, $safeTable, $entityColumn);
+    nextgen_partner_add_unique_index(
+        $db,
+        $safeTable,
+        $indexName,
+        ['partner_id', $entityColumn, 'role_type']
+    );
+}
+
 function nextgen_partner_ensure_assignment_unique_indexes(PDO $db): void
 {
-    $definitions = [
-        'nextgen_partner_events_organizers' => [
-            'legacy' => ['partner_id', 'organizer_id'],
-            'unique' => ['partner_id', 'organizer_id', 'role_type'],
-            'index' => 'uk_partner_org_role',
-        ],
-        'nextgen_partner_djs' => [
-            'legacy' => ['partner_id', 'tag_id'],
-            'unique' => ['partner_id', 'tag_id', 'role_type'],
-            'index' => 'uk_partner_dj_role',
-        ],
-    ];
-
-    foreach ($definitions as $table => $definition) {
-        try {
-            $db->query('SELECT 1 FROM `' . str_replace('`', '', $table) . '` LIMIT 1');
-        } catch (Throwable) {
-            continue;
-        }
-
-        nextgen_partner_drop_unique_index_by_columns($db, $table, $definition['legacy']);
-        if (nextgen_partner_has_unique_index_columns($db, $table, $definition['unique'])) {
-            continue;
-        }
-
-        $columnList = implode('`, `', $definition['unique']);
-        $db->exec(
-            'ALTER TABLE `' . str_replace('`', '', $table) . '`'
-            . ' ADD UNIQUE INDEX `' . $definition['index'] . '` (`' . $columnList . '`)'
-        );
-    }
+    nextgen_partner_migrate_assignment_table_for_multi_role(
+        $db,
+        'nextgen_partner_events_organizers',
+        'organizer_id',
+        'uk_partner_org_role'
+    );
+    nextgen_partner_migrate_assignment_table_for_multi_role(
+        $db,
+        'nextgen_partner_djs',
+        'tag_id',
+        'uk_partner_dj_role'
+    );
 }
 
 /**
@@ -925,6 +1032,7 @@ function nextgen_partner_sync_assignments(
     }
 
     nextgen_partner_ensure_extended_schema($db);
+    nextgen_partner_ensure_assignment_unique_indexes($db);
 
     try {
         $db->beginTransaction();
