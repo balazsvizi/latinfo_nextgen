@@ -4115,6 +4115,37 @@ body.event-edit-cover-lightbox-open {
     font-weight: 500;
     font-size: 0.9em;
 }
+.partner-list-name {
+    display: block;
+    min-width: 0;
+}
+.partner-list-name__link,
+.partner-list-name__text {
+    display: block;
+    font-weight: 600;
+    line-height: 1.35;
+    color: inherit;
+}
+.partner-list-name__link {
+    color: var(--link, #2f5f2f);
+    text-decoration: none;
+}
+.partner-list-name__link:hover {
+    text-decoration: underline;
+}
+.partner-list-name__kieg {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+.th-partner-nev,
+.td-partner-nev {
+    min-width: 12rem;
+    max-width: 22rem;
+}
 @media (max-width: 640px) {
     .partner-name-row {
         grid-template-columns: 1fr;

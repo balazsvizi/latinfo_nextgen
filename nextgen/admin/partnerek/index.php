@@ -42,7 +42,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 
 $kereso = trim((string) ($_GET['kereso'] ?? ''));
 $order = isset($_GET['order']) && in_array((string) $_GET['order'], [
-    'id', 'nev', 'email', 'telefon', 'organizer_count', 'dj_count', 'finance_count', 'aktiv', 'letrehozva',
+    'id', 'nev', 'organizer_count', 'dj_count', 'finance_count', 'aktiv', 'letrehozva',
 ], true) ? (string) $_GET['order'] : 'letrehozva';
 if (isset($_GET['dir'])) {
     $dirParam = $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -108,10 +108,8 @@ $partnerActivityLogGlobal = true;
         <table class="sortable-table">
             <thead>
                 <tr>
-                    <th><?= sort_th('ID', 'id', $order, $dirParam, $getParams) ?></th>
-                    <th><?= sort_th('Név', 'nev', $order, $dirParam, $getParams) ?></th>
-                    <th><?= sort_th('E-mail', 'email', $order, $dirParam, $getParams) ?></th>
-                    <th><?= sort_th('Telefon', 'telefon', $order, $dirParam, $getParams) ?></th>
+                    <th class="th-num"><?= sort_th('ID', 'id', $order, $dirParam, $getParams) ?></th>
+                    <th class="th-partner-nev"><?= sort_th('Név', 'nev', $order, $dirParam, $getParams) ?></th>
                     <th class="text-center"><?= sort_th('Szervezők', 'organizer_count', $order, $dirParam, $getParams) ?></th>
                     <th class="text-center"><?= sort_th('DJ-k', 'dj_count', $order, $dirParam, $getParams) ?></th>
                     <th class="text-center"><?= sort_th('Finance', 'finance_count', $order, $dirParam, $getParams) ?></th>
@@ -122,18 +120,22 @@ $partnerActivityLogGlobal = true;
             </thead>
             <tbody>
                 <?php foreach ($partners as $p): ?>
+                <?php $partnerEditUrl = nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $p['id']; ?>
                 <tr>
-                    <td><?= (int) $p['id'] ?></td>
-                    <td><?php $partner = $p; require __DIR__ . '/partials/partner_list_name.php'; ?></td>
-                    <td><?= h((string) ($p['email'] ?? '')) ?></td>
-                    <td><?= h((string) ($p['telefon'] ?? '')) ?></td>
+                    <td class="text-muted"><?= (int) $p['id'] ?></td>
+                    <td class="td-partner-nev">
+                        <?php
+                        $partner = $p;
+                        $partnerListEditUrl = $partnerEditUrl;
+                        require __DIR__ . '/partials/partner_list_name.php';
+                        ?>
+                    </td>
                     <td class="text-center"><?= (int) ($p['organizer_count'] ?? 0) ?></td>
                     <td class="text-center"><?= (int) ($p['dj_count'] ?? 0) ?></td>
                     <td class="text-center"><?= (int) ($p['finance_count'] ?? 0) ?></td>
                     <td class="text-nowrap"><?= h(nextgen_partner_format_created_at($p['létrehozva'] ?? '')) ?></td>
                     <td><?= !empty($p['aktív']) ? 'Aktív' : 'Inaktív' ?></td>
                     <td class="actions">
-                        <a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $p['id']) ?>" class="btn btn-sm btn-secondary">Szerkeszt</a>
                         <a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php?partner_id=') . (int) $p['id']) ?>" class="btn btn-sm btn-secondary">Üzenetek</a>
                     </td>
                 </tr>
