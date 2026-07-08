@@ -124,11 +124,116 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
             }
         }
 
+        nextgen_partner_ensure_assignment_unique_indexes($db);
+
         return true;
     } catch (Throwable $ex) {
         error_log('nextgen_partner_ensure_extended_schema: ' . $ex->getMessage());
 
         return false;
+    }
+}
+
+/**
+ * @return array<string, list<string>>
+ */
+function nextgen_partner_table_unique_indexes(PDO $db, string $table): array
+{
+    try {
+        $stmt = $db->query('SHOW INDEX FROM `' . str_replace('`', '', $table) . '`');
+    } catch (Throwable) {
+        return [];
+    }
+
+    $indexes = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        if ((int) ($row['Non_unique'] ?? 1) !== 0) {
+            continue;
+        }
+        $keyName = (string) ($row['Key_name'] ?? '');
+        if ($keyName === '' || $keyName === 'PRIMARY') {
+            continue;
+        }
+        $seq = (int) ($row['Seq_in_index'] ?? 0);
+        $indexes[$keyName][$seq] = (string) ($row['Column_name'] ?? '');
+    }
+
+    foreach ($indexes as $keyName => $columns) {
+        ksort($columns);
+        $indexes[$keyName] = array_values($columns);
+    }
+
+    return $indexes;
+}
+
+/**
+ * @param list<string> $columns
+ */
+function nextgen_partner_drop_unique_index_by_columns(PDO $db, string $table, array $columns): void
+{
+    $target = array_values($columns);
+    sort($target);
+    foreach (nextgen_partner_table_unique_indexes($db, $table) as $keyName => $indexColumns) {
+        $sorted = $indexColumns;
+        sort($sorted);
+        if ($sorted !== $target) {
+            continue;
+        }
+        $safeKey = str_replace('`', '', $keyName);
+        $db->exec('ALTER TABLE `' . str_replace('`', '', $table) . '` DROP INDEX `' . $safeKey . '`');
+    }
+}
+
+/**
+ * @param list<string> $columns
+ */
+function nextgen_partner_has_unique_index_columns(PDO $db, string $table, array $columns): bool
+{
+    $target = array_values($columns);
+    sort($target);
+    foreach (nextgen_partner_table_unique_indexes($db, $table) as $indexColumns) {
+        $sorted = $indexColumns;
+        sort($sorted);
+        if ($sorted === $target) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function nextgen_partner_ensure_assignment_unique_indexes(PDO $db): void
+{
+    $definitions = [
+        'nextgen_partner_events_organizers' => [
+            'legacy' => ['partner_id', 'organizer_id'],
+            'unique' => ['partner_id', 'organizer_id', 'role_type'],
+            'index' => 'uk_partner_org_role',
+        ],
+        'nextgen_partner_djs' => [
+            'legacy' => ['partner_id', 'tag_id'],
+            'unique' => ['partner_id', 'tag_id', 'role_type'],
+            'index' => 'uk_partner_dj_role',
+        ],
+    ];
+
+    foreach ($definitions as $table => $definition) {
+        try {
+            $db->query('SELECT 1 FROM `' . str_replace('`', '', $table) . '` LIMIT 1');
+        } catch (Throwable) {
+            continue;
+        }
+
+        nextgen_partner_drop_unique_index_by_columns($db, $table, $definition['legacy']);
+        if (nextgen_partner_has_unique_index_columns($db, $table, $definition['unique'])) {
+            continue;
+        }
+
+        $columnList = implode('`, `', $definition['unique']);
+        $db->exec(
+            'ALTER TABLE `' . str_replace('`', '', $table) . '`'
+            . ' ADD UNIQUE INDEX `' . $definition['index'] . '` (`' . $columnList . '`)'
+        );
     }
 }
 

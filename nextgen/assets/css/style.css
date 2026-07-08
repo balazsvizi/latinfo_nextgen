@@ -4164,7 +4164,7 @@ body.event-edit-cover-lightbox-open {
     flex: 1;
     min-width: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(10rem, 0.9fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr) minmax(0, 0.9fr);
     gap: 0.65rem;
     align-items: start;
 }
@@ -4176,10 +4176,14 @@ body.event-edit-cover-lightbox-open {
     padding: 0;
     border: 0;
     min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.85rem;
 }
 .partner-assign-row__roles-label {
-    display: block;
-    margin: 0 0 0.35rem;
+    flex: 0 0 100%;
+    margin: 0;
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-muted);
@@ -4187,15 +4191,13 @@ body.event-edit-cover-lightbox-open {
     letter-spacing: 0.03em;
 }
 .partner-assign-row__role-check {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    margin: 0 0 0.25rem;
+    margin: 0;
     font-size: 0.875rem;
     cursor: pointer;
-}
-.partner-assign-row__role-check:last-child {
-    margin-bottom: 0;
+    white-space: nowrap;
 }
 .partner-assign-row__role-check input {
     margin: 0;

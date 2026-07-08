@@ -129,9 +129,11 @@ $partnerActivityLogGlobal = true;
                     <td class="text-muted"><?= (int) $p['id'] ?></td>
                     <td class="td-partner-nev">
                         <?php
+                        unset($partnerListNev, $partnerListKieg);
                         $partner = $p;
                         $partnerListEditUrl = $partnerEditUrl;
                         require __DIR__ . '/partials/partner_list_name.php';
+                        unset($partnerListEditUrl);
                         ?>
                     </td>
                     <td><?= $partnerTelepules !== '' ? h($partnerTelepules) : '–' ?></td>
