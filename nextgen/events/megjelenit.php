@@ -130,6 +130,8 @@ $eventEditUrl = events_url('szerkeszt.php?id=') . (int) ($event['id'] ?? 0);
 $S = $T;
 $adminEditUrl = $eventEditUrl;
 
+$eventExternalUrl = trim((string) ($event['event_url'] ?? ''));
+
 $jsonLd = [
     '@context' => 'https://schema.org',
     '@type' => 'Event',
@@ -318,9 +320,15 @@ header('Content-Type: text/html; charset=UTF-8');
     </header>
 
     <div class="event-public__content">
+        <?php if ($eventExternalUrl !== ''): ?>
+            <?php $placement = 'top'; require __DIR__ . '/partials/public_event_external_info_notice.php'; ?>
+        <?php endif; ?>
         <div class="event-body">
             <?= $safeEventContent ?>
         </div>
+        <?php if ($eventExternalUrl !== ''): ?>
+            <?php $placement = 'bottom'; require __DIR__ . '/partials/public_event_external_info_notice.php'; ?>
+        <?php endif; ?>
         <?php if ($costText !== null): ?>
             <aside class="event-public__admission" aria-label="<?= h($T['meta_price']) ?>">
                 <p class="event-public__admission-label"><?= h($T['meta_price']) ?></p>

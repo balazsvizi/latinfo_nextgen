@@ -971,6 +971,42 @@ body.venue-public-map-dialog-open {
     background: var(--li-card);
 }
 
+.event-external-info-notice {
+    max-width: 65ch;
+    margin: 0 0 clamp(1rem, 2.5vw, 1.35rem);
+    padding: 0.8rem 1rem;
+    font-family: var(--ev-sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--li-text-soft);
+    background: linear-gradient(135deg, rgba(109, 143, 99, 0.12) 0%, rgba(109, 143, 99, 0.04) 100%);
+    border: 1px solid rgba(109, 143, 99, 0.24);
+    border-radius: 0.65rem;
+}
+
+.event-external-info-notice--bottom {
+    margin: clamp(1.15rem, 2.5vw, 1.5rem) 0 0;
+}
+
+.event-external-info-notice__link {
+    font-weight: 700;
+    color: var(--li-green-dark);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.18em;
+    transition: color 0.15s ease;
+}
+
+.event-external-info-notice__link:hover {
+    color: var(--li-green);
+}
+
+.event-external-info-notice__link:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
 .event-public__admission {
     margin-top: clamp(1.25rem, 3vw, 2rem);
     padding-top: clamp(1rem, 2.5vw, 1.5rem);
