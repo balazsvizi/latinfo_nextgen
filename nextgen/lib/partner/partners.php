@@ -305,17 +305,38 @@ function nextgen_partner_migrate_assignment_table_for_multi_role(PDO $db, string
     sort($sortedPk);
     $legacyPk = ['partner_id', $entityColumn];
     sort($legacyPk);
+    $hasIdColumn = nextgen_partner_table_has_column($db, $safeTable, 'id');
 
     if ($sortedPk === $legacyPk) {
+        if (!$hasIdColumn) {
+            try {
+                $db->exec("
+                    ALTER TABLE `{$safeTable}`
+                    DROP PRIMARY KEY,
+                    ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST
+                ");
+            } catch (Throwable $ex) {
+                error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK drop+add: ' . $ex->getMessage());
+                try {
+                    $db->exec("ALTER TABLE `{$safeTable}` ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST, ADD UNIQUE KEY `uk_tmp_partner_row_id` (`id`)");
+                    $db->exec("ALTER TABLE `{$safeTable}` DROP PRIMARY KEY");
+                    $db->exec("ALTER TABLE `{$safeTable}` DROP INDEX `uk_tmp_partner_row_id`, ADD PRIMARY KEY (`id`)");
+                } catch (Throwable $fallbackEx) {
+                    error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK fallback: ' . $fallbackEx->getMessage());
+                }
+            }
+        } else {
+            try {
+                $db->exec("ALTER TABLE `{$safeTable}` DROP PRIMARY KEY, ADD PRIMARY KEY (`id`)");
+            } catch (Throwable $ex) {
+                error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK switch: ' . $ex->getMessage());
+            }
+        }
+    } elseif ($hasIdColumn && !in_array('id', $pkColumns, true)) {
         try {
-            $db->exec("
-                ALTER TABLE `{$safeTable}`
-                DROP PRIMARY KEY,
-                ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
-                ADD PRIMARY KEY (`id`)
-            ");
+            $db->exec("ALTER TABLE `{$safeTable}` ADD PRIMARY KEY (`id`)");
         } catch (Throwable $ex) {
-            error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK: ' . $ex->getMessage());
+            error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK on id: ' . $ex->getMessage());
         }
     }
 
@@ -326,6 +347,49 @@ function nextgen_partner_migrate_assignment_table_for_multi_role(PDO $db, string
         $indexName,
         ['partner_id', $entityColumn, 'role_type']
     );
+}
+
+function nextgen_partner_assignment_table_supports_multi_role(PDO $db, string $table, string $entityColumn): bool
+{
+    $safeTable = str_replace('`', '', $table);
+    if (!nextgen_partner_table_has_column($db, $safeTable, 'role_type')) {
+        return false;
+    }
+
+    $pkColumns = nextgen_partner_table_primary_key_columns($db, $safeTable);
+    $sortedPk = $pkColumns;
+    sort($sortedPk);
+    $legacyPk = ['partner_id', $entityColumn];
+    sort($legacyPk);
+    if ($sortedPk === $legacyPk) {
+        return false;
+    }
+
+    return nextgen_partner_has_unique_index_columns(
+        $db,
+        $safeTable,
+        ['partner_id', $entityColumn, 'role_type']
+    );
+}
+
+function nextgen_partner_assignment_tables_support_multi_role(PDO $db): bool
+{
+    return nextgen_partner_assignment_table_supports_multi_role($db, 'nextgen_partner_events_organizers', 'organizer_id')
+        && nextgen_partner_assignment_table_supports_multi_role($db, 'nextgen_partner_djs', 'tag_id');
+}
+
+function nextgen_partner_is_duplicate_key_exception(Throwable $ex): bool
+{
+    if (!$ex instanceof PDOException) {
+        return false;
+    }
+
+    $message = $ex->getMessage();
+
+    return str_contains($message, '1062')
+        || str_contains($message, '1022')
+        || stripos($message, 'Duplicate entry') !== false
+        || stripos($message, 'duplicate key') !== false;
 }
 
 function nextgen_partner_ensure_assignment_unique_indexes(PDO $db): void
@@ -1034,59 +1098,93 @@ function nextgen_partner_sync_assignments(
     nextgen_partner_ensure_extended_schema($db);
     nextgen_partner_ensure_assignment_unique_indexes($db);
 
-    try {
-        $db->beginTransaction();
-
-        $db->prepare('DELETE FROM `nextgen_partner_events_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
-        $insOrg = $db->prepare('
-            INSERT INTO `nextgen_partner_events_organizers` (`partner_id`, `organizer_id`, `role_type`, `role_note`, `sort_order`)
-            VALUES (?, ?, ?, ?, ?)
-        ');
-        foreach ($organizerRows as $i => $row) {
-            $insOrg->execute([
-                $partnerId,
-                (int) $row['organizer_id'],
-                (string) $row['role_type'],
-                $row['role_note'] ?? null,
-                $i,
-            ]);
+    $attempt = 0;
+    while ($attempt < 2) {
+        $attempt++;
+        if ($attempt > 1) {
+            nextgen_partner_ensure_assignment_unique_indexes($db);
         }
 
-        $db->prepare('DELETE FROM `nextgen_partner_djs` WHERE `partner_id` = ?')->execute([$partnerId]);
-        $insDj = $db->prepare('
-            INSERT INTO `nextgen_partner_djs` (`partner_id`, `tag_id`, `role_type`, `role_note`, `sort_order`)
-            VALUES (?, ?, ?, ?, ?)
-        ');
-        foreach ($djRows as $i => $row) {
-            $insDj->execute([
-                $partnerId,
-                (int) $row['tag_id'],
-                (string) $row['role_type'],
-                $row['role_note'] ?? null,
-                $i,
-            ]);
+        try {
+            if (
+                ($organizerRows !== [] || $djRows !== [])
+                && !nextgen_partner_assignment_tables_support_multi_role($db)
+            ) {
+                nextgen_partner_ensure_assignment_unique_indexes($db);
+                if (!nextgen_partner_assignment_tables_support_multi_role($db)) {
+                    return [
+                        'ok' => false,
+                        'error' => 'Hozzárendelések mentése sikertelen. Futtasd: nextgen/partner/sql/migration_partner_roles.sql',
+                    ];
+                }
+            }
+
+            $db->beginTransaction();
+
+            $db->prepare('DELETE FROM `nextgen_partner_events_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
+            $insOrg = $db->prepare('
+                INSERT INTO `nextgen_partner_events_organizers` (`partner_id`, `organizer_id`, `role_type`, `role_note`, `sort_order`)
+                VALUES (?, ?, ?, ?, ?)
+            ');
+            foreach ($organizerRows as $i => $row) {
+                $insOrg->execute([
+                    $partnerId,
+                    (int) $row['organizer_id'],
+                    (string) $row['role_type'],
+                    $row['role_note'] ?? null,
+                    $i,
+                ]);
+            }
+
+            $db->prepare('DELETE FROM `nextgen_partner_djs` WHERE `partner_id` = ?')->execute([$partnerId]);
+            $insDj = $db->prepare('
+                INSERT INTO `nextgen_partner_djs` (`partner_id`, `tag_id`, `role_type`, `role_note`, `sort_order`)
+                VALUES (?, ?, ?, ?, ?)
+            ');
+            foreach ($djRows as $i => $row) {
+                $insDj->execute([
+                    $partnerId,
+                    (int) $row['tag_id'],
+                    (string) $row['role_type'],
+                    $row['role_note'] ?? null,
+                    $i,
+                ]);
+            }
+
+            $db->commit();
+
+            $summary = sprintf(
+                '%d esemény szervező, %d DJ (%d szervező-szerep, %d DJ-szerep)',
+                count(array_unique(array_map(static fn (array $r): int => (int) $r['organizer_id'], $organizerRows))),
+                count(array_unique(array_map(static fn (array $r): int => (int) $r['tag_id'], $djRows))),
+                count($organizerRows),
+                count($djRows)
+            );
+            nextgen_partner_log($db, $partnerId, 'Hozzárendelések módosítva', $summary);
+
+            return ['ok' => true];
+        } catch (Throwable $ex) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            error_log('nextgen_partner_sync_assignments: ' . $ex->getMessage());
+
+            if ($attempt < 2 && nextgen_partner_is_duplicate_key_exception($ex)) {
+                continue;
+            }
+
+            if (!nextgen_partner_assignment_tables_support_multi_role($db)) {
+                return [
+                    'ok' => false,
+                    'error' => 'Hozzárendelések mentése sikertelen. Futtasd: nextgen/partner/sql/migration_partner_roles.sql',
+                ];
+            }
+
+            return ['ok' => false, 'error' => 'Hozzárendelések mentése sikertelen.'];
         }
-
-        $db->commit();
-
-        $summary = sprintf(
-            '%d esemény szervező, %d DJ (%d szervező-szerep, %d DJ-szerep)',
-            count(array_unique(array_map(static fn (array $r): int => (int) $r['organizer_id'], $organizerRows))),
-            count(array_unique(array_map(static fn (array $r): int => (int) $r['tag_id'], $djRows))),
-            count($organizerRows),
-            count($djRows)
-        );
-        nextgen_partner_log($db, $partnerId, 'Hozzárendelések módosítva', $summary);
-
-        return ['ok' => true];
-    } catch (Throwable $ex) {
-        if ($db->inTransaction()) {
-            $db->rollBack();
-        }
-        error_log('nextgen_partner_sync_assignments: ' . $ex->getMessage());
-
-        return ['ok' => false, 'error' => 'Hozzárendelések mentése sikertelen.'];
     }
+
+    return ['ok' => false, 'error' => 'Hozzárendelések mentése sikertelen.'];
 }
 
 /**
