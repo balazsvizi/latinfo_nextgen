@@ -62,7 +62,7 @@ function events_csv_import_schema(): array {
             'columns' => [
                 'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥200000). Kitöltve: max 100000, upsert.'],
                 'name' => ['type' => 'string', 'max' => 255, 'nullable' => false],
-                'finance_ticket_percent' => ['type' => 'uint', 'nullable' => true, 'note' => 'Belépőjegy % (1–100), opcionális'],
+                'finance_ticket_percent' => ['type' => 'uint', 'nullable' => true, 'note' => 'Belépőjegy % (1–500), opcionális'],
                 'finance_fix_amount' => ['type' => 'decimal', 'nullable' => true, 'note' => 'Fix összeg eventenként (Ft)'],
             ],
         ],

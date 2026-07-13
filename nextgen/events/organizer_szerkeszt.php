@@ -101,10 +101,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         id="finance_ticket_percent"
                         name="finance_ticket_percent"
                         min="1"
-                        max="100"
+                        max="500"
                         step="1"
                         value="<?= h($financeTicketPercentForm) ?>"
-                        placeholder="1–100"
+                        placeholder="1–500"
                     >
                     <p class="help">Opcionális. A belépő átlagának százaléka eventenként.</p>
                 </div>

@@ -5,12 +5,25 @@ declare(strict_types=1);
  * Szervezői és esemény-szintű finance mezők (belépőjegy %, fix díj, ki fizeti).
  */
 
+function events_organizer_finance_ticket_percent_max(): int
+{
+    return 500;
+}
+
+function events_organizer_finance_ticket_percent_default(): int
+{
+    return 200;
+}
+
 function events_organizer_finance_ensure_schema(PDO $db): bool
 {
     try {
         $stmt = $db->query("SHOW COLUMNS FROM `events_organizers` LIKE 'finance_ticket_percent'");
-        if ($stmt->fetch() === false) {
-            $db->exec('ALTER TABLE `events_organizers` ADD COLUMN `finance_ticket_percent` TINYINT UNSIGNED NULL DEFAULT NULL AFTER `name`');
+        $col = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($col === false) {
+            $db->exec('ALTER TABLE `events_organizers` ADD COLUMN `finance_ticket_percent` SMALLINT UNSIGNED NULL DEFAULT NULL AFTER `name`');
+        } elseif (stripos((string) ($col['Type'] ?? ''), 'tinyint') !== false) {
+            $db->exec('ALTER TABLE `events_organizers` MODIFY COLUMN `finance_ticket_percent` SMALLINT UNSIGNED NULL DEFAULT NULL');
         }
         $stmt = $db->query("SHOW COLUMNS FROM `events_organizers` LIKE 'finance_fix_amount'");
         if ($stmt->fetch() === false) {
@@ -42,13 +55,14 @@ function events_organizer_finance_parse_from_post(): array
     $fixRaw = trim((string) ($_POST['finance_fix_amount'] ?? ''));
 
     $percent = null;
+    $percentMax = events_organizer_finance_ticket_percent_max();
     if ($percentRaw !== '') {
         if (!preg_match('/^\d+$/', $percentRaw)) {
-            return ['percent' => null, 'fix_amount' => null, 'error' => 'A belépőjegy százalék csak egész szám lehet (1–100).'];
+            return ['percent' => null, 'fix_amount' => null, 'error' => 'A belépőjegy százalék csak egész szám lehet (1–' . $percentMax . ').'];
         }
         $percent = (int) $percentRaw;
-        if ($percent < 1 || $percent > 100) {
-            return ['percent' => null, 'fix_amount' => null, 'error' => 'A belépőjegy százalék 1 és 100 között lehet.'];
+        if ($percent < 1 || $percent > $percentMax) {
+            return ['percent' => null, 'fix_amount' => null, 'error' => 'A belépőjegy százalék 1 és ' . $percentMax . ' között lehet.'];
         }
     }
 
@@ -124,25 +138,24 @@ function events_load_organizer_finance_map(PDO $db): array
 }
 
 /**
- * Szervezői díj kalkuláció: fix összeg elsőbbséget élvez, különben belépő átlag × %.
+ * Szervezői díj kalkuláció: fix összeg elsőbbséget élvez, különben belépő átlag × % (hiányzó % → 200).
  */
 function events_organizer_finance_calculate_fee(?float $fixAmount, ?int $percent, ?float $costFrom, ?float $costTo): ?float
 {
     if ($fixAmount !== null && $fixAmount > 0) {
         return round($fixAmount, 2);
     }
-    if ($percent !== null && $percent >= 1 && $percent <= 100) {
-        $from = $costFrom ?? 0.0;
-        $to = $costTo ?? $from;
-        if ($from <= 0 && $to <= 0) {
-            return null;
-        }
-        $avg = ($from + $to) / 2;
-
-        return round($avg * $percent / 100, 2);
+    $from = $costFrom ?? 0.0;
+    $to = $costTo ?? $from;
+    if ($from <= 0 && $to <= 0) {
+        return null;
     }
+    $effectivePercent = ($percent !== null && $percent >= 1 && $percent <= events_organizer_finance_ticket_percent_max())
+        ? $percent
+        : events_organizer_finance_ticket_percent_default();
+    $avg = ($from + $to) / 2;
 
-    return null;
+    return round($avg * $effectivePercent / 100, 2);
 }
 
 /**

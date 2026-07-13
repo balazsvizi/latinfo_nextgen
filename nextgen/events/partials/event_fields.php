@@ -229,7 +229,7 @@ require __DIR__ . '/wp_token_field.php';
             <button type="button" class="btn btn-secondary btn-sm" id="events-edit-finance-calc-btn">Szervezői díj kalkulálása</button>
             <output class="events-edit-finance-calc__result" id="events-edit-finance-calc-result" for="events-edit-finance-calc-btn" aria-live="polite">—</output>
         </div>
-        <p class="help">A „Ki fizeti” szervező(ők) finance beállítása alapján: fix összeg, vagy belépő átlag × százalék.</p>
+        <p class="help">Fix összeg elsőbbséget élvez; ha nincs % a szervezőn, a kalkuláció 200%-kal számol a belépő átlaga alapján.</p>
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-finance">

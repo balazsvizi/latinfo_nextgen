@@ -53,17 +53,18 @@
 
     function calculateFee(fixAmount, percent, from, to) {
         if (fixAmount !== null && fixAmount > 0) {
-            return Math.round(fixAmount * 100) / 100;
+            return { fee: Math.round(fixAmount * 100) / 100, percentUsed: null };
         }
-        if (percent !== null && percent >= 1 && percent <= 100) {
-            var f = from !== null ? from : 0;
-            var t = to !== null ? to : f;
-            if (f <= 0 && t <= 0) {
-                return null;
-            }
-            return Math.round(((f + t) / 2) * percent / 100 * 100) / 100;
+        var f = from !== null ? from : 0;
+        var t = to !== null ? to : f;
+        if (f <= 0 && t <= 0) {
+            return { fee: null, percentUsed: null };
         }
-        return null;
+        var effectivePercent = (percent !== null && percent >= 1 && percent <= 500) ? percent : 200;
+        return {
+            fee: Math.round(((f + t) / 2) * effectivePercent / 100 * 100) / 100,
+            percentUsed: effectivePercent
+        };
     }
 
     function formatFt(amount) {
@@ -106,11 +107,13 @@
             if (pct !== null && isNaN(pct)) {
                 pct = null;
             }
-            var fee = calculateFee(fixAmt, pct, from, to);
-            if (fee === null) {
-                lines.push(name + ': nincs finance beállítás vagy belépő');
+            var calc = calculateFee(fixAmt, pct, from, to);
+            if (calc.fee === null) {
+                lines.push(name + ': nincs belépő megadva');
+            } else if (calc.percentUsed !== null && (pct === null || isNaN(pct))) {
+                lines.push(name + ': ' + formatFt(calc.fee) + ' (' + calc.percentUsed + '%)');
             } else {
-                lines.push(name + ': ' + formatFt(fee));
+                lines.push(name + ': ' + formatFt(calc.fee));
             }
         });
 
