@@ -211,39 +211,29 @@ require __DIR__ . '/wp_token_field.php';
         <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="14" required><?= h($e['event_content']) ?></textarea>
     </div>
 </div>
-<div class="events-edit-panel events-edit-panel--tone-cost">
+<div class="events-edit-panel events-edit-panel--tone-cost events-edit-cost-block">
     <h3 class="events-edit-panel__title">Belépő</h3>
-    <div class="form-row events-edit-cost-grid">
-        <div class="form-group">
-            <label for="event_cost_from">Belépő (tól)</label>
-            <input type="number" id="event_cost_from" name="event_cost_from" step="0.01" min="0" value="<?= h($e['event_cost_from']) ?>" placeholder="0">
+    <div class="events-edit-cost-block__body">
+        <div class="form-row events-edit-cost-grid">
+            <div class="form-group">
+                <label for="event_cost_from">Tól</label>
+                <input type="number" id="event_cost_from" name="event_cost_from" step="0.01" min="0" value="<?= h($e['event_cost_from']) ?>" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label for="event_cost_to">Ig</label>
+                <input type="number" id="event_cost_to" name="event_cost_to" step="0.01" min="0" value="<?= h($e['event_cost_to']) ?>" placeholder="0">
+            </div>
         </div>
-        <div class="form-group">
-            <label for="event_cost_to">Belépő (ig)</label>
-            <input type="number" id="event_cost_to" name="event_cost_to" step="0.01" min="0" value="<?= h($e['event_cost_to']) ?>" placeholder="0">
-        </div>
-    </div>
-    <div class="events-edit-finance-calc" id="events-edit-finance-calc"
-         data-organizer-finance="<?= h($organizerFinanceJson) ?>">
-        <div class="events-edit-finance-calc__row">
-            <button type="button" class="btn btn-secondary btn-sm" id="events-edit-finance-calc-btn">Szervezői díj kalkulálása</button>
-            <output class="events-edit-finance-calc__result" id="events-edit-finance-calc-result" for="events-edit-finance-calc-btn" aria-live="polite">—</output>
-        </div>
-        <p class="help">Fix összeg elsőbbséget élvez; ha nincs % a szervezőn, a kalkuláció 200%-kal számol a belépő átlaga alapján.</p>
-    </div>
-</div>
-<div class="events-edit-panel events-edit-panel--tone-finance">
-    <h3 class="events-edit-panel__title">Finance</h3>
-    <div class="form-group">
-        <label>Ki fizeti</label>
+        <div class="events-edit-cost-block__payer">
+            <span class="events-edit-cost-block__payer-label" id="event-finance-payer-label">Ki fizeti</span>
 <?php
 $wpTokenId = 'event-finance-payer';
 $wpTokenLabel = '';
 $wpTokenFieldName = 'finance_payer_organizer_ids[]';
-$wpTokenPlaceholder = 'Szervező kiválasztása…';
-$wpTokenHelp = 'Az esemény szervezői közül választhatsz. Mentéskor legfeljebb egy szervező adható meg.';
+$wpTokenPlaceholder = 'Szervező…';
+$wpTokenHelp = '';
 $wpTokenManageUrl = events_url('organizers.php');
-$wpTokenManageLabel = 'Szervezők kezelése';
+$wpTokenManageLabel = 'Szervezők';
 $wpTokenManageNewTab = true;
 $wpTokenAll = $orgPickerAll;
 $wpTokenSelected = $selFinancePayer;
@@ -254,10 +244,23 @@ $wpTokenShowPopular = false;
 $wpTokenChipLinkPattern = events_url('organizer_szerkeszt.php?id={id}');
 require __DIR__ . '/wp_token_field.php';
 ?>
-    </div>
-    <div class="form-group">
-        <label for="finance_note">Megjegyzés</label>
-        <textarea id="finance_note" name="finance_note" rows="3" maxlength="5000" placeholder="Belső finance megjegyzés…"><?= h((string) ($e['finance_note'] ?? '')) ?></textarea>
+        </div>
+        <textarea
+            id="finance_note"
+            name="finance_note"
+            class="events-edit-cost-block__note"
+            rows="2"
+            maxlength="5000"
+            placeholder="Megjegyzés…"
+            aria-label="Finance megjegyzés"
+        ><?= h((string) ($e['finance_note'] ?? '')) ?></textarea>
+        <div class="events-edit-finance-calc" id="events-edit-finance-calc"
+             data-organizer-finance="<?= h($organizerFinanceJson) ?>">
+            <div class="events-edit-finance-calc__row">
+                <button type="button" class="btn btn-secondary btn-sm" id="events-edit-finance-calc-btn">Szervezői díj kalkulálása</button>
+                <output class="events-edit-finance-calc__result" id="events-edit-finance-calc-result" for="events-edit-finance-calc-btn" aria-live="polite">—</output>
+            </div>
+        </div>
     </div>
 </div>
 </div>

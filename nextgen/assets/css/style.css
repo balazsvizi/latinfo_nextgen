@@ -3709,9 +3709,53 @@ body.event-edit-cover-lightbox-open {
     border-left-color: #d97706;
     background: linear-gradient(135deg, #fffbeb 0%, #fff 60%);
 }
-.events-edit-panel--tone-finance {
-    border-left-color: #059669;
-    background: linear-gradient(135deg, #ecfdf5 0%, #fff 60%);
+.events-edit-cost-block__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.events-edit-cost-block__body .form-group {
+    margin-bottom: 0;
+}
+.events-edit-cost-block__payer {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 0.45rem 0.65rem;
+}
+.events-edit-cost-block__payer-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #78350f;
+    padding-top: 0.45rem;
+    white-space: nowrap;
+}
+.events-edit-cost-block__payer .wp-token-field {
+    margin: 0;
+    min-width: 0;
+}
+.events-edit-cost-block__payer .wp-token-field__help,
+.events-edit-cost-block__payer .wp-token-field__manage {
+    display: none;
+}
+.events-edit-cost-block__payer .wp-token-input__inner {
+    min-height: 2rem;
+    padding: 0.2rem 0.35rem;
+}
+.events-edit-cost-block__payer .wp-token-input__search {
+    font-size: 0.875rem;
+    min-width: 5rem;
+}
+.events-edit-cost-block__note {
+    width: 100%;
+    margin: 0;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    resize: vertical;
+    min-height: 2.5rem;
 }
 .events-edit-finance-grid {
     display: grid;
@@ -3729,25 +3773,34 @@ body.event-edit-cover-lightbox-open {
     font-size: 1rem;
 }
 .events-edit-finance-calc {
-    margin-top: 1rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid rgba(217, 119, 6, 0.2);
+    margin-top: 0.15rem;
+    padding-top: 0;
+    border-top: 0;
 }
 .events-edit-finance-calc__row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.65rem 1rem;
+    gap: 0.45rem 0.75rem;
 }
 .events-edit-finance-calc__result {
     font-weight: 600;
+    font-size: 0.875rem;
     color: #92400e;
-    min-height: 1.25rem;
+    min-height: 1.1rem;
 }
 .events-edit-cost-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem 1rem;
+    gap: 0.5rem 0.75rem;
+}
+.events-edit-cost-grid label {
+    font-size: 0.8125rem;
+    margin-bottom: 0.2rem;
+}
+.events-edit-cost-grid input {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.875rem;
 }
 .events-toggle {
     display: inline-flex;
