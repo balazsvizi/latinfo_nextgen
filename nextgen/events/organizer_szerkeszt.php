@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
+require_once __DIR__ . '/lib/organizer_finance.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -14,7 +15,8 @@ if ($id <= 0) {
 }
 
 $db = getDb();
-$stmt = $db->prepare('SELECT `id`, `name` FROM `events_organizers` WHERE `id` = ? LIMIT 1');
+events_organizer_finance_ensure_schema($db);
+$stmt = $db->prepare('SELECT `id`, `name`, `finance_ticket_percent`, `finance_fix_amount` FROM `events_organizers` WHERE `id` = ? LIMIT 1');
 $stmt->execute([$id]);
 $organizer = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$organizer) {
@@ -24,14 +26,26 @@ if (!$organizer) {
 
 $hiba = '';
 $name = (string) ($organizer['name'] ?? '');
+$financeTicketPercent = $organizer['finance_ticket_percent'] ?? null;
+$financeFixAmount = $organizer['finance_fix_amount'] ?? null;
+$financeTicketPercentForm = $financeTicketPercent !== null && $financeTicketPercent !== '' ? (string) (int) $financeTicketPercent : '';
+$financeFixAmountForm = $financeFixAmount !== null && $financeFixAmount !== '' ? (string) $financeFixAmount : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('organizer_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
         $name = trim((string) ($_POST['name'] ?? ''));
+        $financeTicketPercentForm = trim((string) ($_POST['finance_ticket_percent'] ?? ''));
+        $financeFixAmountForm = trim((string) ($_POST['finance_fix_amount'] ?? ''));
+        $financeParsed = events_organizer_finance_parse_from_post();
+        $financePercent = $financeParsed['percent'];
+        $financeFix = $financeParsed['fix_amount'];
+        $financeErr = $financeParsed['error'];
         if ($name === '') {
             $hiba = 'A név megadása kötelező.';
+        } elseif ($financeErr !== null) {
+            $hiba = $financeErr;
         } else {
             $dup = $db->prepare('SELECT `id` FROM `events_organizers` WHERE `name` = ? AND `id` <> ? LIMIT 1');
             $dup->execute([$name, $id]);
@@ -39,8 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hiba = 'Már létezik ilyen nevű szervező.';
             } else {
                 try {
-                    $upd = $db->prepare('UPDATE `events_organizers` SET `name` = ? WHERE `id` = ?');
-                    $upd->execute([$name, $id]);
+                    $upd = $db->prepare('
+                        UPDATE `events_organizers`
+                        SET `name` = ?, `finance_ticket_percent` = ?, `finance_fix_amount` = ?
+                        WHERE `id` = ?
+                    ');
+                    $upd->execute([$name, $financePercent, $financeFix, $id]);
                     rendszer_log('szervező', $id, 'Módosítva', $name);
                     flash('success', 'Mentve.');
                     redirect(events_url('organizer_szerkeszt.php?id=') . $id);
@@ -73,6 +91,38 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <label for="organizer_name">Név *</label>
             <input type="text" id="organizer_name" name="name" value="<?= h($name) ?>" required maxlength="500" autofocus>
         </div>
+        <fieldset class="events-edit-panel events-edit-panel--tone-finance organizer-finance-fieldset">
+            <legend class="events-edit-panel__title">Finance</legend>
+            <div class="form-row events-edit-finance-grid">
+                <div class="form-group">
+                    <label for="finance_ticket_percent">Belépőjegy %</label>
+                    <input
+                        type="number"
+                        id="finance_ticket_percent"
+                        name="finance_ticket_percent"
+                        min="1"
+                        max="100"
+                        step="1"
+                        value="<?= h($financeTicketPercentForm) ?>"
+                        placeholder="1–100"
+                    >
+                    <p class="help">Opcionális. A belépő átlagának százaléka eventenként.</p>
+                </div>
+                <div class="form-group">
+                    <label for="finance_fix_amount">Fix összeg eventenként (Ft)</label>
+                    <input
+                        type="number"
+                        id="finance_fix_amount"
+                        name="finance_fix_amount"
+                        min="0"
+                        step="1"
+                        value="<?= h($financeFixAmountForm) ?>"
+                        placeholder="0"
+                    >
+                    <p class="help">Szám típusú, opcionális. Ha meg van adva, elsőbbséget élvez a százalékkal szemben.</p>
+                </div>
+            </div>
+        </fieldset>
         <p class="toolbar">
             <button type="submit" class="btn btn-primary">Mentés</button>
             <a href="<?= h($publicUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>

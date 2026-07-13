@@ -8,6 +8,7 @@ require_once __DIR__ . '/lib/event_log.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
 require_once __DIR__ . '/lib/event_delete.php';
 require_once __DIR__ . '/lib/admin_event_calendar.php';
+require_once __DIR__ . '/lib/organizer_finance.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -17,6 +18,7 @@ if ($id <= 0) {
 }
 
 $db = getDb();
+events_organizer_finance_ensure_schema($db);
 $stmt = $db->prepare('SELECT * FROM `events_calendar_events` WHERE id = ?');
 $stmt->execute([$id]);
 $event = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -26,6 +28,7 @@ if (!$event) {
 }
 
 $organizers = events_load_organizer_options($db);
+$organizerFinanceMap = events_load_organizer_finance_map($db);
 $categories = events_load_category_options($db);
 $venues = events_load_venue_options($db);
 $tags = events_load_tag_options($db);
@@ -38,6 +41,9 @@ $event['supplementary_style_ids'] = events_load_event_supplementary_style_ids($d
 
 $hiba = '';
 $e = events_row_for_form($event);
+if ($e['finance_payer_organizer_ids'] === [] && $e['organizer_ids'] !== []) {
+    $e['finance_payer_organizer_ids'] = array_slice($e['organizer_ids'], 0, 2);
+}
 $eventFormShowPermanentDelete = (string) ($event['event_status'] ?? '') === 'trash';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -64,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $e['tag_ids'] = $tagIds;
         $e['main_style_ids'] = $mainStyleIds;
         $e['supplementary_style_ids'] = $supplementaryStyleIds;
+        $e['finance_payer_organizer_ids'] = $row['finance_payer_organizer_ids'] ?? events_finance_payer_organizer_ids_from_post();
     } else {
         try {
             $db->beginTransaction();
@@ -72,7 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     event_name = ?, event_slug = ?, event_content = ?, event_status = ?,
                     event_start = ?, event_end = ?, event_allday = ?,
                     event_change_active = ?, event_change_type = ?, event_change_note = ?,
-                    event_cost_from = ?, event_cost_to = ?, event_url = ?, event_featured_image_url = ?, event_latinfohu_partner = ?,
+                    event_cost_from = ?, event_cost_to = ?, finance_payer_organizer_id = ?, finance_note = ?,
+                    event_url = ?, event_featured_image_url = ?, event_latinfohu_partner = ?,
                     venue_id = ?
                 WHERE id = ?
             ');
@@ -89,6 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_change_note'],
                 $row['event_cost_from'],
                 $row['event_cost_to'],
+                $row['finance_payer_organizer_id'],
+                $row['finance_note'],
                 $row['event_url'],
                 $row['event_featured_image_url'],
                 $row['event_latinfohu_partner'],
@@ -121,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $e['tag_ids'] = $tagIds;
             $e['main_style_ids'] = $mainStyleIds;
             $e['supplementary_style_ids'] = $supplementaryStyleIds;
+            $e['finance_payer_organizer_ids'] = $row['finance_payer_organizer_ids'] ?? [];
         }
     }
     }

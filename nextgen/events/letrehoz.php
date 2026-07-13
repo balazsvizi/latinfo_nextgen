@@ -5,10 +5,13 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/event_log.php';
+require_once __DIR__ . '/lib/organizer_finance.php';
 requireLogin();
 
 $db = getDb();
+events_organizer_finance_ensure_schema($db);
 $organizers = events_load_organizer_options($db);
+$organizerFinanceMap = events_load_organizer_finance_map($db);
 $categories = events_load_category_options($db);
 $venues = events_load_venue_options($db);
 $tags = events_load_tag_options($db);
@@ -33,6 +36,8 @@ $defaults = [
     'main_style_ids' => [],
     'supplementary_style_ids' => [],
     'venue_id' => null,
+    'finance_payer_organizer_id' => null,
+    'finance_note' => null,
 ];
 
 $hiba = '';
@@ -79,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $e['tag_ids'] = $tagIds;
         $e['main_style_ids'] = $mainStyleIds;
         $e['supplementary_style_ids'] = $supplementaryStyleIds;
+        $e['finance_payer_organizer_ids'] = $row['finance_payer_organizer_ids'] ?? events_finance_payer_organizer_ids_from_post();
     } else {
         try {
             $db->beginTransaction();
@@ -87,9 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     event_name, event_slug, event_content, event_status,
                     event_start, event_end, event_allday,
                     event_change_active, event_change_type, event_change_note,
-                    event_cost_from, event_cost_to, event_url, event_featured_image_url, event_latinfohu_partner,
+                    event_cost_from, event_cost_to, finance_payer_organizer_id, finance_note,
+                    event_url, event_featured_image_url, event_latinfohu_partner,
                     venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
@@ -104,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_change_note'],
                 $row['event_cost_from'],
                 $row['event_cost_to'],
+                $row['finance_payer_organizer_id'],
+                $row['finance_note'],
                 $row['event_url'],
                 $row['event_featured_image_url'],
                 $row['event_latinfohu_partner'],
@@ -139,6 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $e['tag_ids'] = $tagIds;
             $e['main_style_ids'] = $mainStyleIds;
             $e['supplementary_style_ids'] = $supplementaryStyleIds;
+            $e['finance_payer_organizer_ids'] = $row['finance_payer_organizer_ids'] ?? [];
         }
     }
     }

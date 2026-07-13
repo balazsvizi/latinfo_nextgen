@@ -3709,6 +3709,41 @@ body.event-edit-cover-lightbox-open {
     border-left-color: #d97706;
     background: linear-gradient(135deg, #fffbeb 0%, #fff 60%);
 }
+.events-edit-panel--tone-finance {
+    border-left-color: #059669;
+    background: linear-gradient(135deg, #ecfdf5 0%, #fff 60%);
+}
+.events-edit-finance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1rem;
+}
+.organizer-finance-fieldset {
+    margin: 1.25rem 0 0;
+    padding: 1rem 1.1rem 0.25rem;
+    border: 0;
+}
+.organizer-finance-fieldset .events-edit-panel__title {
+    margin: 0 0 0.75rem;
+    padding: 0;
+    font-size: 1rem;
+}
+.events-edit-finance-calc {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(217, 119, 6, 0.2);
+}
+.events-edit-finance-calc__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+}
+.events-edit-finance-calc__result {
+    font-weight: 600;
+    color: #92400e;
+    min-height: 1.25rem;
+}
 .events-edit-cost-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

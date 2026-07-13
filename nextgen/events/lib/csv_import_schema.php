@@ -24,6 +24,8 @@ function events_csv_import_schema(): array {
                 'event_allday' => ['type' => 'bool', 'nullable' => false],
                 'event_cost_from' => ['type' => 'decimal', 'nullable' => true],
                 'event_cost_to' => ['type' => 'decimal', 'nullable' => true],
+                'finance_payer_organizer_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Ki fizeti (events_organizers.id)'],
+                'finance_note' => ['type' => 'text', 'nullable' => true, 'note' => 'Belső finance megjegyzés'],
                 'event_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
                 'event_featured_image_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true, 'note' => 'Kiemelt kép (https vagy /útvonal)'],
                 'event_latinfohu_partner' => ['type' => 'bool', 'nullable' => false],
@@ -60,6 +62,8 @@ function events_csv_import_schema(): array {
             'columns' => [
                 'id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Üres = auto ID (≥200000). Kitöltve: max 100000, upsert.'],
                 'name' => ['type' => 'string', 'max' => 255, 'nullable' => false],
+                'finance_ticket_percent' => ['type' => 'uint', 'nullable' => true, 'note' => 'Belépőjegy % (1–100), opcionális'],
+                'finance_fix_amount' => ['type' => 'decimal', 'nullable' => true, 'note' => 'Fix összeg eventenként (Ft)'],
             ],
         ],
         'events_venues' => [

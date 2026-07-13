@@ -24,9 +24,18 @@ if (!isset($styles) || !is_array($styles)) {
 if (!isset($db) || !($db instanceof PDO)) {
     $db = getDb();
 }
+if (!function_exists('events_load_organizer_finance_map')) {
+    require_once __DIR__ . '/../lib/organizer_finance.php';
+}
+if (!isset($organizerFinanceMap) || !is_array($organizerFinanceMap)) {
+    $organizerFinanceMap = events_load_organizer_finance_map($db);
+}
 $tagsAllowCreate = events_tags_tables_available($db);
 $stylesAllowCreate = events_styles_tables_available($db);
 $selOrg = isset($e['organizer_ids']) && is_array($e['organizer_ids']) ? array_values(array_unique(array_map('intval', $e['organizer_ids']))) : [];
+$selFinancePayer = isset($e['finance_payer_organizer_ids']) && is_array($e['finance_payer_organizer_ids'])
+    ? array_values(array_unique(array_map('intval', $e['finance_payer_organizer_ids'])))
+    : [];
 $selCat = isset($e['category_ids']) && is_array($e['category_ids']) ? array_values(array_unique(array_map('intval', $e['category_ids']))) : [];
 $selTag = isset($e['tag_ids']) && is_array($e['tag_ids']) ? array_values(array_unique(array_map('intval', $e['tag_ids']))) : [];
 $selMainStyle = isset($e['main_style_ids']) && is_array($e['main_style_ids']) ? array_values(array_unique(array_map('intval', $e['main_style_ids']))) : [];
@@ -69,6 +78,20 @@ $canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
     && trim((string) ($e['event_slug'] ?? '')) !== '';
 $eventFormAutoSlug = !empty($eventFormAutoSlug);
 $eventSlugRefreshTitle = 'Slug frissítése (név + kezdő dátum), vágólapra másolva';
+$organizerFinanceForJs = [];
+foreach ($organizers as $oid => $onev) {
+    $oidInt = (int) $oid;
+    $fin = $organizerFinanceMap[$oidInt] ?? ['finance_ticket_percent' => null, 'finance_fix_amount' => null];
+    $organizerFinanceForJs[$oidInt] = [
+        'name' => (string) $onev,
+        'finance_ticket_percent' => $fin['finance_ticket_percent'] ?? null,
+        'finance_fix_amount' => $fin['finance_fix_amount'] ?? null,
+    ];
+}
+$organizerFinanceJson = json_encode($organizerFinanceForJs, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+if ($organizerFinanceJson === false) {
+    $organizerFinanceJson = '{}';
+}
 ?>
 <div class="events-edit-layout">
 <div class="events-edit-main">
@@ -199,6 +222,42 @@ require __DIR__ . '/wp_token_field.php';
             <label for="event_cost_to">Belépő (ig)</label>
             <input type="number" id="event_cost_to" name="event_cost_to" step="0.01" min="0" value="<?= h($e['event_cost_to']) ?>" placeholder="0">
         </div>
+    </div>
+    <div class="events-edit-finance-calc" id="events-edit-finance-calc"
+         data-organizer-finance="<?= h($organizerFinanceJson) ?>">
+        <div class="events-edit-finance-calc__row">
+            <button type="button" class="btn btn-secondary btn-sm" id="events-edit-finance-calc-btn">Szervezői díj kalkulálása</button>
+            <output class="events-edit-finance-calc__result" id="events-edit-finance-calc-result" for="events-edit-finance-calc-btn" aria-live="polite">—</output>
+        </div>
+        <p class="help">A „Ki fizeti” szervező(ők) finance beállítása alapján: fix összeg, vagy belépő átlag × százalék.</p>
+    </div>
+</div>
+<div class="events-edit-panel events-edit-panel--tone-finance">
+    <h3 class="events-edit-panel__title">Finance</h3>
+    <div class="form-group">
+        <label>Ki fizeti</label>
+<?php
+$wpTokenId = 'event-finance-payer';
+$wpTokenLabel = '';
+$wpTokenFieldName = 'finance_payer_organizer_ids[]';
+$wpTokenPlaceholder = 'Szervező kiválasztása…';
+$wpTokenHelp = 'Az esemény szervezői közül választhatsz. Mentéskor legfeljebb egy szervező adható meg.';
+$wpTokenManageUrl = events_url('organizers.php');
+$wpTokenManageLabel = 'Szervezők kezelése';
+$wpTokenManageNewTab = true;
+$wpTokenAll = $orgPickerAll;
+$wpTokenSelected = $selFinancePayer;
+$wpTokenAllowCreate = false;
+$wpTokenEntityType = 'organizer';
+$wpTokenSingle = false;
+$wpTokenShowPopular = false;
+$wpTokenChipLinkPattern = events_url('organizer_szerkeszt.php?id={id}');
+require __DIR__ . '/wp_token_field.php';
+?>
+    </div>
+    <div class="form-group">
+        <label for="finance_note">Megjegyzés</label>
+        <textarea id="finance_note" name="finance_note" rows="3" maxlength="5000" placeholder="Belső finance megjegyzés…"><?= h((string) ($e['finance_note'] ?? '')) ?></textarea>
     </div>
 </div>
 </div>
@@ -862,4 +921,5 @@ require __DIR__ . '/wp_token_field.php';
 <?php require __DIR__ . '/event_allday_script.php'; ?>
 <?php require __DIR__ . '/event_change_script.php'; ?>
 <?php require __DIR__ . '/event_date_copy_script.php'; ?>
+<?php require __DIR__ . '/event_finance_calc_script.php'; ?>
 <?php require __DIR__ . '/event_form_validation_script.php'; ?>

@@ -8,6 +8,7 @@ require_once __DIR__ . '/html_security.php';
 require_once __DIR__ . '/style_request.php';
 require_once __DIR__ . '/tag_type.php';
 require_once __DIR__ . '/event_change.php';
+require_once __DIR__ . '/organizer_finance.php';
 
 /**
  * Űrlapról: kiemelt kép URL (üres = null), vagy hibaüzenet.
@@ -396,6 +397,8 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $ct = trim((string) ($_POST['event_cost_to'] ?? ''));
     $row['event_cost_from'] = $cf === '' ? null : (float) str_replace(',', '.', $cf);
     $row['event_cost_to'] = $ct === '' ? null : (float) str_replace(',', '.', $ct);
+    $financePayerIds = events_finance_payer_organizer_ids_from_post();
+    $row['finance_note'] = events_finance_normalize_note((string) ($_POST['finance_note'] ?? ''));
     $organizerIds = events_organizer_ids_from_post();
     $categoryIds = events_category_ids_from_post();
     $tagIds = events_tags_tables_available($db) ? events_tag_ids_from_post() : [];
@@ -466,6 +469,14 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
             return [$row, 'A kiválasztott kiegészítő stílusok között érvénytelen (nem létező) elem van.', $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
         }
     }
+
+    [$financePayerId, $financePayerErr] = events_finance_validate_payer_organizer_ids($db, $financePayerIds);
+    if ($financePayerErr !== null) {
+        return [$row, $financePayerErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+    $row['finance_payer_organizer_id'] = $financePayerId;
+    $row['finance_payer_organizer_ids'] = $financePayerIds;
+    $row['finance_note'] = $row['finance_note'] !== '' ? $row['finance_note'] : null;
 
     [$eventUrl, $eventUrlErr] = events_normalize_safe_url((string) ($_POST['event_url'] ?? ''), true);
     if ($eventUrlErr !== null) {
@@ -555,6 +566,8 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['event_change_note'] = null;
     $event['event_status'] = events_default_post_status();
     $event['event_url'] = null;
+    $event['finance_payer_organizer_id'] = null;
+    $event['finance_note'] = null;
 
     return $event;
 }
@@ -647,6 +660,19 @@ function events_row_for_form(array $row): array {
     $e['event_change_type'] = events_event_change_is_valid_type($changeType) ? $changeType : '';
     $e['event_change_note'] = isset($e['event_change_note']) && $e['event_change_note'] !== null
         ? (string) $e['event_change_note']
+        : '';
+    $payerId = isset($e['finance_payer_organizer_id']) && $e['finance_payer_organizer_id'] !== null && $e['finance_payer_organizer_id'] !== ''
+        ? (int) $e['finance_payer_organizer_id']
+        : 0;
+    if ($payerId > 0) {
+        $e['finance_payer_organizer_ids'] = [$payerId];
+    } elseif (isset($e['finance_payer_organizer_ids']) && is_array($e['finance_payer_organizer_ids'])) {
+        $e['finance_payer_organizer_ids'] = array_values(array_unique(array_map('intval', $e['finance_payer_organizer_ids'])));
+    } else {
+        $e['finance_payer_organizer_ids'] = [];
+    }
+    $e['finance_note'] = isset($e['finance_note']) && $e['finance_note'] !== null
+        ? (string) $e['finance_note']
         : '';
     $st = (string) ($e['event_status'] ?? '');
     if (!events_is_allowed_post_status($st)) {
