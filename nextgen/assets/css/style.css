@@ -3716,7 +3716,7 @@ body.event-edit-cover-lightbox-open {
 }
 .events-edit-cost-block__row {
     display: grid;
-    align-items: center;
+    align-items: stretch;
     gap: 0.35rem 0.5rem;
 }
 .events-edit-cost-block__row--ticket {
@@ -3726,39 +3726,53 @@ body.event-edit-cover-lightbox-open {
     grid-template-columns: auto minmax(5rem, 6.5rem) minmax(7rem, 1.15fr) minmax(6rem, 1.35fr);
 }
 .events-edit-cost-block__mini-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: #78350f;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--text-secondary);
     margin: 0;
     white-space: nowrap;
+    align-self: center;
 }
 .events-edit-cost-block__sep {
-    color: #b45309;
-    font-weight: 600;
+    color: var(--text-muted);
+    font-weight: 500;
     text-align: center;
+    align-self: center;
 }
 .events-edit-cost-block__input {
     width: 100%;
     min-width: 0;
     margin: 0;
-    padding: 0.35rem 0.5rem;
-    font-size: 0.875rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
+    padding: 0.65rem 0.875rem;
+    font-size: 1rem;
+    font-family: inherit;
+    line-height: 1.25;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.events-edit-cost-block__input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
 }
 .events-edit-cost-block__refresh {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
+    align-self: stretch;
+    width: auto;
+    min-width: calc(1rem + 1.3rem + 2px);
+    padding: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     background: #fff;
     color: #92400e;
     cursor: pointer;
     flex-shrink: 0;
+    box-sizing: border-box;
+    transition: border-color var(--transition), background-color var(--transition);
 }
 .events-edit-cost-block__refresh:hover {
     background: #fffbeb;
@@ -3770,6 +3784,14 @@ body.event-edit-cover-lightbox-open {
 }
 .events-edit-cost-block__payer-cell {
     min-width: 0;
+    display: flex;
+    align-items: stretch;
+}
+.events-edit-cost-block__payer-cell .wp-token-field,
+.events-edit-cost-block__payer-cell .wp-token-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
 }
 .events-edit-cost-block__payer-cell .wp-token-field {
     margin: 0;
@@ -3779,12 +3801,21 @@ body.event-edit-cover-lightbox-open {
     display: none;
 }
 .events-edit-cost-block__payer-cell .wp-token-input__inner {
-    min-height: 2rem;
-    padding: 0.15rem 0.3rem;
+    width: 100%;
+    min-height: calc(1rem + 1.3rem + 2px);
+    height: 100%;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-sm);
+    border-color: var(--border);
+    box-sizing: border-box;
+}
+.events-edit-cost-block__payer-cell .wp-token-input__inner:focus-within {
+    box-shadow: 0 0 0 3px var(--primary-light);
 }
 .events-edit-cost-block__payer-cell .wp-token-input__search {
-    font-size: 0.875rem;
+    font-size: 1rem;
     min-width: 4rem;
+    line-height: 1.25;
 }
 @media (max-width: 720px) {
     .events-edit-cost-block__row--ticket,
