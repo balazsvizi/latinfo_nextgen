@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     event_name = ?, event_slug = ?, event_content = ?, event_status = ?,
                     event_start = ?, event_end = ?, event_allday = ?,
                     event_change_active = ?, event_change_type = ?, event_change_note = ?,
-                    event_cost_from = ?, event_cost_to = ?, finance_payer_organizer_id = ?, finance_note = ?,
+                    event_cost_from = ?, event_cost_to = ?, finance_payer_organizer_id = ?, finance_note = ?, finance_organizer_fee = ?,
                     event_url = ?, event_featured_image_url = ?, event_latinfohu_partner = ?,
                     venue_id = ?
                 WHERE id = ?
@@ -99,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_cost_to'],
                 $row['finance_payer_organizer_id'],
                 $row['finance_note'],
+                $row['finance_organizer_fee'],
                 $row['event_url'],
                 $row['event_featured_image_url'],
                 $row['event_latinfohu_partner'],

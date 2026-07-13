@@ -2,10 +2,10 @@
 (function () {
     var calcRoot = document.getElementById('events-edit-finance-calc');
     var btn = document.getElementById('events-edit-finance-calc-btn');
-    var result = document.getElementById('events-edit-finance-calc-result');
+    var feeInput = document.getElementById('finance_organizer_fee');
     var costFrom = document.getElementById('event_cost_from');
     var costTo = document.getElementById('event_cost_to');
-    if (!calcRoot || !btn || !result) {
+    if (!calcRoot || !btn || !feeInput) {
         return;
     }
 
@@ -53,75 +53,55 @@
 
     function calculateFee(fixAmount, percent, from, to) {
         if (fixAmount !== null && fixAmount > 0) {
-            return { fee: Math.round(fixAmount * 100) / 100, percentUsed: null };
+            return Math.round(fixAmount * 100) / 100;
         }
         var f = from !== null ? from : 0;
         var t = to !== null ? to : f;
         if (f <= 0 && t <= 0) {
-            return { fee: null, percentUsed: null };
+            return null;
         }
         var effectivePercent = (percent !== null && percent >= 1 && percent <= 500) ? percent : 200;
-        return {
-            fee: Math.round(((f + t) / 2) * effectivePercent / 100 * 100) / 100,
-            percentUsed: effectivePercent
-        };
+        return Math.round(((f + t) / 2) * effectivePercent / 100 * 100) / 100;
     }
 
-    function formatFt(amount) {
-        try {
-            return new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 2 }).format(amount) + ' Ft';
-        } catch (e1) {
-            return String(amount) + ' Ft';
+    function feeForOrganizer(orgId, from, to) {
+        var meta = financeMap[String(orgId)] || financeMap[orgId] || {};
+        var fixAmt = meta.finance_fix_amount !== null && meta.finance_fix_amount !== undefined && meta.finance_fix_amount !== ''
+            ? parseFloat(meta.finance_fix_amount)
+            : null;
+        var pct = meta.finance_ticket_percent !== null && meta.finance_ticket_percent !== undefined && meta.finance_ticket_percent !== ''
+            ? parseInt(meta.finance_ticket_percent, 10)
+            : null;
+        if (fixAmt !== null && isNaN(fixAmt)) {
+            fixAmt = null;
         }
+        if (pct !== null && isNaN(pct)) {
+            pct = null;
+        }
+        return calculateFee(fixAmt, pct, from, to);
     }
 
     btn.addEventListener('click', function () {
         var payerIds = getOrganizerIdsFromToken('event-finance-payer');
         var eventOrgIds = getOrganizerIdsFromToken('event-organizers');
-        var targetIds = payerIds.length > 0 ? payerIds : eventOrgIds;
+        var targetId = payerIds.length > 0 ? payerIds[0] : (eventOrgIds.length > 0 ? eventOrgIds[0] : 0);
 
-        if (targetIds.length === 0) {
-            result.textContent = 'Nincs szervező kiválasztva.';
+        if (targetId <= 0) {
+            btn.title = 'Nincs szervező kiválasztva.';
             return;
-        }
-        if (payerIds.length > 1) {
-            result.textContent = 'A „Ki fizeti” mezőben több szervező van — mentéskor hiba keletkezik. A kalkuláció az összes kijelöltre vonatkozik.';
         }
 
         var from = parseCostInput(costFrom);
         var to = parseCostInput(costTo);
-        var lines = [];
-
-        targetIds.forEach(function (orgId) {
-            var meta = financeMap[String(orgId)] || financeMap[orgId] || {};
-            var name = meta.name || ('Szervező #' + orgId);
-            var fixAmt = meta.finance_fix_amount !== null && meta.finance_fix_amount !== undefined && meta.finance_fix_amount !== ''
-                ? parseFloat(meta.finance_fix_amount)
-                : null;
-            var pct = meta.finance_ticket_percent !== null && meta.finance_ticket_percent !== undefined && meta.finance_ticket_percent !== ''
-                ? parseInt(meta.finance_ticket_percent, 10)
-                : null;
-            if (fixAmt !== null && isNaN(fixAmt)) {
-                fixAmt = null;
-            }
-            if (pct !== null && isNaN(pct)) {
-                pct = null;
-            }
-            var calc = calculateFee(fixAmt, pct, from, to);
-            if (calc.fee === null) {
-                lines.push(name + ': nincs belépő megadva');
-            } else if (calc.percentUsed !== null && (pct === null || isNaN(pct))) {
-                lines.push(name + ': ' + formatFt(calc.fee) + ' (' + calc.percentUsed + '%)');
-            } else {
-                lines.push(name + ': ' + formatFt(calc.fee));
-            }
-        });
-
-        if (payerIds.length <= 1) {
-            result.textContent = lines.join(' · ');
-        } else {
-            result.textContent = lines.join(' · ');
+        var fee = feeForOrganizer(targetId, from, to);
+        if (fee === null) {
+            btn.title = 'Nincs belépő megadva a kalkulációhoz.';
+            return;
         }
+
+        feeInput.value = String(fee);
+        btn.title = 'Szervezői díj kalkulálása';
+        feeInput.dispatchEvent(new Event('input', { bubbles: true }));
     });
 })();
 </script>

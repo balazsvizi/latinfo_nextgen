@@ -37,6 +37,10 @@ function events_organizer_finance_ensure_schema(PDO $db): bool
         if ($stmt->fetch() === false) {
             $db->exec('ALTER TABLE `events_calendar_events` ADD COLUMN `finance_note` TEXT NULL DEFAULT NULL AFTER `finance_payer_organizer_id`');
         }
+        $stmt = $db->query("SHOW COLUMNS FROM `events_calendar_events` LIKE 'finance_organizer_fee'");
+        if ($stmt->fetch() === false) {
+            $db->exec('ALTER TABLE `events_calendar_events` ADD COLUMN `finance_organizer_fee` DECIMAL(12,2) NULL DEFAULT NULL AFTER `finance_note`');
+        }
 
         return true;
     } catch (Throwable $ex) {
@@ -109,6 +113,27 @@ function events_finance_normalize_note(string $raw): string
     }
 
     return $note;
+}
+
+/**
+ * @return array{0: ?float, 1: ?string}
+ */
+function events_finance_parse_organizer_fee_from_post(): array
+{
+    $raw = trim((string) ($_POST['finance_organizer_fee'] ?? ''));
+    if ($raw === '') {
+        return [null, null];
+    }
+    $norm = str_replace([' ', ','], ['', '.'], $raw);
+    if (!is_numeric($norm)) {
+        return [null, 'A szervezői díj csak szám lehet.'];
+    }
+    $fee = round((float) $norm, 2);
+    if ($fee < 0) {
+        return [null, 'A szervezői díj nem lehet negatív.'];
+    }
+
+    return [$fee, null];
 }
 
 /**

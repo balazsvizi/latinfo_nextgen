@@ -404,6 +404,11 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
     $tagIds = events_tags_tables_available($db) ? events_tag_ids_from_post() : [];
     $mainStyleIds = events_styles_tables_available($db) ? events_main_style_ids_from_post() : [];
     $supplementaryStyleIds = events_styles_tables_available($db) ? events_supplementary_style_ids_from_post() : [];
+    [$financeOrganizerFee, $financeFeeErr] = events_finance_parse_organizer_fee_from_post();
+    if ($financeFeeErr !== null) {
+        return [$row, $financeFeeErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+    $row['finance_organizer_fee'] = $financeOrganizerFee;
 
     if ($changeActive) {
         if (!events_event_change_is_valid_type($changeType)) {
@@ -568,6 +573,7 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['event_url'] = null;
     $event['finance_payer_organizer_id'] = null;
     $event['finance_note'] = null;
+    $event['finance_organizer_fee'] = null;
 
     return $event;
 }
@@ -609,7 +615,7 @@ function events_row_for_form(array $row): array {
             $e[$tk] = substr($e[$tk], 0, 5);
         }
     }
-    foreach (['event_cost_from', 'event_cost_to'] as $k) {
+    foreach (['event_cost_from', 'event_cost_to', 'finance_organizer_fee'] as $k) {
         if ($e[$k] === null) {
             $e[$k] = '';
         } else {

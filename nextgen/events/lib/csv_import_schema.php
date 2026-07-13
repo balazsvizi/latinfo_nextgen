@@ -26,6 +26,7 @@ function events_csv_import_schema(): array {
                 'event_cost_to' => ['type' => 'decimal', 'nullable' => true],
                 'finance_payer_organizer_id' => ['type' => 'uint', 'nullable' => true, 'note' => 'Ki fizeti (events_organizers.id)'],
                 'finance_note' => ['type' => 'text', 'nullable' => true, 'note' => 'Belső finance megjegyzés'],
+                'finance_organizer_fee' => ['type' => 'decimal', 'nullable' => true, 'note' => 'Szervezői díj (Ft), szerkeszthető'],
                 'event_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
                 'event_featured_image_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true, 'note' => 'Kiemelt kép (https vagy /útvonal)'],
                 'event_latinfohu_partner' => ['type' => 'bool', 'nullable' => false],
