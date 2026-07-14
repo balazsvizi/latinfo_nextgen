@@ -8,9 +8,11 @@ declare(strict_types=1);
  * @var string $homeCalViewUrl
  * @var string $homeListViewUrl
  * @var string $homeMapViewUrl
+ * @var bool $showMapView
  * @var array<string, string> $D
  */
 $homeStandalone = $homeStandalone ?? false;
+$showMapView = $showMapView ?? (function_exists('isLoggedIn') && isLoggedIn());
 $switchClass = 'events-cal-view-switch' . ($homeStandalone ? ' events-cal-view-switch--standalone' : '');
 $calLabel = (string) ($D['view_cal'] ?? 'Naptár');
 $listLabel = (string) ($D['view_list'] ?? 'Lista');
@@ -28,9 +30,11 @@ $aria = (string) ($D['view_switch_aria'] ?? 'Nézet választó');
     <?php else: ?>
         <a class="events-cal-view-switch__item" href="<?= h($homeListViewUrl) ?>"><?= h($listLabel) ?></a>
     <?php endif; ?>
-    <?php if ($homeActiveView === 'map'): ?>
-        <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h($mapLabel) ?></span>
-    <?php else: ?>
-        <a class="events-cal-view-switch__item" href="<?= h($homeMapViewUrl) ?>"><?= h($mapLabel) ?></a>
+    <?php if ($showMapView): ?>
+        <?php if ($homeActiveView === 'map'): ?>
+            <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h($mapLabel) ?></span>
+        <?php else: ?>
+            <a class="events-cal-view-switch__item" href="<?= h($homeMapViewUrl) ?>"><?= h($mapLabel) ?></a>
+        <?php endif; ?>
     <?php endif; ?>
 </nav>

@@ -5,15 +5,29 @@ require_once __DIR__ . '/admin_event_filters.php';
 require_once __DIR__ . '/event_status.php';
 
 /**
+ * Térkép nézet csak bejelentkezett adminnak (nyilvános főoldal).
+ */
+function events_public_map_view_allowed(): bool
+{
+    return function_exists('isLoggedIn') && isLoggedIn();
+}
+
+/**
  * Publikus főoldal nézet: naptár, lista vagy térkép.
  */
 function events_public_resolve_home_view(string $raw): string
 {
-    return match ($raw) {
+    $view = match ($raw) {
         'list' => 'list',
         'map' => 'map',
         default => 'cal',
     };
+
+    if ($view === 'map' && !events_public_map_view_allowed()) {
+        return 'cal';
+    }
+
+    return $view;
 }
 
 /**

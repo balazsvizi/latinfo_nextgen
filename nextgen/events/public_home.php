@@ -26,6 +26,15 @@ $filtersActive = events_public_filters_are_active($filters);
 $view = (string) ($filters['view'] ?? 'cal');
 
 [$monthFirst, $monthLast, $monthKey] = events_admin_calendar_resolve_month((string) ($_GET['month'] ?? ''));
+
+if (
+    isset($_GET['view'])
+    && (string) $_GET['view'] === 'map'
+    && $view !== 'map'
+) {
+    $redirectParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
+    events_public_redirect_to(events_public_home_url($lang, $redirectParams), 302);
+}
 $prevMonthKey = $monthFirst->modify('-1 month')->format('Y-m');
 $nextMonthKey = $monthFirst->modify('+1 month')->format('Y-m');
 $monthLabel = events_public_calendar_month_label($monthFirst, $lang);
@@ -175,6 +184,7 @@ header('Content-Type: text/html; charset=UTF-8');
             $homeCalViewUrl = $calViewUrl;
             $homeListViewUrl = $listViewUrl;
             $homeMapViewUrl = $mapViewUrl;
+            $showMapView = isLoggedIn();
             ?>
 
             <?php if ($view === 'cal'): ?>
