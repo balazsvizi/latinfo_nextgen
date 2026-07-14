@@ -16,16 +16,11 @@ if (!in_array($tipus, ['', 'visszajelzes', 'ertesites'], true)) {
     $tipus = '';
 }
 
-$where_sql = '';
+$where_sql = landing_feedback_where_tipus($tipus);
 $params = [];
-if ($tipus === 'visszajelzes') {
-    $where_sql = 'WHERE (email IS NULL OR email = \'\')';
-} elseif ($tipus === 'ertesites') {
-    $where_sql = 'WHERE email IS NOT NULL AND email != \'\'';
-}
 
 $stmt = $db->prepare("
-    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent, létrehozva
+    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, ip, user_agent, létrehozva
     FROM nextgen_landing_feedback
     $where_sql
     ORDER BY létrehozva DESC
@@ -34,10 +29,7 @@ $stmt->execute($params);
 $sorok = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 function landing_export_tipus_cimke(array $r): string {
-    if (isset($r['email']) && trim((string) $r['email']) !== '') {
-        return 'Értesítés (e-mail)';
-    }
-    return 'Visszajelzés';
+    return landing_feedback_tipus_cimke($r);
 }
 
 function landing_export_xml_cell(string $value): string {
@@ -65,7 +57,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
 <Table>
 <Row>
 <?php
-$headers = ['ID', 'Időbélyeg', 'Típus', 'Ilyen legyen', 'Ilyen ne legyen', 'E-mail (értesítés)', 'IP', 'User-Agent'];
+$headers = ['ID', 'Időbélyeg', 'Típus', 'Ilyen legyen', 'Ilyen ne legyen', 'Név', 'E-mail', 'Telefon', 'IP', 'User-Agent'];
 foreach ($headers as $h) {
     echo landing_export_xml_cell($h);
 }
@@ -78,7 +70,9 @@ foreach ($sorok as $r) {
     echo landing_export_xml_cell(landing_export_tipus_cimke($r));
     echo landing_export_xml_cell((string) ($r['ilyen_legyen'] ?? ''));
     echo landing_export_xml_cell((string) ($r['ilyen_ne_legyen'] ?? ''));
+    echo landing_export_xml_cell((string) ($r['nev'] ?? ''));
     echo landing_export_xml_cell((string) ($r['email'] ?? ''));
+    echo landing_export_xml_cell((string) ($r['telefon'] ?? ''));
     echo landing_export_xml_cell((string) ($r['ip'] ?? ''));
     echo landing_export_xml_cell((string) ($r['user_agent'] ?? ''));
     echo "</Row>\n";

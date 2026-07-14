@@ -31,14 +31,23 @@ ensure_landingpage_table($db);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) {
     $ilyen = trim($_POST['ilyen_legyen'] ?? '');
     $ne = trim($_POST['ilyen_ne_legyen'] ?? '');
+    $nev = trim($_POST['nev'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $telefon = trim($_POST['telefon'] ?? '');
+
     if ($ilyen === '' && $ne === '') {
         $hiba_feedback = 'Írd meg legalább röviden, hogyan tetszik a megújult naptár, vagy mit javítanál.';
+    } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $hiba_feedback = 'Érvénytelen e-mail cím.';
     } else {
         [$ip, $ua] = landing_client_meta();
-        $stmt = $db->prepare('INSERT INTO nextgen_landing_feedback (ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent) VALUES (?, ?, NULL, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO nextgen_landing_feedback (ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([
             $ilyen !== '' ? $ilyen : null,
             $ne !== '' ? $ne : null,
+            $email !== '' ? $email : null,
+            $nev !== '' ? $nev : null,
+            $telefon !== '' ? $telefon : null,
             $ip,
             $ua,
         ]);
@@ -185,6 +194,16 @@ $heroImagePath = site_url('lanueva/assets/images/og/lanueva-naptar.png');
                 <input type="hidden" name="landing_feedback" value="1">
                 <textarea name="ilyen_legyen" placeholder="Mi tetszik? Pl. kinézet, szűrés, mobilnézet…" rows="4"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
                 <textarea name="ilyen_ne_legyen" placeholder="Mit javítanál? Pl. hiányzó funkció, zavaró részlet…" rows="4"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
+
+                <div class="ln-form-contact">
+                    <p class="ln-form-contact-lead">Segítenél további kérdések megválaszolásával? Add meg az elérhetőségedet és felvesszük veled a kapcsolatot!</p>
+                    <div class="ln-form-contact-fields">
+                        <input type="text" name="nev" maxlength="255" placeholder="Név" value="<?= h($_POST['nev'] ?? '') ?>" autocomplete="name">
+                        <input type="email" name="email" maxlength="255" placeholder="E-mail" value="<?= h($_POST['email'] ?? '') ?>" autocomplete="email">
+                        <input type="tel" name="telefon" maxlength="50" placeholder="Telefon" value="<?= h($_POST['telefon'] ?? '') ?>" autocomplete="tel">
+                    </div>
+                </div>
+
                 <button type="submit" class="ln-btn ln-btn-primary">Elküldöm a visszajelzést</button>
             </form>
         </article>

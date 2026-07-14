@@ -292,7 +292,10 @@ body.ln-modern {
     gap: 1rem;
 }
 
-.ln-form textarea {
+.ln-form textarea,
+.ln-form input[type="text"],
+.ln-form input[type="email"],
+.ln-form input[type="tel"] {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
@@ -301,16 +304,47 @@ body.ln-modern {
     font-size: 1rem;
     font-family: "Space Grotesk", sans-serif;
     transition: border-color 0.3s, box-shadow 0.3s;
+    width: 100%;
 }
 
-.ln-form textarea::placeholder {
+.ln-form textarea::placeholder,
+.ln-form input[type="text"]::placeholder,
+.ln-form input[type="email"]::placeholder,
+.ln-form input[type="tel"]::placeholder {
     color: rgba(255, 255, 255, 0.4);
 }
 
-.ln-form textarea:focus {
+.ln-form textarea:focus,
+.ln-form input[type="text"]:focus,
+.ln-form input[type="email"]:focus,
+.ln-form input[type="tel"]:focus {
     outline: none;
     border-color: var(--ln-cyan);
     box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+}
+
+.ln-form-contact {
+    margin-top: 0.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ln-form-contact-lead {
+    margin-bottom: 1rem;
+    color: var(--ln-text-dim);
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.ln-form-contact-fields {
+    display: grid;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .ln-form-contact-fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 .ln-btn {

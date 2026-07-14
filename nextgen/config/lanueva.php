@@ -15,24 +15,20 @@ $oldal = max(1, (int) ($_GET['oldal'] ?? 1));
 $per_page = 50;
 $offset = ($oldal - 1) * $per_page;
 
-$where_sql = '';
-$params = [];
-if ($tipus === 'visszajelzes') {
-    $where_sql = 'WHERE (email IS NULL OR email = \'\')';
-} elseif ($tipus === 'ertesites') {
-    $where_sql = 'WHERE email IS NOT NULL AND email != \'\'';
-}
+$where_sql = landing_feedback_where_tipus($tipus);
 
 $order = 'létrehozva';
 $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
 $dir = $dir_param === 'desc' ? 'DESC' : 'ASC';
+
+$params = [];
 
 $count_stmt = $db->prepare("SELECT COUNT(*) FROM nextgen_landing_feedback $where_sql");
 $count_stmt->execute($params);
 $total = (int) $count_stmt->fetchColumn();
 
 $stmt = $db->prepare("
-    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, ip, user_agent, létrehozva
+    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, ip, user_agent, létrehozva
     FROM nextgen_landing_feedback
     $where_sql
     ORDER BY $order $dir
@@ -54,10 +50,13 @@ $export_query = http_build_query(array_filter([
 $export_href = nextgen_url('config/lanueva_export.php') . ($export_query !== '' ? '?' . $export_query : '');
 
 function landing_lista_tipus(array $r): string {
-    if (isset($r['email']) && trim((string) $r['email']) !== '') {
-        return 'Értesítés (e-mail)';
-    }
-    return 'Visszajelzés';
+    return landing_feedback_tipus_cimke($r);
+}
+
+function landing_lista_has_contact(array $r): bool {
+    return trim((string) ($r['nev'] ?? '')) !== ''
+        || trim((string) ($r['email'] ?? '')) !== ''
+        || trim((string) ($r['telefon'] ?? '')) !== '';
 }
 
 function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
@@ -113,7 +112,7 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
                     <td class="landing-ts"><?= h($r['létrehozva']) ?></td>
                     <td><?= h(landing_lista_tipus($r)) ?></td>
                     <td class="landing-tartalom">
-                        <?php if (trim((string) ($r['email'] ?? '')) !== ''): ?>
+                        <?php if (landing_feedback_is_ertesites($r)): ?>
                             <strong>E-mail:</strong> <?= h($r['email']) ?>
                         <?php else: ?>
                             <?php if (trim((string) ($r['ilyen_legyen'] ?? '')) !== ''): ?>
@@ -122,7 +121,21 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
                             <?php if (trim((string) ($r['ilyen_ne_legyen'] ?? '')) !== ''): ?>
                                 <div class="landing-blob"><strong>Ilyen ne legyen:</strong> <?= nl2br(h($r['ilyen_ne_legyen'])) ?></div>
                             <?php endif; ?>
-                            <?php if (trim((string) ($r['ilyen_legyen'] ?? '')) === '' && trim((string) ($r['ilyen_ne_legyen'] ?? '')) === ''): ?>
+                            <?php if (landing_lista_has_contact($r)): ?>
+                                <div class="landing-blob">
+                                    <strong>Elérhetőség:</strong>
+                                    <?php if (trim((string) ($r['nev'] ?? '')) !== ''): ?>
+                                        <div>Név: <?= h($r['nev']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if (trim((string) ($r['email'] ?? '')) !== ''): ?>
+                                        <div>E-mail: <?= h($r['email']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if (trim((string) ($r['telefon'] ?? '')) !== ''): ?>
+                                        <div>Telefon: <?= h($r['telefon']) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!landing_feedback_has_text($r) && !landing_lista_has_contact($r)): ?>
                                 <span class="text-muted">(üres)</span>
                             <?php endif; ?>
                         <?php endif; ?>
