@@ -142,7 +142,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th><?= sort_th('Szervező', 'organizer', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= sort_th('Belépő tól', 'cost_from', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= sort_th('Belépő ig', 'cost_to', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num"><?= sort_th('Szervezői díj', 'fee', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num">
+                            <?= sort_th('Szervezői díj', 'fee', $order, $dir_param, $get_params) ?>
+                            <span class="events-finance-th-sub">
+                                <?= sort_th('Katt', 'views', $order, $dir_param, $get_params) ?>
+                                ·
+                                <?= sort_th('Katt/Ft', 'views_per_fee', $order, $dir_param, $get_params) ?>
+                            </span>
+                        </th>
                         <th><?= sort_th('Ki fizeti', 'payer', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Megjegyzés', 'note', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
@@ -165,6 +172,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $eid = (int) ($r['id'] ?? 0);
                             $editUrl = $editBase . $eid;
                             $feeRaw = $r['finance_organizer_fee'] ?? null;
+                            $views = (int) ($r['megtekintesek'] ?? 0);
+                            $viewsPerFee = $r['views_per_fee'] ?? null;
                             ?>
                             <tr>
                                 <td><?= $eid ?></td>
@@ -177,7 +186,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td><?= h((string) ($r['organizer_name'] ?? '') !== '' ? (string) $r['organizer_name'] : '—') ?></td>
                                 <td class="td-num"><?= h(events_finance_format_money($r['event_cost_from'] ?? null)) ?></td>
                                 <td class="td-num"><?= h(events_finance_format_money($r['event_cost_to'] ?? null)) ?></td>
-                                <td class="td-num"><?= h(events_finance_format_money($feeRaw)) ?></td>
+                                <td class="td-num events-finance-fee-cell">
+                                    <div class="events-finance-fee-cell__main"><?= h(events_finance_format_money($feeRaw)) ?></div>
+                                    <div class="events-finance-fee-cell__sub"><?= (int) $views ?> katt</div>
+                                    <div class="events-finance-fee-cell__sub"><?= h(events_finance_format_views_per_fee($viewsPerFee !== null && $viewsPerFee !== '' ? (float) $viewsPerFee : null)) ?></div>
+                                </td>
                                 <td><?= h((string) ($r['payer_name'] ?? '') !== '' ? (string) $r['payer_name'] : '—') ?></td>
                                 <td class="events-finance-note-cell"><?= h(trim((string) ($r['finance_note'] ?? '')) !== '' ? (string) $r['finance_note'] : '—') ?></td>
                                 <td><?= h(events_post_status_label((string) ($r['event_status'] ?? ''))) ?></td>

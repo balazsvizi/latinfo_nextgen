@@ -11,6 +11,7 @@ require_once __DIR__ . '/lib/event_public_tags.php';
 require_once __DIR__ . '/lib/event_public_styles.php';
 require_once __DIR__ . '/lib/event_view_tracking.php';
 require_once __DIR__ . '/lib/event_change.php';
+require_once __DIR__ . '/lib/admin_event_calendar.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 
@@ -125,10 +126,41 @@ $cssUrl = events_url('assets/event_public.css');
 $urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu');
 $urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
-$showAdminEdit = isLoggedIn();
+$showAdminEdit = false;
 $eventEditUrl = events_url('szerkeszt.php?id=') . (int) ($event['id'] ?? 0);
 $S = $T;
 $adminEditUrl = $eventEditUrl;
+
+$eventMonthKey = events_admin_calendar_month_key_from_event($event);
+$adminFloatTools = [];
+if (isLoggedIn()) {
+    $adminFloatTools = [
+        [
+            'href' => $eventEditUrl,
+            'title' => (string) ($T['admin_edit_title'] ?? 'Szerkesztés'),
+            'aria' => (string) ($T['admin_edit_aria'] ?? 'Esemény szerkesztése az adminban'),
+            'icon' => 'edit',
+        ],
+        [
+            'href' => events_url('letrehoz.php?copy_from=') . (int) ($event['id'] ?? 0),
+            'title' => 'Esemény másolása',
+            'aria' => 'Esemény másolása',
+            'icon' => 'copy',
+        ],
+        [
+            'href' => events_admin_calendar_view_url($eventMonthKey, []),
+            'title' => 'Admin naptár',
+            'aria' => 'Admin naptár megnyitása',
+            'icon' => 'calendar',
+        ],
+        [
+            'href' => events_admin_list_view_url([]),
+            'title' => 'Eseménylista (admin)',
+            'aria' => 'Eseménylista az Event Adminban',
+            'icon' => 'list',
+        ],
+    ];
+}
 
 $eventExternalUrl = trim((string) ($event['event_url'] ?? ''));
 
@@ -194,6 +226,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 </head>
 <body class="event-public-page">
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public event-public--detail">
     <header class="event-public__hero">

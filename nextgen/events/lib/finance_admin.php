@@ -57,7 +57,7 @@ function events_finance_admin_filters_from_request(): array
 
     $allowedOrder = [
         'id', 'start', 'name', 'organizer', 'status',
-        'cost_from', 'cost_to', 'fee', 'payer', 'note',
+        'cost_from', 'cost_to', 'fee', 'views', 'views_per_fee', 'payer', 'note',
     ];
     if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
         $order = (string) $_GET['order'];
@@ -209,6 +209,8 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
         'cost_from' => "e.event_cost_from IS NULL, e.event_cost_from {$dirSql}",
         'cost_to' => "e.event_cost_to IS NULL, e.event_cost_to {$dirSql}",
         'fee' => "e.finance_organizer_fee IS NULL, e.finance_organizer_fee {$dirSql}",
+        'views' => "megtekintesek {$dirSql}",
+        'views_per_fee' => "views_per_fee IS NULL, views_per_fee {$dirSql}",
         'note' => "(e.finance_note IS NULL OR e.finance_note = ''), e.finance_note {$dirSql}",
         'payer' => "(payer_name IS NULL OR payer_name = ''), payer_name {$dirSql}",
         'organizer' => "(organizer_name IS NULL OR organizer_name = ''), organizer_name {$dirSql}",
@@ -223,7 +225,18 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
                 FROM `events_calendar_event_organizers` eo
                 INNER JOIN `events_organizers` o ON o.id = eo.organizer_id
                 WHERE eo.event_id = e.id) AS organizer_name,
-               (SELECT po.name FROM `events_organizers` po WHERE po.id = e.finance_payer_organizer_id LIMIT 1) AS payer_name
+               (SELECT po.name FROM `events_organizers` po WHERE po.id = e.finance_payer_organizer_id LIMIT 1) AS payer_name,
+               (SELECT COUNT(*) FROM `events_calendar_event_views` m
+                WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view') AS megtekintesek,
+               CASE
+                   WHEN e.finance_organizer_fee IS NOT NULL AND e.finance_organizer_fee > 0
+                   THEN (
+                       (SELECT COUNT(*) FROM `events_calendar_event_views` m
+                        WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view')
+                       / e.finance_organizer_fee
+                   )
+                   ELSE NULL
+               END AS views_per_fee
         FROM {$poolFromSql}
         {$whereSql}
         ORDER BY {$orderSql}
@@ -298,4 +311,15 @@ function events_finance_format_start_date(?string $datetime): string
     }
 
     return $dt->format('Y.m.d.');
+}
+
+function events_finance_format_views_per_fee(null|int|float|string $viewsPerFee): string
+{
+    if ($viewsPerFee === null || $viewsPerFee === '') {
+        return '—';
+    }
+    $n = (float) $viewsPerFee;
+    $decimals = $n >= 1 ? 2 : 4;
+
+    return number_format($n, $decimals, ',', ' ') . ' katt/Ft';
 }

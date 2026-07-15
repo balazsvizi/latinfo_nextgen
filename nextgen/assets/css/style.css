@@ -3336,7 +3336,7 @@ dialog.eventpics-modal::backdrop {
 
 .events-edit-float-tools {
     position: fixed;
-    top: calc(var(--header-h) + 0.45rem);
+    top: calc(var(--header-h, 0px) + 0.45rem);
     left: max(0.5rem, env(safe-area-inset-left, 0px));
     z-index: 99989;
     display: flex;
@@ -3872,6 +3872,29 @@ body.event-edit-cover-lightbox-open {
 }
 .events-finance-table .td-num {
     white-space: nowrap;
+}
+.events-finance-fee-cell {
+    line-height: 1.25;
+}
+.events-finance-fee-cell__main {
+    font-weight: 600;
+}
+.events-finance-fee-cell__sub {
+    margin-top: 0.15rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+.events-finance-th-sub {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+.events-finance-th-sub .th-sort {
+    font-size: inherit;
+    color: inherit;
 }
 .events-toggle {
     display: inline-flex;

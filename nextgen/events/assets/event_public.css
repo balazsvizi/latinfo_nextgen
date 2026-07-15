@@ -137,6 +137,52 @@ body.event-public-page {
     object-position: left center;
 }
 
+/* Admin lebegő eszköztár (publikus oldalakon, bejelentkezve) */
+.events-edit-float-tools {
+    position: fixed;
+    top: max(0.5rem, env(safe-area-inset-top, 0px));
+    left: max(0.5rem, env(safe-area-inset-left, 0px));
+    z-index: 99989;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: #7c3aed;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.45);
+    border-radius: 10px;
+}
+
+.events-edit-float-tools__btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.events-edit-float-tools__btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.events-edit-float-tools__btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.events-edit-float-tools__icon {
+    display: block;
+}
+
 .event-admin-edit {
     display: inline-flex;
     align-items: center;

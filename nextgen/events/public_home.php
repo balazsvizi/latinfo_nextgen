@@ -106,17 +106,45 @@ $urlEn = events_public_home_lang_switch_url('en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $D;
 $isEventsHome = true;
-$showAdminEdit = isLoggedIn();
+$showAdminEdit = false;
+$adminEditUrl = '';
 $publicAdminParams = $filters['get_params'];
 if ($view === 'list') {
-    $adminEditUrl = events_admin_list_view_url($publicAdminParams);
-    $S['admin_edit_aria'] = (string) $D['admin_edit_aria_list'];
+    $matchingAdminUrl = events_admin_list_view_url($publicAdminParams);
+    $matchingAdminTitle = (string) $D['admin_edit_aria_list'];
+    $matchingAdminIcon = 'list';
 } elseif ($view === 'map') {
-    $adminEditUrl = events_admin_list_view_url($publicAdminParams);
-    $S['admin_edit_aria'] = (string) $D['admin_edit_aria_list'];
+    $matchingAdminUrl = events_admin_list_view_url($publicAdminParams);
+    $matchingAdminTitle = (string) $D['admin_edit_aria_list'];
+    $matchingAdminIcon = 'list';
 } else {
-    $adminEditUrl = events_admin_calendar_view_url($monthKey, $publicAdminParams);
-    $S['admin_edit_aria'] = (string) $D['admin_edit_aria_cal'];
+    $matchingAdminUrl = events_admin_calendar_view_url($monthKey, $publicAdminParams);
+    $matchingAdminTitle = (string) $D['admin_edit_aria_cal'];
+    $matchingAdminIcon = 'calendar';
+}
+
+$adminFloatTools = [];
+if (isLoggedIn()) {
+    $adminFloatTools = [
+        [
+            'href' => $matchingAdminUrl,
+            'title' => (string) ($D['admin_edit_title'] ?? 'Szerkesztés'),
+            'aria' => $matchingAdminTitle,
+            'icon' => $matchingAdminIcon,
+        ],
+        [
+            'href' => events_url('letrehoz.php'),
+            'title' => 'Új esemény',
+            'aria' => 'Új esemény létrehozása',
+            'icon' => 'plus',
+        ],
+        [
+            'href' => events_url('fooldal_szerkeszt.php'),
+            'title' => 'Főoldal szövegek szerkesztése',
+            'aria' => 'Főoldal szövegek szerkesztése',
+            'icon' => 'edit',
+        ],
+    ];
 }
 $heroInlineTitle = '';
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
@@ -147,6 +175,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
 <body class="event-public-page event-public-page--home">
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public home-public">
     <header class="event-public__hero">

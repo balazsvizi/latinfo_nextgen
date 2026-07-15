@@ -71,12 +71,36 @@ $filterFormHidden = ['month' => $monthKey];
 $filterClearUrl = events_url('events_naptar.php?month=' . rawurlencode($monthKey));
 $publicHomePreviewUrl = events_public_home_url('hu', ['month' => $monthKey]);
 
+$adminFloatTools = [
+    [
+        'href' => events_url('letrehoz.php'),
+        'title' => 'Új esemény',
+        'aria' => 'Új esemény létrehozása',
+        'icon' => 'plus',
+    ],
+    [
+        'href' => $listViewUrl,
+        'title' => 'Eseménylista',
+        'aria' => 'Átváltás lista nézetre',
+        'icon' => 'list',
+    ],
+    [
+        'href' => $publicHomePreviewUrl,
+        'title' => 'Nyilvános naptár megtekintése',
+        'aria' => 'Nyilvános naptár megtekintése',
+        'icon' => 'eye',
+    ],
+];
+$adminFloatToolsRequireLogin = false;
+
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Események – naptár';
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 
 <div class="card events-admin-card events-admin-card--calendar">
     <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-calendar-filter-form">
