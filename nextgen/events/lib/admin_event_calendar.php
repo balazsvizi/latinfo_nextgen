@@ -552,6 +552,60 @@ function events_admin_calendar_month_label(DateTimeImmutable $monthFirst): strin
     return ($huMonths[$m] ?? $monthFirst->format('F')) . ' ' . $y;
 }
 
+/**
+ * Hónapok (Y-m), amelyekben van legalább egy esemény a listában.
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return list<string>
+ */
+function events_admin_calendar_months_with_events(array $rows): array {
+    $keys = [];
+    foreach ($rows as $row) {
+        $range = events_admin_calendar_event_grid_date_range($row);
+        if ($range === null) {
+            continue;
+        }
+        $cursor = $range['start']->modify('first day of this month');
+        $endMonth = $range['end']->modify('first day of this month');
+        while ($cursor <= $endMonth) {
+            $keys[$cursor->format('Y-m')] = true;
+            $cursor = $cursor->modify('+1 month');
+        }
+    }
+    $list = array_keys($keys);
+    sort($list, SORT_STRING);
+
+    return $list;
+}
+
+/**
+ * Előző/következő hónap kulcs: először a bejegyzéses hónapok közt lép, majd naptári ±1.
+ *
+ * @param list<string> $monthKeys Y-m, növekvő
+ */
+function events_admin_calendar_step_month_key(string $currentKey, array $monthKeys, int $direction): string {
+    $direction = $direction < 0 ? -1 : 1;
+    $keys = $monthKeys;
+    if (!in_array($currentKey, $keys, true)) {
+        $keys[] = $currentKey;
+        sort($keys, SORT_STRING);
+    }
+    $idx = array_search($currentKey, $keys, true);
+    if ($idx !== false) {
+        $next = $idx + $direction;
+        if ($next >= 0 && $next < count($keys)) {
+            return $keys[$next];
+        }
+    }
+    try {
+        $dt = new DateTimeImmutable($currentKey . '-01');
+
+        return $dt->modify(($direction > 0 ? '+' : '-') . '1 month')->format('Y-m');
+    } catch (Throwable) {
+        return $currentKey;
+    }
+}
+
 function events_admin_calendar_event_time_label(array $row): string {
     if (!empty($row['event_allday'])) {
         return '';

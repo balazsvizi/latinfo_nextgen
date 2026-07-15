@@ -472,6 +472,26 @@ function events_filter_label_attr_classes(array $filters, string $key): string
 }
 
 /**
+ * Van-e bármely aktív admin eseményszűrő (hónap paraméter nélkül).
+ *
+ * @param array<string, mixed> $filters
+ */
+function events_admin_filters_are_active(array $filters): bool {
+    $keys = [
+        'organizer', 'venue', 'city', 'name', 'id', 'views_min', 'status',
+        'category', 'tag', 'dj', 'main_style', 'supplementary_style',
+        'start_from', 'start_to',
+    ];
+    foreach ($keys as $key) {
+        if (str_contains(events_filter_label_attr_classes($filters, $key), '--active')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Szűrt események helyszín koordinátákkal (admin térkép nézet).
  *
  * @param array<string, mixed> $filters

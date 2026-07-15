@@ -12,8 +12,6 @@ $db = getDb();
 $filters = events_admin_filters_from_request($db);
 
 [$monthFirst, $monthLast, $monthKey] = events_admin_calendar_resolve_month((string) ($_GET['month'] ?? ''));
-$prevMonthKey = $monthFirst->modify('-1 month')->format('Y-m');
-$nextMonthKey = $monthFirst->modify('+1 month')->format('Y-m');
 $monthLabel = events_admin_calendar_month_label($monthFirst);
 
 $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
@@ -58,16 +56,26 @@ $gridDays = events_admin_calendar_grid_days($monthFirst, $monthLast);
 $calendarWeeks = events_admin_calendar_build_week_layouts($rows, $gridDays, $monthFirst, $monthLast);
 $weekdayHeaders = events_admin_calendar_weekday_headers();
 
+$monthsWithEvents = events_admin_calendar_months_with_events($rows);
+if (!in_array($monthKey, $monthsWithEvents, true)) {
+    $monthsWithEvents[] = $monthKey;
+    sort($monthsWithEvents, SORT_STRING);
+}
+$monthSelectOptions = $monthsWithEvents;
+$prevMonthKey = events_admin_calendar_step_month_key($monthKey, $monthsWithEvents, -1);
+$nextMonthKey = events_admin_calendar_step_month_key($monthKey, $monthsWithEvents, 1);
+
 $navBaseParams = $filters['get_params'];
 $prevMonthUrl = events_admin_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_admin_calendar_month_url($nextMonthKey, $navBaseParams);
-$todayMonthUrl = events_admin_calendar_month_url((new DateTimeImmutable('today'))->format('Y-m'), $navBaseParams);
 $listViewUrl = events_admin_list_view_url($navBaseParams);
 $calendarViewUrl = events_admin_calendar_view_url($monthKey, $navBaseParams);
+$mapViewUrl = events_admin_map_view_url($navBaseParams);
 $activeView = 'month';
+$filtersActive = events_admin_filters_are_active($filters);
 
 $filterFormAction = events_url('events_naptar.php');
-$filterFormHidden = ['month' => $monthKey];
+$filterFormHidden = [];
 $filterClearUrl = events_url('events_naptar.php?month=' . rawurlencode($monthKey));
 $publicHomePreviewUrl = events_public_home_url('hu', ['month' => $monthKey]);
 
@@ -104,8 +112,45 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card events-admin-card--calendar">
     <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-calendar-filter-form">
+        <details class="events-cal-filters-panel" id="events-cal-filters-panel"<?= $filtersActive ? ' open' : '' ?>>
+            <summary class="events-cal-filters-panel__summary">
+                <span class="events-cal-filters-panel__summary-text">Keresés</span>
+                <?php if ($filtersActive): ?>
+                    <span class="events-cal-filters-panel__meta">
+                        <span class="events-cal-filters-panel__badge">Aktív</span>
+                        <a href="<?= h($filterClearUrl) ?>" class="events-cal-filters-panel__clear" onclick="event.stopPropagation();">Szűrők törlése</a>
+                    </span>
+                <?php endif; ?>
+            </summary>
+            <div class="events-cal-filters-panel__body">
+                <?php require __DIR__ . '/partials/admin_event_filters.php'; ?>
+            </div>
+        </details>
+
         <div class="events-list-head events-cal-page__head">
-            <h2 class="events-list-title">Események</h2>
+            <div class="events-cal-page__head-start">
+                <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
+                <div class="events-cal-month-switch" aria-label="Hónap választás">
+                    <a class="events-cal-toolbar__arrow" href="<?= h($prevMonthUrl) ?>" rel="prev" aria-label="Előző hónap">‹</a>
+                    <div class="events-filter-select-wrap events-cal-month-switch__wrap">
+                        <label class="visually-hidden" for="ev-cal-month">Hónap</label>
+                        <select class="events-filter-select events-cal-month-switch__select" name="month" id="ev-cal-month" title="Hónap">
+                            <?php foreach ($monthSelectOptions as $optKey): ?>
+                                <?php
+                                try {
+                                    $optLabel = events_admin_calendar_month_label(new DateTimeImmutable($optKey . '-01'));
+                                } catch (Throwable) {
+                                    $optLabel = $optKey;
+                                }
+                                ?>
+                                <option value="<?= h($optKey) ?>" <?= $optKey === $monthKey ? 'selected' : '' ?>><?= h($optLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="Következő hónap">›</a>
+                </div>
+                <h2 class="events-list-title">Események</h2>
+            </div>
             <div class="events-list-actions">
                 <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
                 <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
@@ -115,20 +160,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
-
-        <?php require __DIR__ . '/partials/admin_event_filters.php'; ?>
-
-        <div class="events-cal-toolbar" aria-label="Naptár vezérlők">
-            <div class="events-cal-toolbar__left">
-                <div class="events-cal-toolbar__nav" aria-label="Hónap választás">
-                    <a class="events-cal-toolbar__arrow" href="<?= h($prevMonthUrl) ?>" rel="prev" aria-label="Előző hónap">‹</a>
-                    <a class="events-cal-toolbar__today" href="<?= h($todayMonthUrl) ?>">Ez a hónap</a>
-                    <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="Következő hónap">›</a>
-                </div>
-                <h3 class="events-cal-toolbar__month"><?= h($monthLabel) ?></h3>
-            </div>
-        </div>
         <p class="events-cal-legend" aria-label="Naptár jelmagyarázat">
             <span class="events-cal-legend__item events-cal-legend__item--published">Közzétéve</span>
             <span class="events-cal-legend__item events-cal-legend__item--unpublished">Nem közzétett</span>
