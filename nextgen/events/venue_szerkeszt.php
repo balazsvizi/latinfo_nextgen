@@ -115,12 +115,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$adminFloatTools = [];
+$venuePublicSlug = trim((string) ($v['slug'] ?? ''));
+if ($venuePublicSlug !== '') {
+    $adminFloatTools[] = [
+        'href' => events_helyszin_megjelenit_url($venuePublicSlug),
+        'title' => 'Nyilvános megtekintés',
+        'aria' => 'Nyilvános helyszínoldal megtekintése',
+        'icon' => 'eye',
+    ];
+}
+$adminFloatTools[] = [
+    'href' => events_url('venue_letrehoz.php'),
+    'title' => 'Új helyszín',
+    'aria' => 'Új helyszín létrehozása',
+    'icon' => 'plus',
+];
+$adminFloatTools[] = [
+    'href' => events_url('venues.php'),
+    'title' => 'Vissza a helyszínlistához',
+    'aria' => 'Vissza a helyszínlistához',
+    'icon' => 'back',
+];
+$adminFloatToolsRequireLogin = false;
+
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Helyszín szerkesztése: ' . ($venue['name'] ?? '');
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 
 <div class="events-edit-page venue-edit-page">
     <header class="events-edit-header">
