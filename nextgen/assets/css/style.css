@@ -1248,59 +1248,63 @@ tr:hover td { background: var(--bg); }
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .events-cal-filters-panel {
-    margin: 0 0 0.85rem;
+    margin: 0 0 1rem;
     border: 1px solid #e8ebe6;
     border-radius: 0.5rem;
     background: #fafbf9;
 }
-.events-cal-filters-panel__summary {
-    display: flex;
-    flex-wrap: wrap;
+.events-cal-filters-toggle {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem 1rem;
-    padding: 0.65rem 0.9rem;
-    cursor: pointer;
-    list-style: none;
-    font-size: 0.9375rem;
-    font-weight: 600;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #d8ddd4;
+    border-radius: 0.35rem;
+    background: #fff;
     color: var(--text-primary);
-    user-select: none;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
-.events-cal-filters-panel__summary::-webkit-details-marker {
-    display: none;
+.events-cal-filters-toggle:hover,
+.events-cal-filters-toggle.is-open,
+.events-cal-filters-toggle.is-active {
+    border-color: var(--primary);
+    background: #f8faf7;
+    color: var(--primary);
 }
-.events-cal-filters-panel__summary::after {
-    content: '▾';
-    margin-left: auto;
+.events-cal-filters-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.events-cal-filters-toggle__chevron {
     color: #8a9284;
     font-weight: 400;
     transition: transform 0.15s ease;
 }
-.events-cal-filters-panel[open] > .events-cal-filters-panel__summary::after {
+.events-cal-filters-toggle.is-open .events-cal-filters-toggle__chevron {
     transform: rotate(-180deg);
-}
-.events-cal-filters-panel__summary:hover {
-    color: var(--primary);
-}
-.events-cal-filters-panel__summary:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-}
-.events-cal-filters-panel__meta {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 0.75rem;
 }
 .events-cal-filters-panel__badge {
     display: inline-flex;
     align-items: center;
-    padding: 0.15rem 0.5rem;
+    padding: 0.1rem 0.4rem;
     border-radius: 999px;
     background: #fde8e8;
     color: #b42318;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 700;
+}
+.events-cal-filters-panel__toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
 }
 .events-cal-filters-panel__clear {
     font-size: 0.8125rem;
@@ -1312,14 +1316,47 @@ tr:hover td { background: var(--bg); }
     text-decoration: underline;
 }
 .events-cal-filters-panel__body {
-    padding: 0 0.9rem 0.9rem;
-    border-top: 1px solid #e8ebe6;
+    padding: 0.85rem 0.9rem 0.9rem;
 }
 .events-cal-filters-panel__body .events-filters-shell {
-    margin: 0.85rem 0 0;
+    margin: 0;
     padding: 0;
     border: none;
     background: transparent;
+}
+.events-cal-page__legends {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e8ebe6;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.events-cal-color-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.85rem;
+}
+.events-cal-color-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.3;
+}
+.events-cal-color-legend__swatch {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 0.2rem;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+.events-cal-color-legend__label {
+    min-width: 0;
 }
 .events-cal-page__head {
     margin-bottom: 0.85rem;
@@ -1932,7 +1969,7 @@ tr:hover td { background: var(--bg); }
     display: flex;
     flex-wrap: wrap;
     gap: 0.65rem 1rem;
-    margin: 0 0 0.85rem;
+    margin: 0;
     font-size: 0.75rem;
     color: #64748b;
 }

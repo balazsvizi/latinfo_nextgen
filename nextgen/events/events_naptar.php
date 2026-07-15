@@ -73,6 +73,7 @@ $calendarViewUrl = events_admin_calendar_view_url($monthKey, $navBaseParams);
 $mapViewUrl = events_admin_map_view_url($navBaseParams);
 $activeView = 'month';
 $filtersActive = events_admin_filters_are_active($filters);
+$calendarColorLegend = events_admin_calendar_category_legend_items($db, 'hu');
 
 $filterFormAction = events_url('events_naptar.php');
 $filterFormHidden = [];
@@ -112,21 +113,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card events-admin-card--calendar">
     <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-calendar-filter-form">
-        <details class="events-cal-filters-panel" id="events-cal-filters-panel"<?= $filtersActive ? ' open' : '' ?>>
-            <summary class="events-cal-filters-panel__summary">
-                <span class="events-cal-filters-panel__summary-text">Keresés</span>
-                <?php if ($filtersActive): ?>
-                    <span class="events-cal-filters-panel__meta">
-                        <span class="events-cal-filters-panel__badge">Aktív</span>
-                        <a href="<?= h($filterClearUrl) ?>" class="events-cal-filters-panel__clear" onclick="event.stopPropagation();">Szűrők törlése</a>
-                    </span>
-                <?php endif; ?>
-            </summary>
-            <div class="events-cal-filters-panel__body">
-                <?php require __DIR__ . '/partials/admin_event_filters.php'; ?>
-            </div>
-        </details>
-
         <div class="events-list-head events-cal-page__head">
             <div class="events-cal-page__head-start">
                 <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
@@ -149,6 +135,19 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     </div>
                     <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="Következő hónap">›</a>
                 </div>
+                <button
+                    type="button"
+                    class="events-cal-filters-toggle<?= $filtersActive ? ' is-active' : '' ?>"
+                    id="events-cal-filters-toggle"
+                    aria-expanded="<?= $filtersActive ? 'true' : 'false' ?>"
+                    aria-controls="events-cal-filters-panel"
+                >
+                    <span>Keresés</span>
+                    <?php if ($filtersActive): ?>
+                        <span class="events-cal-filters-panel__badge">Aktív</span>
+                    <?php endif; ?>
+                    <span class="events-cal-filters-toggle__chevron" aria-hidden="true">▾</span>
+                </button>
                 <h2 class="events-list-title">Események</h2>
             </div>
             <div class="events-list-actions">
@@ -160,10 +159,20 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <p class="events-cal-legend" aria-label="Naptár jelmagyarázat">
-            <span class="events-cal-legend__item events-cal-legend__item--published">Közzétéve</span>
-            <span class="events-cal-legend__item events-cal-legend__item--unpublished">Nem közzétett</span>
-        </p>
+        <div
+            class="events-cal-filters-panel"
+            id="events-cal-filters-panel"
+            <?= $filtersActive ? '' : 'hidden' ?>
+        >
+            <div class="events-cal-filters-panel__body">
+                <?php if ($filtersActive): ?>
+                    <div class="events-cal-filters-panel__toolbar">
+                        <a href="<?= h($filterClearUrl) ?>" class="events-cal-filters-panel__clear">Szűrők törlése</a>
+                    </div>
+                <?php endif; ?>
+                <?php require __DIR__ . '/partials/admin_event_filters.php'; ?>
+            </div>
+        </div>
 
         <?php
         $calendarPublicPreview = false;
@@ -199,7 +208,52 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </ul>
             </section>
         <?php endif; ?>
+
+        <footer class="events-cal-page__legends" aria-label="Jelmagyarázat">
+            <p class="events-cal-legend" aria-label="Közzétételi státusz">
+                <span class="events-cal-legend__item events-cal-legend__item--published">Közzétéve</span>
+                <span class="events-cal-legend__item events-cal-legend__item--unpublished">Nem közzétett</span>
+            </p>
+            <?php if ($calendarColorLegend !== []): ?>
+                <ul class="events-cal-color-legend" role="list" aria-label="Esemény színek (kategóriák)">
+                    <?php foreach ($calendarColorLegend as $legItem): ?>
+                        <?php
+                        $legColor = strtoupper(trim((string) ($legItem['color'] ?? '#6D8F63')));
+                        if (preg_match('/^#[0-9A-F]{6}$/', $legColor) !== 1) {
+                            $legColor = '#6D8F63';
+                        }
+                        ?>
+                        <li class="events-cal-color-legend__item">
+                            <span class="events-cal-color-legend__swatch" style="background-color: <?= h($legColor) ?>;" aria-hidden="true"></span>
+                            <span class="events-cal-color-legend__label"><?= h((string) ($legItem['label'] ?? '')) ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </footer>
     </form>
 </div>
+<script>
+(function () {
+    var btn = document.getElementById('events-cal-filters-toggle');
+    var panel = document.getElementById('events-cal-filters-panel');
+    if (!btn || !panel) return;
+    btn.addEventListener('click', function () {
+        var open = panel.hasAttribute('hidden');
+        if (open) {
+            panel.removeAttribute('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+            btn.classList.add('is-open');
+        } else {
+            panel.setAttribute('hidden', '');
+            btn.setAttribute('aria-expanded', 'false');
+            btn.classList.remove('is-open');
+        }
+    });
+    if (!panel.hasAttribute('hidden')) {
+        btn.classList.add('is-open');
+    }
+})();
+</script>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
