@@ -39,6 +39,7 @@ $defaults = [
     'finance_payer_organizer_id' => null,
     'finance_note' => null,
     'finance_organizer_fee' => null,
+    'finance_amount_paid' => null,
 ];
 
 $hiba = '';
@@ -94,10 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     event_name, event_slug, event_content, event_status,
                     event_start, event_end, event_allday,
                     event_change_active, event_change_type, event_change_note,
-                    event_cost_from, event_cost_to, finance_payer_organizer_id, finance_note, finance_organizer_fee,
+                    event_cost_from, event_cost_to, finance_payer_organizer_id, finance_note, finance_organizer_fee, finance_amount_paid,
                     event_url, event_featured_image_url, event_latinfohu_partner,
                     venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
@@ -115,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['finance_payer_organizer_id'],
                 $row['finance_note'],
                 $row['finance_organizer_fee'],
+                $row['finance_amount_paid'],
                 $row['event_url'],
                 $row['event_featured_image_url'],
                 $row['event_latinfohu_partner'],

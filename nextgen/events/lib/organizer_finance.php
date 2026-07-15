@@ -41,6 +41,10 @@ function events_organizer_finance_ensure_schema(PDO $db): bool
         if ($stmt->fetch() === false) {
             $db->exec('ALTER TABLE `events_calendar_events` ADD COLUMN `finance_organizer_fee` DECIMAL(12,2) NULL DEFAULT NULL AFTER `finance_note`');
         }
+        $stmt = $db->query("SHOW COLUMNS FROM `events_calendar_events` LIKE 'finance_amount_paid'");
+        if ($stmt->fetch() === false) {
+            $db->exec('ALTER TABLE `events_calendar_events` ADD COLUMN `finance_amount_paid` DECIMAL(12,2) NULL DEFAULT NULL AFTER `finance_organizer_fee`');
+        }
 
         return true;
     } catch (Throwable $ex) {
@@ -116,24 +120,60 @@ function events_finance_normalize_note(string $raw): string
 }
 
 /**
+ * Űrlap számmező: egész értékeket tizedesjegy nélkül jelenítünk meg.
+ */
+function events_finance_format_number_for_input(mixed $value): string
+{
+    if ($value === null || $value === '') {
+        return '';
+    }
+    if (!is_numeric($value)) {
+        return trim((string) $value);
+    }
+    $n = (float) $value;
+    if (abs($n - round($n)) < 0.0000001) {
+        return (string) (int) round($n);
+    }
+    $formatted = rtrim(rtrim(sprintf('%.2f', $n), '0'), '.');
+
+    return $formatted === '-0' ? '0' : $formatted;
+}
+
+/**
  * @return array{0: ?float, 1: ?string}
  */
-function events_finance_parse_organizer_fee_from_post(): array
+function events_finance_parse_money_from_post(string $field, string $label): array
 {
-    $raw = trim((string) ($_POST['finance_organizer_fee'] ?? ''));
+    $raw = trim((string) ($_POST[$field] ?? ''));
     if ($raw === '') {
         return [null, null];
     }
     $norm = str_replace([' ', ','], ['', '.'], $raw);
     if (!is_numeric($norm)) {
-        return [null, 'A szervezői díj csak szám lehet.'];
+        return [null, $label . ' csak szám lehet.'];
     }
-    $fee = round((float) $norm, 2);
-    if ($fee < 0) {
-        return [null, 'A szervezői díj nem lehet negatív.'];
+    $amount = round((float) $norm, 2);
+    if ($amount < 0) {
+        return [null, $label . ' nem lehet negatív.'];
     }
 
-    return [$fee, null];
+    return [$amount, null];
+}
+
+/**
+ * @return array{0: ?float, 1: ?string}
+ */
+function events_finance_parse_organizer_fee_from_post(): array
+{
+    return events_finance_parse_money_from_post('finance_organizer_fee', 'A fizetendő összeg');
+}
+
+/**
+ * @return array{0: ?float, 1: ?string}
+ */
+function events_finance_parse_amount_paid_from_post(): array
+{
+    return events_finance_parse_money_from_post('finance_amount_paid', 'A ténylegesen fizetett összeg');
 }
 
 /**

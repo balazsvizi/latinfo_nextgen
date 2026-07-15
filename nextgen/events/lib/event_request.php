@@ -409,6 +409,11 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
         return [$row, $financeFeeErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
     }
     $row['finance_organizer_fee'] = $financeOrganizerFee;
+    [$financeAmountPaid, $financePaidErr] = events_finance_parse_amount_paid_from_post();
+    if ($financePaidErr !== null) {
+        return [$row, $financePaidErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+    $row['finance_amount_paid'] = $financeAmountPaid;
 
     if ($changeActive) {
         if (!events_event_change_is_valid_type($changeType)) {
@@ -574,6 +579,7 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['finance_payer_organizer_id'] = null;
     $event['finance_note'] = null;
     $event['finance_organizer_fee'] = null;
+    $event['finance_amount_paid'] = null;
 
     return $event;
 }
@@ -615,12 +621,8 @@ function events_row_for_form(array $row): array {
             $e[$tk] = substr($e[$tk], 0, 5);
         }
     }
-    foreach (['event_cost_from', 'event_cost_to', 'finance_organizer_fee'] as $k) {
-        if ($e[$k] === null) {
-            $e[$k] = '';
-        } else {
-            $e[$k] = is_float($e[$k]) ? (string) $e[$k] : (string) $e[$k];
-        }
+    foreach (['event_cost_from', 'event_cost_to', 'finance_organizer_fee', 'finance_amount_paid'] as $k) {
+        $e[$k] = events_finance_format_number_for_input($e[$k] ?? null);
     }
     $e['venue_id'] = isset($e['venue_id']) && $e['venue_id'] !== null ? (string) (int) $e['venue_id'] : '';
     $e['event_featured_image_url'] = isset($e['event_featured_image_url']) && $e['event_featured_image_url'] !== null

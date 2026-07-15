@@ -3722,8 +3722,14 @@ body.event-edit-cover-lightbox-open {
 .events-edit-cost-block__row--ticket {
     grid-template-columns: auto minmax(4.5rem, 1fr) auto auto minmax(4.5rem, 1fr);
 }
+.events-edit-cost-block__row--numbers {
+    grid-template-columns: auto minmax(4rem, 0.9fr) auto auto minmax(4rem, 0.9fr) auto minmax(5rem, 1fr) minmax(5.5rem, 1.1fr);
+}
 .events-edit-cost-block__row--fee {
     grid-template-columns: auto minmax(5rem, 6.5rem) minmax(7rem, 1.15fr) minmax(6rem, 1.35fr);
+}
+.events-edit-cost-block__row--meta {
+    grid-template-columns: minmax(8rem, 1.1fr) minmax(8rem, 1.4fr);
 }
 .events-edit-cost-block__mini-label {
     font-size: 0.9375rem;
@@ -3819,17 +3825,25 @@ body.event-edit-cover-lightbox-open {
 }
 @media (max-width: 720px) {
     .events-edit-cost-block__row--ticket,
-    .events-edit-cost-block__row--fee {
+    .events-edit-cost-block__row--fee,
+    .events-edit-cost-block__row--numbers,
+    .events-edit-cost-block__row--meta {
         grid-template-columns: 1fr 1fr;
     }
-    .events-edit-cost-block__row--ticket .events-edit-cost-block__sep {
+    .events-edit-cost-block__row--ticket .events-edit-cost-block__sep,
+    .events-edit-cost-block__row--numbers .events-edit-cost-block__sep {
         display: none;
     }
     .events-edit-cost-block__row--fee {
         grid-template-columns: auto 1fr;
     }
     .events-edit-cost-block__row--fee .events-edit-cost-block__payer-cell,
-    .events-edit-cost-block__row--fee .events-edit-cost-block__input--note {
+    .events-edit-cost-block__row--fee .events-edit-cost-block__input--note,
+    .events-edit-cost-block__row--meta .events-edit-cost-block__payer-cell,
+    .events-edit-cost-block__row--meta .events-edit-cost-block__input--note,
+    .events-edit-cost-block__row--numbers .events-edit-cost-block__refresh,
+    .events-edit-cost-block__row--numbers .events-edit-cost-block__input--fee,
+    .events-edit-cost-block__row--numbers .events-edit-cost-block__input--paid {
         grid-column: 1 / -1;
     }
 }

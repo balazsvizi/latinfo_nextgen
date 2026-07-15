@@ -212,25 +212,19 @@ require __DIR__ . '/wp_token_field.php';
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-cost events-edit-cost-block">
-    <div class="events-edit-cost-block__body">
-        <div class="events-edit-cost-block__row events-edit-cost-block__row--ticket">
+    <div class="events-edit-cost-block__body" id="events-edit-finance-calc" data-organizer-finance="<?= h($organizerFinanceJson) ?>">
+        <div class="events-edit-cost-block__row events-edit-cost-block__row--numbers">
             <label class="events-edit-cost-block__mini-label" for="event_cost_from">Tól</label>
-            <input type="number" id="event_cost_from" name="event_cost_from" class="events-edit-cost-block__input" step="0.01" min="0" value="<?= h($e['event_cost_from']) ?>" placeholder="0">
+            <input type="number" id="event_cost_from" name="event_cost_from" class="events-edit-cost-block__input" step="any" min="0" value="<?= h($e['event_cost_from']) ?>" placeholder="0">
             <span class="events-edit-cost-block__sep" aria-hidden="true">–</span>
             <label class="events-edit-cost-block__mini-label" for="event_cost_to">Ig</label>
-            <input type="number" id="event_cost_to" name="event_cost_to" class="events-edit-cost-block__input" step="0.01" min="0" value="<?= h($e['event_cost_to']) ?>" placeholder="0">
-        </div>
-        <div
-            class="events-edit-cost-block__row events-edit-cost-block__row--fee"
-            id="events-edit-finance-calc"
-            data-organizer-finance="<?= h($organizerFinanceJson) ?>"
-        >
+            <input type="number" id="event_cost_to" name="event_cost_to" class="events-edit-cost-block__input" step="any" min="0" value="<?= h($e['event_cost_to']) ?>" placeholder="0">
             <button
                 type="button"
                 class="events-edit-cost-block__refresh"
                 id="events-edit-finance-calc-btn"
-                title="Szervezői díj kalkulálása"
-                aria-label="Szervezői díj kalkulálása"
+                title="Díjak kalkulálása"
+                aria-label="Díjak kalkulálása"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 4v6h6"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             </button>
@@ -239,12 +233,25 @@ require __DIR__ . '/wp_token_field.php';
                 id="finance_organizer_fee"
                 name="finance_organizer_fee"
                 class="events-edit-cost-block__input events-edit-cost-block__input--fee"
-                step="0.01"
+                step="any"
                 min="0"
                 value="<?= h((string) ($e['finance_organizer_fee'] ?? '')) ?>"
-                placeholder="Díj"
-                aria-label="Szervezői díj"
+                placeholder="Fizetendő"
+                aria-label="Fizetendő"
             >
+            <input
+                type="number"
+                id="finance_amount_paid"
+                name="finance_amount_paid"
+                class="events-edit-cost-block__input events-edit-cost-block__input--paid"
+                step="any"
+                min="0"
+                value="<?= h((string) ($e['finance_amount_paid'] ?? '')) ?>"
+                placeholder="Ténylegesen fizet"
+                aria-label="Ténylegesen fizet"
+            >
+        </div>
+        <div class="events-edit-cost-block__row events-edit-cost-block__row--meta">
             <div class="events-edit-cost-block__payer-cell">
 <?php
 $wpTokenId = 'event-finance-payer';

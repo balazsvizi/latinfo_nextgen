@@ -3,6 +3,7 @@
     var calcRoot = document.getElementById('events-edit-finance-calc');
     var btn = document.getElementById('events-edit-finance-calc-btn');
     var feeInput = document.getElementById('finance_organizer_fee');
+    var paidInput = document.getElementById('finance_amount_paid');
     var costFrom = document.getElementById('event_cost_from');
     var costTo = document.getElementById('event_cost_to');
     if (!calcRoot || !btn || !feeInput) {
@@ -26,6 +27,16 @@
         }
         var n = parseFloat(t);
         return isNaN(n) ? null : n;
+    }
+
+    function formatNumberForInput(n) {
+        if (n === null || n === undefined || isNaN(n)) {
+            return '';
+        }
+        if (Math.abs(n - Math.round(n)) < 0.0000001) {
+            return String(Math.round(n));
+        }
+        return String(Math.round(n * 100) / 100);
     }
 
     function getOrganizerIdsFromToken(tokenId) {
@@ -99,9 +110,16 @@
             return;
         }
 
-        feeInput.value = String(fee);
-        btn.title = 'Szervezői díj kalkulálása';
+        var formatted = formatNumberForInput(fee);
+        feeInput.value = formatted;
         feeInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        if (paidInput && (paidInput.value || '').trim() === '') {
+            paidInput.value = formatted;
+            paidInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        btn.title = 'Díjak kalkulálása';
     });
 })();
 </script>
