@@ -1,5 +1,25 @@
 <script>
 (function () {
+    var btn = document.getElementById('events-cal-filters-toggle');
+    var panel = document.getElementById('events-cal-filters-panel');
+    if (btn && panel) {
+        btn.addEventListener('click', function () {
+            var open = panel.hasAttribute('hidden');
+            if (open) {
+                panel.removeAttribute('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+                btn.classList.add('is-open');
+            } else {
+                panel.setAttribute('hidden', '');
+                btn.setAttribute('aria-expanded', 'false');
+                btn.classList.remove('is-open');
+            }
+        });
+        if (!panel.hasAttribute('hidden')) {
+            btn.classList.add('is-open');
+        }
+    }
+
     var shell = document.querySelector('.events-filters-shell');
     if (!shell) return;
     var form = shell.closest('form');

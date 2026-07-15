@@ -187,11 +187,14 @@ if ($rows !== []) {
 
 $editBase = events_url('szerkeszt.php?id=');
 $filterFormAction = events_url('events_admin.php');
-$filterFormHidden = [];
+$filterFormHidden = ['order' => $order, 'dir' => $dir_param];
 $filterClearUrl = events_url('events_admin.php');
 $calendarViewUrl = events_admin_calendar_view_url(events_admin_calendar_view_month_key($filters), $get_params);
 $listViewUrl = events_admin_list_view_url($get_params, ['order' => $order, 'dir' => $dir_param]);
+$mapViewUrl = events_admin_map_view_url($get_params);
 $activeView = 'list';
+$filtersActive = events_admin_filters_are_active($filters);
+$listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
 $publicPreviewParams = $get_params;
 $publicPreviewParams['month'] = events_admin_calendar_view_month_key($filters);
 $publicHomePreviewUrl = events_public_home_url('hu', $publicPreviewParams);
@@ -228,9 +231,25 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 
 <div class="card events-admin-card">
-    <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form" id="events-admin-filter-form">
+    <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-admin-filter-form">
         <div class="events-list-head events-cal-page__head">
-            <h2 class="events-list-title">Események</h2>
+            <div class="events-cal-page__head-start">
+                <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
+                <button
+                    type="button"
+                    class="events-cal-filters-toggle<?= $filtersActive ? ' is-active' : '' ?>"
+                    id="events-cal-filters-toggle"
+                    aria-expanded="<?= $filtersActive ? 'true' : 'false' ?>"
+                    aria-controls="events-cal-filters-panel"
+                >
+                    <span>Keresés</span>
+                    <?php if ($filtersActive): ?>
+                        <span class="events-cal-filters-panel__badge">Aktív</span>
+                    <?php endif; ?>
+                    <span class="events-cal-filters-toggle__chevron" aria-hidden="true">▾</span>
+                </button>
+                <h2 class="events-list-title">Események</h2>
+            </div>
             <div class="events-list-actions">
                 <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
                 <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
@@ -240,15 +259,20 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <?php
-        $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
-        require __DIR__ . '/partials/admin_event_view_switch.php';
-        ?>
-
-        <?php
-        $filterFormHidden = ['order' => $order, 'dir' => $dir_param];
-        require __DIR__ . '/partials/admin_event_filters.php';
-        ?>
+        <div
+            class="events-cal-filters-panel"
+            id="events-cal-filters-panel"
+            <?= $filtersActive ? '' : 'hidden' ?>
+        >
+            <div class="events-cal-filters-panel__body">
+                <?php if ($filtersActive): ?>
+                    <div class="events-cal-filters-panel__toolbar">
+                        <a href="<?= h($filterClearUrl) ?>" class="events-cal-filters-panel__clear">Szűrők törlése</a>
+                    </div>
+                <?php endif; ?>
+                <?php require __DIR__ . '/partials/admin_event_filters.php'; ?>
+            </div>
+        </div>
 
         <?php require __DIR__ . '/partials/admin_event_list_table.php'; ?>
     </form>
