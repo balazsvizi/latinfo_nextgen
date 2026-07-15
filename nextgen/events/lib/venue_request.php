@@ -100,6 +100,76 @@ function events_venue_apple_directions_url(?string $destination): ?string {
 }
 
 /**
+ * Waze: GPS előnyben (navigálás azonnal), különben keresés a cél szövegére.
+ *
+ * @param array{lat: float, lng: float}|null $coords
+ */
+function events_venue_waze_directions_url(?string $destination, ?array $coords = null): ?string {
+    if ($coords !== null) {
+        $lat = events_venue_format_coord_for_form($coords['lat']);
+        $lng = events_venue_format_coord_for_form($coords['lng']);
+        if ($lat !== '' && $lng !== '') {
+            return 'https://waze.com/ul?ll=' . rawurlencode($lat . ',' . $lng) . '&navigate=yes';
+        }
+    }
+    if ($destination === null || $destination === '') {
+        return null;
+    }
+
+    return 'https://waze.com/ul?q=' . rawurlencode($destination) . '&navigate=yes';
+}
+
+/**
+ * Tesla: nincs nyilvános deep link; Google Maps célpont, amit a Tesla app megosztással fogad.
+ * GPS esetén helykereső URL (pontosabb share / Enter Destination).
+ *
+ * @param array{lat: float, lng: float}|null $coords
+ */
+function events_venue_tesla_directions_url(?string $destination, ?array $coords = null): ?string {
+    if ($coords !== null) {
+        $lat = events_venue_format_coord_for_form($coords['lat']);
+        $lng = events_venue_format_coord_for_form($coords['lng']);
+        if ($lat !== '' && $lng !== '') {
+            return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($lat . ',' . $lng);
+        }
+    }
+
+    return events_venue_google_directions_url($destination);
+}
+
+/**
+ * Navigációs app linkek egy helyszínhez.
+ *
+ * @param array{lat: float, lng: float}|null $coords
+ * @return array<string, string>|null keyed: google, apple, waze, tesla
+ */
+function events_venue_navigation_app_urls(?array $coords, string $addressLine, string $venueName = ''): ?array {
+    $destination = events_venue_directions_destination($coords, $addressLine, $venueName);
+    if ($destination === null) {
+        return null;
+    }
+    $google = events_venue_google_directions_url($destination);
+    if ($google === null) {
+        return null;
+    }
+    $urls = ['google' => $google];
+    $apple = events_venue_apple_directions_url($destination);
+    if ($apple !== null) {
+        $urls['apple'] = $apple;
+    }
+    $waze = events_venue_waze_directions_url($destination, $coords);
+    if ($waze !== null) {
+        $urls['waze'] = $waze;
+    }
+    $tesla = events_venue_tesla_directions_url($destination, $coords);
+    if ($tesla !== null) {
+        $urls['tesla'] = $tesla;
+    }
+
+    return $urls;
+}
+
+/**
  * @param array{lat: float, lng: float}|null $coords
  */
 function events_venue_has_directions_target(?array $coords, string $addressLine, string $venueName = ''): bool {

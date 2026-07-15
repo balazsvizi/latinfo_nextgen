@@ -1747,6 +1747,93 @@ a.event-hero-chip--category-link:hover {
     padding: 0 clamp(1.25rem, 4vw, 2rem) 1.25rem;
 }
 
+.venue-location-panel {
+    margin: 0 0 0.25rem;
+    padding: 0;
+}
+
+.venue-location-panel .venue-public-map {
+    padding-bottom: 0.65rem;
+}
+
+.venue-location-panel .venue-public-map--full .venue-public-map__host {
+    height: min(55vh, 480px);
+    min-height: 300px;
+}
+
+.venue-nav-apps {
+    margin: 0;
+    padding: 0 clamp(1.25rem, 4vw, 2rem) 1.35rem;
+}
+
+.venue-nav-apps__heading {
+    margin: 0 0 0.65rem;
+    font-family: var(--ev-font);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--li-green-dark);
+}
+
+.venue-nav-apps__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+@media (min-width: 520px) {
+    .venue-nav-apps__list {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.venue-nav-apps__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: var(--ev-radius-sm);
+    border: 1px solid var(--li-border);
+    background: #fff;
+    color: var(--li-text);
+    font-family: var(--ev-sans);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: var(--li-shadow);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.venue-nav-apps__btn:hover {
+    border-color: var(--li-green-muted);
+    background: var(--li-green-soft);
+    color: var(--li-green-dark);
+}
+
+.venue-nav-apps__btn:active {
+    transform: scale(0.98);
+}
+
+.venue-nav-apps__btn:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
+.venue-nav-apps__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--li-green);
+}
+
+.venue-nav-apps__btn:hover .venue-nav-apps__icon {
+    color: var(--li-green-dark);
+}
+
 .venue-public-map__heading {
     margin: 0 0 0.85rem;
     font-family: var(--ev-font);
