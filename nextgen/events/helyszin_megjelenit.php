@@ -164,42 +164,53 @@ header('Content-Type: text/html; charset=UTF-8');
         </div>
     </header>
 
-    <?php if ($venueCoords !== null || events_venue_has_directions_target($venueCoords, $addrLine, $title)): ?>
+    <?php
+    $mapQueryFallback = events_venue_directions_destination(null, $addrLine, $title);
+    $showVenueMap = $venueCoords !== null || ($mapQueryFallback !== null && $mapQueryFallback !== '');
+    $showVenueNav = events_venue_has_directions_target($venueCoords, $addrLine, $title);
+    ?>
+    <?php if ($showVenueMap || $showVenueNav): ?>
         <section
             class="venue-location-panel"
-            aria-label="<?= h($venueCoords !== null
+            aria-label="<?= h($showVenueMap
                 ? (string) ($V['map_heading'] ?? 'Térkép')
                 : (string) ($V['nav_apps_heading'] ?? 'Navigálj ide')) ?>"
         >
-            <?php if ($venueCoords !== null): ?>
-                <?php
-                $mapLat = $venueCoords['lat'];
-                $mapLng = $venueCoords['lng'];
-                $mapTitle = $title;
-                $mapAddress = $addrLine;
-                $mapHeading = (string) ($V['map_heading'] ?? 'Térkép');
-                $mapAriaLabel = (string) ($V['map_aria'] ?? 'Helyszín a térképen');
-                $mapVariant = 'full';
-                require __DIR__ . '/partials/public_venue_map.php';
-                ?>
+            <?php if ($showVenueMap): ?>
+                <div class="venue-location-panel__map">
+                    <?php
+                    $mapLat = $venueCoords !== null ? $venueCoords['lat'] : null;
+                    $mapLng = $venueCoords !== null ? $venueCoords['lng'] : null;
+                    $mapTitle = $title;
+                    $mapAddress = $addrLine;
+                    $mapHeading = (string) ($V['map_heading'] ?? 'Térkép');
+                    $mapAriaLabel = (string) ($V['map_aria'] ?? 'Helyszín a térképen');
+                    $mapVariant = 'full';
+                    $mapQuery = $venueCoords === null ? $mapQueryFallback : null;
+                    $mapLang = $lang;
+                    require __DIR__ . '/partials/public_venue_map.php';
+                    ?>
+                </div>
             <?php endif; ?>
-            <?php if (events_venue_has_directions_target($venueCoords, $addrLine, $title)): ?>
-                <?php
-                $venueTitle = $title;
-                $directionsLabel = (string) ($V['directions_label'] ?? 'Tervezz útvonalat');
-                $directionsAria = (string) ($V['directions_aria'] ?? $directionsLabel);
-                $directionsVariant = 'apps';
-                $directionsAppLabels = [
-                    'heading' => (string) ($V['nav_apps_heading'] ?? 'Navigálj ide'),
-                    'group_aria' => (string) ($V['nav_apps_aria'] ?? 'Megnyitás navigációs alkalmazásban'),
-                    'google' => (string) ($V['nav_app_google'] ?? 'Google Maps'),
-                    'apple' => (string) ($V['nav_app_apple'] ?? 'Apple Maps'),
-                    'waze' => (string) ($V['nav_app_waze'] ?? 'Waze'),
-                    'tesla' => (string) ($V['nav_app_tesla'] ?? 'Tesla'),
-                    'tesla_hint' => (string) ($V['nav_app_tesla_hint'] ?? 'Megnyitás, majd megosztás a Tesla appnak'),
-                ];
-                require __DIR__ . '/partials/public_venue_directions.php';
-                ?>
+            <?php if ($showVenueNav): ?>
+                <div class="venue-location-panel__nav">
+                    <?php
+                    $venueTitle = $title;
+                    $directionsLabel = (string) ($V['directions_label'] ?? 'Tervezz útvonalat');
+                    $directionsAria = (string) ($V['directions_aria'] ?? $directionsLabel);
+                    $directionsVariant = 'apps';
+                    $directionsAppLabels = [
+                        'heading' => (string) ($V['nav_apps_heading'] ?? 'Navigálj ide'),
+                        'group_aria' => (string) ($V['nav_apps_aria'] ?? 'Megnyitás navigációs alkalmazásban'),
+                        'google' => (string) ($V['nav_app_google'] ?? 'Google Maps'),
+                        'apple' => (string) ($V['nav_app_apple'] ?? 'Apple Maps'),
+                        'waze' => (string) ($V['nav_app_waze'] ?? 'Waze'),
+                        'tesla' => (string) ($V['nav_app_tesla'] ?? 'Tesla'),
+                        'tesla_hint' => (string) ($V['nav_app_tesla_hint'] ?? 'Megnyitás, majd megosztás a Tesla appnak'),
+                    ];
+                    require __DIR__ . '/partials/public_venue_directions.php';
+                    ?>
+                </div>
             <?php endif; ?>
         </section>
     <?php endif; ?>
@@ -211,6 +222,7 @@ header('Content-Type: text/html; charset=UTF-8');
         </div>
     <?php endif; ?>
 
+    <div class="venue-events-block">
     <?php
     $PEszovegek = $V;
     $sectionIdPrefix = 'venue';
@@ -218,6 +230,7 @@ header('Content-Type: text/html; charset=UTF-8');
     $D = $V;
     require __DIR__ . '/partials/public_partitioned_events.php';
     ?>
+    </div>
 
     <footer class="event-public__footer">
         <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>

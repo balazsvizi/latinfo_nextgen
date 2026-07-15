@@ -1622,11 +1622,21 @@ a.event-hero-chip--category-link:hover {
     -webkit-box-decoration-break: clone;
 }
 
-/* Szervező eseménylista (organizer.php) */
+/* Szervező / helyszín eseménylista */
 .organizer-public__events,
 .venue-public__events {
     margin: 0;
     padding: 0 clamp(1.25rem, 4vw, 2rem) 1.5rem;
+}
+
+.venue-events-block {
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--li-border-strong, var(--li-border));
+}
+
+.venue-events-block .venue-public__events {
+    padding-top: 0;
 }
 
 .venue-body {
@@ -1794,17 +1804,33 @@ a.event-hero-chip--category-link:hover {
 }
 
 .venue-location-panel {
-    margin: 0 0 0.25rem;
+    margin: 0.35rem clamp(1.25rem, 4vw, 2rem) 0;
+    padding: 1rem 1rem 1.15rem;
+    border: 1px solid var(--li-border);
+    border-radius: var(--ev-radius);
+    background: var(--li-card, #fff);
+    box-shadow: var(--li-shadow);
+}
+
+.venue-location-panel__map .venue-public-map {
     padding: 0;
 }
 
-.venue-location-panel .venue-public-map {
-    padding-bottom: 0.65rem;
+.venue-location-panel__map .venue-public-map--full .venue-public-map__host,
+.venue-location-panel .venue-public-map--full .venue-public-map__host {
+    height: min(48vh, 420px);
+    min-height: 280px;
 }
 
-.venue-location-panel .venue-public-map--full .venue-public-map__host {
-    height: min(55vh, 480px);
-    min-height: 300px;
+.venue-location-panel__nav {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--li-border);
+}
+
+.venue-location-panel__nav .venue-nav-apps {
+    margin: 0;
+    padding: 0;
 }
 
 .venue-nav-apps {
@@ -1895,6 +1921,17 @@ a.event-hero-chip--category-link:hover {
     border: 1px solid var(--li-border);
     background: #e8efe5;
     box-shadow: var(--li-shadow);
+}
+
+.venue-public-map__host--embed {
+    background: #f3f5f1;
+}
+
+.venue-public-map__iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
 .venue-public-map--full .venue-public-map__host {
