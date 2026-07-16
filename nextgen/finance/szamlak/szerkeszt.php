@@ -153,19 +153,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action']
         }
     }
 
+    $cc_list = szamla_email_cimlista_parse((string)($_POST['cc_text'] ?? ''));
+    $bcc_list = szamla_email_cimlista_parse((string)($_POST['bcc_text'] ?? ''));
+
     if ($action === 'test') {
         $teszt_cim = trim((string)($_POST['teszt_cim'] ?? ''));
         if (!filter_var($teszt_cim, FILTER_VALIDATE_EMAIL)) {
             flash('error', 'Érvényes teszt e-mail cím szükséges.');
             redirect($szerkeszt_url);
         }
-        $res = email_kuld($teszt_cim, '[TESZT] ' . $subject, $body, [
+        $teszt_subject = '[TESZT] ' . $subject;
+        $res = email_kuld($teszt_cim, $teszt_subject, $body, [
             'config_id' => $felado_id,
             'html' => true,
+            'cc' => $cc_list,
+            'bcc' => $bcc_list,
             'attachments' => $attachments,
         ]);
         if ($res['ok']) {
-            rendszer_log('számla', $id, 'Számla e-mail teszt küldve', 'Címzett: ' . $teszt_cim);
+            rendszer_log(
+                'számla',
+                $id,
+                'Számla e-mail teszt küldve',
+                szamla_email_log_reszletek([$teszt_cim], $cc_list, $bcc_list, $teszt_subject, $attachments)
+            );
             flash('success', 'Teszt e-mail elküldve: ' . $teszt_cim);
         } else {
             flash('error', 'Tesztküldés hiba: ' . $res['hiba']);
@@ -173,16 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action']
         redirect($szerkeszt_url);
     }
 
-    $cimzettek_text = trim((string)($_POST['cimzettek_text'] ?? $default_cimzettek_text));
-    $darabok = preg_split('/[\s,;]+/u', $cimzettek_text) ?: [];
-    $cimzettek = [];
-    foreach ($darabok as $em) {
-        $em = trim((string)$em);
-        if ($em !== '' && filter_var($em, FILTER_VALIDATE_EMAIL)) {
-            $cimzettek[] = $em;
-        }
-    }
-    $cimzettek = array_values(array_unique($cimzettek));
+    $cimzettek = szamla_email_cimlista_parse((string)($_POST['cimzettek_text'] ?? $default_cimzettek_text));
     if (empty($cimzettek)) {
         flash('error', 'Adj meg legalább egy érvényes címzett e-mail címet.');
         redirect($szerkeszt_url);
@@ -191,17 +193,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action']
     $res = email_kuld($cimzettek, $subject, $body, [
         'config_id' => $felado_id,
         'html' => true,
+        'cc' => $cc_list,
+        'bcc' => $bcc_list,
         'attachments' => $attachments,
     ]);
     if ($res['ok']) {
         $db->prepare('UPDATE finance_invoices SET státusz = ? WHERE id = ? AND (COALESCE(törölve,0) = 0)')
             ->execute(['kiküldve', $id]);
-        rendszer_log('számla', $id, 'Számla e-mail küldve', 'Címzettek: ' . implode(', ', $cimzettek));
+        rendszer_log(
+            'számla',
+            $id,
+            'Számla e-mail küldve',
+            szamla_email_log_reszletek($cimzettek, $cc_list, $bcc_list, $subject, $attachments)
+        );
         flash('success', 'Számla e-mail elküldve, státusz: Kiküldve.');
     } else {
         flash('error', 'Küldési hiba: ' . $res['hiba']);
     }
     redirect($szerkeszt_url);
+}
+
+/**
+ * E-mail címek kinyerése szövegből (sor / vessző / pontosvessző).
+ *
+ * @return list<string>
+ */
+function szamla_email_cimlista_parse(string $text): array
+{
+    $darabok = preg_split('/[\s,;]+/u', trim($text)) ?: [];
+    $cimzettek = [];
+    foreach ($darabok as $em) {
+        $em = trim((string)$em);
+        if ($em !== '' && filter_var($em, FILTER_VALIDATE_EMAIL)) {
+            $cimzettek[] = $em;
+        }
+    }
+
+    return array_values(array_unique($cimzettek));
+}
+
+/**
+ * Számla e-mail küldés log részletei (címzettek, tárgy, mellékletek).
+ *
+ * @param list<string> $cimzettek
+ * @param list<string> $cc
+ * @param list<string> $bcc
+ * @param list<array{path?:string,name?:string}> $attachments
+ */
+function szamla_email_log_reszletek(array $cimzettek, array $cc, array $bcc, string $subject, array $attachments): string
+{
+    $parts = ['Címzettek: ' . (empty($cimzettek) ? '—' : implode(', ', $cimzettek))];
+    $parts[] = 'CC: ' . (empty($cc) ? '—' : implode(', ', $cc));
+    $parts[] = 'BCC: ' . (empty($bcc) ? '—' : implode(', ', $bcc));
+    $parts[] = 'Tárgy: ' . $subject;
+    $nevek = [];
+    foreach ($attachments as $att) {
+        $nev = trim((string)($att['name'] ?? ''));
+        if ($nev !== '') {
+            $nevek[] = $nev;
+        }
+    }
+    $parts[] = 'Mellékletek: ' . (empty($nevek) ? 'nincs' : implode(', ', $nevek));
+
+    return implode(' | ', $parts);
 }
 
 /**
@@ -525,6 +579,19 @@ require_once __DIR__ . '/../../partials/header.php';
             <?php endif; ?>
             <textarea name="cimzettek_text" rows="4" placeholder="email1@pelda.hu&#10;email2@pelda.hu"><?= h($default_cimzettek_text) ?></textarea>
             <p class="help">Több címzett megadható új sorral, vesszővel vagy pontosvesszővel elválasztva.</p>
+        </div>
+
+        <div class="form-row form-row-2">
+            <div class="form-group">
+                <label>CC (másolat)</label>
+                <textarea name="cc_text" rows="3" placeholder="cc1@pelda.hu&#10;cc2@pelda.hu"><?= h((string)($_POST['cc_text'] ?? 'naptar@latinfo.hu')) ?></textarea>
+                <p class="help">Opcionális. Több cím: új sor, vessző vagy pontosvessző.</p>
+            </div>
+            <div class="form-group">
+                <label>BCC (titkos másolat)</label>
+                <textarea name="bcc_text" rows="3" placeholder="bcc1@pelda.hu&#10;bcc2@pelda.hu"><?= h((string)($_POST['bcc_text'] ?? '')) ?></textarea>
+                <p class="help">Opcionális. Több cím: új sor, vessző vagy pontosvessző.</p>
+            </div>
         </div>
 
         <div class="form-group">
