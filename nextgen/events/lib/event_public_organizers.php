@@ -161,24 +161,25 @@ function events_public_list_partition_events(array $rows, ?int $nowTs = null): a
     require_once __DIR__ . '/admin_event_calendar.php';
 
     $nowTs = $nowTs ?? time();
-    $todayKey = date('Y-m-d', $nowTs);
+    $todayKey = events_admin_calendar_effective_today()->format('Y-m-d');
     $today = [];
     $soon = [];
     $past = [];
 
     foreach ($rows as $r) {
-        if (events_public_event_row_is_past($r, $nowTs)) {
-            $past[] = $r;
-            continue;
-        }
         $range = events_admin_calendar_event_date_range($r);
         if ($range !== null) {
             $startKey = $range['start']->format('Y-m-d');
             $endKey = $range['end']->format('Y-m-d');
+            // Effektív „ma” (hajnali 4-ig tegnap): az aznapi események a Ma szekcióban maradnak.
             if ($todayKey >= $startKey && $todayKey <= $endKey) {
                 $today[] = $r;
                 continue;
             }
+        }
+        if (events_public_event_row_is_past($r, $nowTs)) {
+            $past[] = $r;
+            continue;
         }
         $soon[] = $r;
     }

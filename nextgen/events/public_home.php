@@ -68,7 +68,7 @@ $navBaseParams = array_merge($filters['get_params'], $langNav);
 unset($navBaseParams['view']);
 $prevMonthUrl = events_public_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_public_calendar_month_url($nextMonthKey, $navBaseParams);
-$todayMonthUrl = events_public_calendar_month_url((new DateTimeImmutable('today'))->format('Y-m'), $navBaseParams);
+$todayMonthUrl = events_public_calendar_month_url(events_admin_calendar_effective_today()->format('Y-m'), $navBaseParams);
 
 $listViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'list']);
 $listViewUrl = events_public_home_url($lang, $listViewParams);

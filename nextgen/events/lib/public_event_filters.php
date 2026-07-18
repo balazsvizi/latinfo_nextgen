@@ -37,7 +37,8 @@ function events_public_resolve_home_view(string $raw): string
  */
 function events_public_map_default_date_range(): array
 {
-    $today = new DateTimeImmutable('today');
+    require_once __DIR__ . '/admin_event_calendar.php';
+    $today = events_admin_calendar_effective_today();
 
     return [
         'from' => $today->format('Y-m-d'),
