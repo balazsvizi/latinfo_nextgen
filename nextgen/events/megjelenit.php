@@ -50,8 +50,6 @@ $stmt = $db->prepare('
         v.`address` AS `venue_address`,
         v.`latitude` AS `venue_latitude`,
         v.`longitude` AS `venue_longitude`,
-        v.`website_url` AS `venue_website_url`,
-        v.`google_maps_url` AS `venue_google_maps_url`,
         l.`name` AS `venue_linked_name`,
         l.`slug` AS `venue_linked_slug`
     FROM `events_calendar_events` e
@@ -96,8 +94,6 @@ $venueCoords = $showVenue ? events_venue_coordinates_from_row([
     'latitude' => $event['venue_latitude'] ?? null,
     'longitude' => $event['venue_longitude'] ?? null,
 ]) : null;
-$venueWebsiteUrl = $showVenue ? trim((string) ($event['venue_website_url'] ?? '')) : '';
-$venueGoogleMapsUrl = $showVenue ? trim((string) ($event['venue_google_maps_url'] ?? '')) : '';
 
 $allday = !empty($event['event_allday']);
 $tsStart = !empty($event['event_start']) ? strtotime((string) $event['event_start']) : false;
@@ -327,13 +323,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                     ?>
                                 </p>
                             <?php endif; ?>
-                            <?php
-                            $linkLabels = [
-                                'website' => (string) ($T['venue_website'] ?? 'Weboldal'),
-                                'google_maps' => (string) ($T['venue_google_maps'] ?? 'Google Maps'),
-                            ];
-                            require __DIR__ . '/partials/public_venue_external_links.php';
-                            ?>
                         </div>
                     </div>
             </div>
@@ -360,15 +349,10 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="event-body">
                 <?= $safeEventContent ?>
             </div>
-            <?php if ($costText !== null): ?>
-                <aside class="event-public__admission" aria-label="<?= h($T['meta_price']) ?>">
-                    <p class="event-public__admission-label"><?= h($T['meta_price']) ?></p>
-                    <p class="event-public__admission-value"><?= h($costText) ?></p>
-                </aside>
-            <?php endif; ?>
         </div>
         <?php if ($eventExternalUrl !== ''): ?>
             <?php $placement = 'bottom'; require __DIR__ . '/partials/public_event_external_info_notice.php'; ?>
+            <p class="event-external-info-disclaimer" role="note"><?= h((string) ($T['external_info_disclaimer'] ?? '')) ?></p>
         <?php endif; ?>
     </div>
 </article>

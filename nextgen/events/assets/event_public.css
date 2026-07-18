@@ -1047,29 +1047,45 @@ body.venue-public-map-dialog-open {
 .event-public--detail .event-external-info-notice {
     max-width: none;
     margin: 0;
-    padding: 0.5rem clamp(1rem, 3vw, 1.35rem);
-    font-size: 0.8125rem;
+    padding: 0.85rem clamp(1rem, 3vw, 1.5rem);
+    font-size: clamp(0.9375rem, 2.4vw, 1.0625rem);
+    font-weight: 600;
     line-height: 1.45;
     text-align: center;
+    color: var(--li-green-dark);
     border-radius: 0;
     border-left: none;
     border-right: none;
-    background: linear-gradient(180deg, rgba(109, 143, 99, 0.14) 0%, rgba(109, 143, 99, 0.06) 100%);
+    background: linear-gradient(180deg, rgba(109, 143, 99, 0.22) 0%, rgba(109, 143, 99, 0.1) 100%);
 }
 
 .event-public--detail .event-external-info-notice--top {
     border-top: none;
-    border-bottom: 1px solid rgba(109, 143, 99, 0.22);
+    border-bottom: 1px solid rgba(109, 143, 99, 0.28);
 }
 
-.event-public--detail .event-external-info-notice--bottom {
-    border-top: 1px solid rgba(109, 143, 99, 0.22);
-    border-bottom: none;
+.event-public--detail .event-external-info-notice__link {
+    font-weight: 800;
+    font-size: 1.05em;
+    text-decoration-thickness: 2.5px;
+    text-underline-offset: 0.2em;
 }
 
-.event-public__footer--shell {
+.event-public--detail .event-external-info-disclaimer {
+    margin: 0;
+    padding: 0.65rem clamp(1rem, 3vw, 1.35rem) 0.85rem;
+    font-family: var(--ev-sans);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    text-align: center;
+    color: var(--li-text-soft);
+    background: rgba(248, 250, 252, 0.95);
+    border-top: 1px solid var(--li-border);
+}
+
+.event-public__footer.event-public__footer--shell {
     padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 4vw, 1.5rem) 0;
-    margin-top: clamp(0.5rem, 1.5vw, 0.85rem);
+    margin-top: clamp(0.75rem, 2vw, 1.15rem);
 }
 
 .event-public__footer--shell .event-site-line {
@@ -1372,6 +1388,19 @@ a.event-public__tag-pill:hover {
     text-transform: uppercase;
     color: var(--li-text-soft);
     line-height: 1.2;
+}
+
+.event-hero-meta__label--nested {
+    margin-top: 0.35rem;
+}
+
+.event-hero-meta__admission {
+    margin: 0;
+    font-family: var(--ev-sans);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--li-green-dark);
+    line-height: 1.3;
 }
 
 .event-hero-meta__chips {
@@ -2213,7 +2242,7 @@ a.event-hero-chip--category-link:hover {
 
 .event-public__footer {
     padding: 0 clamp(1.25rem, 4vw, 2rem) 1.5rem;
-    margin-top: -0.5rem;
+    margin-top: 0.75rem;
 }
 
 .organizer-public .event-public__footer {

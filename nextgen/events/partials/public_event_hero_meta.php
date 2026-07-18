@@ -12,26 +12,34 @@ declare(strict_types=1);
  * @var list<array{id:int,color:string,name:string}> $eventCategories
  * @var list<array{id:int,name:string}> $eventTags
  * @var list<array{id:int,name:string}> $eventDjs
+ * @var string|null $costText
  */
 $hasOrganizers = $eventOrganizers !== [];
 $hasStyles = $eventMainStyles !== [] || $eventSupplementaryStyles !== [];
 $hasCategories = $eventCategories !== [];
 $hasTags = $eventTags !== [];
 $hasDjs = $eventDjs !== [];
+$hasAdmission = isset($costText) && $costText !== null && $costText !== '';
 
-if (!$hasOrganizers && !$hasStyles && !$hasCategories && !$hasTags && !$hasDjs) {
+if (!$hasOrganizers && !$hasStyles && !$hasCategories && !$hasTags && !$hasDjs && !$hasAdmission) {
     return;
 }
 ?>
 <div class="event-hero-meta" role="group" aria-label="<?= h($lang === 'en' ? 'Event details' : 'Esemény adatok') ?>">
-    <?php if ($hasOrganizers): ?>
+    <?php if ($hasOrganizers || $hasAdmission): ?>
         <div class="event-hero-meta__item">
-            <span class="event-hero-meta__label"><?= h($T['section_organizers']) ?></span>
-            <div class="event-hero-meta__chips">
-                <?php foreach ($eventOrganizers as $org): ?>
-                    <a class="event-hero-chip event-hero-chip--link" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
-                <?php endforeach; ?>
-            </div>
+            <?php if ($hasOrganizers): ?>
+                <span class="event-hero-meta__label"><?= h($T['section_organizers']) ?></span>
+                <div class="event-hero-meta__chips">
+                    <?php foreach ($eventOrganizers as $org): ?>
+                        <a class="event-hero-chip event-hero-chip--link" href="<?= h(events_public_organizer_page_url((int) $org['id'], $lang)) ?>"><?= h((string) $org['name']) ?></a>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($hasAdmission): ?>
+                <span class="event-hero-meta__label<?= $hasOrganizers ? ' event-hero-meta__label--nested' : '' ?>"><?= h($T['meta_price']) ?></span>
+                <p class="event-hero-meta__admission"><?= h((string) $costText) ?></p>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
