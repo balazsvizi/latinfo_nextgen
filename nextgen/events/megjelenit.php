@@ -352,7 +352,6 @@ header('Content-Type: text/html; charset=UTF-8');
         </div>
         <?php if ($eventExternalUrl !== ''): ?>
             <?php $placement = 'bottom'; require __DIR__ . '/partials/public_event_external_info_notice.php'; ?>
-            <p class="event-external-info-disclaimer" role="note"><?= h((string) ($T['external_info_disclaimer'] ?? '')) ?></p>
         <?php endif; ?>
     </div>
 </article>
