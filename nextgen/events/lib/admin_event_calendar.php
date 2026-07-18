@@ -82,6 +82,19 @@ function events_admin_calendar_event_block_style_for_event(
 }
 
 /**
+ * Aktuális naptári nap: magyar idő szerint hajnali 4:00-ig még az előző nap számít „mainak”.
+ */
+function events_admin_calendar_effective_today(): DateTimeImmutable {
+    $tz = new DateTimeZone('Europe/Budapest');
+    $now = new DateTimeImmutable('now', $tz);
+    if ((int) $now->format('G') < 4) {
+        $now = $now->modify('-1 day');
+    }
+
+    return $now->setTime(0, 0, 0);
+}
+
+/**
  * @return array{0: DateTimeImmutable, 1: DateTimeImmutable, 2: string}
  */
 function events_admin_calendar_resolve_month(string $monthParam): array {
@@ -96,7 +109,7 @@ function events_admin_calendar_resolve_month(string $monthParam): array {
             // fall through
         }
     }
-    $today = new DateTimeImmutable('today');
+    $today = events_admin_calendar_effective_today();
     $first = $today->modify('first day of this month');
 
     return [$first, $first->modify('last day of this month'), $first->format('Y-m')];
@@ -160,7 +173,7 @@ function events_admin_calendar_view_month_key(array $filters): string {
         }
     }
 
-    return (new DateTimeImmutable('today'))->format('Y-m');
+    return events_admin_calendar_effective_today()->format('Y-m');
 }
 
 /**
@@ -177,7 +190,7 @@ function events_admin_calendar_month_key_from_event(array $event): string {
         }
     }
 
-    return (new DateTimeImmutable('today'))->format('Y-m');
+    return events_admin_calendar_effective_today()->format('Y-m');
 }
 
 /**
@@ -186,7 +199,7 @@ function events_admin_calendar_month_key_from_event(array $event): string {
 function events_admin_calendar_grid_days(DateTimeImmutable $monthFirst, DateTimeImmutable $monthLast): array {
     $gridStart = $monthFirst->modify('monday this week');
     $gridEnd = $monthLast->modify('sunday this week');
-    $todayKey = (new DateTimeImmutable('today'))->format('Y-m-d');
+    $todayKey = events_admin_calendar_effective_today()->format('Y-m-d');
     $monthKey = $monthFirst->format('Y-m');
     $days = [];
     $cursor = $gridStart;
@@ -327,7 +340,7 @@ function events_admin_calendar_build_week_layouts(
     DateTimeImmutable $monthFirst,
     DateTimeImmutable $monthLast
 ): array {
-    $todayKey = (new DateTimeImmutable('today'))->format('Y-m-d');
+    $todayKey = events_admin_calendar_effective_today()->format('Y-m-d');
     $weeks = [];
 
     foreach (array_chunk($gridDays, 7) as $weekDays) {
