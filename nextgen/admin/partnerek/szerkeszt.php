@@ -10,6 +10,7 @@ requireLogin();
 
 $db = getDb();
 nextgen_partner_ensure_extended_schema($db);
+nextgen_partner_ensure_assignment_unique_indexes($db);
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 if ($id <= 0) {

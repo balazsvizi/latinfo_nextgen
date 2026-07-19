@@ -212,13 +212,16 @@ function nextgen_partner_has_unique_index_columns(PDO $db, string $table, array 
 function nextgen_partner_table_primary_key_columns(PDO $db, string $table): array
 {
     try {
-        $stmt = $db->query('SHOW INDEX FROM `' . str_replace('`', '', $table) . "` WHERE Key_name = 'PRIMARY'");
+        $stmt = $db->query('SHOW INDEX FROM `' . str_replace('`', '', $table) . '`');
     } catch (Throwable) {
         return [];
     }
 
     $columns = [];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        if ((string) ($row['Key_name'] ?? '') !== 'PRIMARY') {
+            continue;
+        }
         $columns[(int) ($row['Seq_in_index'] ?? 0)] = (string) ($row['Column_name'] ?? '');
     }
     ksort($columns);
@@ -287,9 +290,18 @@ function nextgen_partner_add_unique_index(PDO $db, string $table, string $indexN
     }
 }
 
+/**
+ * migration_partner_roles.sql — több szerep: id PK + (partner, entitás, role_type) unique.
+ */
 function nextgen_partner_migrate_assignment_table_for_multi_role(PDO $db, string $table, string $entityColumn, string $indexName): void
 {
     $safeTable = str_replace('`', '', $table);
+    $safeEntity = str_replace('`', '', $entityColumn);
+    $safeIndex = str_replace('`', '', $indexName);
+    if ($safeEntity !== 'organizer_id' && $safeEntity !== 'tag_id') {
+        return;
+    }
+
     try {
         $db->query('SELECT 1 FROM `' . $safeTable . '` LIMIT 1');
     } catch (Throwable) {
@@ -300,53 +312,121 @@ function nextgen_partner_migrate_assignment_table_for_multi_role(PDO $db, string
         return;
     }
 
-    $pkColumns = nextgen_partner_table_primary_key_columns($db, $safeTable);
+    if (nextgen_partner_assignment_table_supports_multi_role($db, $safeTable, $safeEntity)) {
+        return;
+    }
+
+    $defaultRole = $safeEntity === 'tag_id' ? 'dj' : 'event';
+    nextgen_partner_migrate_assignment_table_via_alter($db, $safeTable, $safeEntity, $safeIndex);
+
+    if (nextgen_partner_assignment_table_supports_multi_role($db, $safeTable, $safeEntity)) {
+        return;
+    }
+
+    nextgen_partner_migrate_assignment_table_via_rebuild($db, $safeTable, $safeEntity, $safeIndex, $defaultRole);
+}
+
+function nextgen_partner_migrate_assignment_table_via_alter(PDO $db, string $table, string $entityColumn, string $indexName): void
+{
+    $pkColumns = nextgen_partner_table_primary_key_columns($db, $table);
     $sortedPk = $pkColumns;
     sort($sortedPk);
     $legacyPk = ['partner_id', $entityColumn];
     sort($legacyPk);
-    $hasIdColumn = nextgen_partner_table_has_column($db, $safeTable, 'id');
+    $hasIdColumn = nextgen_partner_table_has_column($db, $table, 'id');
 
     if ($sortedPk === $legacyPk) {
         if (!$hasIdColumn) {
             try {
                 $db->exec("
-                    ALTER TABLE `{$safeTable}`
+                    ALTER TABLE `{$table}`
                     DROP PRIMARY KEY,
                     ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST
                 ");
             } catch (Throwable $ex) {
-                error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK drop+add: ' . $ex->getMessage());
+                error_log('nextgen_partner_migrate_assignment_table_via_alter PK drop+add: ' . $ex->getMessage());
                 try {
-                    $db->exec("ALTER TABLE `{$safeTable}` ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST, ADD UNIQUE KEY `uk_tmp_partner_row_id` (`id`)");
-                    $db->exec("ALTER TABLE `{$safeTable}` DROP PRIMARY KEY");
-                    $db->exec("ALTER TABLE `{$safeTable}` DROP INDEX `uk_tmp_partner_row_id`, ADD PRIMARY KEY (`id`)");
-                } catch (Throwable $fallbackEx) {
-                    error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK fallback: ' . $fallbackEx->getMessage());
+                    $db->exec("ALTER TABLE `{$table}` DROP PRIMARY KEY");
+                    $db->exec("ALTER TABLE `{$table}` ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST");
+                } catch (Throwable $stepEx) {
+                    error_log('nextgen_partner_migrate_assignment_table_via_alter PK steps: ' . $stepEx->getMessage());
                 }
             }
         } else {
             try {
-                $db->exec("ALTER TABLE `{$safeTable}` DROP PRIMARY KEY, ADD PRIMARY KEY (`id`)");
+                $db->exec("ALTER TABLE `{$table}` DROP PRIMARY KEY, ADD PRIMARY KEY (`id`)");
             } catch (Throwable $ex) {
-                error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK switch: ' . $ex->getMessage());
+                error_log('nextgen_partner_migrate_assignment_table_via_alter PK switch: ' . $ex->getMessage());
             }
         }
     } elseif ($hasIdColumn && !in_array('id', $pkColumns, true)) {
         try {
-            $db->exec("ALTER TABLE `{$safeTable}` ADD PRIMARY KEY (`id`)");
+            if ($pkColumns !== []) {
+                $db->exec("ALTER TABLE `{$table}` DROP PRIMARY KEY");
+            }
+            $db->exec("ALTER TABLE `{$table}` ADD PRIMARY KEY (`id`)");
         } catch (Throwable $ex) {
-            error_log('nextgen_partner_migrate_assignment_table_for_multi_role PK on id: ' . $ex->getMessage());
+            error_log('nextgen_partner_migrate_assignment_table_via_alter PK on id: ' . $ex->getMessage());
         }
     }
 
-    nextgen_partner_drop_legacy_assignment_uniques($db, $safeTable, $entityColumn);
-    nextgen_partner_add_unique_index(
-        $db,
-        $safeTable,
-        $indexName,
-        ['partner_id', $entityColumn, 'role_type']
-    );
+    nextgen_partner_drop_legacy_assignment_uniques($db, $table, $entityColumn);
+    nextgen_partner_add_unique_index($db, $table, $indexName, ['partner_id', $entityColumn, 'role_type']);
+}
+
+function nextgen_partner_migrate_assignment_table_via_rebuild(
+    PDO $db,
+    string $table,
+    string $entityColumn,
+    string $indexName,
+    string $defaultRole
+): void {
+    $tmp = $table . '__roles_mig';
+    $bak = $table . '__roles_bak';
+
+    try {
+        $db->exec('DROP TABLE IF EXISTS `' . $tmp . '`');
+        $db->exec('DROP TABLE IF EXISTS `' . $bak . '`');
+
+        $db->exec("
+            CREATE TABLE `{$tmp}` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `partner_id` INT UNSIGNED NOT NULL,
+                `{$entityColumn}` INT UNSIGNED NOT NULL,
+                `role_type` VARCHAR(16) NOT NULL DEFAULT '{$defaultRole}',
+                `role_note` VARCHAR(500) NULL DEFAULT NULL,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `{$indexName}` (`partner_id`, `{$entityColumn}`, `role_type`),
+                KEY `idx_{$table}_entity` (`{$entityColumn}`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $hasRoleType = nextgen_partner_table_has_column($db, $table, 'role_type');
+        $hasRoleNote = nextgen_partner_table_has_column($db, $table, 'role_note');
+        $hasSort = nextgen_partner_table_has_column($db, $table, 'sort_order');
+
+        $roleTypeExpr = $hasRoleType
+            ? "COALESCE(NULLIF(TRIM(`role_type`), ''), '{$defaultRole}')"
+            : "'{$defaultRole}'";
+        $roleNoteExpr = $hasRoleNote ? '`role_note`' : 'NULL';
+        $sortExpr = $hasSort ? '`sort_order`' : '0';
+
+        $db->exec("
+            INSERT INTO `{$tmp}` (`partner_id`, `{$entityColumn}`, `role_type`, `role_note`, `sort_order`)
+            SELECT `partner_id`, `{$entityColumn}`, {$roleTypeExpr}, {$roleNoteExpr}, {$sortExpr}
+            FROM `{$table}`
+        ");
+
+        $db->exec("RENAME TABLE `{$table}` TO `{$bak}`, `{$tmp}` TO `{$table}`");
+        $db->exec("DROP TABLE `{$bak}`");
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_migrate_assignment_table_via_rebuild: ' . $ex->getMessage());
+        try {
+            $db->exec('DROP TABLE IF EXISTS `' . $tmp . '`');
+        } catch (Throwable) {
+        }
+    }
 }
 
 function nextgen_partner_assignment_table_supports_multi_role(PDO $db, string $table, string $entityColumn): bool
@@ -355,13 +435,12 @@ function nextgen_partner_assignment_table_supports_multi_role(PDO $db, string $t
     if (!nextgen_partner_table_has_column($db, $safeTable, 'role_type')) {
         return false;
     }
+    if (!nextgen_partner_table_has_column($db, $safeTable, 'id')) {
+        return false;
+    }
 
     $pkColumns = nextgen_partner_table_primary_key_columns($db, $safeTable);
-    $sortedPk = $pkColumns;
-    sort($sortedPk);
-    $legacyPk = ['partner_id', $entityColumn];
-    sort($legacyPk);
-    if ($sortedPk === $legacyPk) {
+    if ($pkColumns !== ['id']) {
         return false;
     }
 
