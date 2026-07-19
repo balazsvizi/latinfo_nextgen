@@ -195,4 +195,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php require __DIR__ . '/partials/admin_event_edit_stats.php'; ?>
 
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
+<?php require __DIR__ . '/partials/event_fields_focus_hint_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

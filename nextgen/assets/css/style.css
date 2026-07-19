@@ -3906,6 +3906,32 @@ body.event-edit-cover-lightbox-open {
     white-space: nowrap;
     align-self: center;
 }
+
+.events-field-focus-hint {
+    position: absolute;
+    z-index: 1200;
+    max-width: min(20rem, calc(100vw - 1rem));
+    padding: 0.28rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated, #fff);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.events-field-focus-hint.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .events-edit-cost-block__sep {
     color: var(--text-muted);
     font-weight: 500;

@@ -197,4 +197,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
 <?php if ($eventFormIsCopy): require __DIR__ . '/partials/event_copy_save_script.php'; endif; ?>
+<?php require __DIR__ . '/partials/event_fields_focus_hint_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>
