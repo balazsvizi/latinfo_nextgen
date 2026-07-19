@@ -14,10 +14,14 @@ require_once __DIR__ . '/partials/header.php';
 ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
-<div class="card">
-    <h1 class="card-title">Szervezők</h1>
-    <p class="help">Itt éred el a hozzád rendelt eseményszervezői profilokat, dashboarddal és statisztikákkal.</p>
+<div class="partner-page-head">
+    <div>
+        <h1 class="partner-page-title">Szervezők</h1>
+        <p class="partner-page-lead">Válaszd ki a szervezői profilod — dashboard, statisztikák, és az eseményeid.</p>
+    </div>
+</div>
 
+<div class="card">
     <?php if ($organizers === []): ?>
         <p class="help">Még nincs hozzárendelt szerveződ. Kérjük, vedd fel a kapcsolatot az üzemeltetővel.</p>
     <?php else: ?>
@@ -25,7 +29,6 @@ require_once __DIR__ . '/partials/header.php';
             <?php foreach ($organizers as $org): ?>
                 <?php
                 $oid = (int) ($org['organizer_id'] ?? $org['id'] ?? 0);
-                $publicUrl = events_url('organizer.php?id=') . $oid;
                 $roleTypes = $org['role_types'] ?? [];
                 if (!is_array($roleTypes) || $roleTypes === []) {
                     $roleTypes = ['event'];
@@ -44,7 +47,7 @@ require_once __DIR__ . '/partials/header.php';
                             <?php if ($orgNote !== ''): ?>
                                 · <?= h($orgNote) ?>
                             <?php else: ?>
-                                · Nyilvános: <?= h($publicUrl) ?>
+                                · Dashboard és statisztikák
                             <?php endif; ?>
                         </p>
                     </div>

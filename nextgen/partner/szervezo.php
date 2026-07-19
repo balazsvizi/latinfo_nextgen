@@ -9,6 +9,8 @@ $partnerId = partner_current_id();
 $organizerId = (int) ($_GET['id'] ?? 0);
 partner_require_organizer_access($db, $organizerId);
 
+partner_portal_set_context('o:' . $organizerId);
+
 $organizer = partner_organizer_summary($db, $organizerId);
 if ($organizer === null) {
     flash('error', 'A szervező nem található.');
@@ -19,6 +21,12 @@ $statsParams = events_edit_stats_params_from_request($_GET);
 $statsData = events_edit_stats_for_organizer($db, $organizerId, $statsParams);
 $statsEventRows = $statsData['event_rows'] ?? [];
 $draftRows = $statsData['draft_rows'] ?? [];
+$statsPreferPartnerLinks = true;
+$statsEventDetailUrl = static function (array $row): ?string {
+    $id = (int) ($row['id'] ?? 0);
+
+    return $id > 0 ? partner_portal_event_detail_url($id) : null;
+};
 
 $orgName = (string) ($organizer['name'] ?? '');
 $publicUrl = events_url('organizer.php?id=') . $organizerId;
@@ -29,14 +37,15 @@ require_once __DIR__ . '/partials/header.php';
 ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
-<p class="toolbar">
+<p class="toolbar partner-toolbar">
     <a href="<?= h(partner_url('szervezok.php')) ?>" class="btn btn-secondary">← Szervezők</a>
-    <a href="<?= h($publicUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>
+    <a href="<?= h(partner_url('esemenyek.php')) ?>" class="btn btn-secondary">Eseménylista</a>
+    <a href="<?= h($publicUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal ↗</a>
 </p>
 
 <div class="card szervezo-profile-card">
     <h1 class="card-title"><?= h($orgName) ?></h1>
-    <p class="help">Szervezői dashboard – események és megtekintési statisztikák.</p>
+    <p class="help">Szervezői dashboard – események és megtekintési statisztikák. Az eseményekre kattintva a partner részletek nyílnak meg.</p>
 </div>
 
 <div class="dash-cards szervezo-dash-cards">

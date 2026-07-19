@@ -35,6 +35,10 @@ $eventPublicUrl = static function (array $row) use ($publishedStatus): ?string {
     return events_public_canonical_url($slug);
 };
 
+/** @var (callable(array<string,mixed>): ?string)|null $statsEventDetailUrl */
+$statsEventDetailUrl = $statsEventDetailUrl ?? null;
+$statsPreferPartnerLinks = !empty($statsPreferPartnerLinks);
+
 $eventDateYmd = static function (array $row, string $key): string {
     $raw = trim((string) ($row[$key] ?? ''));
     if ($raw === '') {
@@ -154,7 +158,9 @@ $eventDateYmd = static function (array $row, string $key): string {
     <?php endif; ?>
 
     <h3 class="events-edit-stats__events-title">Események</h3>
-    <p class="events-edit-stats__events-hint">Alapból az időszakban megtekintéssel rendelkező események. A közzétett eseményekre kattintva a nyilvános oldal nyílik meg.</p>
+    <p class="events-edit-stats__events-hint"><?= $statsPreferPartnerLinks
+        ? 'Kattints az eseményre a partner részletekhez. A nyilvános oldal a részletek oldalon érhető el.'
+        : 'Alapból az időszakban megtekintéssel rendelkező események. A közzétett eseményekre kattintva a nyilvános oldal nyílik meg.' ?></p>
 
     <?php if ($statsEventRows === []): ?>
         <p class="help events-edit-stats__empty">Nincs közzétett eseményed.</p>
@@ -249,6 +255,10 @@ $eventDateYmd = static function (array $row, string $key): string {
                         }
                         $searchName = mb_strtolower((string) ($row['event_name'] ?? ''), 'UTF-8');
                         $publicUrl = $eventPublicUrl($row);
+                        $detailUrl = is_callable($statsEventDetailUrl) ? $statsEventDetailUrl($row) : null;
+                        $primaryUrl = $statsPreferPartnerLinks
+                            ? ($detailUrl ?? $publicUrl)
+                            : ($publicUrl ?? $detailUrl);
                         $eventName = (string) ($row['event_name'] ?? '');
                         ?>
                         <tr
@@ -263,8 +273,8 @@ $eventDateYmd = static function (array $row, string $key): string {
                         >
                             <td><?= h(events_admin_format_datum_cell($row)) ?></td>
                             <td>
-                                <?php if ($publicUrl !== null): ?>
-                                    <a href="<?= h($publicUrl) ?>" target="_blank" rel="noopener"><?= h($eventName) ?></a>
+                                <?php if ($primaryUrl !== null): ?>
+                                    <a href="<?= h($primaryUrl) ?>"<?= (!$statsPreferPartnerLinks && $publicUrl !== null) ? ' target="_blank" rel="noopener"' : '' ?>><?= h($eventName) ?></a>
                                 <?php else: ?>
                                     <?= h($eventName) ?>
                                 <?php endif; ?>

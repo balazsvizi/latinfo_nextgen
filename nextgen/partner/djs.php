@@ -14,12 +14,16 @@ $activeNav = 'djs';
 require_once __DIR__ . '/partials/header.php';
 ?>
 
-<div class="card">
-    <h1 class="card-title">DJ-k</h1>
-    <p class="help">A hozzád rendelt DJ profilok (nyilvános címke oldalak).</p>
+<div class="partner-page-head">
+    <div>
+        <h1 class="partner-page-title">DJ profilok</h1>
+        <p class="partner-page-lead">Válaszd ki a DJ profilod — események, statisztika-szerű összefoglaló, és a nyilvános oldal.</p>
+    </div>
+</div>
 
+<div class="card">
     <?php if ($djs === []): ?>
-        <p class="help">Még nincs hozzárendelt DJ oldalad.</p>
+        <p class="help">Még nincs hozzárendelt DJ oldalad. Ha DJ-ként is dolgozol, kérd az adminisztrátortól a hozzárendelést.</p>
     <?php else: ?>
         <div class="partner-entity-list">
             <?php foreach ($djs as $dj): ?>
@@ -40,7 +44,7 @@ require_once __DIR__ . '/partials/header.php';
                     }
                 }
                 ?>
-                <a class="partner-entity-card" href="<?= h($publicUrl) ?>" target="_blank" rel="noopener">
+                <a class="partner-entity-card" href="<?= h(partner_url('dj.php?id=') . $tagId) ?>">
                     <div>
                         <p class="partner-entity-card__title"><?= h((string) ($dj['name'] ?? '')) ?></p>
                         <p class="partner-entity-card__meta">
@@ -55,11 +59,11 @@ require_once __DIR__ . '/partials/header.php';
                                 · <?= (int) ($stats['event_total'] ?? 0) ?> esemény,
                                 <?= (int) ($stats['event_upcoming'] ?? 0) ?> közelgő
                             <?php else: ?>
-                                · Nyilvános DJ oldal
+                                · Partner DJ dashboard
                             <?php endif; ?>
                         </p>
                     </div>
-                    <span aria-hidden="true">↗</span>
+                    <span aria-hidden="true">→</span>
                 </a>
             <?php endforeach; ?>
         </div>

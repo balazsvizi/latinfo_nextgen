@@ -9,6 +9,7 @@ require_once $nextgenRoot . '/includes/functions.php';
 require_once $nextgenRoot . '/lib/partner/partners.php';
 require_once $nextgenRoot . '/lib/partner/messages.php';
 require_once $nextgenRoot . '/lib/partner/password_reset.php';
+require_once $nextgenRoot . '/lib/partner/portal.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params(0, '/');
@@ -22,6 +23,8 @@ require_once $nextgenRoot . '/events/lib/event_edit_stats.php';
 require_once $nextgenRoot . '/events/lib/admin_event_filters.php';
 require_once $nextgenRoot . '/events/lib/organizers_admin.php';
 require_once $nextgenRoot . '/events/lib/event_public_djs.php';
+require_once $nextgenRoot . '/events/lib/event_public_tags.php';
+require_once $nextgenRoot . '/events/lib/admin_event_calendar.php';
 
 if (!function_exists('events_url')) {
     function events_url(string $path = ''): string

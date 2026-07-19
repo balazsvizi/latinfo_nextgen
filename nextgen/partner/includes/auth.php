@@ -125,3 +125,21 @@ function partner_require_organizer_access(PDO $db, int $organizerId): void
         redirect(partner_url('szervezok.php'));
     }
 }
+
+function partner_require_dj_access(PDO $db, int $tagId): void
+{
+    partner_require_login();
+    if (!nextgen_partner_can_access_dj($db, partner_current_id(), $tagId)) {
+        flash('error', 'Nincs hozzáférésed ehhez a DJ profilhoz.');
+        redirect(partner_url('djs.php'));
+    }
+}
+
+function partner_require_event_access(PDO $db, int $eventId): void
+{
+    partner_require_login();
+    if (!partner_portal_can_access_event($db, partner_current_id(), $eventId)) {
+        flash('error', 'Nincs hozzáférésed ehhez az eseményhez.');
+        redirect(partner_url('esemenyek.php'));
+    }
+}
