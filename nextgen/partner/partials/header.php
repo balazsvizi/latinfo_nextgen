@@ -9,7 +9,7 @@ declare(strict_types=1);
     <title><?= h(trim(SITE_NAME . ' Partnerportál')) ?><?= isset($pageTitle) ? ' – ' . h($pageTitle) : '' ?></title>
     <?php require dirname(__DIR__, 2) . '/includes/favicon_head.php'; ?>
     <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>">
-    <link rel="stylesheet" href="<?= h(partner_url('assets/css/portal.css')) ?>">
+    <link rel="stylesheet" href="<?= h(partner_asset_url('assets/css/portal.css')) ?>">
     <?php if (!empty($extraHead)) {
         echo $extraHead;
     } ?>

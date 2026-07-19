@@ -129,9 +129,13 @@ if (!function_exists('partner_url')) {
 }
 
 if (!function_exists('partner_asset_url')) {
+    /**
+     * Statikus asset a valós nextgen/partner/assets útvonalon
+     * (nem igényel /partnerportal rewrite-ot).
+     */
     function partner_asset_url(string $path): string
     {
-        return partner_url(ltrim($path, '/'));
+        return nextgen_url('partner/' . ltrim($path, '/'));
     }
 }
 
