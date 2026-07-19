@@ -58,7 +58,7 @@ ob_start();
 <?php
 $authContent = (string) ob_get_clean();
 $authTitle = 'Partner bejelentkezés';
-$authSubtitle = 'Partner portál – szervezők, DJ-k, üzenetek';
+$authSubtitle = 'Partnerportál';
 $authTableReady = $tableReady;
 $authHideLoginLink = true;
 require __DIR__ . '/partials/auth_layout.php';

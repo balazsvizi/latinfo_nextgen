@@ -80,6 +80,10 @@
     padding: 1.5rem 1.25rem 3rem;
 }
 
+.partner-dashboard-card .card-title {
+    margin-bottom: 0.5rem;
+}
+
 .partner-footer {
     border-top: 1px solid #d8e0ea;
     background: #eef2f7;

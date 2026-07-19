@@ -1,7 +1,7 @@
 </main>
 <footer class="main-footer partner-footer">
     <div class="footer-inner">
-        <p><?= h(SITE_NAME) ?> Partner portál</p>
+        <p><?= h(SITE_NAME) ?> Partnerportál</p>
     </div>
 </footer>
 </body>

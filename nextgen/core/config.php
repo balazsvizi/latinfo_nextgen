@@ -74,9 +74,9 @@ if (!defined('NEXTGEN_WEB')) {
     define('NEXTGEN_WEB', $nextgenWeb);
 }
 
-/** Partner portál URL szegmens (pl. partners → /partners/). */
+/** Partner portál URL szegmens (pl. partnerportal → /partnerportal/). */
 if (!defined('PARTNERS_PATH')) {
-    define('PARTNERS_PATH', trim((string) cfg_get('PARTNERS_PATH', 'partners', $localConfig), '/'));
+    define('PARTNERS_PATH', trim((string) cfg_get('PARTNERS_PATH', 'partnerportal', $localConfig), '/'));
 }
 
 if (!function_exists('site_url')) {
@@ -113,15 +113,15 @@ if (!function_exists('nextgen_url')) {
 
 if (!function_exists('partner_url')) {
   /**
-   * Partner portál URL (pl. /partners/, /partners/index.php).
-   */
+ * Partner portál URL (pl. /partnerportal/, /partnerportal/index.php).
+ */
     function partner_url(string $path = ''): string
     {
         $path = ltrim($path, '/');
         if ($path === 'login.php') {
             $path = '';
         }
-        $segment = defined('PARTNERS_PATH') && PARTNERS_PATH !== '' ? PARTNERS_PATH : 'partners';
+        $segment = defined('PARTNERS_PATH') && PARTNERS_PATH !== '' ? PARTNERS_PATH : 'partnerportal';
         $base = site_url($segment . '/');
 
         return $path === '' ? rtrim($base, '/') . '/' : rtrim($base, '/') . '/' . $path;

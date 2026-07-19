@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Átirányítás az egységes partner portálra (/partners/).
+ * Átirányítás az egységes partner portálra (/partnerportal/).
  */
 require_once dirname(__DIR__, 2) . '/core/config.php';
 require_once dirname(__DIR__, 2) . '/includes/functions.php';

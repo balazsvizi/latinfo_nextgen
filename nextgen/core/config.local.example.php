@@ -22,6 +22,9 @@ return [
     // 'UPLOAD_PATH' => __DIR__ . '/../uploads/szamlak',
     // 'UPLOAD_URL' => '/nextgen/uploads/szamlak',
 
+    // Partner portál: /{PARTNERS_PATH}/ (alap: partnerportal)
+    // 'PARTNERS_PATH' => 'partnerportal',
+
     // Nyilvános naptár: /{EVENTS_HOME_PATH}/ (alap: events)
     // 'EVENTS_HOME_PATH' => 'events',
 

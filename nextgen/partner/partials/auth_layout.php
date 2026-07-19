@@ -21,7 +21,7 @@ $authHideLoginLink = $authHideLoginLink ?? false;
 </head>
 <body class="login-page partner-login-page">
     <div class="login-box">
-        <h1 class="login-brand"><span class="logo-site"><?= h(SITE_NAME) ?></span> <span class="logo-area">Partner</span></h1>
+        <h1 class="login-brand"><span class="logo-site"><?= h(SITE_NAME) ?></span> <span class="logo-area">Partnerportál</span></h1>
         <?php if ($authSubtitle !== ''): ?>
             <p class="login-sub"><?= h($authSubtitle) ?></p>
         <?php endif; ?>
