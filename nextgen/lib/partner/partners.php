@@ -312,18 +312,36 @@ function nextgen_partner_migrate_assignment_table_for_multi_role(PDO $db, string
         return;
     }
 
-    if (nextgen_partner_assignment_table_supports_multi_role($db, $safeTable, $safeEntity)) {
+    $status = nextgen_partner_assignment_table_multi_role_status($db, $safeTable, $safeEntity);
+    $ideal = $status['has_id']
+        && $status['pk'] === ['id']
+        && $status['has_role_unique']
+        && !$status['has_legacy_pair'];
+
+    if ($ideal) {
         return;
     }
 
     $defaultRole = $safeEntity === 'tag_id' ? 'dj' : 'event';
     nextgen_partner_migrate_assignment_table_via_alter($db, $safeTable, $safeEntity, $safeIndex);
 
-    if (nextgen_partner_assignment_table_supports_multi_role($db, $safeTable, $safeEntity)) {
+    $status = nextgen_partner_assignment_table_multi_role_status($db, $safeTable, $safeEntity);
+    $ideal = $status['has_id']
+        && $status['pk'] === ['id']
+        && $status['has_role_unique']
+        && !$status['has_legacy_pair'];
+
+    if ($ideal) {
         return;
     }
 
-    nextgen_partner_migrate_assignment_table_via_rebuild($db, $safeTable, $safeEntity, $safeIndex, $defaultRole);
+    // Ha még mindig legacy pár-constraint van, táblaújraépítés.
+    if ($status['has_legacy_pair'] || !$status['has_id'] || $status['pk'] !== ['id']) {
+        nextgen_partner_migrate_assignment_table_via_rebuild($db, $safeTable, $safeEntity, $safeIndex, $defaultRole);
+    } else {
+        nextgen_partner_drop_legacy_assignment_uniques($db, $safeTable, $safeEntity);
+        nextgen_partner_add_unique_index($db, $safeTable, $safeIndex, ['partner_id', $safeEntity, 'role_type']);
+    }
 }
 
 function nextgen_partner_migrate_assignment_table_via_alter(PDO $db, string $table, string $entityColumn, string $indexName): void
@@ -385,6 +403,7 @@ function nextgen_partner_migrate_assignment_table_via_rebuild(
     $bak = $table . '__roles_bak';
 
     try {
+        $db->exec('SET FOREIGN_KEY_CHECKS=0');
         $db->exec('DROP TABLE IF EXISTS `' . $tmp . '`');
         $db->exec('DROP TABLE IF EXISTS `' . $bak . '`');
 
@@ -426,35 +445,123 @@ function nextgen_partner_migrate_assignment_table_via_rebuild(
             $db->exec('DROP TABLE IF EXISTS `' . $tmp . '`');
         } catch (Throwable) {
         }
+    } finally {
+        try {
+            $db->exec('SET FOREIGN_KEY_CHECKS=1');
+        } catch (Throwable) {
+        }
     }
 }
 
-function nextgen_partner_assignment_table_supports_multi_role(PDO $db, string $table, string $entityColumn): bool
+/**
+ * Van-e még (partner_id, entitás) összetett egyediség (PK vagy UNIQUE) role_type nélkül.
+ */
+function nextgen_partner_assignment_table_has_legacy_pair_constraint(PDO $db, string $table, string $entityColumn): bool
 {
     $safeTable = str_replace('`', '', $table);
-    if (!nextgen_partner_table_has_column($db, $safeTable, 'role_type')) {
-        return false;
-    }
-    if (!nextgen_partner_table_has_column($db, $safeTable, 'id')) {
-        return false;
+    $target = ['partner_id', $entityColumn];
+    sort($target);
+
+    $pk = nextgen_partner_table_primary_key_columns($db, $safeTable);
+    $sortedPk = $pk;
+    sort($sortedPk);
+    if ($sortedPk === $target) {
+        return true;
     }
 
-    $pkColumns = nextgen_partner_table_primary_key_columns($db, $safeTable);
-    if ($pkColumns !== ['id']) {
-        return false;
+    foreach (nextgen_partner_table_unique_indexes($db, $safeTable) as $indexColumns) {
+        $sorted = $indexColumns;
+        sort($sorted);
+        if ($sorted === $target) {
+            return true;
+        }
     }
 
-    return nextgen_partner_has_unique_index_columns(
+    return false;
+}
+
+/**
+ * @return array{
+ *   ok: bool,
+ *   has_role_type: bool,
+ *   has_id: bool,
+ *   pk: list<string>,
+ *   has_role_unique: bool,
+ *   has_legacy_pair: bool
+ * }
+ */
+function nextgen_partner_assignment_table_multi_role_status(PDO $db, string $table, string $entityColumn): array
+{
+    $safeTable = str_replace('`', '', $table);
+    $hasRoleType = nextgen_partner_table_has_column($db, $safeTable, 'role_type');
+    $hasId = nextgen_partner_table_has_column($db, $safeTable, 'id');
+    $pk = nextgen_partner_table_primary_key_columns($db, $safeTable);
+    $hasRoleUnique = $hasRoleType && nextgen_partner_has_unique_index_columns(
         $db,
         $safeTable,
         ['partner_id', $entityColumn, 'role_type']
     );
+    $hasLegacy = nextgen_partner_assignment_table_has_legacy_pair_constraint($db, $safeTable, $entityColumn);
+
+    $ok = $hasRoleType
+        && !$hasLegacy
+        && (
+            // Ideális: id PK + role unique
+            ($hasId && $pk === ['id'] && $hasRoleUnique)
+            // Elfogadható: nincs legacy pár-constraint, van role_type (mentés működhet)
+            || ($hasRoleType && !$hasLegacy)
+        );
+
+    return [
+        'ok' => $ok,
+        'has_role_type' => $hasRoleType,
+        'has_id' => $hasId,
+        'pk' => $pk,
+        'has_role_unique' => $hasRoleUnique,
+        'has_legacy_pair' => $hasLegacy,
+    ];
+}
+
+function nextgen_partner_assignment_table_supports_multi_role(PDO $db, string $table, string $entityColumn): bool
+{
+    return nextgen_partner_assignment_table_multi_role_status($db, $table, $entityColumn)['ok'];
 }
 
 function nextgen_partner_assignment_tables_support_multi_role(PDO $db): bool
 {
     return nextgen_partner_assignment_table_supports_multi_role($db, 'nextgen_partner_events_organizers', 'organizer_id')
         && nextgen_partner_assignment_table_supports_multi_role($db, 'nextgen_partner_djs', 'tag_id');
+}
+
+function nextgen_partner_assignment_tables_multi_role_diagnostic(PDO $db): string
+{
+    $parts = [];
+    foreach (
+        [
+            'org' => ['nextgen_partner_events_organizers', 'organizer_id'],
+            'dj' => ['nextgen_partner_djs', 'tag_id'],
+        ] as $label => [$table, $entity]
+    ) {
+        try {
+            $db->query('SELECT 1 FROM `' . $table . '` LIMIT 1');
+        } catch (Throwable) {
+            $parts[] = $label . ': tábla hiányzik';
+            continue;
+        }
+        $s = nextgen_partner_assignment_table_multi_role_status($db, $table, $entity);
+        $parts[] = sprintf(
+            '%s: ok=%s role=%s id=%s pk=[%s] role_uq=%s legacy=%s',
+            $label,
+            $s['ok'] ? '1' : '0',
+            $s['has_role_type'] ? '1' : '0',
+            $s['has_id'] ? '1' : '0',
+            implode(',', $s['pk']),
+            $s['has_role_unique'] ? '1' : '0',
+            $s['has_legacy_pair'] ? '1' : '0'
+        );
+    }
+
+    return implode(' | ', $parts);
 }
 
 function nextgen_partner_is_duplicate_key_exception(Throwable $ex): bool
@@ -1177,23 +1284,39 @@ function nextgen_partner_sync_assignments(
     nextgen_partner_ensure_extended_schema($db);
     nextgen_partner_ensure_assignment_unique_indexes($db);
 
+    // Mentés előtt mindig dobjuk a legacy (partner, entitás) unique-okat.
+    nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_events_organizers', 'organizer_id');
+    nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_djs', 'tag_id');
+
     $attempt = 0;
     while ($attempt < 2) {
         $attempt++;
         if ($attempt > 1) {
             nextgen_partner_ensure_assignment_unique_indexes($db);
+            nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_events_organizers', 'organizer_id');
+            nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_djs', 'tag_id');
         }
 
         try {
             if (
                 ($organizerRows !== [] || $djRows !== [])
-                && !nextgen_partner_assignment_tables_support_multi_role($db)
+                && (
+                    nextgen_partner_assignment_table_has_legacy_pair_constraint($db, 'nextgen_partner_events_organizers', 'organizer_id')
+                    || nextgen_partner_assignment_table_has_legacy_pair_constraint($db, 'nextgen_partner_djs', 'tag_id')
+                )
             ) {
                 nextgen_partner_ensure_assignment_unique_indexes($db);
-                if (!nextgen_partner_assignment_tables_support_multi_role($db)) {
+                nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_events_organizers', 'organizer_id');
+                nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_djs', 'tag_id');
+
+                if (
+                    nextgen_partner_assignment_table_has_legacy_pair_constraint($db, 'nextgen_partner_events_organizers', 'organizer_id')
+                    || nextgen_partner_assignment_table_has_legacy_pair_constraint($db, 'nextgen_partner_djs', 'tag_id')
+                ) {
                     return [
                         'ok' => false,
-                        'error' => 'Hozzárendelések mentése sikertelen. Futtasd: nextgen/partner/sql/migration_partner_roles.sql',
+                        'error' => 'Hozzárendelések mentése sikertelen (régi egyedi kulcs). '
+                            . nextgen_partner_assignment_tables_multi_role_diagnostic($db),
                     ];
                 }
             }
@@ -1252,18 +1375,23 @@ function nextgen_partner_sync_assignments(
                 continue;
             }
 
-            if (!nextgen_partner_assignment_tables_support_multi_role($db)) {
-                return [
-                    'ok' => false,
-                    'error' => 'Hozzárendelések mentése sikertelen. Futtasd: nextgen/partner/sql/migration_partner_roles.sql',
-                ];
-            }
+            $hint = nextgen_partner_assignment_tables_multi_role_diagnostic($db);
+            $sqlState = $ex instanceof PDOException ? (string) ($ex->errorInfo[0] ?? '') : '';
+            $driverCode = $ex instanceof PDOException ? (string) ($ex->errorInfo[1] ?? '') : '';
 
-            return ['ok' => false, 'error' => 'Hozzárendelések mentése sikertelen.'];
+            return [
+                'ok' => false,
+                'error' => 'Hozzárendelések mentése sikertelen'
+                    . ($driverCode !== '' ? " (SQL {$driverCode}" . ($sqlState !== '' ? "/{$sqlState}" : '') . ')' : '')
+                    . '. ' . $hint,
+            ];
         }
     }
 
-    return ['ok' => false, 'error' => 'Hozzárendelések mentése sikertelen.'];
+    return [
+        'ok' => false,
+        'error' => 'Hozzárendelések mentése sikertelen. ' . nextgen_partner_assignment_tables_multi_role_diagnostic($db),
+    ];
 }
 
 /**

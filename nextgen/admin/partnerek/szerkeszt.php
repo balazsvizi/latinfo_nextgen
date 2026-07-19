@@ -11,6 +11,11 @@ requireLogin();
 $db = getDb();
 nextgen_partner_ensure_extended_schema($db);
 nextgen_partner_ensure_assignment_unique_indexes($db);
+nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_events_organizers', 'organizer_id');
+nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_djs', 'tag_id');
+$partnerSchemaDiag = nextgen_partner_assignment_tables_multi_role_diagnostic($db);
+$partnerSchemaNeedsFix = nextgen_partner_assignment_table_has_legacy_pair_constraint($db, 'nextgen_partner_events_organizers', 'organizer_id')
+    || nextgen_partner_assignment_table_has_legacy_pair_constraint($db, 'nextgen_partner_djs', 'tag_id');
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 if ($id <= 0) {
@@ -158,6 +163,12 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
+<?php if ($partnerSchemaNeedsFix): ?>
+    <p class="alert alert-warning">
+        A partner hozzárendelési séma még nem teljesen migrált (régi egyedi kulcs).
+        <br><small><?= h($partnerSchemaDiag) ?></small>
+    </p>
+<?php endif; ?>
 
 <div class="card">
     <h2>Partner szerkesztése</h2>
