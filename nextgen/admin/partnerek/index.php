@@ -88,15 +88,17 @@ $partnerActivityLogGlobal = true;
         </p>
     <?php endif; ?>
     <p class="toolbar">
-        <form method="get" style="display:inline-flex;gap:0.5rem;flex-wrap:wrap;">
-            <input type="search" name="kereso" placeholder="Név, település, kieg. infó, e-mail, ID…" value="<?= h($kereso) ?>">
+        <form method="get" id="partners-filter-form" style="display:inline-flex;gap:0.5rem;flex-wrap:wrap;">
+            <input type="search" name="kereso" id="partners-filter-kereso" placeholder="Név, település, kieg. infó, e-mail, ID…" value="<?= h($kereso) ?>" autocomplete="off">
             <?php if ($order !== 'letrehozva'): ?>
                 <input type="hidden" name="order" value="<?= h($order) ?>">
             <?php endif; ?>
             <?php if (!($order === 'letrehozva' && $dirParam === 'desc')): ?>
                 <input type="hidden" name="dir" value="<?= h($dirParam) ?>">
             <?php endif; ?>
-            <button type="submit" class="btn btn-secondary btn-sm">Keresés</button>
+            <noscript>
+                <button type="submit" class="btn btn-secondary btn-sm">Keresés</button>
+            </noscript>
         </form>
         <a href="<?= h(nextgen_url('admin/partnerek/letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új partner</a>
         <a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" class="btn btn-secondary btn-sm">
@@ -155,4 +157,55 @@ $partnerActivityLogGlobal = true;
     <?php endif; ?>
 </div>
 <?php require __DIR__ . '/partials/activity_log.php'; ?>
+<script>
+(function () {
+    var form = document.getElementById('partners-filter-form');
+    var input = document.getElementById('partners-filter-kereso');
+    if (!form || !input) {
+        return;
+    }
+
+    var debounceTimer = null;
+    var lastSubmitted = input.value;
+
+    function submitForm() {
+        if (input.value === lastSubmitted) {
+            return;
+        }
+        lastSubmitted = input.value;
+        try {
+            sessionStorage.setItem('partners-filter-focus', '1');
+            sessionStorage.setItem('partners-filter-caret', String(input.selectionStart || input.value.length));
+        } catch (e) {}
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
+    }
+
+    input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(submitForm, 350);
+    });
+
+    input.addEventListener('search', function () {
+        clearTimeout(debounceTimer);
+        submitForm();
+    });
+
+    try {
+        if (sessionStorage.getItem('partners-filter-focus') === '1') {
+            sessionStorage.removeItem('partners-filter-focus');
+            var caret = parseInt(sessionStorage.getItem('partners-filter-caret') || '', 10);
+            sessionStorage.removeItem('partners-filter-caret');
+            input.focus();
+            if (!isNaN(caret)) {
+                var pos = Math.min(Math.max(caret, 0), input.value.length);
+                input.setSelectionRange(pos, pos);
+            }
+        }
+    } catch (e) {}
+})();
+</script>
 <?php require_once dirname(__DIR__, 2) . '/partials/footer.php'; ?>
