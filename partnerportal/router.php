@@ -29,8 +29,13 @@ if (str_starts_with($rel, $base . '/')) {
 
 $rel = trim($rel, '/');
 
-if ($rel === '' || $rel === 'index.php' || $rel === 'router.php') {
-    require dirname(__DIR__) . '/nextgen/partner/login.php';
+if ($rel === '' || $rel === 'router.php') {
+    require __DIR__ . '/index.php';
+    exit;
+}
+
+if ($rel === 'index.php') {
+    require dirname(__DIR__) . '/nextgen/partner/index.php';
     exit;
 }
 
