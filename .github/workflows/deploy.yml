@@ -28,3 +28,11 @@ jobs:
           port: 21
           protocol: ftp
           dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            hostbase/**
+            **/hostbase/**
+            /hostbase
+            /hostbase/**
