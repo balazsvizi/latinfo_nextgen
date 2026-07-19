@@ -87,9 +87,18 @@ $partnerActivityLogGlobal = true;
             <?php endif; ?>
         </p>
     <?php endif; ?>
-    <p class="toolbar">
-        <form method="get" id="partners-filter-form" style="display:inline-flex;gap:0.5rem;flex-wrap:wrap;">
-            <input type="search" name="kereso" id="partners-filter-kereso" placeholder="Név, település, kieg. infó, e-mail, ID…" value="<?= h($kereso) ?>" autocomplete="off">
+    <div class="toolbar partners-admin-toolbar">
+        <form method="get" id="partners-filter-form" class="partners-filter-form">
+            <label class="visually-hidden" for="partners-filter-kereso">Keresés</label>
+            <input
+                type="search"
+                name="kereso"
+                id="partners-filter-kereso"
+                class="partners-filter-input"
+                placeholder="Név, település, kieg. infó, e-mail, ID…"
+                value="<?= h($kereso) ?>"
+                autocomplete="off"
+            >
             <?php if ($order !== 'letrehozva'): ?>
                 <input type="hidden" name="order" value="<?= h($order) ?>">
             <?php endif; ?>
@@ -105,7 +114,7 @@ $partnerActivityLogGlobal = true;
             Üzenetek<?= $unread > 0 ? ' (' . $unread . ')' : '' ?>
         </a>
         <a href="<?= h(partner_url('')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
-    </p>
+    </div>
     <div class="table-wrap">
         <table class="sortable-table">
             <thead>
