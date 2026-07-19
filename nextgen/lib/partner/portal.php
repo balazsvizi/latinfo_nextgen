@@ -10,7 +10,7 @@ declare(strict_types=1);
  */
 function partner_portal_default_context(): array
 {
-    return ['type' => 'all', 'id' => 0, 'label' => 'Összes profil', 'key' => 'all'];
+    return ['type' => 'all', 'id' => 0, 'label' => 'Összes partner', 'key' => 'all'];
 }
 
 /**

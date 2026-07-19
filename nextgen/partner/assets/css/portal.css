@@ -44,12 +44,17 @@
 .partner-header__inner {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 0.85rem 1.25rem;
+    padding: 0.85rem 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.partner-header__top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    flex-wrap: wrap;
 }
 
 .partner-header__brand {
@@ -83,6 +88,70 @@
     cursor: pointer;
 }
 
+.partner-header__identity {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 0.75rem 1.25rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.partner-header__who,
+.partner-header__partner-pick {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.partner-header__who-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.72;
+}
+
+.partner-header__who-name {
+    font-family: var(--pp-display);
+    font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+    font-weight: 700;
+    line-height: 1.15;
+    word-break: break-word;
+}
+
+.partner-header__who-email {
+    font-size: 0.82rem;
+    opacity: 0.82;
+    word-break: break-all;
+}
+
+.partner-header__partner-select {
+    width: 100%;
+    max-width: 360px;
+    margin-top: 0.15rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 10px;
+    background: rgba(10, 22, 38, 0.35);
+    color: #fff;
+    font: inherit;
+}
+
+.partner-header__partner-select option,
+.partner-header__partner-select optgroup {
+    color: #142033;
+    background: #fff;
+}
+
+.partner-header__partner-current {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-top: 0.2rem;
+}
+
 .partner-header__nav {
     display: flex;
     align-items: center;
@@ -111,6 +180,11 @@
     margin-left: 0.35rem;
 }
 
+.partner-hero--compact {
+    padding-top: 1.15rem;
+    padding-bottom: 1.15rem;
+}
+
 .partner-nav-badge {
     display: inline-flex;
     align-items: center;
@@ -127,42 +201,7 @@
 }
 
 .partner-context-bar {
-    background: rgba(255, 255, 255, 0.78);
-    border-bottom: 1px solid var(--pp-line);
-    backdrop-filter: blur(8px);
-}
-
-.partner-context-bar__inner {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 0.75rem 1.25rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.65rem 1rem;
-}
-
-.partner-context-bar__label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--pp-muted);
-}
-
-.partner-context-bar__select {
-    min-width: min(100%, 260px);
-    padding: 0.45rem 0.7rem;
-    border: 1px solid var(--pp-line);
-    border-radius: 10px;
-    background: #fff;
-    font: inherit;
-}
-
-.partner-context-bar__hint {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--pp-ink-soft);
+    display: none;
 }
 
 .partner-main {
@@ -830,6 +869,14 @@
 @media (max-width: 720px) {
     .partner-header__menu-btn {
         display: inline-flex;
+    }
+
+    .partner-header__identity {
+        grid-template-columns: 1fr;
+    }
+
+    .partner-header__partner-select {
+        max-width: none;
     }
 
     .partner-header__nav {

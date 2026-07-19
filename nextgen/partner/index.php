@@ -50,12 +50,12 @@ require_once __DIR__ . '/partials/header.php';
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
-<section class="partner-hero">
+<section class="partner-hero partner-hero--compact">
     <div class="partner-hero__text">
-        <p class="partner-hero__eyebrow">Partnerportál</p>
-        <h1 class="partner-hero__title">Szia<?= partner_session_display_name() !== '' ? ', ' . h(partner_session_display_name()) : '' ?>!</h1>
+        <p class="partner-hero__eyebrow">Kezdőlap</p>
+        <h1 class="partner-hero__title">Áttekintés</h1>
         <p class="partner-hero__lead">
-            Itt látod az eseményeidet, a naptárat, a DJ / szervező profiljaidat, és üzenhetsz a Latinfo csapatnak.
+            Események, naptár, profilok és üzenetek — az aktív partner: <strong><?= h($context['label']) ?></strong>.
         </p>
     </div>
     <div class="partner-hero__actions">
