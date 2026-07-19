@@ -1139,6 +1139,37 @@ function nextgen_partner_update_password(
 /**
  * @return array{ok: true}|array{ok: false, error: string}
  */
+function nextgen_partner_set_password_change_required(PDO $db, int $partnerId, bool $requireChangeOnLogin): array
+{
+    if ($partnerId <= 0) {
+        return ['ok' => false, 'error' => 'Érvénytelen partner.'];
+    }
+    try {
+        nextgen_partner_ensure_password_schema($db);
+        $stmt = $db->prepare('
+            UPDATE `nextgen_partners`
+            SET `jelszó_csere_kötelező` = ?
+            WHERE `id` = ?
+        ');
+        $stmt->execute([$requireChangeOnLogin ? 1 : 0, $partnerId]);
+        nextgen_partner_log(
+            $db,
+            $partnerId,
+            'Jelszócsere kötelezettség módosítva',
+            $requireChangeOnLogin ? 'Kötelező a következő belépéskor' : 'Nem kötelező'
+        );
+
+        return ['ok' => true];
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_set_password_change_required: ' . $ex->getMessage());
+
+        return ['ok' => false, 'error' => 'Mentés sikertelen.'];
+    }
+}
+
+/**
+ * @return array{ok: true}|array{ok: false, error: string}
+ */
 function nextgen_partner_set_active(PDO $db, int $partnerId, bool $active): array
 {
     if ($partnerId <= 0) {

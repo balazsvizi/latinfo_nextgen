@@ -55,10 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'password') {
             $jelszo = (string) ($_POST['jelszo'] ?? '');
+            $requireChange = !empty($_POST['jelszo_csere_kotelezo']);
             if ($jelszo === '') {
-                $hiba = 'Add meg az új jelszót.';
+                $result = nextgen_partner_set_password_change_required($db, $id, $requireChange);
+                if ($result['ok']) {
+                    flash('success', 'Jelszóbeállítások mentve.');
+                    redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                }
+                $hiba = (string) ($result['error'] ?? 'Mentés sikertelen.');
             } else {
-                $requireChange = !empty($_POST['jelszo_csere_kotelezo']);
                 $result = nextgen_partner_update_password($db, $id, $jelszo, $requireChange);
                 if ($result['ok']) {
                     flash('success', 'Jelszó frissítve.');
@@ -287,13 +292,14 @@ require __DIR__ . '/partials/partner_dj_assign_row.php';
     <?php if (!empty($partner['jelszó_csere_kötelező'])): ?>
         <p class="alert alert-warning">A partnernek kötelező új jelszót beállítania a következő belépéskor.</p>
     <?php endif; ?>
-    <form method="post" class="venue-form">
+    <form method="post" class="venue-form" id="partner-admin-password-form">
         <?= csrf_input('partner_admin_edit') ?>
         <input type="hidden" name="id" value="<?= $id ?>">
         <input type="hidden" name="_action" value="password">
         <div class="form-group">
             <label for="jelszo">Új jelszó</label>
-            <input type="password" id="jelszo" name="jelszo" minlength="8" autocomplete="new-password">
+            <input type="password" id="jelszo" name="jelszo" minlength="8" autocomplete="new-password" placeholder="Legalább 8 karakter (ha változtatni szeretnéd)">
+            <p class="help">Üresen hagyva csak a lenti beállítás mentődik.</p>
         </div>
         <div class="form-group">
             <label>
@@ -301,7 +307,9 @@ require __DIR__ . '/partials/partner_dj_assign_row.php';
                 Kötelező új jelszó megadása a következő belépéskor
             </label>
         </div>
-        <p class="toolbar"><button type="submit" class="btn btn-secondary btn-sm">Jelszó újraállítása</button></p>
+        <div class="toolbar">
+            <button type="submit" class="btn btn-primary">Mentés</button>
+        </div>
     </form>
     <form method="post" class="toolbar">
         <?= csrf_input('partner_admin_edit') ?>
