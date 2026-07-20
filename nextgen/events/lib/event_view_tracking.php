@@ -60,11 +60,22 @@ function events_view_tracking_is_published_event(PDO $db, int $eventId): bool
 }
 
 /**
- * Admin munkamenetben nem rögzítünk megtekintést (saját számláló).
+ * Admin vagy partnerportál munkamenetben nem rögzítünk megtekintést (saját számláló).
  */
 function events_view_tracking_should_record(): bool
 {
-    return !(function_exists('isLoggedIn') && isLoggedIn());
+    if (function_exists('events_public_visitor_metrics_allowed')) {
+        return events_public_visitor_metrics_allowed();
+    }
+
+    if (function_exists('isLoggedIn') && isLoggedIn()) {
+        return false;
+    }
+    if (function_exists('partner_is_logged_in') && partner_is_logged_in()) {
+        return false;
+    }
+
+    return empty($_SESSION['partner_id']);
 }
 
 function events_track_event_view(PDO $db, int $eventId, string $metricType, ?string $source = null): void

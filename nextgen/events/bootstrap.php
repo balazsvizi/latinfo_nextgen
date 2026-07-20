@@ -227,6 +227,24 @@ if (!function_exists('events_public_favicon_head_markup')) {
     }
 }
 
+if (!function_exists('events_public_visitor_metrics_allowed')) {
+    /**
+     * Nyilvános metrikák (belső számláló + GA4) csak vendég látogatónál.
+     * Admin és partnerportál munkamenetben nem mérünk.
+     */
+    function events_public_visitor_metrics_allowed(): bool {
+        if (function_exists('isLoggedIn') && isLoggedIn()) {
+            return false;
+        }
+        if (function_exists('partner_is_logged_in') && partner_is_logged_in()) {
+            return false;
+        }
+
+        // Partner auth nincs mindig betöltve a nyilvános oldalakon; a session közös.
+        return empty($_SESSION['partner_id']);
+    }
+}
+
 if (!function_exists('events_public_ga_measurement_id')) {
     function events_public_ga_measurement_id(): string {
         if (!defined('GA4_MEASUREMENT_ID')) {
@@ -246,7 +264,7 @@ if (!function_exists('events_public_ga_head_markup')) {
      * Google Analytics 4 (gtag.js) — csak nyilvános esemény oldalak head-jébe.
      */
     function events_public_ga_head_markup(): string {
-        if (function_exists('isLoggedIn') && isLoggedIn()) {
+        if (!events_public_visitor_metrics_allowed()) {
             return '';
         }
 
