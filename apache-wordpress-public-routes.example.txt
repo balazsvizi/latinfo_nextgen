@@ -1,0 +1,39 @@
+# WordPress + Latinfo publikus útvonalak (public_html/.htaccess)
+#
+# A partnerportál beállításakor gyakran felülíródik a WordPress .htaccess.
+# Illeszd be az alábbi blokkot a WordPress „BEGIN WordPress” sor ELÉ.
+# (Ha már van RewriteEngine On a fájlban, ne ismételd meg.)
+#
+# A partnerportal/ fizikai mappa a repo-ból FTP-n felmegy — rewrite nélkül is működik.
+# Az /event/{slug}/ útvonalhoz viszont KELL az alábbi szabály a WP catch-all ELŐTT.
+
+# --- Latinfo publikus útvonalak (kezdet) ---
+
+RewriteEngine On
+
+# Egy esemény: /event/{slug}/  →  nextgen/events/megjelenit.php
+RewriteRule ^event/([^/]+)/?$ nextgen/events/megjelenit.php?slug=$1 [L,QSA,NC]
+
+# Naptár főoldal: /events/  →  nextgen/events/public_home.php
+RewriteRule ^events/?$ nextgen/events/index.php [L,QSA,NC]
+
+# Partnerportál (tartalék, ha a fizikai partnerportal/ mappa nem elérhető)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^partnerportal/?$ nextgen/partner/login.php [L,QSA,NC]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^partnerportal/(.+)$ nextgen/partner/$1 [L,QSA,NC]
+
+# Régi URL-ek → új formátum
+RewriteRule ^partners/?(.*)$ /partnerportal/$1 [R=301,L,QSA,NC]
+RewriteRule ^nextgen/partner/login\.php$ /partnerportal/ [R=301,L,QSA,NC]
+RewriteRule ^nextgen/events/?$ /events/ [R=301,L,QSA,NC]
+RewriteRule ^esemenyek/([^/]+)/?$ /event/$1/ [R=301,L,NC]
+RewriteRule ^esemenyek/?$ /events/ [R=301,L,QSA,NC]
+
+# --- Latinfo publikus útvonalak (vég) ---
+
+# BEGIN WordPress
+# ... (a meglévő WordPress blokk marad változatlanul)

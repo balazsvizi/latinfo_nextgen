@@ -1,5 +1,7 @@
 # Apache / Laragon: DocumentRoot = a projekt gyökér könyvtára (ahol a nextgen/ és lanueva/ mappák vannak).
-# Mivel a gyökérben nincs .htaccess, ezeket a direktívákat a VirtualHost blokkba vagy egy Include fájlba tedd.
+# Helyi Laragon: a gyökér .htaccess (gitignore) tartalmazza a szabályokat.
+# Production (WordPress): illeszd be az apache-wordpress-public-routes.example.txt tartalmát
+# a public_html/.htaccess „BEGIN WordPress” blokkja ELÉ.
 
 DirectoryIndex nextgen/index.php
 
