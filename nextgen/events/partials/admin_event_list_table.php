@@ -27,8 +27,12 @@ declare(strict_types=1);
                     <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                     <th><?= sort_th('Meta', 'category', $order, $dir_param, $get_params) ?></th>
                     <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
-                    <th class="th-center"><?= sort_th('Előnézet', 'cal_previews', $order, $dir_param, $get_params) ?></th>
-                    <th class="th-center"><?= sort_th('Oldal', 'views', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center" title="Naptár előnézet — emberi"><?= sort_th('Előn. ember', 'cal_previews_human', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center" title="Naptár előnézet — bot"><?= sort_th('Előn. bot', 'cal_previews_bot', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center" title="Naptár előnézet — összesen"><?= sort_th('Előn. össz', 'cal_previews', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center" title="Eseményoldal — emberi"><?= sort_th('Oldal ember', 'views_human', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center" title="Eseményoldal — bot"><?= sort_th('Oldal bot', 'views_bot', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center" title="Eseményoldal — összesen"><?= sort_th('Oldal össz', 'views', $order, $dir_param, $get_params) ?></th>
                     <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                 </tr>
             </thead>

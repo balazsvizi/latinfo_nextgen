@@ -51,7 +51,7 @@ $eventDateYmd = static function (array $row, string $key): string {
     <?php if (empty($statsData['table_ready'])): ?>
         <p class="alert alert-warning events-edit-stats__migration">
             A részletes metrikákhoz futtasd: <code>events/sql/migration_event_view_metrics.sql</code>
-            (addig csak az összesített oldalmegtekintés érhető el).
+            (addig csak az összesített oldalmegtekintés érhető el). Bot bontáshoz: <code>events/sql/migration_event_view_is_bot.sql</code>.
         </p>
     <?php endif; ?>
 
@@ -91,7 +91,7 @@ $eventDateYmd = static function (array $row, string $key): string {
     <?php if ($hasChart): ?>
         <div class="events-edit-stats__chart-wrap">
             <h3 class="events-edit-stats__chart-title">Megtekintések alakulása</h3>
-            <p class="events-edit-stats__chart-hint">Napi bontás — összesítve a szervező eseményeire.</p>
+            <p class="events-edit-stats__chart-hint">Napi bontás — emberi és bot forgalom külön, a szervező eseményeire.</p>
             <div class="events-edit-stats__chart-canvas">
                 <canvas id="<?= h($statsChartDomId) ?>" aria-label="Szervező megtekintések grafikonja"></canvas>
             </div>
@@ -236,8 +236,12 @@ $eventDateYmd = static function (array $row, string $key): string {
                         <th>Dátum</th>
                         <th>Név</th>
                         <th>Státusz</th>
-                        <th class="th-center">Előnézet</th>
-                        <th class="th-center">Oldal</th>
+                        <th class="th-center" title="Előnézet — emberi">Előn. ember</th>
+                        <th class="th-center" title="Előnézet — bot">Előn. bot</th>
+                        <th class="th-center" title="Előnézet — összesen">Előn. össz</th>
+                        <th class="th-center" title="Oldal — emberi">Oldal ember</th>
+                        <th class="th-center" title="Oldal — bot">Oldal bot</th>
+                        <th class="th-center" title="Oldal — összesen">Oldal össz</th>
                     </tr>
                 </thead>
                 <tbody id="organizer-stats-events-tbody">
@@ -247,8 +251,10 @@ $eventDateYmd = static function (array $row, string $key): string {
                         $edit = $editBase . $eid;
                         $st = (string) ($row['event_status'] ?? '');
                         $badgeClass = events_post_status_badge_class($st);
-                        $pageViews = (int) ($row['megtekintesek'] ?? 0);
-                        $previewViews = (int) ($row['naptar_elonezetek'] ?? 0);
+                        $pageCounts = events_view_metric_counts_from_row($row, 'megtekintesek');
+                        $previewCounts = events_view_metric_counts_from_row($row, 'naptar_elonezetek');
+                        $pageViews = (int) $pageCounts['total'];
+                        $previewViews = (int) $previewCounts['total'];
                         $hasViews = ($pageViews + $previewViews) > 0 ? '1' : '0';
                         $eventStart = $eventDateYmd($row, 'event_start');
                         $eventEnd = $eventDateYmd($row, 'event_end');
@@ -279,12 +285,16 @@ $eventDateYmd = static function (array $row, string $key): string {
                                     <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
                                 </a>
                             </td>
-                            <td class="text-center"><?= $previewViews ?></td>
-                            <td class="text-center"><?= $pageViews ?></td>
+                            <td class="text-center"><?= (int) $previewCounts['human'] ?></td>
+                            <td class="text-center"><?= (int) $previewCounts['bot'] ?></td>
+                            <td class="text-center"><?= (int) $previewCounts['total'] ?></td>
+                            <td class="text-center"><?= (int) $pageCounts['human'] ?></td>
+                            <td class="text-center"><?= (int) $pageCounts['bot'] ?></td>
+                            <td class="text-center"><?= (int) $pageCounts['total'] ?></td>
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-stats-events-empty" hidden>
-                        <td colspan="6" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
+                        <td colspan="10" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
                     </tr>
                 </tbody>
             </table>

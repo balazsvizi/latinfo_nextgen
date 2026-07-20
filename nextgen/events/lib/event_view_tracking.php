@@ -24,6 +24,134 @@ function events_view_tracking_ip_hash(): ?string
     return $ip !== '' ? hash('sha256', $ip . '|' . SITE_NAME) : null;
 }
 
+/**
+ * Kereső / AI / scraper User-Agent felismerés (UA alapú, nem 100%).
+ */
+function events_view_tracking_detect_bot(?string $userAgent = null): bool
+{
+    $ua = trim($userAgent ?? (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    if ($ua === '') {
+        return true;
+    }
+
+    static $pattern = null;
+    if ($pattern === null) {
+        $pattern = '/'
+            . 'googlebot|google-extended|storebot-google|adsbot-google|apis-google|mediapartners-google|feedfetcher'
+            . '|bingbot|bingpreview|msnbot|adidxbot'
+            . '|slurp|duckduckbot|duckassistbot|baiduspider|yandex(?:bot|images)|sogou|exabot|seznambot|coccocbot'
+            . '|applebot|petalbot|bytespider|amazonbot|ia_archiver|archive\.org_bot'
+            . '|ahrefsbot|semrushbot|dotbot|mj12bot|rogerbot|screaming frog|serpstat|majestic'
+            . '|gptbot|chatgpt-user|oai-searchbot|claudebot|anthropic|ccbot|perplexitybot|diffbot'
+            . '|facebookexternalhit|facebot|twitterbot|linkedinbot|pinterest|redditbot|slackbot|discordbot'
+            . '|whatsapp|telegrambot|embedly|quora\s*link\s*preview|outbrain|flipboard|tumblr|bitlybot'
+            . '|crawler|spider|scrapy|wget|curl|python-requests|python-urllib|go-http-client|java\/|okhttp'
+            . '|libwww-perl|httpclient|headlesschrome|phantomjs|selenium|puppeteer|playwright|httrack'
+            . '/i';
+    }
+
+    return (bool) preg_match($pattern, $ua);
+}
+
+function events_view_tracking_bot_column_ready(PDO $db, bool $refresh = false): bool
+{
+    static $ready = null;
+    if ($refresh) {
+        $ready = null;
+    }
+    if ($ready !== null) {
+        return $ready;
+    }
+
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM `events_calendar_event_views` LIKE 'is_bot'");
+        $ready = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        $ready = false;
+    }
+
+    return $ready;
+}
+
+/**
+ * is_bot oszlop létrehozása, ha hiányzik.
+ */
+function events_view_tracking_ensure_bot_column(PDO $db): bool
+{
+    if (events_view_tracking_bot_column_ready($db)) {
+        return true;
+    }
+
+    try {
+        $db->exec(
+            'ALTER TABLE `events_calendar_event_views`
+             ADD COLUMN `is_bot` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0 AFTER `source`'
+        );
+        try {
+            $db->exec(
+                'ALTER TABLE `events_calendar_event_views`
+                 ADD INDEX `idx_event_metric_bot` (`esemény_id`, `metric_type`, `is_bot`)'
+            );
+        } catch (Throwable) {
+            // Index opcionális / már létezhet.
+        }
+    } catch (Throwable $ex) {
+        error_log('events_view_tracking_ensure_bot_column: ' . $ex->getMessage());
+
+        return false;
+    }
+
+    return events_view_tracking_bot_column_ready($db, true);
+}
+
+/**
+ * Korrelált COUNT SQL egy metrikára (emberi / bot / össz).
+ *
+ * @return array{human: string, bot: string, total: string}
+ */
+function events_view_metric_count_selects(
+    string $metricType,
+    bool $botColumnReady,
+    string $eventIdExpr = 'e.id',
+    string $tableAlias = 'm'
+): array {
+    $base = "FROM `events_calendar_event_views` {$tableAlias}"
+        . " WHERE {$tableAlias}.`esemény_id` = {$eventIdExpr}"
+        . " AND {$tableAlias}.`metric_type` = "
+        . "'" . str_replace("'", "''", $metricType) . "'";
+
+    $total = "(SELECT COUNT(*) {$base})";
+    if (!$botColumnReady) {
+        return [
+            'human' => $total,
+            'bot' => '0',
+            'total' => $total,
+        ];
+    }
+
+    return [
+        'human' => "(SELECT COUNT(*) {$base} AND {$tableAlias}.`is_bot` = 0)",
+        'bot' => "(SELECT COUNT(*) {$base} AND {$tableAlias}.`is_bot` = 1)",
+        'total' => $total,
+    ];
+}
+
+/**
+ * @return array{human: int, bot: int, total: int}
+ */
+function events_view_metric_counts_from_row(array $row, string $prefix): array
+{
+    $total = (int) ($row[$prefix] ?? 0);
+    $human = array_key_exists($prefix . '_human', $row) ? (int) $row[$prefix . '_human'] : $total;
+    $bot = array_key_exists($prefix . '_bot', $row) ? (int) $row[$prefix . '_bot'] : max(0, $total - $human);
+
+    return [
+        'human' => $human,
+        'bot' => $bot,
+        'total' => $total > 0 ? $total : ($human + $bot),
+    ];
+}
+
 function events_view_tracking_append_ref(string $url, string $ref): string
 {
     $url = trim($url);
@@ -94,11 +222,25 @@ function events_track_event_view(PDO $db, int $eventId, string $metricType, ?str
         $source = EVENTS_VIEW_SOURCE_CALENDAR;
     }
 
+    $isBot = events_view_tracking_detect_bot() ? 1 : 0;
+    $botColumnReady = events_view_tracking_ensure_bot_column($db);
+
     try {
-        $stmt = $db->prepare(
-            'INSERT INTO `events_calendar_event_views` (`esemény_id`, `ip_hash`, `metric_type`, `source`) VALUES (?, ?, ?, ?)'
-        );
-        $stmt->execute([$eventId, events_view_tracking_ip_hash(), $metricType, $source]);
+        if ($botColumnReady) {
+            $stmt = $db->prepare(
+                'INSERT INTO `events_calendar_event_views`
+                    (`esemény_id`, `ip_hash`, `metric_type`, `source`, `is_bot`)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([$eventId, events_view_tracking_ip_hash(), $metricType, $source, $isBot]);
+        } else {
+            $stmt = $db->prepare(
+                'INSERT INTO `events_calendar_event_views`
+                    (`esemény_id`, `ip_hash`, `metric_type`, `source`)
+                 VALUES (?, ?, ?, ?)'
+            );
+            $stmt->execute([$eventId, events_view_tracking_ip_hash(), $metricType, $source]);
+        }
     } catch (Throwable) {
         // Opcionális napló – ne törjük a megjelenítést.
     }

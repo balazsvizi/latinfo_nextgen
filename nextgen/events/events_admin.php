@@ -9,6 +9,8 @@ require_once __DIR__ . '/lib/admin_event_calendar.php';
 requireLogin();
 
 $db = getDb();
+require_once __DIR__ . '/lib/event_view_tracking.php';
+events_view_tracking_ensure_bot_column($db);
 $filters = events_admin_filters_from_request($db);
 
 $tagsAvailable = $filters['tagsAvailable'];
@@ -24,7 +26,11 @@ if ($tagsAvailable) {
 if ($djsAvailable) {
     $allowedOrder[] = 'dj';
 }
-$allowedOrder = array_merge($allowedOrder, ['name', 'start', 'end', 'status', 'cal_previews', 'views']);
+$allowedOrder = array_merge($allowedOrder, [
+    'name', 'start', 'end', 'status',
+    'cal_previews', 'cal_previews_human', 'cal_previews_bot',
+    'views', 'views_human', 'views_bot',
+]);
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -49,7 +55,11 @@ $orderSql = match ($order) {
     'end' => "e.event_end IS NULL, e.event_end $dirSql",
     'status' => "e.event_status $dirSql",
     'cal_previews' => "naptar_elonezetek $dirSql",
+    'cal_previews_human' => "naptar_elonezetek_human $dirSql",
+    'cal_previews_bot' => "naptar_elonezetek_bot $dirSql",
     'views' => "megtekintesek $dirSql",
+    'views_human' => "megtekintesek_human $dirSql",
+    'views_bot' => "megtekintesek_bot $dirSql",
     default => 'e.id DESC',
 };
 
@@ -60,14 +70,23 @@ $listDisplayedCount = (int) $countStmt->fetchColumn();
 $listLimitValue = $filters['list_limit_value'];
 $listTotalInDb = events_admin_table_total_count($db, 'events_calendar_events');
 
+require_once __DIR__ . '/lib/event_view_tracking.php';
+$botColumnReady = events_view_tracking_bot_column_ready($db);
+$pageCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_PAGE, $botColumnReady);
+$previewCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, $botColumnReady);
+
 $sql = "
     SELECT e.*,
         (SELECT GROUP_CONCAT(o.name ORDER BY eo.sort_order ASC, o.name ASC SEPARATOR ', ')
          FROM `events_calendar_event_organizers` eo
          INNER JOIN `events_organizers` o ON o.id = eo.organizer_id
          WHERE eo.event_id = e.id) AS organizer_name,
-        (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view') AS megtekintesek,
-        (SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'calendar_preview') AS naptar_elonezetek
+        {$pageCounts['human']} AS megtekintesek_human,
+        {$pageCounts['bot']} AS megtekintesek_bot,
+        {$pageCounts['total']} AS megtekintesek,
+        {$previewCounts['human']} AS naptar_elonezetek_human,
+        {$previewCounts['bot']} AS naptar_elonezetek_bot,
+        {$previewCounts['total']} AS naptar_elonezetek
     FROM {$poolFromSql}
     {$whereSql}
     ORDER BY {$orderSql}

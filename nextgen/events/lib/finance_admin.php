@@ -58,7 +58,8 @@ function events_finance_admin_filters_from_request(): array
     $allowedOrder = [
         'id', 'start', 'name', 'organizer', 'status',
         'cost_from', 'cost_to', 'fee',
-        'cal_previews', 'fee_per_preview', 'views', 'fee_per_view',
+        'cal_previews', 'cal_previews_human', 'cal_previews_bot', 'fee_per_preview',
+        'views', 'views_human', 'views_bot', 'fee_per_view',
         'payer', 'note',
     ];
     if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
@@ -212,14 +213,24 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
         'cost_to' => "e.event_cost_to IS NULL, e.event_cost_to {$dirSql}",
         'fee' => "e.finance_organizer_fee IS NULL, e.finance_organizer_fee {$dirSql}",
         'cal_previews' => "naptar_elonezetek {$dirSql}",
+        'cal_previews_human' => "naptar_elonezetek_human {$dirSql}",
+        'cal_previews_bot' => "naptar_elonezetek_bot {$dirSql}",
         'fee_per_preview' => "fee_per_preview IS NULL, fee_per_preview {$dirSql}",
         'views' => "megtekintesek {$dirSql}",
+        'views_human' => "megtekintesek_human {$dirSql}",
+        'views_bot' => "megtekintesek_bot {$dirSql}",
         'fee_per_view' => "fee_per_view IS NULL, fee_per_view {$dirSql}",
         'note' => "(e.finance_note IS NULL OR e.finance_note = ''), e.finance_note {$dirSql}",
         'payer' => "(payer_name IS NULL OR payer_name = ''), payer_name {$dirSql}",
         'organizer' => "(organizer_name IS NULL OR organizer_name = ''), organizer_name {$dirSql}",
         default => 'e.event_start IS NULL, e.event_start DESC',
     };
+
+    require_once __DIR__ . '/event_view_tracking.php';
+    events_view_tracking_ensure_bot_column($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $pageCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_PAGE, $botReady);
+    $previewCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, $botReady);
 
     $sql = "
         SELECT e.id, e.event_name, e.event_slug, e.event_status, e.event_start,
@@ -230,28 +241,22 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
                 INNER JOIN `events_organizers` o ON o.id = eo.organizer_id
                 WHERE eo.event_id = e.id) AS organizer_name,
                (SELECT po.name FROM `events_organizers` po WHERE po.id = e.finance_payer_organizer_id LIMIT 1) AS payer_name,
-               (SELECT COUNT(*) FROM `events_calendar_event_views` m
-                WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'calendar_preview') AS naptar_elonezetek,
-               (SELECT COUNT(*) FROM `events_calendar_event_views` m
-                WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view') AS megtekintesek,
+               {$previewCounts['human']} AS naptar_elonezetek_human,
+               {$previewCounts['bot']} AS naptar_elonezetek_bot,
+               {$previewCounts['total']} AS naptar_elonezetek,
+               {$pageCounts['human']} AS megtekintesek_human,
+               {$pageCounts['bot']} AS megtekintesek_bot,
+               {$pageCounts['total']} AS megtekintesek,
                CASE
                    WHEN e.finance_organizer_fee IS NOT NULL AND e.finance_organizer_fee > 0
-                        AND (SELECT COUNT(*) FROM `events_calendar_event_views` m
-                             WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'calendar_preview') > 0
-                   THEN e.finance_organizer_fee / (
-                       SELECT COUNT(*) FROM `events_calendar_event_views` m
-                       WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'calendar_preview'
-                   )
+                        AND {$previewCounts['human']} > 0
+                   THEN e.finance_organizer_fee / ({$previewCounts['human']})
                    ELSE NULL
                END AS fee_per_preview,
                CASE
                    WHEN e.finance_organizer_fee IS NOT NULL AND e.finance_organizer_fee > 0
-                        AND (SELECT COUNT(*) FROM `events_calendar_event_views` m
-                             WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view') > 0
-                   THEN e.finance_organizer_fee / (
-                       SELECT COUNT(*) FROM `events_calendar_event_views` m
-                       WHERE m.`esemény_id` = e.id AND m.`metric_type` = 'page_view'
-                   )
+                        AND {$pageCounts['human']} > 0
+                   THEN e.finance_organizer_fee / ({$pageCounts['human']})
                    ELSE NULL
                END AS fee_per_view
         FROM {$poolFromSql}

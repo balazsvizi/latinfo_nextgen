@@ -111,7 +111,14 @@ $badgeClass = events_post_status_badge_class($st);
             <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
         </a>
     </td>
-    <td class="text-center"><a class="events-cell-edit" href="<?= h($edit) ?>" title="Naptár előnézet megnyitások"><?= (int) ($r['naptar_elonezetek'] ?? 0) ?></a></td>
-    <td class="text-center"><a class="events-cell-edit" href="<?= h($edit) ?>" title="Teljes eseményoldal megtekintések"><?= (int) $r['megtekintesek'] ?></a></td>
+    <?php
+    $metricEditUrl = $edit;
+    $metricTitle = 'Naptár előnézet';
+    $metricCounts = events_view_metric_counts_from_row($r, 'naptar_elonezetek');
+    require __DIR__ . '/admin_metric_count_cells.php';
+    $metricTitle = 'Eseményoldal';
+    $metricCounts = events_view_metric_counts_from_row($r, 'megtekintesek');
+    require __DIR__ . '/admin_metric_count_cells.php';
+    ?>
     <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= $eid ?></a></td>
 </tr>

@@ -378,7 +378,10 @@ function events_admin_filters_from_request(PDO $db): array {
         $params[] = $status;
     }
     if ($f_views_min !== '' && ctype_digit($f_views_min)) {
-        $where[] = '(SELECT COUNT(*) FROM `events_calendar_event_views` m WHERE m.`esemény_id` = e.id AND m.`metric_type` = \'page_view\') >= ?';
+        require_once __DIR__ . '/event_view_tracking.php';
+        $botReady = events_view_tracking_bot_column_ready($db);
+        $pageHumanSql = events_view_metric_count_selects(EVENTS_VIEW_METRIC_PAGE, $botReady)['human'];
+        $where[] = "{$pageHumanSql} >= ?";
         $params[] = (int) $f_views_min;
     }
 

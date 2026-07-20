@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/finance_admin.php';
+require_once __DIR__ . '/lib/event_view_tracking.php';
 requireLogin();
 
 $db = getDb();
@@ -35,7 +36,7 @@ $hasFilters = $filters['f_q'] !== ''
     || $filters['f_start_from'] !== ''
     || $filters['f_start_to'] !== '';
 
-$colspan = 14;
+$colspan = 18;
 $editBase = events_url('szerkeszt.php?id=');
 
 $pageTitle = 'Finance – Események';
@@ -143,10 +144,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th class="th-num"><?= sort_th('Belépő tól', 'cost_from', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= sort_th('Belépő ig', 'cost_to', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= sort_th('Szervezői díj', 'fee', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num"><?= sort_th('Előnézet', 'cal_previews', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num" title="Szervezői díj / előnézet kattintás"><?= sort_th('Ft', 'fee_per_preview', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num"><?= sort_th('Oldal', 'views', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num" title="Szervezői díj / oldal kattintás"><?= sort_th('Ft', 'fee_per_view', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Előnézet — emberi"><?= sort_th('Előn. ember', 'cal_previews_human', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Előnézet — bot"><?= sort_th('Előn. bot', 'cal_previews_bot', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Előnézet — összesen"><?= sort_th('Előn. össz', 'cal_previews', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Szervezői díj / emberi előnézet"><?= sort_th('Ft/előn.', 'fee_per_preview', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Oldal — emberi"><?= sort_th('Oldal ember', 'views_human', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Oldal — bot"><?= sort_th('Oldal bot', 'views_bot', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Oldal — összesen"><?= sort_th('Oldal össz', 'views', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Szervezői díj / emberi oldalmegtekintés"><?= sort_th('Ft/oldal', 'fee_per_view', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Ki fizeti', 'payer', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Megjegyzés', 'note', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
@@ -169,8 +174,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $eid = (int) ($r['id'] ?? 0);
                             $editUrl = $editBase . $eid;
                             $feeRaw = $r['finance_organizer_fee'] ?? null;
-                            $previews = (int) ($r['naptar_elonezetek'] ?? 0);
-                            $views = (int) ($r['megtekintesek'] ?? 0);
+                            $previewCounts = events_view_metric_counts_from_row($r, 'naptar_elonezetek');
+                            $pageCounts = events_view_metric_counts_from_row($r, 'megtekintesek');
                             $feePerPreview = $r['fee_per_preview'] ?? null;
                             $feePerView = $r['fee_per_view'] ?? null;
                             ?>
@@ -186,9 +191,13 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td class="td-num"><?= h(events_finance_format_money($r['event_cost_from'] ?? null)) ?></td>
                                 <td class="td-num"><?= h(events_finance_format_money($r['event_cost_to'] ?? null)) ?></td>
                                 <td class="td-num"><?= h(events_finance_format_money($feeRaw)) ?></td>
-                                <td class="td-num"><?= $previews ?></td>
+                                <td class="td-num"><?= (int) $previewCounts['human'] ?></td>
+                                <td class="td-num"><?= (int) $previewCounts['bot'] ?></td>
+                                <td class="td-num"><?= (int) $previewCounts['total'] ?></td>
                                 <td class="td-num"><?= h(events_finance_format_fee_per_click($feePerPreview !== null && $feePerPreview !== '' ? (float) $feePerPreview : null)) ?></td>
-                                <td class="td-num"><?= $views ?></td>
+                                <td class="td-num"><?= (int) $pageCounts['human'] ?></td>
+                                <td class="td-num"><?= (int) $pageCounts['bot'] ?></td>
+                                <td class="td-num"><?= (int) $pageCounts['total'] ?></td>
                                 <td class="td-num"><?= h(events_finance_format_fee_per_click($feePerView !== null && $feePerView !== '' ? (float) $feePerView : null)) ?></td>
                                 <td><?= h((string) ($r['payer_name'] ?? '') !== '' ? (string) $r['payer_name'] : '—') ?></td>
                                 <td class="events-finance-note-cell"><?= h(trim((string) ($r['finance_note'] ?? '')) !== '' ? (string) $r['finance_note'] : '—') ?></td>
