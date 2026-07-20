@@ -117,8 +117,18 @@ if (!function_exists('events_public_is_legacy_home_request')) {
 }
 
 if (!function_exists('events_public_is_legacy_megjelenit_request')) {
+    /**
+     * Csak akkor igaz, ha a kliens közvetlenül a megjelenit.php-t kérte.
+     * A /event/{slug}/ → megjelenit.php belső rewrite NEM legacy (különben redirect loop).
+     */
     function events_public_is_legacy_megjelenit_request(): bool {
-        return str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), 'megjelenit.php');
+        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        $seg = defined('EVENTS_PUBLIC_PATH') ? EVENTS_PUBLIC_PATH : 'event';
+        if ($seg !== '' && preg_match('#/' . preg_quote($seg, '#') . '/([^/]+)/?$#i', $path) === 1) {
+            return false;
+        }
+
+        return str_contains($path, 'megjelenit.php');
     }
 }
 
