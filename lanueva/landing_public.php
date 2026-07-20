@@ -51,6 +51,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
             $ip,
             $ua,
         ]);
+
+        try {
+            if (!function_exists('email_kuld')) {
+                require_once __DIR__ . '/../nextgen/includes/email.php';
+            }
+            if (!function_exists('h')) {
+                require_once __DIR__ . '/../nextgen/includes/functions.php';
+            }
+            $targy = SITE_NAME . ' – LaNueva új visszajelzés';
+            $sor = static function (string $cimke, string $ertek): string {
+                if ($ertek === '') {
+                    return '';
+                }
+                return '<p><strong>' . h($cimke) . ':</strong><br>' . nl2br(h($ertek)) . '</p>';
+            };
+            $szoveg = '<p>Új visszajelzés érkezett a LaNueva landingről.</p>'
+                . $sor('Ilyen legyen', $ilyen)
+                . $sor('Ilyen ne legyen', $ne)
+                . $sor('Név', $nev)
+                . $sor('E-mail', $email)
+                . $sor('Telefon', $telefon)
+                . $sor('IP', (string) ($ip ?? ''))
+                . '<p><a href="' . h(site_url('nextgen/config/lanueva.php')) . '">Megnyitás az adminban</a></p>';
+            $mailOpciok = ['html' => true];
+            if ($email !== '') {
+                $mailOpciok['reply_to'] = $email;
+            }
+            $mailResult = email_kuld('balazsv@gmail.com', $targy, $szoveg, $mailOpciok);
+            if (!$mailResult['ok']) {
+                error_log('lanueva feedback mail: ' . ($mailResult['hiba'] ?? ''));
+            }
+        } catch (Throwable $ex) {
+            error_log('lanueva feedback mail: ' . $ex->getMessage());
+        }
+
         flash('landing_ok_feedback', 'Köszönjük! Megkaptuk a naptárral kapcsolatos visszajelzésed.');
         redirect(site_url('lanueva/'));
     }

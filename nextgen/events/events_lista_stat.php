@@ -80,6 +80,26 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$statsSummary = [
+    'events' => count($rows),
+    'preview_human' => 0,
+    'preview_bot' => 0,
+    'preview_total' => 0,
+    'page_human' => 0,
+    'page_bot' => 0,
+    'page_total' => 0,
+];
+foreach ($rows as $summaryRow) {
+    $preview = events_view_metric_counts_from_row($summaryRow, 'naptar_elonezetek');
+    $page = events_view_metric_counts_from_row($summaryRow, 'megtekintesek');
+    $statsSummary['preview_human'] += $preview['human'];
+    $statsSummary['preview_bot'] += $preview['bot'];
+    $statsSummary['preview_total'] += $preview['total'];
+    $statsSummary['page_human'] += $page['human'];
+    $statsSummary['page_bot'] += $page['bot'];
+    $statsSummary['page_total'] += $page['total'];
+}
+
 $editBase = events_url('szerkeszt.php?id=');
 $filterFormAction = events_url('events_lista_stat.php');
 $filterClearUrl = events_url('events_lista_stat.php');
@@ -98,7 +118,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
-<div class="card events-admin-card">
+<div class="card events-admin-card events-stats-page">
     <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-admin-filter-form">
         <div class="events-list-head events-cal-page__head">
             <div class="events-cal-page__head-start">
@@ -129,7 +149,33 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <p class="help" style="margin:0 0 0.75rem;">Naptár előnézet és oldalmegtekintés: emberi, bot és összesen. Alapból oldal össz szerint csökkenő.</p>
+        <p class="events-stats-page__intro">Naptár előnézet és oldalmegtekintés emberi / bot / össz bontásban. Alapból oldal össz szerint csökkenő.</p>
+
+        <?php if ($rows !== []): ?>
+            <div class="events-stats-summary" aria-label="Összesítés a megjelenített listára">
+                <div class="events-stats-summary__card">
+                    <p class="events-stats-summary__label">Esemény</p>
+                    <p class="events-stats-summary__value"><?= (int) $statsSummary['events'] ?></p>
+                    <p class="events-stats-summary__hint">megjelenítve</p>
+                </div>
+                <div class="events-stats-summary__card events-stats-summary__card--preview">
+                    <p class="events-stats-summary__label">Előnézet</p>
+                    <p class="events-stats-summary__value"><?= (int) $statsSummary['preview_total'] ?></p>
+                    <p class="events-stats-summary__hint">
+                        <span class="events-stats-summary__chip events-stats-summary__chip--human"><?= (int) $statsSummary['preview_human'] ?> ember</span>
+                        <span class="events-stats-summary__chip events-stats-summary__chip--bot"><?= (int) $statsSummary['preview_bot'] ?> bot</span>
+                    </p>
+                </div>
+                <div class="events-stats-summary__card events-stats-summary__card--page">
+                    <p class="events-stats-summary__label">Oldal</p>
+                    <p class="events-stats-summary__value"><?= (int) $statsSummary['page_total'] ?></p>
+                    <p class="events-stats-summary__hint">
+                        <span class="events-stats-summary__chip events-stats-summary__chip--human"><?= (int) $statsSummary['page_human'] ?> ember</span>
+                        <span class="events-stats-summary__chip events-stats-summary__chip--bot"><?= (int) $statsSummary['page_bot'] ?> bot</span>
+                    </p>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div
             class="events-cal-filters-panel"

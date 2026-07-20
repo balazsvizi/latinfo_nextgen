@@ -7,8 +7,9 @@ $eid = (int) $r['id'];
 $edit = $editBase . $eid;
 $st = (string) ($r['event_status'] ?? '');
 $badgeClass = events_post_status_badge_class($st);
+$organizerName = trim((string) ($r['organizer_name'] ?? ''));
 ?>
-<tr>
+<tr class="events-stats-row">
     <td class="events-td-actions">
         <div class="events-action-icons">
             <a href="<?= h($edit) ?>" class="events-icon-action" title="Szerkesztés" aria-label="Szerkesztés">
@@ -21,9 +22,9 @@ $badgeClass = events_post_status_badge_class($st);
             <?php endif; ?>
         </div>
     </td>
-    <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
-    <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= ($r['organizer_name'] ?? '') !== '' ? h((string) $r['organizer_name']) : '–' ?></a></td>
-    <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
+    <td class="events-stats-td-date"><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_admin_format_datum_cell($r)) ?></a></td>
+    <td class="events-stats-td-org"><a class="events-cell-edit" href="<?= h($edit) ?>"><?= $organizerName !== '' ? h($organizerName) : '–' ?></a></td>
+    <td class="events-stats-td-name"><a class="events-cell-edit" href="<?= h($edit) ?>"><?= h((string) $r['event_name']) ?></a></td>
     <td>
         <a class="events-cell-edit events-cell-edit--badge" href="<?= h($edit) ?>">
             <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
@@ -32,11 +33,13 @@ $badgeClass = events_post_status_badge_class($st);
     <?php
     $metricEditUrl = $edit;
     $metricTitle = 'Naptár előnézet';
+    $metricGroupClass = 'events-metric-cell--preview';
     $metricCounts = events_view_metric_counts_from_row($r, 'naptar_elonezetek');
     require __DIR__ . '/admin_metric_count_cells.php';
     $metricTitle = 'Eseményoldal';
+    $metricGroupClass = 'events-metric-cell--page';
     $metricCounts = events_view_metric_counts_from_row($r, 'megtekintesek');
     require __DIR__ . '/admin_metric_count_cells.php';
     ?>
-    <td><a class="events-cell-edit" href="<?= h($edit) ?>"><?= $eid ?></a></td>
+    <td class="events-stats-td-id"><a class="events-cell-edit" href="<?= h($edit) ?>"><?= $eid ?></a></td>
 </tr>
