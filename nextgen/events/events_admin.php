@@ -26,11 +26,7 @@ if ($tagsAvailable) {
 if ($djsAvailable) {
     $allowedOrder[] = 'dj';
 }
-$allowedOrder = array_merge($allowedOrder, [
-    'name', 'start', 'end', 'status',
-    'cal_previews', 'cal_previews_human', 'cal_previews_bot',
-    'views', 'views_human', 'views_bot',
-]);
+$allowedOrder = array_merge($allowedOrder, ['name', 'start', 'end', 'status']);
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -54,12 +50,6 @@ $orderSql = match ($order) {
     'start' => "e.event_start IS NULL, e.event_start $dirSql",
     'end' => "e.event_end IS NULL, e.event_end $dirSql",
     'status' => "e.event_status $dirSql",
-    'cal_previews' => "naptar_elonezetek $dirSql",
-    'cal_previews_human' => "naptar_elonezetek_human $dirSql",
-    'cal_previews_bot' => "naptar_elonezetek_bot $dirSql",
-    'views' => "megtekintesek $dirSql",
-    'views_human' => "megtekintesek_human $dirSql",
-    'views_bot' => "megtekintesek_bot $dirSql",
     default => 'e.id DESC',
 };
 
@@ -70,23 +60,12 @@ $listDisplayedCount = (int) $countStmt->fetchColumn();
 $listLimitValue = $filters['list_limit_value'];
 $listTotalInDb = events_admin_table_total_count($db, 'events_calendar_events');
 
-require_once __DIR__ . '/lib/event_view_tracking.php';
-$botColumnReady = events_view_tracking_bot_column_ready($db);
-$pageCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_PAGE, $botColumnReady);
-$previewCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, $botColumnReady);
-
 $sql = "
     SELECT e.*,
         (SELECT GROUP_CONCAT(o.name ORDER BY eo.sort_order ASC, o.name ASC SEPARATOR ', ')
          FROM `events_calendar_event_organizers` eo
          INNER JOIN `events_organizers` o ON o.id = eo.organizer_id
-         WHERE eo.event_id = e.id) AS organizer_name,
-        {$pageCounts['human']} AS megtekintesek_human,
-        {$pageCounts['bot']} AS megtekintesek_bot,
-        {$pageCounts['total']} AS megtekintesek,
-        {$previewCounts['human']} AS naptar_elonezetek_human,
-        {$previewCounts['bot']} AS naptar_elonezetek_bot,
-        {$previewCounts['total']} AS naptar_elonezetek
+         WHERE eo.event_id = e.id) AS organizer_name
     FROM {$poolFromSql}
     {$whereSql}
     ORDER BY {$orderSql}
@@ -271,6 +250,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
             <div class="events-list-actions">
                 <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
+                <a href="<?= h(events_url('events_lista_stat.php')) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
                 <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
                 <a href="<?= h($publicHomePreviewUrl) ?>" class="events-icon-action events-edit-preview-action" title="Naptár főoldal megtekintése (új lap)" aria-label="Naptár főoldal megtekintése új lapon" target="_blank" rel="noopener">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>

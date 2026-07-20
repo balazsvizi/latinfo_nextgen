@@ -62,6 +62,10 @@ function pm_tools_page_catalog(): array
             'display_name' => 'Események lista',
             'purpose' => 'Event Admin – események listája és kezelése.',
         ],
+        '/nextgen/events/events_lista_stat.php' => [
+            'display_name' => 'Esemény lista stat',
+            'purpose' => 'Esemény megtekintések és naptár előnézetek (emberi / bot / össz).',
+        ],
         '/nextgen/events/events_naptar.php' => [
             'display_name' => 'Esemény naptár',
             'purpose' => 'Események naptár nézetben.',
