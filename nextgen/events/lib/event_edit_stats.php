@@ -370,9 +370,19 @@ function events_edit_stats_for_event(PDO $db, int $eventId, array $params): arra
  */
 function events_edit_stats_for_organizer(PDO $db, int $organizerId, array $params): array
 {
-    $empty = events_edit_stats_empty_result();
+    return events_edit_stats_for_organizers($db, $organizerId > 0 ? [$organizerId] : [], $params);
+}
 
-    if ($organizerId <= 0) {
+/**
+ * @param list<int> $organizerIds
+ * @param array{date_from: string, date_to: string} $params
+ * @return array<string, mixed>
+ */
+function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $params): array
+{
+    $empty = events_edit_stats_empty_result();
+    $organizerIds = array_values(array_unique(array_filter(array_map('intval', $organizerIds), static fn (int $id): bool => $id > 0)));
+    if ($organizerIds === []) {
         return $empty;
     }
 
@@ -391,41 +401,42 @@ function events_edit_stats_for_organizer(PDO $db, int $organizerId, array $param
     $previewHumanByDay = array_fill_keys($labels, 0);
     $previewBotByDay = array_fill_keys($labels, 0);
     $window = events_edit_stats_view_window($params);
+    $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
 
     try {
         if ($tableReady && $botReady) {
-            $stmt = $db->prepare('
+            $stmt = $db->prepare("
                 SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, v.`is_bot`, COUNT(*) AS cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
-                WHERE eo.`organizer_id` = ?
+                WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
                 GROUP BY bucket, v.`metric_type`, v.`is_bot`
-            ');
-            $stmt->execute([$organizerId, $window['start_inclusive'], $window['end_exclusive']]);
+            ");
+            $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
         } elseif ($tableReady) {
-            $stmt = $db->prepare('
+            $stmt = $db->prepare("
                 SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, 0 AS is_bot, COUNT(*) AS cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
-                WHERE eo.`organizer_id` = ?
+                WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
                 GROUP BY bucket, v.`metric_type`
-            ');
-            $stmt->execute([$organizerId, $window['start_inclusive'], $window['end_exclusive']]);
+            ");
+            $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
         } else {
-            $stmt = $db->prepare('
+            $stmt = $db->prepare("
                 SELECT DATE(v.`létrehozva`) AS bucket, 0 AS is_bot, COUNT(*) AS cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
-                WHERE eo.`organizer_id` = ?
+                WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
                 GROUP BY bucket
-            ');
-            $stmt->execute([$organizerId, $window['start_inclusive'], $window['end_exclusive']]);
+            ");
+            $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
         }
         events_edit_stats_apply_bucket_rows(
             $stmt->fetchAll(PDO::FETCH_ASSOC),
@@ -449,7 +460,7 @@ function events_edit_stats_for_organizer(PDO $db, int $organizerId, array $param
         $tableReady,
         $botReady
     );
-    $eventsList = events_edit_stats_organizer_events_list($db, $organizerId, $params, $tableReady);
+    $eventsList = events_edit_stats_organizers_events_list($db, $organizerIds, $params, $tableReady);
     $result['totals']['events_total'] = $eventsList['events_total'];
     $result['totals']['events_with_views'] = $eventsList['events_with_views'];
     $result['event_rows'] = $eventsList['rows'];
@@ -491,8 +502,19 @@ function events_edit_stats_partition_draft_events(array $rows): array
 
 function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, array $params, ?bool $tableReady = null): array
 {
+    return events_edit_stats_organizers_events_list($db, $organizerId > 0 ? [$organizerId] : [], $params, $tableReady);
+}
+
+/**
+ * @param list<int> $organizerIds
+ * @param array{date_from: string, date_to: string} $params
+ * @return array{rows: list<array<string, mixed>>, draft_rows: list<array<string, mixed>>, events_total: int, events_with_views: int}
+ */
+function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, array $params, ?bool $tableReady = null): array
+{
     $empty = ['rows' => [], 'draft_rows' => [], 'events_total' => 0, 'events_with_views' => 0];
-    if ($organizerId <= 0) {
+    $organizerIds = array_values(array_unique(array_filter(array_map('intval', $organizerIds), static fn (int $id): bool => $id > 0)));
+    if ($organizerIds === []) {
         return $empty;
     }
 
@@ -500,6 +522,7 @@ function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, arra
     $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
     $botReady = events_view_tracking_bot_column_ready($db);
     $window = events_edit_stats_view_window($params);
+    $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
 
     // Időablakos COUNT-ok.
     $timeAnd = ' AND v.`létrehozva` >= ? AND v.`létrehozva` < ?';
@@ -531,11 +554,15 @@ function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, arra
         . ($tableReady ? ",
             {$previewHumanSql} AS naptar_elonezetek_human,
             {$previewBotSql} AS naptar_elonezetek_bot,
-            {$previewTotalSql} AS naptar_elonezetek" : '') . '
+            {$previewTotalSql} AS naptar_elonezetek" : '') . "
         FROM `events_calendar_events` e
-        INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = e.`id` AND eo.`organizer_id` = ?
+        WHERE e.`id` IN (
+            SELECT eo.`event_id`
+            FROM `events_calendar_event_organizers` eo
+            WHERE eo.`organizer_id` IN ({$orgPh})
+        )
         ORDER BY e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
-    ';
+    ";
 
     $executeParams = [];
     // page human
@@ -562,7 +589,9 @@ function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, arra
         $executeParams[] = $window['start_inclusive'];
         $executeParams[] = $window['end_exclusive'];
     }
-    $executeParams[] = $organizerId;
+    foreach ($organizerIds as $oid) {
+        $executeParams[] = $oid;
+    }
 
     try {
         $stmt = $db->prepare($sql);

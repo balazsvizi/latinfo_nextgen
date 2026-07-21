@@ -9,7 +9,6 @@ $partnerId = partner_current_id();
 $context = partner_portal_current_context($db, $partnerId);
 $events = partner_portal_fetch_events($db, $partnerId, $context);
 $stats = partner_portal_event_stats_summary($events);
-$publishedStatus = events_public_post_status();
 $scope = (string) ($_GET['scope'] ?? 'all');
 if (!in_array($scope, ['all', 'upcoming', 'past', 'draft'], true)) {
     $scope = 'all';
@@ -63,7 +62,7 @@ $baseListUrl = partner_url('esemenyek.php');
         <h1 class="partner-page-title">Események</h1>
         <p class="partner-page-lead">
             A <strong><?= h($context['label']) ?></strong> profilhoz tartozó események.
-            Kattints egy eseményre a partner részletekhez (nem a nyilvános oldalra).
+            A közzétett eseményekre kattintva a nyilvános oldal nyílik meg.
         </p>
     </div>
 </div>
@@ -127,8 +126,9 @@ $baseListUrl = partner_url('esemenyek.php');
                 <tbody>
                     <?php foreach ($filtered as $ev): ?>
                         <?php
-                        $eid = (int) ($ev['id'] ?? 0);
                         $st = (string) ($ev['event_status'] ?? '');
+                        $clickUrl = partner_portal_event_click_url($ev);
+                        $isPublic = partner_portal_event_public_url($ev) !== null;
                         $venueBits = array_filter([
                             trim((string) ($ev['venue_name'] ?? '')),
                             trim((string) ($ev['venue_city'] ?? '')),
@@ -137,7 +137,7 @@ $baseListUrl = partner_url('esemenyek.php');
                         <tr>
                             <td data-label="Dátum"><?= h(events_admin_format_datum_cell($ev)) ?></td>
                             <td data-label="Név">
-                                <a href="<?= h(partner_portal_event_detail_url($eid)) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></a>
+                                <a href="<?= h($clickUrl) ?>"<?= $isPublic ? ' target="_blank" rel="noopener"' : '' ?>><?= h((string) ($ev['event_name'] ?? '')) ?></a>
                             </td>
                             <td data-label="Helyszín"><?= h($venueBits !== [] ? implode(', ', $venueBits) : '—') ?></td>
                             <td data-label="Státusz">

@@ -11,12 +11,6 @@ $partnerUserName = trim((string) ($partnerRow['név'] ?? partner_session_display
 $partnerContexts = partner_portal_available_contexts($db, $partnerId);
 $partnerContext = partner_portal_current_context($db, $partnerId);
 $partnerMsgPending = partner_portal_admin_reply_pending($db, $partnerId);
-$partnerHasOrganizers = false;
-foreach ($partnerContexts as $pc) {
-    if ($pc['type'] === 'organizer') {
-        $partnerHasOrganizers = true;
-    }
-}
 
 $nav = (string) ($activeNav ?? '');
 $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): bool => $c['type'] === 'organizer'));
@@ -87,9 +81,7 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
             <a href="<?= h(partner_url('index.php')) ?>" class="partner-header__link<?= $nav === 'home' ? ' is-active' : '' ?>">Kezdőlap</a>
             <a href="<?= h(partner_url('esemenyek.php')) ?>" class="partner-header__link<?= $nav === 'events' ? ' is-active' : '' ?>">Események</a>
             <a href="<?= h(partner_url('naptar.php')) ?>" class="partner-header__link<?= $nav === 'calendar' ? ' is-active' : '' ?>">Naptár</a>
-            <?php if ($partnerHasOrganizers): ?>
-                <a href="<?= h(partner_url('szervezok.php')) ?>" class="partner-header__link<?= $nav === 'organizers' ? ' is-active' : '' ?>">Szervezők</a>
-            <?php endif; ?>
+            <a href="<?= h(partner_url('statistikak.php')) ?>" class="partner-header__link<?= $nav === 'stats' ? ' is-active' : '' ?>">Statisztikák</a>
             <a href="<?= h(partner_url('uzenetek.php')) ?>" class="partner-header__link<?= $nav === 'messages' ? ' is-active' : '' ?>">
                 Üzenetek
                 <?php if ($partnerMsgPending): ?><span class="partner-nav-badge" title="Új admin válasz">!</span><?php endif; ?>

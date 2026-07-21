@@ -81,10 +81,10 @@ require_once __DIR__ . '/partials/header.php';
             <?php endif; ?>
         </span>
     </a>
-    <a class="partner-stat-card" href="<?= h(partner_url('szervezok.php')) ?>">
-        <span class="partner-stat-card__label">Szervezők</span>
+    <a class="partner-stat-card" href="<?= h(partner_url('statistikak.php')) ?>">
+        <span class="partner-stat-card__label">Statisztikák</span>
         <span class="partner-stat-card__value"><?= $orgCount ?></span>
-        <span class="partner-stat-card__hint"><?= $orgCount === 1 ? 'Hozzárendelt szervező' : 'Hozzárendelt szervezők' ?></span>
+        <span class="partner-stat-card__hint">Megtekintések · <?= $orgCount ?> szervező</span>
     </a>
     <a class="partner-stat-card<?= $msgPending ? ' partner-stat-card--pulse' : '' ?>" href="<?= h(partner_url('uzenetek.php')) ?>">
         <span class="partner-stat-card__label">Üzenetek</span>
@@ -104,9 +104,12 @@ require_once __DIR__ . '/partials/header.php';
         <?php else: ?>
             <ul class="partner-event-list">
                 <?php foreach ($upcomingEvents as $ev): ?>
-                    <?php $eid = (int) ($ev['id'] ?? 0); ?>
+                    <?php
+                    $clickUrl = partner_portal_event_click_url($ev);
+                    $isPublic = partner_portal_event_public_url($ev) !== null;
+                    ?>
                     <li>
-                        <a class="partner-event-row" href="<?= h(partner_portal_event_detail_url($eid)) ?>">
+                        <a class="partner-event-row" href="<?= h($clickUrl) ?>"<?= $isPublic ? ' target="_blank" rel="noopener"' : '' ?>>
                             <span class="partner-event-row__date"><?= h(events_admin_format_datum_cell($ev)) ?></span>
                             <span class="partner-event-row__name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                             <span class="partner-event-row__meta">
@@ -131,12 +134,10 @@ require_once __DIR__ . '/partials/header.php';
                 <strong>Partner naptár</strong>
                 <span>Teljes hónap, a te eseményeid kiemelve</span>
             </a>
-            <?php if ($orgCount > 0): ?>
-                <a href="<?= h(partner_url('szervezok.php')) ?>" class="partner-quick-link">
-                    <strong>Szervező dashboard</strong>
-                    <span>Statisztikák és megtekintések</span>
-                </a>
-            <?php endif; ?>
+            <a href="<?= h(partner_url('statistikak.php')) ?>" class="partner-quick-link">
+                <strong>Statisztikák</strong>
+                <span>Megtekintések a te eseményeiden</span>
+            </a>
             <a href="<?= h(partner_url('uzenetek.php')) ?>" class="partner-quick-link">
                 <strong>Üzenet az adminnak</strong>
                 <span>Teljes előzménnyel, mint egy beszélgetés</span>

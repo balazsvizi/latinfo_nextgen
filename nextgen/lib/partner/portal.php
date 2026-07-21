@@ -379,6 +379,47 @@ function partner_portal_event_detail_url(int $eventId): string
     return partner_url('esemeny.php?id=' . $eventId);
 }
 
+/**
+ * Nyilvános esemény URL, ha közzétett és van slug.
+ *
+ * @param array<string, mixed> $event
+ */
+function partner_portal_event_public_url(array $event): ?string
+{
+    $slug = trim((string) ($event['event_slug'] ?? ''));
+    if ($slug === '') {
+        return null;
+    }
+    if (function_exists('events_admin_calendar_event_is_published')) {
+        if (!events_admin_calendar_event_is_published($event)) {
+            return null;
+        }
+    } else {
+        $published = function_exists('events_public_post_status') ? events_public_post_status() : 'publish';
+        if ((string) ($event['event_status'] ?? '') !== $published) {
+            return null;
+        }
+    }
+
+    return events_public_canonical_url($slug);
+}
+
+/**
+ * Listában / naptárban: publikus oldal, különben partner részletek.
+ *
+ * @param array<string, mixed> $event
+ */
+function partner_portal_event_click_url(array $event): string
+{
+    $public = partner_portal_event_public_url($event);
+    if ($public !== null) {
+        return $public;
+    }
+    $id = (int) ($event['id'] ?? 0);
+
+    return $id > 0 ? partner_portal_event_detail_url($id) : partner_url('esemenyek.php');
+}
+
 function partner_portal_month_url(string $monthKey, array $extra = []): string
 {
     $params = array_merge(['month' => $monthKey], $extra);

@@ -71,11 +71,7 @@ $venueBits = array_filter([
                         <?php else: ?>
                             <?php foreach ($organizers as $i => $org): ?>
                                 <?php if ($i > 0): ?>, <?php endif; ?>
-                                <?php if (nextgen_partner_can_access_organizer($db, $partnerId, (int) $org['id'])): ?>
-                                    <a href="<?= h(partner_url('szervezo.php?id=') . (int) $org['id']) ?>"><?= h($org['name']) ?></a>
-                                <?php else: ?>
-                                    <?= h($org['name']) ?>
-                                <?php endif; ?>
+                                <?= h($org['name']) ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </dd>

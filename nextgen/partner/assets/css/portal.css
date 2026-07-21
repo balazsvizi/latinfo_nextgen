@@ -654,6 +654,42 @@
     margin-top: 0.85rem;
 }
 
+.partner-cal-view-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0 0 0.85rem;
+    padding: 0.25rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--pp-line);
+    box-shadow: var(--pp-shadow);
+}
+
+.partner-cal-view-toggle__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.5rem;
+    padding: 0.4rem 0.95rem;
+    border-radius: 999px;
+    text-decoration: none;
+    color: var(--pp-ink-soft);
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.partner-cal-view-toggle__btn:hover {
+    color: var(--pp-brand);
+    background: var(--pp-accent-soft);
+}
+
+.partner-cal-view-toggle__btn.is-active {
+    color: #fff;
+    background: var(--pp-accent);
+}
+
 .partner-cal-toolbar {
     padding: 1rem 1.15rem;
     margin-bottom: 1rem;

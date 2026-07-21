@@ -122,7 +122,7 @@ function partner_require_organizer_access(PDO $db, int $organizerId): void
     partner_require_login();
     if (!nextgen_partner_can_access_organizer($db, partner_current_id(), $organizerId)) {
         flash('error', 'Nincs hozzáférésed ehhez a szervezőhöz.');
-        redirect(partner_url('szervezok.php'));
+        redirect(partner_url('statistikak.php'));
     }
 }
 
