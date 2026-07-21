@@ -21,6 +21,16 @@ $authHideLoginLink = $authHideLoginLink ?? false;
 </head>
 <body class="login-page partner-login-page">
     <div class="login-box">
+        <a class="partner-login-logo" href="<?= h(LATINFO_PUBLIC_HOME_URL) ?>" title="<?= h(SITE_NAME) ?>" aria-label="<?= h(SITE_NAME . ' kezdőoldala') ?>">
+            <img
+                src="<?= h(events_url('assets/images/latinfo-logo.png')) ?>"
+                alt="<?= h(SITE_NAME) ?>"
+                width="240"
+                height="80"
+                decoding="async"
+                fetchpriority="high"
+            >
+        </a>
         <h1 class="login-brand"><span class="logo-site"><?= h(SITE_NAME) ?></span> <span class="logo-area">Partnerportál</span></h1>
         <?php if ($authSubtitle !== ''): ?>
             <p class="login-sub"><?= h($authSubtitle) ?></p>

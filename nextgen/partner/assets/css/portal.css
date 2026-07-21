@@ -32,6 +32,22 @@
     background: linear-gradient(145deg, #1a2f4a 0%, #2a4a6e 50%, #3d6b9f 100%);
 }
 
+.partner-login-logo {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 1.25rem;
+    text-decoration: none;
+}
+
+.partner-login-logo img {
+    display: block;
+    width: auto;
+    max-width: min(220px, 100%);
+    height: auto;
+    max-height: 64px;
+    object-fit: contain;
+}
+
 .partner-header {
     background: linear-gradient(135deg, var(--pp-brand) 0%, var(--pp-brand-2) 100%);
     color: #fff;
