@@ -1,23 +1,27 @@
 <?php
 declare(strict_types=1);
 /**
- * Metrika cellák: emberi / bot / össz.
+ * Metrika cellák: emberi / bot / össz (bot opcionálisan elrejthető).
  *
  * @var array{human: int, bot: int, total: int} $metricCounts
  * @var string $metricEditUrl
  * @var string $metricTitle
  * @var string $metricGroupClass pl. events-metric-cell--preview
+ * @var bool $metricShowBot
  */
 $metricCounts = $metricCounts ?? ['human' => 0, 'bot' => 0, 'total' => 0];
 $metricEditUrl = $metricEditUrl ?? '#';
 $metricTitle = $metricTitle ?? '';
 $metricGroupClass = trim((string) ($metricGroupClass ?? ''));
+$metricShowBot = $metricShowBot ?? true;
 
 $metricItems = [
     ['kind' => 'human', 'label' => 'emberi', 'value' => (int) $metricCounts['human']],
-    ['kind' => 'bot', 'label' => 'bot', 'value' => (int) $metricCounts['bot']],
-    ['kind' => 'total', 'label' => 'összesen', 'value' => (int) $metricCounts['total']],
 ];
+if ($metricShowBot) {
+    $metricItems[] = ['kind' => 'bot', 'label' => 'bot', 'value' => (int) $metricCounts['bot']];
+}
+$metricItems[] = ['kind' => 'total', 'label' => 'összesen', 'value' => (int) $metricCounts['total']];
 
 foreach ($metricItems as $item):
     $classes = 'events-metric-cell events-metric-cell--' . $item['kind'];
@@ -32,3 +36,6 @@ foreach ($metricItems as $item):
         <a class="events-metric-val" href="<?= h($metricEditUrl) ?>"><?= $item['value'] ?></a>
     </td>
 <?php endforeach; ?>
+<?php
+$metricShowBot = true;
+?>

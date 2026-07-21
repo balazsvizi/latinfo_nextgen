@@ -64,19 +64,9 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         ];
         if (!empty($statsData['table_ready'])) {
             $statCards[] = [
-                'label' => 'Előnézet — emberi',
-                'value' => (int) ($totals['calendar_previews_human'] ?? $totals['calendar_previews'] ?? 0),
-                'hint' => 'Emberi előnézet',
-            ];
-            $statCards[] = [
-                'label' => 'Előnézet — bot',
-                'value' => (int) ($totals['calendar_previews_bot'] ?? 0),
-                'hint' => 'Robot / crawler',
-            ];
-            $statCards[] = [
-                'label' => 'Előnézet — össz',
-                'value' => (int) ($totals['calendar_previews'] ?? 0),
-                'hint' => 'Összes naptár előnézet',
+                'label' => 'Előnézet',
+                'value' => (int) ($totals['calendar_previews'] ?? $totals['calendar_previews_human'] ?? 0),
+                'hint' => 'Naptár előnézet megnyitások',
             ];
         }
         foreach ($statCards as $card):
@@ -92,7 +82,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     <?php if ($hasChart): ?>
         <div class="events-edit-stats__chart-wrap">
             <h3 class="events-edit-stats__chart-title">Megtekintések alakulása</h3>
-            <p class="events-edit-stats__chart-hint">Napi bontás — emberi és bot forgalom külön vonalon.</p>
+            <p class="events-edit-stats__chart-hint">Napi bontás — oldal: emberi / bot; előnézet: összes megnyitás.</p>
             <div class="events-edit-stats__chart-canvas">
                 <canvas id="events-edit-stats-chart" aria-label="Esemény megtekintések grafikonja"></canvas>
             </div>

@@ -114,15 +114,13 @@ $venueBits = array_filter([
                 $pageBot = (int) ($totals['page_views_bot'] ?? 0);
                 $pageTotal = (int) ($totals['page_views'] ?? ($pageHuman + $pageBot));
                 $previewHuman = (int) ($totals['calendar_previews_human'] ?? $totals['calendar_previews'] ?? 0);
-                $previewBot = (int) ($totals['calendar_previews_bot'] ?? 0);
-                $previewTotal = (int) ($totals['calendar_previews'] ?? ($previewHuman + $previewBot));
+                $previewTotal = (int) ($totals['calendar_previews'] ?? $previewHuman);
                 ?>
                 <p class="partner-aside-card__big"><?= $pageHuman ?></p>
                 <p class="help">Oldal — emberi (választott időszak)</p>
                 <p class="help">Bot: <?= $pageBot ?> · Össz: <?= $pageTotal ?></p>
-                <p class="partner-aside-card__big partner-aside-card__big--sm"><?= $previewHuman ?></p>
-                <p class="help">Naptár előnézet — emberi</p>
-                <p class="help">Bot: <?= $previewBot ?> · Össz: <?= $previewTotal ?></p>
+                <p class="partner-aside-card__big partner-aside-card__big--sm"><?= $previewTotal ?></p>
+                <p class="help">Naptár előnézet</p>
                 <form method="get" class="partner-mini-stats-form">
                     <input type="hidden" name="id" value="<?= $eventId ?>">
                     <label class="events-filter-label" for="stat_date_from">Tól</label>

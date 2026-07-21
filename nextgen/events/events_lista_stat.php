@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Esemény lista – megtekintés / előnézet statisztikák (emberi, bot, össz).
+ * Esemény lista – megtekintés / előnézet statisztikák.
  */
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
@@ -18,7 +18,7 @@ $get_params = $filters['get_params'];
 
 $allowedOrder = [
     'id', 'organizer', 'name', 'start', 'status',
-    'cal_previews', 'cal_previews_human', 'cal_previews_bot',
+    'cal_previews', 'cal_previews_human',
     'views', 'views_human', 'views_bot',
 ];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
@@ -42,7 +42,6 @@ $orderSql = match ($order) {
     'status' => "e.event_status {$dirSql}",
     'cal_previews' => "naptar_elonezetek {$dirSql}",
     'cal_previews_human' => "naptar_elonezetek_human {$dirSql}",
-    'cal_previews_bot' => "naptar_elonezetek_bot {$dirSql}",
     'views' => "megtekintesek {$dirSql}",
     'views_human' => "megtekintesek_human {$dirSql}",
     'views_bot' => "megtekintesek_bot {$dirSql}",
@@ -69,8 +68,7 @@ $sql = "
         {$pageCounts['human']} AS megtekintesek_human,
         {$pageCounts['bot']} AS megtekintesek_bot,
         {$pageCounts['total']} AS megtekintesek,
-        {$previewCounts['human']} AS naptar_elonezetek_human,
-        {$previewCounts['bot']} AS naptar_elonezetek_bot,
+        {$previewCounts['total']} AS naptar_elonezetek_human,
         {$previewCounts['total']} AS naptar_elonezetek
     FROM {$poolFromSql}
     {$whereSql}
@@ -83,7 +81,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $statsSummary = [
     'events' => count($rows),
     'preview_human' => 0,
-    'preview_bot' => 0,
     'preview_total' => 0,
     'page_human' => 0,
     'page_bot' => 0,
@@ -93,7 +90,6 @@ foreach ($rows as $summaryRow) {
     $preview = events_view_metric_counts_from_row($summaryRow, 'naptar_elonezetek');
     $page = events_view_metric_counts_from_row($summaryRow, 'megtekintesek');
     $statsSummary['preview_human'] += $preview['human'];
-    $statsSummary['preview_bot'] += $preview['bot'];
     $statsSummary['preview_total'] += $preview['total'];
     $statsSummary['page_human'] += $page['human'];
     $statsSummary['page_bot'] += $page['bot'];
@@ -149,7 +145,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <p class="events-stats-page__intro">Naptár előnézet és oldalmegtekintés emberi / bot / össz bontásban. Alapból oldal össz szerint csökkenő.</p>
+        <p class="events-stats-page__intro">Naptár előnézet (összes) és oldalmegtekintés emberi / bot / össz bontásban. Alapból oldal össz szerint csökkenő.</p>
 
         <?php if ($rows !== []): ?>
             <div class="events-stats-summary" aria-label="Összesítés a megjelenített listára">
@@ -161,10 +157,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <div class="events-stats-summary__card events-stats-summary__card--preview">
                     <p class="events-stats-summary__label">Előnézet</p>
                     <p class="events-stats-summary__value"><?= (int) $statsSummary['preview_total'] ?></p>
-                    <p class="events-stats-summary__hint">
-                        <span class="events-stats-summary__chip events-stats-summary__chip--human"><?= (int) $statsSummary['preview_human'] ?> ember</span>
-                        <span class="events-stats-summary__chip events-stats-summary__chip--bot"><?= (int) $statsSummary['preview_bot'] ?> bot</span>
-                    </p>
+                    <p class="events-stats-summary__hint">naptár előnézet megnyitás</p>
                 </div>
                 <div class="events-stats-summary__card events-stats-summary__card--page">
                     <p class="events-stats-summary__label">Oldal</p>

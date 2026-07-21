@@ -107,8 +107,7 @@ function events_edit_stats_chart_labels(array $labels): array
  *     page_views_human: int,
  *     page_views_bot: int,
  *     calendar_previews: int,
- *     calendar_previews_human: int,
- *     calendar_previews_bot: int
+ *     calendar_previews_human: int
  *   },
  *   chart: array{labels: list<string>, datasets: list<array{label: string, data: list<int>, color: string, total: int}>}
  * }
@@ -124,12 +123,10 @@ function events_edit_stats_build_result(
 ): array {
     $totalPageHuman = 0;
     $totalPageBot = 0;
-    $totalPreviewHuman = 0;
-    $totalPreviewBot = 0;
+    $totalPreview = 0;
     $pageHumanData = [];
     $pageBotData = [];
-    $previewHumanData = [];
-    $previewBotData = [];
+    $previewData = [];
 
     foreach ($labels as $label) {
         $ph = (int) ($pageHumanByDay[$label] ?? 0);
@@ -138,16 +135,13 @@ function events_edit_stats_build_result(
         $vb = (int) ($previewBotByDay[$label] ?? 0);
         $pageHumanData[] = $ph;
         $pageBotData[] = $pb;
-        $previewHumanData[] = $vh;
-        $previewBotData[] = $vb;
+        $previewData[] = $vh + $vb;
         $totalPageHuman += $ph;
         $totalPageBot += $pb;
-        $totalPreviewHuman += $vh;
-        $totalPreviewBot += $vb;
+        $totalPreview += $vh + $vb;
     }
 
     $totalPage = $totalPageHuman + $totalPageBot;
-    $totalPreview = $totalPreviewHuman + $totalPreviewBot;
 
     $datasets = [
         [
@@ -165,16 +159,10 @@ function events_edit_stats_build_result(
     ];
     if ($tableReady) {
         $datasets[] = [
-            'label' => 'Előnézet — emberi',
-            'data' => $previewHumanData,
+            'label' => 'Előnézet',
+            'data' => $previewData,
             'color' => '#6b7fa8',
-            'total' => $totalPreviewHuman,
-        ];
-        $datasets[] = [
-            'label' => 'Előnézet — bot',
-            'data' => $previewBotData,
-            'color' => '#a8b4c8',
-            'total' => $totalPreviewBot,
+            'total' => $totalPreview,
         ];
     }
 
@@ -186,8 +174,7 @@ function events_edit_stats_build_result(
             'page_views_human' => $totalPageHuman,
             'page_views_bot' => $totalPageBot,
             'calendar_previews' => $totalPreview,
-            'calendar_previews_human' => $totalPreviewHuman,
-            'calendar_previews_bot' => $totalPreviewBot,
+            'calendar_previews_human' => $totalPreview,
         ],
         'chart' => [
             'labels' => events_edit_stats_chart_labels($labels),
@@ -272,7 +259,6 @@ function events_edit_stats_empty_result(): array
             'page_views_bot' => 0,
             'calendar_previews' => 0,
             'calendar_previews_human' => 0,
-            'calendar_previews_bot' => 0,
         ],
         'chart' => ['labels' => [], 'datasets' => []],
     ];
@@ -534,16 +520,14 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
         $pageHumanSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd} AND v.`is_bot` = 0)";
         $pageBotSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd} AND v.`is_bot` = 1)";
         $pageTotalSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd})";
-        $previewHumanSql = "(SELECT COUNT(*) {$previewBase} AND v.`is_bot` = 0)";
-        $previewBotSql = "(SELECT COUNT(*) {$previewBase} AND v.`is_bot` = 1)";
         $previewTotalSql = "(SELECT COUNT(*) {$previewBase})";
+        $previewHumanSql = $previewTotalSql;
     } else {
         $pageTotalSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd})";
         $pageHumanSql = $pageTotalSql;
         $pageBotSql = '0';
         $previewTotalSql = "(SELECT COUNT(*) {$previewBase})";
         $previewHumanSql = $previewTotalSql;
-        $previewBotSql = '0';
     }
 
     $sql = "
@@ -553,7 +537,6 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
             {$pageTotalSql} AS megtekintesek"
         . ($tableReady ? ",
             {$previewHumanSql} AS naptar_elonezetek_human,
-            {$previewBotSql} AS naptar_elonezetek_bot,
             {$previewTotalSql} AS naptar_elonezetek" : '') . "
         FROM `events_calendar_events` e
         WHERE e.`id` IN (
@@ -577,14 +560,9 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
     $executeParams[] = $window['start_inclusive'];
     $executeParams[] = $window['end_exclusive'];
     if ($tableReady) {
-        // preview human
+        // preview human (= total; bot bontás nincs)
         $executeParams[] = $window['start_inclusive'];
         $executeParams[] = $window['end_exclusive'];
-        if ($botReady) {
-            // preview bot
-            $executeParams[] = $window['start_inclusive'];
-            $executeParams[] = $window['end_exclusive'];
-        }
         // preview total
         $executeParams[] = $window['start_inclusive'];
         $executeParams[] = $window['end_exclusive'];

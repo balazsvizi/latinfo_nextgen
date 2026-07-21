@@ -90,7 +90,7 @@ $eventDateYmd = static function (array $row, string $key): string {
     <?php if ($hasChart): ?>
         <div class="events-edit-stats__chart-wrap">
             <h3 class="events-edit-stats__chart-title">Megtekintések alakulása</h3>
-            <p class="events-edit-stats__chart-hint">Napi bontás — emberi és bot forgalom külön, az eseményeidre.</p>
+            <p class="events-edit-stats__chart-hint">Napi bontás — oldal: emberi / bot; előnézet: összes megnyitás.</p>
             <div class="events-edit-stats__chart-canvas">
                 <canvas id="<?= h($statsChartDomId) ?>" aria-label="Megtekintések grafikonja"></canvas>
             </div>
@@ -237,7 +237,6 @@ $eventDateYmd = static function (array $row, string $key): string {
                         <th>Név</th>
                         <th>Státusz</th>
                         <th class="th-center" title="Előnézet — emberi">Előn. ember</th>
-                        <th class="th-center" title="Előnézet — bot">Előn. bot</th>
                         <th class="th-center" title="Előnézet — összesen">Előn. össz</th>
                         <th class="th-center" title="Oldal — emberi">Oldal ember</th>
                         <th class="th-center" title="Oldal — bot">Oldal bot</th>
@@ -293,7 +292,6 @@ $eventDateYmd = static function (array $row, string $key): string {
                                 <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
                             </td>
                             <td class="text-center"><?= (int) $previewCounts['human'] ?></td>
-                            <td class="text-center"><?= (int) $previewCounts['bot'] ?></td>
                             <td class="text-center"><?= (int) $previewCounts['total'] ?></td>
                             <td class="text-center"><?= (int) $pageCounts['human'] ?></td>
                             <td class="text-center"><?= (int) $pageCounts['bot'] ?></td>
@@ -301,7 +299,7 @@ $eventDateYmd = static function (array $row, string $key): string {
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-stats-events-empty" hidden>
-                        <td colspan="9" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
+                        <td colspan="8" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
                     </tr>
                 </tbody>
             </table>

@@ -58,7 +58,7 @@ function events_finance_admin_filters_from_request(): array
     $allowedOrder = [
         'id', 'start', 'name', 'organizer', 'status',
         'cost_from', 'cost_to', 'fee',
-        'cal_previews', 'cal_previews_human', 'cal_previews_bot', 'fee_per_preview',
+        'cal_previews', 'cal_previews_human', 'fee_per_preview',
         'views', 'views_human', 'views_bot', 'fee_per_view',
         'payer', 'note',
     ];
@@ -214,7 +214,6 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
         'fee' => "e.finance_organizer_fee IS NULL, e.finance_organizer_fee {$dirSql}",
         'cal_previews' => "naptar_elonezetek {$dirSql}",
         'cal_previews_human' => "naptar_elonezetek_human {$dirSql}",
-        'cal_previews_bot' => "naptar_elonezetek_bot {$dirSql}",
         'fee_per_preview' => "fee_per_preview IS NULL, fee_per_preview {$dirSql}",
         'views' => "megtekintesek {$dirSql}",
         'views_human' => "megtekintesek_human {$dirSql}",
@@ -241,16 +240,15 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
                 INNER JOIN `events_organizers` o ON o.id = eo.organizer_id
                 WHERE eo.event_id = e.id) AS organizer_name,
                (SELECT po.name FROM `events_organizers` po WHERE po.id = e.finance_payer_organizer_id LIMIT 1) AS payer_name,
-               {$previewCounts['human']} AS naptar_elonezetek_human,
-               {$previewCounts['bot']} AS naptar_elonezetek_bot,
+               {$previewCounts['total']} AS naptar_elonezetek_human,
                {$previewCounts['total']} AS naptar_elonezetek,
                {$pageCounts['human']} AS megtekintesek_human,
                {$pageCounts['bot']} AS megtekintesek_bot,
                {$pageCounts['total']} AS megtekintesek,
                CASE
                    WHEN e.finance_organizer_fee IS NOT NULL AND e.finance_organizer_fee > 0
-                        AND {$previewCounts['human']} > 0
-                   THEN e.finance_organizer_fee / ({$previewCounts['human']})
+                        AND {$previewCounts['total']} > 0
+                   THEN e.finance_organizer_fee / ({$previewCounts['total']})
                    ELSE NULL
                END AS fee_per_preview,
                CASE
