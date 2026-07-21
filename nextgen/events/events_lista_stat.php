@@ -94,6 +94,7 @@ foreach ($rows as $summaryRow) {
 
 $editBase = events_url('szerkeszt.php?id=');
 $filterFormAction = events_url('events_lista_stat.php');
+$filterFormHidden = ['order' => $order, 'dir' => $dir_param];
 $filterClearUrl = events_url('events_lista_stat.php');
 $listViewUrl = events_admin_list_view_url($get_params);
 $filtersActive = events_admin_filters_are_active($filters);

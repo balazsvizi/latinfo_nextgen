@@ -3,6 +3,7 @@ declare(strict_types=1);
 /** @var array $filters events_admin_filters_from_request() */
 /** @var string $filterFormAction */
 /** @var array<string, string> $filterFormHidden */
+$filterFormHidden = is_array($filterFormHidden ?? null) ? $filterFormHidden : [];
 ?>
 <section class="events-filters-shell" aria-label="Szűrők"
     data-axis-min="<?= h($filters['axisMinStr']) ?>"
