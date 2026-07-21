@@ -97,17 +97,17 @@
 .partner-header__inner {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 0.9rem 1.25rem 1rem;
+    padding: 0.75rem 1.25rem 0.85rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 0.65rem;
 }
 
 .partner-header__top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 1rem 1.25rem;
+    flex-wrap: wrap;
 }
 
 .partner-header__brand {
@@ -117,6 +117,7 @@
     align-items: center;
     gap: 0.85rem;
     min-width: 0;
+    flex-shrink: 0;
 }
 
 .partner-header__logo {
@@ -147,6 +148,52 @@
     line-height: 1.2;
 }
 
+.partner-header__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem 1.25rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.partner-header__partner-pick,
+.partner-header__who {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.partner-header__partner-pick {
+    flex: 1 1 12rem;
+    max-width: 280px;
+}
+
+.partner-header__who {
+    flex: 0 1 auto;
+}
+
+.partner-header__meta-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--pp-muted);
+}
+
+.partner-header__who-name {
+    font-family: var(--pp-display);
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--pp-brand);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 16rem;
+}
+
 .partner-header__menu-btn {
     display: none;
     border: 1px solid var(--pp-line);
@@ -157,63 +204,22 @@
     font: inherit;
     font-weight: 600;
     cursor: pointer;
+    margin-left: auto;
 }
 
 .partner-header__menu-btn:hover {
     background: #dce8d8;
 }
 
-.partner-header__identity {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    gap: 0.75rem 1.25rem;
-    padding: 0.8rem 1rem;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #fbfcfa 0%, #eef3eb 100%);
-    border: 1px solid var(--pp-line);
-}
-
-.partner-header__who,
-.partner-header__partner-pick {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    min-width: 0;
-}
-
-.partner-header__who-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--pp-muted);
-}
-
-.partner-header__who-name {
-    font-family: var(--pp-display);
-    font-size: clamp(1.1rem, 2.4vw, 1.35rem);
-    font-weight: 700;
-    line-height: 1.15;
-    color: var(--pp-brand);
-    word-break: break-word;
-}
-
-.partner-header__who-email {
-    font-size: 0.82rem;
-    color: var(--pp-ink-soft);
-    word-break: break-all;
-}
-
 .partner-header__partner-select {
     width: 100%;
-    max-width: 360px;
-    margin-top: 0.15rem;
-    padding: 0.45rem 0.7rem;
+    padding: 0.4rem 0.65rem;
     border: 1px solid var(--pp-line);
     border-radius: 10px;
     background: #fff;
     color: var(--pp-ink);
     font: inherit;
+    font-size: 0.9rem;
 }
 
 .partner-header__partner-select:focus {
@@ -228,22 +234,13 @@
     background: #fff;
 }
 
-.partner-header__partner-current {
-    font-size: 0.85rem;
-    color: var(--pp-ink-soft);
-    margin-top: 0.2rem;
-}
-
-.partner-header__partner-current strong {
-    color: var(--pp-brand);
-}
-
 .partner-header__nav {
     display: flex;
     align-items: center;
     gap: 0.2rem 0.35rem;
     flex-wrap: wrap;
-    padding-top: 0.15rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--pp-line);
 }
 
 .partner-header__link {
@@ -969,12 +966,24 @@
         display: inline-flex;
     }
 
-    .partner-header__identity {
-        grid-template-columns: 1fr;
+    .partner-header__top {
+        align-items: flex-start;
     }
 
-    .partner-header__partner-select {
+    .partner-header__meta {
+        order: 3;
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .partner-header__partner-pick {
         max-width: none;
+        flex: 1 1 100%;
+    }
+
+    .partner-header__who-name {
+        max-width: none;
+        white-space: normal;
     }
 
     .partner-header__nav {

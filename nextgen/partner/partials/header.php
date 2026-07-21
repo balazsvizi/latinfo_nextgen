@@ -7,7 +7,6 @@ partner_portal_apply_context_from_request($db, $partnerId);
 
 $partnerRow = partner_current($db);
 $partnerUserName = trim((string) ($partnerRow['név'] ?? partner_session_display_name()));
-$partnerUserEmail = trim((string) ($partnerRow['email'] ?? ($_SESSION['partner_email'] ?? '')));
 
 $partnerContexts = partner_portal_available_contexts($db, $partnerId);
 $partnerContext = partner_portal_current_context($db, $partnerId);
@@ -53,40 +52,35 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
                 >
                 <span class="partner-header__area">Partnerportál</span>
             </a>
+
+            <div class="partner-header__meta">
+                <?php if ($partnerContexts !== []): ?>
+                    <div class="partner-header__partner-pick">
+                        <label class="partner-header__meta-label" for="partner-context-select">Partner</label>
+                        <select id="partner-context-select" class="partner-header__partner-select" aria-label="Partner választása">
+                            <option value="all"<?= $partnerContext['key'] === 'all' ? ' selected' : '' ?>>Összes partner</option>
+                            <?php if ($orgOpts !== []): ?>
+                                <optgroup label="Szervezők">
+                                    <?php foreach ($orgOpts as $c): ?>
+                                        <option value="<?= h($c['key']) ?>"<?= $partnerContext['key'] === $c['key'] ? ' selected' : '' ?>>
+                                            <?= h($c['label']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                <?php endif; ?>
+
+                <div class="partner-header__who" title="Bejelentkezett felhasználó">
+                    <span class="partner-header__meta-label">Felhasználó</span>
+                    <span class="partner-header__who-name"><?= h($partnerUserName !== '' ? $partnerUserName : 'Partner') ?></span>
+                </div>
+            </div>
+
             <button type="button" class="partner-header__menu-btn" id="partner-nav-toggle" aria-expanded="false" aria-controls="partner-main-nav">
                 Menü
             </button>
-        </div>
-
-        <div class="partner-header__identity">
-            <div class="partner-header__who" title="Bejelentkezett felhasználó">
-                <span class="partner-header__who-label">Felhasználó</span>
-                <span class="partner-header__who-name"><?= h($partnerUserName !== '' ? $partnerUserName : 'Partner') ?></span>
-                <?php if ($partnerUserEmail !== ''): ?>
-                    <span class="partner-header__who-email"><?= h($partnerUserEmail) ?></span>
-                <?php endif; ?>
-            </div>
-
-            <?php if ($partnerContexts !== []): ?>
-                <div class="partner-header__partner-pick">
-                    <label class="partner-header__who-label" for="partner-context-select">Partner</label>
-                    <select id="partner-context-select" class="partner-header__partner-select" aria-label="Partner választása">
-                        <option value="all"<?= $partnerContext['key'] === 'all' ? ' selected' : '' ?>>Összes partner</option>
-                        <?php if ($orgOpts !== []): ?>
-                            <optgroup label="Szervezők">
-                                <?php foreach ($orgOpts as $c): ?>
-                                    <option value="<?= h($c['key']) ?>"<?= $partnerContext['key'] === $c['key'] ? ' selected' : '' ?>>
-                                        <?= h($c['label']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </optgroup>
-                        <?php endif; ?>
-                    </select>
-                    <span class="partner-header__partner-current">
-                        Aktív: <strong><?= h($partnerContext['label']) ?></strong>
-                    </span>
-                </div>
-            <?php endif; ?>
         </div>
 
         <nav class="partner-header__nav" id="partner-main-nav" aria-label="Partner menü">
