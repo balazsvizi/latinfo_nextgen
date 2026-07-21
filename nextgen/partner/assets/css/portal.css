@@ -48,6 +48,10 @@
     object-fit: contain;
 }
 
+.partner-login-page .login-brand {
+    text-align: center;
+}
+
 .partner-header {
     background: linear-gradient(135deg, var(--pp-brand) 0%, var(--pp-brand-2) 100%);
     color: #fff;
