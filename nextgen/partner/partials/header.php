@@ -13,19 +13,14 @@ $partnerContexts = partner_portal_available_contexts($db, $partnerId);
 $partnerContext = partner_portal_current_context($db, $partnerId);
 $partnerMsgPending = partner_portal_admin_reply_pending($db, $partnerId);
 $partnerHasOrganizers = false;
-$partnerHasDjs = false;
 foreach ($partnerContexts as $pc) {
     if ($pc['type'] === 'organizer') {
         $partnerHasOrganizers = true;
-    }
-    if ($pc['type'] === 'dj') {
-        $partnerHasDjs = true;
     }
 }
 
 $nav = (string) ($activeNav ?? '');
 $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): bool => $c['type'] === 'organizer'));
-$djOpts = array_values(array_filter($partnerContexts, static fn (array $c): bool => $c['type'] === 'dj'));
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -86,15 +81,6 @@ $djOpts = array_values(array_filter($partnerContexts, static fn (array $c): bool
                                 <?php endforeach; ?>
                             </optgroup>
                         <?php endif; ?>
-                        <?php if ($djOpts !== []): ?>
-                            <optgroup label="DJ-k">
-                                <?php foreach ($djOpts as $c): ?>
-                                    <option value="<?= h($c['key']) ?>"<?= $partnerContext['key'] === $c['key'] ? ' selected' : '' ?>>
-                                        <?= h($c['label']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </optgroup>
-                        <?php endif; ?>
                     </select>
                     <span class="partner-header__partner-current">
                         Aktív: <strong><?= h($partnerContext['label']) ?></strong>
@@ -109,9 +95,6 @@ $djOpts = array_values(array_filter($partnerContexts, static fn (array $c): bool
             <a href="<?= h(partner_url('naptar.php')) ?>" class="partner-header__link<?= $nav === 'calendar' ? ' is-active' : '' ?>">Naptár</a>
             <?php if ($partnerHasOrganizers): ?>
                 <a href="<?= h(partner_url('szervezok.php')) ?>" class="partner-header__link<?= $nav === 'organizers' ? ' is-active' : '' ?>">Szervezők</a>
-            <?php endif; ?>
-            <?php if ($partnerHasDjs): ?>
-                <a href="<?= h(partner_url('djs.php')) ?>" class="partner-header__link<?= $nav === 'djs' ? ' is-active' : '' ?>">DJ-k</a>
             <?php endif; ?>
             <a href="<?= h(partner_url('uzenetek.php')) ?>" class="partner-header__link<?= $nav === 'messages' ? ' is-active' : '' ?>">
                 Üzenetek

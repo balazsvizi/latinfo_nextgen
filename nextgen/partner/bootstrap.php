@@ -22,7 +22,6 @@ require_once $nextgenRoot . '/events/lib/event_status.php';
 require_once $nextgenRoot . '/events/lib/event_edit_stats.php';
 require_once $nextgenRoot . '/events/lib/admin_event_filters.php';
 require_once $nextgenRoot . '/events/lib/organizers_admin.php';
-require_once $nextgenRoot . '/events/lib/event_public_djs.php';
 require_once $nextgenRoot . '/events/lib/event_public_tags.php';
 require_once $nextgenRoot . '/events/lib/admin_event_calendar.php';
 

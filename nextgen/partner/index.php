@@ -41,7 +41,6 @@ foreach ($events as $ev) {
 }
 
 $orgCount = count(array_filter($contexts, static fn (array $c): bool => $c['type'] === 'organizer'));
-$djCount = count(array_filter($contexts, static fn (array $c): bool => $c['type'] === 'dj'));
 
 $pageTitle = 'Kezdőlap';
 $activeNav = 'home';
@@ -83,9 +82,9 @@ require_once __DIR__ . '/partials/header.php';
         </span>
     </a>
     <a class="partner-stat-card" href="<?= h(partner_url('szervezok.php')) ?>">
-        <span class="partner-stat-card__label">Profilok</span>
-        <span class="partner-stat-card__value"><?= $orgCount + $djCount ?></span>
-        <span class="partner-stat-card__hint"><?= $orgCount ?> szervező · <?= $djCount ?> DJ</span>
+        <span class="partner-stat-card__label">Szervezők</span>
+        <span class="partner-stat-card__value"><?= $orgCount ?></span>
+        <span class="partner-stat-card__hint"><?= $orgCount === 1 ? 'Hozzárendelt szervező' : 'Hozzárendelt szervezők' ?></span>
     </a>
     <a class="partner-stat-card<?= $msgPending ? ' partner-stat-card--pulse' : '' ?>" href="<?= h(partner_url('uzenetek.php')) ?>">
         <span class="partner-stat-card__label">Üzenetek</span>
@@ -136,12 +135,6 @@ require_once __DIR__ . '/partials/header.php';
                 <a href="<?= h(partner_url('szervezok.php')) ?>" class="partner-quick-link">
                     <strong>Szervező dashboard</strong>
                     <span>Statisztikák és megtekintések</span>
-                </a>
-            <?php endif; ?>
-            <?php if ($djCount > 0): ?>
-                <a href="<?= h(partner_url('djs.php')) ?>" class="partner-quick-link">
-                    <strong>DJ profilok</strong>
-                    <span>Események a DJ címkéidhez</span>
                 </a>
             <?php endif; ?>
             <a href="<?= h(partner_url('uzenetek.php')) ?>" class="partner-quick-link">

@@ -2,11 +2,11 @@
 declare(strict_types=1);
 
 /**
- * Partnerportál: kontextus (szervező/DJ), események, naptár, dashboard.
+ * Partnerportál: kontextus (szervező), események, naptár, dashboard.
  */
 
 /**
- * @return array{type: 'all'|'organizer'|'dj', id: int, label: string, key: string}
+ * @return array{type: 'all'|'organizer', id: int, label: string, key: string}
  */
 function partner_portal_default_context(): array
 {
@@ -14,7 +14,7 @@ function partner_portal_default_context(): array
 }
 
 /**
- * @return list<array{type: 'organizer'|'dj', id: int, label: string, key: string, roles: list<string>}>
+ * @return list<array{type: 'organizer', id: int, label: string, key: string, roles: list<string>}>
  */
 function partner_portal_available_contexts(PDO $db, int $partnerId): array
 {
@@ -36,25 +36,6 @@ function partner_portal_available_contexts(PDO $db, int $partnerId): array
             'id' => $oid,
             'label' => (string) ($org['name'] ?? ('Szervező #' . $oid)),
             'key' => 'o:' . $oid,
-            'roles' => array_values(array_map('strval', $roles)),
-        ];
-    }
-
-    $djs = nextgen_partner_group_dj_assignments_for_form(nextgen_partner_djs($db, $partnerId));
-    foreach ($djs as $dj) {
-        $tid = (int) ($dj['tag_id'] ?? $dj['id'] ?? 0);
-        if ($tid <= 0) {
-            continue;
-        }
-        $roles = $dj['role_types'] ?? [];
-        if (!is_array($roles) || $roles === []) {
-            $roles = ['dj'];
-        }
-        $contexts[] = [
-            'type' => 'dj',
-            'id' => $tid,
-            'label' => (string) ($dj['name'] ?? ('DJ #' . $tid)),
-            'key' => 'd:' . $tid,
             'roles' => array_values(array_map('strval', $roles)),
         ];
     }
@@ -125,7 +106,7 @@ function partner_portal_apply_context_from_request(PDO $db, int $partnerId): voi
 }
 
 /**
- * @return array{organizer_ids: list<int>, tag_ids: list<int>}
+ * @return array{organizer_ids: list<int>}
  */
 function partner_portal_scope_ids(PDO $db, int $partnerId, ?array $context = null): array
 {
@@ -133,30 +114,23 @@ function partner_portal_scope_ids(PDO $db, int $partnerId, ?array $context = nul
     $available = partner_portal_available_contexts($db, $partnerId);
 
     if (($context['type'] ?? '') === 'organizer' && (int) ($context['id'] ?? 0) > 0) {
-        return ['organizer_ids' => [(int) $context['id']], 'tag_ids' => []];
-    }
-    if (($context['type'] ?? '') === 'dj' && (int) ($context['id'] ?? 0) > 0) {
-        return ['organizer_ids' => [], 'tag_ids' => [(int) $context['id']]];
+        return ['organizer_ids' => [(int) $context['id']]];
     }
 
     $organizerIds = [];
-    $tagIds = [];
     foreach ($available as $ctx) {
         if ($ctx['type'] === 'organizer') {
             $organizerIds[] = (int) $ctx['id'];
-        } elseif ($ctx['type'] === 'dj') {
-            $tagIds[] = (int) $ctx['id'];
         }
     }
 
     return [
         'organizer_ids' => array_values(array_unique($organizerIds)),
-        'tag_ids' => array_values(array_unique($tagIds)),
     ];
 }
 
 /**
- * @return array{organizer_ids: list<int>, tag_ids: list<int>}
+ * @return array{organizer_ids: list<int>}
  */
 function partner_portal_all_owned_ids(PDO $db, int $partnerId): array
 {
@@ -178,33 +152,20 @@ function partner_portal_fetch_events(PDO $db, int $partnerId, ?array $context = 
 {
     $scope = partner_portal_scope_ids($db, $partnerId, $context);
     $orgIds = $scope['organizer_ids'];
-    $tagIds = $scope['tag_ids'];
-    if ($orgIds === [] && $tagIds === []) {
+    if ($orgIds === []) {
         return [];
     }
 
-    $parts = [];
     $params = [];
-    if ($orgIds !== []) {
-        $parts[] = 'e.`id` IN (
-            SELECT eo.`event_id` FROM `events_calendar_event_organizers` eo
-            WHERE eo.`organizer_id` IN (' . partner_portal_in_placeholders($orgIds) . ')
-        )';
-        foreach ($orgIds as $id) {
-            $params[] = $id;
-        }
-    }
-    if ($tagIds !== []) {
-        $parts[] = 'e.`id` IN (
-            SELECT et.`event_id` FROM `events_calendar_event_tags` et
-            WHERE et.`tag_id` IN (' . partner_portal_in_placeholders($tagIds) . ')
-        )';
-        foreach ($tagIds as $id) {
-            $params[] = $id;
-        }
+    $orgPlaceholders = partner_portal_in_placeholders($orgIds);
+    foreach ($orgIds as $id) {
+        $params[] = $id;
     }
 
-    $where = '(' . implode(' OR ', $parts) . ')';
+    $where = 'e.`id` IN (
+        SELECT eo.`event_id` FROM `events_calendar_event_organizers` eo
+        WHERE eo.`organizer_id` IN (' . $orgPlaceholders . ')
+    )';
     $limitSql = $limit > 0 ? ' LIMIT ' . $limit : '';
 
     try {
@@ -235,31 +196,20 @@ function partner_portal_owned_event_id_map(PDO $db, int $partnerId): array
 {
     $scope = partner_portal_all_owned_ids($db, $partnerId);
     $orgIds = $scope['organizer_ids'];
-    $tagIds = $scope['tag_ids'];
-    if ($orgIds === [] && $tagIds === []) {
+    if ($orgIds === []) {
         return [];
     }
 
-    $parts = [];
     $params = [];
-    if ($orgIds !== []) {
-        $parts[] = 'SELECT eo.`event_id` AS id FROM `events_calendar_event_organizers` eo
-            WHERE eo.`organizer_id` IN (' . partner_portal_in_placeholders($orgIds) . ')';
-        foreach ($orgIds as $id) {
-            $params[] = $id;
-        }
-    }
-    if ($tagIds !== []) {
-        $parts[] = 'SELECT et.`event_id` AS id FROM `events_calendar_event_tags` et
-            WHERE et.`tag_id` IN (' . partner_portal_in_placeholders($tagIds) . ')';
-        foreach ($tagIds as $id) {
-            $params[] = $id;
-        }
+    foreach ($orgIds as $id) {
+        $params[] = $id;
     }
 
     try {
-        $sql = implode(' UNION ', $parts);
-        $stmt = $db->prepare($sql);
+        $stmt = $db->prepare(
+            'SELECT eo.`event_id` AS id FROM `events_calendar_event_organizers` eo
+             WHERE eo.`organizer_id` IN (' . partner_portal_in_placeholders($orgIds) . ')'
+        );
         $stmt->execute($params);
         $map = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -284,39 +234,22 @@ function partner_portal_can_access_event(PDO $db, int $partnerId, int $eventId):
     }
     $scope = partner_portal_all_owned_ids($db, $partnerId);
     $orgIds = $scope['organizer_ids'];
-    $tagIds = $scope['tag_ids'];
-    if ($orgIds === [] && $tagIds === []) {
+    if ($orgIds === []) {
         return false;
     }
 
     try {
-        if ($orgIds !== []) {
-            $stmt = $db->prepare(
-                'SELECT 1 FROM `events_calendar_event_organizers`
-                 WHERE `event_id` = ? AND `organizer_id` IN (' . partner_portal_in_placeholders($orgIds) . ')
-                 LIMIT 1'
-            );
-            $stmt->execute(array_merge([$eventId], $orgIds));
-            if ($stmt->fetchColumn()) {
-                return true;
-            }
-        }
-        if ($tagIds !== []) {
-            $stmt = $db->prepare(
-                'SELECT 1 FROM `events_calendar_event_tags`
-                 WHERE `event_id` = ? AND `tag_id` IN (' . partner_portal_in_placeholders($tagIds) . ')
-                 LIMIT 1'
-            );
-            $stmt->execute(array_merge([$eventId], $tagIds));
-            if ($stmt->fetchColumn()) {
-                return true;
-            }
-        }
+        $stmt = $db->prepare(
+            'SELECT 1 FROM `events_calendar_event_organizers`
+             WHERE `event_id` = ? AND `organizer_id` IN (' . partner_portal_in_placeholders($orgIds) . ')
+             LIMIT 1'
+        );
+        $stmt->execute(array_merge([$eventId], $orgIds));
+
+        return (bool) $stmt->fetchColumn();
     } catch (Throwable) {
         return false;
     }
-
-    return false;
 }
 
 /**
