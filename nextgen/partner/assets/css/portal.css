@@ -1,27 +1,26 @@
-/* Partnerportál — egységes, reszponzív felület */
+/* Partnerportál — Latinfo.hu zöld márkához igazítva */
 
 :root {
-    --pp-ink: #142033;
-    --pp-ink-soft: #3a4a63;
-    --pp-muted: #6b7a90;
-    --pp-paper: #f3f6fb;
+    --pp-ink: #1f241c;
+    --pp-ink-soft: #5a6354;
+    --pp-muted: #7a8574;
+    --pp-paper: #f4f6f2;
     --pp-card: #ffffff;
-    --pp-line: #d7e0ec;
-    --pp-brand: #1a2f4a;
-    --pp-brand-2: #2f5f8a;
-    --pp-accent: #2f7d6d;
-    --pp-accent-soft: rgba(47, 125, 109, 0.12);
+    --pp-line: #d4e0cf;
+    --pp-brand: #3d4f38;
+    --pp-brand-2: #6d8f63;
+    --pp-accent: #6d8f63;
+    --pp-accent-soft: rgba(109, 143, 99, 0.14);
     --pp-warn: #b45309;
     --pp-radius: 14px;
-    --pp-shadow: 0 10px 28px rgba(20, 32, 51, 0.08);
+    --pp-shadow: 0 2px 14px rgba(45, 58, 40, 0.07);
     --pp-font: "DM Sans", "Segoe UI", sans-serif;
-    --pp-display: "Fraunces", Georgia, serif;
+    --pp-display: "DM Sans", "Segoe UI", sans-serif;
 }
 
 .partner-portal-body {
     background:
-        radial-gradient(1200px 500px at 10% -10%, rgba(47, 95, 138, 0.16), transparent 60%),
-        radial-gradient(900px 420px at 100% 0%, rgba(47, 125, 109, 0.12), transparent 55%),
+        radial-gradient(ellipse 90% 55% at 50% -20%, rgba(109, 143, 99, 0.14), transparent 60%),
         var(--pp-paper);
     min-height: 100vh;
     font-family: var(--pp-font);
@@ -29,33 +28,67 @@
 }
 
 .partner-login-page {
-    background: linear-gradient(145deg, #1a2f4a 0%, #2a4a6e 50%, #3d6b9f 100%);
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -15%, rgba(109, 143, 99, 0.22), transparent 55%),
+        linear-gradient(180deg, #fbfcfa 0%, #e8f1e5 55%, #dfeadf 100%);
+}
+
+.partner-login-page .login-box {
+    border: 1px solid var(--pp-line);
+    box-shadow: 0 12px 40px rgba(45, 58, 40, 0.1);
+    border-radius: 18px;
+    padding: 2.25rem 2rem 2rem;
 }
 
 .partner-login-logo {
     display: flex;
     justify-content: center;
-    margin: 0 0 1.25rem;
+    margin: 0 0 1rem;
     text-decoration: none;
 }
 
 .partner-login-logo img {
     display: block;
     width: auto;
-    max-width: min(220px, 100%);
+    max-width: min(240px, 100%);
     height: auto;
-    max-height: 64px;
+    max-height: 72px;
     object-fit: contain;
 }
 
 .partner-login-page .login-brand {
     text-align: center;
+    color: var(--pp-brand);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+}
+
+.partner-login-page .login-box button {
+    background: var(--pp-accent);
+}
+
+.partner-login-page .login-box button:hover {
+    background: #56734d;
+}
+
+.partner-login-page .login-box input:focus {
+    border-color: var(--pp-accent);
+    box-shadow: 0 0 0 3px var(--pp-accent-soft);
+}
+
+.partner-login-page .login-back-home a:hover {
+    color: var(--pp-accent);
 }
 
 .partner-header {
-    background: linear-gradient(135deg, var(--pp-brand) 0%, var(--pp-brand-2) 100%);
-    color: #fff;
-    box-shadow: 0 2px 16px rgba(26, 47, 74, 0.28);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--pp-ink);
+    border-bottom: 1px solid var(--pp-line);
+    box-shadow: 0 8px 28px rgba(45, 58, 40, 0.05);
+    backdrop-filter: blur(10px);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -64,10 +97,10 @@
 .partner-header__inner {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 0.85rem 1.25rem 1rem;
+    padding: 0.9rem 1.25rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.85rem;
 }
 
 .partner-header__top {
@@ -82,16 +115,16 @@
     color: inherit;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.85rem;
     min-width: 0;
 }
 
 .partner-header__logo {
     display: block;
     width: auto;
-    max-width: 140px;
+    max-width: 168px;
     height: auto;
-    max-height: 36px;
+    max-height: 42px;
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -103,31 +136,41 @@
 }
 
 .partner-header__area {
-    font-weight: 500;
-    font-size: 0.9rem;
-    opacity: 0.85;
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--pp-brand-2);
     white-space: nowrap;
+    padding-left: 0.85rem;
+    border-left: 1px solid var(--pp-line);
+    line-height: 1.2;
 }
 
 .partner-header__menu-btn {
     display: none;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    border: 1px solid var(--pp-line);
+    background: var(--pp-accent-soft);
+    color: var(--pp-brand);
     border-radius: 999px;
     padding: 0.4rem 0.85rem;
     font: inherit;
+    font-weight: 600;
     cursor: pointer;
+}
+
+.partner-header__menu-btn:hover {
+    background: #dce8d8;
 }
 
 .partner-header__identity {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
     gap: 0.75rem 1.25rem;
-    padding: 0.75rem 0.9rem;
+    padding: 0.8rem 1rem;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, #fbfcfa 0%, #eef3eb 100%);
+    border: 1px solid var(--pp-line);
 }
 
 .partner-header__who,
@@ -143,20 +186,21 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    opacity: 0.72;
+    color: var(--pp-muted);
 }
 
 .partner-header__who-name {
     font-family: var(--pp-display);
-    font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+    font-size: clamp(1.1rem, 2.4vw, 1.35rem);
     font-weight: 700;
     line-height: 1.15;
+    color: var(--pp-brand);
     word-break: break-word;
 }
 
 .partner-header__who-email {
     font-size: 0.82rem;
-    opacity: 0.82;
+    color: var(--pp-ink-soft);
     word-break: break-all;
 }
 
@@ -165,50 +209,73 @@
     max-width: 360px;
     margin-top: 0.15rem;
     padding: 0.45rem 0.7rem;
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    border: 1px solid var(--pp-line);
     border-radius: 10px;
-    background: rgba(10, 22, 38, 0.35);
-    color: #fff;
+    background: #fff;
+    color: var(--pp-ink);
     font: inherit;
+}
+
+.partner-header__partner-select:focus {
+    outline: none;
+    border-color: var(--pp-accent);
+    box-shadow: 0 0 0 3px var(--pp-accent-soft);
 }
 
 .partner-header__partner-select option,
 .partner-header__partner-select optgroup {
-    color: #142033;
+    color: var(--pp-ink);
     background: #fff;
 }
 
 .partner-header__partner-current {
     font-size: 0.85rem;
-    opacity: 0.9;
+    color: var(--pp-ink-soft);
     margin-top: 0.2rem;
+}
+
+.partner-header__partner-current strong {
+    color: var(--pp-brand);
 }
 
 .partner-header__nav {
     display: flex;
     align-items: center;
-    gap: 0.2rem 0.55rem;
+    gap: 0.2rem 0.35rem;
     flex-wrap: wrap;
+    padding-top: 0.15rem;
 }
 
 .partner-header__link {
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--pp-ink-soft);
     text-decoration: none;
     font-size: 0.92rem;
-    padding: 0.35rem 0.55rem;
+    font-weight: 500;
+    padding: 0.4rem 0.65rem;
     border-radius: 8px;
     position: relative;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
-.partner-header__link:hover,
+.partner-header__link:hover {
+    color: var(--pp-brand);
+    background: var(--pp-accent-soft);
+}
+
 .partner-header__link.is-active {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.14);
+    color: var(--pp-brand);
+    background: var(--pp-accent-soft);
+    font-weight: 600;
+}
+
+.partner-header__logout {
+    margin-left: auto;
+    color: var(--pp-muted);
 }
 
 .partner-header__user {
     font-size: 0.85rem;
-    opacity: 0.9;
+    color: var(--pp-ink-soft);
     margin-left: 0.35rem;
 }
 
@@ -266,8 +333,7 @@
     padding: 1.5rem 1.5rem 1.35rem;
     border-radius: calc(var(--pp-radius) + 4px);
     background:
-        linear-gradient(135deg, rgba(26, 47, 74, 0.96), rgba(47, 95, 138, 0.92)),
-        #1a2f4a;
+        linear-gradient(135deg, #3d4f38 0%, #56734d 55%, #6d8f63 100%);
     color: #fff;
     box-shadow: var(--pp-shadow);
     margin-bottom: 1.25rem;
@@ -339,7 +405,7 @@
 
 .partner-stat-card:hover {
     transform: translateY(-2px);
-    border-color: #b9c9dc;
+    border-color: var(--pp-border-strong, #b8ccb0);
 }
 
 .partner-stat-card--static:hover {
@@ -414,13 +480,13 @@
     padding: 0.75rem 0.85rem;
     border-radius: 12px;
     border: 1px solid var(--pp-line);
-    background: #fbfcfe;
+    background: #fbfcfa;
     text-decoration: none;
     color: inherit;
 }
 
 .partner-event-row:hover {
-    border-color: #aec2d8;
+    border-color: #b8ccb0;
     background: #fff;
 }
 
@@ -451,7 +517,7 @@
     padding: 0.85rem 1rem;
     border-radius: 12px;
     border: 1px solid var(--pp-line);
-    background: linear-gradient(180deg, #fff, #f7fafc);
+    background: linear-gradient(180deg, #fff, #f7faf4);
     text-decoration: none;
     color: inherit;
 }
@@ -916,14 +982,29 @@
         width: 100%;
         flex-direction: column;
         align-items: stretch;
+        gap: 0.15rem;
+        padding: 0.35rem;
+        border-radius: 12px;
+        background: #fbfcfa;
+        border: 1px solid var(--pp-line);
     }
 
     .partner-header__nav.is-open {
         display: flex;
     }
 
-    .partner-header__user {
+    .partner-header__logout {
         margin-left: 0;
+    }
+
+    .partner-header__area {
+        font-size: 0.72rem;
+        padding-left: 0.6rem;
+    }
+
+    .partner-header__logo {
+        max-width: 132px;
+        max-height: 34px;
     }
 
     .partner-stat-grid,

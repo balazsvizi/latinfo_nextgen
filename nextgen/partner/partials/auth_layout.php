@@ -16,6 +16,9 @@ $authHideLoginLink = $authHideLoginLink ?? false;
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= h($authTitle) ?> – <?= h(SITE_NAME) ?></title>
     <?php require dirname(__DIR__, 2) . '/includes/favicon_head.php'; ?>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>">
     <link rel="stylesheet" href="<?= h(partner_asset_url('assets/css/portal.css')) ?>">
 </head>
