@@ -31,7 +31,7 @@ $authHideLoginLink = $authHideLoginLink ?? false;
                 fetchpriority="high"
             >
         </a>
-        <h1 class="login-brand"><span class="logo-site"><?= h(SITE_NAME) ?></span> <span class="logo-area">Partnerportál</span></h1>
+        <h1 class="login-brand">Partnerportál</h1>
         <?php if ($authSubtitle !== ''): ?>
             <p class="login-sub"><?= h($authSubtitle) ?></p>
         <?php endif; ?>
