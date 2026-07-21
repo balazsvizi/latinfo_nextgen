@@ -48,7 +48,14 @@ $djOpts = array_values(array_filter($partnerContexts, static fn (array $c): bool
     <div class="partner-header__inner">
         <div class="partner-header__top">
             <a href="<?= h(partner_url('index.php')) ?>" class="partner-header__brand">
-                <span class="partner-header__site"><?= h(SITE_NAME) ?></span>
+                <img
+                    class="partner-header__logo"
+                    src="<?= h(events_url('assets/images/latinfo-logo.png')) ?>"
+                    alt="<?= h(SITE_NAME) ?>"
+                    width="160"
+                    height="54"
+                    decoding="async"
+                >
                 <span class="partner-header__area">Partnerportál</span>
             </a>
             <button type="button" class="partner-header__menu-btn" id="partner-nav-toggle" aria-expanded="false" aria-controls="partner-main-nav">

@@ -81,8 +81,19 @@
     text-decoration: none;
     color: inherit;
     display: flex;
-    align-items: baseline;
-    gap: 0.4rem;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.partner-header__logo {
+    display: block;
+    width: auto;
+    max-width: 140px;
+    height: auto;
+    max-height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .partner-header__site {
@@ -95,6 +106,7 @@
     font-weight: 500;
     font-size: 0.9rem;
     opacity: 0.85;
+    white-space: nowrap;
 }
 
 .partner-header__menu-btn {
