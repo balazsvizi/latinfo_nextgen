@@ -36,7 +36,7 @@ $hasFilters = $filters['f_q'] !== ''
     || $filters['f_start_from'] !== ''
     || $filters['f_start_to'] !== '';
 
-$colspan = 17;
+$colspan = 16;
 $editBase = events_url('szerkeszt.php?id=');
 
 $pageTitle = 'Finance – Események';
@@ -144,9 +144,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th class="th-num"><?= sort_th('Belépő tól', 'cost_from', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= sort_th('Belépő ig', 'cost_to', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= sort_th('Szervezői díj', 'fee', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num" title="Előnézet — emberi"><?= sort_th('Előn. ember', 'cal_previews_human', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num" title="Előnézet — összesen"><?= sort_th('Előn. össz', 'cal_previews', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num" title="Szervezői díj / emberi előnézet"><?= sort_th('Ft/előn.', 'fee_per_preview', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Naptár előnézet"><?= sort_th('Előnézet', 'cal_previews', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Szervezői díj / előnézet"><?= sort_th('Ft/előn.', 'fee_per_preview', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num" title="Oldal — emberi"><?= sort_th('Oldal ember', 'views_human', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num" title="Oldal — bot"><?= sort_th('Oldal bot', 'views_bot', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num" title="Oldal — összesen"><?= sort_th('Oldal össz', 'views', $order, $dir_param, $get_params) ?></th>
@@ -190,7 +189,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td class="td-num"><?= h(events_finance_format_money($r['event_cost_from'] ?? null)) ?></td>
                                 <td class="td-num"><?= h(events_finance_format_money($r['event_cost_to'] ?? null)) ?></td>
                                 <td class="td-num"><?= h(events_finance_format_money($feeRaw)) ?></td>
-                                <td class="td-num"><?= (int) $previewCounts['human'] ?></td>
                                 <td class="td-num"><?= (int) $previewCounts['total'] ?></td>
                                 <td class="td-num"><?= h(events_finance_format_fee_per_click($feePerPreview !== null && $feePerPreview !== '' ? (float) $feePerPreview : null)) ?></td>
                                 <td class="td-num"><?= (int) $pageCounts['human'] ?></td>

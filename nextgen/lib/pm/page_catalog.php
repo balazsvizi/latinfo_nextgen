@@ -64,7 +64,7 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/events/events_lista_stat.php' => [
             'display_name' => 'Esemény lista stat',
-            'purpose' => 'Esemény megtekintések és naptár előnézetek (emberi / bot / össz).',
+            'purpose' => 'Esemény megtekintések (emberi / bot / össz) és naptár előnézetek.',
         ],
         '/nextgen/events/events_naptar.php' => [
             'display_name' => 'Esemény naptár',

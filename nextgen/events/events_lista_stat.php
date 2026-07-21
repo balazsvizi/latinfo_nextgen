@@ -18,7 +18,7 @@ $get_params = $filters['get_params'];
 
 $allowedOrder = [
     'id', 'organizer', 'name', 'start', 'status',
-    'cal_previews', 'cal_previews_human',
+    'cal_previews',
     'views', 'views_human', 'views_bot',
 ];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
@@ -41,7 +41,6 @@ $orderSql = match ($order) {
     'start' => "e.event_start IS NULL, e.event_start {$dirSql}",
     'status' => "e.event_status {$dirSql}",
     'cal_previews' => "naptar_elonezetek {$dirSql}",
-    'cal_previews_human' => "naptar_elonezetek_human {$dirSql}",
     'views' => "megtekintesek {$dirSql}",
     'views_human' => "megtekintesek_human {$dirSql}",
     'views_bot' => "megtekintesek_bot {$dirSql}",
@@ -68,7 +67,6 @@ $sql = "
         {$pageCounts['human']} AS megtekintesek_human,
         {$pageCounts['bot']} AS megtekintesek_bot,
         {$pageCounts['total']} AS megtekintesek,
-        {$previewCounts['total']} AS naptar_elonezetek_human,
         {$previewCounts['total']} AS naptar_elonezetek
     FROM {$poolFromSql}
     {$whereSql}
@@ -80,7 +78,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $statsSummary = [
     'events' => count($rows),
-    'preview_human' => 0,
     'preview_total' => 0,
     'page_human' => 0,
     'page_bot' => 0,
@@ -89,7 +86,6 @@ $statsSummary = [
 foreach ($rows as $summaryRow) {
     $preview = events_view_metric_counts_from_row($summaryRow, 'naptar_elonezetek');
     $page = events_view_metric_counts_from_row($summaryRow, 'megtekintesek');
-    $statsSummary['preview_human'] += $preview['human'];
     $statsSummary['preview_total'] += $preview['total'];
     $statsSummary['page_human'] += $page['human'];
     $statsSummary['page_bot'] += $page['bot'];

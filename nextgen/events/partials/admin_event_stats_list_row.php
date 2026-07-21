@@ -34,12 +34,14 @@ $organizerName = trim((string) ($r['organizer_name'] ?? ''));
     $metricEditUrl = $edit;
     $metricTitle = 'Naptár előnézet';
     $metricGroupClass = 'events-metric-cell--preview';
-    $metricShowBot = false;
+    $metricTotalOnly = true;
     $metricCounts = events_view_metric_counts_from_row($r, 'naptar_elonezetek');
     require __DIR__ . '/admin_metric_count_cells.php';
     $metricTitle = 'Eseményoldal';
     $metricGroupClass = 'events-metric-cell--page';
+    $metricTotalOnly = false;
     $metricShowBot = true;
+    $metricShowHuman = true;
     $metricCounts = events_view_metric_counts_from_row($r, 'megtekintesek');
     require __DIR__ . '/admin_metric_count_cells.php';
     ?>

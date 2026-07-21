@@ -79,6 +79,11 @@ $eventDateYmd = static function (array $row, string $key): string {
             <p class="events-edit-stats__card-value"><?= $eventsWithViews ?> / <?= $eventsTotal ?></p>
             <p class="events-edit-stats__card-hint">Megjelenített / összes</p>
         </div>
+        <div class="events-edit-stats__card">
+            <p class="events-edit-stats__card-label">Egyedi látogató</p>
+            <p class="events-edit-stats__card-value"><?= (int) ($statsData['totals']['unique_visitors'] ?? 0) ?></p>
+            <p class="events-edit-stats__card-hint">Emberi oldalmegtekintés, IP alapján</p>
+        </div>
         <?php foreach ($chartPayload['datasets'] as $dataset): ?>
             <div class="events-edit-stats__card">
                 <p class="events-edit-stats__card-label"><?= h((string) ($dataset['label'] ?? '')) ?></p>
@@ -236,8 +241,8 @@ $eventDateYmd = static function (array $row, string $key): string {
                         <th>Dátum</th>
                         <th>Név</th>
                         <th>Státusz</th>
-                        <th class="th-center" title="Előnézet — emberi">Előn. ember</th>
-                        <th class="th-center" title="Előnézet — összesen">Előn. össz</th>
+                        <th class="th-center" title="Naptár előnézet">Előnézet</th>
+                        <th class="th-center" title="Egyedi emberi oldal-látogató (IP)">Egyedi</th>
                         <th class="th-center" title="Oldal — emberi">Oldal ember</th>
                         <th class="th-center" title="Oldal — bot">Oldal bot</th>
                         <th class="th-center" title="Oldal — összesen">Oldal össz</th>
@@ -251,9 +256,10 @@ $eventDateYmd = static function (array $row, string $key): string {
                         $st = (string) ($row['event_status'] ?? '');
                         $badgeClass = events_post_status_badge_class($st);
                         $pageCounts = events_view_metric_counts_from_row($row, 'megtekintesek');
-                        $previewCounts = events_view_metric_counts_from_row($row, 'naptar_elonezetek');
+                        $previewViews = (int) ($row['naptar_elonezetek'] ?? 0);
+                        $uniqueVisitors = (int) ($row['egyedi_latogatok'] ?? 0);
                         $pageViews = (int) $pageCounts['total'];
-                        $previewViews = (int) $previewCounts['total'];
+                        $previewViews = (int) $previewViews;
                         $hasViews = ($pageViews + $previewViews) > 0 ? '1' : '0';
                         $eventStart = $eventDateYmd($row, 'event_start');
                         $eventEnd = $eventDateYmd($row, 'event_end');
@@ -284,8 +290,8 @@ $eventDateYmd = static function (array $row, string $key): string {
                                     <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
                                 </a>
                             </td>
-                            <td class="text-center"><?= (int) $previewCounts['human'] ?></td>
-                            <td class="text-center"><?= (int) $previewCounts['total'] ?></td>
+                            <td class="text-center"><?= $previewViews ?></td>
+                            <td class="text-center"><?= $uniqueVisitors ?></td>
                             <td class="text-center"><?= (int) $pageCounts['human'] ?></td>
                             <td class="text-center"><?= (int) $pageCounts['bot'] ?></td>
                             <td class="text-center"><?= (int) $pageCounts['total'] ?></td>

@@ -107,7 +107,8 @@ function events_edit_stats_chart_labels(array $labels): array
  *     page_views_human: int,
  *     page_views_bot: int,
  *     calendar_previews: int,
- *     calendar_previews_human: int
+ *     calendar_previews_human: int,
+ *     unique_visitors?: int
  *   },
  *   chart: array{labels: list<string>, datasets: list<array{label: string, data: list<int>, color: string, total: int}>}
  * }
@@ -259,6 +260,7 @@ function events_edit_stats_empty_result(): array
             'page_views_bot' => 0,
             'calendar_previews' => 0,
             'calendar_previews_human' => 0,
+            'unique_visitors' => 0,
         ],
         'chart' => ['labels' => [], 'datasets' => []],
     ];
@@ -449,10 +451,64 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
     $eventsList = events_edit_stats_organizers_events_list($db, $organizerIds, $params, $tableReady);
     $result['totals']['events_total'] = $eventsList['events_total'];
     $result['totals']['events_with_views'] = $eventsList['events_with_views'];
+    $result['totals']['unique_visitors'] = events_edit_stats_unique_visitors_for_organizers(
+        $db,
+        $organizerIds,
+        $params,
+        $tableReady,
+        $botReady
+    );
     $result['event_rows'] = $eventsList['rows'];
     $result['draft_rows'] = $eventsList['draft_rows'];
 
     return $result;
+}
+
+/**
+ * Egyedi emberi oldal-látogatók (DISTINCT ip_hash) a szervező(k) eseményein.
+ *
+ * @param list<int> $organizerIds
+ * @param array{date_from: string, date_to: string} $params
+ */
+function events_edit_stats_unique_visitors_for_organizers(
+    PDO $db,
+    array $organizerIds,
+    array $params,
+    ?bool $tableReady = null,
+    ?bool $botReady = null
+): int {
+    $organizerIds = array_values(array_unique(array_filter(array_map('intval', $organizerIds), static fn (int $id): bool => $id > 0)));
+    if ($organizerIds === []) {
+        return 0;
+    }
+
+    $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
+    $botReady = $botReady ?? events_view_tracking_bot_column_ready($db);
+    $window = events_edit_stats_view_window($params);
+    $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
+
+    $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $botAnd = $botReady ? ' AND v.`is_bot` = 0' : '';
+
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(DISTINCT v.`ip_hash`)
+            FROM `events_calendar_event_views` v
+            INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+            WHERE eo.`organizer_id` IN ({$orgPh})
+              AND v.`létrehozva` >= ?
+              AND v.`létrehozva` < ?
+              AND v.`ip_hash` IS NOT NULL
+              AND v.`ip_hash` <> ''
+              {$metricAnd}
+              {$botAnd}
+        ");
+        $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
+
+        return (int) $stmt->fetchColumn();
+    } catch (Throwable) {
+        return 0;
+    }
 }
 
 /**
@@ -520,23 +576,23 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
         $pageHumanSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd} AND v.`is_bot` = 0)";
         $pageBotSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd} AND v.`is_bot` = 1)";
         $pageTotalSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd})";
+        $pageUniqueSql = "(SELECT COUNT(DISTINCT v.`ip_hash`) {$pageBase}{$pageTypeAnd} AND v.`is_bot` = 0 AND v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> '')";
         $previewTotalSql = "(SELECT COUNT(*) {$previewBase})";
-        $previewHumanSql = $previewTotalSql;
     } else {
         $pageTotalSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd})";
         $pageHumanSql = $pageTotalSql;
         $pageBotSql = '0';
+        $pageUniqueSql = "(SELECT COUNT(DISTINCT v.`ip_hash`) {$pageBase}{$pageTypeAnd} AND v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> '')";
         $previewTotalSql = "(SELECT COUNT(*) {$previewBase})";
-        $previewHumanSql = $previewTotalSql;
     }
 
     $sql = "
         SELECT e.*,
             {$pageHumanSql} AS megtekintesek_human,
             {$pageBotSql} AS megtekintesek_bot,
-            {$pageTotalSql} AS megtekintesek"
+            {$pageTotalSql} AS megtekintesek,
+            {$pageUniqueSql} AS egyedi_latogatok"
         . ($tableReady ? ",
-            {$previewHumanSql} AS naptar_elonezetek_human,
             {$previewTotalSql} AS naptar_elonezetek" : '') . "
         FROM `events_calendar_events` e
         WHERE e.`id` IN (
@@ -559,10 +615,10 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
     // page total
     $executeParams[] = $window['start_inclusive'];
     $executeParams[] = $window['end_exclusive'];
+    // page unique
+    $executeParams[] = $window['start_inclusive'];
+    $executeParams[] = $window['end_exclusive'];
     if ($tableReady) {
-        // preview human (= total; bot bontás nincs)
-        $executeParams[] = $window['start_inclusive'];
-        $executeParams[] = $window['end_exclusive'];
         // preview total
         $executeParams[] = $window['start_inclusive'];
         $executeParams[] = $window['end_exclusive'];
