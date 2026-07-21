@@ -230,17 +230,33 @@ $eventDateYmd = static function (array $row, string $key): string {
         </div>
 
         <div class="table-wrap events-admin-table-wrap">
-            <table class="sortable-table events-admin-table events-edit-stats__events-table">
+            <table class="sortable-table events-admin-table events-edit-stats__events-table" id="organizer-stats-events-table">
                 <thead>
                     <tr>
-                        <th>Dátum</th>
-                        <th>Név</th>
-                        <th>Státusz</th>
-                        <th class="th-center" title="Előnézet — emberi">Előn. ember</th>
-                        <th class="th-center" title="Előnézet — összesen">Előn. össz</th>
-                        <th class="th-center" title="Oldal — emberi">Oldal ember</th>
-                        <th class="th-center" title="Oldal — bot">Oldal bot</th>
-                        <th class="th-center" title="Oldal — összesen">Oldal össz</th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="date" aria-pressed="false">Dátum</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="name" aria-pressed="false">Név</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="status" aria-pressed="false">Státusz</button>
+                        </th>
+                        <th class="th-center" scope="col" title="Előnézet — emberi">
+                            <button type="button" class="th-sort" data-sort="preview_human" aria-pressed="false">Előn. ember</button>
+                        </th>
+                        <th class="th-center" scope="col" title="Előnézet — összesen">
+                            <button type="button" class="th-sort" data-sort="preview" aria-pressed="false">Előn. össz</button>
+                        </th>
+                        <th class="th-center" scope="col" title="Oldal — emberi">
+                            <button type="button" class="th-sort" data-sort="page_human" aria-pressed="false">Oldal ember</button>
+                        </th>
+                        <th class="th-center" scope="col" title="Oldal — bot">
+                            <button type="button" class="th-sort" data-sort="page_bot" aria-pressed="false">Oldal bot</button>
+                        </th>
+                        <th class="th-center" scope="col" title="Oldal — összesen">
+                            <button type="button" class="th-sort" data-sort="page" aria-pressed="false">Oldal össz</button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="organizer-stats-events-tbody">
@@ -278,7 +294,10 @@ $eventDateYmd = static function (array $row, string $key): string {
                             data-event-start="<?= h($eventStart) ?>"
                             data-event-end="<?= h($eventEnd) ?>"
                             data-page-views="<?= $pageViews ?>"
+                            data-page-human="<?= (int) $pageCounts['human'] ?>"
+                            data-page-bot="<?= (int) $pageCounts['bot'] ?>"
                             data-preview-views="<?= $previewViews ?>"
+                            data-preview-human="<?= (int) $previewCounts['human'] ?>"
                         >
                             <td><?= h(events_admin_format_datum_cell($row)) ?></td>
                             <td>
@@ -307,6 +326,7 @@ $eventDateYmd = static function (array $row, string $key): string {
         <script>
         (function () {
             var controls = document.getElementById('organizer-stats-list-controls');
+            var table = document.getElementById('organizer-stats-events-table');
             var tbody = document.getElementById('organizer-stats-events-tbody');
             if (!controls || !tbody) return;
 
@@ -321,6 +341,8 @@ $eventDateYmd = static function (array $row, string $key): string {
             var eventFromInput = document.getElementById('org_stats_filter_event_from');
             var eventToInput = document.getElementById('org_stats_filter_event_to');
             var searchTimer = null;
+            var sortKey = 'date';
+            var sortDir = 'desc';
 
             function getScope() {
                 var checked = controls.querySelector('input[name="org_stats_scope"]:checked');
@@ -384,6 +406,77 @@ $eventDateYmd = static function (array $row, string $key): string {
                 return true;
             }
 
+            function sortValue(row, key) {
+                if (key === 'date') {
+                    return row.getAttribute('data-event-start') || '';
+                }
+                if (key === 'name') {
+                    return row.getAttribute('data-search') || '';
+                }
+                if (key === 'status') {
+                    return row.getAttribute('data-status') || '';
+                }
+                if (key === 'preview_human') {
+                    return parseInt(row.getAttribute('data-preview-human') || '0', 10);
+                }
+                if (key === 'preview') {
+                    return parseInt(row.getAttribute('data-preview-views') || '0', 10);
+                }
+                if (key === 'page_human') {
+                    return parseInt(row.getAttribute('data-page-human') || '0', 10);
+                }
+                if (key === 'page_bot') {
+                    return parseInt(row.getAttribute('data-page-bot') || '0', 10);
+                }
+                if (key === 'page') {
+                    return parseInt(row.getAttribute('data-page-views') || '0', 10);
+                }
+                return '';
+            }
+
+            function updateSortHeaders() {
+                if (!table) return;
+                var buttons = table.querySelectorAll('thead .th-sort[data-sort]');
+                buttons.forEach(function (btn) {
+                    var key = btn.getAttribute('data-sort') || '';
+                    var active = key === sortKey;
+                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    btn.classList.toggle('is-active', active);
+                    var label = (btn.getAttribute('data-label') || btn.textContent || '').replace(/\s*[↑↓]\s*$/, '').trim();
+                    btn.setAttribute('data-label', label);
+                    btn.textContent = active ? (label + (sortDir === 'asc' ? ' ↑' : ' ↓')) : label;
+                });
+            }
+
+            function applySort() {
+                rows.sort(function (a, b) {
+                    var va = sortValue(a, sortKey);
+                    var vb = sortValue(b, sortKey);
+                    var cmp = 0;
+                    if (typeof va === 'number' && typeof vb === 'number') {
+                        cmp = va - vb;
+                    } else {
+                        var sa = String(va);
+                        var sb = String(vb);
+                        if (sa === '' && sb !== '') cmp = 1;
+                        else if (sa !== '' && sb === '') cmp = -1;
+                        else cmp = sa.localeCompare(sb, 'hu', { sensitivity: 'base', numeric: true });
+                    }
+                    if (cmp === 0) {
+                        cmp = (a.getAttribute('data-search') || '').localeCompare(
+                            b.getAttribute('data-search') || '',
+                            'hu',
+                            { sensitivity: 'base' }
+                        );
+                    }
+                    return sortDir === 'asc' ? cmp : -cmp;
+                });
+                rows.forEach(function (row) {
+                    tbody.insertBefore(row, emptyRow || null);
+                });
+                updateSortHeaders();
+            }
+
             function applyFilters() {
                 var visible = 0;
                 rows.forEach(function (row) {
@@ -399,6 +492,24 @@ $eventDateYmd = static function (array $row, string $key): string {
                 if (filtersPanel) {
                     filtersPanel.hidden = getFilterMode() !== 'filtered';
                 }
+            }
+
+            if (table) {
+                table.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.th-sort[data-sort]');
+                    if (!btn || !table.contains(btn)) return;
+                    e.preventDefault();
+                    var key = btn.getAttribute('data-sort') || '';
+                    if (key === '') return;
+                    if (sortKey === key) {
+                        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortKey = key;
+                        sortDir = (key === 'name' || key === 'status') ? 'asc' : 'desc';
+                    }
+                    applySort();
+                    applyFilters();
+                });
             }
 
             controls.addEventListener('change', function (e) {
@@ -426,6 +537,7 @@ $eventDateYmd = static function (array $row, string $key): string {
             }
 
             syncFiltersPanel();
+            updateSortHeaders();
             applyFilters();
         })();
         </script>
