@@ -88,7 +88,7 @@ function events_realtime_metric_label(string $metric): string
  *   per_minute: list<array{t: string, label: string, users: int, page: int, preview: int}>,
  *   top_events: list<array{id: int, name: string, slug: string, unique: int, page: int, preview: int}>,
  *   by_source: list<array{source: string, label: string, count: int}>,
- *   recent: list<array{at: string, event_id: int, name: string, metric: string, metric_label: string, source: string, source_label: string, is_bot: bool}>
+ *   recent: list<array{at: string, event_id: int, name: string, event_date: string, metric: string, metric_label: string, source: string, source_label: string, is_bot: bool}>
  * }
  */
 function events_realtime_snapshot(PDO $db): array
@@ -394,15 +394,20 @@ function events_realtime_by_source(PDO $db, string $start, bool $botReady, bool 
 }
 
 /**
- * @return list<array{at: string, event_id: int, name: string, metric: string, metric_label: string, source: string, source_label: string, is_bot: bool}>
+ * @return list<array{at: string, event_id: int, name: string, event_date: string, metric: string, metric_label: string, source: string, source_label: string, is_bot: bool}>
  */
 function events_realtime_recent(PDO $db, string $start, bool $botReady, bool $tableReady): array
 {
+    if (!function_exists('events_admin_format_datum_cell')) {
+        require_once __DIR__ . '/admin_event_filters.php';
+    }
+
     $botSelect = $botReady ? 'v.`is_bot`' : '0 AS `is_bot`';
     $metricSelect = $tableReady ? 'v.`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
 
     $sql = "SELECT v.`létrehozva` AS at_ts, v.`esemény_id` AS event_id,
-                   e.`event_name`, {$metricSelect}, v.`source`, {$botSelect}
+                   e.`event_name`, e.`event_start`, e.`event_end`, e.`event_allday`,
+                   {$metricSelect}, v.`source`, {$botSelect}
             FROM `events_calendar_event_views` v
             LEFT JOIN `events_calendar_events` e ON e.`id` = v.`esemény_id`
             WHERE v.`létrehozva` >= ?
@@ -422,6 +427,7 @@ function events_realtime_recent(PDO $db, string $start, bool $botReady, bool $ta
             'at' => (string) ($row['at_ts'] ?? ''),
             'event_id' => (int) ($row['event_id'] ?? 0),
             'name' => (string) ($row['event_name'] ?? ('#' . (int) ($row['event_id'] ?? 0))),
+            'event_date' => events_admin_format_datum_cell($row),
             'metric' => $metric,
             'metric_label' => events_realtime_metric_label($metric),
             'source' => $source,

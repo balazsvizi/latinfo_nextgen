@@ -4806,14 +4806,15 @@ body.event-edit-cover-lightbox-open {
     min-width: 0;
     transition: width 0.35s ease;
 }
-.events-rt-recent-time {
+.events-rt-recent-time,
+.events-rt-recent-event-date {
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
     font-size: 0.85rem;
     color: var(--text-secondary, #6b7280);
 }
 .events-rt-table--recent {
-    min-width: 640px;
+    min-width: 760px;
 }
 
 .events-edit-stats__card {

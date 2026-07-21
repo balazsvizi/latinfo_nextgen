@@ -156,6 +156,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <thead>
                     <tr>
                         <th scope="col">Idő</th>
+                        <th scope="col">Esemény dátuma</th>
                         <th scope="col">Esemény</th>
                         <th scope="col">Metrika</th>
                         <th scope="col">Forrás</th>
@@ -164,11 +165,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </thead>
                 <tbody id="events-rt-recent-body">
                     <?php if ($snapshot['recent'] === []): ?>
-                        <tr class="events-rt-empty-row"><td colspan="5">Nincs friss aktivitás.</td></tr>
+                        <tr class="events-rt-empty-row"><td colspan="6">Nincs friss aktivitás.</td></tr>
                     <?php else: ?>
                         <?php foreach ($snapshot['recent'] as $row): ?>
                             <tr>
                                 <td class="events-rt-recent-time"><?= h((string) $row['at']) ?></td>
+                                <td class="events-rt-recent-event-date"><?= h((string) ($row['event_date'] ?? '–')) ?></td>
                                 <td>
                                     <?php if ((int) $row['event_id'] > 0): ?>
                                         <a href="<?= h($editBase . (int) $row['event_id']) ?>"><?= h((string) $row['name']) ?></a>
@@ -343,7 +345,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         if (!body) return;
         var rows = payload.recent || [];
         if (!rows.length) {
-            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs friss aktivitás.</td></tr>';
+            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="6">Nincs friss aktivitás.</td></tr>';
             return;
         }
         body.innerHTML = rows.map(function (r) {
@@ -355,6 +357,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             }
             return '<tr>'
                 + '<td class="events-rt-recent-time">' + esc(r.at || '') + '</td>'
+                + '<td class="events-rt-recent-event-date">' + esc(r.event_date || '–') + '</td>'
                 + '<td>' + nameHtml + '</td>'
                 + '<td>' + esc(r.metric_label || '') + '</td>'
                 + '<td>' + esc(r.source_label || '') + '</td>'
