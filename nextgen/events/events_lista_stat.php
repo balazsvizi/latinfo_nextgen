@@ -138,6 +138,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
             <div class="events-list-actions">
                 <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
+                <a href="<?= h(events_url('events_realtime.php')) ?>" class="btn btn-secondary btn-sm">Valós idejű</a>
                 <a href="<?= h($listViewUrl) ?>" class="btn btn-secondary btn-sm">Események lista</a>
             </div>
         </div>

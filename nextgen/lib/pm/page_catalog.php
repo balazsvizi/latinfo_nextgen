@@ -66,6 +66,10 @@ function pm_tools_page_catalog(): array
             'display_name' => 'Esemény lista stat',
             'purpose' => 'Esemény megtekintések (emberi / bot / össz) és naptár előnézetek.',
         ],
+        '/nextgen/events/events_realtime.php' => [
+            'display_name' => 'Valós idejű áttekintés',
+            'purpose' => 'GA-szerű élő áttekintés: aktív egyediek, top események, forrás, utolsó 30 perc.',
+        ],
         '/nextgen/events/events_naptar.php' => [
             'display_name' => 'Esemény naptár',
             'purpose' => 'Események naptár nézetben.',
