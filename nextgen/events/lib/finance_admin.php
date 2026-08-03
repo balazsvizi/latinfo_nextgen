@@ -59,6 +59,7 @@ function events_finance_admin_filters_from_request(): array
         'id', 'start', 'name', 'organizer', 'status',
         'cost_from', 'cost_to', 'fee',
         'cal_previews', 'fee_per_preview',
+        'external_clicks',
         'views', 'views_human', 'views_bot', 'fee_per_view',
         'payer', 'note',
     ];
@@ -214,6 +215,7 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
         'fee' => "e.finance_organizer_fee IS NULL, e.finance_organizer_fee {$dirSql}",
         'cal_previews' => "naptar_elonezetek {$dirSql}",
         'fee_per_preview' => "fee_per_preview IS NULL, fee_per_preview {$dirSql}",
+        'external_clicks' => "tovabbi_info_kattintasok {$dirSql}",
         'views' => "megtekintesek {$dirSql}",
         'views_human' => "megtekintesek_human {$dirSql}",
         'views_bot' => "megtekintesek_bot {$dirSql}",
@@ -229,6 +231,7 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
     $botReady = events_view_tracking_bot_column_ready($db);
     $pageCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_PAGE, $botReady);
     $previewCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, $botReady);
+    $externalCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_EXTERNAL_INFO, $botReady);
 
     $sql = "
         SELECT e.id, e.event_name, e.event_slug, e.event_status, e.event_start,
@@ -240,6 +243,7 @@ function events_finance_admin_fetch(PDO $db, array $filters, ?int $listLimit): a
                 WHERE eo.event_id = e.id) AS organizer_name,
                (SELECT po.name FROM `events_organizers` po WHERE po.id = e.finance_payer_organizer_id LIMIT 1) AS payer_name,
                {$previewCounts['total']} AS naptar_elonezetek,
+               {$externalCounts['total']} AS tovabbi_info_kattintasok,
                {$pageCounts['human']} AS megtekintesek_human,
                {$pageCounts['bot']} AS megtekintesek_bot,
                {$pageCounts['total']} AS megtekintesek,

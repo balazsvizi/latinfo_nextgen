@@ -53,7 +53,7 @@ $eventDateYmd = static function (array $row, string $key): string {
 ?>
 <div class="card events-edit-stats events-edit-stats--organizer">
     <h2 class="card-title">Statisztika</h2>
-    <p class="events-edit-stats__intro">Az eseményeid naptár előnézet és oldalmegtekintés adatai a választott időszakban.</p>
+    <p class="events-edit-stats__intro">Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.</p>
 
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
         <div class="events-edit-stats__filter-grid">
@@ -95,7 +95,7 @@ $eventDateYmd = static function (array $row, string $key): string {
     <?php if ($hasChart): ?>
         <div class="events-edit-stats__chart-wrap">
             <h3 class="events-edit-stats__chart-title">Megtekintések alakulása</h3>
-            <p class="events-edit-stats__chart-hint">Napi bontás — oldal: emberi / bot; előnézet: összes megnyitás.</p>
+            <p class="events-edit-stats__chart-hint">Napi bontás — oldal: emberi / bot; előnézet és további info: összes.</p>
             <div class="events-edit-stats__chart-canvas">
                 <canvas id="<?= h($statsChartDomId) ?>" aria-label="Megtekintések grafikonja"></canvas>
             </div>
@@ -250,6 +250,9 @@ $eventDateYmd = static function (array $row, string $key): string {
                         <th class="th-center" scope="col" title="Naptár előnézet megnyitások">
                             <button type="button" class="th-sort" data-sort="preview" aria-pressed="false">Előnézet</button>
                         </th>
+                        <th class="th-center" scope="col" title="További információ gombra kattintás">
+                            <button type="button" class="th-sort" data-sort="external" aria-pressed="false">Tov. info</button>
+                        </th>
                         <th class="th-center" scope="col" title="Egyedi emberi oldal-látogató (IP)">
                             <button type="button" class="th-sort" data-sort="unique" aria-pressed="false">Egyedi</button>
                         </th>
@@ -273,9 +276,10 @@ $eventDateYmd = static function (array $row, string $key): string {
                             ? events_view_metric_counts_from_row($row, 'megtekintesek')
                             : ['human' => (int) ($row['megtekintesek'] ?? 0), 'bot' => 0, 'total' => (int) ($row['megtekintesek'] ?? 0)];
                         $previewViews = (int) ($row['naptar_elonezetek'] ?? 0);
+                        $externalClicks = (int) ($row['tovabbi_info_kattintasok'] ?? 0);
                         $uniqueVisitors = (int) ($row['egyedi_latogatok'] ?? 0);
                         $pageViews = (int) $pageCounts['total'];
-                        $hasViews = ($pageViews + $previewViews) > 0 ? '1' : '0';
+                        $hasViews = ($pageViews + $previewViews + $externalClicks) > 0 ? '1' : '0';
                         $eventStart = $eventDateYmd($row, 'event_start');
                         $eventEnd = $eventDateYmd($row, 'event_end');
                         if ($eventEnd === '' && $eventStart !== '') {
@@ -300,6 +304,7 @@ $eventDateYmd = static function (array $row, string $key): string {
                             data-page-human="<?= (int) $pageCounts['human'] ?>"
                             data-page-bot="<?= (int) $pageCounts['bot'] ?>"
                             data-preview-views="<?= $previewViews ?>"
+                            data-external-clicks="<?= $externalClicks ?>"
                             data-unique-visitors="<?= $uniqueVisitors ?>"
                         >
                             <td><?= h(events_admin_format_datum_cell($row)) ?></td>
@@ -314,6 +319,7 @@ $eventDateYmd = static function (array $row, string $key): string {
                                 <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
                             </td>
                             <td class="text-center"><?= $previewViews ?></td>
+                            <td class="text-center"><?= $externalClicks ?></td>
                             <td class="text-center"><?= $uniqueVisitors ?></td>
                             <td class="text-center"><?= (int) $pageCounts['human'] ?></td>
                             <td class="text-center"><?= (int) $pageCounts['bot'] ?></td>
@@ -321,7 +327,7 @@ $eventDateYmd = static function (array $row, string $key): string {
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-stats-events-empty" hidden>
-                        <td colspan="8" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
+                        <td colspan="9" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
                     </tr>
                 </tbody>
             </table>
@@ -421,6 +427,9 @@ $eventDateYmd = static function (array $row, string $key): string {
                 }
                 if (key === 'preview') {
                     return parseInt(row.getAttribute('data-preview-views') || '0', 10);
+                }
+                if (key === 'external') {
+                    return parseInt(row.getAttribute('data-external-clicks') || '0', 10);
                 }
                 if (key === 'unique') {
                     return parseInt(row.getAttribute('data-unique-visitors') || '0', 10);

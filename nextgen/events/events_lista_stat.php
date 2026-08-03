@@ -18,7 +18,7 @@ $get_params = $filters['get_params'];
 
 $allowedOrder = [
     'id', 'organizer', 'name', 'start', 'status',
-    'cal_previews',
+    'cal_previews', 'external_clicks',
     'views', 'views_human', 'views_bot',
 ];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
@@ -41,6 +41,7 @@ $orderSql = match ($order) {
     'start' => "e.event_start IS NULL, e.event_start {$dirSql}",
     'status' => "e.event_status {$dirSql}",
     'cal_previews' => "naptar_elonezetek {$dirSql}",
+    'external_clicks' => "tovabbi_info_kattintasok {$dirSql}",
     'views' => "megtekintesek {$dirSql}",
     'views_human' => "megtekintesek_human {$dirSql}",
     'views_bot' => "megtekintesek_bot {$dirSql}",
@@ -57,6 +58,7 @@ $listTotalInDb = events_admin_table_total_count($db, 'events_calendar_events');
 $botColumnReady = events_view_tracking_bot_column_ready($db);
 $pageCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_PAGE, $botColumnReady);
 $previewCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, $botColumnReady);
+$externalCounts = events_view_metric_count_selects(EVENTS_VIEW_METRIC_EXTERNAL_INFO, $botColumnReady);
 
 $sql = "
     SELECT e.id, e.event_name, e.event_slug, e.event_status, e.event_start, e.event_end, e.event_allday,
@@ -67,7 +69,8 @@ $sql = "
         {$pageCounts['human']} AS megtekintesek_human,
         {$pageCounts['bot']} AS megtekintesek_bot,
         {$pageCounts['total']} AS megtekintesek,
-        {$previewCounts['total']} AS naptar_elonezetek
+        {$previewCounts['total']} AS naptar_elonezetek,
+        {$externalCounts['total']} AS tovabbi_info_kattintasok
     FROM {$poolFromSql}
     {$whereSql}
     ORDER BY {$orderSql}
@@ -79,14 +82,17 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $statsSummary = [
     'events' => count($rows),
     'preview_total' => 0,
+    'external_total' => 0,
     'page_human' => 0,
     'page_bot' => 0,
     'page_total' => 0,
 ];
 foreach ($rows as $summaryRow) {
     $preview = events_view_metric_counts_from_row($summaryRow, 'naptar_elonezetek');
+    $external = events_view_metric_counts_from_row($summaryRow, 'tovabbi_info_kattintasok');
     $page = events_view_metric_counts_from_row($summaryRow, 'megtekintesek');
     $statsSummary['preview_total'] += $preview['total'];
+    $statsSummary['external_total'] += $external['total'];
     $statsSummary['page_human'] += $page['human'];
     $statsSummary['page_bot'] += $page['bot'];
     $statsSummary['page_total'] += $page['total'];
@@ -143,7 +149,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <p class="events-stats-page__intro">Naptár előnézet (összes) és oldalmegtekintés emberi / bot / össz bontásban. Alapból oldal össz szerint csökkenő.</p>
+        <p class="events-stats-page__intro">Naptár előnézet, további információ kattintás (összes) és oldalmegtekintés emberi / bot / össz bontásban. Alapból oldal össz szerint csökkenő.</p>
 
         <?php if ($rows !== []): ?>
             <div class="events-stats-summary" aria-label="Összesítés a megjelenített listára">
@@ -156,6 +162,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <p class="events-stats-summary__label">Előnézet</p>
                     <p class="events-stats-summary__value"><?= (int) $statsSummary['preview_total'] ?></p>
                     <p class="events-stats-summary__hint">naptár előnézet megnyitás</p>
+                </div>
+                <div class="events-stats-summary__card events-stats-summary__card--external">
+                    <p class="events-stats-summary__label">További info</p>
+                    <p class="events-stats-summary__value"><?= (int) $statsSummary['external_total'] ?></p>
+                    <p class="events-stats-summary__hint">CTA gombra kattintás</p>
                 </div>
                 <div class="events-stats-summary__card events-stats-summary__card--page">
                     <p class="events-stats-summary__label">Oldal</p>

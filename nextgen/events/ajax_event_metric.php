@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Nyilvános esemény metrika (pl. naptár előnézet megnyitás).
+ * Nyilvános esemény metrika (naptár előnézet, további információ kattintás).
  */
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_view_tracking.php';
@@ -18,7 +18,7 @@ if ($eventId <= 0 || $metric === '') {
     exit;
 }
 
-if ($metric !== EVENTS_VIEW_METRIC_CALENDAR_PREVIEW) {
+if (!in_array($metric, events_view_metric_types_ajax(), true)) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'Érvénytelen metrika.'], JSON_UNESCAPED_UNICODE);
     exit;
@@ -31,6 +31,10 @@ if (!events_view_tracking_is_published_event($db, $eventId)) {
     exit;
 }
 
-events_track_event_view($db, $eventId, EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, EVENTS_VIEW_SOURCE_CALENDAR);
+$source = $metric === EVENTS_VIEW_METRIC_EXTERNAL_INFO
+    ? EVENTS_VIEW_SOURCE_DIRECT
+    : EVENTS_VIEW_SOURCE_CALENDAR;
+
+events_track_event_view($db, $eventId, $metric, $source);
 
 echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);

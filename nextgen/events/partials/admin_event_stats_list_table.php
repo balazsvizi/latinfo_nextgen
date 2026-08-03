@@ -19,6 +19,7 @@ declare(strict_types=1);
                     <th rowspan="2"><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                     <th rowspan="2"><?= sort_th('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
                     <th class="th-center events-stats-th-group events-stats-th-group--preview" rowspan="2" scope="col" title="Naptár előnézet"><?= sort_th('Előnézet', 'cal_previews', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center events-stats-th-group events-stats-th-group--external" rowspan="2" scope="col" title="További információ gombra kattintás"><?= sort_th('Tov. info', 'external_clicks', $order, $dir_param, $get_params) ?></th>
                     <th class="events-stats-th-group events-stats-th-group--page" colspan="3" scope="colgroup">Oldal</th>
                     <th rowspan="2"><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                 </tr>

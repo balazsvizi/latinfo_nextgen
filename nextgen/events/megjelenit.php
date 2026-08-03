@@ -332,7 +332,14 @@ header('Content-Type: text/html; charset=UTF-8');
 
             <?php if (!empty($event['event_url'])): ?>
                 <div class="event-cta-wrap">
-                    <a class="event-cta" href="<?= h((string) $event['event_url']) ?>" target="_blank" rel="noopener noreferrer">
+                    <a
+                        class="event-cta"
+                        href="<?= h((string) $event['event_url']) ?>"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-event-metric="external_info_click"
+                        data-event-id="<?= (int) $event['id'] ?>"
+                    >
                         <span><?= h($T['cta_external']) ?></span>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     </a>
@@ -377,5 +384,29 @@ header('Content-Type: text/html; charset=UTF-8');
     ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
+<?php if (!empty($event['event_url'])): ?>
+<script>
+(function () {
+    var trackUrl = <?= json_encode(events_url('ajax_event_metric.php'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var cta = document.querySelector('a.event-cta[data-event-metric="external_info_click"]');
+    if (!trackUrl || !cta) return;
+
+    function trackExternalInfoClick() {
+        var id = cta.getAttribute('data-event-id') || '';
+        if (!id) return;
+        var body = new FormData();
+        body.append('event_id', String(id));
+        body.append('metric', 'external_info_click');
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(trackUrl, body);
+            return;
+        }
+        fetch(trackUrl, { method: 'POST', body: body, keepalive: true }).catch(function () {});
+    }
+
+    cta.addEventListener('click', trackExternalInfoClick);
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>

@@ -73,6 +73,7 @@ function events_realtime_metric_label(string $metric): string
     return match ($metric) {
         EVENTS_VIEW_METRIC_PAGE => 'Oldal',
         EVENTS_VIEW_METRIC_CALENDAR_PREVIEW => 'Előnézet',
+        EVENTS_VIEW_METRIC_EXTERNAL_INFO => 'További info',
         default => $metric !== '' ? $metric : '—',
     };
 }
@@ -82,11 +83,12 @@ function events_realtime_metric_label(string $metric): string
  *   users_30m: int,
  *   page_hits_30m: int,
  *   preview_hits_30m: int,
+ *   external_hits_30m: int,
  *   bot_hits_30m: int,
  *   window_start: string,
  *   window_end: string,
- *   per_minute: list<array{t: string, label: string, users: int, page: int, preview: int}>,
- *   top_events: list<array{id: int, name: string, slug: string, unique: int, page: int, preview: int}>,
+ *   per_minute: list<array{t: string, label: string, users: int, page: int, preview: int, external: int}>,
+ *   top_events: list<array{id: int, name: string, slug: string, unique: int, page: int, preview: int, external: int}>,
  *   by_source: list<array{source: string, label: string, count: int}>,
  *   recent: list<array{at: string, event_id: int, name: string, event_date: string, metric: string, metric_label: string, source: string, source_label: string, is_bot: bool}>
  * }
@@ -105,6 +107,7 @@ function events_realtime_snapshot(PDO $db): array
         'users_30m' => 0,
         'page_hits_30m' => 0,
         'preview_hits_30m' => 0,
+        'external_hits_30m' => 0,
         'bot_hits_30m' => 0,
         'window_start' => $start,
         'window_end' => $window['end'],
@@ -121,6 +124,7 @@ function events_realtime_snapshot(PDO $db): array
             'users' => 0,
             'page' => 0,
             'preview' => 0,
+            'external' => 0,
         ];
     }
 
@@ -129,6 +133,9 @@ function events_realtime_snapshot(PDO $db): array
         $pageHits = events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_PAGE, false, $botReady, $tableReady);
         $previewHits = $tableReady
             ? events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, false, $botReady, $tableReady)
+            : 0;
+        $externalHits = $tableReady
+            ? events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_EXTERNAL_INFO, false, $botReady, $tableReady)
             : 0;
         $botHits = $botReady ? events_realtime_count_bot_hits($db, $start, $tableReady) : 0;
 
@@ -146,6 +153,7 @@ function events_realtime_snapshot(PDO $db): array
                 'users' => 0,
                 'page' => 0,
                 'preview' => 0,
+                'external' => 0,
             ];
         }
 
@@ -153,6 +161,7 @@ function events_realtime_snapshot(PDO $db): array
             'users_30m' => $users30,
             'page_hits_30m' => $pageHits,
             'preview_hits_30m' => $previewHits,
+            'external_hits_30m' => $externalHits,
             'bot_hits_30m' => $botHits,
             'window_start' => $start,
             'window_end' => $window['end'],
@@ -217,13 +226,14 @@ function events_realtime_count_hits(
 
 function events_realtime_count_bot_hits(PDO $db, string $start, bool $tableReady): int
 {
-    $metricAnd = $tableReady ? ' AND `metric_type` IN (?, ?)' : '';
+    $metricAnd = $tableReady ? ' AND `metric_type` IN (?, ?, ?)' : '';
     $sql = "SELECT COUNT(*) FROM `events_calendar_event_views`
             WHERE `létrehozva` >= ? AND `is_bot` = 1{$metricAnd}";
     $params = [$start];
     if ($tableReady) {
         $params[] = EVENTS_VIEW_METRIC_PAGE;
         $params[] = EVENTS_VIEW_METRIC_CALENDAR_PREVIEW;
+        $params[] = EVENTS_VIEW_METRIC_EXTERNAL_INFO;
     }
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
@@ -232,7 +242,7 @@ function events_realtime_count_bot_hits(PDO $db, string $start, bool $tableReady
 }
 
 /**
- * @param array<string, array{t: string, label: string, users: int, page: int, preview: int}> $perMinuteMap
+ * @param array<string, array{t: string, label: string, users: int, page: int, preview: int, external: int}> $perMinuteMap
  */
 function events_realtime_fill_per_minute(
     PDO $db,
@@ -244,7 +254,7 @@ function events_realtime_fill_per_minute(
     $botAnd = $botReady ? ' AND `is_bot` = 0' : '';
     $metricSelect = $tableReady ? '`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
 
-    // Hits per minute (page / preview).
+    // Hits per minute (page / preview / external).
     $sqlHits = "SELECT DATE_FORMAT(`létrehozva`, '%Y-%m-%d %H:%i:00') AS bucket,
                        {$metricSelect},
                        COUNT(*) AS cnt
@@ -262,7 +272,9 @@ function events_realtime_fill_per_minute(
         $cnt = (int) ($row['cnt'] ?? 0);
         if ($metric === EVENTS_VIEW_METRIC_CALENDAR_PREVIEW) {
             $perMinuteMap[$bucket]['preview'] += $cnt;
-        } else {
+        } elseif ($metric === EVENTS_VIEW_METRIC_EXTERNAL_INFO) {
+            $perMinuteMap[$bucket]['external'] += $cnt;
+        } elseif ($metric === EVENTS_VIEW_METRIC_PAGE) {
             $perMinuteMap[$bucket]['page'] += $cnt;
         }
     }
@@ -292,19 +304,21 @@ function events_realtime_fill_per_minute(
 }
 
 /**
- * @return list<array{id: int, name: string, slug: string, unique: int, page: int, preview: int}>
+ * @return list<array{id: int, name: string, slug: string, unique: int, page: int, preview: int, external: int}>
  */
 function events_realtime_top_events(PDO $db, string $start, bool $botReady, bool $tableReady): array
 {
     $botAnd = $botReady ? ' AND v.`is_bot` = 0' : '';
     $pageMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : '';
     $previewMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : ' AND 1 = 0';
+    $externalMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : ' AND 1 = 0';
 
     $sql = "
         SELECT e.`id`, e.`event_name`, e.`event_slug`,
             COALESCE(u.unique_cnt, 0) AS unique_cnt,
             COALESCE(p.page_cnt, 0) AS page_cnt,
-            COALESCE(pr.preview_cnt, 0) AS preview_cnt
+            COALESCE(pr.preview_cnt, 0) AS preview_cnt,
+            COALESCE(ex.external_cnt, 0) AS external_cnt
         FROM `events_calendar_events` e
         INNER JOIN (
             SELECT v.`esemény_id` AS event_id, COUNT(*) AS page_cnt
@@ -326,6 +340,12 @@ function events_realtime_top_events(PDO $db, string $start, bool $botReady, bool
             WHERE v.`létrehozva` >= ?{$botAnd}{$previewMetricAnd}
             GROUP BY v.`esemény_id`
         ) pr ON pr.event_id = e.`id`
+        LEFT JOIN (
+            SELECT v.`esemény_id` AS event_id, COUNT(*) AS external_cnt
+            FROM `events_calendar_event_views` v
+            WHERE v.`létrehozva` >= ?{$botAnd}{$externalMetricAnd}
+            GROUP BY v.`esemény_id`
+        ) ex ON ex.event_id = e.`id`
         ORDER BY page_cnt DESC, unique_cnt DESC, e.`id` DESC
         LIMIT " . (int) EVENTS_REALTIME_TOP_EVENTS;
 
@@ -341,6 +361,10 @@ function events_realtime_top_events(PDO $db, string $start, bool $botReady, bool
     if ($tableReady) {
         $params[] = EVENTS_VIEW_METRIC_CALENDAR_PREVIEW;
     }
+    $params[] = $start;
+    if ($tableReady) {
+        $params[] = EVENTS_VIEW_METRIC_EXTERNAL_INFO;
+    }
 
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
@@ -355,6 +379,7 @@ function events_realtime_top_events(PDO $db, string $start, bool $botReady, bool
             'unique' => (int) ($row['unique_cnt'] ?? 0),
             'page' => (int) ($row['page_cnt'] ?? 0),
             'preview' => (int) ($row['preview_cnt'] ?? 0),
+            'external' => (int) ($row['external_cnt'] ?? 0),
         ];
     }
 

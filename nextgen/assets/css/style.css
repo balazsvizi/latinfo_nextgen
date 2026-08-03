@@ -4428,6 +4428,10 @@ body.event-edit-cover-lightbox-open {
     border-color: color-mix(in srgb, #6b7fa8 28%, var(--border, #e5e7eb));
     background: linear-gradient(180deg, #f5f7fb 0%, #fff 100%);
 }
+.events-stats-summary__card--external {
+    border-color: color-mix(in srgb, #a8784a 28%, var(--border, #e5e7eb));
+    background: linear-gradient(180deg, #fbf7f2 0%, #fff 100%);
+}
 .events-stats-summary__card--page {
     border-color: color-mix(in srgb, #6d8f63 28%, var(--border, #e5e7eb));
     background: linear-gradient(180deg, #f5f8f4 0%, #fff 100%);
@@ -4502,6 +4506,11 @@ body.event-edit-cover-lightbox-open {
     background: color-mix(in srgb, #6b7fa8 10%, var(--bg, #fff));
     border-left: 1px solid color-mix(in srgb, #6b7fa8 22%, var(--border, #e5e7eb));
 }
+.events-stats-th-group--external {
+    color: #7a5530;
+    background: color-mix(in srgb, #a8784a 10%, var(--bg, #fff));
+    border-left: 1px solid color-mix(in srgb, #a8784a 22%, var(--border, #e5e7eb));
+}
 .events-stats-th-group--page {
     color: #3d5a36;
     background: color-mix(in srgb, #6d8f63 10%, var(--bg, #fff));
@@ -4552,6 +4561,10 @@ body.event-edit-cover-lightbox-open {
     border-left: 1px solid color-mix(in srgb, #6b7fa8 14%, transparent);
     background: color-mix(in srgb, #6b7fa8 4%, transparent);
 }
+.events-metric-cell--external {
+    border-left: 1px solid color-mix(in srgb, #a8784a 14%, transparent);
+    background: color-mix(in srgb, #a8784a 4%, transparent);
+}
 .events-metric-cell--page {
     border-left: 1px solid color-mix(in srgb, #6d8f63 14%, transparent);
     background: color-mix(in srgb, #6d8f63 4%, transparent);
@@ -4594,6 +4607,10 @@ body.event-edit-cover-lightbox-open {
 .events-metric-cell--preview.events-metric-cell--total .events-metric-val {
     background: color-mix(in srgb, #6b7fa8 16%, transparent);
     color: #3b4c66;
+}
+.events-metric-cell--external.events-metric-cell--total .events-metric-val {
+    background: color-mix(in srgb, #a8784a 16%, transparent);
+    color: #6a4828;
 }
 .events-metric-cell.is-zero .events-metric-val {
     opacity: 0.38;
@@ -4690,6 +4707,10 @@ body.event-edit-cover-lightbox-open {
 .events-rt-kpi--preview {
     border-color: color-mix(in srgb, #6b7fa8 28%, var(--border, #e5e7eb));
     background: linear-gradient(180deg, #f5f7fb 0%, #fff 100%);
+}
+.events-rt-kpi--external {
+    border-color: color-mix(in srgb, #a8784a 28%, var(--border, #e5e7eb));
+    background: linear-gradient(180deg, #fbf7f2 0%, #fff 100%);
 }
 .events-rt-kpi--bot {
     border-color: color-mix(in srgb, #9ca3af 28%, var(--border, #e5e7eb));

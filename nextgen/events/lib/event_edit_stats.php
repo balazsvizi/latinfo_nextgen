@@ -99,6 +99,8 @@ function events_edit_stats_chart_labels(array $labels): array
  * @param array<string, int> $pageBotByDay
  * @param array<string, int> $previewHumanByDay
  * @param array<string, int> $previewBotByDay
+ * @param array<string, int> $externalHumanByDay
+ * @param array<string, int> $externalBotByDay
  * @return array{
  *   table_ready: bool,
  *   bot_ready: bool,
@@ -108,6 +110,8 @@ function events_edit_stats_chart_labels(array $labels): array
  *     page_views_bot: int,
  *     calendar_previews: int,
  *     calendar_previews_human: int,
+ *     external_info_clicks: int,
+ *     external_info_clicks_human: int,
  *     unique_visitors?: int
  *   },
  *   chart: array{labels: list<string>, datasets: list<array{label: string, data: list<int>, color: string, total: int}>}
@@ -119,27 +123,35 @@ function events_edit_stats_build_result(
     array $pageBotByDay,
     array $previewHumanByDay,
     array $previewBotByDay,
+    array $externalHumanByDay,
+    array $externalBotByDay,
     bool $tableReady,
     bool $botReady
 ): array {
     $totalPageHuman = 0;
     $totalPageBot = 0;
     $totalPreview = 0;
+    $totalExternal = 0;
     $pageHumanData = [];
     $pageBotData = [];
     $previewData = [];
+    $externalData = [];
 
     foreach ($labels as $label) {
         $ph = (int) ($pageHumanByDay[$label] ?? 0);
         $pb = (int) ($pageBotByDay[$label] ?? 0);
         $vh = (int) ($previewHumanByDay[$label] ?? 0);
         $vb = (int) ($previewBotByDay[$label] ?? 0);
+        $eh = (int) ($externalHumanByDay[$label] ?? 0);
+        $eb = (int) ($externalBotByDay[$label] ?? 0);
         $pageHumanData[] = $ph;
         $pageBotData[] = $pb;
         $previewData[] = $vh + $vb;
+        $externalData[] = $eh + $eb;
         $totalPageHuman += $ph;
         $totalPageBot += $pb;
         $totalPreview += $vh + $vb;
+        $totalExternal += $eh + $eb;
     }
 
     $totalPage = $totalPageHuman + $totalPageBot;
@@ -165,6 +177,12 @@ function events_edit_stats_build_result(
             'color' => '#6b7fa8',
             'total' => $totalPreview,
         ];
+        $datasets[] = [
+            'label' => 'További info',
+            'data' => $externalData,
+            'color' => '#a8784a',
+            'total' => $totalExternal,
+        ];
     }
 
     return [
@@ -176,6 +194,8 @@ function events_edit_stats_build_result(
             'page_views_bot' => $totalPageBot,
             'calendar_previews' => $totalPreview,
             'calendar_previews_human' => $totalPreview,
+            'external_info_clicks' => $totalExternal,
+            'external_info_clicks_human' => $totalExternal,
         ],
         'chart' => [
             'labels' => events_edit_stats_chart_labels($labels),
@@ -203,6 +223,8 @@ function events_edit_stats_view_window(array $params): array
  * @param array<string, int> $pageBotByDay
  * @param array<string, int> $previewHumanByDay
  * @param array<string, int> $previewBotByDay
+ * @param array<string, int> $externalHumanByDay
+ * @param array<string, int> $externalBotByDay
  */
 function events_edit_stats_apply_bucket_rows(
     array $rows,
@@ -210,6 +232,8 @@ function events_edit_stats_apply_bucket_rows(
     array &$pageBotByDay,
     array &$previewHumanByDay,
     array &$previewBotByDay,
+    array &$externalHumanByDay,
+    array &$externalBotByDay,
     bool $tableReady,
     bool $botReady
 ): void {
@@ -228,10 +252,18 @@ function events_edit_stats_apply_bucket_rows(
                 } else {
                     $previewHumanByDay[$bucket] += $cnt;
                 }
-            } elseif ($isBot) {
-                $pageBotByDay[$bucket] += $cnt;
-            } else {
-                $pageHumanByDay[$bucket] += $cnt;
+            } elseif ($metric === EVENTS_VIEW_METRIC_EXTERNAL_INFO) {
+                if ($isBot) {
+                    $externalBotByDay[$bucket] += $cnt;
+                } else {
+                    $externalHumanByDay[$bucket] += $cnt;
+                }
+            } elseif ($metric === EVENTS_VIEW_METRIC_PAGE) {
+                if ($isBot) {
+                    $pageBotByDay[$bucket] += $cnt;
+                } else {
+                    $pageHumanByDay[$bucket] += $cnt;
+                }
             }
         } elseif ($isBot) {
             $pageBotByDay[$bucket] += $cnt;
@@ -260,6 +292,8 @@ function events_edit_stats_empty_result(): array
             'page_views_bot' => 0,
             'calendar_previews' => 0,
             'calendar_previews_human' => 0,
+            'external_info_clicks' => 0,
+            'external_info_clicks_human' => 0,
             'unique_visitors' => 0,
         ],
         'chart' => ['labels' => [], 'datasets' => []],
@@ -288,6 +322,8 @@ function events_edit_stats_for_event(PDO $db, int $eventId, array $params): arra
     $pageBotByDay = array_fill_keys($labels, 0);
     $previewHumanByDay = array_fill_keys($labels, 0);
     $previewBotByDay = array_fill_keys($labels, 0);
+    $externalHumanByDay = array_fill_keys($labels, 0);
+    $externalBotByDay = array_fill_keys($labels, 0);
     $window = events_edit_stats_view_window($params);
 
     try {
@@ -328,6 +364,8 @@ function events_edit_stats_for_event(PDO $db, int $eventId, array $params): arra
             $pageBotByDay,
             $previewHumanByDay,
             $previewBotByDay,
+            $externalHumanByDay,
+            $externalBotByDay,
             $tableReady,
             $botReady
         );
@@ -341,6 +379,8 @@ function events_edit_stats_for_event(PDO $db, int $eventId, array $params): arra
         $pageBotByDay,
         $previewHumanByDay,
         $previewBotByDay,
+        $externalHumanByDay,
+        $externalBotByDay,
         $tableReady,
         $botReady
     );
@@ -388,6 +428,8 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
     $pageBotByDay = array_fill_keys($labels, 0);
     $previewHumanByDay = array_fill_keys($labels, 0);
     $previewBotByDay = array_fill_keys($labels, 0);
+    $externalHumanByDay = array_fill_keys($labels, 0);
+    $externalBotByDay = array_fill_keys($labels, 0);
     $window = events_edit_stats_view_window($params);
     $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
 
@@ -432,6 +474,8 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
             $pageBotByDay,
             $previewHumanByDay,
             $previewBotByDay,
+            $externalHumanByDay,
+            $externalBotByDay,
             $tableReady,
             $botReady
         );
@@ -445,6 +489,8 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
         $pageBotByDay,
         $previewHumanByDay,
         $previewBotByDay,
+        $externalHumanByDay,
+        $externalBotByDay,
         $tableReady,
         $botReady
     );
@@ -570,6 +616,7 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
     $timeAnd = ' AND v.`létrehozva` >= ? AND v.`létrehozva` < ?';
     $pageBase = "FROM `events_calendar_event_views` v WHERE v.`esemény_id` = e.`id`{$timeAnd}";
     $previewBase = "FROM `events_calendar_event_views` v WHERE v.`esemény_id` = e.`id` AND v.`metric_type` = 'calendar_preview'{$timeAnd}";
+    $externalBase = "FROM `events_calendar_event_views` v WHERE v.`esemény_id` = e.`id` AND v.`metric_type` = 'external_info_click'{$timeAnd}";
     $pageTypeAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
 
     if ($botReady) {
@@ -578,12 +625,14 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
         $pageTotalSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd})";
         $pageUniqueSql = "(SELECT COUNT(DISTINCT v.`ip_hash`) {$pageBase}{$pageTypeAnd} AND v.`is_bot` = 0 AND v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> '')";
         $previewTotalSql = "(SELECT COUNT(*) {$previewBase})";
+        $externalTotalSql = "(SELECT COUNT(*) {$externalBase})";
     } else {
         $pageTotalSql = "(SELECT COUNT(*) {$pageBase}{$pageTypeAnd})";
         $pageHumanSql = $pageTotalSql;
         $pageBotSql = '0';
         $pageUniqueSql = "(SELECT COUNT(DISTINCT v.`ip_hash`) {$pageBase}{$pageTypeAnd} AND v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> '')";
         $previewTotalSql = "(SELECT COUNT(*) {$previewBase})";
+        $externalTotalSql = "(SELECT COUNT(*) {$externalBase})";
     }
 
     $sql = "
@@ -593,7 +642,8 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
             {$pageTotalSql} AS megtekintesek,
             {$pageUniqueSql} AS egyedi_latogatok"
         . ($tableReady ? ",
-            {$previewTotalSql} AS naptar_elonezetek" : '') . "
+            {$previewTotalSql} AS naptar_elonezetek,
+            {$externalTotalSql} AS tovabbi_info_kattintasok" : '') . "
         FROM `events_calendar_events` e
         WHERE e.`id` IN (
             SELECT eo.`event_id`
@@ -622,6 +672,9 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
         // preview total
         $executeParams[] = $window['start_inclusive'];
         $executeParams[] = $window['end_exclusive'];
+        // external info total
+        $executeParams[] = $window['start_inclusive'];
+        $executeParams[] = $window['end_exclusive'];
     }
     foreach ($organizerIds as $oid) {
         $executeParams[] = $oid;
@@ -641,7 +694,9 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
 
     $eventsWithViews = 0;
     foreach ($nonDraftRows as $row) {
-        $views = (int) ($row['megtekintesek'] ?? 0) + (int) ($row['naptar_elonezetek'] ?? 0);
+        $views = (int) ($row['megtekintesek'] ?? 0)
+            + (int) ($row['naptar_elonezetek'] ?? 0)
+            + (int) ($row['tovabbi_info_kattintasok'] ?? 0);
         if ($views > 0) {
             $eventsWithViews++;
         }

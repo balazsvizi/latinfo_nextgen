@@ -38,7 +38,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head events-cal-page__head">
         <div class="events-cal-page__head-start">
             <h2 class="events-list-title">Valós idejű áttekintés</h2>
-            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · eseményoldal és naptár előnézet</p>
+            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · oldal, előnézet és további információ</p>
         </div>
         <div class="events-list-actions">
             <a href="<?= h($listaStatUrl) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
@@ -68,6 +68,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <p class="events-rt-kpi__value" id="events-rt-preview"><?= (int) $snapshot['preview_hits_30m'] ?></p>
             <p class="events-rt-kpi__hint">naptár előnézet</p>
         </div>
+        <div class="events-rt-kpi events-rt-kpi--external">
+            <p class="events-rt-kpi__label">További info</p>
+            <p class="events-rt-kpi__value" id="events-rt-external"><?= (int) ($snapshot['external_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">CTA kattintás</p>
+        </div>
         <div class="events-rt-kpi events-rt-kpi--bot">
             <p class="events-rt-kpi__label">Bot</p>
             <p class="events-rt-kpi__value" id="events-rt-bot"><?= (int) $snapshot['bot_hits_30m'] ?></p>
@@ -77,7 +82,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
     <section class="events-rt-chart-panel" aria-labelledby="events-rt-chart-title">
         <h3 class="events-rt-section-title" id="events-rt-chart-title">Percenkénti aktivitás</h3>
-        <p class="events-rt-section-hint">Egyedi felhasználók, oldal- és előnézet-megnyitások az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</p>
+        <p class="events-rt-section-hint">Egyedi felhasználók, oldal-, előnézet- és további info kattintások az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</p>
         <div class="events-rt-chart-canvas">
             <canvas id="events-rt-chart" aria-label="Valós idejű aktivitás grafikonja"></canvas>
         </div>
@@ -94,11 +99,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <th class="th-center" scope="col" title="Egyedi emberi oldal-látogató">Egyedi</th>
                             <th class="th-center" scope="col">Oldal</th>
                             <th class="th-center" scope="col">Előnézet</th>
+                            <th class="th-center" scope="col" title="További információ gombra kattintás">Tov. info</th>
                         </tr>
                     </thead>
                     <tbody id="events-rt-top-body">
                         <?php if ($snapshot['top_events'] === []): ?>
-                            <tr class="events-rt-empty-row"><td colspan="4">Nincs aktivitás az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</td></tr>
+                            <tr class="events-rt-empty-row"><td colspan="5">Nincs aktivitás az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</td></tr>
                         <?php else: ?>
                             <?php foreach ($snapshot['top_events'] as $ev): ?>
                                 <tr>
@@ -108,6 +114,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     <td class="text-center"><?= (int) $ev['unique'] ?></td>
                                     <td class="text-center"><?= (int) $ev['page'] ?></td>
                                     <td class="text-center"><?= (int) $ev['preview'] ?></td>
+                                    <td class="text-center"><?= (int) ($ev['external'] ?? 0) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -226,12 +233,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
         var users = perMinute.map(function (r) { return Number(r.users || 0); });
         var page = perMinute.map(function (r) { return Number(r.page || 0); });
         var preview = perMinute.map(function (r) { return Number(r.preview || 0); });
+        var external = perMinute.map(function (r) { return Number(r.external || 0); });
 
         if (chart) {
             chart.data.labels = labels;
             chart.data.datasets[0].data = users;
             chart.data.datasets[1].data = page;
             chart.data.datasets[2].data = preview;
+            if (chart.data.datasets[3]) {
+                chart.data.datasets[3].data = external;
+            }
             chart.update('none');
             return;
         }
@@ -273,6 +284,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         pointRadius: 0,
                         pointHoverRadius: 4,
                         fill: false
+                    },
+                    {
+                        label: 'További info',
+                        data: external,
+                        borderColor: '#a8784a',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        fill: false
                     }
                 ]
             },
@@ -303,7 +325,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         if (!body) return;
         var rows = payload.top_events || [];
         if (!rows.length) {
-            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="4">Nincs aktivitás az elmúlt ' + windowMinutes + ' percben.</td></tr>';
+            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs aktivitás az elmúlt ' + windowMinutes + ' percben.</td></tr>';
             return;
         }
         body.innerHTML = rows.map(function (ev) {
@@ -313,6 +335,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 + '<td class="text-center">' + Number(ev.unique || 0) + '</td>'
                 + '<td class="text-center">' + Number(ev.page || 0) + '</td>'
                 + '<td class="text-center">' + Number(ev.preview || 0) + '</td>'
+                + '<td class="text-center">' + Number(ev.external || 0) + '</td>'
                 + '</tr>';
         }).join('');
     }
@@ -372,6 +395,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         setText('events-rt-users', Number(payload.users_30m || 0));
         setText('events-rt-page', Number(payload.page_hits_30m || 0));
         setText('events-rt-preview', Number(payload.preview_hits_30m || 0));
+        setText('events-rt-external', Number(payload.external_hits_30m || 0));
         setText('events-rt-bot', Number(payload.bot_hits_30m || 0));
         setText('events-rt-updated', 'Frissítve: ' + (payload.generated_at || ''));
         buildChart(payload);

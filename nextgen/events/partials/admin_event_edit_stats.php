@@ -15,7 +15,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
 ?>
 <div class="events-edit-panel events-edit-stats">
     <h2 class="events-edit-panel__title">Statisztika</h2>
-    <p class="events-edit-stats__intro">Naptár előnézet és teljes eseményoldal megtekintések az eseményhez.</p>
+    <p class="events-edit-stats__intro">Naptár előnézet, további információ kattintás és teljes eseményoldal megtekintések az eseményhez.</p>
 
     <?php if (empty($statsData['table_ready'])): ?>
         <p class="alert alert-warning events-edit-stats__migration">
@@ -68,6 +68,11 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                 'value' => (int) ($totals['calendar_previews'] ?? $totals['calendar_previews_human'] ?? 0),
                 'hint' => 'Naptár előnézet megnyitások',
             ];
+            $statCards[] = [
+                'label' => 'További info',
+                'value' => (int) ($totals['external_info_clicks'] ?? $totals['external_info_clicks_human'] ?? 0),
+                'hint' => 'További információ gombra kattintás',
+            ];
         }
         foreach ($statCards as $card):
         ?>
@@ -82,7 +87,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     <?php if ($hasChart): ?>
         <div class="events-edit-stats__chart-wrap">
             <h3 class="events-edit-stats__chart-title">Megtekintések alakulása</h3>
-            <p class="events-edit-stats__chart-hint">Napi bontás — oldal: emberi / bot; előnézet: összes megnyitás.</p>
+            <p class="events-edit-stats__chart-hint">Napi bontás — oldal: emberi / bot; előnézet és további info: összes.</p>
             <div class="events-edit-stats__chart-canvas">
                 <canvas id="events-edit-stats-chart" aria-label="Esemény megtekintések grafikonja"></canvas>
             </div>

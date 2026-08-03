@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 const EVENTS_VIEW_METRIC_PAGE = 'page_view';
 const EVENTS_VIEW_METRIC_CALENDAR_PREVIEW = 'calendar_preview';
+const EVENTS_VIEW_METRIC_EXTERNAL_INFO = 'external_info_click';
 
 const EVENTS_VIEW_SOURCE_DIRECT = 'direct';
 const EVENTS_VIEW_SOURCE_CALENDAR = 'calendar';
@@ -14,7 +15,24 @@ const EVENTS_VIEW_SOURCE_LIST = 'list';
  */
 function events_view_metric_types(): array
 {
-    return [EVENTS_VIEW_METRIC_PAGE, EVENTS_VIEW_METRIC_CALENDAR_PREVIEW];
+    return [
+        EVENTS_VIEW_METRIC_PAGE,
+        EVENTS_VIEW_METRIC_CALENDAR_PREVIEW,
+        EVENTS_VIEW_METRIC_EXTERNAL_INFO,
+    ];
+}
+
+/**
+ * Ajax / beacon útvonalon rögzíthető metrikák (oldalmegtekintés szerveroldalon megy).
+ *
+ * @return list<string>
+ */
+function events_view_metric_types_ajax(): array
+{
+    return [
+        EVENTS_VIEW_METRIC_CALENDAR_PREVIEW,
+        EVENTS_VIEW_METRIC_EXTERNAL_INFO,
+    ];
 }
 
 function events_view_tracking_ip_hash(): ?string
@@ -218,6 +236,8 @@ function events_track_event_view(PDO $db, int $eventId, string $metricType, ?str
 
     if ($metricType === EVENTS_VIEW_METRIC_PAGE) {
         $source = events_view_tracking_resolve_page_source((string) $source);
+    } elseif ($metricType === EVENTS_VIEW_METRIC_EXTERNAL_INFO) {
+        $source = EVENTS_VIEW_SOURCE_DIRECT;
     } elseif ($source === null || $source === '') {
         $source = EVENTS_VIEW_SOURCE_CALENDAR;
     }
