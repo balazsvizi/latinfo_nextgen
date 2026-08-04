@@ -13,19 +13,51 @@ function events_public_map_view_allowed(): bool
 }
 
 /**
- * Publikus főoldal nézet: naptár, lista, térkép vagy új mobil naptár (mcal).
+ * User-Agent alapján mobilos kliens (naptár alapnézethez).
+ */
+function events_public_user_agent_is_mobile(): bool
+{
+    $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    if ($ua === '') {
+        return false;
+    }
+
+    return preg_match(
+        '/Mobile|Android|iPhone|iPod|webOS|BlackBerry|IEMobile|Opera Mini|Opera Mobi|Windows Phone/i',
+        $ua
+    ) === 1;
+}
+
+/**
+ * Eszköz szerinti alap naptárnézet: mobil → mcal, asztal → cal.
+ */
+function events_public_default_home_calendar_view(): string
+{
+    return events_public_user_agent_is_mobile() ? 'mcal' : 'cal';
+}
+
+/**
+ * Publikus főoldal nézet: naptár (eszközfüggő alap), lista, térkép vagy kényszerített cal/mcal.
+ *
+ * Üres $raw = nincs view param → eszköz szerinti alapértelmezés.
  */
 function events_public_resolve_home_view(string $raw): string
 {
+    $raw = trim($raw);
+    if ($raw === '') {
+        return events_public_default_home_calendar_view();
+    }
+
     $view = match ($raw) {
         'list' => 'list',
         'map' => 'map',
+        'cal' => 'cal',
         'mcal' => 'mcal',
-        default => 'cal',
+        default => events_public_default_home_calendar_view(),
     };
 
     if ($view === 'map' && !events_public_map_view_allowed()) {
-        return 'cal';
+        return events_public_default_home_calendar_view();
     }
 
     return $view;
@@ -54,7 +86,9 @@ function events_public_map_default_date_range(): array
  */
 function events_public_filters_from_request(PDO $db): array {
     $f_city = trim((string) ($_GET['f_city'] ?? ''));
-    $view = events_public_resolve_home_view((string) ($_GET['view'] ?? 'cal'));
+    $viewParamPresent = array_key_exists('view', $_GET);
+    $viewRaw = $viewParamPresent ? trim((string) $_GET['view']) : '';
+    $view = events_public_resolve_home_view($viewRaw);
 
     $savedGet = $_GET;
     unset($_GET['status'], $_GET['f_id'], $_GET['f_views_min']);
@@ -90,6 +124,7 @@ function events_public_filters_from_request(PDO $db): array {
     $filters['f_id'] = '';
     $filters['f_views_min'] = '';
     $filters['view'] = $view;
+    $filters['view_explicit'] = $viewParamPresent && $viewRaw !== '';
 
     $listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
     $filters['list_limit_value'] = $listLimitParsed['value'];
@@ -115,7 +150,14 @@ function events_public_filters_from_request(PDO $db): array {
         $mcalMode = trim((string) ($_GET['mcal_mode'] ?? ''));
         if ($mcalMode === 'day') {
             $getParams['mcal_mode'] = 'day';
+        } else {
+            unset($getParams['mcal_mode']);
         }
+    } elseif ($view === 'cal' && !empty($filters['view_explicit']) && $viewRaw === 'cal') {
+        $getParams['view'] = 'cal';
+        unset($getParams['mcal_mode'], $getParams['day']);
+    } else {
+        unset($getParams['view'], $getParams['mcal_mode'], $getParams['day']);
     }
     $filters['get_params'] = $getParams;
     $filters['map_uses_default_dates'] = $mapUsesDefaultDates;
@@ -203,7 +245,7 @@ function events_public_filter_label_attr_classes(array $filters, string $key): s
 function events_public_fetch_filtered_events(PDO $db, array $filters): array {
     $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
     $fromSql = '`events_calendar_events` e LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
-    if (($filters['view'] ?? 'cal') === 'list') {
+    if (($filters['view'] ?? events_public_default_home_calendar_view()) === 'list') {
         $poolFrom = events_admin_list_pool_from_sql($filters['list_limit']);
         $fromSql = $poolFrom . ' LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
     }

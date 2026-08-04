@@ -24,7 +24,8 @@ $db = getDb();
 $homeContent = events_public_home_load($db);
 $filters = events_public_filters_from_request($db);
 $filtersActive = events_public_filters_are_active($filters);
-$view = (string) ($filters['view'] ?? 'cal');
+$view = (string) ($filters['view'] ?? events_public_default_home_calendar_view());
+$viewExplicit = !empty($filters['view_explicit']);
 $filtersPanelOpen = $filtersActive;
 if ($view === 'mcal') {
     $filtersPanelOpen = events_public_filters_are_active_excluding_name($filters);
@@ -80,9 +81,7 @@ $selectedDayKey = events_public_mobile_calendar_resolve_selected_day(
 );
 
 $navBaseParams = array_merge($filters['get_params'], $langNav);
-if ($view !== 'mcal') {
-    unset($navBaseParams['view'], $navBaseParams['mcal_mode'], $navBaseParams['day']);
-} else {
+if ($view === 'mcal') {
     $navBaseParams['view'] = 'mcal';
     unset($navBaseParams['day']);
     if ($mcalMode === 'day') {
@@ -90,6 +89,11 @@ if ($view !== 'mcal') {
     } else {
         unset($navBaseParams['mcal_mode']);
     }
+} elseif ($view === 'cal' && $viewExplicit) {
+    $navBaseParams['view'] = 'cal';
+    unset($navBaseParams['mcal_mode'], $navBaseParams['day']);
+} else {
+    unset($navBaseParams['view'], $navBaseParams['mcal_mode'], $navBaseParams['day']);
 }
 $prevMonthUrl = events_public_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_public_calendar_month_url($nextMonthKey, $navBaseParams);
@@ -103,8 +107,14 @@ $mapViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'map']
 unset($mapViewParams['mcal_mode'], $mapViewParams['day']);
 $mapViewUrl = events_public_home_url($lang, $mapViewParams);
 
-$calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
-unset($calViewParams['view'], $calViewParams['mcal_mode'], $calViewParams['day']);
+// Eszközfüggő alap naptár (nincs view param).
+$adaptiveCalViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
+unset($adaptiveCalViewParams['view'], $adaptiveCalViewParams['mcal_mode'], $adaptiveCalViewParams['day']);
+$adaptiveCalViewUrl = events_public_home_url($lang, $adaptiveCalViewParams);
+
+// Kényszerített klasszikus / mobil (Hun/Eng „/” váltó).
+$calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey, 'view' => 'cal']);
+unset($calViewParams['mcal_mode'], $calViewParams['day']);
 $calViewUrl = events_public_home_url($lang, $calViewParams);
 
 $mcalViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey, 'view' => 'mcal']);
@@ -127,12 +137,16 @@ if ($view === 'list') {
         $filterFormHidden['mcal_mode'] = 'day';
     }
     $filterFormHidden['day'] = $selectedDayKey;
+} elseif ($view === 'cal' && $viewExplicit) {
+    $filterFormHidden['view'] = 'cal';
 }
 $filterClearParams = array_merge(['month' => $monthKey], $langNav);
 if ($view === 'map') {
     $filterClearParams['view'] = 'map';
 } elseif ($view === 'mcal') {
     $filterClearParams['view'] = 'mcal';
+} elseif ($view === 'cal' && $viewExplicit) {
+    $filterClearParams['view'] = 'cal';
 }
 $filterClearUrl = events_public_home_url($lang, $filterClearParams);
 
@@ -196,7 +210,8 @@ $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
 $mcalToggleUrl = $view === 'mcal' ? $calViewUrl : $mcalViewUrl;
 $mcalToggleTitle = $view === 'mcal'
     ? (string) ($D['mcal_toggle_back'] ?? ($lang === 'en' ? 'Classic calendar' : 'Klasszikus naptár'))
-    : (string) ($D['mcal_toggle_open'] ?? ($lang === 'en' ? 'New mobile calendar' : 'Új mobil naptár'));
+    : (string) ($D['mcal_toggle_open'] ?? ($lang === 'en' ? 'Mobile calendar' : 'Mobil naptár'));
+$needsDeviceViewSync = !$viewExplicit && ($view === 'cal' || $view === 'mcal');
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -205,6 +220,21 @@ header('Content-Type: text/html; charset=UTF-8');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php if ($needsDeviceViewSync): ?>
+    <script>
+    (function () {
+        try {
+            // Csak keskeny viewport + klasszikus nézet → mobil naptár.
+            // Fordítva nem váltunk (tablet landscape UA+mcal ne loopoljon).
+            if (!window.matchMedia('(max-width: 639px)').matches) return;
+            if (<?= json_encode($view, JSON_UNESCAPED_UNICODE) ?> !== 'cal') return;
+            var url = new URL(window.location.href);
+            url.searchParams.set('view', 'mcal');
+            window.location.replace(url.pathname + url.search + url.hash);
+        } catch (e) { /* ignore */ }
+    })();
+    </script>
+    <?php endif; ?>
     <?= events_public_ga_head_markup() ?>
     <?= events_public_robots_noindex_head_markup() ?>
     <meta name="theme-color" content="<?= $view === 'mcal' ? '#3B50FF' : '#6d8f63' ?>">
@@ -257,8 +287,8 @@ header('Content-Type: text/html; charset=UTF-8');
             </details>
 
             <?php
-            $homeActiveView = $view;
-            $homeCalViewUrl = $calViewUrl;
+            $homeActiveView = ($view === 'mcal' || $view === 'cal') ? 'cal' : $view;
+            $homeCalViewUrl = $adaptiveCalViewUrl;
             $homeListViewUrl = $listViewUrl;
             $homeMapViewUrl = $mapViewUrl;
             $showMapView = isLoggedIn();

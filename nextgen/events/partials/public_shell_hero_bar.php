@@ -12,7 +12,7 @@ declare(strict_types=1);
  * @var bool $showAdminEdit
  * @var string $adminEditUrl
  * @var string $heroInlineTitle Opcionális cím a logó mellett (főoldal)
- * @var string|null $mcalToggleUrl Hun/Eng közti „/” → új mobil naptár (vagy vissza)
+ * @var string|null $mcalToggleUrl Hun/Eng közti „/” → mobil / klasszikus naptár váltó
  * @var string|null $mcalToggleTitle
  */
 $isEventsHome = $isEventsHome ?? false;
