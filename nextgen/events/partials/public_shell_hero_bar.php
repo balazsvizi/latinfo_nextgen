@@ -12,11 +12,15 @@ declare(strict_types=1);
  * @var bool $showAdminEdit
  * @var string $adminEditUrl
  * @var string $heroInlineTitle Opcionális cím a logó mellett (főoldal)
+ * @var string|null $mcalToggleUrl Hun/Eng közti „/” → új mobil naptár (vagy vissza)
+ * @var string|null $mcalToggleTitle
  */
 $isEventsHome = $isEventsHome ?? false;
 $showAdminEdit = $showAdminEdit ?? false;
 $adminEditUrl = $adminEditUrl ?? '';
 $heroInlineTitle = trim((string) ($heroInlineTitle ?? ''));
+$mcalToggleUrl = trim((string) ($mcalToggleUrl ?? ''));
+$mcalToggleTitle = trim((string) ($mcalToggleTitle ?? ''));
 $C = events_public_common_nav_strings($lang);
 $eventsHomeUrl = events_public_home_page_url($lang);
 $latinfoLogoSrc = events_public_logo_src();
@@ -48,7 +52,11 @@ $L = events_public_lang_switch_link_labels();
                 <span class="event-lang-switch__text event-lang-switch__text--short"><?= h($L['hu_short']) ?></span>
                 <span class="event-lang-switch__text event-lang-switch__text--long"><?= h($L['hu_long']) ?></span>
             </a>
-            <span class="event-lang-switch__sep" aria-hidden="true">/</span>
+            <?php if ($mcalToggleUrl !== ''): ?>
+                <a class="event-lang-switch__sep event-lang-switch__sep--mcal" href="<?= h($mcalToggleUrl) ?>" title="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>" aria-label="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>">/</a>
+            <?php else: ?>
+                <span class="event-lang-switch__sep" aria-hidden="true">/</span>
+            <?php endif; ?>
             <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en" aria-label="<?= h($L['en_aria']) ?>" title="<?= h($L['en_aria']) ?>">
                 <span class="event-lang-switch__text event-lang-switch__text--short"><?= h($L['en_short']) ?></span>
                 <span class="event-lang-switch__text event-lang-switch__text--long"><?= h($L['en_long']) ?></span>

@@ -11,6 +11,7 @@ require_once __DIR__ . '/lib/public_home_content.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_calendar.php';
+require_once __DIR__ . '/lib/public_mobile_calendar.php';
 require_once __DIR__ . '/lib/calendar_event_preview.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 require_once __DIR__ . '/lib/public_home_events_map.php';
@@ -60,25 +61,53 @@ if ($view === 'cal') {
 
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
 $undated = $bucket['undated'];
+$byDay = $bucket['byDay'];
 $gridDays = events_admin_calendar_grid_days($monthFirst, $monthLast);
 $calendarWeeks = events_admin_calendar_build_week_layouts($rows, $gridDays, $monthFirst, $monthLast);
 $weekdayHeaders = events_public_calendar_weekday_headers($lang);
 
+$mcalMode = ((string) ($_GET['mcal_mode'] ?? '') === 'day') ? 'day' : 'month';
+$selectedDayKey = events_public_mobile_calendar_resolve_selected_day(
+    $monthFirst,
+    $byDay,
+    (string) ($_GET['day'] ?? '')
+);
+
 $navBaseParams = array_merge($filters['get_params'], $langNav);
-unset($navBaseParams['view']);
+if ($view !== 'mcal') {
+    unset($navBaseParams['view'], $navBaseParams['mcal_mode'], $navBaseParams['day']);
+} else {
+    $navBaseParams['view'] = 'mcal';
+    unset($navBaseParams['day']);
+    if ($mcalMode === 'day') {
+        $navBaseParams['mcal_mode'] = 'day';
+    } else {
+        unset($navBaseParams['mcal_mode']);
+    }
+}
 $prevMonthUrl = events_public_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_public_calendar_month_url($nextMonthKey, $navBaseParams);
 $todayMonthUrl = events_public_calendar_month_url(events_admin_calendar_effective_today()->format('Y-m'), $navBaseParams);
 
 $listViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'list']);
+unset($listViewParams['mcal_mode'], $listViewParams['day']);
 $listViewUrl = events_public_home_url($lang, $listViewParams);
 
 $mapViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'map']);
+unset($mapViewParams['mcal_mode'], $mapViewParams['day']);
 $mapViewUrl = events_public_home_url($lang, $mapViewParams);
 
 $calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
-unset($calViewParams['view']);
+unset($calViewParams['view'], $calViewParams['mcal_mode'], $calViewParams['day']);
 $calViewUrl = events_public_home_url($lang, $calViewParams);
+
+$mcalViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey, 'view' => 'mcal']);
+unset($mcalViewParams['mcal_mode'], $mcalViewParams['day']);
+$mcalViewUrl = events_public_home_url($lang, $mcalViewParams);
+$mcalMonthViewUrl = $mcalViewUrl;
+$mcalDayModeParams = array_merge($mcalViewParams, ['mcal_mode' => 'day', 'day' => $selectedDayKey]);
+$mcalDayModeUrl = events_public_home_url($lang, $mcalDayModeParams);
+$mcalListViewUrl = $listViewUrl;
 
 $filterFormAction = events_public_home_path();
 $filterFormHidden = array_merge(['month' => $monthKey], $langNav);
@@ -86,15 +115,23 @@ if ($view === 'list') {
     $filterFormHidden['view'] = 'list';
 } elseif ($view === 'map') {
     $filterFormHidden['view'] = 'map';
+} elseif ($view === 'mcal') {
+    $filterFormHidden['view'] = 'mcal';
+    if ($mcalMode === 'day') {
+        $filterFormHidden['mcal_mode'] = 'day';
+    }
+    $filterFormHidden['day'] = $selectedDayKey;
 }
 $filterClearParams = array_merge(['month' => $monthKey], $langNav);
 if ($view === 'map') {
     $filterClearParams['view'] = 'map';
+} elseif ($view === 'mcal') {
+    $filterClearParams['view'] = 'mcal';
 }
 $filterClearUrl = events_public_home_url($lang, $filterClearParams);
 
 $icalFeedParams = array_merge($filters['get_params'], $langNav);
-unset($icalFeedParams['month'], $icalFeedParams['view']);
+unset($icalFeedParams['month'], $icalFeedParams['view'], $icalFeedParams['mcal_mode'], $icalFeedParams['day']);
 
 $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];
@@ -150,6 +187,11 @@ $heroInlineTitle = '';
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
 $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
 
+$mcalToggleUrl = $view === 'mcal' ? $calViewUrl : $mcalViewUrl;
+$mcalToggleTitle = $view === 'mcal'
+    ? (string) ($D['mcal_toggle_back'] ?? ($lang === 'en' ? 'Classic calendar' : 'Klasszikus naptár'))
+    : (string) ($D['mcal_toggle_open'] ?? ($lang === 'en' ? 'New mobile calendar' : 'Új mobil naptár'));
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
@@ -159,7 +201,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?= events_public_ga_head_markup() ?>
     <?= events_public_robots_noindex_head_markup() ?>
-    <meta name="theme-color" content="#6d8f63">
+    <meta name="theme-color" content="<?= $view === 'mcal' ? '#3B50FF' : '#6d8f63' ?>">
     <title><?= h($title) ?><?= h($D['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">
     <meta property="og:type" content="website">
@@ -174,15 +216,15 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page event-public-page--home">
+<body class="event-public-page event-public-page--home<?= $view === 'mcal' ? ' event-public-page--mcal' : '' ?>">
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
-<div class="event-shell">
-<article class="event-public home-public">
+<div class="event-shell<?= $view === 'mcal' ? ' event-shell--mcal' : '' ?>">
+<article class="event-public home-public<?= $view === 'mcal' ? ' home-public--mcal' : '' ?>">
     <header class="event-public__hero">
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
     </header>
 
-    <?php if ($contentTop !== ''): ?>
+    <?php if ($view !== 'mcal' && $contentTop !== ''): ?>
         <div class="home-public__cms home-public__cms--top event-rich-text">
             <?= $contentTop ?>
         </div>
@@ -190,7 +232,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <section class="home-public__main" aria-label="<?= h((string) $D['calendar_aria']) ?>">
         <form method="get" action="<?= h($filterFormAction) ?>" class="home-public__form" id="events-home-filter-form">
-            <details class="home-public__filters-panel" id="home-filters-panel"<?= $filtersActive ? ' open' : '' ?>>
+            <details class="home-public__filters-panel<?= $view === 'mcal' ? ' home-public__filters-panel--mcal' : '' ?>" id="home-filters-panel"<?= $filtersActive ? ' open' : '' ?>>
                 <summary class="home-public__filters-summary">
                     <span class="home-public__filters-summary-text"><?= h((string) $D['filters_toggle']) ?></span>
                     <?php if ($filtersActive): ?>
@@ -216,7 +258,9 @@ header('Content-Type: text/html; charset=UTF-8');
             $showMapView = isLoggedIn();
             ?>
 
-            <?php if ($view === 'cal'): ?>
+            <?php if ($view === 'mcal'): ?>
+                <?php require __DIR__ . '/partials/public_mobile_calendar.php'; ?>
+            <?php elseif ($view === 'cal'): ?>
                 <div class="events-cal-toolbar" aria-label="<?= h((string) $D['cal_controls_aria']) ?>">
                     <div class="events-cal-toolbar__left">
                         <div class="events-cal-toolbar__nav" aria-label="<?= h((string) $D['month_nav_aria']) ?>">
@@ -274,7 +318,7 @@ header('Content-Type: text/html; charset=UTF-8');
         </form>
     </section>
 
-    <?php if ($contentBottom !== ''): ?>
+    <?php if ($view !== 'mcal' && $contentBottom !== ''): ?>
         <div class="home-public__cms home-public__cms--bottom event-rich-text">
             <?= $contentBottom ?>
         </div>

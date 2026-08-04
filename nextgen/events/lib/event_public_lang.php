@@ -827,6 +827,13 @@ function events_public_home_strings(string $lang): array {
         'cal_colors_help_scale_aria' => 'Kategória színskála',
         'cal_colors_help_list_aria' => 'Kategóriák és színeik',
         'cal_colors_help_close' => 'Bezárás',
+        'mcal_toggle_open' => 'Új mobil naptár',
+        'mcal_toggle_back' => 'Klasszikus naptár',
+        'mcal_view_month' => 'Hónap',
+        'mcal_view_day' => 'Nap',
+        'mcal_search_aria' => 'Keresés az események között',
+        'mcal_grid_aria' => 'Havi naptár',
+        'mcal_empty_day' => 'Nincs esemény ezen a napon.',
     ];
     $en = [
         'html_title_suffix' => ' – ',
@@ -927,6 +934,13 @@ function events_public_home_strings(string $lang): array {
         'cal_colors_help_scale_aria' => 'Category colour scale',
         'cal_colors_help_list_aria' => 'Categories and their colours',
         'cal_colors_help_close' => 'Close',
+        'mcal_toggle_open' => 'New mobile calendar',
+        'mcal_toggle_back' => 'Classic calendar',
+        'mcal_view_month' => 'Month',
+        'mcal_view_day' => 'Day',
+        'mcal_search_aria' => 'Search events',
+        'mcal_grid_aria' => 'Month calendar',
+        'mcal_empty_day' => 'No events on this day.',
     ];
 
     return $lang === 'en' ? $en : $hu;

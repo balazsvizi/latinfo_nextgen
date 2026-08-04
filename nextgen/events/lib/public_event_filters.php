@@ -13,13 +13,14 @@ function events_public_map_view_allowed(): bool
 }
 
 /**
- * Publikus főoldal nézet: naptár, lista vagy térkép.
+ * Publikus főoldal nézet: naptár, lista, térkép vagy új mobil naptár (mcal).
  */
 function events_public_resolve_home_view(string $raw): string
 {
     $view = match ($raw) {
         'list' => 'list',
         'map' => 'map',
+        'mcal' => 'mcal',
         default => 'cal',
     };
 
@@ -108,6 +109,12 @@ function events_public_filters_from_request(PDO $db): array {
         $getParams['view'] = 'map';
         if ($mapUsesDefaultDates) {
             unset($getParams['f_start_from'], $getParams['f_start_to']);
+        }
+    } elseif ($view === 'mcal') {
+        $getParams['view'] = 'mcal';
+        $mcalMode = trim((string) ($_GET['mcal_mode'] ?? ''));
+        if ($mcalMode === 'day') {
+            $getParams['mcal_mode'] = 'day';
         }
     }
     $filters['get_params'] = $getParams;

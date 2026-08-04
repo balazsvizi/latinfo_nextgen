@@ -1,4 +1,4 @@
-/* Nyilvános esemény — latinfo.hu kezdőoldal hangjához igazítva (világos, zöld akcent) */
+/* Nyilv?nos esem?ny ? latinfo.hu kezd?oldal hangj?hoz igaz?tva (vil?gos, z?ld akcent) */
 :root {
     --li-green: #6d8f63;
     --li-green-hover: #56734d;
@@ -137,7 +137,7 @@ body.event-public-page {
     object-position: left center;
 }
 
-/* Admin lebegő eszköztár (publikus oldalakon, bejelentkezve) */
+/* Admin lebeg? eszk?zt?r (publikus oldalakon, bejelentkezve) */
 .events-edit-float-tools {
     position: fixed;
     top: max(0.5rem, env(safe-area-inset-top, 0px));
@@ -224,6 +224,28 @@ body.event-public-page {
     font-weight: 400;
     user-select: none;
     padding: 0 0.05rem;
+}
+
+a.event-lang-switch__sep--mcal {
+    text-decoration: none;
+    color: var(--li-text-soft);
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 0.15rem 0.35rem;
+    line-height: 1;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+a.event-lang-switch__sep--mcal:hover,
+a.event-lang-switch__sep--mcal:focus-visible {
+    color: var(--li-green-dark);
+    background: var(--li-green-soft);
+    outline: none;
+}
+
+a.event-lang-switch__sep--mcal:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
 }
 
 .event-lang-switch__text--long {
@@ -1017,7 +1039,7 @@ body.venue-public-map-dialog-open {
     background: var(--li-card);
 }
 
-/* Esemény részletező (megjelenit) — külön lekerekített fehér tartalomdoboz */
+/* Esem?ny r?szletez? (megjelenit) ? k?l?n lekerek?tett feh?r tartalomdoboz */
 .event-public--detail {
     background: transparent;
     border: none;
@@ -1366,7 +1388,7 @@ a.event-public__tag-pill:hover {
     color: var(--li-green-dark);
 }
 
-/* Hero meta — megjelenit.php: címkézett chip rács */
+/* Hero meta ? megjelenit.php: c?mk?zett chip r?cs */
 .event-hero-meta {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
@@ -1519,7 +1541,7 @@ a.event-hero-chip--category-link:hover {
 }
 
 .event-hero-chip--dj::before {
-    content: '🎧';
+    content: '??';
     margin-right: 0.3rem;
     font-size: 0.75rem;
     line-height: 1;
@@ -1662,7 +1684,7 @@ a.event-hero-chip--category-link:hover {
     -webkit-box-decoration-break: clone;
 }
 
-/* Szervező / helyszín eseménylista */
+/* Szervez? / helysz?n esem?nylista */
 .organizer-public__events,
 .venue-public__events {
     margin: 0;
@@ -2077,7 +2099,7 @@ a.event-hero-chip--category-link:hover {
     margin-top: 0.25rem;
 }
 
-/* Már lezajlott események — elkülönített „archívum” sáv */
+/* M?r lezajlott esem?nyek ? elk?l?n?tett ?arch?vum? s?v */
 .organizer-public__subsection--past {
     margin-top: 2.5rem;
     margin-left: calc(-1 * clamp(1.25rem, 4vw, 2rem));
@@ -2721,7 +2743,7 @@ a.event-hero-chip--category-link:hover {
     margin-top: 0.5rem;
 }
 
-/* —— Publikus esemény főoldal (public_home.php) —— */
+/* ?? Publikus esem?ny f?oldal (public_home.php) ?? */
 body.event-public-page--home .event-shell {
     max-width: none;
     padding: clamp(0.85rem, 2vw, 1.5rem) clamp(0.75rem, 2.5vw, 2.5rem) 2.5rem;
@@ -2897,7 +2919,7 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public__filters-summary::after {
-    content: '▾';
+    content: '?';
     flex-shrink: 0;
     font-size: 1rem;
     line-height: 1;
@@ -4550,7 +4572,7 @@ a.home-public-map-popup__title:hover {
     }
 }
 
-/* Naptár esemény előnézet (mobil bottom sheet) */
+/* Napt?r esem?ny el?n?zet (mobil bottom sheet) */
 .events-cal-preview {
     --cal-preview-accent: var(--li-green);
     padding: 0;
@@ -4779,7 +4801,7 @@ body.events-cal-preview-open {
     }
 }
 
-/* Esemény változás / elmaradás — naptár */
+/* Esem?ny v?ltoz?s / elmarad?s ? napt?r */
 .home-public .events-cal__event-change-badge {
     display: inline-block;
     margin-bottom: 0.1rem;
@@ -4848,7 +4870,7 @@ body.events-cal-preview-open {
     text-decoration-thickness: 2px;
 }
 
-/* Esemény változás — publikus oldal */
+/* Esem?ny v?ltoz?s ? publikus oldal */
 .event-change-notice {
     margin: 0 0 1rem;
     padding: 0.9rem 1rem;
@@ -4977,7 +4999,7 @@ body.events-cal-preview-open {
     letter-spacing: 0.06em;
 }
 
-/* Naptár előnézet — változás */
+/* Napt?r el?n?zet ? v?ltoz?s */
 .events-cal-preview__change {
     margin: 0 0 1rem;
     padding: 0;
@@ -5048,4 +5070,375 @@ body.events-cal-preview-open {
     margin: 0;
     font-size: 0.9375rem;
     line-height: 1.5;
+}
+
+/* --- Uj mobil naptar (mcal) prototipus --- */
+:root {
+    --mcal-accent: #3b50ff;
+    --mcal-accent-soft: rgba(59, 80, 255, 0.12);
+    --mcal-text: #1f2430;
+    --mcal-text-muted: #8a9099;
+    --mcal-text-soft: #b0b5bd;
+    --mcal-border: #e8eaee;
+    --mcal-dot: #9aa0a8;
+    --mcal-event-edge: #c5c9d0;
+}
+
+body.event-public-page--mcal {
+    background: #fff;
+    background-image: none;
+}
+
+body.event-public-page--mcal .event-shell--mcal {
+    max-width: 26rem;
+    padding: 0.75rem 0.85rem 2rem;
+}
+
+body.event-public-page--mcal .home-public--mcal .event-public__hero {
+    margin-bottom: 0.35rem;
+}
+
+body.event-public-page--mcal .home-public--mcal .event-public__hero-chrome {
+    margin-bottom: 0;
+}
+
+body.event-public-page--mcal .home-public__filters-panel--mcal > .home-public__filters-summary {
+    display: none;
+}
+
+body.event-public-page--mcal .home-public__filters-panel--mcal:not([open]) {
+    display: none;
+}
+
+body.event-public-page--mcal .home-public__filters-panel--mcal[open] {
+    display: block;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--mcal-border);
+    border-radius: 10px;
+    background: #fafbfc;
+}
+
+body.event-public-page--mcal .home-public__filters-panel--mcal[open] .home-public__filters-body {
+    padding: 0.75rem;
+}
+
+.mcal {
+    font-family: var(--ev-sans);
+    color: var(--mcal-text);
+    background: #fff;
+}
+
+.mcal__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0 0.85rem;
+    position: relative;
+    z-index: 5;
+}
+
+.mcal__date-wrap {
+    position: relative;
+    min-width: 0;
+}
+
+.mcal__date-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0.35rem 0.2rem;
+    border: 0;
+    background: transparent;
+    color: var(--mcal-text);
+    font: inherit;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.mcal__date-btn:hover,
+.mcal__date-btn:focus-visible {
+    background: var(--mcal-accent-soft);
+    outline: none;
+}
+
+.mcal__date-chevron {
+    color: var(--mcal-text-muted);
+    flex-shrink: 0;
+}
+
+.mcal__month-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border: 0;
+}
+
+.mcal__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    flex-shrink: 0;
+}
+
+.mcal__icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--mcal-text);
+    cursor: pointer;
+}
+
+.mcal__icon-btn:hover,
+.mcal__icon-btn:focus-visible {
+    background: #f2f3f6;
+    outline: none;
+}
+
+.mcal__icon-btn.is-active,
+.mcal__icon-btn--view.is-active {
+    color: var(--mcal-accent);
+    box-shadow: inset 0 -2px 0 var(--mcal-accent);
+    border-radius: 8px 8px 0 0;
+}
+
+.mcal__view-wrap {
+    position: relative;
+}
+
+.mcal__view-menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    min-width: 9.5rem;
+    padding: 0.35rem 0;
+    background: #fff;
+    border: 1px solid var(--mcal-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(20, 24, 40, 0.12);
+    z-index: 20;
+}
+
+.mcal__view-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.85rem;
+    color: var(--mcal-text);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.mcal__view-item:hover,
+.mcal__view-item:focus-visible {
+    background: #f5f6f8;
+    outline: none;
+}
+
+.mcal__view-item.is-current {
+    font-weight: 700;
+}
+
+.mcal__view-item svg {
+    flex-shrink: 0;
+    color: var(--mcal-text-muted);
+}
+
+.mcal__grid-wrap {
+    padding: 0.15rem 0 0.5rem;
+}
+
+.mcal__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0;
+    margin-bottom: 0.35rem;
+}
+
+.mcal__weekday {
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--mcal-text-muted);
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0;
+}
+
+.mcal__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.15rem 0;
+}
+
+.mcal__day {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.2rem;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0.35rem 0.15rem 0.4rem;
+    border: 0;
+    background: transparent;
+    color: var(--mcal-text);
+    font: inherit;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.mcal__day:hover,
+.mcal__day:focus-visible {
+    background: #f3f4f7;
+    outline: none;
+}
+
+.mcal__day--outside {
+    color: var(--mcal-text-soft);
+}
+
+.mcal__day-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.mcal__day-dot {
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.mcal__day.has-events .mcal__day-dot {
+    background: var(--mcal-dot);
+}
+
+.mcal__day.is-selected {
+    background: var(--mcal-accent);
+    border-radius: 10px;
+}
+
+.mcal__day.is-selected:hover,
+.mcal__day.is-selected:focus-visible {
+    background: var(--mcal-accent);
+}
+
+.mcal__day.is-selected .mcal__day-num {
+    background: transparent;
+    color: #1a1a2e;
+    font-weight: 600;
+}
+
+.mcal__day.is-selected.has-events .mcal__day-dot {
+    background: #fff;
+}
+
+.mcal__day-panel {
+    margin-top: 1.25rem;
+    padding-top: 0.15rem;
+}
+
+.mcal__day-heading {
+    margin: 0 0 0.85rem;
+    padding: 0.65rem 0 0;
+    border-top: 1px solid var(--mcal-border);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--mcal-text);
+    letter-spacing: -0.01em;
+}
+
+.mcal__events {
+    display: flex;
+    flex-direction: column;
+}
+
+.mcal__event {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--mcal-border);
+}
+
+.mcal__event:last-child {
+    border-bottom: 0;
+}
+
+.mcal__event:hover .mcal__event-bar,
+.mcal__event:focus-visible .mcal__event-bar {
+    filter: brightness(1.06);
+}
+
+.mcal__event:focus-visible {
+    outline: 2px solid var(--mcal-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.mcal__event-meta {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--mcal-text-muted);
+}
+
+.mcal__event-bar {
+    display: block;
+    padding: 0.7rem 0.85rem;
+    border-radius: 2px;
+    background: var(--mcal-event-accent, #3b50ff);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    box-shadow: inset 3px 0 0 var(--mcal-event-edge);
+    word-break: break-word;
+}
+
+.mcal__empty {
+    margin: 0.5rem 0 0;
+    color: var(--mcal-text-muted);
+    font-size: 0.95rem;
+}
+
+.mcal--day-mode .mcal__day-panel {
+    margin-top: 0.35rem;
+}
+
+@media (min-width: 40rem) {
+    body.event-public-page--mcal .event-shell--mcal {
+        max-width: 24rem;
+        margin-left: auto;
+        margin-right: auto;
+        border: 1px solid var(--mcal-border);
+        border-radius: 16px;
+        padding: 1rem 1.1rem 1.75rem;
+        background: #fff;
+        box-shadow: 0 12px 40px rgba(20, 24, 40, 0.06);
+    }
 }
