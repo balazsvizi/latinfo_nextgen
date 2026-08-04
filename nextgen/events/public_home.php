@@ -25,6 +25,10 @@ $homeContent = events_public_home_load($db);
 $filters = events_public_filters_from_request($db);
 $filtersActive = events_public_filters_are_active($filters);
 $view = (string) ($filters['view'] ?? 'cal');
+$filtersPanelOpen = $filtersActive;
+if ($view === 'mcal') {
+    $filtersPanelOpen = events_public_filters_are_active_excluding_name($filters);
+}
 
 [$monthFirst, $monthLast, $monthKey] = events_admin_calendar_resolve_month((string) ($_GET['month'] ?? ''));
 
@@ -53,10 +57,12 @@ $mapPayload = $view === 'map'
     : ['markers' => [], 'geocode_jobs' => [], 'skipped' => 0, 'pending' => 0, 'total' => 0];
 $calendarColorLegend = [];
 $calendarPreviewById = [];
-if ($view === 'cal') {
+if ($view === 'cal' || $view === 'mcal') {
     $organizersByEventId = events_calendar_load_organizers_by_event_id($db, $rows);
     $calendarPreviewById = events_calendar_preview_build_map($rows, $categoriesByEventId, $organizersByEventId, $lang);
-    $calendarColorLegend = events_admin_calendar_category_legend_items($db, $lang);
+    if ($view === 'cal') {
+        $calendarColorLegend = events_admin_calendar_category_legend_items($db, $lang);
+    }
 }
 
 $bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
@@ -232,7 +238,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <section class="home-public__main" aria-label="<?= h((string) $D['calendar_aria']) ?>">
         <form method="get" action="<?= h($filterFormAction) ?>" class="home-public__form" id="events-home-filter-form">
-            <details class="home-public__filters-panel<?= $view === 'mcal' ? ' home-public__filters-panel--mcal' : '' ?>" id="home-filters-panel"<?= $filtersActive ? ' open' : '' ?>>
+            <details class="home-public__filters-panel<?= $view === 'mcal' ? ' home-public__filters-panel--mcal' : '' ?>" id="home-filters-panel"<?= $filtersPanelOpen ? ' open' : '' ?>>
                 <summary class="home-public__filters-summary">
                     <span class="home-public__filters-summary-text"><?= h((string) $D['filters_toggle']) ?></span>
                     <?php if ($filtersActive): ?>
@@ -330,7 +336,7 @@ header('Content-Type: text/html; charset=UTF-8');
 </article>
 </div>
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
-<?php if ($view === 'cal' && $calendarPreviewById !== []): ?>
+<?php if (($view === 'cal' || $view === 'mcal') && $calendarPreviewById !== []): ?>
 <?php require __DIR__ . '/partials/public_calendar_event_preview.php'; ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>

@@ -30,7 +30,7 @@ function events_public_mobile_calendar_tz_abbr(DateTimeImmutable $dt): string
 }
 
 /**
- * Esemény meta sor: „2026. július 15. @ 18:00 – 20:00 CEST”
+ * Esemény meta sor: HU „2026. július 15. @ 18:00 – 20:00”, EN + időzóna.
  */
 function events_public_mobile_calendar_event_meta(array $ev, string $lang): string
 {
@@ -65,9 +65,12 @@ function events_public_mobile_calendar_event_meta(array $ev, string $lang): stri
         }
     }
 
-    $tzAbbr = events_public_mobile_calendar_tz_abbr($start);
+    $line = $dayLabel . ' @ ' . $timePart;
+    if ($lang === 'en') {
+        $line .= ' ' . events_public_mobile_calendar_tz_abbr($start);
+    }
 
-    return $dayLabel . ' @ ' . $timePart . ' ' . $tzAbbr;
+    return $line;
 }
 
 /**
@@ -129,25 +132,46 @@ function events_public_mobile_calendar_resolve_selected_day(
 /**
  * @param list<array<string, mixed>> $dayEvents
  * @param array<int, list<array{color?: string}>> $categoriesByEventId
- * @return list<array{id: int, name: string, url: string, accent: string, meta: string}>
+ * @return list<array{
+ *   id: int,
+ *   name: string,
+ *   url: string,
+ *   accent: string,
+ *   meta: string,
+ *   changeBadge: string,
+ *   changeType: string,
+ *   nameStruck: bool
+ * }>
  */
 function events_public_mobile_calendar_day_event_payload(
     array $dayEvents,
     array $categoriesByEventId,
     string $lang
 ): array {
+    require_once __DIR__ . '/event_change.php';
     $out = [];
     foreach ($dayEvents as $ev) {
         $eid = (int) ($ev['id'] ?? 0);
         if ($eid <= 0) {
             continue;
         }
+        $changeType = '';
+        $changeBadge = '';
+        $nameStruck = false;
+        if (events_event_change_active($ev)) {
+            $changeType = (string) (events_event_change_type($ev) ?? '');
+            $changeBadge = events_event_change_calendar_badge_label($ev, $lang);
+            $nameStruck = $changeType === events_event_change_type_cancelled();
+        }
         $out[] = [
             'id' => $eid,
             'name' => (string) ($ev['event_name'] ?? ''),
-            'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CALENDAR),
+            'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
             'accent' => events_public_mobile_calendar_event_accent($ev, $categoriesByEventId),
             'meta' => events_public_mobile_calendar_event_meta($ev, $lang),
+            'changeBadge' => $changeBadge,
+            'changeType' => $changeType,
+            'nameStruck' => $nameStruck,
         ];
     }
 

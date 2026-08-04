@@ -167,6 +167,19 @@ function events_public_filters_are_active(array $filters): bool {
 }
 
 /**
+ * Van-e aktív szűrő a név mezőn kívül (mobil kereső vs. szűrőpanel).
+ *
+ * @param array<string, mixed> $filters
+ */
+function events_public_filters_are_active_excluding_name(array $filters): bool
+{
+    $saved = $filters;
+    $saved['f_name'] = '';
+
+    return events_public_filters_are_active($saved);
+}
+
+/**
  * Szűrőmező címke osztályai – aktív értéknél ugyanaz a kiemelés, mint az „aktív” jelvény.
  *
  * @param array<string, mixed> $filters

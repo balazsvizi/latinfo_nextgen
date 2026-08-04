@@ -19,21 +19,28 @@ declare(strict_types=1);
  * @var string $nextMonthUrl
  * @var string $mcalMode month|day
  * @var bool $filtersActive
+ * @var bool $filtersPanelOpen
+ * @var array<string, mixed> $filters
  */
 
 require_once __DIR__ . '/../lib/public_mobile_calendar.php';
 
 $mcalMode = ($mcalMode ?? 'month') === 'day' ? 'day' : 'month';
+$filtersPanelOpen = !empty($filtersPanelOpen);
 $weekdayLetters = events_public_mobile_calendar_weekday_letters($lang);
 $eventsByDayPayload = events_public_mobile_calendar_events_by_day_payload($byDay, $categoriesByEventId, $lang);
 $selectedDayHeading = events_public_mobile_calendar_day_heading($selectedDayKey, $lang);
 $selectedEvents = $eventsByDayPayload[$selectedDayKey] ?? [];
 $monthPickerValue = $monthKey;
-$headerDateLabel = $monthFirst->format('Y-m-d');
+$headerDateLabel = events_public_calendar_month_label($monthFirst, $lang);
+$searchNameValue = trim((string) ($filters['f_name'] ?? ''));
+$searchOpen = $searchNameValue !== '';
 $emptyDayLabel = (string) ($D['mcal_empty_day'] ?? ($lang === 'en' ? 'No events on this day.' : 'Nincs esemény ezen a napon.'));
+$searchPh = (string) ($D['filter_name_ph'] ?? ($lang === 'en' ? 'Search in title…' : 'Keresés a címben…'));
 $viewListLabel = (string) ($D['view_list'] ?? 'Lista');
 $viewMonthLabel = (string) ($D['mcal_view_month'] ?? ($lang === 'en' ? 'Month' : 'Hónap'));
 $viewDayLabel = (string) ($D['mcal_view_day'] ?? ($lang === 'en' ? 'Day' : 'Nap'));
+$maxDots = 3;
 ?>
 <div
     class="mcal<?= $mcalMode === 'day' ? ' mcal--day-mode' : '' ?>"
@@ -60,10 +67,10 @@ $viewDayLabel = (string) ($D['mcal_view_day'] ?? ($lang === 'en' ? 'Day' : 'Nap'
             >
         </div>
         <div class="mcal__actions">
-            <button type="button" class="mcal__icon-btn" id="mcal-search-btn" aria-label="<?= h((string) ($D['mcal_search_aria'] ?? 'Keresés')) ?>" title="<?= h((string) ($D['mcal_search_aria'] ?? 'Keresés')) ?>">
+            <button type="button" class="mcal__icon-btn<?= $searchOpen ? ' is-active' : '' ?>" id="mcal-search-btn" aria-label="<?= h((string) ($D['mcal_search_aria'] ?? 'Keresés')) ?>" title="<?= h((string) ($D['mcal_search_aria'] ?? 'Keresés')) ?>" aria-expanded="<?= $searchOpen ? 'true' : 'false' ?>" aria-controls="mcal-search-panel">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
-            <button type="button" class="mcal__icon-btn<?= $filtersActive ? ' is-active' : '' ?>" id="mcal-filter-btn" aria-label="<?= h((string) ($D['filters_toggle'] ?? 'Szűrők')) ?>" title="<?= h((string) ($D['filters_toggle'] ?? 'Szűrők')) ?>" aria-expanded="<?= $filtersActive ? 'true' : 'false' ?>" aria-controls="home-filters-panel">
+            <button type="button" class="mcal__icon-btn<?= $filtersPanelOpen ? ' is-active' : '' ?>" id="mcal-filter-btn" aria-label="<?= h((string) ($D['filters_toggle'] ?? 'Szűrők')) ?>" title="<?= h((string) ($D['filters_toggle'] ?? 'Szűrők')) ?>" aria-expanded="<?= $filtersPanelOpen ? 'true' : 'false' ?>" aria-controls="home-filters-panel">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h10M14 7a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM20 17H10M10 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
             <div class="mcal__view-wrap">
@@ -88,6 +95,22 @@ $viewDayLabel = (string) ($D['mcal_view_day'] ?? ($lang === 'en' ? 'Day' : 'Nap'
         </div>
     </div>
 
+    <div class="mcal__search-panel" id="mcal-search-panel"<?= $searchOpen ? '' : ' hidden' ?>>
+        <label class="mcal__search-label" for="mcal-search-input"><?= h((string) ($D['filter_name'] ?? 'Esemény neve')) ?></label>
+        <div class="mcal__search-row">
+            <input
+                type="search"
+                class="mcal__search-input"
+                id="mcal-search-input"
+                value="<?= h($searchNameValue) ?>"
+                placeholder="<?= h($searchPh) ?>"
+                autocomplete="off"
+                enterkeyhint="search"
+            >
+            <button type="button" class="mcal__search-submit" id="mcal-search-submit"><?= h((string) ($D['mcal_search_go'] ?? ($lang === 'en' ? 'Search' : 'Keresés'))) ?></button>
+        </div>
+    </div>
+
     <div class="mcal__grid-wrap" id="mcal-grid-wrap"<?= $mcalMode === 'day' ? ' hidden' : '' ?>>
         <div class="mcal__weekdays" aria-hidden="true">
             <?php foreach ($weekdayLetters as $letter): ?>
@@ -98,7 +121,8 @@ $viewDayLabel = (string) ($D['mcal_view_day'] ?? ($lang === 'en' ? 'Day' : 'Nap'
             <?php foreach ($gridDays as $day): ?>
                 <?php
                 $dayKey = (string) $day['key'];
-                $hasEvents = !empty($byDay[$dayKey]);
+                $eventCount = isset($byDay[$dayKey]) ? count($byDay[$dayKey]) : 0;
+                $hasEvents = $eventCount > 0;
                 $isSelected = $dayKey === $selectedDayKey;
                 $classes = 'mcal__day';
                 if (!$day['inMonth']) {
@@ -114,18 +138,29 @@ $viewDayLabel = (string) ($D['mcal_view_day'] ?? ($lang === 'en' ? 'Day' : 'Nap'
                     $classes .= ' has-events';
                 }
                 $dayNum = (int) $day['date']->format('j');
+                $dotCount = min($eventCount, $maxDots);
+                $ariaDay = $dayKey . ($eventCount > 0 ? ', ' . $eventCount : '');
                 ?>
                 <button
                     type="button"
                     class="<?= h($classes) ?>"
                     role="gridcell"
                     data-day="<?= h($dayKey) ?>"
+                    data-count="<?= $eventCount ?>"
                     data-in-month="<?= $day['inMonth'] ? '1' : '0' ?>"
-                    aria-label="<?= h($dayKey) ?>"
+                    aria-label="<?= h($ariaDay) ?>"
                     aria-pressed="<?= $isSelected ? 'true' : 'false' ?>"
                 >
                     <span class="mcal__day-num"><?= $dayNum ?></span>
-                    <span class="mcal__day-dot" aria-hidden="true"></span>
+                    <span class="mcal__day-dots" aria-hidden="true" data-count="<?= $eventCount ?>">
+                        <?php if ($eventCount > $maxDots): ?>
+                            <span class="mcal__day-count"><?= $eventCount > 9 ? '9+' : (string) $eventCount ?></span>
+                        <?php else: ?>
+                            <?php for ($di = 0; $di < $dotCount; $di++): ?>
+                                <span class="mcal__day-dot"></span>
+                            <?php endfor; ?>
+                        <?php endif; ?>
+                    </span>
                 </button>
             <?php endforeach; ?>
         </div>
@@ -138,9 +173,31 @@ $viewDayLabel = (string) ($D['mcal_view_day'] ?? ($lang === 'en' ? 'Day' : 'Nap'
                 <p class="mcal__empty" id="mcal-empty"><?= h($emptyDayLabel) ?></p>
             <?php else: ?>
                 <?php foreach ($selectedEvents as $item): ?>
-                    <a class="mcal__event" href="<?= h((string) $item['url']) ?>">
+                    <?php
+                    $barClass = 'mcal__event-bar';
+                    if (($item['changeType'] ?? '') === 'cancelled') {
+                        $barClass .= ' mcal__event-bar--cancelled';
+                    } elseif (($item['changeType'] ?? '') === 'modified') {
+                        $barClass .= ' mcal__event-bar--modified';
+                    }
+                    $nameClass = 'mcal__event-name';
+                    if (!empty($item['nameStruck'])) {
+                        $nameClass .= ' mcal__event-name--struck';
+                    }
+                    ?>
+                    <a
+                        class="mcal__event js-cal-event-preview"
+                        href="<?= h((string) $item['url']) ?>"
+                        data-preview-id="<?= (int) $item['id'] ?>"
+                        aria-haspopup="dialog"
+                    >
                         <span class="mcal__event-meta"><?= h((string) $item['meta']) ?></span>
-                        <span class="mcal__event-bar" style="--mcal-event-accent: <?= h((string) $item['accent']) ?>"><?= h((string) $item['name']) ?></span>
+                        <span class="<?= h($barClass) ?>" style="--mcal-event-accent: <?= h((string) $item['accent']) ?>">
+                            <?php if (($item['changeBadge'] ?? '') !== ''): ?>
+                                <span class="mcal__event-change<?= ($item['changeType'] ?? '') === 'cancelled' ? ' mcal__event-change--cancelled' : (($item['changeType'] ?? '') === 'modified' ? ' mcal__event-change--modified' : '') ?>"><?= h((string) $item['changeBadge']) ?></span>
+                            <?php endif; ?>
+                            <span class="<?= h($nameClass) ?>"><?= h((string) $item['name']) ?></span>
+                        </span>
                     </a>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -181,10 +238,15 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
     var monthInput = document.getElementById('mcal-month-picker');
     var dateBtn = document.getElementById('mcal-date-btn');
     var searchBtn = document.getElementById('mcal-search-btn');
+    var searchPanel = document.getElementById('mcal-search-panel');
+    var searchInput = document.getElementById('mcal-search-input');
+    var searchSubmit = document.getElementById('mcal-search-submit');
     var filterBtn = document.getElementById('mcal-filter-btn');
     var filtersPanel = document.getElementById('home-filters-panel');
     var filtersWereActive = !!(filterBtn && filterBtn.classList.contains('is-active'));
     var dayModeLink = viewMenu ? viewMenu.querySelector('[data-mcal-day-link]') : null;
+    var form = document.getElementById('events-home-filter-form');
+    var nameField = document.getElementById('ev-f-name');
 
     function esc(s) {
         return String(s)
@@ -205,6 +267,28 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
         } catch (e) { /* ignore */ }
     }
 
+    function renderEventHtml(it) {
+        var barClass = 'mcal__event-bar';
+        if (it.changeType === 'cancelled') barClass += ' mcal__event-bar--cancelled';
+        else if (it.changeType === 'modified') barClass += ' mcal__event-bar--modified';
+        var nameClass = 'mcal__event-name';
+        if (it.nameStruck) nameClass += ' mcal__event-name--struck';
+        var badge = '';
+        if (it.changeBadge) {
+            var bClass = 'mcal__event-change';
+            if (it.changeType === 'cancelled') bClass += ' mcal__event-change--cancelled';
+            else if (it.changeType === 'modified') bClass += ' mcal__event-change--modified';
+            badge = '<span class="' + bClass + '">' + esc(it.changeBadge) + '</span>';
+        }
+        return '<a class="mcal__event js-cal-event-preview" href="' + esc(it.url) + '" data-preview-id="' + esc(String(it.id)) + '" aria-haspopup="dialog">'
+            + '<span class="mcal__event-meta">' + esc(it.meta) + '</span>'
+            + '<span class="' + barClass + '" style="--mcal-event-accent: ' + esc(it.accent) + '">'
+            + badge
+            + '<span class="' + nameClass + '">' + esc(it.name) + '</span>'
+            + '</span>'
+            + '</a>';
+    }
+
     function renderDay(dayKey) {
         root.setAttribute('data-selected', dayKey);
         if (headingEl) {
@@ -219,11 +303,7 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
         }
         var html = '';
         for (var i = 0; i < items.length; i++) {
-            var it = items[i];
-            html += '<a class="mcal__event" href="' + esc(it.url) + '">'
-                + '<span class="mcal__event-meta">' + esc(it.meta) + '</span>'
-                + '<span class="mcal__event-bar" style="--mcal-event-accent: ' + esc(it.accent) + '">' + esc(it.name) + '</span>'
-                + '</a>';
+            html += renderEventHtml(items[i]);
         }
         eventsEl.innerHTML = html;
     }
@@ -312,8 +392,53 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
         });
     }
 
-    function openFilters(focusName) {
+    function runSearch() {
+        if (!searchInput) return;
+        var q = (searchInput.value || '').trim();
+        if (nameField) {
+            nameField.value = q;
+        }
+        if (form) {
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+        }
+    }
+
+    if (searchBtn && searchPanel) {
+        searchBtn.addEventListener('click', function () {
+            var willOpen = searchPanel.hidden;
+            searchPanel.hidden = !willOpen;
+            searchBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (willOpen) {
+                searchBtn.classList.add('is-active');
+                window.setTimeout(function () {
+                    if (searchInput) searchInput.focus();
+                }, 30);
+            } else if (!(searchInput && searchInput.value.trim())) {
+                searchBtn.classList.remove('is-active');
+            }
+        });
+    }
+    if (searchSubmit) {
+        searchSubmit.addEventListener('click', runSearch);
+    }
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                runSearch();
+            }
+        });
+    }
+
+    function openFilters() {
         if (!filtersPanel) return;
+        if (searchPanel && !searchPanel.hidden) {
+            searchPanel.hidden = true;
+            if (searchBtn && !(searchInput && searchInput.value.trim())) {
+                searchBtn.classList.remove('is-active');
+                searchBtn.setAttribute('aria-expanded', 'false');
+            }
+        }
         if (!filtersPanel.open) {
             filtersPanel.open = true;
         }
@@ -321,24 +446,9 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
             filterBtn.setAttribute('aria-expanded', 'true');
             filterBtn.classList.add('is-active');
         }
-        if (focusName) {
-            var nameInput = document.getElementById('ev-f-name');
-            if (nameInput) {
-                window.setTimeout(function () {
-                    nameInput.focus();
-                    nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 50);
-            }
-        } else {
-            filtersPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        filtersPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    if (searchBtn) {
-        searchBtn.addEventListener('click', function () {
-            openFilters(true);
-        });
-    }
     if (filterBtn) {
         filterBtn.addEventListener('click', function () {
             if (!filtersPanel) return;
@@ -349,7 +459,7 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
                     filterBtn.classList.remove('is-active');
                 }
             } else {
-                openFilters(false);
+                openFilters();
             }
         });
     }

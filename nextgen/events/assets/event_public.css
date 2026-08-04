@@ -5325,15 +5325,40 @@ body.event-public-page--mcal .home-public__filters-panel--mcal[open] .home-publi
     line-height: 1;
 }
 
-.mcal__day-dot {
-    width: 0.3rem;
-    height: 0.3rem;
-    border-radius: 50%;
-    background: transparent;
+.mcal__day-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.18rem;
+    min-height: 0.45rem;
 }
 
-.mcal__day.has-events .mcal__day-dot {
+.mcal__day-dot {
+    width: 0.28rem;
+    height: 0.28rem;
+    border-radius: 50%;
     background: var(--mcal-dot);
+}
+
+.mcal__day-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0.9rem;
+    height: 0.75rem;
+    padding: 0 0.2rem;
+    border-radius: 999px;
+    background: var(--mcal-dot);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.mcal__day--outside .mcal__day-dot,
+.mcal__day--outside .mcal__day-count {
+    opacity: 0.55;
 }
 
 .mcal__day.is-selected {
@@ -5352,8 +5377,13 @@ body.event-public-page--mcal .home-public__filters-panel--mcal[open] .home-publi
     font-weight: 600;
 }
 
-.mcal__day.is-selected.has-events .mcal__day-dot {
+.mcal__day.is-selected .mcal__day-dot {
     background: #fff;
+}
+
+.mcal__day.is-selected .mcal__day-count {
+    background: #fff;
+    color: var(--mcal-accent);
 }
 
 .mcal__day-panel {
@@ -5382,6 +5412,7 @@ body.event-public-page--mcal .home-public__filters-panel--mcal[open] .home-publi
     color: inherit;
     padding: 0.7rem 0;
     border-bottom: 1px solid var(--mcal-border);
+    cursor: pointer;
 }
 
 .mcal__event:last-child {
@@ -5408,7 +5439,10 @@ body.event-public-page--mcal .home-public__filters-panel--mcal[open] .home-publi
 }
 
 .mcal__event-bar {
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.55rem;
     padding: 0.7rem 0.85rem;
     border-radius: 2px;
     background: var(--mcal-event-accent, #3b50ff);
@@ -5420,10 +5454,102 @@ body.event-public-page--mcal .home-public__filters-panel--mcal[open] .home-publi
     word-break: break-word;
 }
 
+.mcal__event-bar--cancelled {
+    opacity: 0.92;
+}
+
+.mcal__event-name--struck {
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+}
+
+.mcal__event-change {
+    display: inline-block;
+    flex-shrink: 0;
+    padding: 0.12rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.18);
+    color: #fff;
+}
+
+.mcal__event-change--cancelled {
+    background: rgba(127, 29, 29, 0.55);
+}
+
+.mcal__event-change--modified {
+    background: rgba(120, 53, 15, 0.5);
+}
+
 .mcal__empty {
     margin: 0.5rem 0 0;
     color: var(--mcal-text-muted);
     font-size: 0.95rem;
+}
+
+.mcal__search-panel {
+    margin: 0 0 0.85rem;
+    padding: 0.65rem 0.75rem 0.75rem;
+    border: 1px solid var(--mcal-border);
+    border-radius: 10px;
+    background: #fafbfc;
+}
+
+.mcal__search-label {
+    display: block;
+    margin: 0 0 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--mcal-text-muted);
+}
+
+.mcal__search-row {
+    display: flex;
+    gap: 0.45rem;
+    align-items: stretch;
+}
+
+.mcal__search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--mcal-border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--mcal-text);
+    font: inherit;
+    font-size: 0.95rem;
+}
+
+.mcal__search-input:focus {
+    outline: 2px solid var(--mcal-accent);
+    outline-offset: 1px;
+    border-color: var(--mcal-accent);
+}
+
+.mcal__search-submit {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.55rem 0.85rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--mcal-accent);
+    color: #fff;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.mcal__search-submit:hover,
+.mcal__search-submit:focus-visible {
+    filter: brightness(1.06);
+    outline: none;
 }
 
 .mcal--day-mode .mcal__day-panel {
