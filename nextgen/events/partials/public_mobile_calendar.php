@@ -261,7 +261,7 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
         try {
             var u = new URL(dayModeLink.href, window.location.origin);
             u.searchParams.set('day', dayKey);
-            u.searchParams.delete('view');
+            u.searchParams.set('view', 'mcal');
             u.searchParams.set('mcal_mode', 'day');
             dayModeLink.href = u.pathname + u.search + u.hash;
         } catch (e) { /* ignore */ }
@@ -337,7 +337,7 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
                     var url = new URL(window.location.href);
                     url.searchParams.set('month', parts[0] + '-' + parts[1]);
                     url.searchParams.set('day', dayKey);
-                    url.searchParams.delete('view');
+                    url.searchParams.set('view', 'mcal');
                     window.location.href = url.toString();
                 }
                 return;
@@ -383,7 +383,7 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
             if (!val) return;
             var url = new URL(window.location.href);
             url.searchParams.set('month', val);
-            url.searchParams.delete('view');
+            url.searchParams.set('view', 'mcal');
             url.searchParams.delete('day');
             window.location.href = url.toString();
         });

@@ -13,20 +13,19 @@ function events_public_map_view_allowed(): bool
 }
 
 /**
- * Publikus főoldal nézet: mobil naptár (alap), klasszikus naptár, lista vagy térkép.
+ * Publikus főoldal nézet: naptár, lista, térkép vagy új mobil naptár (mcal).
  */
 function events_public_resolve_home_view(string $raw): string
 {
     $view = match ($raw) {
         'list' => 'list',
         'map' => 'map',
-        'cal' => 'cal',
         'mcal' => 'mcal',
-        default => 'mcal',
+        default => 'cal',
     };
 
     if ($view === 'map' && !events_public_map_view_allowed()) {
-        return 'mcal';
+        return 'cal';
     }
 
     return $view;
@@ -55,7 +54,7 @@ function events_public_map_default_date_range(): array
  */
 function events_public_filters_from_request(PDO $db): array {
     $f_city = trim((string) ($_GET['f_city'] ?? ''));
-    $view = events_public_resolve_home_view((string) ($_GET['view'] ?? 'mcal'));
+    $view = events_public_resolve_home_view((string) ($_GET['view'] ?? 'cal'));
 
     $savedGet = $_GET;
     unset($_GET['status'], $_GET['f_id'], $_GET['f_views_min']);
@@ -111,16 +110,11 @@ function events_public_filters_from_request(PDO $db): array {
         if ($mapUsesDefaultDates) {
             unset($getParams['f_start_from'], $getParams['f_start_to']);
         }
-    } elseif ($view === 'cal') {
-        $getParams['view'] = 'cal';
-        unset($getParams['mcal_mode'], $getParams['day']);
     } elseif ($view === 'mcal') {
-        unset($getParams['view']);
+        $getParams['view'] = 'mcal';
         $mcalMode = trim((string) ($_GET['mcal_mode'] ?? ''));
         if ($mcalMode === 'day') {
             $getParams['mcal_mode'] = 'day';
-        } else {
-            unset($getParams['mcal_mode']);
         }
     }
     $filters['get_params'] = $getParams;
@@ -209,7 +203,7 @@ function events_public_filter_label_attr_classes(array $filters, string $key): s
 function events_public_fetch_filtered_events(PDO $db, array $filters): array {
     $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
     $fromSql = '`events_calendar_events` e LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
-    if (($filters['view'] ?? 'mcal') === 'list') {
+    if (($filters['view'] ?? 'cal') === 'list') {
         $poolFrom = events_admin_list_pool_from_sql($filters['list_limit']);
         $fromSql = $poolFrom . ' LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`';
     }

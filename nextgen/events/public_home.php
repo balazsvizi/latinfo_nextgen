@@ -24,7 +24,7 @@ $db = getDb();
 $homeContent = events_public_home_load($db);
 $filters = events_public_filters_from_request($db);
 $filtersActive = events_public_filters_are_active($filters);
-$view = (string) ($filters['view'] ?? 'mcal');
+$view = (string) ($filters['view'] ?? 'cal');
 $filtersPanelOpen = $filtersActive;
 if ($view === 'mcal') {
     $filtersPanelOpen = events_public_filters_are_active_excluding_name($filters);
@@ -80,18 +80,16 @@ $selectedDayKey = events_public_mobile_calendar_resolve_selected_day(
 );
 
 $navBaseParams = array_merge($filters['get_params'], $langNav);
-if ($view === 'mcal') {
-    unset($navBaseParams['view'], $navBaseParams['day']);
+if ($view !== 'mcal') {
+    unset($navBaseParams['view'], $navBaseParams['mcal_mode'], $navBaseParams['day']);
+} else {
+    $navBaseParams['view'] = 'mcal';
+    unset($navBaseParams['day']);
     if ($mcalMode === 'day') {
         $navBaseParams['mcal_mode'] = 'day';
     } else {
         unset($navBaseParams['mcal_mode']);
     }
-} elseif ($view === 'cal') {
-    $navBaseParams['view'] = 'cal';
-    unset($navBaseParams['mcal_mode'], $navBaseParams['day']);
-} else {
-    unset($navBaseParams['mcal_mode'], $navBaseParams['day']);
 }
 $prevMonthUrl = events_public_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_public_calendar_month_url($nextMonthKey, $navBaseParams);
@@ -105,12 +103,12 @@ $mapViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'map']
 unset($mapViewParams['mcal_mode'], $mapViewParams['day']);
 $mapViewUrl = events_public_home_url($lang, $mapViewParams);
 
-$calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey, 'view' => 'cal']);
-unset($calViewParams['mcal_mode'], $calViewParams['day']);
+$calViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
+unset($calViewParams['view'], $calViewParams['mcal_mode'], $calViewParams['day']);
 $calViewUrl = events_public_home_url($lang, $calViewParams);
 
-$mcalViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey]);
-unset($mcalViewParams['view'], $mcalViewParams['mcal_mode'], $mcalViewParams['day']);
+$mcalViewParams = array_merge($filters['get_params'], $langNav, ['month' => $monthKey, 'view' => 'mcal']);
+unset($mcalViewParams['mcal_mode'], $mcalViewParams['day']);
 $mcalViewUrl = events_public_home_url($lang, $mcalViewParams);
 $mcalMonthViewUrl = $mcalViewUrl;
 $mcalDayModeParams = array_merge($mcalViewParams, ['mcal_mode' => 'day', 'day' => $selectedDayKey]);
@@ -123,9 +121,8 @@ if ($view === 'list') {
     $filterFormHidden['view'] = 'list';
 } elseif ($view === 'map') {
     $filterFormHidden['view'] = 'map';
-} elseif ($view === 'cal') {
-    $filterFormHidden['view'] = 'cal';
 } elseif ($view === 'mcal') {
+    $filterFormHidden['view'] = 'mcal';
     if ($mcalMode === 'day') {
         $filterFormHidden['mcal_mode'] = 'day';
     }
@@ -134,8 +131,8 @@ if ($view === 'list') {
 $filterClearParams = array_merge(['month' => $monthKey], $langNav);
 if ($view === 'map') {
     $filterClearParams['view'] = 'map';
-} elseif ($view === 'cal') {
-    $filterClearParams['view'] = 'cal';
+} elseif ($view === 'mcal') {
+    $filterClearParams['view'] = 'mcal';
 }
 $filterClearUrl = events_public_home_url($lang, $filterClearParams);
 
@@ -196,10 +193,10 @@ $heroInlineTitle = '';
 $contentTop = trim((string) ($homeContent['content_top'] ?? ''));
 $contentBottom = trim((string) ($homeContent['content_bottom'] ?? ''));
 
-$mcalToggleUrl = $view === 'cal' ? $mcalViewUrl : $calViewUrl;
-$mcalToggleTitle = $view === 'cal'
-    ? (string) ($D['mcal_toggle_open'] ?? ($lang === 'en' ? 'Mobile calendar' : 'Mobil naptár'))
-    : (string) ($D['mcal_toggle_back'] ?? ($lang === 'en' ? 'Classic calendar' : 'Klasszikus naptár'));
+$mcalToggleUrl = $view === 'mcal' ? $calViewUrl : $mcalViewUrl;
+$mcalToggleTitle = $view === 'mcal'
+    ? (string) ($D['mcal_toggle_back'] ?? ($lang === 'en' ? 'Classic calendar' : 'Klasszikus naptár'))
+    : (string) ($D['mcal_toggle_open'] ?? ($lang === 'en' ? 'New mobile calendar' : 'Új mobil naptár'));
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -260,8 +257,8 @@ header('Content-Type: text/html; charset=UTF-8');
             </details>
 
             <?php
-            $homeActiveView = $view === 'mcal' ? 'cal' : $view;
-            $homeCalViewUrl = $mcalViewUrl;
+            $homeActiveView = $view;
+            $homeCalViewUrl = $calViewUrl;
             $homeListViewUrl = $listViewUrl;
             $homeMapViewUrl = $mapViewUrl;
             $showMapView = isLoggedIn();
