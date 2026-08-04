@@ -16,7 +16,7 @@ require_once __DIR__ . '/lib/calendar_event_preview.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 require_once __DIR__ . '/lib/public_home_events_map.php';
 
-events_public_send_noindex_header();
+events_public_send_noindex_follow_header();
 $D = events_public_home_strings($lang);
 $langNav = events_public_lang_nav_params($lang);
 
@@ -236,7 +236,7 @@ header('Content-Type: text/html; charset=UTF-8');
     </script>
     <?php endif; ?>
     <?= events_public_ga_head_markup() ?>
-    <?= events_public_robots_noindex_head_markup() ?>
+    <?= events_public_robots_noindex_follow_head_markup() ?>
     <meta name="theme-color" content="<?= $view === 'mcal' ? '#3B50FF' : '#6d8f63' ?>">
     <title><?= h($title) ?><?= h($D['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">

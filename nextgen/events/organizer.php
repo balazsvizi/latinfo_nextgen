@@ -9,12 +9,12 @@ require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 
 $lang = events_public_resolve_megjelenit_lang();
-events_public_send_noindex_header();
 $O = events_public_organizer_strings($lang);
 
 $organizerId = (int) ($_GET['id'] ?? 0);
 if ($organizerId <= 0) {
     http_response_code(404);
+    events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
     echo events_public_organizer_not_found_html($lang);
     exit;
@@ -26,6 +26,7 @@ $st->execute([$organizerId]);
 $organizer = $st->fetch(PDO::FETCH_ASSOC);
 if (!$organizer) {
     http_response_code(404);
+    events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
     echo events_public_organizer_not_found_html($lang);
     exit;
@@ -48,8 +49,10 @@ $desc = $lang === 'en'
     ? ($orgName !== '' ? 'Published events by ' . $orgName . ' on Latinfo.hu.' : 'Published events on Latinfo.hu.')
     : ($orgName !== '' ? $orgName . ' közzétett eseményei a Latinfo.hu-n.' : 'Közzétett események a Latinfo.hu-n.');
 
-$canonical = events_absolute_url(events_url('organizer.php?id=' . $organizerId));
-$ogPageUrl = events_absolute_url(events_public_organizer_page_url($organizerId, $lang, $limitParams));
+$canonical = events_absolute_url(events_public_organizer_page_url($organizerId, $lang));
+$ogPageUrl = $canonical;
+$hreflangHu = events_absolute_url(events_public_organizer_page_url($organizerId, 'hu'));
+$hreflangEn = events_absolute_url(events_public_organizer_page_url($organizerId, 'en'));
 $cssUrl = events_url('assets/event_public.css');
 $urlHu = events_public_organizer_lang_switch_url($organizerId, 'hu', $limitParams);
 $urlEn = events_public_organizer_lang_switch_url($organizerId, 'en', $limitParams);
@@ -66,7 +69,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?= events_public_ga_head_markup() ?>
-    <?= events_public_robots_noindex_head_markup() ?>
+    <?= events_public_robots_index_head_markup() ?>
     <meta name="theme-color" content="#6d8f63">
     <title><?= h($title) ?><?= h($O['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">
@@ -79,9 +82,9 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta name="twitter:title" content="<?= h($title) ?>">
     <meta name="twitter:description" content="<?= h($desc) ?>">
     <link rel="canonical" href="<?= h($canonical) ?>">
-    <link rel="alternate" hreflang="hu" href="<?= h($urlHu) ?>">
-    <link rel="alternate" hreflang="en" href="<?= h($urlEn) ?>">
-    <link rel="alternate" hreflang="x-default" href="<?= h($urlHu) ?>">
+    <link rel="alternate" hreflang="hu" href="<?= h($hreflangHu) ?>">
+    <link rel="alternate" hreflang="en" href="<?= h($hreflangEn) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= h($hreflangHu) ?>">
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>

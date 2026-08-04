@@ -36,7 +36,6 @@ if (events_public_is_legacy_megjelenit_request()) {
     events_public_redirect_to(events_public_append_query($target, $legacyParams));
 }
 
-events_public_send_noindex_header();
 $T = events_public_megjelenit_strings($lang);
 
 $db = getDb();
@@ -110,17 +109,19 @@ $costText = events_public_megjelenit_cost_text($cf, $ct, $lang);
 $pageSource = events_view_tracking_resolve_page_source((string) ($_GET['ref'] ?? ''));
 events_track_event_view($db, (int) $event['id'], EVENTS_VIEW_METRIC_PAGE, $pageSource);
 
-$canonical = events_absolute_url(events_public_canonical_url((string) $event['event_slug']));
+$canonical = events_absolute_url(events_public_event_page_url((string) $event['event_slug'], $lang));
 $title = $event['event_name'];
 $safeEventContent = events_sanitize_html_fragment((string) ($event['event_content'] ?? ''));
 $desc = mb_substr(trim(strip_tags($safeEventContent)), 0, 160, 'UTF-8');
 $featuredRaw = trim(html_entity_decode(trim((string) ($event['event_featured_image_url'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 $featuredRaw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $featuredRaw) ?? $featuredRaw;
 $featuredAbsolute = $featuredRaw !== '' ? events_absolute_url($featuredRaw) : '';
-$ogPageUrl = events_absolute_url(events_public_event_page_url($slug, $lang));
+$ogPageUrl = $canonical;
 $cssUrl = events_url('assets/event_public.css');
 $urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu');
 $urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');
+$hreflangHu = events_absolute_url(events_public_event_page_url($slug, 'hu'));
+$hreflangEn = events_absolute_url(events_public_event_page_url($slug, 'en'));
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $showAdminEdit = false;
 $eventEditUrl = events_url('szerkeszt.php?id=') . (int) ($event['id'] ?? 0);
@@ -159,6 +160,7 @@ if (isLoggedIn()) {
 }
 
 $eventExternalUrl = trim((string) ($event['event_url'] ?? ''));
+$eventChangeType = function_exists('events_event_change_type') ? events_event_change_type($event) : null;
 
 $jsonLd = [
     '@context' => 'https://schema.org',
@@ -167,11 +169,21 @@ $jsonLd = [
     'url' => $canonical,
     'inLanguage' => $lang === 'en' ? 'en' : 'hu',
 ];
+if ($desc !== '') {
+    $jsonLd['description'] = $desc;
+}
 if (!empty($event['event_start']) && $tsStart) {
     $jsonLd['startDate'] = date('c', $tsStart);
 }
 if (!empty($event['event_end']) && $tsEnd) {
     $jsonLd['endDate'] = date('c', $tsEnd);
+}
+if ($eventChangeType === events_event_change_type_cancelled()) {
+    $jsonLd['eventStatus'] = 'https://schema.org/EventCancelled';
+} elseif ($eventChangeType === events_event_change_type_modified()) {
+    $jsonLd['eventStatus'] = 'https://schema.org/EventRescheduled';
+} else {
+    $jsonLd['eventStatus'] = 'https://schema.org/EventScheduled';
 }
 if ($showVenue && ($venueName !== '' || $venueAddrLine !== '')) {
     $jsonLd['location'] = [
@@ -194,7 +206,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?= events_public_ga_head_markup() ?>
-    <?= events_public_robots_noindex_head_markup() ?>
+    <?= events_public_robots_index_head_markup() ?>
     <meta name="theme-color" content="#6d8f63">
     <title><?= h((string) $title) ?><?= h($T['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">
@@ -214,9 +226,9 @@ header('Content-Type: text/html; charset=UTF-8');
         <meta name="twitter:image" content="<?= h($featuredAbsolute) ?>">
     <?php endif; ?>
     <link rel="canonical" href="<?= h($canonical) ?>">
-    <link rel="alternate" hreflang="hu" href="<?= h($urlHu) ?>">
-    <link rel="alternate" hreflang="en" href="<?= h($urlEn) ?>">
-    <link rel="alternate" hreflang="x-default" href="<?= h($urlHu) ?>">
+    <link rel="alternate" hreflang="hu" href="<?= h($hreflangHu) ?>">
+    <link rel="alternate" hreflang="en" href="<?= h($hreflangEn) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= h($hreflangHu) ?>">
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
     <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

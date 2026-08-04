@@ -10,7 +10,6 @@ require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 
 $lang = events_public_resolve_megjelenit_lang();
-events_public_send_noindex_header();
 $V = events_public_venue_strings($lang);
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
@@ -21,6 +20,7 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
 
 if ($slug === '') {
     http_response_code(404);
+    events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
     $eventsHome = events_public_home_page_url($lang);
     $latinfoHome = LATINFO_PUBLIC_HOME_URL;
@@ -62,6 +62,7 @@ $stmt->execute([$slug]);
 $venue = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$venue) {
     http_response_code(404);
+    events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
     $eventsHome = events_public_home_page_url($lang);
     ?><!DOCTYPE html>
@@ -90,7 +91,6 @@ if (!$venue) {
     exit;
 }
 
-$canonical = events_helyszin_megjelenit_url((string) $venue['slug']);
 $title = (string) $venue['name'];
 $safeVenueBody = events_sanitize_html_fragment((string) ($venue['description'] ?? ''));
 $descRaw = trim(strip_tags($safeVenueBody));
@@ -116,10 +116,33 @@ $partitioned = events_public_organizer_partition_events($eventsList);
 $eventsUpcoming = $partitioned['upcoming'];
 $eventsPast = $partitioned['past'];
 
+$canonical = events_absolute_url(events_public_venue_page_url((string) $venue['slug'], $lang));
+$hreflangHu = events_absolute_url(events_public_venue_page_url($slug, 'hu'));
+$hreflangEn = events_absolute_url(events_public_venue_page_url($slug, 'en'));
 $urlHu = events_public_venue_lang_switch_url($slug, 'hu', $limitParams);
 $urlEn = events_public_venue_lang_switch_url($slug, 'en', $limitParams);
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('venue_szerkeszt.php?id=') . $venueId;
+
+$jsonLd = [
+    '@context' => 'https://schema.org',
+    '@type' => 'Place',
+    'name' => $title,
+    'url' => $canonical,
+];
+if ($desc !== '') {
+    $jsonLd['description'] = $desc;
+}
+if ($addrLine !== '') {
+    $jsonLd['address'] = $addrLine;
+}
+if (is_array($venueCoords)) {
+    $jsonLd['geo'] = [
+        '@type' => 'GeoCoordinates',
+        'latitude' => $venueCoords['lat'],
+        'longitude' => $venueCoords['lng'],
+    ];
+}
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -129,12 +152,16 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?= events_public_ga_head_markup() ?>
-    <?= events_public_robots_noindex_head_markup() ?>
+    <?= events_public_robots_index_head_markup() ?>
     <title><?= h($title) ?> – <?= h(SITE_NAME) ?></title>
     <?php if ($desc !== ''): ?><meta name="description" content="<?= h($desc) ?>"><?php endif; ?>
     <link rel="canonical" href="<?= h($canonical) ?>">
+    <link rel="alternate" hreflang="hu" href="<?= h($hreflangHu) ?>">
+    <link rel="alternate" hreflang="en" href="<?= h($hreflangEn) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= h($hreflangHu) ?>">
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
+    <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 </head>
 <body class="event-public-page">
 <div class="event-shell">

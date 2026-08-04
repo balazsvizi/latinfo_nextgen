@@ -9,12 +9,12 @@ require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 
 $lang = events_public_resolve_megjelenit_lang();
-events_public_send_noindex_header();
 $G = events_public_tag_strings($lang);
 
 $tagId = (int) ($_GET['id'] ?? 0);
 if ($tagId <= 0) {
     http_response_code(404);
+    events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
     echo events_public_tag_not_found_html($lang);
     exit;
@@ -23,6 +23,7 @@ if ($tagId <= 0) {
 $db = getDb();
 if (!events_tags_tables_available($db)) {
     http_response_code(404);
+    events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
     echo events_public_tag_not_found_html($lang);
     exit;
@@ -33,6 +34,7 @@ $st->execute([$tagId]);
 $tag = $st->fetch(PDO::FETCH_ASSOC);
 if (!$tag) {
     http_response_code(404);
+    events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
     echo events_public_tag_not_found_html($lang);
     exit;
@@ -70,6 +72,7 @@ $S = $G;
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('tags.php?open_tag=') . $tagId;
 
+events_public_send_noindex_follow_header();
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
@@ -78,7 +81,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?= events_public_ga_head_markup() ?>
-    <?= events_public_robots_noindex_head_markup() ?>
+    <?= events_public_robots_noindex_follow_head_markup() ?>
     <meta name="theme-color" content="#6d8f63">
     <title><?= h($title) ?><?= h($G['html_title_suffix']) ?><?= h(SITE_NAME) ?></title>
     <meta name="description" content="<?= h($desc) ?>">

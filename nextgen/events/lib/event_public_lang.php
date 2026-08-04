@@ -49,16 +49,38 @@ function events_public_lang_nav_params(string $lang): array {
 }
 
 /**
- * Nyilvános esemény oldalak — egyelőre ne indexeljék a keresők.
+ * Nyilvános esemény oldalak — robots meta / header.
  */
 function events_public_robots_noindex_head_markup(): string {
     return '<meta name="robots" content="noindex, nofollow">' . "\n"
         . '<meta name="googlebot" content="noindex, nofollow">' . "\n";
 }
 
+/**
+ * Indexelhető oldalak (esemény slug, helyszín, szervező).
+ */
+function events_public_robots_index_head_markup(): string {
+    return '<meta name="robots" content="index, follow">' . "\n"
+        . '<meta name="googlebot" content="index, follow">' . "\n";
+}
+
+/**
+ * Nem indexelendő, de a linkek követhetők (naptár, szűrt listák — slug oldalak felfedezése).
+ */
+function events_public_robots_noindex_follow_head_markup(): string {
+    return '<meta name="robots" content="noindex, follow">' . "\n"
+        . '<meta name="googlebot" content="noindex, follow">' . "\n";
+}
+
 function events_public_send_noindex_header(): void {
     if (!headers_sent()) {
         header('X-Robots-Tag: noindex, nofollow', true);
+    }
+}
+
+function events_public_send_noindex_follow_header(): void {
+    if (!headers_sent()) {
+        header('X-Robots-Tag: noindex, follow', true);
     }
 }
 
@@ -528,10 +550,29 @@ function events_public_event_page_url(string $slug, string $lang): string {
 }
 
 /**
+ * Nyilvános helyszín oldal URL (slug + nyelv).
+ */
+function events_public_venue_page_url(string $slug, string $lang): string {
+    $q = ['slug' => $slug];
+    if ($lang === 'en') {
+        $q['lang'] = 'en';
+    }
+
+    return events_url('helyszin_megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+}
+
+/**
  * Nyilvános szervező-oldal URL.
  */
 function events_public_organizer_page_url(int $organizerId, string $lang, array $extraParams = []): string {
-    return events_url('organizer.php?' . http_build_query(array_merge(['id' => $organizerId, 'lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
+    $q = array_merge(['id' => $organizerId], $extraParams);
+    if ($lang === 'en') {
+        $q['lang'] = 'en';
+    } else {
+        unset($q['lang']);
+    }
+
+    return events_url('organizer.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
 }
 
 function events_public_organizer_lang_switch_url(int $organizerId, string $targetLang, array $extraParams = []): string {
