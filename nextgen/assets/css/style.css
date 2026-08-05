@@ -2936,6 +2936,116 @@ dialog.eventpics-modal::backdrop {
     padding: 0.1rem;
 }
 
+/* Publikus főoldal tip szerkesztő */
+.events-fooldal-notice {
+    margin: 0 0 1.75rem;
+    padding: 1rem 1.1rem 1.15rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 0.4rem);
+    background: var(--bg-muted, #f6f7f5);
+}
+.events-fooldal-notice__legend {
+    padding: 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+.events-fooldal-notice__color-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.events-fooldal-notice__swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+.events-fooldal-notice__swatch {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 4.25rem;
+    margin: 0;
+    padding: 0.45rem 0.4rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 0.4rem);
+    background: #fff;
+    cursor: pointer;
+}
+.events-fooldal-notice__swatch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.events-fooldal-notice__swatch.is-selected,
+.events-fooldal-notice__swatch:has(input:checked) {
+    border-color: var(--accent, #3d6b4f);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #3d6b4f) 28%, transparent);
+}
+.events-fooldal-notice__swatch-chip {
+    width: 2.4rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--swatch-accent, #39ff14) 40%, transparent);
+    background: linear-gradient(135deg, var(--swatch-bg-from, #0a0e27) 0%, var(--swatch-bg-to, #141829) 100%);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--swatch-accent, #39ff14) 55%, transparent);
+}
+.events-fooldal-notice__swatch-chip--custom {
+    background:
+        linear-gradient(135deg, #0a0e27 0%, #141829 100%),
+        repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 0 0 / 8px 8px;
+    background-blend-mode: normal;
+    box-shadow: inset 0 0 0 2px var(--swatch-accent, #39ff14);
+}
+.events-fooldal-notice__swatch-name {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: var(--text-muted, #667);
+    text-align: center;
+}
+.events-fooldal-notice__preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 0.35rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm, 0.4rem);
+    background: #1a1d2e;
+}
+.events-fooldal-notice__preview-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+}
+.events-fooldal-notice__preview-link {
+    /* Admin előnézet: ugyanaz a tip osztály, de a nyilvános CSS nem mindig töltődik */
+    --rn-accent: #39ff14;
+    --rn-accent-hover: #7dff5c;
+    --rn-border: rgba(57, 255, 20, 0.35);
+    --rn-border-hover: rgba(125, 255, 92, 0.55);
+    --rn-shadow: rgba(57, 255, 20, 0.15);
+    --rn-shadow-hover: rgba(57, 255, 20, 0.28);
+    --rn-glow: rgba(57, 255, 20, 0.55);
+    --rn-glow-soft: rgba(57, 255, 20, 0.25);
+    --rn-bg-from: #0a0e27;
+    --rn-bg-to: #141829;
+    display: inline-block;
+    margin: 0;
+    padding: 0.32rem 0.7rem;
+    max-width: 100%;
+    border-radius: 999px;
+    border: 1px solid var(--rn-border);
+    background: linear-gradient(135deg, var(--rn-bg-from) 0%, var(--rn-bg-to) 100%);
+    box-shadow: 0 2px 10px var(--rn-shadow);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--rn-accent);
+    text-shadow: 0 0 10px var(--rn-glow), 0 0 20px var(--rn-glow-soft);
+}
+
 /* Címke típus választó (tags.php szerkesztő) */
 .events-tag-type-fieldset {
     margin: 0 0 1rem;

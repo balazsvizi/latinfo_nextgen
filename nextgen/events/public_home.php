@@ -22,6 +22,7 @@ $langNav = events_public_lang_nav_params($lang);
 
 $db = getDb();
 $homeContent = events_public_home_load($db);
+$renewalNotice = events_public_home_notice_for_display($homeContent, $lang, $D);
 $filters = events_public_filters_from_request($db);
 $filtersActive = events_public_filters_are_active($filters);
 $view = (string) ($filters['view'] ?? events_public_default_home_calendar_view());
