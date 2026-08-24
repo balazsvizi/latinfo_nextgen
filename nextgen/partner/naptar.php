@@ -105,7 +105,11 @@ require_once __DIR__ . '/partials/header.php';
                 href="<?= h(partner_portal_month_url($prevMonthKey, $calExtra)) ?>"
                 rel="prev"
                 aria-label="Előző hónap"
-            >‹</a>
+            >
+                <svg class="partner-cal-pager__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M10.2 3.2 5.4 8l4.8 4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </a>
             <h2 class="partner-cal-pager__title">
                 <span class="partner-cal-pager__year"><?= $monthYear ?></span>
                 <span class="partner-cal-pager__month"><?= h($monthName) ?></span>
@@ -115,7 +119,11 @@ require_once __DIR__ . '/partials/header.php';
                 href="<?= h(partner_portal_month_url($nextMonthKey, $calExtra)) ?>"
                 rel="next"
                 aria-label="Következő hónap"
-            >›</a>
+            >
+                <svg class="partner-cal-pager__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M5.8 3.2 10.6 8 5.8 12.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </a>
         </div>
 
         <div class="partner-cal-toolbar__side partner-cal-toolbar__side--end">

@@ -724,11 +724,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
     padding: 0;
     border: none;
     background: transparent;
     box-shadow: none;
+    line-height: 1;
 }
 
 .partner-cal-pager__btn {
@@ -736,26 +737,25 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 1.85rem;
-    height: 1.85rem;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    background: transparent;
+    box-sizing: border-box;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--pp-line);
+    background: #fff;
     color: var(--pp-brand);
-    font-size: 1.2rem;
-    font-weight: 500;
-    line-height: 1;
     text-decoration: none;
-    box-shadow: none;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 1px 2px rgba(45, 58, 40, 0.06);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .partner-cal-pager__btn:hover {
-    background: var(--pp-accent-soft);
-    border-color: var(--pp-line);
-    color: var(--pp-brand);
+    background: var(--pp-accent);
+    border-color: var(--pp-accent);
+    color: #fff;
     text-decoration: none;
-    box-shadow: none;
+    box-shadow: 0 2px 8px rgba(109, 143, 99, 0.28);
     transform: none;
 }
 
@@ -764,33 +764,44 @@
     outline-offset: 2px;
 }
 
+.partner-cal-pager__icon {
+    display: block;
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
 .partner-cal-pager__title {
     display: inline-flex;
     flex-direction: row;
-    align-items: baseline;
+    align-items: center;
     justify-content: center;
     gap: 0.4rem;
     margin: 0;
-    min-width: 0;
-    padding: 0 0.15rem;
+    min-width: 7.25rem;
+    height: 2rem;
+    padding: 0 0.2rem;
     font-family: var(--pp-display);
-    line-height: 1.15;
+    line-height: 1;
 }
 
 .partner-cal-pager__year {
+    display: inline-block;
     font-size: 0.95rem;
     font-weight: 700;
     letter-spacing: 0.02em;
     text-transform: none;
     color: var(--pp-muted);
+    line-height: 1;
 }
 
 .partner-cal-pager__month {
+    display: inline-block;
     font-size: 1.05rem;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--pp-brand);
     text-transform: lowercase;
+    line-height: 1;
 }
 
 .partner-cal-toolbar__meta {
