@@ -84,42 +84,49 @@ require_once __DIR__ . '/partials/header.php';
     </div>
 </div>
 
-<div class="partner-cal-view-toggle" role="group" aria-label="Naptár nézet">
-    <a
-        class="partner-cal-view-toggle__btn<?= $view === 'all' ? ' is-active' : '' ?>"
-        href="<?= h(partner_portal_month_url($monthKey, ['view' => 'all'])) ?>"
-    >Mind</a>
-    <a
-        class="partner-cal-view-toggle__btn<?= $view === 'own' ? ' is-active' : '' ?>"
-        href="<?= h(partner_portal_month_url($monthKey, ['view' => 'own'])) ?>"
-    >Saját</a>
-</div>
-
 <div class="partner-cal-toolbar card">
-    <div class="partner-cal-pager" aria-label="Hónap választás">
-        <a
-            class="partner-cal-pager__btn"
-            href="<?= h(partner_portal_month_url($prevMonthKey, $calExtra)) ?>"
-            rel="prev"
-            aria-label="Előző hónap"
-        >‹</a>
-        <h2 class="partner-cal-pager__title">
-            <span class="partner-cal-pager__year"><?= $monthYear ?></span>
-            <span class="partner-cal-pager__month"><?= h($monthName) ?></span>
-        </h2>
-        <a
-            class="partner-cal-pager__btn"
-            href="<?= h(partner_portal_month_url($nextMonthKey, $calExtra)) ?>"
-            rel="next"
-            aria-label="Következő hónap"
-        >›</a>
+    <div class="partner-cal-toolbar__row">
+        <div class="partner-cal-toolbar__side partner-cal-toolbar__side--start">
+            <div class="partner-cal-view-toggle" role="group" aria-label="Naptár nézet">
+                <a
+                    class="partner-cal-view-toggle__btn<?= $view === 'all' ? ' is-active' : '' ?>"
+                    href="<?= h(partner_portal_month_url($monthKey, ['view' => 'all'])) ?>"
+                >Mind</a>
+                <a
+                    class="partner-cal-view-toggle__btn<?= $view === 'own' ? ' is-active' : '' ?>"
+                    href="<?= h(partner_portal_month_url($monthKey, ['view' => 'own'])) ?>"
+                >Saját</a>
+            </div>
+        </div>
+
+        <div class="partner-cal-pager" aria-label="Hónap választás">
+            <a
+                class="partner-cal-pager__btn"
+                href="<?= h(partner_portal_month_url($prevMonthKey, $calExtra)) ?>"
+                rel="prev"
+                aria-label="Előző hónap"
+            >‹</a>
+            <h2 class="partner-cal-pager__title">
+                <span class="partner-cal-pager__year"><?= $monthYear ?></span>
+                <span class="partner-cal-pager__month"><?= h($monthName) ?></span>
+            </h2>
+            <a
+                class="partner-cal-pager__btn"
+                href="<?= h(partner_portal_month_url($nextMonthKey, $calExtra)) ?>"
+                rel="next"
+                aria-label="Következő hónap"
+            >›</a>
+        </div>
+
+        <div class="partner-cal-toolbar__side partner-cal-toolbar__side--end">
+            <p class="partner-cal-toolbar__meta">
+                <span class="partner-cal-toolbar__count"><?= count($rows) ?> esemény</span>
+                <?php if ($view === 'all'): ?>
+                    <span class="partner-cal-mine-pill"><?= $ownCountInMonth ?> a tied</span>
+                <?php endif; ?>
+            </p>
+        </div>
     </div>
-    <p class="partner-cal-toolbar__meta">
-        <?= count($rows) ?> esemény a nézetben
-        <?php if ($view === 'all'): ?>
-            · <span class="partner-cal-mine-pill"><?= $ownCountInMonth ?> a tied</span>
-        <?php endif; ?>
-    </p>
     <?php if ($view === 'all'): ?>
         <div class="partner-cal-legend">
             <span class="partner-cal-legend__item partner-cal-legend__item--mine">Saját esemény</span>
