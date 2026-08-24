@@ -127,20 +127,22 @@ require_once __DIR__ . '/partials/header.php';
         </div>
 
         <div class="partner-cal-toolbar__side partner-cal-toolbar__side--end">
-            <p class="partner-cal-toolbar__meta">
-                <span class="partner-cal-toolbar__count"><?= count($rows) ?> esemény</span>
+            <div class="partner-cal-toolbar__end">
+                <p class="partner-cal-toolbar__meta">
+                    <span class="partner-cal-toolbar__count"><?= count($rows) ?> esemény</span>
+                    <?php if ($view === 'all'): ?>
+                        <span class="partner-cal-mine-pill"><?= $ownCountInMonth ?> a tied</span>
+                    <?php endif; ?>
+                </p>
                 <?php if ($view === 'all'): ?>
-                    <span class="partner-cal-mine-pill"><?= $ownCountInMonth ?> a tied</span>
+                    <div class="partner-cal-legend">
+                        <span class="partner-cal-legend__item partner-cal-legend__item--mine">Saját esemény</span>
+                        <span class="partner-cal-legend__item">Egyéb program</span>
+                    </div>
                 <?php endif; ?>
-            </p>
+            </div>
         </div>
     </div>
-    <?php if ($view === 'all'): ?>
-        <div class="partner-cal-legend">
-            <span class="partner-cal-legend__item partner-cal-legend__item--mine">Saját esemény</span>
-            <span class="partner-cal-legend__item">Egyéb program</span>
-        </div>
-    <?php endif; ?>
 </div>
 
 <div class="card partner-cal-wrap partner-cal-wrap--portal">

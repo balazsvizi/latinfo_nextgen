@@ -665,7 +665,7 @@
 .partner-cal-toolbar__row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
+    align-items: start;
     gap: 0.65rem 1rem;
 }
 
@@ -681,6 +681,15 @@
 
 .partner-cal-toolbar__side--end {
     justify-content: flex-end;
+    align-items: flex-start;
+}
+
+.partner-cal-toolbar__end {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    min-width: 0;
 }
 
 .partner-cal-view-toggle {
@@ -721,25 +730,25 @@
 }
 
 .partner-cal-pager {
-    display: inline-flex;
+    display: inline-grid;
+    grid-template-columns: 2rem max-content 2rem;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    column-gap: 0.5rem;
+    height: 2rem;
+    margin: 0;
     padding: 0;
     border: none;
     background: transparent;
     box-shadow: none;
-    line-height: 1;
 }
 
 .partner-cal-pager__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    display: inline-grid;
+    place-items: center;
     box-sizing: border-box;
     width: 2rem;
     height: 2rem;
+    margin: 0;
     padding: 0;
     border-radius: 50%;
     border: 1px solid var(--pp-line);
@@ -771,37 +780,42 @@
 }
 
 .partner-cal-pager__title {
-    display: inline-flex;
-    flex-direction: row;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
     margin: 0;
+    padding: 0;
     min-width: 7.25rem;
     height: 2rem;
-    padding: 0 0.2rem;
     font-family: var(--pp-display);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    color: inherit;
+}
+
+.partner-cal-toolbar.card .partner-cal-pager__title {
+    margin: 0;
+}
+
+.partner-cal-pager__year,
+.partner-cal-pager__month {
+    display: block;
+    margin: 0;
+    padding: 0;
+    font: inherit;
     line-height: 1;
 }
 
 .partner-cal-pager__year {
-    display: inline-block;
-    font-size: 0.95rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: none;
     color: var(--pp-muted);
-    line-height: 1;
 }
 
 .partner-cal-pager__month {
-    display: inline-block;
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
     color: var(--pp-brand);
     text-transform: lowercase;
-    line-height: 1;
 }
 
 .partner-cal-toolbar__meta {
@@ -811,6 +825,7 @@
     justify-content: flex-end;
     gap: 0.4rem;
     margin: 0;
+    min-height: 2rem;
     color: var(--pp-ink-soft);
     font-size: 0.8125rem;
     line-height: 1.2;
@@ -823,11 +838,11 @@
 .partner-cal-legend {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.55rem 0.9rem;
+    justify-content: flex-end;
+    gap: 0.45rem 0.75rem;
     margin: 0;
-    padding-top: 0.45rem;
-    border-top: 1px solid #e6ece3;
+    padding: 0;
+    border: none;
 }
 
 .partner-cal-mine-pill {
@@ -856,9 +871,15 @@
     .partner-cal-toolbar__side--start,
     .partner-cal-toolbar__side--end {
         justify-content: center;
+        align-items: center;
     }
 
-    .partner-cal-toolbar__meta {
+    .partner-cal-toolbar__end {
+        align-items: center;
+    }
+
+    .partner-cal-toolbar__meta,
+    .partner-cal-legend {
         justify-content: center;
     }
 }
