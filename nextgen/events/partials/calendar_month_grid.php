@@ -200,11 +200,15 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                             $ev = $segment['event'];
                             $eid = (int) ($ev['id'] ?? 0);
                             $isPublished = events_admin_calendar_event_is_published($ev);
+                            $isOwnEvent = isset($calendarOwnEventIds[$eid]);
                             $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished, false);
                             $barTitle = (string) ($ev['event_name'] ?? '');
                             $timeLabel = $segment['showTime'] ? events_admin_calendar_event_time_label($ev) : '';
                             $labelClasses = 'events-cal__week-bar-label';
                             $barEventNameClass = 'events-cal__event-name' . events_event_change_event_name_class($ev);
+                            if ($isOwnEvent) {
+                                $labelClasses .= ' events-cal__week-bar-label--mine';
+                            }
                             if ($segment['roundLeft']) {
                                 $labelClasses .= ' events-cal__week-bar-label--round-left';
                             }

@@ -763,6 +763,26 @@
     font-weight: 700;
 }
 
+/* Saját események a Mind nézetben is aktív színnel maradnak, akkor is, ha már eltelt a nap. */
+.partner-cal-wrap--portal .events-cal__day--past .events-cal__event-link--mine,
+.partner-cal-wrap--portal .events-cal__event-link--mine.events-cal__event-link--past,
+.partner-cal-wrap--portal .events-cal__week-bar-label--mine.events-cal__week-bar-label--past {
+    filter: none;
+    opacity: 1;
+}
+
+.partner-cal-wrap--portal .events-cal__day--past .events-cal__event-link--mine:hover,
+.partner-cal-wrap--portal .events-cal__event-link--mine.events-cal__event-link--past:hover {
+    filter: brightness(1.06);
+    opacity: 1;
+}
+
+.partner-cal-wrap--portal .events-cal__day--past .events-cal__event-link--bar.events-cal__event-link--mine:hover,
+.partner-cal-wrap--portal .events-cal__event-link--mine.events-cal__event-link--bar.events-cal__event-link--past:hover {
+    filter: brightness(1.05);
+    opacity: 1;
+}
+
 .partner-cal-wrap--portal .events-cal__event-link--other {
     opacity: 0.55;
     filter: saturate(0.7);
