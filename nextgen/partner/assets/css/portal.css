@@ -655,10 +655,11 @@
 }
 
 .partner-cal-view-toggle {
-    display: inline-flex;
+    display: flex;
+    width: fit-content;
     align-items: center;
     gap: 0.25rem;
-    margin: 0 0 0.85rem;
+    margin: 0 auto 0.85rem;
     padding: 0.25rem;
     border-radius: 999px;
     background: #fff;
@@ -691,38 +692,51 @@
 }
 
 .partner-cal-toolbar {
-    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    padding: 1.15rem 1.25rem 1.25rem;
     margin-bottom: 1rem;
 }
 
 .partner-cal-pager {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    justify-content: center;
+    gap: 0.85rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #fbfcfa 0%, #f0f4ee 100%);
+    border: 1px solid var(--pp-line);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .partner-cal-pager__btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.35rem;
-    height: 2.35rem;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: 999px;
-    border: 1px solid var(--pp-line);
+    border: none;
     background: #fff;
     color: var(--pp-brand);
-    font-size: 1.45rem;
+    font-size: 1.55rem;
+    font-weight: 500;
     line-height: 1;
     text-decoration: none;
-    box-shadow: var(--pp-shadow);
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 1px 3px rgba(45, 58, 40, 0.1);
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .partner-cal-pager__btn:hover {
-    background: var(--pp-accent-soft);
-    border-color: var(--pp-accent);
-    color: var(--pp-brand);
+    background: var(--pp-accent);
+    color: #fff;
     text-decoration: none;
+    box-shadow: 0 4px 12px rgba(109, 143, 99, 0.35);
     transform: translateY(-1px);
 }
 
@@ -732,34 +746,46 @@
 }
 
 .partner-cal-pager__title {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.45rem;
-    margin: 0;
-    min-width: 9.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    gap: 0.05rem;
+    margin: 0;
+    min-width: 7.5rem;
+    padding: 0.15rem 0.35rem;
     font-family: var(--pp-display);
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    line-height: 1.1;
 }
 
 .partner-cal-pager__year {
-    font-size: 1.45rem;
+    font-size: 0.78rem;
     font-weight: 700;
-    color: var(--pp-brand);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pp-muted);
 }
 
 .partner-cal-pager__month {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--pp-ink-soft);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--pp-brand);
     text-transform: lowercase;
 }
 
 .partner-cal-toolbar__meta {
-    margin: 0.65rem 0 0;
+    margin: 0;
     color: var(--pp-ink-soft);
     font-size: 0.9rem;
+}
+
+.partner-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.65rem 1rem;
+    margin: 0;
 }
 
 .partner-cal-mine-pill {
@@ -770,13 +796,6 @@
     color: #1f5a4e;
     font-weight: 700;
     font-size: 0.82rem;
-}
-
-.partner-cal-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    margin-top: 0.65rem;
 }
 
 .partner-cal-legend__item {
