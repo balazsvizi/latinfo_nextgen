@@ -14,6 +14,9 @@ if (!in_array($view, ['all', 'own'], true)) {
 
 [$monthFirst, $monthLast, $monthKey] = events_admin_calendar_resolve_month((string) ($_GET['month'] ?? ''));
 $monthLabel = events_admin_calendar_month_label($monthFirst);
+$monthLabelParts = explode(' ', $monthLabel);
+$monthYear = (int) (array_pop($monthLabelParts) ?: $monthFirst->format('Y'));
+$monthName = $monthLabelParts !== [] ? implode(' ', $monthLabelParts) : $monthFirst->format('F');
 
 $rows = partner_portal_calendar_events($db, $monthFirst, $monthLast);
 $ownMap = partner_portal_owned_event_id_map($db, $partnerId);
@@ -93,10 +96,23 @@ require_once __DIR__ . '/partials/header.php';
 </div>
 
 <div class="partner-cal-toolbar card">
-    <div class="partner-cal-toolbar__nav">
-        <a class="btn btn-secondary btn-sm" href="<?= h(partner_portal_month_url($prevMonthKey, $calExtra)) ?>">← Előző</a>
-        <h2 class="partner-cal-toolbar__month"><?= h($monthLabel) ?></h2>
-        <a class="btn btn-secondary btn-sm" href="<?= h(partner_portal_month_url($nextMonthKey, $calExtra)) ?>">Következő →</a>
+    <div class="partner-cal-pager" aria-label="Hónap választás">
+        <a
+            class="partner-cal-pager__btn"
+            href="<?= h(partner_portal_month_url($prevMonthKey, $calExtra)) ?>"
+            rel="prev"
+            aria-label="Előző hónap"
+        >‹</a>
+        <h2 class="partner-cal-pager__title">
+            <span class="partner-cal-pager__year"><?= $monthYear ?></span>
+            <span class="partner-cal-pager__month"><?= h($monthName) ?></span>
+        </h2>
+        <a
+            class="partner-cal-pager__btn"
+            href="<?= h(partner_portal_month_url($nextMonthKey, $calExtra)) ?>"
+            rel="next"
+            aria-label="Következő hónap"
+        >›</a>
     </div>
     <p class="partner-cal-toolbar__meta">
         <?= count($rows) ?> esemény a nézetben
