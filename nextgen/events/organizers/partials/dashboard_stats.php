@@ -5,6 +5,18 @@ declare(strict_types=1);
 /** @var list<array<string, mixed>> $statsEventRows */
 /** @var string $statsFormAction */
 /** @var string $statsChartDomId */
+/** @var string|null $statsAllDateFrom */
+/** @var array<string, scalar|null> $statsFilterExtraQuery */
+
+$statsAllDateFrom = $statsAllDateFrom ?? null;
+$statsFilterExtraQuery = $statsFilterExtraQuery ?? [];
+$statsPreset30 = events_edit_stats_range_for_preset('30');
+$statsPresetYear = events_edit_stats_range_for_preset('year');
+$statsPresetAll = events_edit_stats_range_for_preset('all', $statsAllDateFrom);
+$statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDateFrom);
+$statsPresetUrl30 = events_edit_stats_filter_url($statsFormAction, $statsPreset30, $statsFilterExtraQuery);
+$statsPresetUrlYear = events_edit_stats_filter_url($statsFormAction, $statsPresetYear, $statsFilterExtraQuery);
+$statsPresetUrlAll = events_edit_stats_filter_url($statsFormAction, $statsPresetAll, $statsFilterExtraQuery);
 
 $chartPayload = $statsData['chart'] ?? ['labels' => [], 'datasets' => []];
 $hasChart = ($chartPayload['labels'] ?? []) !== [] && ($chartPayload['datasets'] ?? []) !== [];
@@ -67,7 +79,20 @@ $eventDateYmd = static function (array $row, string $key): string {
             </div>
             <div class="form-group events-edit-stats__filter-actions">
                 <button type="submit" class="btn btn-secondary btn-sm">Megjelenítés</button>
-                <a class="btn btn-secondary btn-sm" href="<?= h($statsFormAction) ?>">Utolsó 30 nap</a>
+                <div class="events-edit-stats__presets" role="group" aria-label="Gyors időszak">
+                    <a
+                        class="btn btn-sm <?= $statsActivePreset === '30' ? 'btn-primary' : 'btn-secondary' ?>"
+                        href="<?= h($statsPresetUrl30) ?>"
+                    >Utolsó 30 nap</a>
+                    <a
+                        class="btn btn-sm <?= $statsActivePreset === 'year' ? 'btn-primary' : 'btn-secondary' ?>"
+                        href="<?= h($statsPresetUrlYear) ?>"
+                    >Utolsó 1 év</a>
+                    <a
+                        class="btn btn-sm <?= $statsActivePreset === 'all' ? 'btn-primary' : 'btn-secondary' ?>"
+                        href="<?= h($statsPresetUrlAll) ?>"
+                    >Összes</a>
+                </div>
             </div>
         </div>
     </form>

@@ -42,6 +42,132 @@ function events_edit_stats_params_from_request(array $query): array
     ];
 }
 
+/**
+ * Gyors időszak-preset: 30 nap, 1 év, összes.
+ *
+ * @return array{date_from: string, date_to: string}
+ */
+function events_edit_stats_range_for_preset(string $preset, ?string $allFromYmd = null): array
+{
+    $today = new DateTimeImmutable('today');
+    $to = $today->format('Y-m-d');
+
+    return match ($preset) {
+        'year' => [
+            'date_from' => $today->modify('-1 year')->format('Y-m-d'),
+            'date_to' => $to,
+        ],
+        'all' => [
+            'date_from' => ($allFromYmd !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $allFromYmd) === 1)
+                ? $allFromYmd
+                : $today->modify('-5 years')->format('Y-m-d'),
+            'date_to' => $to,
+        ],
+        default => [
+            'date_from' => $today->modify('-29 days')->format('Y-m-d'),
+            'date_to' => $to,
+        ],
+    };
+}
+
+/**
+ * @param array{date_from?: string, date_to?: string} $params
+ */
+function events_edit_stats_detect_preset(array $params, ?string $allFromYmd = null): string
+{
+    $from = (string) ($params['date_from'] ?? '');
+    $to = (string) ($params['date_to'] ?? '');
+    foreach (['30', 'year', 'all'] as $preset) {
+        $range = events_edit_stats_range_for_preset($preset, $allFromYmd);
+        if ($range['date_from'] === $from && $range['date_to'] === $to) {
+            return $preset;
+        }
+    }
+
+    return 'custom';
+}
+
+/**
+ * @param array{date_from: string, date_to: string} $range
+ * @param array<string, scalar|null> $extraQuery
+ */
+function events_edit_stats_filter_url(string $baseUrl, array $range, array $extraQuery = []): string
+{
+    $query = array_merge($extraQuery, [
+        'stat_date_from' => $range['date_from'],
+        'stat_date_to' => $range['date_to'],
+    ]);
+    $qs = http_build_query($query);
+    if ($qs === '') {
+        return $baseUrl;
+    }
+    $sep = str_contains($baseUrl, '?') ? '&' : '?';
+
+    return $baseUrl . $sep . $qs;
+}
+
+/**
+ * Legkorábbi megtekintés napja a szervező(k) eseményein, vagy null.
+ *
+ * @param list<int> $organizerIds
+ */
+function events_edit_stats_earliest_view_date_for_organizers(PDO $db, array $organizerIds): ?string
+{
+    $organizerIds = array_values(array_unique(array_filter(
+        array_map(static fn (mixed $id): int => (int) $id, $organizerIds),
+        static fn (int $id): bool => $id > 0
+    )));
+    if ($organizerIds === []) {
+        return null;
+    }
+
+    $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
+    try {
+        $stmt = $db->prepare("
+            SELECT DATE(MIN(v.`létrehozva`)) AS first_day
+            FROM `events_calendar_event_views` v
+            INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+            WHERE eo.`organizer_id` IN ({$orgPh})
+        ");
+        $stmt->execute($organizerIds);
+        $day = $stmt->fetchColumn();
+        if (!is_string($day) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            return null;
+        }
+
+        return $day;
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_earliest_view_date_for_organizers: ' . $e->getMessage());
+
+        return null;
+    }
+}
+
+/**
+ * Legkorábbi megtekintés napja egy eseményen, vagy null.
+ */
+function events_edit_stats_earliest_view_date_for_event(PDO $db, int $eventId): ?string
+{
+    if ($eventId <= 0) {
+        return null;
+    }
+
+    try {
+        $stmt = $db->prepare('SELECT DATE(MIN(`létrehozva`)) AS first_day FROM `events_calendar_event_views` WHERE `esemény_id` = ?');
+        $stmt->execute([$eventId]);
+        $day = $stmt->fetchColumn();
+        if (!is_string($day) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            return null;
+        }
+
+        return $day;
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_earliest_view_date_for_event: ' . $e->getMessage());
+
+        return null;
+    }
+}
+
 function events_edit_stats_table_ready(PDO $db): bool
 {
     try {

@@ -11,6 +11,7 @@ $scope = partner_portal_scope_ids($db, $partnerId, $context);
 $organizerIds = $scope['organizer_ids'];
 
 $statsParams = events_edit_stats_params_from_request($_GET);
+$statsAllDateFrom = events_edit_stats_earliest_view_date_for_organizers($db, $organizerIds);
 $statsData = events_edit_stats_for_organizers($db, $organizerIds, $statsParams);
 $statsEventRows = $statsData['event_rows'] ?? [];
 $draftRows = $statsData['draft_rows'] ?? [];
