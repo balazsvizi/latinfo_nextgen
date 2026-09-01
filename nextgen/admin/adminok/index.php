@@ -23,7 +23,7 @@ if ($kereso !== '') {
     $params = [$p, $p, $p];
 }
 $order_sql = $order === 'név' ? 'név' : ($order === 'felhasználónév' ? 'felhasználónév' : ($order === 'email' ? 'email' : ($order === 'szint' ? 'szint' : 'létrehozva')));
-$stmt = $db->prepare("SELECT id, név, felhasználónév, email, szint, aktív, létrehozva FROM nextgen_admins $where ORDER BY $order_sql $dir");
+$stmt = $db->prepare("SELECT id, név, felhasználónév, email, partner_uzenet_email, szint, aktív, létrehozva FROM nextgen_admins $where ORDER BY $order_sql $dir");
 $stmt->execute($params);
 $adminok = $stmt->fetchAll();
 
@@ -43,6 +43,7 @@ $get_params = array_filter(['kereso' => $kereso]);
                     <th><?= sort_th('Név', 'név', $order, $dir_param, $get_params) ?></th>
                     <th><?= sort_th('Felhasználónév', 'felhasználónév', $order, $dir_param, $get_params) ?></th>
                     <th><?= sort_th('E-mail', 'email', $order, $dir_param, $get_params) ?></th>
+                    <th>Partner üzenet</th>
                     <th><?= sort_th('Szint', 'szint', $order, $dir_param, $get_params) ?></th>
                     <th>Státusz</th>
                     <th><?= sort_th('Létrehozva', 'létrehozva', $order, $dir_param, $get_params) ?></th>
@@ -55,6 +56,18 @@ $get_params = array_filter(['kereso' => $kereso]);
                     <td><?= h($a['név']) ?></td>
                     <td><?= h($a['felhasználónév']) ?></td>
                     <td><?= h($a['email'] ?? '') ?></td>
+                    <td>
+                        <?php
+                        $partnerNotify = !empty($a['partner_uzenet_email']);
+                        $hasEmail = trim((string) ($a['email'] ?? '')) !== '';
+                        if ($partnerNotify && $hasEmail): ?>
+                            Igen
+                        <?php elseif ($partnerNotify): ?>
+                            <span class="text-muted" title="Be van kapcsolva, de nincs e-mail cím">Nincs e-mail</span>
+                        <?php else: ?>
+                            <span class="text-muted">Nem</span>
+                        <?php endif; ?>
+                    </td>
                     <td><?= (isset($a['szint']) && $a['szint'] === 'superadmin') ? 'Superadmin' : 'Admin' ?></td>
                     <td><?= $a['aktív'] ? 'Aktív' : 'Letiltva' ?></td>
                     <td><?= h($a['létrehozva']) ?></td>
