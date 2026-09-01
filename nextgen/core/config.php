@@ -61,6 +61,9 @@ if ($baseUrlResolved === '' && PHP_SAPI !== 'cli') {
 }
 define('BASE_URL', $baseUrlResolved);
 
+/** Nyilvános alap URL e-mailekhez és külső linkekhez (pl. https://latinfo.hu). Üresen: HTTP_HOST alapján. */
+define('APP_PUBLIC_URL', rtrim((string) cfg_get('APP_PUBLIC_URL', '', $localConfig), '/'));
+
 /** Webes útvonal a backoffice mappához (pl. /nextgen). Üres, ha a PHP már a /nextgen URL alatt fut. */
 $nextgenWebCfg = trim((string) cfg_get('NEXTGEN_WEB', '/nextgen', $localConfig), '/');
 $nextgenWeb = $nextgenWebCfg === '' ? '' : '/' . $nextgenWebCfg;

@@ -90,7 +90,19 @@ $partnerActivityLog = $partnerId > 0 ? nextgen_partner_activity_log_for_partner(
 <?php if ($selectedPartner !== null): ?>
 <div class="card partner-inbox-thread">
     <h2>Üzenetek: <?php $partner = $selectedPartner; require __DIR__ . '/partials/partner_list_name.php'; ?></h2>
-    <div class="partner-messages-list">
+
+    <form method="post" class="partner-inbox-compose">
+        <?= csrf_input('partner_admin_messages') ?>
+        <input type="hidden" name="partner_id" value="<?= $partnerId ?>">
+        <input type="hidden" name="_action" value="send">
+        <div class="form-group">
+            <label for="admin_reply">Válasz a partnernek</label>
+            <textarea id="admin_reply" name="message" class="partner-message-textarea partner-message-textarea--admin-compose" rows="12" required></textarea>
+        </div>
+        <p class="toolbar"><button type="submit" class="btn btn-primary">Küldés</button></p>
+    </form>
+
+    <div class="partner-messages-list partner-inbox-thread__history">
         <?php foreach ($threadMessages as $msg): ?>
             <?php
             $isAdmin = ($msg['creator_type'] ?? '') === 'admin';
@@ -112,17 +124,6 @@ $partnerActivityLog = $partnerId > 0 ? nextgen_partner_activity_log_for_partner(
             </div>
         <?php endforeach; ?>
     </div>
-
-    <form method="post" style="margin-top:1rem;">
-        <?= csrf_input('partner_admin_messages') ?>
-        <input type="hidden" name="partner_id" value="<?= $partnerId ?>">
-        <input type="hidden" name="_action" value="send">
-        <div class="form-group">
-            <label for="admin_reply">Válasz a partnernek</label>
-            <textarea id="admin_reply" name="message" class="partner-message-textarea" rows="5" required></textarea>
-        </div>
-        <p class="toolbar"><button type="submit" class="btn btn-primary">Küldés</button></p>
-    </form>
 </div>
 <?php endif; ?>
 

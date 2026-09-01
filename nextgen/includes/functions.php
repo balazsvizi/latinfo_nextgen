@@ -71,6 +71,74 @@ function h(?string $s): string {
 }
 
 /**
+ * Nyilvános alap URL (séma + host + opcionális alkönyvtár), e-mailekhez és abszolút linkekhez.
+ */
+function ng_public_base_url(): string
+{
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+
+    if (defined('APP_PUBLIC_URL')) {
+        $configured = rtrim((string) APP_PUBLIC_URL, '/');
+        if ($configured !== '' && preg_match('#^https?://#i', $configured)) {
+            $cached = $configured;
+
+            return $cached;
+        }
+    }
+
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $basePath = '';
+
+    if (defined('BASE_URL')) {
+        $baseUrl = (string) BASE_URL;
+        if (preg_match('#^https?://[^/]+(/.*)$#i', $baseUrl, $m)) {
+            $basePath = rtrim($m[1], '/');
+        } elseif ($baseUrl !== '' && str_starts_with($baseUrl, '/') && !str_starts_with($baseUrl, '//')) {
+            $basePath = rtrim($baseUrl, '/');
+        }
+    }
+
+    $cached = $scheme . '://' . $host . $basePath;
+
+    return $cached;
+}
+
+/**
+ * Teljes abszolút URL (e-mail linkekhez): https://domain/útvonal
+ */
+function ng_absolute_url(string $pathOrUrl): string
+{
+    $t = trim($pathOrUrl);
+    if ($t === '') {
+        return '';
+    }
+
+    if (str_starts_with($t, '//')) {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https:' : 'http:';
+
+        return $scheme . $t;
+    }
+
+    $path = $t;
+    $query = '';
+    if (preg_match('#^https?://[^/]+(/[^?]*)(\?.*)?$#i', $t, $m)) {
+        $path = $m[1] !== '' ? $m[1] : '/';
+        $query = $m[2] ?? '';
+    } elseif (!str_starts_with($t, '/')) {
+        $path = '/' . $t;
+    } elseif (($qpos = strpos($t, '?')) !== false) {
+        $path = substr($t, 0, $qpos);
+        $query = substr($t, $qpos);
+    }
+
+    return rtrim(ng_public_base_url(), '/') . $path . $query;
+}
+
+/**
  * Backoffice navigációs zóna: nextgen (hub, config, admin, jelszó), finance (CRM), events.
  */
 function ng_nav_app_zone(): string {

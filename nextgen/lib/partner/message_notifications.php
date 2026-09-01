@@ -18,17 +18,38 @@ function nextgen_partner_message_email_load_deps(): void
     }
 }
 
-function nextgen_partner_message_email_excerpt(string $message, int $maxLen = 500): string
+function nextgen_partner_message_email_thread_html(PDO $db, int $partnerId, string $partnerName): string
 {
-    $message = trim($message);
-    if ($message === '') {
+    if ($partnerId <= 0) {
         return '';
     }
-    if (mb_strlen($message) > $maxLen) {
-        return mb_substr($message, 0, $maxLen) . '…';
+
+    $messages = nextgen_partner_messages_for_partner($db, $partnerId);
+    if ($messages === []) {
+        return '';
     }
 
-    return $message;
+    $messages = array_reverse($messages);
+    $html = '<div style="margin:1.25em 0 0;border-top:1px solid #ddd;padding-top:1em;">'
+        . '<p style="margin:0 0 0.85em;font-weight:700;color:#444;">Beszélgetés előzményei</p>';
+
+    foreach ($messages as $msg) {
+        $isAdmin = ($msg['creator_type'] ?? '') === 'admin';
+        $author = nextgen_partner_message_author_label($msg, $partnerName);
+        $date = (string) ($msg['létrehozva'] ?? '');
+        $body = nl2br(h((string) ($msg['message'] ?? '')), false);
+        $bg = $isAdmin ? '#eef4ff' : '#f9f9f9';
+        $border = $isAdmin ? '#3b82f6' : '#9ca3af';
+
+        $html .= '<div style="margin:0 0 0.75em;padding:0.75em 1em;border-left:3px solid ' . $border . ';background:' . $bg . ';">'
+            . '<p style="margin:0 0 0.35em;font-size:0.875em;color:#666;">' . h($date) . ' – ' . h($author) . '</p>'
+            . '<div style="white-space:pre-wrap;word-break:break-word;">' . $body . '</div>'
+            . '</div>';
+    }
+
+    $html .= '</div>';
+
+    return $html;
 }
 
 function nextgen_partner_message_notify_admins_on_partner_send(PDO $db, int $partnerId, string $message): void
@@ -53,9 +74,8 @@ function nextgen_partner_message_notify_admins_on_partner_send(PDO $db, int $par
     if ($partnerName === '') {
         $partnerName = 'Partner';
     }
-    $threadUrl = nextgen_url('admin/partnerek/uzenetek.php?partner_id=' . $partnerId);
-    $excerpt = nextgen_partner_message_email_excerpt($message);
-    $bodyExcerpt = nl2br(h($excerpt), false);
+    $threadUrl = ng_absolute_url(nextgen_url('admin/partnerek/uzenetek.php?partner_id=' . $partnerId));
+    $threadHtml = nextgen_partner_message_email_thread_html($db, $partnerId, $partnerName);
     $targy = SITE_NAME . ' – Új partner üzenet: ' . $partnerName;
 
     foreach ($recipients as $recipient) {
@@ -64,11 +84,9 @@ function nextgen_partner_message_notify_admins_on_partner_send(PDO $db, int $par
             $adminName = 'Admin';
         }
         $szoveg = '<p>Kedves ' . h($adminName) . '!</p>'
-            . '<p><strong>' . h($partnerName) . '</strong> új üzenetet küldött a partner portálon:</p>'
-            . '<blockquote style="margin:1em 0;padding:0.75em 1em;border-left:3px solid #ccc;background:#f9f9f9;">'
-            . $bodyExcerpt
-            . '</blockquote>'
-            . '<p><a href="' . h($threadUrl) . '">Üzenet megtekintése és válasz</a></p>';
+            . '<p><strong>' . h($partnerName) . '</strong> új üzenetet küldött a partner portálon.</p>'
+            . $threadHtml
+            . '<p style="margin-top:1.25em;"><a href="' . h($threadUrl) . '">Üzenet megtekintése és válasz</a></p>';
 
         $result = email_kuld($recipient['email'], $targy, $szoveg, ['html' => true]);
         if (!$result['ok']) {
@@ -114,17 +132,14 @@ function nextgen_partner_message_notify_partner_on_admin_reply(PDO $db, int $par
         }
     }
 
-    $messagesUrl = partner_url('messages.php');
-    $excerpt = nextgen_partner_message_email_excerpt($message);
-    $bodyExcerpt = nl2br(h($excerpt), false);
+    $messagesUrl = ng_absolute_url(partner_url('messages.php'));
+    $threadHtml = nextgen_partner_message_email_thread_html($db, $partnerId, $partnerName);
     $targy = SITE_NAME . ' – Új válasz a partner portálon';
 
     $szoveg = '<p>Kedves ' . h($partnerName) . '!</p>'
-        . '<p><strong>' . h($adminName) . '</strong> válaszolt az üzenetedre:</p>'
-        . '<blockquote style="margin:1em 0;padding:0.75em 1em;border-left:3px solid #ccc;background:#f9f9f9;">'
-        . $bodyExcerpt
-        . '</blockquote>'
-        . '<p><a href="' . h($messagesUrl) . '">Üzenetek megtekintése</a></p>';
+        . '<p><strong>' . h($adminName) . '</strong> válaszolt az üzenetedre.</p>'
+        . $threadHtml
+        . '<p style="margin-top:1.25em;"><a href="' . h($messagesUrl) . '">Üzenetek megtekintése</a></p>';
 
     $result = email_kuld($email, $targy, $szoveg, ['html' => true]);
     if (!$result['ok']) {

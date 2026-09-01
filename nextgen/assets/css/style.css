@@ -5380,6 +5380,19 @@ body.event-edit-cover-lightbox-open {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: inherit;
+    resize: vertical;
+}
+.partner-message-textarea--admin-compose {
+    min-height: 280px;
+}
+.partner-inbox-compose {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+}
+.partner-inbox-thread__history {
+    display: grid;
+    gap: 0.75rem;
 }
 .events-edit-stats__events-title {
     margin: 1.5rem 0 0.35rem;

@@ -15,6 +15,10 @@ return [
     // Ne állítsd '/nextgen'-re, ha a La nueva a /lanueva/ alatt van (testvér mappa) – ilyenkor BASE_URL maradjon '' vagy a közös szülő útvonal.
     'BASE_URL' => '',
 
+    // E-mailekben és külső linkekben használt nyilvános alap URL (pl. https://latinfo.hu).
+    // Fejlesztői gépen üresen hagyva a HTTP_HOST-ot használja (pl. http://alatinfo.test) – Gmailből ez nem mindig működik.
+    // 'APP_PUBLIC_URL' => 'https://latinfo.hu',
+
     // Backoffice URL szegmens (alap: nextgen). Ha a BASE_URL már .../nextgen-re végződik, automatikusan nem duplázódik.
     // 'NEXTGEN_WEB' => '/nextgen',
 
