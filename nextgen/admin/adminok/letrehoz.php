@@ -2,18 +2,12 @@
 require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
+require_once __DIR__ . '/../../../nextgen/lib/admin/admins.php';
 requireSuperadmin();
 
 $db = getDb();
+nextgen_admin_ensure_notification_columns($db);
 $hiba = '';
-try {
-    $col = $db->query("SHOW COLUMNS FROM nextgen_admins LIKE 'email'")->fetch();
-    if (!$col) {
-        $db->exec("ALTER TABLE nextgen_admins ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
-    }
-} catch (Throwable $e) {
-    // nincs ALTER jog: migrációval felvehető
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $név = trim($_POST['név'] ?? '');
@@ -22,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $jelszo = $_POST['jelszó'] ?? '';
     $jelszo2 = $_POST['jelszó_ujra'] ?? '';
     $szint = ($_POST['szint'] ?? '') === 'superadmin' ? 'superadmin' : 'admin';
+    $partnerUzenetEmail = isset($_POST['partner_uzenet_email']) ? 1 : 0;
 
     if ($név === '' || $fh === '') {
         $hiba = 'Név és felhasználónév megadása kötelező.';
@@ -38,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hiba = 'Ez a felhasználónév már foglalt.';
         } else {
             $hash = password_hash($jelszo, PASSWORD_DEFAULT);
-            $db->prepare('INSERT INTO nextgen_admins (név, felhasználónév, email, jelszó_hash, szint, aktív) VALUES (?, ?, ?, ?, ?, 1)')
-                ->execute([$név, $fh, ($email !== '' ? $email : null), $hash, $szint]);
+            $db->prepare('INSERT INTO nextgen_admins (név, felhasználónév, email, partner_uzenet_email, jelszó_hash, szint, aktív) VALUES (?, ?, ?, ?, ?, ?, 1)')
+                ->execute([$név, $fh, ($email !== '' ? $email : null), $partnerUzenetEmail, $hash, $szint]);
             rendszer_log('admin', (int)$db->lastInsertId(), 'Létrehozva', null);
             flash('success', 'Admin létrehozva.');
             redirect(nextgen_url('admin/adminok/'));
@@ -57,6 +52,12 @@ require_once __DIR__ . '/../../partials/header.php';
         <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h($_POST['név'] ?? '') ?>" required></div>
         <div class="form-group"><label>Felhasználónév *</label><input type="text" name="felhasználónév" value="<?= h($_POST['felhasználónév'] ?? '') ?>" required autocomplete="username"></div>
         <div class="form-group"><label>E-mail cím</label><input type="email" name="email" value="<?= h($_POST['email'] ?? '') ?>" placeholder="nev@pelda.hu"></div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="partner_uzenet_email" value="1" <?= !empty($_POST['partner_uzenet_email']) ? 'checked' : '' ?>>
+                E-mail értesítés partner üzenetekről
+            </label>
+        </div>
         <div class="form-group"><label>Jelszó * (min. 6 karakter)</label><input type="password" name="jelszó" required minlength="6" autocomplete="new-password"></div>
         <div class="form-group"><label>Jelszó újra *</label><input type="password" name="jelszó_ujra" required minlength="6" autocomplete="new-password"></div>
         <div class="form-group">

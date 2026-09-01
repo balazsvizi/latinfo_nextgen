@@ -3,19 +3,13 @@ $pageTitle = 'Adminok';
 require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
+require_once __DIR__ . '/../../../nextgen/lib/admin/admins.php';
 requireSuperadmin();
 
 require_once __DIR__ . '/../../partials/header.php';
 
 $db = getDb();
-try {
-    $col = $db->query("SHOW COLUMNS FROM nextgen_admins LIKE 'email'")->fetch();
-    if (!$col) {
-        $db->exec("ALTER TABLE nextgen_admins ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
-    }
-} catch (Throwable $e) {
-    // nincs ALTER jog: migrációval felvehető
-}
+nextgen_admin_ensure_notification_columns($db);
 $kereso = trim($_GET['kereso'] ?? '');
 $order = isset($_GET['order']) && in_array($_GET['order'], ['név', 'felhasználónév', 'email', 'szint', 'létrehozva'], true) ? $_GET['order'] : 'név';
 $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'desc' ? 'desc' : 'asc';

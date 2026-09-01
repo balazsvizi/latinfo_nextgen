@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/partners.php';
+require_once __DIR__ . '/message_notifications.php';
 
 function nextgen_partner_messages_table_ready(PDO $db): bool
 {
@@ -68,6 +69,7 @@ function nextgen_partner_message_send_partner(PDO $db, int $partnerId, string $m
         $messageId = (int) $db->lastInsertId();
         $preview = mb_strlen($message) > 120 ? mb_substr($message, 0, 120) . '…' : $message;
         nextgen_partner_log($db, $partnerId, 'Üzenet küldve (partner)', $preview);
+        nextgen_partner_message_notify_admins_on_partner_send($db, $partnerId, $message);
 
         return ['ok' => true, 'id' => $messageId];
     } catch (Throwable $ex) {
@@ -102,6 +104,7 @@ function nextgen_partner_message_send_admin(PDO $db, int $partnerId, int $adminI
         $messageId = (int) $db->lastInsertId();
         $preview = mb_strlen($message) > 120 ? mb_substr($message, 0, 120) . '…' : $message;
         nextgen_partner_log($db, $partnerId, 'Üzenet küldve (admin)', $preview);
+        nextgen_partner_message_notify_partner_on_admin_reply($db, $partnerId, $message, $adminId);
 
         return ['ok' => true, 'id' => $messageId];
     } catch (Throwable $ex) {

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
+require_once __DIR__ . '/../../../nextgen/lib/admin/admins.php';
 requireSuperadmin();
 
 $id = (int)($_GET['id'] ?? 0);
@@ -11,15 +12,8 @@ if (!$id) {
 }
 
 $db = getDb();
-try {
-    $col = $db->query("SHOW COLUMNS FROM nextgen_admins LIKE 'email'")->fetch();
-    if (!$col) {
-        $db->exec("ALTER TABLE nextgen_admins ADD COLUMN email VARCHAR(255) NULL AFTER felhasználónév");
-    }
-} catch (Throwable $e) {
-    // nincs ALTER jog: migrációval felvehető
-}
-$stmt = $db->prepare('SELECT id, név, felhasználónév, email, szint, aktív FROM nextgen_admins WHERE id = ?');
+nextgen_admin_ensure_notification_columns($db);
+$stmt = $db->prepare('SELECT id, név, felhasználónév, email, partner_uzenet_email, szint, aktív FROM nextgen_admins WHERE id = ?');
 $stmt->execute([$id]);
 $admin = $stmt->fetch();
 if (!$admin) {
@@ -36,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $jelszo2 = $_POST['jelszó_ujra'] ?? '';
     $szint = ($_POST['szint'] ?? '') === 'superadmin' ? 'superadmin' : 'admin';
     $aktív = isset($_POST['aktív']) ? 1 : 0;
+    $partnerUzenetEmail = isset($_POST['partner_uzenet_email']) ? 1 : 0;
 
     if ($név === '' || $fh === '') {
         $hiba = 'Név és felhasználónév megadása kötelező.';
@@ -53,11 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             if ($jelszo !== '') {
                 $hash = password_hash($jelszo, PASSWORD_DEFAULT);
-                $db->prepare('UPDATE nextgen_admins SET név = ?, felhasználónév = ?, email = ?, jelszó_hash = ?, szint = ?, aktív = ? WHERE id = ?')
-                    ->execute([$név, $fh, ($email !== '' ? $email : null), $hash, $szint, $aktív, $id]);
+                $db->prepare('UPDATE nextgen_admins SET név = ?, felhasználónév = ?, email = ?, partner_uzenet_email = ?, jelszó_hash = ?, szint = ?, aktív = ? WHERE id = ?')
+                    ->execute([$név, $fh, ($email !== '' ? $email : null), $partnerUzenetEmail, $hash, $szint, $aktív, $id]);
             } else {
-                $db->prepare('UPDATE nextgen_admins SET név = ?, felhasználónév = ?, email = ?, szint = ?, aktív = ? WHERE id = ?')
-                    ->execute([$név, $fh, ($email !== '' ? $email : null), $szint, $aktív, $id]);
+                $db->prepare('UPDATE nextgen_admins SET név = ?, felhasználónév = ?, email = ?, partner_uzenet_email = ?, szint = ?, aktív = ? WHERE id = ?')
+                    ->execute([$név, $fh, ($email !== '' ? $email : null), $partnerUzenetEmail, $szint, $aktív, $id]);
             }
             rendszer_log('admin', $id, 'Módosítva', null);
             if ((int)$id === (int)($_SESSION['admin_id'] ?? 0)) {
@@ -74,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'név' => $név ?: $admin['név'],
         'felhasználónév' => $fh ?: $admin['felhasználónév'],
         'email' => $email,
+        'partner_uzenet_email' => $partnerUzenetEmail,
         'szint' => $szint,
         'aktív' => $aktív,
     ]);
@@ -97,6 +93,14 @@ require_once __DIR__ . '/../../partials/header.php';
         <div class="form-group">
             <label>E-mail cím</label>
             <input type="email" name="email" value="<?= h($admin['email'] ?? '') ?>" placeholder="nev@pelda.hu">
+            <p class="help">Partner üzenet értesítéshez szükséges.</p>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="partner_uzenet_email" value="1" <?= !empty($admin['partner_uzenet_email']) ? 'checked' : '' ?>>
+                E-mail értesítés partner üzenetekről
+            </label>
+            <p class="help">Ha be van kapcsolva és meg van adva az e-mail cím, új partner üzenet esetén értesítést kapsz.</p>
         </div>
         <div class="form-group">
             <label>Új jelszó</label>
