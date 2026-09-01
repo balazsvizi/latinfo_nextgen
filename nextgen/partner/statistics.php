@@ -14,7 +14,6 @@ $statsParams = events_edit_stats_params_from_request($_GET);
 $statsAllDateFrom = events_edit_stats_earliest_view_date_for_organizers($db, $organizerIds);
 $statsData = events_edit_stats_for_organizers($db, $organizerIds, $statsParams);
 $statsEventRows = $statsData['event_rows'] ?? [];
-$draftRows = $statsData['draft_rows'] ?? [];
 $statsPreferPartnerLinks = false;
 $statsEventDetailUrl = static function (array $row): ?string {
     return partner_portal_event_public_url($row);
@@ -44,7 +43,6 @@ require_once __DIR__ . '/partials/header.php';
     <?php
     $statsFormAction = partner_url('statistics.php');
     $statsChartDomId = 'partner-stats-chart';
-    require dirname(__DIR__) . '/events/organizers/partials/dashboard_drafts.php';
     require dirname(__DIR__) . '/events/organizers/partials/dashboard_stats.php';
     ?>
 <?php endif; ?>

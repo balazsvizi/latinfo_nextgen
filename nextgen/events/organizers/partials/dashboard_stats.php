@@ -62,12 +62,58 @@ $eventDateYmd = static function (array $row, string $key): string {
         return '';
     }
 };
+
+$statsCardHelp = [
+    'Események' => 'A szervező összes közzétett eseménye. Az első szám azokat mutatja, ahol a választott időszakban volt legalább egy megtekintés (oldal, előnézet vagy további info). A második szám az összes közzétett esemény.',
+    'Egyedi látogató' => 'Az összes eseményre vetítve a különböző IP-címek száma, akik emberi oldalmegtekintést generáltak a választott időszakban. Ugyanaz az IP több eseményhez is tartozhat; itt összesítve jelenik meg.',
+    'Oldal — emberi' => 'A nyilvános eseményoldal megnyitásainak száma, ahol a látogató nem bot. A választott időszak napjain naplózott emberi megtekintések összege.',
+    'Oldal — bot' => 'A nyilvános eseményoldal megnyitásainak száma, amit a rendszer keresőrobotnak vagy automatizált kérésnek észlel. A választott időszak napjain naplózott bot megtekintések összege.',
+    'Előnézet' => 'A naptárban vagy listában megnyitott előnézet-panelek száma (emberi és bot együtt) a választott időszakban.',
+    'További info' => 'A „További információ” gombra kattintások száma (emberi és bot együtt) a választott időszakban.',
+];
+
+$renderStatsCardHelp = static function (string $label) use ($statsCardHelp): void {
+    $help = $statsCardHelp[$label] ?? '';
+    if ($help === '') {
+        return;
+    }
+    $helpId = 'stats-help-' . substr(sha1($label), 0, 10);
+    ?>
+    <span class="events-edit-stats__info">
+        <button
+            type="button"
+            class="events-edit-stats__info-btn"
+            aria-label="Segítség: <?= h($label) ?>"
+            aria-expanded="false"
+            aria-controls="<?= h($helpId) ?>"
+        >i</button>
+        <span class="events-edit-stats__info-popover" id="<?= h($helpId) ?>" role="tooltip" hidden><?= h($help) ?></span>
+    </span>
+    <?php
+};
 ?>
 <div class="card events-edit-stats events-edit-stats--organizer">
     <h2 class="card-title">Statisztika</h2>
     <p class="events-edit-stats__intro">Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.</p>
 
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
+        <div class="events-edit-stats__presets-row">
+            <span class="events-filter-label">Gyors időszak</span>
+            <div class="events-edit-stats__presets" role="group" aria-label="Gyors időszak">
+                <a
+                    class="btn btn-sm <?= $statsActivePreset === '30' ? 'btn-primary' : 'btn-secondary' ?>"
+                    href="<?= h($statsPresetUrl30) ?>"
+                >Utolsó 30 nap</a>
+                <a
+                    class="btn btn-sm <?= $statsActivePreset === 'year' ? 'btn-primary' : 'btn-secondary' ?>"
+                    href="<?= h($statsPresetUrlYear) ?>"
+                >Utolsó 1 év</a>
+                <a
+                    class="btn btn-sm <?= $statsActivePreset === 'all' ? 'btn-primary' : 'btn-secondary' ?>"
+                    href="<?= h($statsPresetUrlAll) ?>"
+                >Összes</a>
+            </div>
+        </div>
         <div class="events-edit-stats__filter-grid">
             <div class="form-group">
                 <label class="events-filter-label" for="stat_date_from">Időszak tól</label>
@@ -79,43 +125,82 @@ $eventDateYmd = static function (array $row, string $key): string {
             </div>
             <div class="form-group events-edit-stats__filter-actions">
                 <button type="submit" class="btn btn-secondary btn-sm">Megjelenítés</button>
-                <div class="events-edit-stats__presets" role="group" aria-label="Gyors időszak">
-                    <a
-                        class="btn btn-sm <?= $statsActivePreset === '30' ? 'btn-primary' : 'btn-secondary' ?>"
-                        href="<?= h($statsPresetUrl30) ?>"
-                    >Utolsó 30 nap</a>
-                    <a
-                        class="btn btn-sm <?= $statsActivePreset === 'year' ? 'btn-primary' : 'btn-secondary' ?>"
-                        href="<?= h($statsPresetUrlYear) ?>"
-                    >Utolsó 1 év</a>
-                    <a
-                        class="btn btn-sm <?= $statsActivePreset === 'all' ? 'btn-primary' : 'btn-secondary' ?>"
-                        href="<?= h($statsPresetUrlAll) ?>"
-                    >Összes</a>
-                </div>
             </div>
         </div>
     </form>
 
     <div class="events-edit-stats__cards">
         <div class="events-edit-stats__card">
-            <p class="events-edit-stats__card-label">Események</p>
+            <p class="events-edit-stats__card-label-wrap">
+                <span class="events-edit-stats__card-label">Események</span>
+                <?php $renderStatsCardHelp('Események'); ?>
+            </p>
             <p class="events-edit-stats__card-value"><?= $eventsWithViews ?> / <?= $eventsTotal ?></p>
             <p class="events-edit-stats__card-hint">Megtekintett / összes</p>
         </div>
         <div class="events-edit-stats__card">
-            <p class="events-edit-stats__card-label">Egyedi látogató</p>
+            <p class="events-edit-stats__card-label-wrap">
+                <span class="events-edit-stats__card-label">Egyedi látogató</span>
+                <?php $renderStatsCardHelp('Egyedi látogató'); ?>
+            </p>
             <p class="events-edit-stats__card-value"><?= (int) ($statsData['totals']['unique_visitors'] ?? 0) ?></p>
             <p class="events-edit-stats__card-hint">Emberi oldalmegtekintés, IP alapján</p>
         </div>
         <?php foreach ($chartPayload['datasets'] as $dataset): ?>
+            <?php $datasetLabel = (string) ($dataset['label'] ?? ''); ?>
             <div class="events-edit-stats__card">
-                <p class="events-edit-stats__card-label"><?= h((string) ($dataset['label'] ?? '')) ?></p>
+                <p class="events-edit-stats__card-label-wrap">
+                    <span class="events-edit-stats__card-label"><?= h($datasetLabel) ?></span>
+                    <?php $renderStatsCardHelp($datasetLabel); ?>
+                </p>
                 <p class="events-edit-stats__card-value"><?= (int) ($dataset['total'] ?? 0) ?></p>
                 <p class="events-edit-stats__card-hint">Összesen az időszakban</p>
             </div>
         <?php endforeach; ?>
     </div>
+    <script>
+    (function () {
+        var infos = document.querySelectorAll('.events-edit-stats--organizer .events-edit-stats__info');
+        if (!infos.length) return;
+
+        function closeAll(except) {
+            infos.forEach(function (info) {
+                if (except && info === except) return;
+                var btn = info.querySelector('.events-edit-stats__info-btn');
+                var pop = info.querySelector('.events-edit-stats__info-popover');
+                if (!btn || !pop) return;
+                btn.setAttribute('aria-expanded', 'false');
+                pop.hidden = true;
+                info.classList.remove('is-open');
+            });
+        }
+
+        infos.forEach(function (info) {
+            var btn = info.querySelector('.events-edit-stats__info-btn');
+            var pop = info.querySelector('.events-edit-stats__info-popover');
+            if (!btn || !pop) return;
+
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var open = info.classList.contains('is-open');
+                closeAll();
+                if (!open) {
+                    info.classList.add('is-open');
+                    btn.setAttribute('aria-expanded', 'true');
+                    pop.hidden = false;
+                }
+            });
+        });
+
+        document.addEventListener('click', function () {
+            closeAll();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeAll();
+        });
+    })();
+    </script>
 
     <?php if ($hasChart): ?>
         <div class="events-edit-stats__chart-wrap">

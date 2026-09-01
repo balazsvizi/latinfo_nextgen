@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = nextgen_partner_update_profile(
             $db,
             $partnerId,
-            (string) ($_POST['nev'] ?? ''),
+            (string) ($partner['név'] ?? ''),
             (string) ($_POST['email'] ?? ''),
             (string) ($_POST['telefon'] ?? ''),
             (string) ($_POST['egyeb_kontakt'] ?? '')
@@ -64,9 +64,9 @@ require_once __DIR__ . '/partials/header.php';
     <form method="post" class="venue-form">
         <?= csrf_input('partner_profil') ?>
         <input type="hidden" name="_action" value="profile">
-        <div class="form-group">
-            <label for="nev">Név *</label>
-            <input type="text" id="nev" name="nev" value="<?= h((string) ($partner['név'] ?? '')) ?>" required maxlength="255">
+        <div class="partner-profile-field">
+            <span class="partner-profile-label">Név</span>
+            <span class="partner-profile-value"><?= h((string) ($partner['név'] ?? '')) ?></span>
         </div>
         <div class="form-group">
             <label for="email">E-mail *</label>

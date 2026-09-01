@@ -4491,7 +4491,20 @@ body.event-edit-cover-lightbox-open {
     font-size: 0.75rem;
 }
 .events-edit-stats__filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
     margin-bottom: 1.25rem;
+}
+.events-edit-stats__presets-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 0.85rem;
+}
+.events-edit-stats__presets-row > .events-filter-label {
+    margin: 0;
+    font-weight: 600;
 }
 .events-edit-stats__filter-grid {
     display: grid;
@@ -4961,11 +4974,80 @@ body.event-edit-cover-lightbox-open {
     border-radius: 0.65rem;
     background: var(--bg-elevated, #fff);
 }
+.events-edit-stats__card-label-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+}
 .events-edit-stats__card-label {
     margin: 0;
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--text-muted, #6b7280);
+}
+.events-edit-stats__info {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+.events-edit-stats__info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #9ca3af;
+    border-radius: 50%;
+    background: #fff;
+    color: #6b7280;
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1;
+    cursor: help;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.events-edit-stats__info-btn:hover,
+.events-edit-stats__info.is-open .events-edit-stats__info-btn {
+    border-color: #3d6b4f;
+    color: #3d6b4f;
+    background: #f3f7f4;
+}
+.events-edit-stats__info-popover {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 0.4rem);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 13rem;
+    max-width: 17rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--text-primary, #1a1a1a);
+    text-align: left;
+}
+.events-edit-stats__info-popover::before {
+    content: "";
+    position: absolute;
+    top: -0.35rem;
+    left: 50%;
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-left: -0.275rem;
+    border-top: 1px solid var(--border, #e5e7eb);
+    border-left: 1px solid var(--border, #e5e7eb);
+    background: #fff;
+    transform: rotate(45deg);
 }
 .events-edit-stats__card-value {
     margin: 0.35rem 0 0;
