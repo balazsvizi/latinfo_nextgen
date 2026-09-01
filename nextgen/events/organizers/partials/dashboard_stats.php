@@ -77,18 +77,14 @@ $renderStatsCardHelp = static function (string $label) use ($statsCardHelp): voi
     if ($help === '') {
         return;
     }
-    $helpId = 'stats-help-' . substr(sha1($label), 0, 10);
     ?>
-    <span class="events-edit-stats__info">
-        <button
-            type="button"
-            class="events-edit-stats__info-btn"
-            aria-label="Segítség: <?= h($label) ?>"
-            aria-expanded="false"
-            aria-controls="<?= h($helpId) ?>"
-        >i</button>
-        <span class="events-edit-stats__info-popover" id="<?= h($helpId) ?>" role="tooltip" hidden><?= h($help) ?></span>
-    </span>
+    <button
+        type="button"
+        class="events-edit-stats__info-btn"
+        aria-label="Segítség: <?= h($label) ?>"
+        data-stats-help-title="<?= h($label) ?>"
+        data-stats-help-text="<?= h($help) ?>"
+    >i</button>
     <?php
 };
 ?>
@@ -158,46 +154,56 @@ $renderStatsCardHelp = static function (string $label) use ($statsCardHelp): voi
             </div>
         <?php endforeach; ?>
     </div>
+
+    <dialog class="events-edit-stats__help-dialog" id="events-edit-stats-help-dialog" aria-labelledby="events-edit-stats-help-title">
+        <div class="events-edit-stats__help-dialog-inner">
+            <header class="events-edit-stats__help-dialog-head">
+                <h4 class="events-edit-stats__help-dialog-title" id="events-edit-stats-help-title"></h4>
+                <button type="button" class="events-edit-stats__help-dialog-close" aria-label="Bezárás">×</button>
+            </header>
+            <p class="events-edit-stats__help-dialog-body"></p>
+        </div>
+    </dialog>
+
     <script>
     (function () {
-        var infos = document.querySelectorAll('.events-edit-stats--organizer .events-edit-stats__info');
-        if (!infos.length) return;
+        var root = document.querySelector('.events-edit-stats--organizer');
+        var dialog = document.getElementById('events-edit-stats-help-dialog');
+        if (!root || !dialog) return;
 
-        function closeAll(except) {
-            infos.forEach(function (info) {
-                if (except && info === except) return;
-                var btn = info.querySelector('.events-edit-stats__info-btn');
-                var pop = info.querySelector('.events-edit-stats__info-popover');
-                if (!btn || !pop) return;
-                btn.setAttribute('aria-expanded', 'false');
-                pop.hidden = true;
-                info.classList.remove('is-open');
+        var titleEl = document.getElementById('events-edit-stats-help-title');
+        var bodyEl = dialog.querySelector('.events-edit-stats__help-dialog-body');
+        var closeBtn = dialog.querySelector('.events-edit-stats__help-dialog-close');
+
+        function openHelp(btn) {
+            if (!btn) return;
+            if (titleEl) {
+                titleEl.textContent = btn.getAttribute('data-stats-help-title') || 'Segítség';
+            }
+            if (bodyEl) {
+                bodyEl.textContent = btn.getAttribute('data-stats-help-text') || '';
+            }
+            if (typeof dialog.showModal === 'function') {
+                dialog.showModal();
+            }
+        }
+
+        root.querySelectorAll('.events-edit-stats__info-btn[data-stats-help-text]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                openHelp(btn);
+            });
+        });
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                dialog.close();
             });
         }
 
-        infos.forEach(function (info) {
-            var btn = info.querySelector('.events-edit-stats__info-btn');
-            var pop = info.querySelector('.events-edit-stats__info-popover');
-            if (!btn || !pop) return;
-
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var open = info.classList.contains('is-open');
-                closeAll();
-                if (!open) {
-                    info.classList.add('is-open');
-                    btn.setAttribute('aria-expanded', 'true');
-                    pop.hidden = false;
-                }
-            });
-        });
-
-        document.addEventListener('click', function () {
-            closeAll();
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeAll();
+        dialog.addEventListener('click', function (e) {
+            if (e.target === dialog) {
+                dialog.close();
+            }
         });
     })();
     </script>
