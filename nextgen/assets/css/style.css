@@ -5339,9 +5339,41 @@ body.event-edit-cover-lightbox-open {
     background: var(--bg-elevated);
     margin-bottom: 0.75rem;
 }
+.partner-inbox-list {
+    display: grid;
+    gap: 0.75rem;
+}
 .partner-inbox-card--open {
-    border-color: #c5a832;
+    border-color: #d97706;
+    border-width: 2px;
     background: #fffbeb;
+    box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.15), 0 4px 14px rgba(217, 119, 6, 0.12);
+}
+.partner-inbox-card--done {
+    opacity: 0.92;
+    background: #fafafa;
+}
+.partner-inbox-card__badge {
+    display: inline-block;
+    margin-right: 0.45rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #b45309;
+    font-size: 0.75rem;
+    font-weight: 700;
+    vertical-align: middle;
+}
+.partner-inbox-open-count {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #b45309;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    vertical-align: middle;
 }
 .partner-inbox-card__head {
     display: flex;
@@ -5349,6 +5381,29 @@ body.event-edit-cover-lightbox-open {
     gap: 1rem;
     flex-wrap: wrap;
     margin-bottom: 0.5rem;
+}
+.partner-inbox-card__title-wrap {
+    min-width: 0;
+}
+.partner-inbox-card__preview {
+    margin: 0;
+    line-height: 1.45;
+    word-break: break-word;
+}
+.partner-inbox-card__actions {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+.partner-inbox-card__action-form {
+    display: inline;
+    margin: 0;
+}
+.partner-inbox-card__date {
+    white-space: nowrap;
 }
 .partner-message-item {
     padding: 1rem 1.1rem;
@@ -5364,10 +5419,29 @@ body.event-edit-cover-lightbox-open {
     background: #f3f7f4;
     border-color: #d0e4d6;
 }
+.partner-message-item--pending {
+    border-color: #d97706;
+    border-width: 2px;
+    background: #fffbeb;
+    box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.12);
+}
+.partner-message-tag--pending {
+    background: #fef3c7;
+    color: #b45309;
+}
 .partner-message-meta {
     font-size: 0.8125rem;
     color: var(--text-muted);
     margin-bottom: 0.5rem;
+}
+.partner-message-tag {
+    display: inline-block;
+    background: #fff7ed;
+    color: #b45309;
+    border-radius: 999px;
+    padding: 0.05rem 0.45rem;
+    font-weight: 700;
+    font-size: 0.75rem;
 }
 .partner-message-body {
     white-space: pre-wrap;
@@ -5389,6 +5463,13 @@ body.event-edit-cover-lightbox-open {
     margin-bottom: 1.25rem;
     padding-bottom: 1.25rem;
     border-bottom: 1px solid var(--border);
+    scroll-margin-top: 1rem;
+}
+.partner-inbox-compose .form-group textarea,
+.partner-inbox-compose .partner-message-textarea {
+    max-width: none;
+    width: 100%;
+    box-sizing: border-box;
 }
 .partner-inbox-thread__history {
     display: grid;

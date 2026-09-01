@@ -69,7 +69,7 @@ function nextgen_partner_message_send_partner(PDO $db, int $partnerId, string $m
         $messageId = (int) $db->lastInsertId();
         $preview = mb_strlen($message) > 120 ? mb_substr($message, 0, 120) . '…' : $message;
         nextgen_partner_log($db, $partnerId, 'Üzenet küldve (partner)', $preview);
-        nextgen_partner_message_notify_admins_on_partner_send($db, $partnerId, $message);
+        nextgen_partner_message_notify_admins_on_partner_send($db, $partnerId, $message, $messageId);
 
         return ['ok' => true, 'id' => $messageId];
     } catch (Throwable $ex) {
@@ -104,7 +104,7 @@ function nextgen_partner_message_send_admin(PDO $db, int $partnerId, int $adminI
         $messageId = (int) $db->lastInsertId();
         $preview = mb_strlen($message) > 120 ? mb_substr($message, 0, 120) . '…' : $message;
         nextgen_partner_log($db, $partnerId, 'Üzenet küldve (admin)', $preview);
-        nextgen_partner_message_notify_partner_on_admin_reply($db, $partnerId, $message, $adminId);
+        nextgen_partner_message_notify_partner_on_admin_reply($db, $partnerId, $message, $adminId, $messageId);
 
         return ['ok' => true, 'id' => $messageId];
     } catch (Throwable $ex) {
@@ -117,27 +117,102 @@ function nextgen_partner_message_send_admin(PDO $db, int $partnerId, int $adminI
 /**
  * @return array{ok: true}|array{ok: false, error: string}
  */
-function nextgen_partner_message_mark_no_reply(PDO $db, int $messageId): array
+function nextgen_partner_message_mark_no_reply(PDO $db, int $messageId, string $markedBy, int $actorId): array
 {
     if ($messageId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen üzenet.'];
     }
+    if ($markedBy !== 'admin' && $markedBy !== 'partner') {
+        return ['ok' => false, 'error' => 'Érvénytelen művelet.'];
+    }
+    if ($actorId <= 0) {
+        return ['ok' => false, 'error' => 'Érvénytelen művelet.'];
+    }
     try {
-        $msgStmt = $db->prepare('SELECT `partner_id` FROM `nextgen_partner_messages` WHERE `id` = ? LIMIT 1');
+        $msgStmt = $db->prepare('
+            SELECT `id`, `partner_id`, `creator_type`, `nincs_valasz`
+            FROM `nextgen_partner_messages`
+            WHERE `id` = ?
+            LIMIT 1
+        ');
         $msgStmt->execute([$messageId]);
-        $partnerId = (int) ($msgStmt->fetchColumn() ?: 0);
+        $msg = $msgStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$msg) {
+            return ['ok' => false, 'error' => 'Üzenet nem található.'];
+        }
+        if (!empty($msg['nincs_valasz'])) {
+            return ['ok' => true];
+        }
+
+        $partnerId = (int) ($msg['partner_id'] ?? 0);
+        $creatorType = (string) ($msg['creator_type'] ?? '');
+
+        if ($markedBy === 'partner') {
+            if ($actorId !== $partnerId || $creatorType !== 'admin') {
+                return ['ok' => false, 'error' => 'Ehhez az üzenethez nincs jogosultságod.'];
+            }
+        } elseif ($creatorType !== 'partner' && $creatorType !== 'admin') {
+            return ['ok' => false, 'error' => 'Érvénytelen üzenet.'];
+        }
 
         $stmt = $db->prepare('UPDATE `nextgen_partner_messages` SET `nincs_valasz` = 1 WHERE `id` = ?');
         $stmt->execute([$messageId]);
 
         if ($partnerId > 0) {
-            nextgen_partner_log($db, $partnerId, 'Üzenet megjelölve: nem kell válaszolni', 'Üzenet #' . $messageId);
+            $detail = $markedBy === 'partner'
+                ? 'Partner jelölte: nem kell válaszolni'
+                : 'Admin jelölte: nem kell válaszolni';
+            nextgen_partner_log($db, $partnerId, 'Üzenet megjelölve: nem kell válaszolni', $detail . ' (#' . $messageId . ')');
         }
 
         return ['ok' => true];
     } catch (Throwable) {
         return ['ok' => false, 'error' => 'Művelet sikertelen.'];
     }
+}
+
+function nextgen_partner_message_needs_admin_reply(array $message, array $threadMessages): bool
+{
+    if (($message['creator_type'] ?? '') !== 'partner' || !empty($message['nincs_valasz'])) {
+        return false;
+    }
+
+    $messageAt = (string) ($message['létrehozva'] ?? '');
+    $messageId = (int) ($message['id'] ?? 0);
+    foreach ($threadMessages as $other) {
+        if (($other['creator_type'] ?? '') !== 'admin') {
+            continue;
+        }
+        $otherAt = (string) ($other['létrehozva'] ?? '');
+        $otherId = (int) ($other['id'] ?? 0);
+        if ($otherAt > $messageAt || ($otherAt === $messageAt && $otherId > $messageId)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function nextgen_partner_message_needs_partner_reply(array $message, array $threadMessages): bool
+{
+    if (($message['creator_type'] ?? '') !== 'admin' || !empty($message['nincs_valasz'])) {
+        return false;
+    }
+
+    $messageAt = (string) ($message['létrehozva'] ?? '');
+    $messageId = (int) ($message['id'] ?? 0);
+    foreach ($threadMessages as $other) {
+        if (($other['creator_type'] ?? '') !== 'partner') {
+            continue;
+        }
+        $otherAt = (string) ($other['létrehozva'] ?? '');
+        $otherId = (int) ($other['id'] ?? 0);
+        if ($otherAt > $messageAt || ($otherAt === $messageAt && $otherId > $messageId)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -194,6 +269,16 @@ function nextgen_partner_messages_inbox_threads(PDO $db): array
                 'needs_reply' => $needsReply,
             ];
         }
+
+        usort($threads, static function (array $a, array $b): int {
+            $aOpen = !empty($a['needs_reply']) ? 1 : 0;
+            $bOpen = !empty($b['needs_reply']) ? 1 : 0;
+            if ($aOpen !== $bOpen) {
+                return $bOpen <=> $aOpen;
+            }
+
+            return strcmp((string) ($b['last_at'] ?? ''), (string) ($a['last_at'] ?? ''));
+        });
 
         return $threads;
     } catch (Throwable) {

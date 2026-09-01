@@ -16,12 +16,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('partner_uzenetek')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet.';
     } else {
-        $result = nextgen_partner_message_send_partner($db, $partnerId, (string) ($_POST['message'] ?? ''));
-        if ($result['ok']) {
-            flash('success', 'Üzenet elküldve.');
-            redirect(partner_url('messages.php'));
+        $action = (string) ($_POST['_action'] ?? 'send');
+        if ($action === 'no_reply') {
+            $msgId = (int) ($_POST['message_id'] ?? 0);
+            $result = nextgen_partner_message_mark_no_reply($db, $msgId, 'partner', $partnerId);
+            if ($result['ok']) {
+                flash('success', 'Megjelölve: nem kell válaszolni.');
+                redirect(partner_url('messages.php'));
+            }
+            $hiba = (string) ($result['error'] ?? 'Művelet sikertelen.');
+        } else {
+            $result = nextgen_partner_message_send_partner($db, $partnerId, (string) ($_POST['message'] ?? ''));
+            if ($result['ok']) {
+                flash('success', 'Üzenet elküldve.');
+                redirect(partner_url('messages.php'));
+            }
+            $hiba = (string) ($result['error'] ?? 'Küldés sikertelen.');
         }
-        $hiba = (string) ($result['error'] ?? 'Küldés sikertelen.');
     }
 }
 
@@ -68,16 +79,25 @@ require_once __DIR__ . '/partials/header.php';
                     : 'partner-message-item partner-message-item--partner';
                 $author = nextgen_partner_message_author_label($msg, $partnerName);
                 $noReply = !empty($msg['nincs_valasz']);
+                $needsPartnerReply = $isAdmin && nextgen_partner_message_needs_partner_reply($msg, $messages);
                 ?>
                 <article class="<?= h($class) ?>">
                     <header class="partner-message-meta">
                         <span><?= h($author) ?></span>
                         <time datetime="<?= h((string) ($msg['létrehozva'] ?? '')) ?>"><?= h((string) ($msg['létrehozva'] ?? '')) ?></time>
-                        <?php if ($noReply && $isAdmin === false): ?>
+                        <?php if ($noReply): ?>
                             <span class="partner-message-tag">Nem kell válasz</span>
                         <?php endif; ?>
                     </header>
                     <div class="partner-message-body"><?= nl2br(h((string) ($msg['message'] ?? ''))) ?></div>
+                    <?php if ($needsPartnerReply): ?>
+                    <form method="post" class="toolbar" style="margin-top:0.5rem;">
+                        <?= csrf_input('partner_uzenetek') ?>
+                        <input type="hidden" name="_action" value="no_reply">
+                        <input type="hidden" name="message_id" value="<?= (int) ($msg['id'] ?? 0) ?>">
+                        <button type="submit" class="btn btn-secondary btn-sm">Nem kell válaszolni</button>
+                    </form>
+                    <?php endif; ?>
                 </article>
             <?php endforeach; ?>
         <?php endif; ?>

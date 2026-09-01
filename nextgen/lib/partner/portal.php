@@ -438,16 +438,19 @@ function partner_portal_admin_reply_pending(PDO $db, int $partnerId): bool
     }
     try {
         $stmt = $db->prepare('
-            SELECT `creator_type`
+            SELECT `creator_type`, `nincs_valasz`
             FROM `nextgen_partner_messages`
             WHERE `partner_id` = ?
             ORDER BY `létrehozva` DESC, `id` DESC
             LIMIT 1
         ');
         $stmt->execute([$partnerId]);
-        $type = (string) ($stmt->fetchColumn() ?: '');
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return false;
+        }
 
-        return $type === 'admin';
+        return ($row['creator_type'] ?? '') === 'admin' && empty($row['nincs_valasz']);
     } catch (Throwable) {
         return false;
     }
