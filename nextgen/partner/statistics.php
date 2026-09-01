@@ -42,7 +42,7 @@ require_once __DIR__ . '/partials/header.php';
     </div>
 <?php else: ?>
     <?php
-    $statsFormAction = partner_url('statistikak.php');
+    $statsFormAction = partner_url('statistics.php');
     $statsChartDomId = 'partner-stats-chart';
     require dirname(__DIR__) . '/events/organizers/partials/dashboard_drafts.php';
     require dirname(__DIR__) . '/events/organizers/partials/dashboard_stats.php';

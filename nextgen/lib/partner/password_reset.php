@@ -18,7 +18,7 @@ function nextgen_partner_email_is_deliverable(string $email): bool
 
 function partner_password_reset_url(string $token): string
 {
-    return partner_url('jelszo_uj.php?token=' . rawurlencode($token));
+    return partner_url('password_reset.php?token=' . rawurlencode($token));
 }
 
 /**

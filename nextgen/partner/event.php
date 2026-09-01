@@ -12,7 +12,7 @@ partner_require_event_access($db, $eventId);
 $event = partner_portal_event_by_id($db, $eventId);
 if ($event === null) {
     flash('error', 'Az esemény nem található.');
-    redirect(partner_url('esemenyek.php'));
+    redirect(partner_url('events.php'));
 }
 
 $publishedStatus = events_public_post_status();
@@ -39,11 +39,11 @@ $venueBits = array_filter([
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
 <p class="toolbar partner-toolbar">
-    <a href="<?= h(partner_url('esemenyek.php')) ?>" class="btn btn-secondary">← Események</a>
+    <a href="<?= h(partner_url('events.php')) ?>" class="btn btn-secondary">← Események</a>
     <?php if ($publicUrl !== null): ?>
         <a href="<?= h($publicUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal ↗</a>
     <?php endif; ?>
-    <a href="<?= h(partner_url('naptar.php')) ?>" class="btn btn-secondary">Naptár</a>
+    <a href="<?= h(partner_url('calendar.php')) ?>" class="btn btn-secondary">Naptár</a>
 </p>
 
 <article class="card partner-event-detail">

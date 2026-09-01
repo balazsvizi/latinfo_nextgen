@@ -9,7 +9,7 @@ partner_redirect_legacy_login_url();
 if (partner_is_logged_in()) {
     $partner = partner_current(getDb());
     if ($partner !== null && nextgen_partner_must_change_password($partner)) {
-        redirect(partner_url('jelszo_kotelezo.php'));
+        redirect(partner_url('password_required.php'));
     }
     redirect(partner_url('index.php'));
 }
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (partner_login($email, $jelszo)) {
         $partner = partner_current(getDb());
         if ($partner !== null && nextgen_partner_must_change_password($partner)) {
-            redirect(partner_url('jelszo_kotelezo.php'));
+            redirect(partner_url('password_required.php'));
         }
         $url = $_SESSION['_partner_redirect_after_login'] ?? partner_url('index.php');
         unset($_SESSION['_partner_redirect_after_login']);
@@ -53,7 +53,7 @@ ob_start();
     <button type="submit">Bejelentkezés</button>
 </form>
 <p class="help" style="margin-top:1rem;text-align:center;">
-    <a href="<?= h(partner_url('jelszo_emlekezteto.php')) ?>">Elfelejtett jelszó / új jelszó beállítása</a>
+    <a href="<?= h(partner_url('password_forgot.php')) ?>">Elfelejtett jelszó / új jelszó beállítása</a>
 </p>
 <?php
 $authContent = (string) ob_get_clean();

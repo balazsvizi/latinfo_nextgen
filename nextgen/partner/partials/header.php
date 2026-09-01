@@ -79,14 +79,14 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
 
         <nav class="partner-header__nav" id="partner-main-nav" aria-label="Partner menü">
             <a href="<?= h(partner_url('index.php')) ?>" class="partner-header__link<?= $nav === 'home' ? ' is-active' : '' ?>">Kezdőlap</a>
-            <a href="<?= h(partner_url('esemenyek.php')) ?>" class="partner-header__link<?= $nav === 'events' ? ' is-active' : '' ?>">Események</a>
-            <a href="<?= h(partner_url('naptar.php')) ?>" class="partner-header__link<?= $nav === 'calendar' ? ' is-active' : '' ?>">Naptár</a>
-            <a href="<?= h(partner_url('statistikak.php')) ?>" class="partner-header__link<?= $nav === 'stats' ? ' is-active' : '' ?>">Statisztikák</a>
-            <a href="<?= h(partner_url('uzenetek.php')) ?>" class="partner-header__link<?= $nav === 'messages' ? ' is-active' : '' ?>">
+            <a href="<?= h(partner_url('events.php')) ?>" class="partner-header__link<?= $nav === 'events' ? ' is-active' : '' ?>">Események</a>
+            <a href="<?= h(partner_url('calendar.php')) ?>" class="partner-header__link<?= $nav === 'calendar' ? ' is-active' : '' ?>">Naptár</a>
+            <a href="<?= h(partner_url('statistics.php')) ?>" class="partner-header__link<?= $nav === 'stats' ? ' is-active' : '' ?>">Statisztikák</a>
+            <a href="<?= h(partner_url('messages.php')) ?>" class="partner-header__link<?= $nav === 'messages' ? ' is-active' : '' ?>">
                 Üzenetek
                 <?php if ($partnerMsgPending): ?><span class="partner-nav-badge" title="Új admin válasz">!</span><?php endif; ?>
             </a>
-            <a href="<?= h(partner_url('profil.php')) ?>" class="partner-header__link<?= $nav === 'profile' ? ' is-active' : '' ?>">Profil</a>
+            <a href="<?= h(partner_url('profile.php')) ?>" class="partner-header__link<?= $nav === 'profile' ? ' is-active' : '' ?>">Profil</a>
             <a href="<?= h(partner_url('logout.php')) ?>" class="partner-header__link partner-header__logout">Kijelentkezés</a>
         </nav>
     </div>

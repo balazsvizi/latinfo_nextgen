@@ -29,6 +29,24 @@ if (str_starts_with($rel, $base . '/')) {
 
 $rel = trim($rel, '/');
 
+$legacyRoutes = [
+    'naptar.php' => 'calendar.php',
+    'esemenyek.php' => 'events.php',
+    'esemeny.php' => 'event.php',
+    'statistikak.php' => 'statistics.php',
+    'uzenetek.php' => 'messages.php',
+    'profil.php' => 'profile.php',
+    'jelszo_uj.php' => 'password_reset.php',
+    'jelszo_emlekezteto.php' => 'password_forgot.php',
+    'jelszo_kotelezo.php' => 'password_required.php',
+];
+if (isset($legacyRoutes[$rel])) {
+    $qs = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_QUERY) ?? '');
+    $target = $base . '/' . $legacyRoutes[$rel] . ($qs !== '' ? '?' . $qs : '');
+    header('Location: ' . $target, true, 301);
+    exit;
+}
+
 if ($rel === '' || $rel === 'router.php') {
     require __DIR__ . '/index.php';
     exit;

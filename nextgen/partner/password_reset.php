@@ -58,7 +58,7 @@ ob_start();
     <button type="submit">Jelszó mentése</button>
 </form>
 <?php elseif ($uzenet === ''): ?>
-    <p class="help">Kérj új linket a <a href="<?= h(partner_url('jelszo_emlekezteto.php')) ?>">jelszó emlékeztető</a> oldalon.</p>
+    <p class="help">Kérj új linket a <a href="<?= h(partner_url('password_forgot.php')) ?>">jelszó emlékeztető</a> oldalon.</p>
 <?php endif; ?>
 <?php
 $authContent = (string) ob_get_clean();

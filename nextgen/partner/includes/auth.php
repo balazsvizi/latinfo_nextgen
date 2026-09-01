@@ -26,7 +26,7 @@ function partner_require_password_change_if_needed(): void
         return;
     }
 
-    $allowed = ['jelszo_kotelezo.php', 'logout.php'];
+    $allowed = ['password_required.php', 'logout.php'];
     $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     if (in_array($script, $allowed, true)) {
         return;
@@ -35,7 +35,7 @@ function partner_require_password_change_if_needed(): void
     $db = getDb();
     $partner = partner_current($db);
     if ($partner !== null && nextgen_partner_must_change_password($partner)) {
-        redirect(partner_url('jelszo_kotelezo.php'));
+        redirect(partner_url('password_required.php'));
     }
 }
 
@@ -122,7 +122,7 @@ function partner_require_organizer_access(PDO $db, int $organizerId): void
     partner_require_login();
     if (!nextgen_partner_can_access_organizer($db, partner_current_id(), $organizerId)) {
         flash('error', 'Nincs hozzáférésed ehhez a szervezőhöz.');
-        redirect(partner_url('statistikak.php'));
+        redirect(partner_url('statistics.php'));
     }
 }
 
@@ -131,6 +131,6 @@ function partner_require_event_access(PDO $db, int $eventId): void
     partner_require_login();
     if (!partner_portal_can_access_event($db, partner_current_id(), $eventId)) {
         flash('error', 'Nincs hozzáférésed ehhez az eseményhez.');
-        redirect(partner_url('esemenyek.php'));
+        redirect(partner_url('events.php'));
     }
 }

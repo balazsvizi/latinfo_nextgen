@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result['ok']) {
             partner_refresh_session_from_db($db);
             flash('success', 'Profil mentve.');
-            redirect(partner_url('profil.php'));
+            redirect(partner_url('profile.php'));
         }
         $hiba = (string) ($result['error'] ?? 'Mentés sikertelen.');
     } elseif ($action === 'password') {
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = nextgen_partner_update_password($db, $partnerId, $jelszo);
             if ($result['ok']) {
                 flash('success', 'Jelszó módosítva.');
-                redirect(partner_url('profil.php'));
+                redirect(partner_url('profile.php'));
             }
             $hiba = (string) ($result['error'] ?? 'Jelszó mentése sikertelen.');
         }

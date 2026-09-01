@@ -11,4 +11,4 @@ if (!function_exists('partner_url')) {
     }
 }
 
-redirect(partner_url('profil.php'));
+redirect(partner_url('profile.php'));

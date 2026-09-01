@@ -60,7 +60,7 @@ $calendarEventUrlBuilder = static function (array $ev) use ($ownMap): string {
         return partner_portal_event_detail_url($id);
     }
 
-    return partner_url('naptar.php');
+    return partner_url('calendar.php');
 };
 $calendarPublicPreview = false;
 $calendarLang = 'hu';

@@ -58,19 +58,19 @@ require_once __DIR__ . '/partials/header.php';
         </p>
     </div>
     <div class="partner-hero__actions">
-        <a class="btn btn-primary" href="<?= h(partner_url('esemenyek.php')) ?>">Eseményeim</a>
-        <a class="btn btn-secondary" href="<?= h(partner_url('naptar.php')) ?>">Naptár</a>
-        <a class="btn btn-secondary" href="<?= h(partner_url('uzenetek.php')) ?>">Üzenetek<?= $msgPending ? ' · válasz érkezett' : '' ?></a>
+        <a class="btn btn-primary" href="<?= h(partner_url('events.php')) ?>">Eseményeim</a>
+        <a class="btn btn-secondary" href="<?= h(partner_url('calendar.php')) ?>">Naptár</a>
+        <a class="btn btn-secondary" href="<?= h(partner_url('messages.php')) ?>">Üzenetek<?= $msgPending ? ' · válasz érkezett' : '' ?></a>
     </div>
 </section>
 
 <div class="partner-stat-grid">
-    <a class="partner-stat-card" href="<?= h(partner_url('esemenyek.php')) ?>">
+    <a class="partner-stat-card" href="<?= h(partner_url('events.php')) ?>">
         <span class="partner-stat-card__label">Események</span>
         <span class="partner-stat-card__value"><?= (int) $stats['total'] ?></span>
         <span class="partner-stat-card__hint"><?= (int) $stats['published'] ?> közzétett · <?= (int) $stats['draft'] ?> piszkozat</span>
     </a>
-    <a class="partner-stat-card" href="<?= h(partner_url('esemenyek.php?scope=upcoming')) ?>">
+    <a class="partner-stat-card" href="<?= h(partner_url('events.php?scope=upcoming')) ?>">
         <span class="partner-stat-card__label">Közelgő</span>
         <span class="partner-stat-card__value"><?= (int) $stats['upcoming'] ?></span>
         <span class="partner-stat-card__hint">
@@ -81,12 +81,12 @@ require_once __DIR__ . '/partials/header.php';
             <?php endif; ?>
         </span>
     </a>
-    <a class="partner-stat-card" href="<?= h(partner_url('statistikak.php')) ?>">
+    <a class="partner-stat-card" href="<?= h(partner_url('statistics.php')) ?>">
         <span class="partner-stat-card__label">Statisztikák</span>
         <span class="partner-stat-card__value"><?= $orgCount ?></span>
         <span class="partner-stat-card__hint">Megtekintések · <?= $orgCount ?> szervező</span>
     </a>
-    <a class="partner-stat-card<?= $msgPending ? ' partner-stat-card--pulse' : '' ?>" href="<?= h(partner_url('uzenetek.php')) ?>">
+    <a class="partner-stat-card<?= $msgPending ? ' partner-stat-card--pulse' : '' ?>" href="<?= h(partner_url('messages.php')) ?>">
         <span class="partner-stat-card__label">Üzenetek</span>
         <span class="partner-stat-card__value"><?= $msgCount ?></span>
         <span class="partner-stat-card__hint"><?= $msgPending ? 'Új válasz az admintól' : 'Üzenőfal a csapattal' ?></span>
@@ -97,7 +97,7 @@ require_once __DIR__ . '/partials/header.php';
     <section class="card partner-panel">
         <div class="partner-panel__head">
             <h2 class="card-title">Közelgő események</h2>
-            <a href="<?= h(partner_url('esemenyek.php')) ?>" class="partner-panel__link">Összes →</a>
+            <a href="<?= h(partner_url('events.php')) ?>" class="partner-panel__link">Összes →</a>
         </div>
         <?php if ($upcomingEvents === []): ?>
             <p class="help">Nincs közelgő esemény a kiválasztott profilhoz.</p>
@@ -130,15 +130,15 @@ require_once __DIR__ . '/partials/header.php';
             <h2 class="card-title">Gyors linkek</h2>
         </div>
         <div class="partner-quick-links">
-            <a href="<?= h(partner_url('naptar.php')) ?>" class="partner-quick-link">
+            <a href="<?= h(partner_url('calendar.php')) ?>" class="partner-quick-link">
                 <strong>Partner naptár</strong>
                 <span>Teljes hónap, a te eseményeid kiemelve</span>
             </a>
-            <a href="<?= h(partner_url('statistikak.php')) ?>" class="partner-quick-link">
+            <a href="<?= h(partner_url('statistics.php')) ?>" class="partner-quick-link">
                 <strong>Statisztikák</strong>
                 <span>Megtekintések a te eseményeiden</span>
             </a>
-            <a href="<?= h(partner_url('uzenetek.php')) ?>" class="partner-quick-link">
+            <a href="<?= h(partner_url('messages.php')) ?>" class="partner-quick-link">
                 <strong>Üzenet az adminnak</strong>
                 <span>Teljes előzménnyel, mint egy beszélgetés</span>
             </a>

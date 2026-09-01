@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = nextgen_partner_message_send_partner($db, $partnerId, (string) ($_POST['message'] ?? ''));
         if ($result['ok']) {
             flash('success', 'Üzenet elküldve.');
-            redirect(partner_url('uzenetek.php'));
+            redirect(partner_url('messages.php'));
         }
         $hiba = (string) ($result['error'] ?? 'Küldés sikertelen.');
     }

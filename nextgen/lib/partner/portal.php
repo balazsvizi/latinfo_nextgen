@@ -376,7 +376,7 @@ function partner_portal_event_stats_summary(array $events): array
 
 function partner_portal_event_detail_url(int $eventId): string
 {
-    return partner_url('esemeny.php?id=' . $eventId);
+    return partner_url('event.php?id=' . $eventId);
 }
 
 /**
@@ -417,7 +417,7 @@ function partner_portal_event_click_url(array $event): string
     }
     $id = (int) ($event['id'] ?? 0);
 
-    return $id > 0 ? partner_portal_event_detail_url($id) : partner_url('esemenyek.php');
+    return $id > 0 ? partner_portal_event_detail_url($id) : partner_url('events.php');
 }
 
 function partner_portal_month_url(string $monthKey, array $extra = []): string
@@ -425,7 +425,7 @@ function partner_portal_month_url(string $monthKey, array $extra = []): string
     $params = array_merge(['month' => $monthKey], $extra);
     $qs = http_build_query($params);
 
-    return partner_url('naptar.php' . ($qs !== '' ? '?' . $qs : ''));
+    return partner_url('calendar.php' . ($qs !== '' ? '?' . $qs : ''));
 }
 
 /**

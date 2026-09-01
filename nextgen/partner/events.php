@@ -53,7 +53,7 @@ $pageTitle = 'Események';
 $activeNav = 'events';
 require_once __DIR__ . '/partials/header.php';
 
-$baseListUrl = partner_url('esemenyek.php');
+$baseListUrl = partner_url('events.php');
 ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
