@@ -454,13 +454,18 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				return;
 			}
 			$minMtime = isset($job['date_from']) && $job['date_from'] !== null ? (int) $job['date_from'] : null;
+			$zipPath = (string) $job['zip_path'];
+			$zipDir = dirname($zipPath);
+			if ($zipDir !== '' && !is_dir($zipDir)) {
+				@mkdir($zipDir, 0700, true);
+			}
 			alatinfo_backup_drive_session_release();
 			$zip = alatinfo_backup_zip_dir(
 				$root,
-				(string)$job['zip_path'],
+				$zipPath,
 				alatinfo_backup_default_exclude_paths(),
 				static function (int $count) use ($jobId): void {
-					if ($count % 25 !== 0) {
+					if ($count % 10 !== 0 && $count !== 1) {
 						return;
 					}
 					$zipPct = min(44, 28 + (int)floor(min(1.0, $count / 800) * 16));

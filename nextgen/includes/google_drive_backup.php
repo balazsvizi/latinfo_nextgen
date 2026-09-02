@@ -1702,9 +1702,27 @@ if (!function_exists('alatinfo_backup_zip_dos_time')) {
 	}
 }
 
+if (!function_exists('alatinfo_backup_zip_crc32_file')) {
+	function alatinfo_backup_zip_crc32_file(string $full): ?int
+	{
+		$hex = @hash_file('crc32b', $full);
+		if (!is_string($hex) || $hex === '') {
+			return null;
+		}
+		return (int) hexdec($hex);
+	}
+}
+
+if (!function_exists('alatinfo_backup_zip_crc32_string')) {
+	function alatinfo_backup_zip_crc32_string(string $raw): int
+	{
+		return (int) sprintf('%u', crc32($raw));
+	}
+}
+
 if (!function_exists('alatinfo_backup_zip_append_entry')) {
 	/**
-	 * Egy fájl hozzáadása nyitott ZIP streamhez (kis fájl: deflate, nagy: store).
+	 * Egy fájl hozzáadása nyitott ZIP streamhez (kis fájl: deflate, nagy / hiba: store).
 	 *
 	 * @param resource $fp
 	 * @param resource $cdFp
@@ -1713,86 +1731,93 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 	function alatinfo_backup_zip_append_entry($fp, $cdFp, string $full, string $name, int $offset): ?array
 	{
 		$name = str_replace('\\', '/', $name);
-		if ($name === '' || strlen($name) > 65535 || !is_readable($full)) {
+		if ($name === '' || strlen($name) > 65535 || !is_file($full)) {
 			return null;
 		}
 		$size = @filesize($full);
-		if (!is_int($size) || $size < 0) {
-			return null;
-		}
-		// 100 MB felett kihagyjuk – Drive mentéshez általában nem kell óriás dump/média
-		if ($size > 100 * 1024 * 1024) {
+		if (!is_int($size) || $size < 0 || $size > 100 * 1024 * 1024) {
 			return null;
 		}
 		$mtime = @filemtime($full);
 		$dos = alatinfo_backup_zip_dos_time($mtime !== false ? $mtime : time());
 		$nameLen = strlen($name);
 		$gpFlag = 0x0800;
-		$useStore = $size > 4 * 1024 * 1024;
+		$crc = 0;
+		$method = 0;
+		$compSize = $size;
+		$payload = null;
+		$useStore = $size > 4 * 1024 * 1024 || !function_exists('gzdeflate');
 
-		if ($useStore) {
-			$crcHex = @hash_file('crc32b', $full);
-			if (!is_string($crcHex) || $crcHex === '') {
-				return null;
-			}
-			$crc = hexdec($crcHex);
-			$method = 0;
-			$compSize = $size;
-			$local = pack(
-				'VvvvvvVVVvv',
-				0x04034b50,
-				20,
-				$gpFlag,
-				$method,
-				$dos['time'],
-				$dos['date'],
-				$crc,
-				$compSize,
-				$size,
-				$nameLen,
-				0
-			);
-			fwrite($fp, $local);
-			fwrite($fp, $name);
-			$in = fopen($full, 'rb');
-			if ($in === false) {
-				return null;
-			}
-			stream_copy_to_stream($in, $fp);
-			fclose($in);
-		} else {
+		if (!$useStore) {
 			$raw = @file_get_contents($full);
 			if (!is_string($raw)) {
 				return null;
 			}
-			$crc = crc32($raw);
+			$crc = alatinfo_backup_zip_crc32_string($raw);
 			$uncomp = strlen($raw);
-			$comp = gzdeflate($raw, 6);
+			$comp = @gzdeflate($raw, 6);
 			unset($raw);
-			if (!is_string($comp)) {
+			if (is_string($comp)) {
+				$method = 8;
+				$compSize = strlen($comp);
+				$payload = $comp;
+				$size = $uncomp;
+			} else {
+				$raw2 = @file_get_contents($full);
+				if (!is_string($raw2)) {
+					return null;
+				}
+				$crc = alatinfo_backup_zip_crc32_string($raw2);
+				$size = strlen($raw2);
+				$compSize = $size;
+				$payload = $raw2;
+				$method = 0;
+				$useStore = true;
+			}
+		}
+
+		if ($useStore && $payload === null) {
+			$crcVal = alatinfo_backup_zip_crc32_file($full);
+			if ($crcVal === null) {
 				return null;
 			}
-			$method = 8;
-			$compSize = strlen($comp);
-			$local = pack(
-				'VvvvvvVVVvv',
-				0x04034b50,
-				20,
-				$gpFlag,
-				$method,
-				$dos['time'],
-				$dos['date'],
-				$crc,
-				$compSize,
-				$uncomp,
-				$nameLen,
-				0
-			);
-			fwrite($fp, $local);
-			fwrite($fp, $name);
-			fwrite($fp, $comp);
-			unset($comp);
-			$size = $uncomp;
+			$crc = $crcVal;
+			$method = 0;
+			$compSize = $size;
+		}
+
+		$local = pack(
+			'VvvvvvVVVvv',
+			0x04034b50,
+			20,
+			$gpFlag,
+			$method,
+			$dos['time'],
+			$dos['date'],
+			$crc,
+			$compSize,
+			$size,
+			$nameLen,
+			0
+		);
+		if (fwrite($fp, $local) === false || fwrite($fp, $name) === false) {
+			return null;
+		}
+		if ($payload !== null) {
+			if (fwrite($fp, $payload) === false) {
+				return null;
+			}
+			unset($payload);
+		} else {
+			$in = @fopen($full, 'rb');
+			if ($in === false) {
+				return null;
+			}
+			$copied = stream_copy_to_stream($in, $fp);
+			fclose($in);
+			if ($copied === false || (int) $copied !== $size) {
+				return null;
+			}
 		}
 
 		$central = pack(
@@ -1815,38 +1840,45 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 			0,
 			$offset
 		) . $name;
-		fwrite($cdFp, $central);
-		$newOffset = $offset + strlen($local) + $nameLen + $compSize;
+		if (fwrite($cdFp, $central) === false) {
+			return null;
+		}
 
-		return array('ok' => true, 'offset' => $newOffset);
+		return array('ok' => true, 'offset' => $offset + strlen($local) + $nameLen + $compSize);
 	}
 }
 
 if (!function_exists('alatinfo_backup_zip_write_stream')) {
 	/**
-	 * Alacsony memóriájú ZIP írás: fájlonként, ZipArchive nélkül.
-	 *
 	 * @param list<array{0:string,1:string}> $entries
 	 * @param callable(int $fileCount): void|null $onFileProgress
+	 * @return array{count:int,error:string}
 	 */
-	function alatinfo_backup_zip_write_stream(string $outZip, array $entries, ?callable $onFileProgress = null): int
+	function alatinfo_backup_zip_write_stream(string $outZip, array $entries, ?callable $onFileProgress = null): array
 	{
+		$outDir = dirname($outZip);
+		if ($outDir !== '' && $outDir !== '.' && !is_dir($outDir) && !@mkdir($outDir, 0700, true)) {
+			return array('count' => 0, 'error' => 'ZIP mappa létrehozása sikertelen: ' . $outDir);
+		}
 		if (is_file($outZip)) {
 			@unlink($outZip);
 		}
-		$fp = fopen($outZip, 'wb');
+		$fp = @fopen($outZip, 'wb');
 		if ($fp === false) {
-			return 0;
+			return array('count' => 0, 'error' => 'ZIP fájl megnyitása sikertelen.');
 		}
-		$cdPath = $outZip . '.cd';
-		$cdFp = fopen($cdPath, 'wb+');
+		$cdFp = @fopen('php://temp/maxmemory:8388608', 'wb+');
+		if ($cdFp === false) {
+			$cdFp = @fopen('php://temp', 'wb+');
+		}
 		if ($cdFp === false) {
 			fclose($fp);
 			@unlink($outZip);
-			return 0;
+			return array('count' => 0, 'error' => 'ZIP központi könyvtár buffer megnyitása sikertelen.');
 		}
 		$offset = 0;
 		$count = 0;
+		$candidates = count($entries);
 		foreach ($entries as $entry) {
 			$added = alatinfo_backup_zip_append_entry($fp, $cdFp, $entry[0], $entry[1], $offset);
 			if ($added === null) {
@@ -1862,10 +1894,16 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 		rewind($cdFp);
 		stream_copy_to_stream($cdFp, $fp);
 		fclose($cdFp);
-		@unlink($cdPath);
 		fwrite($fp, pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, $cdSize, $offset, 0));
 		fclose($fp);
-		return $count;
+		if ($count <= 0) {
+			@unlink($outZip);
+			return array(
+				'count' => 0,
+				'error' => 'Egyetlen fájl sem került a ZIP-be (' . $candidates . ' jelölt). Olvasási vagy tömörítési hiba.',
+			);
+		}
+		return array('count' => $count, 'error' => '');
 	}
 }
 
@@ -1949,11 +1987,19 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 				}
 				return array('ok' => true, 'path' => null, 'message' => $msg, 'file_count' => 0, 'skipped' => true);
 			}
-			$fileCount = alatinfo_backup_zip_write_stream($outZip, $entries, $onFileProgress);
+			$write = alatinfo_backup_zip_write_stream($outZip, $entries, $onFileProgress);
+			$fileCount = (int) $write['count'];
 			$zipSize = is_file($outZip) ? filesize($outZip) : false;
 			if ($fileCount <= 0 || !is_int($zipSize) || $zipSize < 64) {
 				@unlink($outZip);
-				return array('ok' => false, 'path' => null, 'message' => 'ZIP írása sikertelen (üres vagy túl kicsi).', 'file_count' => 0, 'skipped' => false);
+				$err = (string) ($write['error'] ?? '');
+				return array(
+					'ok' => false,
+					'path' => null,
+					'message' => $err !== '' ? $err : ('ZIP írása sikertelen (üres vagy túl kicsi, jelölt: ' . count($entries) . ').'),
+					'file_count' => 0,
+					'skipped' => false,
+				);
 			}
 			$msg = 'ZIP kész (' . $fileCount . ' fájl).';
 			if ($skippedByDate > 0) {
@@ -1968,7 +2014,6 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 			);
 		} catch (Throwable $e) {
 			@unlink($outZip);
-			@unlink($outZip . '.cd');
 			return array(
 				'ok' => false,
 				'path' => null,
