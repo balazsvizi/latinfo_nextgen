@@ -408,15 +408,21 @@ $backupSteps = array(
 
 	function parseStepJson(resp) {
 		return resp.text().then(function (text) {
+			var trimmed = (text || '').replace(/^\uFEFF/, '').trim();
+			if (!trimmed) {
+				throw new Error('Üres válasz a szervertől (HTTP ' + resp.status + ') – timeout vagy memóriahiány a ZIP lépésnél.');
+			}
 			try {
-				return JSON.parse(text);
+				return JSON.parse(trimmed);
 			} catch (e) {
-				var msg = 'A szerver nem JSON-t adott vissza.';
-				var m = text.match(/<b>(Fatal error|Warning|Notice|Parse error|Deprecated)<\/b>\s*:\s*([^<]+)/i);
+				var msg = 'A szerver nem JSON-t adott vissza (HTTP ' + resp.status + ').';
+				var m = trimmed.match(/<b>(Fatal error|Warning|Notice|Parse error|Deprecated)<\/b>\s*:\s*([^<\n]+)/i);
 				if (m) {
 					msg = (m[1] + ': ' + m[2]).replace(/\s+/g, ' ').trim();
-				} else if (text.replace(/^\s+/, '').indexOf('<') === 0) {
-					msg = 'Szerver HTML hibát küldött a ZIP/feltöltés lépésnél. Nézd a PHP error logot.';
+				} else if (trimmed.indexOf('<') === 0) {
+					msg = 'Szerver HTML hibát küldött. Részlet: ' + trimmed.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+				} else {
+					msg += ' Részlet: ' + trimmed.slice(0, 180);
 				}
 				throw new Error(msg);
 			}

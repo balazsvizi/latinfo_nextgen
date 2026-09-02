@@ -155,12 +155,44 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 	function alatinfo_backup_google_drive_handle_step(PDO $db): void
 	{
 		@ini_set('display_errors', '0');
+		@ini_set('memory_limit', '1024M');
 		if (ob_get_level() === 0) {
 			ob_start();
 		}
+		$fatalSent = false;
+		register_shutdown_function(static function () use (&$fatalSent): void {
+			if ($fatalSent || !empty($GLOBALS['alatinfo_backup_json_sent'])) {
+				return;
+			}
+			$err = error_get_last();
+			if ($err === null) {
+				return;
+			}
+			$type = (int) ($err['type'] ?? 0);
+			if (!in_array($type, array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR), true)) {
+				return;
+			}
+			$fatalSent = true;
+			$msg = (string) ($err['message'] ?? 'Ismeretlen fatal error');
+			error_log('backup step fatal: ' . $msg);
+			while (ob_get_level() > 0) {
+				ob_end_clean();
+			}
+			if (!headers_sent()) {
+				http_response_code(500);
+				header('Content-Type: application/json; charset=UTF-8');
+			}
+			echo json_encode(array(
+				'ok' => false,
+				'messages' => array('Szerver fatal hiba: ' . $msg),
+				'progress' => null,
+			), JSON_UNESCAPED_UNICODE);
+		});
 		try {
 			alatinfo_backup_google_drive_run_step($db);
+			$fatalSent = true;
 		} catch (Throwable $e) {
+			$fatalSent = true;
 			error_log('backup step: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 			alatinfo_backup_drive_json_response(array(
 				'ok' => false,

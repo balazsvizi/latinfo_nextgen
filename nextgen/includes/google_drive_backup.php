@@ -1504,6 +1504,7 @@ if (!function_exists('alatinfo_backup_default_exclude_paths')) {
 		return array(
 			'.git',
 			'node_modules',
+			'vendor',
 			'.svn',
 			'__MACOSX',
 			'secret_folder',
@@ -1511,6 +1512,8 @@ if (!function_exists('alatinfo_backup_default_exclude_paths')) {
 			'nextgen/node_modules',
 			'nextgen/database/backups',
 			'nextgen/database/dumps',
+			'wp-content/cache',
+			'wp-content/upgrade',
 		);
 	}
 }
@@ -1520,7 +1523,13 @@ if (!function_exists('alatinfo_backup_rel_excluded')) {
 	function alatinfo_backup_rel_excluded(string $rel, array $excludeMap): bool
 	{
 		foreach (explode('/', $rel) as $part) {
-			if ($part === '.git' || $part === 'node_modules' || $part === '.svn' || $part === '__MACOSX') {
+			if (
+				$part === '.git'
+				|| $part === 'node_modules'
+				|| $part === 'vendor'
+				|| $part === '.svn'
+				|| $part === '__MACOSX'
+			) {
 				return true;
 			}
 		}
@@ -1693,49 +1702,84 @@ if (!function_exists('alatinfo_backup_zip_dos_time')) {
 	}
 }
 
-if (!function_exists('alatinfo_backup_zip_write_deflate')) {
+if (!function_exists('alatinfo_backup_zip_append_entry')) {
 	/**
-	 * ZipArchive nélküli ZIP (deflate) – akkor használjuk, ha a zip PHP-kiterjesztés nincs betöltve.
+	 * Egy fájl hozzáadása nyitott ZIP streamhez (kis fájl: deflate, nagy: store).
 	 *
-	 * @param list<array{0:string,1:string}> $entries [abszolút útvonal, zipbeli név]
+	 * @param resource $fp
+	 * @param resource $cdFp
+	 * @return array{ok:bool,offset:int}|null null = kihagyva
 	 */
-	function alatinfo_backup_zip_write_deflate(string $outZip, array $entries): bool
+	function alatinfo_backup_zip_append_entry($fp, $cdFp, string $full, string $name, int $offset): ?array
 	{
-		$fp = fopen($outZip, 'wb');
-		if ($fp === false) {
-			return false;
+		$name = str_replace('\\', '/', $name);
+		if ($name === '' || strlen($name) > 65535 || !is_readable($full)) {
+			return null;
 		}
-		$central = '';
-		$offset = 0;
-		$count = 0;
-		foreach ($entries as $entry) {
-			$full = $entry[0];
-			$name = str_replace('\\', '/', $entry[1]);
-			if ($name === '' || strlen($name) > 65535) {
-				continue;
+		$size = @filesize($full);
+		if (!is_int($size) || $size < 0) {
+			return null;
+		}
+		// 100 MB felett kihagyjuk – Drive mentéshez általában nem kell óriás dump/média
+		if ($size > 100 * 1024 * 1024) {
+			return null;
+		}
+		$mtime = @filemtime($full);
+		$dos = alatinfo_backup_zip_dos_time($mtime !== false ? $mtime : time());
+		$nameLen = strlen($name);
+		$gpFlag = 0x0800;
+		$useStore = $size > 4 * 1024 * 1024;
+
+		if ($useStore) {
+			$crcHex = @hash_file('crc32b', $full);
+			if (!is_string($crcHex) || $crcHex === '') {
+				return null;
 			}
+			$crc = hexdec($crcHex);
+			$method = 0;
+			$compSize = $size;
+			$local = pack(
+				'VvvvvvVVVvv',
+				0x04034b50,
+				20,
+				$gpFlag,
+				$method,
+				$dos['time'],
+				$dos['date'],
+				$crc,
+				$compSize,
+				$size,
+				$nameLen,
+				0
+			);
+			fwrite($fp, $local);
+			fwrite($fp, $name);
+			$in = fopen($full, 'rb');
+			if ($in === false) {
+				return null;
+			}
+			stream_copy_to_stream($in, $fp);
+			fclose($in);
+		} else {
 			$raw = @file_get_contents($full);
 			if (!is_string($raw)) {
-				continue;
+				return null;
 			}
 			$crc = crc32($raw);
 			$uncomp = strlen($raw);
 			$comp = gzdeflate($raw, 6);
 			unset($raw);
 			if (!is_string($comp)) {
-				continue;
+				return null;
 			}
+			$method = 8;
 			$compSize = strlen($comp);
-			$mtime = @filemtime($full);
-			$dos = alatinfo_backup_zip_dos_time($mtime !== false ? $mtime : time());
-			$nameLen = strlen($name);
-			$gpFlag = 0x0800;
 			$local = pack(
 				'VvvvvvVVVvv',
 				0x04034b50,
 				20,
 				$gpFlag,
-				8,
+				$method,
 				$dos['time'],
 				$dos['date'],
 				$crc,
@@ -1747,34 +1791,81 @@ if (!function_exists('alatinfo_backup_zip_write_deflate')) {
 			fwrite($fp, $local);
 			fwrite($fp, $name);
 			fwrite($fp, $comp);
-			$central .= pack(
-				'VvvvvvvVVVvvvvvVV',
-				0x02014b50,
-				20,
-				20,
-				$gpFlag,
-				8,
-				$dos['time'],
-				$dos['date'],
-				$crc,
-				$compSize,
-				$uncomp,
-				$nameLen,
-				0,
-				0,
-				0,
-				0,
-				0,
-				$offset
-			) . $name;
-			$offset += strlen($local) + $nameLen + $compSize;
-			$count++;
+			unset($comp);
+			$size = $uncomp;
 		}
-		$cdSize = strlen($central);
-		fwrite($fp, $central);
+
+		$central = pack(
+			'VvvvvvvVVVvvvvvVV',
+			0x02014b50,
+			20,
+			20,
+			$gpFlag,
+			$method,
+			$dos['time'],
+			$dos['date'],
+			$crc,
+			$compSize,
+			$size,
+			$nameLen,
+			0,
+			0,
+			0,
+			0,
+			0,
+			$offset
+		) . $name;
+		fwrite($cdFp, $central);
+		$newOffset = $offset + strlen($local) + $nameLen + $compSize;
+
+		return array('ok' => true, 'offset' => $newOffset);
+	}
+}
+
+if (!function_exists('alatinfo_backup_zip_write_stream')) {
+	/**
+	 * Alacsony memóriájú ZIP írás: fájlonként, ZipArchive nélkül.
+	 *
+	 * @param list<array{0:string,1:string}> $entries
+	 * @param callable(int $fileCount): void|null $onFileProgress
+	 */
+	function alatinfo_backup_zip_write_stream(string $outZip, array $entries, ?callable $onFileProgress = null): int
+	{
+		if (is_file($outZip)) {
+			@unlink($outZip);
+		}
+		$fp = fopen($outZip, 'wb');
+		if ($fp === false) {
+			return 0;
+		}
+		$cdPath = $outZip . '.cd';
+		$cdFp = fopen($cdPath, 'wb+');
+		if ($cdFp === false) {
+			fclose($fp);
+			@unlink($outZip);
+			return 0;
+		}
+		$offset = 0;
+		$count = 0;
+		foreach ($entries as $entry) {
+			$added = alatinfo_backup_zip_append_entry($fp, $cdFp, $entry[0], $entry[1], $offset);
+			if ($added === null) {
+				continue;
+			}
+			$offset = $added['offset'];
+			$count++;
+			if ($onFileProgress !== null) {
+				$onFileProgress($count);
+			}
+		}
+		$cdSize = (int) ftell($cdFp);
+		rewind($cdFp);
+		stream_copy_to_stream($cdFp, $fp);
+		fclose($cdFp);
+		@unlink($cdPath);
 		fwrite($fp, pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, $cdSize, $offset, 0));
 		fclose($fp);
-		return $count > 0;
+		return $count;
 	}
 }
 
@@ -1793,6 +1884,8 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 	): array {
 		$fileCount = 0;
 		$skippedByDate = 0;
+		@ini_set('memory_limit', '1024M');
+		@set_time_limit(0);
 		try {
 			$root = realpath($rootDir);
 			if ($root === false) {
@@ -1848,8 +1941,7 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 					continue;
 				}
 			}
-			$fileCount = count($entries);
-			if ($fileCount === 0) {
+			if ($entries === array()) {
 				@unlink($outZip);
 				$msg = 'Nincs a szűrőnek megfelelő fájl.';
 				if ($skippedByDate > 0) {
@@ -1857,46 +1949,15 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 				}
 				return array('ok' => true, 'path' => null, 'message' => $msg, 'file_count' => 0, 'skipped' => true);
 			}
-			$written = false;
-			if (class_exists('ZipArchive')) {
-				if (is_file($outZip)) {
-					@unlink($outZip);
-				}
-				$zip = new ZipArchive();
-				if ($zip->open($outZip, ZipArchive::CREATE) === true) {
-					foreach ($entries as $i => $entry) {
-						$contents = @file_get_contents($entry[0]);
-						if (!is_string($contents)) {
-							continue;
-						}
-						$zip->addFromString($entry[1], $contents);
-						if ($onFileProgress !== null) {
-							$onFileProgress($i + 1);
-						}
-					}
-					$written = @$zip->close();
-				}
-			}
-			if (!$written) {
-				if (is_file($outZip)) {
-					@unlink($outZip);
-				}
-				$written = alatinfo_backup_zip_write_deflate($outZip, $entries);
-				if ($onFileProgress !== null) {
-					$onFileProgress($fileCount);
-				}
-			}
+			$fileCount = alatinfo_backup_zip_write_stream($outZip, $entries, $onFileProgress);
 			$zipSize = is_file($outZip) ? filesize($outZip) : false;
-			if (!$written || !is_int($zipSize) || $zipSize < 64) {
+			if ($fileCount <= 0 || !is_int($zipSize) || $zipSize < 64) {
 				@unlink($outZip);
-				return array('ok' => false, 'path' => null, 'message' => 'ZIP írása sikertelen (üres vagy túl kicsi).', 'file_count' => $fileCount, 'skipped' => false);
+				return array('ok' => false, 'path' => null, 'message' => 'ZIP írása sikertelen (üres vagy túl kicsi).', 'file_count' => 0, 'skipped' => false);
 			}
 			$msg = 'ZIP kész (' . $fileCount . ' fájl).';
 			if ($skippedByDate > 0) {
 				$msg .= ' Kihagyva dátum miatt: ' . $skippedByDate . '.';
-			}
-			if (!class_exists('ZipArchive')) {
-				$msg .= ' (PHP zip kiterjesztés nélkül.)';
 			}
 			return array(
 				'ok' => true,
@@ -1907,6 +1968,7 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 			);
 		} catch (Throwable $e) {
 			@unlink($outZip);
+			@unlink($outZip . '.cd');
 			return array(
 				'ok' => false,
 				'path' => null,
@@ -2144,6 +2206,7 @@ if (!function_exists('alatinfo_backup_drive_json_response')) {
 	/** @param array<string,mixed> $data */
 	function alatinfo_backup_drive_json_response(array $data, int $code = 200): void
 	{
+		$GLOBALS['alatinfo_backup_json_sent'] = true;
 		while (ob_get_level() > 0) {
 			ob_end_clean();
 		}
