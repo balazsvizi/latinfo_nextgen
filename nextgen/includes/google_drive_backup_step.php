@@ -130,6 +130,7 @@ if (!function_exists('alatinfo_backup_google_drive_step_progress')) {
 if (!function_exists('alatinfo_backup_google_drive_handle_poll')) {
 	function alatinfo_backup_google_drive_handle_poll(): void
 	{
+		@ini_set('display_errors', '0');
 		if (!function_exists('isLoggedIn') || !isLoggedIn() || !function_exists('isSuperadmin') || !isSuperadmin()) {
 			alatinfo_backup_drive_json_response(array('ok' => false, 'progress' => null), 403);
 			return;
@@ -152,6 +153,26 @@ if (!function_exists('alatinfo_backup_google_drive_handle_poll')) {
 
 if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 	function alatinfo_backup_google_drive_handle_step(PDO $db): void
+	{
+		@ini_set('display_errors', '0');
+		if (ob_get_level() === 0) {
+			ob_start();
+		}
+		try {
+			alatinfo_backup_google_drive_run_step($db);
+		} catch (Throwable $e) {
+			error_log('backup step: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+			alatinfo_backup_drive_json_response(array(
+				'ok' => false,
+				'messages' => array('Szerverhiba a mentés során: ' . $e->getMessage()),
+				'progress' => null,
+			), 500);
+		}
+	}
+}
+
+if (!function_exists('alatinfo_backup_google_drive_run_step')) {
+	function alatinfo_backup_google_drive_run_step(PDO $db): void
 	{
 		$guard = alatinfo_backup_google_drive_step_guard();
 		if (!$guard['ok']) {

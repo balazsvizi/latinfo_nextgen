@@ -1519,6 +1519,11 @@ if (!function_exists('alatinfo_backup_rel_excluded')) {
 	/** @param array<string, true> $excludeMap */
 	function alatinfo_backup_rel_excluded(string $rel, array $excludeMap): bool
 	{
+		foreach (explode('/', $rel) as $part) {
+			if ($part === '.git' || $part === 'node_modules' || $part === '.svn' || $part === '__MACOSX') {
+				return true;
+			}
+		}
 		foreach ($excludeMap as $prefix => $_) {
 			if ($rel === $prefix || strpos($rel, $prefix . '/') === 0) {
 				return true;
@@ -1676,6 +1681,103 @@ if (!function_exists('alatinfo_backup_create_full_zip')) {
 	}
 }
 
+if (!function_exists('alatinfo_backup_zip_dos_time')) {
+	/** @return array{time:int,date:int} */
+	function alatinfo_backup_zip_dos_time(int $timestamp): array
+	{
+		$d = getdate($timestamp);
+		return array(
+			'time' => (($d['hours'] & 0x1F) << 11) | (($d['minutes'] & 0x3F) << 5) | ((int) floor($d['seconds'] / 2) & 0x1F),
+			'date' => ((($d['year'] - 1980) & 0x7F) << 9) | (($d['mon'] & 0xF) << 5) | ($d['mday'] & 0x1F),
+		);
+	}
+}
+
+if (!function_exists('alatinfo_backup_zip_write_deflate')) {
+	/**
+	 * ZipArchive nélküli ZIP (deflate) – akkor használjuk, ha a zip PHP-kiterjesztés nincs betöltve.
+	 *
+	 * @param list<array{0:string,1:string}> $entries [abszolút útvonal, zipbeli név]
+	 */
+	function alatinfo_backup_zip_write_deflate(string $outZip, array $entries): bool
+	{
+		$fp = fopen($outZip, 'wb');
+		if ($fp === false) {
+			return false;
+		}
+		$central = '';
+		$offset = 0;
+		$count = 0;
+		foreach ($entries as $entry) {
+			$full = $entry[0];
+			$name = str_replace('\\', '/', $entry[1]);
+			if ($name === '' || strlen($name) > 65535) {
+				continue;
+			}
+			$raw = @file_get_contents($full);
+			if (!is_string($raw)) {
+				continue;
+			}
+			$crc = crc32($raw);
+			$uncomp = strlen($raw);
+			$comp = gzdeflate($raw, 6);
+			unset($raw);
+			if (!is_string($comp)) {
+				continue;
+			}
+			$compSize = strlen($comp);
+			$mtime = @filemtime($full);
+			$dos = alatinfo_backup_zip_dos_time($mtime !== false ? $mtime : time());
+			$nameLen = strlen($name);
+			$gpFlag = 0x0800;
+			$local = pack(
+				'VvvvvvVVVvv',
+				0x04034b50,
+				20,
+				$gpFlag,
+				8,
+				$dos['time'],
+				$dos['date'],
+				$crc,
+				$compSize,
+				$uncomp,
+				$nameLen,
+				0
+			);
+			fwrite($fp, $local);
+			fwrite($fp, $name);
+			fwrite($fp, $comp);
+			$central .= pack(
+				'VvvvvvvVVVvvvvvVV',
+				0x02014b50,
+				20,
+				20,
+				$gpFlag,
+				8,
+				$dos['time'],
+				$dos['date'],
+				$crc,
+				$compSize,
+				$uncomp,
+				$nameLen,
+				0,
+				0,
+				0,
+				0,
+				0,
+				$offset
+			) . $name;
+			$offset += strlen($local) + $nameLen + $compSize;
+			$count++;
+		}
+		$cdSize = strlen($central);
+		fwrite($fp, $central);
+		fwrite($fp, pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, $cdSize, $offset, 0));
+		fclose($fp);
+		return $count > 0;
+	}
+}
+
 if (!function_exists('alatinfo_backup_zip_dir')) {
 	/**
 	 * @param array<int,string> $excludeRel
@@ -1691,74 +1793,128 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 	): array {
 		$fileCount = 0;
 		$skippedByDate = 0;
-		if (!class_exists('ZipArchive')) {
-			return array('ok' => false, 'path' => null, 'message' => 'Nincs ZipArchive kiterjesztés.', 'file_count' => 0, 'skipped' => false);
-		}
-		$root = realpath($rootDir);
-		if ($root === false) {
-			return array('ok' => false, 'path' => null, 'message' => 'Gyökérkönyvtár nem található.', 'file_count' => 0, 'skipped' => false);
-		}
-		$ex = array();
-		foreach ($excludeRel as $r) {
-			$r = str_replace('\\', '/', trim((string)$r, "/\\"));
-			if ($r !== '') {
-				$ex[$r] = true;
+		try {
+			$root = realpath($rootDir);
+			if ($root === false) {
+				return array('ok' => false, 'path' => null, 'message' => 'Gyökérkönyvtár nem található.', 'file_count' => 0, 'skipped' => false);
 			}
-		}
-		$zip = new ZipArchive();
-		if ($zip->open($outZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-			return array('ok' => false, 'path' => null, 'message' => 'ZIP megnyitása sikertelen.', 'file_count' => 0, 'skipped' => false);
-		}
-		$it = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
-			RecursiveIteratorIterator::LEAVES_ONLY
-		);
-		foreach ($it as $file) {
-			/** @var SplFileInfo $file */
-			if (!$file->isFile()) {
-				continue;
+			$rootNorm = rtrim(str_replace('\\', '/', $root), '/');
+			$ex = array();
+			foreach ($excludeRel as $r) {
+				$r = str_replace('\\', '/', trim((string) $r, "/\\"));
+				if ($r !== '') {
+					$ex[$r] = true;
+				}
 			}
-			$full = $file->getRealPath();
-			if ($full === false) {
-				continue;
+			$filter = new RecursiveCallbackFilterIterator(
+				new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+				static function ($current) use ($rootNorm, $ex): bool {
+					/** @var SplFileInfo $current */
+					$path = str_replace('\\', '/', (string) $current->getPathname());
+					$rel = ltrim(substr($path, strlen($rootNorm)), '/');
+					if ($rel === '') {
+						return true;
+					}
+					return !alatinfo_backup_rel_excluded($rel, $ex);
+				}
+			);
+			$it = new RecursiveIteratorIterator($filter, RecursiveIteratorIterator::LEAVES_ONLY, RecursiveIteratorIterator::CATCH_GET_CHILD);
+			/** @var list<array{0:string,1:string}> $entries */
+			$entries = array();
+			foreach ($it as $file) {
+				/** @var SplFileInfo $file */
+				try {
+					if (!$file->isFile()) {
+						continue;
+					}
+					$full = $file->getRealPath();
+					if ($full === false) {
+						continue;
+					}
+					$fullNorm = str_replace('\\', '/', $full);
+					if ($fullNorm !== $rootNorm && strpos($fullNorm, $rootNorm . '/') !== 0) {
+						continue;
+					}
+					$rel = ltrim(substr($fullNorm, strlen($rootNorm)), '/');
+					if ($rel === '' || alatinfo_backup_rel_excluded($rel, $ex)) {
+						continue;
+					}
+					if ($minMtime !== null && $file->getMTime() < $minMtime) {
+						$skippedByDate++;
+						continue;
+					}
+					$entries[] = array($full, 'site/' . $rel);
+				} catch (Throwable $e) {
+					continue;
+				}
 			}
-			$rel = ltrim(str_replace('\\', '/', substr($full, strlen($root))), '/');
-			if (alatinfo_backup_rel_excluded($rel, $ex)) {
-				continue;
+			$fileCount = count($entries);
+			if ($fileCount === 0) {
+				@unlink($outZip);
+				$msg = 'Nincs a szűrőnek megfelelő fájl.';
+				if ($skippedByDate > 0) {
+					$msg .= ' (' . $skippedByDate . ' fájl kihagyva dátum miatt.)';
+				}
+				return array('ok' => true, 'path' => null, 'message' => $msg, 'file_count' => 0, 'skipped' => true);
 			}
-			if ($minMtime !== null && $file->getMTime() < $minMtime) {
-				$skippedByDate++;
-				continue;
+			$written = false;
+			if (class_exists('ZipArchive')) {
+				if (is_file($outZip)) {
+					@unlink($outZip);
+				}
+				$zip = new ZipArchive();
+				if ($zip->open($outZip, ZipArchive::CREATE) === true) {
+					foreach ($entries as $i => $entry) {
+						$contents = @file_get_contents($entry[0]);
+						if (!is_string($contents)) {
+							continue;
+						}
+						$zip->addFromString($entry[1], $contents);
+						if ($onFileProgress !== null) {
+							$onFileProgress($i + 1);
+						}
+					}
+					$written = @$zip->close();
+				}
 			}
-			$zip->addFile($full, 'site/' . $rel);
-			$fileCount++;
-			if ($onFileProgress !== null) {
-				$onFileProgress($fileCount);
+			if (!$written) {
+				if (is_file($outZip)) {
+					@unlink($outZip);
+				}
+				$written = alatinfo_backup_zip_write_deflate($outZip, $entries);
+				if ($onFileProgress !== null) {
+					$onFileProgress($fileCount);
+				}
 			}
-		}
-		$zip->close();
-		if ($fileCount === 0) {
-			@unlink($outZip);
-			$msg = 'Nincs a szűrőnek megfelelő fájl.';
+			$zipSize = is_file($outZip) ? filesize($outZip) : false;
+			if (!$written || !is_int($zipSize) || $zipSize < 64) {
+				@unlink($outZip);
+				return array('ok' => false, 'path' => null, 'message' => 'ZIP írása sikertelen (üres vagy túl kicsi).', 'file_count' => $fileCount, 'skipped' => false);
+			}
+			$msg = 'ZIP kész (' . $fileCount . ' fájl).';
 			if ($skippedByDate > 0) {
-				$msg .= ' (' . $skippedByDate . ' fájl kihagyva dátum miatt.)';
+				$msg .= ' Kihagyva dátum miatt: ' . $skippedByDate . '.';
 			}
-			return array('ok' => true, 'path' => null, 'message' => $msg, 'file_count' => 0, 'skipped' => true);
+			if (!class_exists('ZipArchive')) {
+				$msg .= ' (PHP zip kiterjesztés nélkül.)';
+			}
+			return array(
+				'ok' => true,
+				'path' => $outZip,
+				'message' => $msg,
+				'file_count' => $fileCount,
+				'skipped' => false,
+			);
+		} catch (Throwable $e) {
+			@unlink($outZip);
+			return array(
+				'ok' => false,
+				'path' => null,
+				'message' => 'ZIP hiba: ' . $e->getMessage(),
+				'file_count' => $fileCount,
+				'skipped' => false,
+			);
 		}
-		if (!is_file($outZip) || filesize($outZip) < 64) {
-			return array('ok' => false, 'path' => null, 'message' => 'ZIP üres vagy túl kicsi.', 'file_count' => $fileCount, 'skipped' => false);
-		}
-		$msg = 'ZIP kész (' . $fileCount . ' fájl).';
-		if ($skippedByDate > 0) {
-			$msg .= ' Kihagyva dátum miatt: ' . $skippedByDate . '.';
-		}
-		return array(
-			'ok' => true,
-			'path' => $outZip,
-			'message' => $msg,
-			'file_count' => $fileCount,
-			'skipped' => false,
-		);
 	}
 }
 
@@ -1988,10 +2144,20 @@ if (!function_exists('alatinfo_backup_drive_json_response')) {
 	/** @param array<string,mixed> $data */
 	function alatinfo_backup_drive_json_response(array $data, int $code = 200): void
 	{
-		http_response_code($code);
-		header('Content-Type: application/json; charset=UTF-8');
-		header('Cache-Control: no-cache');
-		echo json_encode($data, JSON_UNESCAPED_UNICODE);
+		while (ob_get_level() > 0) {
+			ob_end_clean();
+		}
+		if (!headers_sent()) {
+			http_response_code($code);
+			header('Content-Type: application/json; charset=UTF-8');
+			header('Cache-Control: no-cache');
+		}
+		$json = json_encode($data, JSON_UNESCAPED_UNICODE);
+		if ($json === false) {
+			$json = '{"ok":false,"messages":["JSON kódolási hiba."]}';
+		}
+		echo $json;
+		exit;
 	}
 }
 
@@ -2200,20 +2366,25 @@ if (!function_exists('alatinfo_backup_rrmdir')) {
 		if (!is_dir($dir)) {
 			return;
 		}
-		$it = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-			RecursiveIteratorIterator::CHILD_FIRST
-		);
-		foreach ($it as $f) {
-			$p = $f->getRealPath();
-			if ($p === false) {
-				continue;
+		try {
+			$it = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+				RecursiveIteratorIterator::CHILD_FIRST,
+				RecursiveIteratorIterator::CATCH_GET_CHILD
+			);
+			foreach ($it as $f) {
+				$p = $f->getRealPath();
+				if ($p === false) {
+					continue;
+				}
+				if ($f->isDir()) {
+					@rmdir($p);
+				} else {
+					@unlink($p);
+				}
 			}
-			if ($f->isDir()) {
-				@rmdir($p);
-			} else {
-				@unlink($p);
-			}
+		} catch (Throwable $e) {
+			error_log('backup rrmdir: ' . $e->getMessage());
 		}
 		@rmdir($dir);
 	}

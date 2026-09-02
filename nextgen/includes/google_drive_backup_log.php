@@ -212,15 +212,19 @@ if (!function_exists('alatinfo_gdrive_backup_log_finish')) {
 		} catch (Throwable $e) {
 			return;
 		}
-		if (function_exists('rendszer_log')) {
-			$summary = ($ok ? 'Sikeres' : 'Sikertelen') . ' Drive mentés';
-			if ($sqlDriveName !== null) {
-				$summary .= ' SQL: ' . $sqlDriveName;
+		try {
+			if (function_exists('rendszer_log')) {
+				$summary = ($ok ? 'Sikeres' : 'Sikertelen') . ' Drive mentés';
+				if ($sqlDriveName !== null) {
+					$summary .= ' SQL: ' . $sqlDriveName;
+				}
+				if ($zipDriveName !== null) {
+					$summary .= ' ZIP: ' . $zipDriveName;
+				}
+				rendszer_log('gdrive_backup', $logId, $ok ? 'Mentés kész' : 'Mentés hiba', $summary);
 			}
-			if ($zipDriveName !== null) {
-				$summary .= ' ZIP: ' . $zipDriveName;
-			}
-			rendszer_log('gdrive_backup', $logId, $ok ? 'Mentés kész' : 'Mentés hiba', $summary);
+		} catch (Throwable $e) {
+			error_log('gdrive backup rendszer_log: ' . $e->getMessage());
 		}
 	}
 }

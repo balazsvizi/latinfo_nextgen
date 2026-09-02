@@ -406,6 +406,23 @@ $backupSteps = array(
 		}
 	}
 
+	function parseStepJson(resp) {
+		return resp.text().then(function (text) {
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				var msg = 'A szerver nem JSON-t adott vissza.';
+				var m = text.match(/<b>(Fatal error|Warning|Notice|Parse error|Deprecated)<\/b>\s*:\s*([^<]+)/i);
+				if (m) {
+					msg = (m[1] + ': ' + m[2]).replace(/\s+/g, ' ').trim();
+				} else if (text.replace(/^\s+/, '').indexOf('<') === 0) {
+					msg = 'Szerver HTML hibát küldött a ZIP/feltöltés lépésnél. Nézd a PHP error logot.';
+				}
+				throw new Error(msg);
+			}
+		});
+	}
+
 	function requestCancel() {
 		if (!form || !cancelUrl) {
 			return Promise.resolve();
@@ -621,7 +638,7 @@ $backupSteps = array(
 			}
 			return fetch(stepUrl, fetchOpts)
 				.then(function (resp) {
-					return resp.json().then(function (j) {
+					return parseStepJson(resp).then(function (j) {
 						if (!resp.ok && !j) {
 							throw new Error('HTTP ' + resp.status);
 						}
