@@ -16,9 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($fh === '' || $jelszo === '') {
         $hiba = 'Kérjük, töltse ki mindkét mezőt.';
     } elseif (login($fh, $jelszo)) {
-        $url = $_SESSION['_redirect_after_login'] ?? nextgen_url('apps.php');
+        $url = (string) ($_SESSION['_redirect_after_login'] ?? '');
         unset($_SESSION['_redirect_after_login']);
-        if ($url !== '' && $url[0] !== '/') {
+        if ($url === '' || !alatinfo_is_safe_post_login_redirect($url)) {
+            $url = nextgen_url('apps.php');
+        } elseif ($url !== '' && $url[0] !== '/') {
             $url = rtrim(BASE_URL, '/') . '/' . ltrim($url, '/');
         }
         redirect($url);
