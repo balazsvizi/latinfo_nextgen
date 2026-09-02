@@ -43,6 +43,51 @@ if (!function_exists('alatinfo_backup_project_root')) {
 	}
 }
 
+if (!function_exists('alatinfo_backup_writable_tmp_base')) {
+	/**
+	 * Írható temp alapkönyvtár: először a projekt backups mappája (hosting /tmp quota ellen),
+	 * majd sys_get_temp_dir().
+	 */
+	function alatinfo_backup_writable_tmp_base(): string
+	{
+		$candidates = array();
+		$root = alatinfo_backup_project_root();
+		$candidates[] = $root . DIRECTORY_SEPARATOR . 'nextgen' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'backups' . DIRECTORY_SEPARATOR . '.gdrive_tmp';
+		$sys = sys_get_temp_dir();
+		if (is_string($sys) && $sys !== '') {
+			$candidates[] = rtrim($sys, '/\\');
+		}
+		foreach ($candidates as $dir) {
+			if (!is_dir($dir)) {
+				@mkdir($dir, 0700, true);
+			}
+			if (!is_dir($dir) || !is_writable($dir)) {
+				continue;
+			}
+			$probe = $dir . DIRECTORY_SEPARATOR . '.wprobe_' . bin2hex(random_bytes(3));
+			if (@file_put_contents($probe, 'ok') === false) {
+				continue;
+			}
+			@unlink($probe);
+			return $dir;
+		}
+		return rtrim((string) sys_get_temp_dir(), '/\\');
+	}
+}
+
+if (!function_exists('alatinfo_backup_create_job_tmpdir')) {
+	/** @return string|null */
+	function alatinfo_backup_create_job_tmpdir(): ?string
+	{
+		$base = alatinfo_backup_writable_tmp_base();
+		$tmp = $base . DIRECTORY_SEPARATOR . 'alatinfo_bk_' . gmdate('Ymd_His') . '_' . bin2hex(random_bytes(4));
+		if (!@mkdir($tmp, 0700, true) && !is_dir($tmp)) {
+			return null;
+		}
+		return $tmp;
+	}
+}
+
 if (!function_exists('alatinfo_backup_drive_cfg')) {
 	function alatinfo_backup_drive_cfg(string $key, string $default = ''): string
 	{
@@ -1512,6 +1557,7 @@ if (!function_exists('alatinfo_backup_default_exclude_paths')) {
 			'nextgen/node_modules',
 			'nextgen/database/backups',
 			'nextgen/database/dumps',
+			'nextgen/database/backups/.gdrive_tmp',
 			'wp-content/cache',
 			'wp-content/upgrade',
 		);
@@ -1728,29 +1774,39 @@ if (!function_exists('alatinfo_backup_zip_crc32_bytes')) {
 }
 
 if (!function_exists('alatinfo_backup_zip_rel_from_root')) {
+	/**
+	 * Relatív útvonal a projektgyökérhez. Ha nem a gyökér alatt van, üres string.
+	 */
 	function alatinfo_backup_zip_rel_from_root(string $rootNorm, string $path): string
 	{
-		$pathNorm = ltrim(str_replace('\\', '/', $path), '/');
-		$rootNorm = rtrim($rootNorm, '/');
-		// Windows: case-insensitive prefix
-		$rootCmp = str_replace('\\', '/', $rootNorm);
-		$pathCmp = str_replace('\\', '/', $pathNorm);
-		if (DIRECTORY_SEPARATOR === '\\') {
-			if (stripos($pathCmp, $rootCmp . '/') === 0) {
-				return substr($pathCmp, strlen($rootCmp) + 1);
-			}
+		$rootCmp = rtrim(str_replace('\\', '/', $rootNorm), '/');
+		$pathCmp = str_replace('\\', '/', $path);
+		if ($rootCmp === '' || $pathCmp === '') {
+			return '';
+		}
+		$ci = DIRECTORY_SEPARATOR === '\\';
+		if ($ci) {
 			if (strcasecmp($pathCmp, $rootCmp) === 0) {
 				return '';
 			}
-		} else {
-			if (strpos($pathCmp, $rootCmp . '/') === 0) {
+			if (stripos($pathCmp, $rootCmp . '/') === 0) {
 				return substr($pathCmp, strlen($rootCmp) + 1);
 			}
-			if ($pathCmp === $rootCmp) {
-				return '';
+			// Ha valaki leading slash nélkül adja az egyiket
+			$rootTrim = ltrim($rootCmp, '/');
+			$pathTrim = ltrim($pathCmp, '/');
+			if (stripos($pathTrim, $rootTrim . '/') === 0) {
+				return substr($pathTrim, strlen($rootTrim) + 1);
 			}
+			return '';
 		}
-		return ltrim($pathCmp, '/');
+		if ($pathCmp === $rootCmp) {
+			return '';
+		}
+		if (str_starts_with($pathCmp, $rootCmp . '/')) {
+			return substr($pathCmp, strlen($rootCmp) + 1);
+		}
+		return '';
 	}
 }
 
@@ -1824,7 +1880,11 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 			0
 		);
 		if (fwrite($fp, $local) === false || fwrite($fp, $name) === false) {
+			$err = error_get_last();
 			$failReason = 'ZIP header írás sikertelen';
+			if (is_array($err) && !empty($err['message'])) {
+				$failReason .= ' (' . (string) $err['message'] . ')';
+			}
 			return null;
 		}
 		if ($compSize > 0 && fwrite($fp, $payload) === false) {
@@ -1921,13 +1981,44 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 		if ($outDir !== '' && $outDir !== '.' && !is_dir($outDir) && !@mkdir($outDir, 0700, true)) {
 			return array('count' => 0, 'error' => 'ZIP mappa létrehozása sikertelen: ' . $outDir);
 		}
+		$candidates = count($entries);
+		$firstFail = null;
+		$failSample = null;
+		$offset = 0;
+		$count = 0;
+
+		// Először ZipArchive (ha van) – megbízhatóbb hostingon
+		if (class_exists('ZipArchive')) {
+			$za = alatinfo_backup_zip_write_with_ziparchive($outZip, $entries, $onFileProgress);
+			if ($za['count'] > 0) {
+				return $za;
+			}
+			$firstFail = $za['error'] !== '' ? $za['error'] : 'ZipArchive sikertelen';
+		}
+
 		if (is_file($outZip)) {
 			@unlink($outZip);
 		}
 		$fp = @fopen($outZip, 'wb');
 		if ($fp === false) {
-			return array('count' => 0, 'error' => 'ZIP fájl megnyitása sikertelen.');
+			return array(
+				'count' => 0,
+				'error' => 'ZIP fájl megnyitása sikertelen.' . ($firstFail !== null ? ' (Előző: ' . $firstFail . ')' : ''),
+			);
 		}
+		if (fwrite($fp, 'PK') === false) {
+			$err = error_get_last();
+			fclose($fp);
+			@unlink($outZip);
+			$msg = 'ZIP fájl nem írható';
+			if (is_array($err) && !empty($err['message'])) {
+				$msg .= ' (' . (string) $err['message'] . ')';
+			}
+			return array('count' => 0, 'error' => $msg);
+		}
+		ftruncate($fp, 0);
+		rewind($fp);
+
 		$cdFp = @fopen('php://temp/maxmemory:8388608', 'wb+');
 		if ($cdFp === false) {
 			$cdFp = @fopen('php://temp', 'wb+');
@@ -1937,16 +2028,11 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 			@unlink($outZip);
 			return array('count' => 0, 'error' => 'ZIP központi könyvtár buffer megnyitása sikertelen.');
 		}
-		$offset = 0;
-		$count = 0;
-		$candidates = count($entries);
-		$firstFail = null;
-		$failSample = null;
 		foreach ($entries as $entry) {
 			$reason = null;
 			$added = alatinfo_backup_zip_append_entry($fp, $cdFp, $entry[0], $entry[1], $offset, $reason);
 			if ($added === null) {
-				if ($firstFail === null) {
+				if ($firstFail === null || str_starts_with((string) $firstFail, 'ZipArchive') || str_starts_with((string) $firstFail, 'Nincs Zip')) {
 					$firstFail = $reason ?? 'ismeretlen';
 					$failSample = $entry[1];
 				}
@@ -1968,11 +2054,6 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 			return array('count' => $count, 'error' => '');
 		}
 		@unlink($outZip);
-
-		$za = alatinfo_backup_zip_write_with_ziparchive($outZip, $entries, $onFileProgress);
-		if ($za['count'] > 0) {
-			return $za;
-		}
 
 		$detail = 'Egyetlen fájl sem került a ZIP-be (' . $candidates . ' jelölt).';
 		if ($firstFail !== null) {

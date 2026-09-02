@@ -273,13 +273,13 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				));
 				return;
 			}
-			$tmp = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'alatinfo_bk_' . gmdate('Ymd_His') . '_' . bin2hex(random_bytes(4));
-			if (!@mkdir($tmp, 0700, true)) {
+			$tmp = alatinfo_backup_create_job_tmpdir();
+			if ($tmp === null) {
 				alatinfo_backup_drive_job_clear();
 				alatinfo_backup_drive_json_response(array(
 					'ok' => false,
 					'job_id' => $jobId,
-					'messages' => array('Átmeneti mappa létrehozása sikertelen.'),
+					'messages' => array('Átmeneti mappa létrehozása sikertelen (nincs írható temp).'),
 					'progress' => $progress,
 				));
 				return;
