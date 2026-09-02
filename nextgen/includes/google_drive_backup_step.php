@@ -155,7 +155,7 @@ if (!function_exists('alatinfo_backup_google_drive_handle_step')) {
 	function alatinfo_backup_google_drive_handle_step(PDO $db): void
 	{
 		@ini_set('display_errors', '0');
-		@ini_set('memory_limit', '1024M');
+		@ini_set('memory_limit', '256M');
 		if (ob_get_level() === 0) {
 			ob_start();
 		}

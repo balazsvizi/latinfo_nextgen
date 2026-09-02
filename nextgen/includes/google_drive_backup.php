@@ -1812,6 +1812,9 @@ if (!function_exists('alatinfo_backup_zip_rel_from_root')) {
 
 if (!function_exists('alatinfo_backup_zip_append_entry')) {
 	/**
+	 * Alacsony memóriájú ZIP bejegyzés: alapból STORE + stream (nincs teljes fájl a RAM-ban).
+	 * Csak <=256KB fájloknál próbál deflate-et.
+	 *
 	 * @param resource $fp
 	 * @param resource $cdFp
 	 * @param-out string|null $failReason
@@ -1825,7 +1828,6 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 			$failReason = 'érvénytelen ZIP név';
 			return null;
 		}
-		// NE is_readable(): hostingon gyakran false, miközben a fájl olvasható
 		if (!is_file($full)) {
 			$failReason = 'nem fájl';
 			return null;
@@ -1843,27 +1845,39 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 		$dos = alatinfo_backup_zip_dos_time($mtime !== false ? $mtime : time());
 		$nameLen = strlen($name);
 		$gpFlag = 0x0800;
-
-		$raw = alatinfo_backup_zip_read_file($full);
-		if (!is_string($raw)) {
-			$failReason = 'olvasás sikertelen';
-			return null;
-		}
-		$size = strlen($raw);
-		$crc = alatinfo_backup_zip_crc32_bytes($raw);
 		$method = 0;
 		$compSize = $size;
-		$payload = $raw;
+		$crc = 0;
+		$payload = null;
 
-		if ($size <= 4 * 1024 * 1024 && function_exists('gzdeflate')) {
-			$comp = @gzdeflate($raw, 6);
-			if (is_string($comp)) {
-				$method = 8;
-				$compSize = strlen($comp);
-				$payload = $comp;
+		// Kis fájl: opcionális deflate (max ~512KB RAM egyszerre)
+		$deflateMax = 256 * 1024;
+		if ($size > 0 && $size <= $deflateMax && function_exists('gzdeflate')) {
+			$raw = alatinfo_backup_zip_read_file($full);
+			if (is_string($raw)) {
+				$size = strlen($raw);
+				$crc = alatinfo_backup_zip_crc32_bytes($raw);
+				$comp = @gzdeflate($raw, 6);
+				unset($raw);
+				if (is_string($comp)) {
+					$method = 8;
+					$compSize = strlen($comp);
+					$payload = $comp;
+				}
 			}
 		}
-		unset($raw);
+
+		if ($payload === null) {
+			// STORE: CRC lemezről, tartalom streamelve – konstans memória
+			$crcHex = @hash_file('crc32b', $full);
+			if (!is_string($crcHex) || $crcHex === '') {
+				$failReason = 'CRC számítás sikertelen';
+				return null;
+			}
+			$crc = (int) hexdec($crcHex);
+			$method = 0;
+			$compSize = $size;
+		}
 
 		$local = pack(
 			'VvvvvvVVVvv',
@@ -1887,11 +1901,26 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 			}
 			return null;
 		}
-		if ($compSize > 0 && fwrite($fp, $payload) === false) {
-			$failReason = 'ZIP adat írás sikertelen';
-			return null;
+
+		if ($payload !== null) {
+			if ($compSize > 0 && fwrite($fp, $payload) === false) {
+				$failReason = 'ZIP adat írás sikertelen';
+				return null;
+			}
+			unset($payload);
+		} elseif ($size > 0) {
+			$in = @fopen($full, 'rb');
+			if ($in === false) {
+				$failReason = 'olvasás sikertelen';
+				return null;
+			}
+			$copied = stream_copy_to_stream($in, $fp);
+			fclose($in);
+			if ($copied === false || (int) $copied !== $size) {
+				$failReason = 'stream másolás sikertelen';
+				return null;
+			}
 		}
-		unset($payload);
 
 		$central = pack(
 			'VvvvvvvVVVvvvvvVV',
@@ -1924,6 +1953,8 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 
 if (!function_exists('alatinfo_backup_zip_write_with_ziparchive')) {
 	/**
+	 * ZipArchive addFile-fel (nem addFromString) – alacsonyabb memória.
+	 *
 	 * @param list<array{0:string,1:string}> $entries
 	 * @param callable(int $fileCount): void|null $onFileProgress
 	 * @return array{count:int,error:string}
@@ -1947,18 +1978,17 @@ if (!function_exists('alatinfo_backup_zip_write_with_ziparchive')) {
 			if ($name === '' || !is_file($full)) {
 				continue;
 			}
-			$raw = alatinfo_backup_zip_read_file($full);
-			if (!is_string($raw)) {
-				continue;
-			}
-			if ($zip->addFromString($name, $raw) !== true) {
+			// addFile: a tartalom a close()-ig a lemezre hivatkozik, nem tölti be mindet
+			if ($zip->addFile($full, $name) !== true) {
 				continue;
 			}
 			$count++;
-			if ($onFileProgress !== null) {
+			if ($onFileProgress !== null && ($count % 25 === 0 || $count === 1)) {
 				$onFileProgress($count);
 			}
-			unset($raw);
+		}
+		if ($onFileProgress !== null && $count > 0) {
+			$onFileProgress($count);
 		}
 		$closed = @$zip->close();
 		if (!$closed || $count <= 0 || !is_file($outZip) || (int) filesize($outZip) < 64) {
@@ -1971,6 +2001,8 @@ if (!function_exists('alatinfo_backup_zip_write_with_ziparchive')) {
 
 if (!function_exists('alatinfo_backup_zip_write_stream')) {
 	/**
+	 * Elsődleges: streamelt STORE ZIP (konstans memória). ZipArchive csak tartalék.
+	 *
 	 * @param list<array{0:string,1:string}> $entries
 	 * @param callable(int $fileCount): void|null $onFileProgress
 	 * @return array{count:int,error:string}
@@ -1987,24 +2019,12 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 		$offset = 0;
 		$count = 0;
 
-		// Először ZipArchive (ha van) – megbízhatóbb hostingon
-		if (class_exists('ZipArchive')) {
-			$za = alatinfo_backup_zip_write_with_ziparchive($outZip, $entries, $onFileProgress);
-			if ($za['count'] > 0) {
-				return $za;
-			}
-			$firstFail = $za['error'] !== '' ? $za['error'] : 'ZipArchive sikertelen';
-		}
-
 		if (is_file($outZip)) {
 			@unlink($outZip);
 		}
 		$fp = @fopen($outZip, 'wb');
 		if ($fp === false) {
-			return array(
-				'count' => 0,
-				'error' => 'ZIP fájl megnyitása sikertelen.' . ($firstFail !== null ? ' (Előző: ' . $firstFail . ')' : ''),
-			);
+			return array('count' => 0, 'error' => 'ZIP fájl megnyitása sikertelen.');
 		}
 		if (fwrite($fp, 'PK') === false) {
 			$err = error_get_last();
@@ -2019,20 +2039,23 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 		ftruncate($fp, 0);
 		rewind($fp);
 
-		$cdFp = @fopen('php://temp/maxmemory:8388608', 'wb+');
+		// Central dir lemezre (ne nőjön a RAM a php://temp-ben sem nagy archívumnál)
+		$cdPath = $outZip . '.cd';
+		$cdFp = @fopen($cdPath, 'wb+');
 		if ($cdFp === false) {
-			$cdFp = @fopen('php://temp', 'wb+');
+			$cdFp = @fopen('php://temp/maxmemory:2097152', 'wb+');
 		}
 		if ($cdFp === false) {
 			fclose($fp);
 			@unlink($outZip);
-			return array('count' => 0, 'error' => 'ZIP központi könyvtár buffer megnyitása sikertelen.');
+			return array('count' => 0, 'error' => 'ZIP központi könyvtár megnyitása sikertelen.');
 		}
+
 		foreach ($entries as $entry) {
 			$reason = null;
 			$added = alatinfo_backup_zip_append_entry($fp, $cdFp, $entry[0], $entry[1], $offset, $reason);
 			if ($added === null) {
-				if ($firstFail === null || str_starts_with((string) $firstFail, 'ZipArchive') || str_starts_with((string) $firstFail, 'Nincs Zip')) {
+				if ($firstFail === null) {
 					$firstFail = $reason ?? 'ismeretlen';
 					$failSample = $entry[1];
 				}
@@ -2043,11 +2066,18 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 			if ($onFileProgress !== null) {
 				$onFileProgress($count);
 			}
+			// Időnként szabadítsuk a ciklust
+			if ($count % 100 === 0) {
+				gc_collect_cycles();
+			}
 		}
 		$cdSize = (int) ftell($cdFp);
 		rewind($cdFp);
 		stream_copy_to_stream($cdFp, $fp);
 		fclose($cdFp);
+		if (is_file($cdPath)) {
+			@unlink($cdPath);
+		}
 		fwrite($fp, pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, $cdSize, $offset, 0));
 		fclose($fp);
 		if ($count > 0 && is_file($outZip) && (int) filesize($outZip) >= 64) {
@@ -2055,12 +2085,20 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 		}
 		@unlink($outZip);
 
+		// Tartalék: ZipArchive addFile (nem addFromString)
+		$za = alatinfo_backup_zip_write_with_ziparchive($outZip, $entries, $onFileProgress);
+		if ($za['count'] > 0) {
+			return $za;
+		}
+
 		$detail = 'Egyetlen fájl sem került a ZIP-be (' . $candidates . ' jelölt).';
 		if ($firstFail !== null) {
 			$detail .= ' Első hiba: ' . $firstFail;
 			if (is_string($failSample) && $failSample !== '') {
 				$detail .= ' [' . $failSample . ']';
 			}
+		} elseif ($za['error'] !== '') {
+			$detail .= ' ' . $za['error'];
 		}
 		return array('count' => 0, 'error' => $detail);
 	}
@@ -2081,7 +2119,7 @@ if (!function_exists('alatinfo_backup_zip_dir')) {
 	): array {
 		$fileCount = 0;
 		$skippedByDate = 0;
-		@ini_set('memory_limit', '1024M');
+		@ini_set('memory_limit', '256M');
 		@set_time_limit(0);
 		try {
 			$root = realpath($rootDir);
