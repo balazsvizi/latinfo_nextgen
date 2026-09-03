@@ -451,9 +451,6 @@ $renderSplit = static function (
                         <th scope="col" rowspan="2">
                             <button type="button" class="th-sort" data-sort="name" aria-pressed="false">Név</button>
                         </th>
-                        <th scope="col" rowspan="2">
-                            <button type="button" class="th-sort" data-sort="status" aria-pressed="false">Státusz</button>
-                        </th>
                         <th class="th-center" scope="col" rowspan="2" title="Hány napig volt közzétéve az oldal a választott időszakban">
                             <button type="button" class="th-sort" data-sort="live_days" aria-pressed="false">Napok kint</button>
                         </th>
@@ -461,6 +458,7 @@ $renderSplit = static function (
                         <th class="th-center events-stats-th-group events-stats-th-group--page" colspan="2" scope="colgroup">Oldal</th>
                         <th class="th-center events-stats-th-group events-stats-th-group--preview" colspan="2" scope="colgroup">Előnézet</th>
                         <th class="th-center events-stats-th-group events-stats-th-group--external" colspan="2" scope="colgroup">Átkatt</th>
+                        <th class="events-stats-th-status" scope="col" rowspan="2"><span class="visually-hidden">Státusz</span></th>
                     </tr>
                     <tr class="events-stats-thead-secondary">
                         <th class="th-center events-stats-th-sub events-stats-th-sub--unique events-stats-th-sub--human" title="Egyedi emberi oldal-látogató (IP)">
@@ -494,6 +492,7 @@ $renderSplit = static function (
                         <?php
                         $st = (string) ($row['event_status'] ?? '');
                         $badgeClass = events_post_status_badge_class($st);
+                        $statusLabel = events_post_status_label($st);
                         $pageCounts = function_exists('events_view_metric_counts_from_row')
                             ? events_view_metric_counts_from_row($row, 'megtekintesek')
                             : ['human' => (int) ($row['megtekintesek'] ?? 0), 'bot' => 0, 'total' => (int) ($row['megtekintesek'] ?? 0)];
@@ -514,6 +513,14 @@ $renderSplit = static function (
                         $eventEnd = $eventDateYmd($row, 'event_end');
                         if ($eventEnd === '' && $eventStart !== '') {
                             $eventEnd = $eventStart;
+                        }
+                        $dateDisplay = '–';
+                        if ($eventStart !== '') {
+                            try {
+                                $dateDisplay = (new DateTimeImmutable($eventStart))->format('Y.m.d.');
+                            } catch (Throwable) {
+                                $dateDisplay = $eventStart;
+                            }
                         }
                         $searchName = mb_strtolower((string) ($row['event_name'] ?? ''), 'UTF-8');
                         $publicUrl = $eventPublicUrl($row);
@@ -543,16 +550,13 @@ $renderSplit = static function (
                             data-unique-human="<?= $uniqueHumanRow ?>"
                             data-unique-bot="<?= $uniqueBotRow ?>"
                         >
-                            <td><?= h(events_admin_format_datum_cell($row)) ?></td>
+                            <td class="events-stats-td-date"><?= h($dateDisplay) ?></td>
                             <td>
                                 <?php if ($primaryUrl !== null): ?>
                                     <a href="<?= h($primaryUrl) ?>"<?= (!$statsPreferPartnerLinks && $publicUrl !== null) ? ' target="_blank" rel="noopener"' : '' ?>><?= h($eventName) ?></a>
                                 <?php else: ?>
                                     <?= h($eventName) ?>
                                 <?php endif; ?>
-                            </td>
-                            <td>
-                                <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
                             </td>
                             <td class="text-center"><?= $liveDays ?></td>
                             <td class="text-center events-stats-cell--human"><?= $uniqueHumanRow ?></td>
@@ -563,6 +567,13 @@ $renderSplit = static function (
                             <td class="text-center events-stats-cell--bot"><?= (int) $previewCounts['bot'] ?></td>
                             <td class="text-center events-stats-cell--human"><?= (int) $externalCounts['human'] ?></td>
                             <td class="text-center events-stats-cell--bot"><?= (int) $externalCounts['bot'] ?></td>
+                            <td class="text-center events-stats-td-status">
+                                <span
+                                    class="event-status-dot <?= h($badgeClass) ?>"
+                                    title="<?= h($statusLabel) ?>"
+                                    aria-label="<?= h($statusLabel) ?>"
+                                ></span>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-stats-events-empty" hidden>

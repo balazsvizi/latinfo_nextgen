@@ -2182,6 +2182,56 @@ tr:hover td { background: var(--bg); }
     border-color: #94a3b8;
 }
 
+.event-status-dot {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    vertical-align: middle;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+.event-status-dot.event-status-badge--publish {
+    background: #10b981;
+    border-color: transparent;
+    color: transparent;
+}
+.event-status-dot.event-status-badge--draft {
+    background: #94a3b8;
+    border-color: transparent;
+    color: transparent;
+}
+.event-status-dot.event-status-badge--pending {
+    background: #f59e0b;
+    border-color: transparent;
+    color: transparent;
+}
+.event-status-dot.event-status-badge--future {
+    background: #3b82f6;
+    border-color: transparent;
+    color: transparent;
+}
+.event-status-dot.event-status-badge--private {
+    background: #8b5cf6;
+    border-color: transparent;
+    color: transparent;
+}
+.event-status-dot.event-status-badge--trash {
+    background: #ef4444;
+    border-color: transparent;
+    color: transparent;
+}
+.event-status-dot.event-status-badge--auto-draft {
+    background: #64748b;
+    border-color: transparent;
+    color: transparent;
+}
+.events-stats-th-status,
+.events-stats-td-status {
+    width: 1.5rem;
+    padding-left: 0.35rem !important;
+    padding-right: 0.35rem !important;
+}
+
 .events-admin-empty {
     margin: 0 0 0.5rem;
     color: var(--text-muted);
