@@ -107,17 +107,19 @@ $renderStatsCardHelp = static function (string $label) use ($statsCardHelp): voi
     <?php
 };
 
-$renderSplit = static function (string $humanLabel, int $human, string $botLabel, int $bot): void {
+$renderSplit = static function (
+    string $leftLabel,
+    int $left,
+    string $rightLabel,
+    int $right,
+    bool $rightIsBot = false
+): void {
     ?>
     <dl class="events-edit-stats__card-split">
-        <div>
-            <dt><?= h($humanLabel) ?></dt>
-            <dd><?= $human ?></dd>
-        </div>
-        <div>
-            <dt><?= h($botLabel) ?></dt>
-            <dd><?= $bot ?></dd>
-        </div>
+        <dt><?= h($leftLabel) ?></dt>
+        <dt><?= h($rightLabel) ?></dt>
+        <dd><?= $left ?></dd>
+        <dd<?= $rightIsBot ? ' class="events-edit-stats__card-split-value--bot"' : '' ?>><?= $right ?></dd>
     </dl>
     <?php
 };
@@ -172,28 +174,28 @@ $renderSplit = static function (string $humanLabel, int $human, string $botLabel
                 <span class="events-edit-stats__card-label">Egyedi látogató</span>
                 <?php $renderStatsCardHelp('Egyedi látogató'); ?>
             </p>
-            <?php $renderSplit('Ember', $uniqueHuman, 'Bot (AI Search stb.)', $uniqueBot); ?>
+            <?php $renderSplit('Ember', $uniqueHuman, 'Bot (AI Search stb.)', $uniqueBot, true); ?>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
                 <span class="events-edit-stats__card-label">Oldal</span>
                 <?php $renderStatsCardHelp('Oldal'); ?>
             </p>
-            <?php $renderSplit('Ember', $pageHuman, 'Bot (AI Search stb.)', $pageBot); ?>
+            <?php $renderSplit('Ember', $pageHuman, 'Bot (AI Search stb.)', $pageBot, true); ?>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
                 <span class="events-edit-stats__card-label">Előnézet</span>
                 <?php $renderStatsCardHelp('Előnézet'); ?>
             </p>
-            <?php $renderSplit('Ember', $previewHuman, 'Bot (AI Search stb.)', $previewBot); ?>
+            <?php $renderSplit('Ember', $previewHuman, 'Bot (AI Search stb.)', $previewBot, true); ?>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
                 <span class="events-edit-stats__card-label">További info</span>
                 <?php $renderStatsCardHelp('További info'); ?>
             </p>
-            <?php $renderSplit('Ember', $externalHuman, 'Bot (AI Search stb.)', $externalBot); ?>
+            <?php $renderSplit('Ember', $externalHuman, 'Bot (AI Search stb.)', $externalBot, true); ?>
         </div>
     </div>
     <script>
@@ -440,42 +442,48 @@ $renderSplit = static function (string $humanLabel, int $human, string $botLabel
         <div class="table-wrap events-admin-table-wrap">
             <table class="sortable-table events-admin-table events-edit-stats__events-table" id="organizer-stats-events-table">
                 <thead>
-                    <tr>
-                        <th scope="col">
+                    <tr class="events-stats-thead-primary">
+                        <th scope="col" rowspan="2">
                             <button type="button" class="th-sort" data-sort="date" aria-pressed="false">Dátum</button>
                         </th>
-                        <th scope="col">
+                        <th scope="col" rowspan="2">
                             <button type="button" class="th-sort" data-sort="name" aria-pressed="false">Név</button>
                         </th>
-                        <th scope="col">
+                        <th scope="col" rowspan="2">
                             <button type="button" class="th-sort" data-sort="status" aria-pressed="false">Státusz</button>
                         </th>
-                        <th class="th-center" scope="col" title="Hány napig volt közzétéve az oldal a választott időszakban">
+                        <th class="th-center" scope="col" rowspan="2" title="Hány napig volt közzétéve az oldal a választott időszakban">
                             <button type="button" class="th-sort" data-sort="live_days" aria-pressed="false">Napok kint</button>
                         </th>
-                        <th class="th-center" scope="col" title="Egyedi emberi oldal-látogató (IP)">
-                            <button type="button" class="th-sort" data-sort="unique_human" aria-pressed="false">Egyedi ember</button>
+                        <th class="th-center events-stats-th-group events-stats-th-group--unique" colspan="2" scope="colgroup">Egyedi</th>
+                        <th class="th-center events-stats-th-group events-stats-th-group--page" colspan="2" scope="colgroup">Oldal</th>
+                        <th class="th-center events-stats-th-group events-stats-th-group--preview" colspan="2" scope="colgroup">Előnézet</th>
+                        <th class="th-center events-stats-th-group events-stats-th-group--external" colspan="2" scope="colgroup">Átkatt</th>
+                    </tr>
+                    <tr class="events-stats-thead-secondary">
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--unique events-stats-th-sub--human" title="Egyedi emberi oldal-látogató (IP)">
+                            <button type="button" class="th-sort" data-sort="unique_human" aria-pressed="false">Ember</button>
                         </th>
-                        <th class="th-center" scope="col" title="Egyedi bot oldal-látogató (IP)">
-                            <button type="button" class="th-sort" data-sort="unique_bot" aria-pressed="false">Egyedi bot</button>
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--unique" title="Egyedi bot oldal-látogató (IP)">
+                            <button type="button" class="th-sort" data-sort="unique_bot" aria-pressed="false">Bot</button>
                         </th>
-                        <th class="th-center" scope="col" title="Oldal — emberi">
-                            <button type="button" class="th-sort" data-sort="page_human" aria-pressed="false">Oldal ember</button>
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--page events-stats-th-sub--human" title="Oldal — emberi">
+                            <button type="button" class="th-sort" data-sort="page_human" aria-pressed="false">Ember</button>
                         </th>
-                        <th class="th-center" scope="col" title="Oldal — bot">
-                            <button type="button" class="th-sort" data-sort="page_bot" aria-pressed="false">Oldal bot</button>
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--page" title="Oldal — bot">
+                            <button type="button" class="th-sort" data-sort="page_bot" aria-pressed="false">Bot</button>
                         </th>
-                        <th class="th-center" scope="col" title="Előnézet — emberi">
-                            <button type="button" class="th-sort" data-sort="preview_human" aria-pressed="false">Előnézet ember</button>
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--preview events-stats-th-sub--human" title="Előnézet — emberi">
+                            <button type="button" class="th-sort" data-sort="preview_human" aria-pressed="false">Ember</button>
                         </th>
-                        <th class="th-center" scope="col" title="Előnézet — bot">
-                            <button type="button" class="th-sort" data-sort="preview_bot" aria-pressed="false">Előnézet bot</button>
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--preview" title="Előnézet — bot">
+                            <button type="button" class="th-sort" data-sort="preview_bot" aria-pressed="false">Bot</button>
                         </th>
-                        <th class="th-center" scope="col" title="További info átkattintás — emberi">
-                            <button type="button" class="th-sort" data-sort="external_human" aria-pressed="false">Átkatt. ember</button>
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--external events-stats-th-sub--human" title="Átkattintás — emberi">
+                            <button type="button" class="th-sort" data-sort="external_human" aria-pressed="false">Ember</button>
                         </th>
-                        <th class="th-center" scope="col" title="További info átkattintás — bot">
-                            <button type="button" class="th-sort" data-sort="external_bot" aria-pressed="false">Átkatt. bot</button>
+                        <th class="th-center events-stats-th-sub events-stats-th-sub--external" title="Átkattintás — bot">
+                            <button type="button" class="th-sort" data-sort="external_bot" aria-pressed="false">Bot</button>
                         </th>
                     </tr>
                 </thead>
@@ -545,14 +553,14 @@ $renderSplit = static function (string $humanLabel, int $human, string $botLabel
                                 <span class="event-status-badge <?= h($badgeClass) ?>"><?= h(events_post_status_label($st)) ?></span>
                             </td>
                             <td class="text-center"><?= $liveDays ?></td>
-                            <td class="text-center"><?= $uniqueHumanRow ?></td>
-                            <td class="text-center"><?= $uniqueBotRow ?></td>
-                            <td class="text-center"><?= (int) $pageCounts['human'] ?></td>
-                            <td class="text-center"><?= (int) $pageCounts['bot'] ?></td>
-                            <td class="text-center"><?= (int) $previewCounts['human'] ?></td>
-                            <td class="text-center"><?= (int) $previewCounts['bot'] ?></td>
-                            <td class="text-center"><?= (int) $externalCounts['human'] ?></td>
-                            <td class="text-center"><?= (int) $externalCounts['bot'] ?></td>
+                            <td class="text-center events-stats-cell--human"><?= $uniqueHumanRow ?></td>
+                            <td class="text-center events-stats-cell--bot"><?= $uniqueBotRow ?></td>
+                            <td class="text-center events-stats-cell--human"><?= (int) $pageCounts['human'] ?></td>
+                            <td class="text-center events-stats-cell--bot"><?= (int) $pageCounts['bot'] ?></td>
+                            <td class="text-center events-stats-cell--human"><?= (int) $previewCounts['human'] ?></td>
+                            <td class="text-center events-stats-cell--bot"><?= (int) $previewCounts['bot'] ?></td>
+                            <td class="text-center events-stats-cell--human"><?= (int) $externalCounts['human'] ?></td>
+                            <td class="text-center events-stats-cell--bot"><?= (int) $externalCounts['bot'] ?></td>
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-stats-events-empty" hidden>

@@ -4646,9 +4646,18 @@ body.event-edit-cover-lightbox-open {
     background: color-mix(in srgb, #6d8f63 10%, var(--bg, #fff));
     border-left: 1px solid color-mix(in srgb, #6d8f63 22%, var(--border, #e5e7eb));
 }
+.events-stats-th-group--unique {
+    color: #3d4f6b;
+    background: color-mix(in srgb, #5b7c99 10%, var(--bg, #fff));
+    border-left: 1px solid color-mix(in srgb, #5b7c99 22%, var(--border, #e5e7eb));
+}
 .events-stats-thead-secondary th {
     padding-top: 0.2rem !important;
     font-weight: 550;
+}
+.events-stats-th-sub--human .th-sort,
+.events-stats-th-sub--human {
+    font-weight: 700;
 }
 .events-stats-th-sub--preview {
     background: color-mix(in srgb, #6b7fa8 7%, var(--bg, #fff));
@@ -4657,6 +4666,21 @@ body.event-edit-cover-lightbox-open {
 .events-stats-th-sub--page {
     background: color-mix(in srgb, #6d8f63 7%, var(--bg, #fff));
     border-left: 1px solid color-mix(in srgb, #6d8f63 18%, var(--border, #e5e7eb));
+}
+.events-stats-th-sub--unique {
+    background: color-mix(in srgb, #5b7c99 7%, var(--bg, #fff));
+    border-left: 1px solid color-mix(in srgb, #5b7c99 18%, var(--border, #e5e7eb));
+}
+.events-stats-th-sub--external {
+    background: color-mix(in srgb, #a8784a 7%, var(--bg, #fff));
+    border-left: 1px solid color-mix(in srgb, #a8784a 18%, var(--border, #e5e7eb));
+}
+.events-stats-cell--human {
+    font-weight: 700;
+}
+.events-stats-cell--bot {
+    font-weight: 400;
+    color: var(--text-secondary, #6b7280);
 }
 .events-stats-th-sub--total {
     font-weight: 700 !important;
@@ -5065,26 +5089,32 @@ body.event-edit-cover-lightbox-open {
 .events-edit-stats__card-split {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.55rem 0.75rem;
+    grid-template-rows: auto auto;
+    column-gap: 0.75rem;
+    row-gap: 0.2rem;
     margin: 0.55rem 0 0;
-}
-.events-edit-stats__card-split > div {
-    min-width: 0;
+    align-items: end;
 }
 .events-edit-stats__card-split dt {
     margin: 0;
+    min-width: 0;
     font-size: 0.7rem;
     font-weight: 600;
     color: var(--text-muted, #6b7280);
-    line-height: 1.3;
+    line-height: 1.25;
+    align-self: start;
 }
 .events-edit-stats__card-split dd {
-    margin: 0.15rem 0 0;
+    margin: 0;
+    min-width: 0;
     font-size: 1.45rem;
     font-weight: 800;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
     color: var(--text-primary, #1a1a1a);
+}
+.events-edit-stats__card-split-value--bot {
+    font-weight: 400;
 }
 .events-edit-stats__chart-wrap {
     padding: 1rem 1.1rem;
