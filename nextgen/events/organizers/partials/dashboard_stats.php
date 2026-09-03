@@ -176,28 +176,28 @@ $renderSplit = static function (
                 <span class="events-edit-stats__card-label">Egyedi látogató</span>
                 <?php $renderStatsCardHelp('Egyedi látogató'); ?>
             </p>
-            <?php $renderSplit('Ember', $uniqueHuman, 'Bot (AI Search stb.)', $uniqueBot, true); ?>
+            <?php $renderSplit('Ember', $uniqueHuman, 'Bot (AI, search, stb)', $uniqueBot, true); ?>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
                 <span class="events-edit-stats__card-label">Oldal</span>
                 <?php $renderStatsCardHelp('Oldal'); ?>
             </p>
-            <?php $renderSplit('Ember', $pageHuman, 'Bot (AI Search stb.)', $pageBot, true); ?>
+            <?php $renderSplit('Ember', $pageHuman, 'Bot (AI, search, stb)', $pageBot, true); ?>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
                 <span class="events-edit-stats__card-label">Előnézet</span>
                 <?php $renderStatsCardHelp('Előnézet'); ?>
             </p>
-            <?php $renderSplit('Ember', $previewHuman, 'Bot (AI Search stb.)', $previewBot, true); ?>
+            <?php $renderSplit('Ember', $previewHuman, 'Bot (AI, search, stb)', $previewBot, true); ?>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
                 <span class="events-edit-stats__card-label">További info</span>
                 <?php $renderStatsCardHelp('További info'); ?>
             </p>
-            <?php $renderSplit('Ember', $externalHuman, 'Bot (AI Search stb.)', $externalBot, true); ?>
+            <?php $renderSplit('Ember', $externalHuman, 'Bot (AI, search, stb)', $externalBot, true); ?>
         </div>
     </div>
     <script>
