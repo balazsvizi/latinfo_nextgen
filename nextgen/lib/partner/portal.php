@@ -374,6 +374,78 @@ function partner_portal_event_stats_summary(array $events): array
     ];
 }
 
+/**
+ * Oldalmegtekintések (emberi) a választott kontextus eseményein, adott időszakban.
+ *
+ * @param array{type?: string, id?: int, label?: string, key?: string}|null $context
+ * @return array{human: int, bot: int, total: int}
+ */
+function partner_portal_page_views_summary(
+    PDO $db,
+    int $partnerId,
+    ?array $context = null,
+    ?array $params = null
+): array {
+    $empty = ['human' => 0, 'bot' => 0, 'total' => 0];
+    $scope = partner_portal_scope_ids($db, $partnerId, $context);
+    $organizerIds = $scope['organizer_ids'];
+    if ($organizerIds === []) {
+        return $empty;
+    }
+
+    $params ??= events_edit_stats_range_for_preset('30');
+    $window = events_edit_stats_view_window($params);
+    $tableReady = events_edit_stats_table_ready($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
+    $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+
+    $countFor = static function (string $botAnd) use (
+        $db,
+        $organizerIds,
+        $orgPh,
+        $window,
+        $metricAnd
+    ): int {
+        try {
+            $stmt = $db->prepare("
+                SELECT COUNT(*)
+                FROM `events_calendar_event_views` v
+                INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                WHERE eo.`organizer_id` IN ({$orgPh})
+                  AND v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$metricAnd}
+                  {$botAnd}
+            ");
+            $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
+
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    };
+
+    if ($botReady) {
+        $human = $countFor(' AND v.`is_bot` = 0');
+        $bot = $countFor(' AND v.`is_bot` = 1');
+
+        return [
+            'human' => $human,
+            'bot' => $bot,
+            'total' => $human + $bot,
+        ];
+    }
+
+    $total = $countFor('');
+
+    return [
+        'human' => $total,
+        'bot' => 0,
+        'total' => $total,
+    ];
+}
+
 function partner_portal_event_detail_url(int $eventId): string
 {
     return partner_url('event.php?id=' . $eventId);

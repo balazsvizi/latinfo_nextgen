@@ -13,9 +13,14 @@ if ($partner === null) {
 
 $partnerId = partner_current_id();
 $context = partner_portal_current_context($db, $partnerId);
-$contexts = partner_portal_available_contexts($db, $partnerId);
 $events = partner_portal_fetch_events($db, $partnerId, $context);
 $stats = partner_portal_event_stats_summary($events);
+$pageViews30 = partner_portal_page_views_summary(
+    $db,
+    $partnerId,
+    $context,
+    events_edit_stats_range_for_preset('30')
+);
 $msgCount = partner_portal_message_count($db, $partnerId);
 $msgPending = partner_portal_admin_reply_pending($db, $partnerId);
 
@@ -40,8 +45,6 @@ foreach ($events as $ev) {
     }
 }
 
-$orgCount = count(array_filter($contexts, static fn (array $c): bool => $c['type'] === 'organizer'));
-
 $pageTitle = 'Kezdőlap';
 $activeNav = 'home';
 require_once __DIR__ . '/partials/header.php';
@@ -53,9 +56,6 @@ require_once __DIR__ . '/partials/header.php';
     <div class="partner-hero__text">
         <p class="partner-hero__eyebrow">Kezdőlap</p>
         <h1 class="partner-hero__title">Áttekintés</h1>
-        <p class="partner-hero__lead">
-            Események, naptár, profilok és üzenetek — az aktív partner: <strong><?= h($context['label']) ?></strong>.
-        </p>
     </div>
     <div class="partner-hero__actions">
         <a class="btn btn-primary" href="<?= h(partner_url('events.php')) ?>">Eseményeim</a>
@@ -83,8 +83,8 @@ require_once __DIR__ . '/partials/header.php';
     </a>
     <a class="partner-stat-card" href="<?= h(partner_url('statistics.php')) ?>">
         <span class="partner-stat-card__label">Statisztikák</span>
-        <span class="partner-stat-card__value"><?= $orgCount ?></span>
-        <span class="partner-stat-card__hint">Megtekintések · <?= $orgCount ?> szervező</span>
+        <span class="partner-stat-card__value"><?= (int) $pageViews30['human'] ?></span>
+        <span class="partner-stat-card__hint">Oldalmegtekintés · utolsó 30 nap</span>
     </a>
     <a class="partner-stat-card<?= $msgPending ? ' partner-stat-card--pulse' : '' ?>" href="<?= h(partner_url('messages.php')) ?>">
         <span class="partner-stat-card__label">Üzenetek</span>
