@@ -10,13 +10,21 @@ declare(strict_types=1);
 
 $statsAllDateFrom = $statsAllDateFrom ?? null;
 $statsFilterExtraQuery = $statsFilterExtraQuery ?? [];
-$statsPreset30 = events_edit_stats_range_for_preset('30');
-$statsPresetYear = events_edit_stats_range_for_preset('year');
-$statsPresetAll = events_edit_stats_range_for_preset('all', $statsAllDateFrom);
 $statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDateFrom);
-$statsPresetUrl30 = events_edit_stats_filter_url($statsFormAction, $statsPreset30, $statsFilterExtraQuery);
-$statsPresetUrlYear = events_edit_stats_filter_url($statsFormAction, $statsPresetYear, $statsFilterExtraQuery);
-$statsPresetUrlAll = events_edit_stats_filter_url($statsFormAction, $statsPresetAll, $statsFilterExtraQuery);
+$statsPresetLinks = [];
+foreach (events_edit_stats_presets() as $preset) {
+    $presetId = (string) $preset['id'];
+    $statsPresetLinks[] = [
+        'id' => $presetId,
+        'label' => (string) $preset['label'],
+        'url' => events_edit_stats_filter_url(
+            $statsFormAction,
+            events_edit_stats_range_for_preset($presetId, $statsAllDateFrom),
+            $statsFilterExtraQuery
+        ),
+        'active' => $statsActivePreset === $presetId,
+    ];
+}
 
 $chartPayload = $statsData['chart'] ?? ['labels' => [], 'datasets' => [], 'modes' => []];
 $hasChart = ($chartPayload['labels'] ?? []) !== []
@@ -132,18 +140,12 @@ $renderSplit = static function (
         <div class="events-edit-stats__presets-row">
             <span class="events-filter-label">Gyors időszak</span>
             <div class="events-edit-stats__presets" role="group" aria-label="Gyors időszak">
-                <a
-                    class="btn btn-sm <?= $statsActivePreset === '30' ? 'btn-primary' : 'btn-secondary' ?>"
-                    href="<?= h($statsPresetUrl30) ?>"
-                >Utolsó 30 nap</a>
-                <a
-                    class="btn btn-sm <?= $statsActivePreset === 'year' ? 'btn-primary' : 'btn-secondary' ?>"
-                    href="<?= h($statsPresetUrlYear) ?>"
-                >Utolsó 1 év</a>
-                <a
-                    class="btn btn-sm <?= $statsActivePreset === 'all' ? 'btn-primary' : 'btn-secondary' ?>"
-                    href="<?= h($statsPresetUrlAll) ?>"
-                >Összes</a>
+                <?php foreach ($statsPresetLinks as $presetLink): ?>
+                    <a
+                        class="btn btn-sm <?= !empty($presetLink['active']) ? 'btn-primary' : 'btn-secondary' ?>"
+                        href="<?= h((string) $presetLink['url']) ?>"
+                    ><?= h((string) $presetLink['label']) ?></a>
+                <?php endforeach; ?>
             </div>
         </div>
         <div class="events-edit-stats__filter-grid">

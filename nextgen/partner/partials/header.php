@@ -48,20 +48,23 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
             </a>
 
             <div class="partner-header__meta">
-                <?php if ($partnerContexts !== []): ?>
+                <?php if (count($orgOpts) === 1): ?>
+                    <div class="partner-header__partner-pick partner-header__partner-pick--single">
+                        <span class="partner-header__meta-label">Partner</span>
+                        <span class="partner-header__who-name"><?= h((string) ($orgOpts[0]['label'] ?? $partnerContext['label'])) ?></span>
+                    </div>
+                <?php elseif (count($orgOpts) > 1): ?>
                     <div class="partner-header__partner-pick">
                         <label class="partner-header__meta-label" for="partner-context-select">Partner</label>
                         <select id="partner-context-select" class="partner-header__partner-select" aria-label="Partner választása">
                             <option value="all"<?= $partnerContext['key'] === 'all' ? ' selected' : '' ?>>Összes partner</option>
-                            <?php if ($orgOpts !== []): ?>
-                                <optgroup label="Szervezők">
-                                    <?php foreach ($orgOpts as $c): ?>
-                                        <option value="<?= h($c['key']) ?>"<?= $partnerContext['key'] === $c['key'] ? ' selected' : '' ?>>
-                                            <?= h($c['label']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                            <?php endif; ?>
+                            <optgroup label="Szervezők">
+                                <?php foreach ($orgOpts as $c): ?>
+                                    <option value="<?= h($c['key']) ?>"<?= $partnerContext['key'] === $c['key'] ? ' selected' : '' ?>>
+                                        <?= h($c['label']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
                         </select>
                     </div>
                 <?php endif; ?>

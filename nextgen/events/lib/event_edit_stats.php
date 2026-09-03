@@ -43,7 +43,27 @@ function events_edit_stats_params_from_request(array $query): array
 }
 
 /**
- * Gyors időszak-preset: 30 nap, 1 év, összes.
+ * Gyors időszak presetek (sorrend = UI sorrend).
+ *
+ * @return list<array{id: string, label: string}>
+ */
+function events_edit_stats_presets(): array
+{
+    return [
+        ['id' => 'today', 'label' => 'Ma'],
+        ['id' => '7', 'label' => '7 nap'],
+        ['id' => '30', 'label' => '30 nap'],
+        ['id' => 'month', 'label' => 'Ez a hónap'],
+        ['id' => 'last_month', 'label' => 'Előző hónap'],
+        ['id' => '90', 'label' => '90 nap'],
+        ['id' => 'ytd', 'label' => 'Idei év'],
+        ['id' => 'year', 'label' => '1 év'],
+        ['id' => 'all', 'label' => 'Összes'],
+    ];
+}
+
+/**
+ * Gyors időszak-preset tartomány.
  *
  * @return array{date_from: string, date_to: string}
  */
@@ -53,6 +73,30 @@ function events_edit_stats_range_for_preset(string $preset, ?string $allFromYmd 
     $to = $today->format('Y-m-d');
 
     return match ($preset) {
+        'today' => [
+            'date_from' => $to,
+            'date_to' => $to,
+        ],
+        '7' => [
+            'date_from' => $today->modify('-6 days')->format('Y-m-d'),
+            'date_to' => $to,
+        ],
+        'month' => [
+            'date_from' => $today->modify('first day of this month')->format('Y-m-d'),
+            'date_to' => $to,
+        ],
+        'last_month' => [
+            'date_from' => $today->modify('first day of last month')->format('Y-m-d'),
+            'date_to' => $today->modify('last day of last month')->format('Y-m-d'),
+        ],
+        '90' => [
+            'date_from' => $today->modify('-89 days')->format('Y-m-d'),
+            'date_to' => $to,
+        ],
+        'ytd' => [
+            'date_from' => $today->format('Y-01-01'),
+            'date_to' => $to,
+        ],
         'year' => [
             'date_from' => $today->modify('-1 year')->format('Y-m-d'),
             'date_to' => $to,
@@ -77,10 +121,11 @@ function events_edit_stats_detect_preset(array $params, ?string $allFromYmd = nu
 {
     $from = (string) ($params['date_from'] ?? '');
     $to = (string) ($params['date_to'] ?? '');
-    foreach (['30', 'year', 'all'] as $preset) {
-        $range = events_edit_stats_range_for_preset($preset, $allFromYmd);
+    foreach (events_edit_stats_presets() as $preset) {
+        $id = (string) $preset['id'];
+        $range = events_edit_stats_range_for_preset($id, $allFromYmd);
         if ($range['date_from'] === $from && $range['date_to'] === $to) {
-            return $preset;
+            return $id;
         }
     }
 

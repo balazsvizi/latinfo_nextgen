@@ -5113,8 +5113,9 @@ body.event-edit-cover-lightbox-open {
     font-variant-numeric: tabular-nums;
     color: var(--text-primary, #1a1a1a);
 }
-.events-edit-stats__card-split-value--bot {
+.events-edit-stats__card-split dd.events-edit-stats__card-split-value--bot {
     font-weight: 400;
+    color: var(--text-secondary, #6b7280);
 }
 .events-edit-stats__chart-wrap {
     padding: 1rem 1.1rem;
