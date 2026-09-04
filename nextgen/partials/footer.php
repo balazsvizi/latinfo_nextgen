@@ -1,7 +1,8 @@
 </main>
 <footer class="main-footer">
     <div class="footer-inner">
-        &copy; <?= date('Y') ?> <?= h(SITE_NAME) ?>
+        <span class="footer-copy">&copy; <?= date('Y') ?> <?= h(SITE_NAME) ?></span>
+        <?= nextgen_footer_version_markup() ?>
     </div>
 </footer>
 <script>

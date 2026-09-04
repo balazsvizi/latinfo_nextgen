@@ -1,0 +1,16 @@
+---
+description: Verziószám a láblécben és a javasolt commit üzenetekben
+alwaysApply: true
+---
+
+# Alkalmazás verzió
+
+- A verzió forrása: `nextgen/core/version.php` (`APP_VERSION`, semver).
+- Feature / fix átadáskor **növeld** a verziót a változás méretéhez igazítva (patch / minor / major).
+- Minden agent összefoglalóban a **javasolt commit üzenet** tartalmazza a verziót, pl.:
+
+```
+v1.0.1 – Rövid leírás a változásról.
+```
+
+- A lábléc a `nextgen_footer_version_markup()` hívással jeleníti meg a verziót; ne írd máshova feltűnően.

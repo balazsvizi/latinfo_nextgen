@@ -39,6 +39,8 @@ define('DB_CHARSET', (string) cfg_get('DB_CHARSET', 'utf8mb4', $localConfig));
 define('SITE_NAME', (string) cfg_get('SITE_NAME', 'Latinfo.hu', $localConfig));
 define('BASE_PATH', dirname(__DIR__, 2));
 
+require_once __DIR__ . '/version.php';
+
 $baseUrlConfigured = rtrim((string) cfg_get('BASE_URL', '', $localConfig), '/');
 $baseUrlResolved = $baseUrlConfigured;
 if ($baseUrlResolved === '' && PHP_SAPI !== 'cli') {

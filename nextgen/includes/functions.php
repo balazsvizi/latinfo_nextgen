@@ -71,6 +71,22 @@ function h(?string $s): string {
 }
 
 /**
+ * Alkalmazás verzió (lábléc, napló).
+ */
+function nextgen_app_version(): string
+{
+    return defined('APP_VERSION') ? (string) APP_VERSION : '0.0.0';
+}
+
+/**
+ * Szolid verziójel a láblécben.
+ */
+function nextgen_footer_version_markup(): string
+{
+    return '<span class="app-version" title="Verzió">v' . h(nextgen_app_version()) . '</span>';
+}
+
+/**
  * Nyilvános alap URL (séma + host + opcionális alkönyvtár), e-mailekhez és abszolút linkekhez.
  */
 function ng_public_base_url(): string

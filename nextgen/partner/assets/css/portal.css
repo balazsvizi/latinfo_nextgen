@@ -957,6 +957,10 @@
     background: #eef2f7;
 }
 
+.partner-footer .app-version {
+    opacity: 0.55;
+}
+
 .partner-profile-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
