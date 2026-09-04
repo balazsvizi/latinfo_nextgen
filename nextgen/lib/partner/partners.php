@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/activity_log.php';
+require_once __DIR__ . '/permissions.php';
 
 function nextgen_partners_table_ready(PDO $db): bool
 {
@@ -129,6 +130,8 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
         } catch (Throwable $indexEx) {
             error_log('nextgen_partner_ensure_assignment_unique_indexes: ' . $indexEx->getMessage());
         }
+
+        nextgen_partner_ensure_permission_schema($db);
 
         return true;
     } catch (Throwable $ex) {
@@ -948,6 +951,7 @@ function nextgen_partners_list(
 }
 
 /**
+ * @param list<string>|null $portalJogok
  * @return array{ok: true, id: int}|array{ok: false, error: string}
  */
 function nextgen_partner_create(
@@ -960,7 +964,8 @@ function nextgen_partner_create(
     bool $requireChangeOnLogin = false,
     ?string $egyebInfo = null,
     ?string $kiegInfo = null,
-    ?string $telepules = null
+    ?string $telepules = null,
+    ?array $portalJogok = null
 ): array {
     if (!nextgen_partners_table_ready($db)) {
         return ['ok' => false, 'error' => 'A partner tábla még nincs telepítve. Futtasd: partner/sql/migration_partners.sql'];
@@ -996,12 +1001,16 @@ function nextgen_partner_create(
 
     try {
         nextgen_partner_ensure_password_schema($db);
+        nextgen_partner_ensure_permission_schema($db);
         $hash = $password !== ''
             ? password_hash($password, PASSWORD_DEFAULT)
             : password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+        $jogok = nextgen_partner_encode_portal_permissions(
+            $portalJogok ?? nextgen_partner_default_portal_permissions()
+        );
         $stmt = $db->prepare('
-            INSERT INTO `nextgen_partners` (`név`, `kieg_info`, `email`, `telefon`, `település`, `egyéb_kontakt`, `egyéb_info`, `jelszó_hash`, `aktív`, `jelszó_csere_kötelező`)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+            INSERT INTO `nextgen_partners` (`név`, `kieg_info`, `email`, `telefon`, `település`, `egyéb_kontakt`, `egyéb_info`, `jelszó_hash`, `aktív`, `jelszó_csere_kötelező`, `portal_jogok`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
         ');
         $stmt->execute([
             $nev,
@@ -1013,6 +1022,7 @@ function nextgen_partner_create(
             $egyebInfo !== '' ? $egyebInfo : null,
             $hash,
             $requireChangeOnLogin ? 1 : 0,
+            $jogok,
         ]);
 
         $partnerId = (int) $db->lastInsertId();

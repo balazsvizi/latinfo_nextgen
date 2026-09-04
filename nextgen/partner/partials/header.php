@@ -7,10 +7,12 @@ partner_portal_apply_context_from_request($db, $partnerId);
 
 $partnerRow = partner_current($db);
 $partnerUserName = trim((string) ($partnerRow['név'] ?? partner_session_display_name()));
+$canStat = nextgen_partner_has_portal_permission($partnerRow, 'stat');
+$canMessages = nextgen_partner_has_portal_permission($partnerRow, 'email_messages');
 
 $partnerContexts = partner_portal_available_contexts($db, $partnerId);
 $partnerContext = partner_portal_current_context($db, $partnerId);
-$partnerMsgPending = partner_portal_admin_reply_pending($db, $partnerId);
+$partnerMsgPending = $canMessages ? partner_portal_admin_reply_pending($db, $partnerId) : false;
 
 $nav = (string) ($activeNav ?? '');
 $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): bool => $c['type'] === 'organizer'));
@@ -48,12 +50,12 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
             </a>
 
             <div class="partner-header__meta">
-                <?php if (count($orgOpts) === 1): ?>
+                <?php if ($canStat && count($orgOpts) === 1): ?>
                     <div class="partner-header__partner-pick partner-header__partner-pick--single">
                         <span class="partner-header__meta-label">Partner</span>
                         <span class="partner-header__who-name"><?= h((string) ($orgOpts[0]['label'] ?? $partnerContext['label'])) ?></span>
                     </div>
-                <?php elseif (count($orgOpts) > 1): ?>
+                <?php elseif ($canStat && count($orgOpts) > 1): ?>
                     <div class="partner-header__partner-pick">
                         <label class="partner-header__meta-label" for="partner-context-select">Partner</label>
                         <select id="partner-context-select" class="partner-header__partner-select" aria-label="Partner választása">
@@ -82,13 +84,17 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
 
         <nav class="partner-header__nav" id="partner-main-nav" aria-label="Partner menü">
             <a href="<?= h(partner_url('index.php')) ?>" class="partner-header__link<?= $nav === 'home' ? ' is-active' : '' ?>">Kezdőlap</a>
-            <a href="<?= h(partner_url('events.php')) ?>" class="partner-header__link<?= $nav === 'events' ? ' is-active' : '' ?>">Események</a>
-            <a href="<?= h(partner_url('calendar.php')) ?>" class="partner-header__link<?= $nav === 'calendar' ? ' is-active' : '' ?>">Naptár</a>
-            <a href="<?= h(partner_url('statistics.php')) ?>" class="partner-header__link<?= $nav === 'stats' ? ' is-active' : '' ?>">Statisztikák</a>
-            <a href="<?= h(partner_url('messages.php')) ?>" class="partner-header__link<?= $nav === 'messages' ? ' is-active' : '' ?>">
-                Üzenetek
-                <?php if ($partnerMsgPending): ?><span class="partner-nav-badge" title="Új admin válasz">!</span><?php endif; ?>
-            </a>
+            <?php if ($canStat): ?>
+                <a href="<?= h(partner_url('events.php')) ?>" class="partner-header__link<?= $nav === 'events' ? ' is-active' : '' ?>">Események</a>
+                <a href="<?= h(partner_url('calendar.php')) ?>" class="partner-header__link<?= $nav === 'calendar' ? ' is-active' : '' ?>">Naptár</a>
+                <a href="<?= h(partner_url('statistics.php')) ?>" class="partner-header__link<?= $nav === 'stats' ? ' is-active' : '' ?>">Statisztikák</a>
+            <?php endif; ?>
+            <?php if ($canMessages): ?>
+                <a href="<?= h(partner_url('messages.php')) ?>" class="partner-header__link<?= $nav === 'messages' ? ' is-active' : '' ?>">
+                    Üzenetek
+                    <?php if ($partnerMsgPending): ?><span class="partner-nav-badge" title="Új admin válasz">!</span><?php endif; ?>
+                </a>
+            <?php endif; ?>
             <a href="<?= h(partner_url('profile.php')) ?>" class="partner-header__link<?= $nav === 'profile' ? ' is-active' : '' ?>">Profil</a>
             <a href="<?= h(partner_url('logout.php')) ?>" class="partner-header__link partner-header__logout">Kijelentkezés</a>
         </nav>

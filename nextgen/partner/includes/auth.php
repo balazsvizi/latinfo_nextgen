@@ -117,12 +117,29 @@ function partner_refresh_session_from_db(PDO $db): void
     $_SESSION['partner_must_change_password'] = nextgen_partner_must_change_password($partner);
 }
 
+function partner_has_portal_permission(string $permission): bool
+{
+    $partner = partner_current(getDb());
+
+    return $partner !== null && nextgen_partner_has_portal_permission($partner, $permission);
+}
+
+function partner_require_portal_permission(string $permission): void
+{
+    partner_require_login();
+    if (partner_has_portal_permission($permission)) {
+        return;
+    }
+    flash('error', 'Nincs jogosultságod ehhez a funkcióhoz.');
+    redirect(partner_url('index.php'));
+}
+
 function partner_require_organizer_access(PDO $db, int $organizerId): void
 {
     partner_require_login();
     if (!nextgen_partner_can_access_organizer($db, partner_current_id(), $organizerId)) {
         flash('error', 'Nincs hozzáférésed ehhez a szervezőhöz.');
-        redirect(partner_url('statistics.php'));
+        redirect(partner_url('index.php'));
     }
 }
 

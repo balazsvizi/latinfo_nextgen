@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
-partner_require_login();
+partner_require_portal_permission('stat');
 
 $db = getDb();
 $partnerId = partner_current_id();

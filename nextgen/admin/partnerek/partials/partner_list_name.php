@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var string|null $partnerListNev
  * @var string|null $partnerListKieg
  * @var string|null $partnerListEditUrl Ha megadva, a név erre a szerkesztő oldalra linkel.
+ * @var bool|null $partnerListShowPerms Ha true, a portál jogosultságokat is mutatja.
  */
 $row = $partner ?? [];
 $displayNev = isset($partnerListNev)
@@ -27,4 +28,19 @@ $displayEditUrl = isset($partnerListEditUrl) ? trim((string) $partnerListEditUrl
     <?php if ($displayKieg !== ''): ?>
         <span class="partner-list-name__kieg"><?= h($displayKieg) ?></span>
     <?php endif; ?>
+    <?php
+    $showPerms = !empty($partnerListShowPerms);
+    $permCatalog = nextgen_partner_portal_permission_catalog();
+    $permKeys = $showPerms ? nextgen_partner_portal_permissions_from_row($row) : [];
+    if ($permKeys !== []):
+    ?>
+        <span class="partner-perm-badges">
+            <?php foreach ($permKeys as $permKey): ?>
+                <span class="partner-perm-badge"><?= h((string) ($permCatalog[$permKey]['label'] ?? $permKey)) ?></span>
+            <?php endforeach; ?>
+        </span>
+    <?php endif; ?>
 </span>
+<?php
+unset($partnerListShowPerms);
+?>

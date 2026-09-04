@@ -18,6 +18,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/includes/auth.php';
 
+nextgen_partner_ensure_permission_schema(getDb());
+
 require_once $nextgenRoot . '/events/lib/event_status.php';
 require_once $nextgenRoot . '/events/lib/event_edit_stats.php';
 require_once $nextgenRoot . '/events/lib/admin_event_filters.php';

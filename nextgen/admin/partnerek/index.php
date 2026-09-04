@@ -143,8 +143,9 @@ $partnerActivityLogGlobal = true;
                         unset($partnerListNev, $partnerListKieg);
                         $partner = $p;
                         $partnerListEditUrl = $partnerEditUrl;
+                        $partnerListShowPerms = true;
                         require __DIR__ . '/partials/partner_list_name.php';
-                        unset($partnerListEditUrl);
+                        unset($partnerListEditUrl, $partnerListShowPerms);
                         ?>
                     </td>
                     <td><?= $partnerTelepules !== '' ? h($partnerTelepules) : '–' ?></td>

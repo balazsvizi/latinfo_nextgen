@@ -22,7 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             !empty($_POST['jelszo_csere_kotelezo']),
             (string) ($_POST['egyeb_info'] ?? ''),
             (string) ($_POST['kieg_info'] ?? ''),
-            (string) ($_POST['telepules'] ?? '')
+            (string) ($_POST['telepules'] ?? ''),
+            nextgen_partner_portal_permissions_from_post($_POST['portal_jogok'] ?? [])
         );
         if ($result['ok']) {
             $pid = (int) $result['id'];
@@ -82,6 +83,12 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                 Kötelező új jelszó megadása az első belépéskor
             </label>
         </div>
+        <?php
+        $selectedPortalJogok = $_SERVER['REQUEST_METHOD'] === 'POST'
+            ? nextgen_partner_portal_permissions_from_post($_POST['portal_jogok'] ?? [])
+            : nextgen_partner_default_portal_permissions();
+        require __DIR__ . '/partials/partner_portal_permissions.php';
+        ?>
         <p class="toolbar">
             <button type="submit" class="btn btn-primary">Létrehozás</button>
             <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary">Mégse</a>

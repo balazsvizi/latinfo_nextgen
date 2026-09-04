@@ -94,14 +94,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$result['ok']) {
                 $hiba = (string) ($result['error'] ?? 'Profil mentése sikertelen.');
             } else {
-                $organizerRows = nextgen_partner_organizer_rows_from_post($_POST['organizer_rows'] ?? []);
-                $djRows = nextgen_partner_dj_rows_from_post($_POST['dj_rows'] ?? []);
-                $assignResult = nextgen_partner_sync_assignments($db, $id, $organizerRows, $djRows);
-                if ($assignResult['ok']) {
-                    flash('success', 'Mentve.');
-                    redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                $permResult = nextgen_partner_update_portal_permissions(
+                    $db,
+                    $id,
+                    nextgen_partner_portal_permissions_from_post($_POST['portal_jogok'] ?? [])
+                );
+                if (!$permResult['ok']) {
+                    $hiba = (string) ($permResult['error'] ?? 'Jogosultságok mentése sikertelen.');
+                } else {
+                    $organizerRows = nextgen_partner_organizer_rows_from_post($_POST['organizer_rows'] ?? []);
+                    $djRows = nextgen_partner_dj_rows_from_post($_POST['dj_rows'] ?? []);
+                    $assignResult = nextgen_partner_sync_assignments($db, $id, $organizerRows, $djRows);
+                    if ($assignResult['ok']) {
+                        flash('success', 'Mentve.');
+                        redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                    }
+                    $hiba = (string) ($assignResult['error'] ?? 'Hozzárendelések mentése sikertelen.');
                 }
-                $hiba = (string) ($assignResult['error'] ?? 'Hozzárendelések mentése sikertelen.');
             }
         }
         $partner = nextgen_partner_by_id($db, $id) ?? $partner;
@@ -217,6 +226,13 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             <label for="egyeb_info">Egyéb infó</label>
             <textarea id="egyeb_info" name="egyeb_info" rows="4" placeholder="Belső megjegyzések, egyéb információk a partnerről…"><?= h((string) ($partner['egyéb_info'] ?? '')) ?></textarea>
         </div>
+
+        <?php
+        $selectedPortalJogok = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'save') === 'save')
+            ? nextgen_partner_portal_permissions_from_post($_POST['portal_jogok'] ?? [])
+            : nextgen_partner_portal_permissions_from_row($partner);
+        require __DIR__ . '/partials/partner_portal_permissions.php';
+        ?>
 
         <h3>Hozzárendelések</h3>
 
