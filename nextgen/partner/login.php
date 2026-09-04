@@ -49,7 +49,13 @@ ob_start();
     <label for="email">E-mail cím</label>
     <input type="email" id="email" name="email" value="<?= h($_POST['email'] ?? '') ?>" required autofocus autocomplete="username">
     <label for="jelszo">Jelszó</label>
-    <input type="password" id="jelszo" name="jelszo" required autocomplete="current-password">
+    <div class="password-toggle-wrap">
+        <input type="password" id="jelszo" name="jelszo" required autocomplete="current-password">
+        <?php
+        $passwordToggleInputId = 'jelszo';
+        require dirname(__DIR__) . '/partials/password_toggle_button.php';
+        ?>
+    </div>
     <button type="submit">Bejelentkezés</button>
 </form>
 <p class="help" style="margin-top:1rem;text-align:center;">

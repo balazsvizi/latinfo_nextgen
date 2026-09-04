@@ -418,7 +418,13 @@ a.header-user:hover {
     box-shadow: 0 0 0 3px var(--primary-light);
 }
 .login-box input::placeholder { color: var(--text-muted); }
-.login-box button {
+.login-box .password-toggle-wrap {
+    margin-bottom: 1.25rem;
+}
+.login-box .password-toggle-wrap input {
+    margin-bottom: 0;
+}
+.login-box form > button {
     width: 100%;
     padding: 0.875rem 1rem;
     margin-top: 0.25rem;
@@ -432,9 +438,9 @@ a.header-user:hover {
     cursor: pointer;
     transition: background var(--transition), transform 0.1s ease;
 }
-.login-box button:hover { background: var(--primary-hover); }
-.login-box button:active { transform: scale(0.99); }
-.login-box button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.login-box form > button:hover { background: var(--primary-hover); }
+.login-box form > button:active { transform: scale(0.99); }
+.login-box form > button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .login-box .error {
     color: var(--danger);
     margin-bottom: 1rem;
@@ -453,6 +459,38 @@ a.header-user:hover {
     text-decoration: none;
 }
 .login-back-home a:hover { color: var(--primary); text-decoration: underline; }
+
+.password-toggle-wrap {
+    position: relative;
+}
+.password-toggle-wrap input {
+    padding-right: 2.75rem;
+}
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+}
+.password-toggle-btn:hover {
+    color: var(--text-secondary, #475569);
+    background: rgba(0, 0, 0, 0.04);
+}
+.password-toggle-btn:focus-visible {
+    outline: 2px solid var(--primary, #2563eb);
+    outline-offset: 2px;
+}
 
 /* ========== Buttons ========== */
 .btn {

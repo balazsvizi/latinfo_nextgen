@@ -47,5 +47,6 @@ $authHideLoginLink = $authHideLoginLink ?? false;
             <?php if (function_exists('events_public_home_path')): ?><a href="<?= h(events_public_home_path()) ?>">← Naptár</a><?php endif; ?>
         </p>
     </div>
+    <script src="<?= h(nextgen_url('assets/js/password-toggle.js')) ?>"></script>
 </body>
 </html>

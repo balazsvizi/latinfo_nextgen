@@ -66,12 +66,21 @@
     margin-bottom: 1.5rem;
 }
 
-.partner-login-page .login-box button {
+.partner-login-page .login-box form > button {
     background: var(--pp-accent);
 }
 
-.partner-login-page .login-box button:hover {
+.partner-login-page .login-box form > button:hover {
     background: #56734d;
+}
+
+.partner-login-page .password-toggle-btn:hover {
+    background: var(--pp-accent-soft);
+    color: var(--pp-brand);
+}
+
+.partner-login-page .password-toggle-btn:focus-visible {
+    outline-color: var(--pp-accent);
 }
 
 .partner-login-page .login-box input:focus {

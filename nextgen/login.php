@@ -50,11 +50,18 @@ $loginBrand = trim(SITE_NAME . ' NextGen');
         <form method="post" action="">
             <label>Felhasználónév</label>
             <input type="text" name="felhasznalonev" value="<?= h($_POST['felhasznalonev'] ?? '') ?>" required autofocus>
-            <label>Jelszó</label>
-            <input type="password" name="jelszo" required>
+            <label for="jelszo">Jelszó</label>
+            <div class="password-toggle-wrap">
+                <input type="password" id="jelszo" name="jelszo" required>
+                <?php
+                $passwordToggleInputId = 'jelszo';
+                require __DIR__ . '/partials/password_toggle_button.php';
+                ?>
+            </div>
             <button type="submit">Bejelentkezés</button>
         </form>
         <p class="login-back-home"><a href="<?= h(site_url('lanueva/')) ?>">← La nueva</a></p>
     </div>
+    <script src="<?= h(nextgen_url('assets/js/password-toggle.js')) ?>"></script>
 </body>
 </html>
