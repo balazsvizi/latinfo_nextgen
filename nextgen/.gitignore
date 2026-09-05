@@ -35,6 +35,10 @@ database/dumps/
 
 uploads/*
 !uploads/.gitkeep
-!uploads/szamlak/
+!uploads/.htaccess
+!uploads/**/.htaccess
+!uploads/**/.gitkeep
+data/rate_limit/*
+!data/rate_limit/.gitkeep
 data/cron/*
 !data/cron/.gitkeep
