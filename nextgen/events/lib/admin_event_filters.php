@@ -141,6 +141,46 @@ function events_admin_list_limit_merge_get_params(
 }
 
 /**
+ * GET szűrő: egy ID, vesszős lista vagy tömb (pl. f_category[]).
+ *
+ * @param mixed $raw
+ * @param array<int, string> $validOptions
+ * @return list<int>
+ */
+function events_admin_parse_filter_ids(mixed $raw, array $validOptions): array
+{
+    $chunks = [];
+    if (is_array($raw)) {
+        foreach ($raw as $item) {
+            if (is_scalar($item)) {
+                $chunks[] = (string) $item;
+            }
+        }
+    } elseif (is_scalar($raw)) {
+        $chunks[] = (string) $raw;
+    }
+
+    $ids = [];
+    $seen = [];
+    foreach ($chunks as $chunk) {
+        foreach (explode(',', $chunk) as $piece) {
+            $piece = trim($piece);
+            if ($piece === '' || !ctype_digit($piece)) {
+                continue;
+            }
+            $id = (int) $piece;
+            if ($id <= 0 || !isset($validOptions[$id]) || isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $ids[] = $id;
+        }
+    }
+
+    return $ids;
+}
+
+/**
  * Admin eseménylista / naptár — közös szűrők és WHERE építés.
  *
  * @return array{
@@ -157,6 +197,7 @@ function events_admin_list_limit_merge_get_params(
  *   f_start_to: string,
  *   f_views_min: string,
  *   f_category_id: int,
+ *   f_category_ids: list<int>,
  *   f_tag_id: int,
  *   f_dj_id: int,
  *   f_main_style_id: int,
@@ -188,7 +229,6 @@ function events_admin_filters_from_request(PDO $db): array {
     $f_venue = trim((string) ($_GET['f_venue'] ?? ''));
     $f_name = trim((string) ($_GET['f_name'] ?? ''));
     $f_id = trim((string) ($_GET['f_id'] ?? ''));
-    $f_category = trim((string) ($_GET['f_category'] ?? ''));
     $f_tag = trim((string) ($_GET['f_tag'] ?? ''));
     $f_dj = trim((string) ($_GET['f_dj'] ?? ''));
     $f_main_style = trim((string) ($_GET['f_main_style'] ?? ''));
@@ -198,10 +238,9 @@ function events_admin_filters_from_request(PDO $db): array {
     $f_views_min = trim((string) ($_GET['f_views_min'] ?? ''));
 
     $categoryOptions = events_load_category_options($db);
-    $f_category_id = 0;
-    if ($f_category !== '' && ctype_digit($f_category) && isset($categoryOptions[(int) $f_category])) {
-        $f_category_id = (int) $f_category;
-    }
+    $f_category_ids = events_admin_parse_filter_ids($_GET['f_category'] ?? null, $categoryOptions);
+    $f_category_id = $f_category_ids[0] ?? 0;
+    $f_category = $f_category_ids !== [] ? implode(',', $f_category_ids) : '';
 
     $tagsAvailable = events_tags_tables_available($db);
     $tagOptions = $tagsAvailable ? events_load_tag_options($db) : [];
@@ -315,12 +354,13 @@ function events_admin_filters_from_request(PDO $db): array {
         $likeVenue = '%' . $f_venue . '%';
         array_push($params, $likeVenue, $likeVenue, $likeVenue);
     }
-    if ($f_category_id > 0) {
+    if ($f_category_ids !== []) {
+        $catPlaceholders = implode(',', array_fill(0, count($f_category_ids), '?'));
         $where[] = 'EXISTS (
             SELECT 1 FROM `events_calendar_event_categories` ec2
-            WHERE ec2.event_id = e.id AND ec2.category_id = ?
+            WHERE ec2.event_id = e.id AND ec2.category_id IN (' . $catPlaceholders . ')
         )';
-        $params[] = $f_category_id;
+        array_push($params, ...$f_category_ids);
     }
     if ($f_tag_id > 0) {
         $where[] = 'EXISTS (
@@ -390,7 +430,7 @@ function events_admin_filters_from_request(PDO $db): array {
         'f_venue' => $f_venue !== '' ? $f_venue : null,
         'f_name' => $f_name !== '' ? $f_name : null,
         'f_id' => $f_id !== '' ? $f_id : null,
-        'f_category' => $f_category_id > 0 ? (string) $f_category_id : null,
+        'f_category' => $f_category_ids !== [] ? implode(',', $f_category_ids) : null,
         'f_tag' => $f_tag_id > 0 ? (string) $f_tag_id : null,
         'f_dj' => $f_dj_id > 0 ? (string) $f_dj_id : null,
         'f_main_style' => $f_main_style_id > 0 ? (string) $f_main_style_id : null,
@@ -416,6 +456,7 @@ function events_admin_filters_from_request(PDO $db): array {
         'f_start_to' => $f_start_to,
         'f_views_min' => $f_views_min,
         'f_category_id' => $f_category_id,
+        'f_category_ids' => $f_category_ids,
         'f_tag_id' => $f_tag_id,
         'f_dj_id' => $f_dj_id,
         'f_main_style_id' => $f_main_style_id,
@@ -458,7 +499,8 @@ function events_filter_label_attr_classes(array $filters, string $key): string
         'id' => trim((string) ($filters['f_id'] ?? '')) !== '',
         'views_min' => trim((string) ($filters['f_views_min'] ?? '')) !== '',
         'status' => trim((string) ($filters['status'] ?? '')) !== '',
-        'category' => (int) ($filters['f_category_id'] ?? 0) > 0,
+        'category' => (is_array($filters['f_category_ids'] ?? null) && $filters['f_category_ids'] !== [])
+            || (int) ($filters['f_category_id'] ?? 0) > 0,
         'tag' => (int) ($filters['f_tag_id'] ?? 0) > 0,
         'dj' => (int) ($filters['f_dj_id'] ?? 0) > 0,
         'main_style' => (int) ($filters['f_main_style_id'] ?? 0) > 0,

@@ -17,15 +17,68 @@ $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
             <label class="<?= h(events_public_filter_label_attr_classes($filters, 'organizer')) ?>" for="ev-f-organizer"><?= h((string) ($D['filter_organizer'] ?? 'Szervező')) ?></label>
             <input class="events-filter-input" type="text" name="f_organizer" id="ev-f-organizer" value="<?= h($filters['f_organizer']) ?>" placeholder="<?= h((string) ($D['filter_organizer_ph'] ?? '')) ?>" autocomplete="off">
         </div>
-        <div class="events-filter-field events-filter-field--status">
+        <div class="events-filter-field events-filter-field--status events-filter-field--multiselect">
+            <?php
+            $selectedCategoryIds = [];
+            if (isset($filters['f_category_ids']) && is_array($filters['f_category_ids'])) {
+                foreach ($filters['f_category_ids'] as $selectedCatId) {
+                    $selectedCategoryIds[] = (int) $selectedCatId;
+                }
+            } elseif ((int) ($filters['f_category_id'] ?? 0) > 0) {
+                $selectedCategoryIds[] = (int) $filters['f_category_id'];
+            }
+            $selectedCategoryCount = count($selectedCategoryIds);
+            $allCategoriesLabel = (string) ($D['filter_all_categories'] ?? 'Összes kategória');
+            $categoryCountTpl = (string) ($D['filter_category_selected_count'] ?? '%d kategória');
+            if ($selectedCategoryCount === 0) {
+                $categorySummary = $allCategoriesLabel;
+            } elseif ($selectedCategoryCount === 1) {
+                $onlyCatId = $selectedCategoryIds[0];
+                $categorySummary = (string) ($filters['categoryOptions'][$onlyCatId] ?? $allCategoriesLabel);
+            } else {
+                $categorySummary = sprintf($categoryCountTpl, $selectedCategoryCount);
+            }
+            ?>
             <label class="<?= h(events_public_filter_label_attr_classes($filters, 'category')) ?>" for="ev-f-category"><?= h((string) ($D['filter_category'] ?? 'Kategória')) ?></label>
-            <div class="events-filter-select-wrap">
-                <select class="events-filter-select" name="f_category" id="ev-f-category" title="<?= h((string) ($D['filter_category'] ?? 'Kategória')) ?>">
-                    <option value=""><?= h((string) ($D['filter_all_categories'] ?? 'Összes kategória')) ?></option>
+            <div
+                class="events-filter-multiselect"
+                data-filter-multiselect="category"
+                data-all-label="<?= h($allCategoriesLabel) ?>"
+                data-count-template="<?= h($categoryCountTpl) ?>"
+            >
+                <div class="events-filter-select-wrap">
+                    <button
+                        type="button"
+                        class="events-filter-select events-filter-multiselect__toggle"
+                        id="ev-f-category"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-controls="ev-f-category-panel"
+                        title="<?= h((string) ($D['filter_category'] ?? 'Kategória')) ?>"
+                    >
+                        <span class="events-filter-multiselect__summary"><?= h($categorySummary) ?></span>
+                    </button>
+                </div>
+                <div class="events-filter-multiselect__panel" id="ev-f-category-panel" hidden role="group" aria-label="<?= h((string) ($D['filter_category'] ?? 'Kategória')) ?>">
                     <?php foreach ($filters['categoryOptions'] as $cid => $cname): ?>
-                        <option value="<?= (int) $cid ?>" <?= $filters['f_category_id'] === (int) $cid ? 'selected' : '' ?>><?= h($cname) ?></option>
+                        <?php
+                        $cidInt = (int) $cid;
+                        $optId = 'ev-f-category-opt-' . $cidInt;
+                        $isChecked = in_array($cidInt, $selectedCategoryIds, true);
+                        ?>
+                        <label class="events-filter-multiselect__option" for="<?= h($optId) ?>">
+                            <input
+                                type="checkbox"
+                                class="events-filter-multiselect__checkbox"
+                                name="f_category[]"
+                                id="<?= h($optId) ?>"
+                                value="<?= $cidInt ?>"
+                                <?= $isChecked ? 'checked' : '' ?>
+                            >
+                            <span class="events-filter-multiselect__option-text"><?= h($cname) ?></span>
+                        </label>
                     <?php endforeach; ?>
-                </select>
+                </div>
             </div>
         </div>
         <?php if ($filters['tagsAvailable']): ?>

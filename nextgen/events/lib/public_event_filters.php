@@ -183,6 +183,9 @@ function events_public_filters_are_active(array $filters): bool {
     if (trim((string) ($filters['f_city'] ?? '')) !== '') {
         return true;
     }
+    if (is_array($filters['f_category_ids'] ?? null) && $filters['f_category_ids'] !== []) {
+        return true;
+    }
     if ((int) ($filters['f_category_id'] ?? 0) > 0) {
         return true;
     }
