@@ -162,6 +162,64 @@ function events_load_category_options(PDO $db): array {
 }
 
 /**
+ * @return array<int, int> category_id => parent_id (0 = gyökér)
+ */
+function events_load_category_parent_map(PDO $db): array
+{
+    $rows = $db->query('SELECT `id`, `parent_id` FROM `events_categories`')->fetchAll(PDO::FETCH_ASSOC);
+    $out = [];
+    foreach ($rows as $r) {
+        $id = (int) ($r['id'] ?? 0);
+        if ($id <= 0) {
+            continue;
+        }
+        $out[$id] = isset($r['parent_id']) && $r['parent_id'] !== null ? (int) $r['parent_id'] : 0;
+    }
+
+    return $out;
+}
+
+/**
+ * Kiválasztott kategóriák + összes leszármazott (alkategória) ID.
+ *
+ * @param list<int> $ids
+ * @param array<int, int> $parentById
+ * @return list<int>
+ */
+function events_category_ids_with_descendants(array $ids, array $parentById): array
+{
+    if ($ids === []) {
+        return [];
+    }
+
+    $children = [];
+    foreach ($parentById as $id => $pid) {
+        $pid = (int) $pid;
+        if (!isset($children[$pid])) {
+            $children[$pid] = [];
+        }
+        $children[$pid][] = (int) $id;
+    }
+
+    $out = [];
+    $seen = [];
+    $stack = array_values(array_map('intval', $ids));
+    while ($stack !== []) {
+        $id = (int) array_pop($stack);
+        if ($id <= 0 || isset($seen[$id])) {
+            continue;
+        }
+        $seen[$id] = true;
+        $out[] = $id;
+        foreach ($children[$id] ?? [] as $childId) {
+            $stack[] = (int) $childId;
+        }
+    }
+
+    return $out;
+}
+
+/**
  * @return list<int>
  */
 function events_organizer_ids_from_post(): array {

@@ -60,9 +60,20 @@
         }
         var allLabel = root.getAttribute('data-all-label') || '';
         var countTpl = root.getAttribute('data-count-template') || '%d';
+        var boxes = Array.prototype.slice.call(root.querySelectorAll('input[type="checkbox"]'));
+        var childrenByParent = {};
+        boxes.forEach(function (box) {
+            var parentId = String(box.getAttribute('data-parent-id') || '0');
+            if (!childrenByParent[parentId]) {
+                childrenByParent[parentId] = [];
+            }
+            childrenByParent[parentId].push(box);
+        });
 
         function selectedBoxes() {
-            return Array.prototype.slice.call(root.querySelectorAll('input[type="checkbox"]:checked'));
+            return boxes.filter(function (box) {
+                return box.checked;
+            });
         }
 
         function optionLabel(box) {
@@ -82,6 +93,18 @@
                 summary.textContent = optionLabel(checked[0]);
             } else {
                 summary.textContent = countTpl.replace('%d', String(checked.length));
+            }
+        }
+
+        function setDescendantsChecked(parentValue, checked) {
+            var stack = (childrenByParent[String(parentValue)] || []).slice();
+            while (stack.length) {
+                var child = stack.pop();
+                child.checked = checked;
+                var nested = childrenByParent[String(child.value)] || [];
+                for (var i = 0; i < nested.length; i++) {
+                    stack.push(nested[i]);
+                }
             }
         }
 
@@ -114,8 +137,9 @@
             }
         });
 
-        root.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+        boxes.forEach(function (cb) {
             cb.addEventListener('change', function () {
+                setDescendantsChecked(cb.value, cb.checked);
                 updateSummary();
                 debouncedSubmit(450);
             });

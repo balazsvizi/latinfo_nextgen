@@ -204,6 +204,7 @@ function events_admin_parse_filter_ids(mixed $raw, array $validOptions): array
  *   f_supplementary_style_id: int,
  *   status: string,
  *   categoryOptions: array<int, string>,
+ *   categoryParentById: array<int, int>,
  *   tagOptions: array<int, string>,
  *   tagsAvailable: bool,
  *   djOptions: array<int, string>,
@@ -238,7 +239,11 @@ function events_admin_filters_from_request(PDO $db): array {
     $f_views_min = trim((string) ($_GET['f_views_min'] ?? ''));
 
     $categoryOptions = events_load_category_options($db);
-    $f_category_ids = events_admin_parse_filter_ids($_GET['f_category'] ?? null, $categoryOptions);
+    $categoryParentById = events_load_category_parent_map($db);
+    $f_category_ids = events_category_ids_with_descendants(
+        events_admin_parse_filter_ids($_GET['f_category'] ?? null, $categoryOptions),
+        $categoryParentById
+    );
     $f_category_id = $f_category_ids[0] ?? 0;
     $f_category = $f_category_ids !== [] ? implode(',', $f_category_ids) : '';
 
@@ -463,6 +468,7 @@ function events_admin_filters_from_request(PDO $db): array {
         'f_supplementary_style_id' => $f_supplementary_style_id,
         'status' => $status,
         'categoryOptions' => $categoryOptions,
+        'categoryParentById' => $categoryParentById,
         'tagOptions' => $tagOptions,
         'tagsAvailable' => $tagsAvailable,
         'djOptions' => $djOptions,

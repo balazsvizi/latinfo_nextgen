@@ -60,11 +60,17 @@ $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
                     </button>
                 </div>
                 <div class="events-filter-multiselect__panel" id="ev-f-category-panel" hidden role="group" aria-label="<?= h((string) ($D['filter_category'] ?? 'Kategória')) ?>">
+                    <?php
+                    $categoryParentById = is_array($filters['categoryParentById'] ?? null)
+                        ? $filters['categoryParentById']
+                        : [];
+                    ?>
                     <?php foreach ($filters['categoryOptions'] as $cid => $cname): ?>
                         <?php
                         $cidInt = (int) $cid;
                         $optId = 'ev-f-category-opt-' . $cidInt;
                         $isChecked = in_array($cidInt, $selectedCategoryIds, true);
+                        $parentId = (int) ($categoryParentById[$cidInt] ?? 0);
                         ?>
                         <label class="events-filter-multiselect__option" for="<?= h($optId) ?>">
                             <input
@@ -73,6 +79,7 @@ $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
                                 name="f_category[]"
                                 id="<?= h($optId) ?>"
                                 value="<?= $cidInt ?>"
+                                data-parent-id="<?= $parentId ?>"
                                 <?= $isChecked ? 'checked' : '' ?>
                             >
                             <span class="events-filter-multiselect__option-text"><?= h($cname) ?></span>
