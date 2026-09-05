@@ -351,6 +351,188 @@ function csrf_validate(string $scope = 'default', string $field = '_csrf'): bool
 }
 
 /**
+ * CSRF kötelező POST műveleteknél — érvénytelen tokennél flash + redirect.
+ */
+function csrf_require(string $scope = 'default', string $field = '_csrf', ?string $redirectUrl = null): void
+{
+    if (csrf_validate($scope, $field)) {
+        return;
+    }
+    flash('error', 'Érvénytelen biztonsági token. Próbáld újra.');
+    if ($redirectUrl !== null && $redirectUrl !== '') {
+        redirect($redirectUrl);
+    }
+    $ref = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+    if ($ref !== '' && str_starts_with($ref, (string) (defined('BASE_URL') ? rtrim(BASE_URL, '/') : ''))) {
+        redirect($ref);
+    }
+    redirect(nextgen_url('apps.php'));
+}
+
+/**
+ * Egyszerű fájl-alapú rate limit (login, publikus AJAX).
+ * true = engedélyezett, false = túl sok próbálkozás.
+ */
+function rate_limit_allow(string $bucket, int $maxAttempts, int $windowSeconds): bool
+{
+    $bucket = preg_replace('/[^a-zA-Z0-9._-]/', '_', $bucket) ?: 'default';
+    $dir = dirname(__DIR__) . '/data/rate_limit';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $path = $dir . '/' . $bucket . '.json';
+    $now = time();
+    $fp = @fopen($path, 'c+');
+    if ($fp === false) {
+        return true;
+    }
+    try {
+        if (!flock($fp, LOCK_EX)) {
+            return true;
+        }
+        $raw = stream_get_contents($fp);
+        $hits = [];
+        if (is_string($raw) && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $ts) {
+                    $t = (int) $ts;
+                    if ($t >= $now - $windowSeconds) {
+                        $hits[] = $t;
+                    }
+                }
+            }
+        }
+        if (count($hits) >= $maxAttempts) {
+            ftruncate($fp, 0);
+            rewind($fp);
+            fwrite($fp, json_encode($hits));
+            fflush($fp);
+            flock($fp, LOCK_UN);
+
+            return false;
+        }
+        $hits[] = $now;
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($hits));
+        fflush($fp);
+        flock($fp, LOCK_UN);
+
+        return true;
+    } finally {
+        fclose($fp);
+    }
+}
+
+function rate_limit_client_key(string $prefix): string
+{
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+
+    return $prefix . '_' . hash('sha256', $ip);
+}
+
+/**
+ * Engedélyezett számlafájl-kiterjesztések.
+ *
+ * @return list<string>
+ */
+function finance_invoice_allowed_extensions(): array
+{
+    return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'doc', 'docx'];
+}
+
+/**
+ * @return array{ok: bool, ext: string, error: string}
+ */
+function finance_invoice_validate_upload(string $tmpPath, string $originalName): array
+{
+    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION) ?: '');
+    $allowed = finance_invoice_allowed_extensions();
+    if ($ext === '' || !in_array($ext, $allowed, true)) {
+        return ['ok' => false, 'ext' => $ext, 'error' => 'Nem engedélyezett fájltípus.'];
+    }
+    if ($tmpPath === '' || !is_file($tmpPath)) {
+        return ['ok' => false, 'ext' => $ext, 'error' => 'Érvénytelen feltöltés.'];
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string) $finfo->file($tmpPath);
+    $mimeMap = [
+        'pdf' => ['application/pdf'],
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'gif' => ['image/gif'],
+        'webp' => ['image/webp'],
+        'doc' => ['application/msword', 'application/octet-stream'],
+        'docx' => [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/zip',
+            'application/octet-stream',
+        ],
+    ];
+    $okMimes = $mimeMap[$ext] ?? [];
+    if ($okMimes !== [] && !in_array($mime, $okMimes, true)) {
+        return ['ok' => false, 'ext' => $ext, 'error' => 'A fájl tartalma nem egyezik a kiterjesztéssel.'];
+    }
+    $maxBytes = 15 * 1024 * 1024;
+    $size = (int) filesize($tmpPath);
+    if ($size <= 0 || $size > $maxBytes) {
+        return ['ok' => false, 'ext' => $ext, 'error' => 'A fájl mérete érvénytelen (max. 15 MB).'];
+    }
+
+    return ['ok' => true, 'ext' => $ext, 'error' => ''];
+}
+
+/**
+ * Számla csatolmány mentése (whitelist + biztonságos fájlnév).
+ * Visszatér: sikeresen feltöltött fájlok száma.
+ */
+function finance_store_invoice_uploads(PDO $db, int $szamlaId, array $fajlAdat): int
+{
+    if ($szamlaId <= 0) {
+        return 0;
+    }
+    if (!is_dir(UPLOAD_PATH)) {
+        @mkdir(UPLOAD_PATH, 0755, true);
+    }
+    $uploadDir = UPLOAD_PATH . '/' . $szamlaId;
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0755, true);
+    }
+
+    $names = is_array($fajlAdat['name'] ?? null) ? $fajlAdat['name'] : [($fajlAdat['name'] ?? '')];
+    $tmp = is_array($fajlAdat['tmp_name'] ?? null) ? $fajlAdat['tmp_name'] : [($fajlAdat['tmp_name'] ?? '')];
+    $errors = is_array($fajlAdat['error'] ?? null) ? $fajlAdat['error'] : [($fajlAdat['error'] ?? UPLOAD_ERR_NO_FILE)];
+
+    $feltoltve = 0;
+    $ins = $db->prepare('INSERT INTO finance_invoice_files (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)');
+    for ($i = 0, $n = count($names); $i < $n; $i++) {
+        if (($errors[$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || empty($names[$i])) {
+            continue;
+        }
+        $name = (string) $names[$i];
+        $tmpPath = (string) ($tmp[$i] ?? '');
+        $check = finance_invoice_validate_upload($tmpPath, $name);
+        if (!$check['ok']) {
+            continue;
+        }
+        $safeBase = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name)) ?: ('file_' . $i);
+        $safeBase = preg_replace('/\.[^.]+$/', '', $safeBase) ?: ('file_' . $i);
+        $ujnev = $safeBase . '_' . bin2hex(random_bytes(4)) . '.' . $check['ext'];
+        $cel = $uploadDir . '/' . $ujnev;
+        if (!move_uploaded_file($tmpPath, $cel)) {
+            continue;
+        }
+        @chmod($cel, 0644);
+        $ins->execute([$szamlaId, $name, $szamlaId . '/' . $ujnev]);
+        $feltoltve++;
+    }
+
+    return $feltoltve;
+}
+
+/**
  * Számla státusz feliratok
  */
 function szamla_statusz_label(string $s): string {

@@ -14,6 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect(nextgen_url('admin/exporter/connections.php'));
 }
 
+csrf_require('admin_exporter_connection_torles', '_csrf', nextgen_url('admin/exporter/connections.php'));
+
 $id = (int) ($_POST['id'] ?? 0);
 if ($id <= 0) {
     flash('error', 'Érvénytelen kapcsolat.');

@@ -30,6 +30,10 @@ $contactTypesTable = $resolveTable($db, ['finance_contact_types', 'nextgen_conta
 $contactTypeLinksTable = $resolveTable($db, ['finance_contact_type_links', 'nextgen_contact_type_links', 'kontakt_típus_kapcsolat'], 'finance_contact_type_links');
 $contactsTable = $resolveTable($db, ['finance_contacts', 'nextgen_contacts', 'kontaktok'], 'finance_contacts');
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('config_kontakt_tipusok', '_csrf', nextgen_url('config/kontakt_tipusok.php'));
+}
+
 // Új típus felvétele
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['uj_tipus_nev'])) {
     $nev = trim($_POST['uj_tipus_nev']);
@@ -116,6 +120,7 @@ $get_params = array_filter(['kereso' => $kereso]);
     <section class="config-section config-section-uj" aria-labelledby="kontakt-tipus-uj-cim">
         <h3 id="kontakt-tipus-uj-cim" class="config-section-title">Új típus</h3>
         <form method="post" class="kontakt-tipus-form-uj">
+            <?= csrf_input('config_kontakt_tipusok') ?>
             <div class="kontakt-tipus-uj-grid">
                 <div class="form-group kontakt-tipus-uj-nev">
                     <label for="uj_tipus">Név *</label>
@@ -161,6 +166,7 @@ $get_params = array_filter(['kereso' => $kereso]);
                     <tr>
                         <td data-label="Név">
                             <form method="post" id="<?= h($fid) ?>" class="kontakt-tipus-row-form">
+                                <?= csrf_input('config_kontakt_tipusok') ?>
                                 <input type="hidden" name="szerkeszt_id" value="<?= (int)$t['id'] ?>">
                                 <input type="text" name="uj_nev" value="<?= h($t['név']) ?>" class="input-block" required aria-label="Név">
                             </form>
@@ -172,6 +178,7 @@ $get_params = array_filter(['kereso' => $kereso]);
                         <td class="td-actions">
                             <button type="submit" form="<?= h($fid) ?>" class="btn btn-sm btn-primary">Mentés</button>
                             <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törlöd ezt a típust?');">
+                                <?= csrf_input('config_kontakt_tipusok') ?>
                                 <input type="hidden" name="torol_id" value="<?= (int)$t['id'] ?>">
                                 <button type="submit" class="btn btn-sm btn-secondary">Törlés</button>
                             </form>

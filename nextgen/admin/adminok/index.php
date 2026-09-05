@@ -75,9 +75,17 @@ $get_params = array_filter(['kereso' => $kereso]);
                         <a href="<?= h(nextgen_url('admin/adminok/szerkeszt.php?id=')) ?><?= (int)$a['id'] ?>" class="btn btn-sm btn-secondary">Szerkeszt</a>
                         <?php if ((int)$a['id'] !== (int)($_SESSION['admin_id'] ?? 0)): ?>
                             <?php if ($a['aktív']): ?>
-                                <a href="<?= h(nextgen_url('admin/adminok/letilt.php?id=')) ?><?= (int)$a['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Letiltja ezt az admint?');">Letiltás</a>
+                                <form method="post" action="<?= h(nextgen_url('admin/adminok/letilt.php')) ?>" class="inline-form" onsubmit="return confirm('Letiltja ezt az admint?');">
+                                    <?= csrf_input('admin_adminok_toggle') ?>
+                                    <input type="hidden" name="id" value="<?= (int) $a['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger">Letiltás</button>
+                                </form>
                             <?php else: ?>
-                                <a href="<?= h(nextgen_url('admin/adminok/engedelyez.php?id=')) ?><?= (int)$a['id'] ?>" class="btn btn-sm btn-primary">Engedélyezés</a>
+                                <form method="post" action="<?= h(nextgen_url('admin/adminok/engedelyez.php')) ?>" class="inline-form">
+                                    <?= csrf_input('admin_adminok_toggle') ?>
+                                    <input type="hidden" name="id" value="<?= (int) $a['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-primary">Engedélyezés</button>
+                                </form>
                             <?php endif; ?>
                         <?php else: ?>
                             <span class="text-muted">(Ön)</span>

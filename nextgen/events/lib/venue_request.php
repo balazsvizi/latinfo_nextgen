@@ -444,15 +444,34 @@ function events_venue_nominatim_throttle(): void
         @mkdir($dir, 0755, true);
     }
     $path = $dir . '/.nominatim_throttle';
-    $now = microtime(true);
-    if (is_file($path)) {
-        $last = (float) trim((string) file_get_contents($path));
+    $fp = @fopen($path, 'c+');
+    if ($fp === false) {
+        usleep(1_100_000);
+
+        return;
+    }
+    try {
+        if (!flock($fp, LOCK_EX)) {
+            usleep(1_100_000);
+
+            return;
+        }
+        $raw = stream_get_contents($fp);
+        $now = microtime(true);
+        $last = is_string($raw) && $raw !== '' ? (float) trim($raw) : 0.0;
         $wait = 1.1 - ($now - $last);
         if ($wait > 0) {
             usleep((int) round($wait * 1_000_000));
+            $now = microtime(true);
         }
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, (string) $now);
+        fflush($fp);
+        flock($fp, LOCK_UN);
+    } finally {
+        fclose($fp);
     }
-    @file_put_contents($path, (string) microtime(true));
 }
 
 /**

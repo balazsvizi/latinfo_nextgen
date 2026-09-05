@@ -16,6 +16,9 @@ if (!$hasCimkeSzin) {
 }
 
 $mod = $_POST['mod'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('config_cimkek', '_csrf', nextgen_url('config/cimkek.php'));
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $mod === 'create') {
     $név = trim($_POST['új_címke'] ?? '');
     $szin = normalize_hex_color($_POST['új_szin'] ?? '', $alap_szin);
@@ -95,6 +98,7 @@ $get_params = array_filter(['kereso' => $kereso]);
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
     <form method="post" class="cimke-form-uj">
+        <?= csrf_input('config_cimkek') ?>
         <input type="hidden" name="mod" value="create">
         <div class="form-group cimke-form-nev">
             <label for="uj">Új címke neve</label>
@@ -145,6 +149,7 @@ $get_params = array_filter(['kereso' => $kereso]);
                 <td><?= h($c['létrehozva']) ?></td>
                 <td>
                     <form method="post" id="cimke-form-<?= (int)$c['id'] ?>" class="inline-form">
+                        <?= csrf_input('config_cimkek') ?>
                         <input type="hidden" name="mod" value="update">
                         <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-secondary">Mentés</button>

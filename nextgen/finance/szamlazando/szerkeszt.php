@@ -18,16 +18,24 @@ if (!$s) {
     redirect(nextgen_url('organizers/'));
 }
 $szervezo_id = (int)$s['szervező_id'];
+$szerkeszt_url = nextgen_url('finance/szamlazando/szerkeszt.php?id=') . $id;
+if (!empty($_GET['vissza']) && $_GET['vissza'] === 'szamla' && !empty($_GET['szamla_id'])) {
+    $szerkeszt_url .= '&vissza=szamla&szamla_id=' . (int)$_GET['szamla_id'];
+}
 
 // Számlázandó törlése (soft delete)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_szamlazando'])) {
-    rendszer_log('számlázandó', $id, 'Törölve', null);
-    $db->prepare('UPDATE finance_billing_items SET törölve = 1, számla_id = NULL WHERE id = ?')->execute([$id]);
-    flash('success', 'Számlázandó tétel törölve.');
-    if (!empty($_POST['vissza']) && $_POST['vissza'] === 'szamla' && !empty($_POST['szamla_id'])) {
-        redirect(nextgen_url('finance/szamlak/szerkeszt.php?id=') . (int)$_POST['szamla_id']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('finance_szamlazando_szerkeszt', '_csrf', $szerkeszt_url);
+
+    if (isset($_POST['torol_szamlazando'])) {
+        rendszer_log('számlázandó', $id, 'Törölve', null);
+        $db->prepare('UPDATE finance_billing_items SET törölve = 1, számla_id = NULL WHERE id = ?')->execute([$id]);
+        flash('success', 'Számlázandó tétel törölve.');
+        if (!empty($_POST['vissza']) && $_POST['vissza'] === 'szamla' && !empty($_POST['szamla_id'])) {
+            redirect(nextgen_url('finance/szamlak/szerkeszt.php?id=') . (int)$_POST['szamla_id']);
+        }
+        redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
     }
-    redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
 }
 
 $idoszakok = $db->prepare('SELECT év, hónap FROM finance_billing_periods WHERE számlázandó_id = ?');
@@ -45,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($honapok)) {
         $hiba = 'Válasszon legalább egy hónapot.';
     } else {
+        $db->beginTransaction();
         try {
             $db->prepare('UPDATE finance_billing_items SET összeg = ?, megjegyzés = ? WHERE id = ?')->execute([$osszeg, $megjegyzes ?: null, $id]);
             $db->prepare('DELETE FROM finance_billing_periods WHERE számlázandó_id = ?')->execute([$id]);
@@ -58,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             rendszer_log('számlázandó', $id, 'Módosítva', null);
+            $db->commit();
             flash('success', 'Mentve.');
             if (!empty($_GET['vissza']) && $_GET['vissza'] === 'szamla' && !empty($_GET['szamla_id'])) {
                 redirect(nextgen_url('finance/szamlak/szerkeszt.php?id=') . (int)$_GET['szamla_id']);
@@ -65,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
             }
         } catch (Exception $e) {
-            $hiba = 'Hiba: ' . $e->getMessage();
+            $db->rollBack();
+            $hiba = 'Mentés sikertelen.';
         }
     }
     $idoszakok = [];
@@ -97,6 +108,7 @@ $extra_idoszakok = array_filter($idoszakok, function ($r) use ($grid_values) {
     <h2>Számlázandó szerkesztése</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post" id="szamlazando-form">
+        <?= csrf_input('finance_szamlazando_szerkeszt') ?>
         <div class="form-group idoszak-csoport">
             <label>Időszak – több is kijelölhető *</label>
             <p class="idoszak-leiras">Az aktuális hónap és az előző 3 hónap, vagy adj meg egyéb hónapot az éééé-hh formátummal.</p>
@@ -138,6 +150,7 @@ $extra_idoszakok = array_filter($idoszakok, function ($r) use ($grid_values) {
     </form>
     <div class="form-actions" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
         <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a finance_billing_items tételt? A tétel nem jelenik meg a listákban, a kapcsolt számlától le fog szakadni.');">
+            <?= csrf_input('finance_szamlazando_szerkeszt') ?>
             <input type="hidden" name="torol_szamlazando" value="1">
             <?php if (!empty($_GET['vissza']) && $_GET['vissza'] === 'szamla' && !empty($_GET['szamla_id'])): ?>
             <input type="hidden" name="vissza" value="szamla">

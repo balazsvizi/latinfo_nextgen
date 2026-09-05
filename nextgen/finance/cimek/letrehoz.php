@@ -13,6 +13,7 @@ if (!$szervezo_id) {
 $db = getDb();
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('finance_cim_letrehoz', '_csrf', nextgen_url('finance/cimek/letrehoz.php?szervezo_id=') . $szervezo_id);
     $név = trim($_POST['név'] ?? '');
     $ország = trim($_POST['ország'] ?? '');
     $irsz = trim($_POST['irsz'] ?? '');
@@ -25,14 +26,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($név === '' || $ország === '' || $irsz === '' || $cím === '') {
         $hiba = 'Név, ország, irányítószám és cím megadása kötelező.';
     } else {
-        if ($alapértelmezett) {
-            $db->prepare('UPDATE finance_billing_addresses SET alapértelmezett = 0 WHERE szervező_id = ?')->execute([$szervezo_id]);
+        $db->beginTransaction();
+        try {
+            if ($alapértelmezett) {
+                $db->prepare('UPDATE finance_billing_addresses SET alapértelmezett = 0 WHERE szervező_id = ?')->execute([$szervezo_id]);
+            }
+            $db->prepare('INSERT INTO finance_billing_addresses (szervező_id, név, ország, irsz, település, cím, adószám, megjegyzés, alapértelmezett) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                ->execute([$szervezo_id, $név, $ország, $irsz, $település, $cím, $adószám ?: null, $megjegyzés ?: null, $alapértelmezett]);
+            rendszer_log('számlázási_cím', (int)$db->lastInsertId(), 'Létrehozva', null);
+            $db->commit();
+            flash('success', 'Cím mentve.');
+            redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
+        } catch (Exception $e) {
+            $db->rollBack();
+            $hiba = 'Mentés sikertelen.';
         }
-        $db->prepare('INSERT INTO finance_billing_addresses (szervező_id, név, ország, irsz, település, cím, adószám, megjegyzés, alapértelmezett) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-            ->execute([$szervezo_id, $név, $ország, $irsz, $település, $cím, $adószám ?: null, $megjegyzés ?: null, $alapértelmezett]);
-        rendszer_log('számlázási_cím', (int)$db->lastInsertId(), 'Létrehozva', null);
-        flash('success', 'Cím mentve.');
-        redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
     }
 }
 
@@ -43,6 +51,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <h2>Új számlázási cím</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('finance_cim_letrehoz') ?>
         <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h($_POST['név'] ?? '') ?>" required></div>
         <div class="form-group"><label>Ország *</label><input type="text" name="ország" value="<?= h($_POST['ország'] ?? 'Magyarország') ?>" required></div>
         <div class="form-group"><label>Irányítószám *</label><input type="text" name="irsz" value="<?= h($_POST['irsz'] ?? '') ?>" required></div>

@@ -327,7 +327,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                         $icon = (string) ($meta['icon'] ?? '🏷️');
                                         ?>
                                         <span class="events-tag-type-pill events-tag-type-pill--<?= h($tone) ?>">
-                                            <span class="events-tag-type-pill__icon" aria-hidden="true"><?= $icon ?></span>
+                                            <span class="events-tag-type-pill__icon" aria-hidden="true"><?= h($icon) ?></span>
                                             <span class="events-tag-type-pill__label"><?= h($typeLabelMap[$code] ?? $code) ?></span>
                                         </span>
                                     <?php endforeach; ?>

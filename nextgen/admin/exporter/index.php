@@ -61,6 +61,7 @@ $flashError = flash('error');
                         <?php $qMeg = trim((string) ($q['megjegyzés'] ?? '')); ?>
                         <a href="?id=<?= (int)$q['id'] ?>"<?= $qMeg !== '' ? ' title="' . h($qMeg) . '"' : '' ?>><?= h($q['név']) ?></a>
                         <form method="post" action="delete.php" class="inline-form" onsubmit="return confirm('Törlöd ezt a lekérdezést?');">
+                            <?= csrf_input('admin_exporter_delete') ?>
                             <input type="hidden" name="id" value="<?= (int)$q['id'] ?>">
                             <button type="submit" class="btn-link btn-danger" title="Törlés">✕</button>
                         </form>
@@ -74,6 +75,7 @@ $flashError = flash('error');
 
         <div class="exporter-main">
             <form method="post" action="save.php" class="exporter-form">
+                <?= csrf_input('admin_exporter_save') ?>
                 <div class="form-group">
                     <label for="connection_id">Adatbázis kapcsolat (exportáláshoz)</label>
                     <select id="connection_id" name="connection_id" class="form-control">
@@ -102,6 +104,7 @@ $flashError = flash('error');
                 </div>
             </form>
             <form id="export-form" method="post" action="export.php" target="_blank" style="display:none;">
+                <?= csrf_input('admin_exporter_export') ?>
                 <input type="hidden" name="query_sql" id="export_query_sql" value="">
                 <input type="hidden" name="connection_id" id="export_connection_id" value="">
                 <input type="hidden" name="query_name" id="export_query_name" value="">

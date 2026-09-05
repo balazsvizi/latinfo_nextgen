@@ -48,6 +48,7 @@ $listak = $stmt->fetchAll();
                         <a href="<?= h(nextgen_url('admin/email/szerkeszt.php?id=')) ?><?= (int)$r['id'] ?>" class="btn btn-sm btn-secondary">Szerkeszt</a>
                         <a href="<?= h(nextgen_url('admin/email/teszt.php?config_id=')) ?><?= (int)$r['id'] ?>" class="btn btn-sm btn-primary">Teszt</a>
                         <form method="post" action="<?= h(nextgen_url('admin/email/torles.php')) ?>" style="display:inline;" onsubmit="return confirm('Biztosan törli ezt az SMTP fiókot?');">
+                            <?= csrf_input('admin_email_torles') ?>
                             <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
                             <button type="submit" class="btn btn-sm btn-danger">Törlés</button>
                         </form>

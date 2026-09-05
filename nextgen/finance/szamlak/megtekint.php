@@ -20,62 +20,50 @@ if (!$szamla) {
 }
 $szervezo_id = (int) $szamla['szervező_id'];
 
-// Számlázandó lecsatolás
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['lecsatol_szamlazando_id'])) {
-    $sid = (int) $_POST['lecsatol_szamlazando_id'];
-    if ($sid) {
-        $db->prepare('UPDATE finance_billing_items SET számla_id = NULL WHERE id = ? AND számla_id = ?')->execute([$sid, $id]);
-        flash('success', 'Számlázandó tétel lecsatolva.');
-        redirect(nextgen_url('finance/szamlak/megtekint.php?id=') . $id);
-    }
-}
-// Számlázandó további csatolása
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hozzacsatol_szamlazando_ids']) && is_array($_POST['hozzacsatol_szamlazando_ids'])) {
-    $csatol_ids = array_map('intval', $_POST['hozzacsatol_szamlazando_ids']);
-    $csatol_ids = array_filter($csatol_ids);
-    if (!empty($csatol_ids)) {
-        $placeholders = implode(',', array_fill(0, count($csatol_ids), '?'));
-        $db->prepare("UPDATE finance_billing_items SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)")
-            ->execute(array_merge([$id], $csatol_ids, [$szervezo_id]));
-        flash('success', 'Számlázandó tétel(ek) csatolva.');
-        redirect(nextgen_url('finance/szamlak/megtekint.php?id=') . $id);
-    }
-}
-// Státusz módosítás
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['státusz'])) {
-    $uj = $_POST['státusz'];
-    if (in_array($uj, ['generált', 'kiküldve', 'kiegyenlítve', 'egyéb', 'KP', 'sztornó'], true)) {
-        $db->prepare('UPDATE finance_invoices SET státusz = ? WHERE id = ?')->execute([$uj, $id]);
-        rendszer_log('számla', $id, 'Státusz módosítva', $uj);
-        flash('success', 'Státusz frissítve.');
-        redirect(nextgen_url('finance/szamlak/megtekint.php?id=') . $id);
-    }
-}
+$megtekint_url = nextgen_url('finance/szamlak/megtekint.php?id=') . $id;
 
-// Új fájl(ok) feltöltés
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['uj_fajl']['name']) && is_dir(UPLOAD_PATH)) {
-    $upload_dir = UPLOAD_PATH . '/' . $id;
-    if (!is_dir($upload_dir)) @mkdir($upload_dir, 0755, true);
-    $names = is_array($_FILES['uj_fajl']['name']) ? $_FILES['uj_fajl']['name'] : [$_FILES['uj_fajl']['name']];
-    $tmp = is_array($_FILES['uj_fajl']['tmp_name']) ? $_FILES['uj_fajl']['tmp_name'] : [$_FILES['uj_fajl']['tmp_name']];
-    $errors = is_array($_FILES['uj_fajl']['error']) ? $_FILES['uj_fajl']['error'] : [$_FILES['uj_fajl']['error']];
-    $feltoltve = 0;
-    for ($i = 0; $i < count($names); $i++) {
-        if (($errors[$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK && !empty($names[$i])) {
-            $name = $names[$i];
-            $ext = pathinfo($name, PATHINFO_EXTENSION) ?: 'bin';
-            $ujnev = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name)) ?: 'file_' . $i . '.' . $ext;
-            $cel = $upload_dir . '/' . $ujnev;
-            if (move_uploaded_file($tmp[$i], $cel)) {
-                $db->prepare('INSERT INTO finance_invoice_files (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
-                    ->execute([$id, $name, $id . '/' . $ujnev]);
-                $feltoltve++;
-            }
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('finance_szamla_megtekint', '_csrf', $megtekint_url);
+
+    // Számlázandó lecsatolás
+    if (isset($_POST['lecsatol_szamlazando_id'])) {
+        $sid = (int) $_POST['lecsatol_szamlazando_id'];
+        if ($sid) {
+            $db->prepare('UPDATE finance_billing_items SET számla_id = NULL WHERE id = ? AND számla_id = ?')->execute([$sid, $id]);
+            flash('success', 'Számlázandó tétel lecsatolva.');
+            redirect($megtekint_url);
         }
     }
-    if ($feltoltve > 0) {
-        flash('success', $feltoltve === 1 ? 'Fájl feltöltve.' : $feltoltve . ' fájl feltöltve.');
-        redirect(nextgen_url('finance/szamlak/megtekint.php?id=') . $id);
+    // Számlázandó további csatolása
+    if (isset($_POST['hozzacsatol_szamlazando_ids']) && is_array($_POST['hozzacsatol_szamlazando_ids'])) {
+        $csatol_ids = array_map('intval', $_POST['hozzacsatol_szamlazando_ids']);
+        $csatol_ids = array_filter($csatol_ids);
+        if (!empty($csatol_ids)) {
+            $placeholders = implode(',', array_fill(0, count($csatol_ids), '?'));
+            $db->prepare("UPDATE finance_billing_items SET számla_id = ? WHERE id IN ($placeholders) AND szervező_id = ? AND számla_id IS NULL AND (COALESCE(törölve,0) = 0)")
+                ->execute(array_merge([$id], $csatol_ids, [$szervezo_id]));
+            flash('success', 'Számlázandó tétel(ek) csatolva.');
+            redirect($megtekint_url);
+        }
+    }
+    // Státusz módosítás
+    if (isset($_POST['státusz'])) {
+        $uj = $_POST['státusz'];
+        if (in_array($uj, ['generált', 'kiküldve', 'kiegyenlítve', 'egyéb', 'KP', 'sztornó'], true)) {
+            $db->prepare('UPDATE finance_invoices SET státusz = ? WHERE id = ?')->execute([$uj, $id]);
+            rendszer_log('számla', $id, 'Státusz módosítva', $uj);
+            flash('success', 'Státusz frissítve.');
+            redirect($megtekint_url);
+        }
+    }
+
+    // Új fájl(ok) feltöltés
+    if (!empty($_FILES['uj_fajl']['name'])) {
+        $feltoltve = finance_store_invoice_uploads($db, $id, $_FILES['uj_fajl']);
+        if ($feltoltve > 0) {
+            flash('success', $feltoltve === 1 ? 'Fájl feltöltve.' : $feltoltve . ' fájl feltöltve.');
+            redirect($megtekint_url);
+        }
     }
 }
 
@@ -121,6 +109,7 @@ require_once __DIR__ . '/../../partials/header.php';
         <tr><th>Belső megjegyzés</th><td><?= nl2br(h($szamla['belső_megjegyzés'] ?? '')) ?></td></tr>
         <tr><th>Státusz</th><td>
             <form method="post" style="display:inline;">
+                <?= csrf_input('finance_szamla_megtekint') ?>
                 <select name="státusz" onchange="this.form.submit()">
                     <?php foreach (['generált','kiküldve','kiegyenlítve','egyéb','KP','sztornó'] as $st): ?>
                         <option value="<?= h($st) ?>" <?= $szamla['státusz'] === $st ? 'selected' : '' ?>><?= szamla_statusz_label($st) ?></option>
@@ -133,6 +122,7 @@ require_once __DIR__ . '/../../partials/header.php';
 <div class="card">
     <h2>Csatolt fájlok</h2>
     <form method="post" enctype="multipart/form-data" id="uj-fajl-form" style="margin-bottom:1rem;">
+        <?= csrf_input('finance_szamla_megtekint') ?>
         <div class="file-upload-wrap file-drop-zone" id="drop-zone-megtekint">
             <input type="file" name="uj_fajl[]" id="uj_fajl" class="file-input-native" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
             <label for="uj_fajl" class="file-input-btn">Fájl kiválasztása</label>
@@ -160,6 +150,7 @@ require_once __DIR__ . '/../../partials/header.php';
             – <?= number_format((float)$sz['összeg'], 0, ',', ' ') ?> Ft
             <?php if (!empty($sz['megjegyzés'])): ?><span class="muted">(<?= h(mb_substr($sz['megjegyzés'], 0, 50)) ?><?= mb_strlen($sz['megjegyzés']) > 50 ? '…' : '' ?>)</span><?php endif; ?>
             <form method="post" class="inline-form" style="display:inline; margin-left:0.5rem;">
+                <?= csrf_input('finance_szamla_megtekint') ?>
                 <input type="hidden" name="lecsatol_szamlazando_id" value="<?= (int)$sz['id'] ?>">
                 <button type="submit" class="btn btn-secondary btn-sm">Lecsatolás</button>
             </form>
@@ -171,6 +162,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <?php endif; ?>
     <?php if (!empty($tovabbi_szamlazando)): ?>
     <form method="post" class="mt-1">
+        <?= csrf_input('finance_szamla_megtekint') ?>
         <p><strong>További csatolása:</strong></p>
         <div class="checkbox-group">
             <?php foreach ($tovabbi_szamlazando as $sz): ?>
@@ -211,6 +203,8 @@ require_once __DIR__ . '/../../partials/header.php';
             var files = e.dataTransfer && e.dataTransfer.files;
             if (!files || files.length === 0) return;
             var fd = new FormData();
+            var csrf = form.querySelector('input[name="_csrf"]');
+            if (csrf) fd.append('_csrf', csrf.value);
             for (var i = 0; i < files.length; i++) fd.append('uj_fajl[]', files[i]);
             fetch(form.action, { method: 'POST', body: fd })
                 .then(function(r) { if (r.redirected) window.location.href = r.url; });

@@ -40,6 +40,7 @@ if (!$kivalasztott_id && !empty($fiokok)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('admin_email_teszt', '_csrf', nextgen_url('admin/email/teszt.php'));
     $config_id = (int) ($_POST['config_id'] ?? 0);
     $cim = trim($_POST['cim'] ?? '');
     if ($config_id <= 0) {
@@ -79,6 +80,7 @@ $cimzett_ertek = ($_SERVER['REQUEST_METHOD'] === 'POST')
     <p class="alert alert-error">Nincs még SMTP fiók. <a href="<?= h(nextgen_url('admin/email/letrehoz.php')) ?>">Új fiók hozzáadása</a></p>
     <?php else: ?>
     <form method="post" id="email-teszt-form">
+        <?= csrf_input('admin_email_teszt') ?>
         <div class="form-group">
             <label>SMTP fiók *</label>
             <select name="config_id" required>

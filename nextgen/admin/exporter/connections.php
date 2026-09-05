@@ -45,6 +45,7 @@ $listak = $db->query('SELECT id, név, host, port, dbname, felhasználó, létre
                         <a href="<?= h(nextgen_url('admin/exporter/connection_teszt.php?id=')) ?><?= (int)$r['id'] ?>" class="btn btn-sm btn-primary">Teszt</a>
                         <a href="<?= h(nextgen_url('admin/exporter/connection_szerkeszt.php?id=')) ?><?= (int)$r['id'] ?>" class="btn btn-sm btn-secondary">Szerkeszt</a>
                         <form method="post" action="connection_torles.php" style="display:inline;" onsubmit="return confirm('Biztosan törlöd ezt a kapcsolatot?');">
+                            <?= csrf_input('admin_exporter_connection_torles') ?>
                             <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
                             <button type="submit" class="btn btn-sm btn-danger">Törlés</button>
                         </form>

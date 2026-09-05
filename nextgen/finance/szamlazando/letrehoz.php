@@ -19,6 +19,7 @@ if (!$sz->fetch()) {
 
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('finance_szamlazando_letrehoz', '_csrf', nextgen_url('finance/szamlazando/letrehoz.php?szervezo_id=') . $szervezo_id);
     $osszeg = str_replace([' ', ','], ['', '.'], $_POST['összeg'] ?? '0');
     $megjegyzes = trim($_POST['megjegyzés'] ?? '');
     $honapok = $_POST['idoszak'] ?? []; // pl. ["2024-1", "2024-2"]
@@ -49,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
         } catch (Exception $e) {
             $db->rollBack();
-            $hiba = 'Hiba: ' . $e->getMessage();
+            $hiba = 'Mentés sikertelen.';
         }
     }
 }
@@ -70,6 +71,7 @@ for ($i = 3; $i >= 0; $i--) {
     <h2>Új finance_billing_items</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post" id="szamlazando-form">
+        <?= csrf_input('finance_szamlazando_letrehoz') ?>
         <div class="form-group idoszak-csoport">
             <label>Időszak – több is kijelölhető *</label>
             <p class="idoszak-leiras">Az aktuális hónap és az előző 3 hónap, vagy adj meg egyéb hónapot az éééé-hh formátummal.</p>

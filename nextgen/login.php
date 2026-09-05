@@ -4,6 +4,7 @@
  */
 require_once __DIR__ . '/core/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/functions.php';
 
 if (isLoggedIn()) {
     redirect(nextgen_url('apps.php'));
@@ -11,21 +12,25 @@ if (isLoggedIn()) {
 
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $fh = trim($_POST['felhasznalonev'] ?? '');
-    $jelszo = $_POST['jelszo'] ?? '';
-    if ($fh === '' || $jelszo === '') {
-        $hiba = 'Kérjük, töltse ki mindkét mezőt.';
-    } elseif (login($fh, $jelszo)) {
-        $url = (string) ($_SESSION['_redirect_after_login'] ?? '');
-        unset($_SESSION['_redirect_after_login']);
-        if ($url === '' || !alatinfo_is_safe_post_login_redirect($url)) {
-            $url = nextgen_url('apps.php');
-        } elseif ($url !== '' && $url[0] !== '/') {
-            $url = rtrim(BASE_URL, '/') . '/' . ltrim($url, '/');
-        }
-        redirect($url);
+    if (!rate_limit_allow(rate_limit_client_key('admin_login'), 8, 900)) {
+        $hiba = 'Túl sok sikertelen próbálkozás. Próbáld újra később.';
     } else {
-        $hiba = 'Hibás felhasználónév vagy jelszó.';
+        $fh = trim($_POST['felhasznalonev'] ?? '');
+        $jelszo = $_POST['jelszo'] ?? '';
+        if ($fh === '' || $jelszo === '') {
+            $hiba = 'Kérjük, töltse ki mindkét mezőt.';
+        } elseif (login($fh, $jelszo)) {
+            $url = (string) ($_SESSION['_redirect_after_login'] ?? '');
+            unset($_SESSION['_redirect_after_login']);
+            if ($url === '' || !alatinfo_is_safe_post_login_redirect($url)) {
+                $url = nextgen_url('apps.php');
+            } elseif ($url !== '' && $url[0] !== '/') {
+                $url = rtrim(BASE_URL, '/') . '/' . ltrim($url, '/');
+            }
+            redirect($url);
+        } else {
+            $hiba = 'Hibás felhasználónév vagy jelszó.';
+        }
     }
 }
 

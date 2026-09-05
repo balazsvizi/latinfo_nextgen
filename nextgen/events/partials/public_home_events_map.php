@@ -81,15 +81,12 @@ $mapShowEmpty = $mapMarkerCount === 0 && $mapPending === 0;
         var raw = document.getElementById(mapId + '-json');
         var pinCountEl = document.getElementById(mapId + '-pin-count');
         var geocodePendingEl = document.getElementById(mapId + '-geocode-pending');
-        var geocodeDoneText = <?= json_encode((string) ($D['map_geocode_done'] ?? 'Cím alapú helymeghatározás kész.'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
         if (!el || !raw || typeof L === 'undefined') return;
 
         var data;
         try { data = JSON.parse(raw.textContent || '{}'); } catch (e) { return; }
         var markers = Array.isArray(data.markers) ? data.markers : [];
-        var geocodeJobs = Array.isArray(data.geocode_jobs) ? data.geocode_jobs : [];
-        var pinCount = markers.length;
-        var geocodeDelayMs = 1100;
+        var pinCount = 0;
 
         function esc(s) {
             return String(s == null ? '' : s)
@@ -189,73 +186,10 @@ $mapShowEmpty = $mapMarkerCount === 0 && $mapPending === 0;
         map.addLayer(cluster);
         fitMapToBounds();
 
-        function fetchNominatim(q, countryCode) {
-            var params = new URLSearchParams({ format: 'json', limit: '5', q: q });
-            if (countryCode && String(countryCode).length === 2) {
-                params.set('countrycodes', String(countryCode).toLowerCase());
-            }
-            return fetch('https://nominatim.openstreetmap.org/search?' + params.toString(), {
-                headers: { Accept: 'application/json', 'Accept-Language': 'hu,en;q=0.8' }
-            }).then(function (res) {
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                return res.json();
-            });
-        }
-
-        var geocodeIndex = 0;
-        var hadGeocodeBoundsUpdate = false;
-
-        function finishGeocodeUi() {
-            if (!geocodePendingEl) return;
-            geocodePendingEl.textContent = geocodeDoneText;
+        // Kliensoldali Nominatim nincs: a hiányzó GPS-t szerveroldali geocode / cron tölti.
+        if (geocodePendingEl) {
+            geocodePendingEl.textContent = <?= json_encode((string) ($D['map_geocode_server_only'] ?? 'A GPS nélküli helyszínek a szerveroldali geokódolás után jelennek meg.'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
             geocodePendingEl.classList.remove('home-public__map-hint--pending');
-        }
-
-        function processNextGeocode() {
-            if (geocodeIndex >= geocodeJobs.length) {
-                if (hadGeocodeBoundsUpdate) {
-                    fitMapToBounds();
-                    map.invalidateSize();
-                }
-                finishGeocodeUi();
-                return;
-            }
-
-            var job = geocodeJobs[geocodeIndex++];
-            var query = job && job.query ? String(job.query) : '';
-            var countryCode = job && job.country_code ? String(job.country_code) : '';
-            var jobMarkers = job && Array.isArray(job.markers) ? job.markers : [];
-
-            function scheduleNext() {
-                setTimeout(processNextGeocode, geocodeDelayMs);
-            }
-
-            if (!query || jobMarkers.length === 0) {
-                scheduleNext();
-                return;
-            }
-
-            fetchNominatim(query, countryCode)
-                .then(function (arr) {
-                    if (arr && arr.length) return arr;
-                    return fetchNominatim(query, '');
-                })
-                .then(function (arr) {
-                    if (!arr || !arr.length) return;
-                    var la = parseFloat(arr[0].lat);
-                    var lo = parseFloat(arr[0].lon);
-                    if (isNaN(la) || isNaN(lo)) return;
-                    jobMarkers.forEach(function (m) {
-                        addMarker(m, la, lo);
-                    });
-                    hadGeocodeBoundsUpdate = true;
-                })
-                .catch(function () { /* csendes hiba – következő cím */ })
-                .finally(scheduleNext);
-        }
-
-        if (geocodeJobs.length > 0) {
-            setTimeout(processNextGeocode, 200);
         }
 
         function invalidate() { map.invalidateSize(); }

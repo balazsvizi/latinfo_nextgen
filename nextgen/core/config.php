@@ -179,8 +179,8 @@ if (!defined('EMAIL_ENCRYPT_KEY')) {
     define('EMAIL_ENCRYPT_KEY', (string) cfg_get('EMAIL_ENCRYPT_KEY', 'change-this-key-in-local-config', $localConfig));
 }
 
-// Hibajelentés (fejlesztés: E_ALL, éles: 0)
-$displayErrors = (string) cfg_get('APP_DISPLAY_ERRORS', '1', $localConfig);
+// Hibajelentés (fejlesztés: E_ALL, éles: 0) — alapból kikapcsolva
+$displayErrors = (string) cfg_get('APP_DISPLAY_ERRORS', '0', $localConfig);
 if ($displayErrors === '0') {
     error_reporting(0);
     ini_set('display_errors', '0');

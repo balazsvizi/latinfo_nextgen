@@ -19,11 +19,12 @@ $uzenet = '';
 $tableReady = nextgen_partners_table_ready(getDb());
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim((string) ($_POST['email'] ?? ''));
-    $jelszo = (string) ($_POST['jelszo'] ?? '');
-    if (!$tableReady) {
+    require_once dirname(__DIR__) . '/includes/functions.php';
+    if (!rate_limit_allow(rate_limit_client_key('partner_login'), 8, 900)) {
+        $hiba = 'Túl sok sikertelen próbálkozás. Próbáld újra később.';
+    } elseif (!$tableReady) {
         $hiba = 'A partner portál még nincs beállítva. Kérjük, vedd fel a kapcsolatot az üzemeltetővel.';
-    } elseif ($email === '' || $jelszo === '') {
+    } elseif (($email = trim((string) ($_POST['email'] ?? ''))) === '' || ($jelszo = (string) ($_POST['jelszo'] ?? '')) === '') {
         $hiba = 'Kérjük, add meg az e-mail címet és a jelszót.';
     } elseif (partner_login($email, $jelszo)) {
         $partner = partner_current(getDb());

@@ -5,36 +5,62 @@
 require_once __DIR__ . '/../../../nextgen/core/config.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/core/database.php';
+require_once __DIR__ . '/../../../nextgen/includes/functions.php';
 
 requireLogin();
 requireSuperadmin();
 
-// Csak SELECT engedélyezett, egy utasítás (végén lévő ; elfogadott)
-function onlySelect(string $sql): bool {
+/**
+ * Csak egyetlen, „tiszta” SELECT — tiltott: több utasítás, INTO OUTFILE, procedure hívás, stb.
+ */
+function exporter_only_safe_select(string $sql): bool
+{
     $sql = rtrim(trim($sql), ";");
-    $t = preg_replace('/\s+/', ' ', $sql);
-    return preg_match('/^\s*SELECT\s+/i', $t) === 1 && strpos($t, ';') === false;
+    if ($sql === '' || str_contains($sql, ';')) {
+        return false;
+    }
+    if (preg_match('/^\s*SELECT\s+/i', $sql) !== 1) {
+        return false;
+    }
+    $blocked = '/\b(INTO\s+OUTFILE|INTO\s+DUMPFILE|LOAD_FILE\s*\(|SLEEP\s*\(|BENCHMARK\s*\(|FOR\s+UPDATE|INFORMATION_SCHEMA\.|PERFORMANCE_SCHEMA\.|mysql\.|sys\.)\b/i';
+    if (preg_match($blocked, $sql) === 1) {
+        return false;
+    }
+
+    return true;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Content-Type: text/plain; charset=utf-8');
+    http_response_code(405);
+    echo 'Csak POST engedélyezett.';
+    exit;
+}
+
+if (!csrf_validate('admin_exporter_export')) {
+    header('Content-Type: text/plain; charset=utf-8');
+    http_response_code(403);
+    echo 'Érvénytelen biztonsági token.';
+    exit;
 }
 
 $sql = '';
 if (isset($_POST['query_sql']) && is_string($_POST['query_sql'])) {
     $sql = trim($_POST['query_sql']);
-} elseif (isset($_GET['id']) && (int) $_GET['id'] > 0) {
+} elseif (isset($_POST['id']) && (int) $_POST['id'] > 0) {
     $db = getDb();
     $stmt = $db->prepare('SELECT query_sql FROM nextgen_exporter_queries WHERE id = ?');
-    $stmt->execute([(int) $_GET['id']]);
+    $stmt->execute([(int) $_POST['id']]);
     $row = $stmt->fetch();
     if ($row) {
-        $sql = trim($row['query_sql']);
+        $sql = trim((string) ($row['query_sql'] ?? ''));
     }
-} elseif (isset($_GET['sql']) && is_string($_GET['sql'])) {
-    $sql = trim($_GET['sql']);
 }
 
-if ($sql === '' || !onlySelect($sql)) {
+if ($sql === '' || !exporter_only_safe_select($sql)) {
     header('Content-Type: text/plain; charset=utf-8');
     http_response_code(400);
-    echo $sql === '' ? 'Nincs megadva lekérdezés.' : 'Csak SELECT lekérdezés engedélyezett.';
+    echo $sql === '' ? 'Nincs megadva lekérdezés.' : 'Csak biztonságos SELECT lekérdezés engedélyezett.';
     exit;
 }
 
@@ -42,7 +68,6 @@ $sql = rtrim(trim($sql), ";");
 
 $connectionId = isset($_POST['connection_id']) && $_POST['connection_id'] !== '' ? (int) $_POST['connection_id'] : null;
 
-// PDO: alapértelmezett config vagy mentett kapcsolat
 if ($connectionId === null || $connectionId <= 0) {
     $db = getDb();
 } else {
@@ -70,18 +95,18 @@ try {
     $stmt = $db->query($sql);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
+    error_log('exporter export: ' . $e->getMessage());
     header('Content-Type: text/plain; charset=utf-8');
     http_response_code(500);
-    echo 'Hiba: ' . $e->getMessage();
+    echo 'A lekérdezés futtatása sikertelen.';
     exit;
 }
 
-// Fájlnév: lekérdezés neve + timestamp (üres/érvénytelen név esetén "export")
 $queryName = '';
-if (isset($_GET['id']) && (int) $_GET['id'] > 0) {
+if (isset($_POST['id']) && (int) $_POST['id'] > 0) {
     $appDb = getDb();
     $nameStmt = $appDb->prepare('SELECT név FROM nextgen_exporter_queries WHERE id = ?');
-    $nameStmt->execute([(int) $_GET['id']]);
+    $nameStmt->execute([(int) $_POST['id']]);
     $n = $nameStmt->fetch();
     if ($n) {
         $queryName = trim($n['név'] ?? '');
@@ -91,8 +116,8 @@ if ($queryName === '' && isset($_POST['query_name']) && is_string($_POST['query_
     $queryName = trim($_POST['query_name']);
 }
 $safeName = preg_replace('/[^\p{L}\p{N}\s_-]/u', '', $queryName);
-$safeName = preg_replace('/\s+/', '_', trim($safeName));
-$safeName = mb_substr($safeName, 0, 80);
+$safeName = preg_replace('/\s+/', '_', trim((string) $safeName));
+$safeName = mb_substr((string) $safeName, 0, 80);
 if ($safeName === '') {
     $safeName = 'export';
 }
@@ -103,7 +128,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 
 $out = fopen('php://output', 'w');
-fprintf($out, "\xEF\xBB\xBF"); // UTF-8 BOM
+fprintf($out, "\xEF\xBB\xBF");
 
 if (count($rows) > 0) {
     fputcsv($out, array_keys($rows[0]), ';');

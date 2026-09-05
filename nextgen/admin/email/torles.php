@@ -8,6 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect(nextgen_url('admin/email/'));
 }
 
+csrf_require('admin_email_torles', '_csrf', nextgen_url('admin/email/'));
+
 $id = (int) ($_POST['id'] ?? 0);
 if ($id <= 0) {
     flash('error', 'Érvénytelen fiók.');

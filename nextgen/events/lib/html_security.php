@@ -72,7 +72,7 @@ function events_sanitize_html_urls(string $html, string $attr): string {
 
             return ' ' . $attr . '="' . h($v) . '"';
         }
-        if ($attr === 'src' && preg_match('#^[a-zA-Z0-9][a-zA-Z0-9_\-/]*\.(jpe?g|png|gif|webp|svg|avif)(\?[^\s>]*)?$#i', $v) && !str_contains($v, ':')) {
+        if ($attr === 'src' && preg_match('#^[a-zA-Z0-9][a-zA-Z0-9_\-/]*\.(jpe?g|png|gif|webp|avif)(\?[^\s>]*)?$#i', $v) && !str_contains($v, ':')) {
             return ' ' . $attr . '="' . h('/' . $v) . '"';
         }
 

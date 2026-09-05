@@ -43,10 +43,19 @@ function events_find_or_create_organizer_by_name(PDO $db, string $name): int {
     if ($existing !== false) {
         return (int) $existing;
     }
-    $ins = $db->prepare('INSERT INTO `events_organizers` (`name`) VALUES (?)');
-    $ins->execute([$name]);
+    try {
+        $ins = $db->prepare('INSERT INTO `events_organizers` (`name`) VALUES (?)');
+        $ins->execute([$name]);
 
-    return (int) $db->lastInsertId();
+        return (int) $db->lastInsertId();
+    } catch (PDOException $e) {
+        $st->execute([$name]);
+        $existing = $st->fetchColumn();
+        if ($existing !== false) {
+            return (int) $existing;
+        }
+        throw $e;
+    }
 }
 
 function events_find_or_create_category_by_name(PDO $db, string $name): int {
@@ -60,13 +69,22 @@ function events_find_or_create_category_by_name(PDO $db, string $name): int {
     if ($existing !== false) {
         return (int) $existing;
     }
-    $ins = $db->prepare('
-        INSERT INTO `events_categories` (`name`, `name_en`, `parent_id`, `color`, `sort_order`)
-        VALUES (?, ?, NULL, ?, 0)
-    ');
-    $ins->execute([$name, '', '#6d8f63']);
+    try {
+        $ins = $db->prepare('
+            INSERT INTO `events_categories` (`name`, `name_en`, `parent_id`, `color`, `sort_order`)
+            VALUES (?, ?, NULL, ?, 0)
+        ');
+        $ins->execute([$name, '', '#6d8f63']);
 
-    return (int) $db->lastInsertId();
+        return (int) $db->lastInsertId();
+    } catch (PDOException $e) {
+        $st->execute([$name]);
+        $existing = $st->fetchColumn();
+        if ($existing !== false) {
+            return (int) $existing;
+        }
+        throw $e;
+    }
 }
 
 function events_find_or_create_venue_by_name(PDO $db, string $name): int {
@@ -82,11 +100,20 @@ function events_find_or_create_venue_by_name(PDO $db, string $name): int {
     }
     $baseSlug = events_slugify($name);
     $slug = events_ensure_unique_venue_slug($db, $baseSlug, null);
-    $ins = $db->prepare('
-        INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`, `linked_venue_id`)
-        VALUES (?, ?, NULL, ?, NULL, NULL, NULL, NULL)
-    ');
-    $ins->execute([$name, $slug, events_venue_default_country()]);
+    try {
+        $ins = $db->prepare('
+            INSERT INTO `events_venues` (`name`, `slug`, `description`, `country`, `city`, `postal_code`, `address`, `linked_venue_id`)
+            VALUES (?, ?, NULL, ?, NULL, NULL, NULL, NULL)
+        ');
+        $ins->execute([$name, $slug, events_venue_default_country()]);
 
-    return (int) $db->lastInsertId();
+        return (int) $db->lastInsertId();
+    } catch (PDOException $e) {
+        $st->execute([$name]);
+        $existing = $st->fetchColumn();
+        if ($existing !== false) {
+            return (int) $existing;
+        }
+        throw $e;
+    }
 }

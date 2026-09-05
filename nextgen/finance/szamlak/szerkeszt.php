@@ -112,6 +112,10 @@ if ($vissza === 'szervezo' && $vissza_szervezo_id > 0) {
     $redirect_after_delete = nextgen_url('finance/szamlak/');
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('finance_szamla_szerkeszt', '_csrf', $szerkeszt_url);
+}
+
 // Számla e-mail küldés / tesztküldés
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action'])) {
     $action = $_POST['szamla_email_action'] === 'test' ? 'test' : 'send';
@@ -264,34 +268,7 @@ function szamla_email_log_reszletek(array $cimzettek, array $cc, array $bcc, str
  */
 function feltolt_szamla_fajlok(PDO $db, int $szamla_id, array $fajlAdat): int
 {
-    if (!is_dir(UPLOAD_PATH)) {
-        @mkdir(UPLOAD_PATH, 0755, true);
-    }
-    $upload_dir = UPLOAD_PATH . '/' . $szamla_id;
-    if (!is_dir($upload_dir)) {
-        @mkdir($upload_dir, 0755, true);
-    }
-
-    $names = is_array($fajlAdat['name'] ?? null) ? $fajlAdat['name'] : [($fajlAdat['name'] ?? '')];
-    $tmp = is_array($fajlAdat['tmp_name'] ?? null) ? $fajlAdat['tmp_name'] : [($fajlAdat['tmp_name'] ?? '')];
-    $errors = is_array($fajlAdat['error'] ?? null) ? $fajlAdat['error'] : [($fajlAdat['error'] ?? UPLOAD_ERR_NO_FILE)];
-
-    $feltoltve = 0;
-    for ($i = 0; $i < count($names); $i++) {
-        if (($errors[$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK && !empty($names[$i])) {
-            $name = $names[$i];
-            $ext = pathinfo($name, PATHINFO_EXTENSION) ?: 'bin';
-            $ujnev = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name)) ?: ('file_' . $i . '.' . $ext);
-            $cel = $upload_dir . '/' . $ujnev;
-            if (move_uploaded_file($tmp[$i], $cel)) {
-                $db->prepare('INSERT INTO finance_invoice_files (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
-                    ->execute([$szamla_id, $name, $szamla_id . '/' . $ujnev]);
-                $feltoltve++;
-            }
-        }
-    }
-
-    return $feltoltve;
+    return finance_store_invoice_uploads($db, $szamla_id, $fajlAdat);
 }
 
 // Számla adatok mentése
@@ -352,7 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['torol_fajl_id'])) {
 }
 
 // Új fájl(ok) feltöltés
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['uj_fajl']['name']) && is_dir(UPLOAD_PATH)) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['uj_fajl']['name'])) {
     $feltoltve = feltolt_szamla_fajlok($db, $id, $_FILES['uj_fajl']);
     if ($feltoltve > 0) {
         flash('success', $feltoltve === 1 ? 'Fájl feltöltve.' : $feltoltve . ' fájl feltöltve.');
@@ -443,6 +420,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <h2>Számla szerkesztése</h2>
     <p><a href="<?= h(nextgen_url('organizers/megtekint.php?id=')) ?><?= (int)$szamla['szervező_id'] ?>">← <?= h($szamla['szervezo_nev']) ?></a></p>
     <form method="post">
+        <?= csrf_input('finance_szamla_szerkeszt') ?>
         <input type="hidden" name="mentes_szamla" value="1">
         <div class="form-row form-row-2">
             <div class="form-group">
@@ -479,6 +457,7 @@ require_once __DIR__ . '/../../partials/header.php';
     </form>
     <div class="form-actions" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
         <form method="post" class="inline-form" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a számlát? A csatolt fájlok is törlődnek, a finance_billing_items tételek visszakerülnek „nem csatolt” állapotba.');">
+            <?= csrf_input('finance_szamla_szerkeszt') ?>
             <input type="hidden" name="torol_szamla" value="1">
             <input type="hidden" name="vissza" value="<?= h($vissza) ?>">
             <input type="hidden" name="vissza_szervezo_id" value="<?= (int)$vissza_szervezo_id ?>">
@@ -490,6 +469,7 @@ require_once __DIR__ . '/../../partials/header.php';
 <div class="card">
     <h2>Csatolt fájlok</h2>
     <form method="post" enctype="multipart/form-data" id="uj-fajl-form" style="margin-bottom:1rem;">
+        <?= csrf_input('finance_szamla_szerkeszt') ?>
         <div class="file-upload-wrap file-drop-zone" id="drop-zone-szerkeszt">
             <input type="file" name="uj_fajl[]" id="uj_fajl" class="file-input-native" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
             <label for="uj_fajl" class="file-input-btn">Fájl kiválasztása</label>
@@ -502,6 +482,7 @@ require_once __DIR__ . '/../../partials/header.php';
         <li>
             <a href="<?= h(nextgen_url('finance/szamlak/letoltes.php?id=')) ?><?= (int)$f['id'] ?>"><?= h($f['eredeti_név']) ?></a>
             <form method="post" class="inline-form" style="display:inline; margin-left:0.35rem;" onsubmit="return confirm('Biztosan törölni szeretnéd ezt a csatolt fájlt?');">
+                <?= csrf_input('finance_szamla_szerkeszt') ?>
                 <input type="hidden" name="torol_fajl_id" value="<?= (int)$f['id'] ?>">
                 <button type="submit" class="btn btn-secondary btn-sm">Törlés</button>
             </form>
@@ -523,6 +504,7 @@ require_once __DIR__ . '/../../partials/header.php';
             <?php if (!empty($sz['megjegyzés'])): ?><span class="muted">(<?= h(mb_substr($sz['megjegyzés'], 0, 50)) ?><?= mb_strlen($sz['megjegyzés']) > 50 ? '…' : '' ?>)</span><?php endif; ?>
             <a href="<?= h(nextgen_url('finance/szamlazando/szerkeszt.php?id=')) ?><?= (int)$sz['id'] ?>&vissza=szamla&szamla_id=<?= (int)$id ?>" class="btn btn-sm btn-secondary">Időszakok szerkesztése</a>
             <form method="post" class="inline-form" style="display:inline; margin-left:0.35rem;">
+                <?= csrf_input('finance_szamla_szerkeszt') ?>
                 <input type="hidden" name="lecsatol_szamlazando_id" value="<?= (int)$sz['id'] ?>">
                 <button type="submit" class="btn btn-secondary btn-sm">Lecsatolás</button>
             </form>
@@ -534,6 +516,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <?php endif; ?>
     <?php if (!empty($tovabbi_szamlazando)): ?>
     <form method="post" class="mt-1">
+        <?= csrf_input('finance_szamla_szerkeszt') ?>
         <p><strong>További csatolása:</strong></p>
         <div class="checkbox-group">
             <?php foreach ($tovabbi_szamlazando as $sz): ?>
@@ -552,6 +535,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <h2>Számla e-mail küldés</h2>
     <p class="help">Alap sablon: <code>szamla_kuldes</code>. Mellékletként az összes ehhez a számlához csatolt fájl kerül kiküldésre.</p>
     <form method="post">
+        <?= csrf_input('finance_szamla_szerkeszt') ?>
         <div class="form-row form-row-2">
             <div class="form-group">
                 <label>Feladó (SMTP fiók)</label>
@@ -769,6 +753,8 @@ require_once __DIR__ . '/../../partials/header.php';
             var files = e.dataTransfer && e.dataTransfer.files;
             if (!files || files.length === 0) return;
             var fd = new FormData();
+            var csrf = form.querySelector('input[name="_csrf"]');
+            if (csrf) fd.append('_csrf', csrf.value);
             for (var i = 0; i < files.length; i++) fd.append('uj_fajl[]', files[i]);
             fetch(form.action, { method: 'POST', body: fd })
                 .then(function(r) { if (r.redirected) window.location.href = r.url; });

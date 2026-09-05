@@ -10,6 +10,8 @@ require_once __DIR__ . '/../../../nextgen/includes/functions.php';
 requireLogin();
 requireSuperadmin();
 
+csrf_require('admin_exporter_delete', '_csrf', nextgen_url('admin/exporter/'));
+
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 if ($id > 0) {
     $db = getDb();

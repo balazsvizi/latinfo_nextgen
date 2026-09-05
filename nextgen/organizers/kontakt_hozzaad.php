@@ -19,13 +19,17 @@ if (!$sz->fetch()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('organizer_kontakt_hozzaad', '_csrf', nextgen_url('organizers/kontakt_hozzaad.php?szervezo_id=') . $szervezo_id);
     $kontakt_id = (int)($_POST['kontakt_id'] ?? 0);
     if ($kontakt_id) {
         try {
             $db->prepare('INSERT IGNORE INTO finance_organizer_contacts (szervező_id, kontakt_id) VALUES (?, ?)')->execute([$szervezo_id, $kontakt_id]);
             rendszer_log('szervező_kontakt', null, 'Kapcsolat létrehozva', "szervező_id=$szervezo_id, kontakt_id=$kontakt_id");
             flash('success', 'Kontakt hozzáadva.');
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+            error_log('organizers kontakt_hozzaad: ' . $e->getMessage());
+            flash('error', 'Kontakt hozzáadása sikertelen.');
+        }
         redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id . '#kontaktok');
     }
 }
@@ -52,6 +56,7 @@ require_once __DIR__ . '/../partials/header.php';
             <p class="text-muted">Nincs olyan kontakt, aki még nincs ehhez a szervezőhöz rendelve. Hozzon létre újat, vagy válasszon másik szervezőnél.</p>
         <?php else: ?>
         <form method="post">
+            <?= csrf_input('organizer_kontakt_hozzaad') ?>
             <div class="form-group">
                 <label>Meglévő kontakt</label>
                 <select name="kontakt_id" required>

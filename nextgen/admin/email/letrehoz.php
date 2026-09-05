@@ -9,6 +9,7 @@ $db = getDb();
 $hiba = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('admin_email_letrehoz', '_csrf', nextgen_url('admin/email/letrehoz.php'));
     $név = trim($_POST['név'] ?? '');
     $host = trim($_POST['host'] ?? '');
     $port = (int) ($_POST['port'] ?? 587);
@@ -44,6 +45,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <h2>Új SMTP fiók</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('admin_email_letrehoz') ?>
         <div class="form-group">
             <label>Megjelenített név *</label>
             <input type="text" name="név" value="<?= h($_POST['név'] ?? '') ?>" required placeholder="pl. Latinfo SMTP">

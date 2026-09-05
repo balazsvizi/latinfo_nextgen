@@ -65,6 +65,7 @@ $hiba = '';
 $form_osszeg = $_POST['összeg'] ?? $elotolt_osszeg;
 $form_szamlazando_ids = isset($_POST['szamlazando_ids']) && is_array($_POST['szamlazando_ids']) ? array_map('intval', $_POST['szamlazando_ids']) : $elotolt_szamlazando_ids;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('finance_szamla_letrehoz', '_csrf', nextgen_url('finance/szamlak/letrehoz.php?szervezo_id=') . $szervezo_id);
     $szamla_szam = trim($_POST['számla_szám'] ?? '');
     $datum = trim($_POST['dátum'] ?? '');
     $osszeg = str_replace([' ', ','], ['', '.'], $_POST['összeg'] ?? '0');
@@ -90,33 +91,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute(array_merge([$szamla_id], $csatol_ids, [$szervezo_id]));
             }
 
-            if (!is_dir(UPLOAD_PATH)) {
-                @mkdir(UPLOAD_PATH, 0755, true);
-            }
-            $upload_dir = UPLOAD_PATH . '/' . $szamla_id;
-            if (!is_dir($upload_dir)) {
-                @mkdir($upload_dir, 0755, true);
-            }
-            $fajlok = $_FILES['fajlok'] ?? [];
-            if (!empty($fajlok['name'][0])) {
-                foreach ($fajlok['name'] as $i => $name) {
-                    if ($fajlok['error'][$i] === UPLOAD_ERR_OK && $name) {
-                        $ext = pathinfo($name, PATHINFO_EXTENSION) ?: 'bin';
-                        $ujnev = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name)) ?: 'file_' . $i . '.' . $ext;
-                        $cel = $upload_dir . '/' . $ujnev;
-                        if (move_uploaded_file($fajlok['tmp_name'][$i], $cel)) {
-                            $db->prepare('INSERT INTO finance_invoice_files (számla_id, eredeti_név, fájl_útvonal) VALUES (?, ?, ?)')
-                                ->execute([$szamla_id, $name, $szamla_id . '/' . $ujnev]);
-                        }
-                    }
-                }
-            }
+            finance_store_invoice_uploads($db, $szamla_id, $_FILES['fajlok'] ?? []);
             $db->commit();
             flash('success', 'Számla mentve.');
             redirect(nextgen_url('finance/szamlak/szerkeszt.php?id=') . $szamla_id);
         } catch (Exception $e) {
             $db->rollBack();
-            $hiba = 'Hiba: ' . $e->getMessage();
+            $hiba = 'Mentés sikertelen.';
         }
     }
 }
@@ -146,6 +127,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post" enctype="multipart/form-data" action="">
+        <?= csrf_input('finance_szamla_letrehoz') ?>
         <input type="hidden" name="szervezo_id" value="<?= (int)$szervezo_id ?>">
         <input type="hidden" name="szamlazando_id" value="<?= (int)$szamlazando_id ?>">
         <div class="form-group"><label>Számlaszám *</label><input type="text" id="szamla_szam" name="számla_szám" value="<?= h($_POST['számla_szám'] ?? '') ?>" required></div>

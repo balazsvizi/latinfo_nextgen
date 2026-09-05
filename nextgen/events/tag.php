@@ -114,7 +114,7 @@ header('Content-Type: text/html; charset=UTF-8');
                         $icon = (string) ($typeRow['icon'] ?? '🏷️');
                         ?>
                         <span class="tag-public__type-pill tag-public__type-pill--<?= h($tone) ?>">
-                            <span class="tag-public__type-pill__icon" aria-hidden="true"><?= $icon ?></span>
+                            <span class="tag-public__type-pill__icon" aria-hidden="true"><?= h($icon) ?></span>
                             <span class="tag-public__type-pill__label"><?= h((string) ($typeRow['name'] ?? '')) ?></span>
                         </span>
                     <?php endforeach; ?>

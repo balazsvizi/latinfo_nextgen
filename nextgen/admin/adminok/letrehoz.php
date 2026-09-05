@@ -10,6 +10,7 @@ nextgen_admin_ensure_notification_columns($db);
 $hiba = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('admin_adminok_letrehoz', '_csrf', nextgen_url('admin/adminok/letrehoz.php'));
     $név = trim($_POST['név'] ?? '');
     $fh = trim($_POST['felhasználónév'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -22,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Név és felhasználónév megadása kötelező.';
     } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $hiba = 'Érvényes e-mail címet adj meg.';
-    } elseif (strlen($jelszo) < 6) {
-        $hiba = 'A jelszónak legalább 6 karakter hosszúnak kell lennie.';
+    } elseif (strlen($jelszo) < 8) {
+        $hiba = 'A jelszónak legalább 8 karakter hosszúnak kell lennie.';
     } elseif ($jelszo !== $jelszo2) {
         $hiba = 'A két jelszó nem egyezik.';
     } else {
@@ -49,6 +50,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <h2>Új admin felhasználó</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('admin_adminok_letrehoz') ?>
         <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h($_POST['név'] ?? '') ?>" required></div>
         <div class="form-group"><label>Felhasználónév *</label><input type="text" name="felhasználónév" value="<?= h($_POST['felhasználónév'] ?? '') ?>" required autocomplete="username"></div>
         <div class="form-group"><label>E-mail cím</label><input type="email" name="email" value="<?= h($_POST['email'] ?? '') ?>" placeholder="nev@pelda.hu"></div>
@@ -58,8 +60,8 @@ require_once __DIR__ . '/../../partials/header.php';
                 E-mail értesítés partner üzenetekről
             </label>
         </div>
-        <div class="form-group"><label>Jelszó * (min. 6 karakter)</label><input type="password" name="jelszó" required minlength="6" autocomplete="new-password"></div>
-        <div class="form-group"><label>Jelszó újra *</label><input type="password" name="jelszó_ujra" required minlength="6" autocomplete="new-password"></div>
+        <div class="form-group"><label>Jelszó * (min. 8 karakter)</label><input type="password" name="jelszó" required minlength="8" autocomplete="new-password"></div>
+        <div class="form-group"><label>Jelszó újra *</label><input type="password" name="jelszó_ujra" required minlength="8" autocomplete="new-password"></div>
         <div class="form-group">
             <label>Szint</label>
             <select name="szint">

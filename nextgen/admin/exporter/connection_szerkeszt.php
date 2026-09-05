@@ -27,6 +27,7 @@ if (!$row) {
 
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('admin_exporter_connection_szerkeszt', '_csrf', nextgen_url('admin/exporter/connection_szerkeszt.php?id=') . $id);
     $név = trim($_POST['név'] ?? '');
     $host = trim($_POST['host'] ?? 'localhost');
     $port = (int) ($_POST['port'] ?? 3306);
@@ -58,6 +59,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <h2>Kapcsolat szerkesztése</h2>
     <?php if ($hiba): ?><p class="msg msg-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('admin_exporter_connection_szerkeszt') ?>
         <div class="form-group">
             <label>Megjelenített név *</label>
             <input type="text" name="név" value="<?= h($row['név']) ?>" required>

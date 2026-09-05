@@ -36,7 +36,15 @@ function events_slug_exists(PDO $db, string $slug, ?int $excludeId): bool {
 function events_ensure_unique_slug(PDO $db, string $base, ?int $excludeId): string {
     $slug = $base;
     $n = 2;
+    $max = 500;
     while (events_slug_exists($db, $slug, $excludeId)) {
+        if ($n > $max) {
+            $slug = $base . '-' . bin2hex(random_bytes(4));
+            if (!events_slug_exists($db, $slug, $excludeId)) {
+                return $slug;
+            }
+            throw new RuntimeException('Nem sikerült egyedi slugot generálni.');
+        }
         $slug = $base . '-' . $n;
         $n++;
     }
@@ -58,7 +66,15 @@ function events_venue_slug_exists(PDO $db, string $slug, ?int $excludeVenueId): 
 function events_ensure_unique_venue_slug(PDO $db, string $base, ?int $excludeVenueId): string {
     $slug = $base;
     $n = 2;
+    $max = 500;
     while (events_venue_slug_exists($db, $slug, $excludeVenueId)) {
+        if ($n > $max) {
+            $slug = $base . '-' . bin2hex(random_bytes(4));
+            if (!events_venue_slug_exists($db, $slug, $excludeVenueId)) {
+                return $slug;
+            }
+            throw new RuntimeException('Nem sikerült egyedi helyszín-slugot generálni.');
+        }
         $slug = $base . '-' . $n;
         $n++;
     }

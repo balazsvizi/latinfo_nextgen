@@ -23,7 +23,12 @@ if (!is_file($path)) {
     exit;
 }
 header('Content-Type: application/octet-stream');
-header('Content-Disposition: attachment; filename="' . basename($f['eredeti_név']) . '"');
+$downloadName = basename((string) ($f['eredeti_név'] ?? 'file'));
+$downloadName = str_replace(["\r", "\n", '"'], '', $downloadName);
+if ($downloadName === '') {
+    $downloadName = 'file';
+}
+header('Content-Disposition: attachment; filename="' . $downloadName . '"');
 header('Content-Length: ' . filesize($path));
 readfile($path);
 exit;

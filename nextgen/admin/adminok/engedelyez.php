@@ -4,7 +4,13 @@ require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
 requireSuperadmin();
 
-$id = (int)($_GET['id'] ?? 0);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    flash('error', 'Érvénytelen kérés.');
+    redirect(nextgen_url('admin/adminok/'));
+}
+csrf_require('admin_adminok_toggle', '_csrf', nextgen_url('admin/adminok/'));
+
+$id = (int) ($_POST['id'] ?? 0);
 if (!$id) {
     flash('error', 'Hiányzó azonosító.');
     redirect(nextgen_url('admin/adminok/'));

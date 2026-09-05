@@ -16,11 +16,14 @@ require_once __DIR__ . '/functions.php';
 function email_jelszo_titkosit(string $jelszo): string {
     $key = defined('EMAIL_ENCRYPT_KEY') ? EMAIL_ENCRYPT_KEY : '';
     if (strlen($key) < 32) {
-        return base64_encode($jelszo); // gyenge fallback – állíts be EMAIL_ENCRYPT_KEY-et
+        throw new RuntimeException('EMAIL_ENCRYPT_KEY hiányzik vagy túl rövid (min. 32 karakter).');
     }
     $key = hash('sha256', $key, true);
     $iv = random_bytes(16);
     $enc = openssl_encrypt($jelszo, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+    if ($enc === false) {
+        throw new RuntimeException('Jelszó titkosítás sikertelen.');
+    }
     return 'v2.' . base64_encode($iv . $enc);
 }
 
@@ -43,6 +46,7 @@ function email_jelszo_visszafejt(string $titkosított): string {
         $dec = openssl_decrypt($enc, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
         return $dec !== false ? $dec : '';
     }
+    // Legacy base64 — csak visszafejtés, új mentéshez erős kulcs kötelező
     return (string) base64_decode($titkosított, true) ?: '';
 }
 

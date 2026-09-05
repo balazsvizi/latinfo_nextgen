@@ -214,7 +214,14 @@ $show_limit = 3;
                 <td><a href="<?= h(nextgen_url('contacts/megtekint.php?id=')) ?><?= (int)$k['id'] ?>"><?= h($k['név']) ?></a></td>
                 <td><?= h($k['email'] ?? '') ?></td>
                 <td><?= h($k['telefon'] ?? '') ?></td>
-                <td><a href="<?= h(nextgen_url('organizers/kontakt_levetel.php?szervezo_id=')) ?><?= $id ?>&kontakt_id=<?= (int)$k['id'] ?>" class="btn btn-sm btn-secondary">Lecsatolás</a></td>
+                <td>
+                    <form method="post" action="<?= h(nextgen_url('organizers/kontakt_levetel.php')) ?>" class="inline-form" onsubmit="return confirm('Lecsatolja ezt a kontaktot?');">
+                        <?= csrf_input('organizer_kontakt_levetel') ?>
+                        <input type="hidden" name="szervezo_id" value="<?= (int) $id ?>">
+                        <input type="hidden" name="kontakt_id" value="<?= (int) $k['id'] ?>">
+                        <button type="submit" class="btn btn-sm btn-secondary">Lecsatolás</button>
+                    </form>
+                </td>
             </tr>
             <?php endforeach; ?>
         </tbody>

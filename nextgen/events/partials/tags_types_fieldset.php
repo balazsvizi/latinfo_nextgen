@@ -30,7 +30,7 @@ $typeRegistry = events_tag_types_load_registry($_tagTypesDb);
                     <?= $isChecked ? 'checked' : '' ?>
                 >
                 <span class="events-tag-type-option__pill" aria-hidden="true">
-                    <span class="events-tag-type-option__icon"><?= $icon ?></span>
+                    <span class="events-tag-type-option__icon"><?= h($icon) ?></span>
                     <span class="events-tag-type-option__label"><?= h((string) ($typeRow['name'] ?? $code)) ?></span>
                 </span>
                 <span class="visually-hidden"><?= h((string) ($typeRow['name'] ?? $code)) ?></span>

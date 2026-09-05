@@ -23,6 +23,7 @@ if (!$admin) {
 
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('admin_adminok_szerkeszt', '_csrf', nextgen_url('admin/adminok/szerkeszt.php?id=') . $id);
     $név = trim($_POST['név'] ?? '');
     $fh = trim($_POST['felhasználónév'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -82,6 +83,7 @@ require_once __DIR__ . '/../../partials/header.php';
     <h2>Admin szerkesztése</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
+        <?= csrf_input('admin_adminok_szerkeszt') ?>
         <div class="form-group">
             <label>Név *</label>
             <input type="text" name="név" value="<?= h($admin['név']) ?>" required>
