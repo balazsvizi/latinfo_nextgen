@@ -80,6 +80,28 @@ $eventDateYmd = static function (array $row, string $key): string {
 
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
         <input type="hidden" name="id" value="<?= (int) $id ?>">
+        <div class="events-edit-stats__mode-bar<?= $statsMode === 'smart' ? ' events-edit-stats__mode-bar--smart' : ' events-edit-stats__mode-bar--all' ?>">
+            <div class="events-edit-stats__mode-bar-copy">
+                <p class="events-edit-stats__mode-bar-title">Számítási mód</p>
+                <p class="events-edit-stats__mode-bar-hint">
+                    <?php if ($statsMode === 'smart'): ?>
+                        <strong>Latinfo.hu smart stat</strong> — csak az esemény záró napján vagy azelőtt történt megtekintések/kattintások.
+                    <?php else: ?>
+                        <strong>Összes</strong> — minden megtekintés és kattintás a választott időszakban.
+                    <?php endif; ?>
+                </p>
+            </div>
+            <div class="events-edit-stats__mode-toggle" role="group" aria-label="Számítási mód">
+                <label class="events-edit-stats__mode-option<?= $statsMode === 'smart' ? ' is-active' : '' ?>">
+                    <input type="radio" name="stat_mode" value="smart"<?= $statsMode === 'smart' ? ' checked' : '' ?>>
+                    <span>Latinfo.hu smart stat</span>
+                </label>
+                <label class="events-edit-stats__mode-option<?= $statsMode === 'all' ? ' is-active' : '' ?>">
+                    <input type="radio" name="stat_mode" value="all"<?= $statsMode === 'all' ? ' checked' : '' ?>>
+                    <span>Összes</span>
+                </label>
+            </div>
+        </div>
         <div class="events-edit-stats__filter-grid">
             <div class="form-group">
                 <label class="events-filter-label" for="stat_date_from">Időszak tól</label>
@@ -88,13 +110,6 @@ $eventDateYmd = static function (array $row, string $key): string {
             <div class="form-group">
                 <label class="events-filter-label" for="stat_date_to">Időszak ig</label>
                 <input class="events-filter-input" type="date" name="stat_date_to" id="stat_date_to" value="<?= h($statsParams['date_to']) ?>">
-            </div>
-            <div class="form-group">
-                <label class="events-filter-label" for="stat_mode">Számítási mód</label>
-                <select class="events-filter-input" name="stat_mode" id="stat_mode">
-                    <option value="smart"<?= $statsMode === 'smart' ? ' selected' : '' ?>>Latinfo.hu smart stat</option>
-                    <option value="all"<?= $statsMode === 'all' ? ' selected' : '' ?>>Összes</option>
-                </select>
             </div>
             <div class="form-group events-edit-stats__filter-actions">
                 <button type="submit" class="btn btn-secondary btn-sm">Megjelenítés</button>
@@ -109,6 +124,21 @@ $eventDateYmd = static function (array $row, string $key): string {
             </div>
         </div>
     </form>
+    <script>
+    (function () {
+        var form = document.querySelector('.events-edit-stats--organizer form.events-edit-stats__filters');
+        if (!form) return;
+        form.querySelectorAll('input[name="stat_mode"]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            });
+        });
+    })();
+    </script>
 
     <div class="events-edit-stats__cards">
         <div class="events-edit-stats__card">
