@@ -42,6 +42,56 @@ function events_edit_stats_params_from_request(array $query): array
     ];
 }
 
+/** Részletes adatlap megtekintés (emberi) — átlagos statisztikai egységérték. */
+function events_edit_stats_media_value_page_view_ft(): int
+{
+    return 35;
+}
+
+/** Átkattintás a szervezőhöz (emberi) — átlagos statisztikai egységérték. */
+function events_edit_stats_media_value_intent_click_ft(): int
+{
+    return 200;
+}
+
+/**
+ * Generált médiaérték emberi oldalmegnyitások és további-info kattintások alapján.
+ *
+ * @return array{
+ *   page_views_human: int,
+ *   external_clicks_human: int,
+ *   page_value_ft: int,
+ *   click_value_ft: int,
+ *   total_ft: int,
+ *   page_unit_ft: int,
+ *   click_unit_ft: int
+ * }
+ */
+function events_edit_stats_media_value(int $pageViewsHuman, int $externalClicksHuman): array
+{
+    $pageViewsHuman = max(0, $pageViewsHuman);
+    $externalClicksHuman = max(0, $externalClicksHuman);
+    $pageUnit = events_edit_stats_media_value_page_view_ft();
+    $clickUnit = events_edit_stats_media_value_intent_click_ft();
+    $pageValue = $pageViewsHuman * $pageUnit;
+    $clickValue = $externalClicksHuman * $clickUnit;
+
+    return [
+        'page_views_human' => $pageViewsHuman,
+        'external_clicks_human' => $externalClicksHuman,
+        'page_value_ft' => $pageValue,
+        'click_value_ft' => $clickValue,
+        'total_ft' => $pageValue + $clickValue,
+        'page_unit_ft' => $pageUnit,
+        'click_unit_ft' => $clickUnit,
+    ];
+}
+
+function events_edit_stats_format_media_ft(int $amount): string
+{
+    return number_format($amount, 0, ',', ' ') . ' Ft';
+}
+
 /**
  * Gyors időszak presetek (sorrend = UI sorrend).
  *

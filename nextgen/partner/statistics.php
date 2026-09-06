@@ -29,7 +29,7 @@ require_once __DIR__ . '/partials/header.php';
     <div>
         <h1 class="partner-page-title">Statisztikák</h1>
         <p class="partner-page-lead">
-            Megtekintések a(z) <strong><?= h($context['label']) ?></strong> profil eseményein —
+            Megtekintések és generált médiaérték a(z) <strong><?= h($context['label']) ?></strong> profil eseményein —
             ugyanaz a nézet, mint az esemény-statisztikáknál, partnerre szűrve.
         </p>
     </div>

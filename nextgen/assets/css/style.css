@@ -4780,6 +4780,11 @@ body.event-edit-cover-lightbox-open {
     background: color-mix(in srgb, #a8784a 10%, var(--bg, #fff));
     border-left: 1px solid color-mix(in srgb, #a8784a 22%, var(--border, #e5e7eb));
 }
+.events-stats-th-group--media {
+    color: #5a4a2e;
+    background: color-mix(in srgb, #c4a35a 12%, var(--bg, #fff));
+    border-left: 1px solid color-mix(in srgb, #c4a35a 24%, var(--border, #e5e7eb));
+}
 .events-stats-th-group--page {
     color: #3d5a36;
     background: color-mix(in srgb, #6d8f63 10%, var(--bg, #fff));
@@ -4814,12 +4819,21 @@ body.event-edit-cover-lightbox-open {
     background: color-mix(in srgb, #a8784a 7%, var(--bg, #fff));
     border-left: 1px solid color-mix(in srgb, #a8784a 18%, var(--border, #e5e7eb));
 }
+.events-stats-th-sub--media {
+    background: color-mix(in srgb, #c4a35a 8%, var(--bg, #fff));
+    border-left: 1px solid color-mix(in srgb, #c4a35a 18%, var(--border, #e5e7eb));
+}
 .events-stats-cell--human {
     font-weight: 700;
 }
 .events-stats-cell--bot {
     font-weight: 400;
     color: var(--text-secondary, #6b7280);
+}
+.events-stats-cell--media {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.88rem;
 }
 .events-stats-th-sub--total {
     font-weight: 700 !important;
@@ -5137,6 +5151,13 @@ body.event-edit-cover-lightbox-open {
     border-radius: 0.65rem;
     background: var(--bg-elevated, #fff);
 }
+.events-edit-stats__card--media-value {
+    border-color: color-mix(in srgb, #c4a35a 32%, var(--border, #e5e7eb));
+    background: linear-gradient(180deg, #fbf8f1 0%, #fff 100%);
+}
+.events-edit-stats__card--media-value .events-edit-stats__card-split dd {
+    font-size: 1.05rem;
+}
 .events-edit-stats__card-label-wrap {
     display: inline-flex;
     align-items: center;
@@ -5198,6 +5219,10 @@ body.event-edit-cover-lightbox-open {
     line-height: 1.45;
     color: var(--text-primary, #1a1a1a);
     text-align: left;
+}
+.events-edit-stats__info-popover--wide {
+    min-width: 16rem;
+    max-width: 22rem;
 }
 .events-edit-stats__info-popover::before {
     content: "";

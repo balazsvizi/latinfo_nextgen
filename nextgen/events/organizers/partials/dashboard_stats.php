@@ -114,11 +114,18 @@ $statsCardHelp = [
     'Oldalmegnyitás' => 'A nyilvános eseményoldal betöltéseinek száma (minden frissítés / visszalépés számít). Nem egyenlő az érdeklődők számával.' . $botHelpSuffix,
     'Előnézet' => 'A naptárban vagy listában megnyitott előnézet-panelek száma emberi és bot bontásban.' . $botHelpSuffix,
     'További info' => 'A „További információ” / külső link átkattintások száma emberi és bot bontásban.' . $botHelpSuffix,
+    'Generált médiaérték' => 'A Dashboard-érték átlagos statisztikai piaci árakon alapul (emberi forgalom, a leszűrt időszakra).'
+        . ' Részletes adatlap megtekintés: ' . events_edit_stats_media_value_page_view_ft() . ' Ft / megtekintés (kvalifikált érdeklődés / Deep View Value).'
+        . ' Átkattintás a szervezőhöz: ' . events_edit_stats_media_value_intent_click_ft() . ' Ft / kattintás (magas konverziójú átirányítás / Intent Click Value).'
+        . ' Képlet: Generált médiaérték = (adatlap megtekintések × ' . events_edit_stats_media_value_page_view_ft()
+        . ' Ft) + (átkattintások × ' . events_edit_stats_media_value_intent_click_ft() . ' Ft).',
 ];
 
 $pagePerUniqueHuman = ($uniqueHuman > 0 && $pageHuman > 0)
     ? round($pageHuman / $uniqueHuman, 1)
     : null;
+
+$mediaValue = events_edit_stats_media_value($pageHuman, $externalHuman);
 
 $renderStatsCardHelp = static function (string $label) use ($statsCardHelp): void {
     $help = $statsCardHelp[$label] ?? '';
@@ -135,7 +142,12 @@ $renderStatsCardHelp = static function (string $label) use ($statsCardHelp): voi
             aria-expanded="false"
             aria-controls="<?= h($helpId) ?>"
         >i</button>
-        <span class="events-edit-stats__info-popover" id="<?= h($helpId) ?>" role="tooltip" hidden><?= h($help) ?></span>
+        <span
+            class="events-edit-stats__info-popover<?= $label === 'Generált médiaérték' ? ' events-edit-stats__info-popover--wide' : '' ?>"
+            id="<?= h($helpId) ?>"
+            role="tooltip"
+            hidden
+        ><?= h($help) ?></span>
     </span>
     <?php
 };
@@ -253,6 +265,24 @@ $renderSplit = static function (
                 <?php $renderStatsCardHelp('További info'); ?>
             </p>
             <?php $renderSplit('Ember', $externalHuman, 'Bot (AI, search, stb)', $externalBot, true); ?>
+        </div>
+        <div class="events-edit-stats__card events-edit-stats__card--media-value">
+            <p class="events-edit-stats__card-label-wrap">
+                <span class="events-edit-stats__card-label">Generált médiaérték</span>
+                <?php $renderStatsCardHelp('Generált médiaérték'); ?>
+            </p>
+            <p class="events-edit-stats__card-value"><?= h(events_edit_stats_format_media_ft((int) $mediaValue['total_ft'])) ?></p>
+            <dl class="events-edit-stats__card-split">
+                <dt>Megtekintés</dt>
+                <dt>Átkattintás</dt>
+                <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['page_value_ft'])) ?></dd>
+                <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['click_value_ft'])) ?></dd>
+            </dl>
+            <p class="events-edit-stats__card-hint">
+                Ember: <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
+                + <?= (int) $mediaValue['external_clicks_human'] ?> × <?= (int) $mediaValue['click_unit_ft'] ?> Ft
+                · leszűrt időszak
+            </p>
         </div>
     </div>
     <script>
@@ -694,7 +724,7 @@ $renderSplit = static function (
     <?php if ($statsEventRows === []): ?>
         <p class="help events-edit-stats__empty"><?= h($statsEmptyEventsMessage) ?></p>
     <?php else: ?>
-        <?php $statsEventsColspan = $statsShowEventRowActions ? 13 : 12; ?>
+        <?php $statsEventsColspan = $statsShowEventRowActions ? 15 : 14; ?>
         <div class="events-org-stats-list-controls" id="organizer-stats-list-controls">
             <div class="events-org-stats-list-controls__row">
                 <fieldset class="events-org-stats-fieldset">
@@ -779,6 +809,7 @@ $renderSplit = static function (
                         <th class="th-center events-stats-th-group events-stats-th-group--page" colspan="2" scope="colgroup">Oldal</th>
                         <th class="th-center events-stats-th-group events-stats-th-group--preview" colspan="2" scope="colgroup">Előnézet</th>
                         <th class="th-center events-stats-th-group events-stats-th-group--external" colspan="2" scope="colgroup">Átkatt</th>
+                        <th class="th-center events-stats-th-group events-stats-th-group--media" colspan="2" scope="colgroup">Médiaérték</th>
                         <th class="events-stats-th-status" scope="col" rowspan="2"><span class="visually-hidden">Státusz</span></th>
                     </tr>
                     <tr class="events-stats-thead-secondary">
@@ -806,6 +837,18 @@ $renderSplit = static function (
                         <th class="th-center events-stats-th-sub events-stats-th-sub--external" title="Átkattintás — bot">
                             <button type="button" class="th-sort" data-sort="external_bot" aria-pressed="false">Bot</button>
                         </th>
+                        <th
+                            class="th-center events-stats-th-sub events-stats-th-sub--media events-stats-th-sub--human"
+                            title="Oldalmegnyitás (ember) × <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft"
+                        >
+                            <button type="button" class="th-sort" data-sort="media_page" aria-pressed="false">Oldal Ft</button>
+                        </th>
+                        <th
+                            class="th-center events-stats-th-sub events-stats-th-sub--media events-stats-th-sub--human"
+                            title="További info (ember) × <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft"
+                        >
+                            <button type="button" class="th-sort" data-sort="media_click" aria-pressed="false">Átkatt Ft</button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="organizer-stats-events-tbody">
@@ -829,6 +872,10 @@ $renderSplit = static function (
                         $pageViews = (int) $pageCounts['total'];
                         $previewViews = (int) $previewCounts['total'];
                         $externalClicks = (int) $externalCounts['total'];
+                        $rowMediaValue = events_edit_stats_media_value(
+                            (int) $pageCounts['human'],
+                            (int) $externalCounts['human']
+                        );
                         $hasViews = ($pageViews + $previewViews + $externalClicks) > 0 ? '1' : '0';
                         $eventStart = $eventDateYmd($row, 'event_start');
                         $eventEnd = $eventDateYmd($row, 'event_end');
@@ -874,6 +921,8 @@ $renderSplit = static function (
                             data-external-bot="<?= (int) $externalCounts['bot'] ?>"
                             data-unique-human="<?= $uniqueHumanRow ?>"
                             data-unique-bot="<?= $uniqueBotRow ?>"
+                            data-media-page="<?= (int) $rowMediaValue['page_value_ft'] ?>"
+                            data-media-click="<?= (int) $rowMediaValue['click_value_ft'] ?>"
                         >
                             <?php if ($statsShowEventRowActions): ?>
                             <td class="events-td-actions">
@@ -908,6 +957,12 @@ $renderSplit = static function (
                             <td class="text-center events-stats-cell--bot"><?= (int) $previewCounts['bot'] ?></td>
                             <td class="text-center events-stats-cell--human"><?= (int) $externalCounts['human'] ?></td>
                             <td class="text-center events-stats-cell--bot"><?= (int) $externalCounts['bot'] ?></td>
+                            <td class="text-center events-stats-cell--human events-stats-cell--media" title="Oldalmegnyitás × <?= (int) $rowMediaValue['page_unit_ft'] ?> Ft">
+                                <?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['page_value_ft'])) ?>
+                            </td>
+                            <td class="text-center events-stats-cell--human events-stats-cell--media" title="További info × <?= (int) $rowMediaValue['click_unit_ft'] ?> Ft">
+                                <?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['click_value_ft'])) ?>
+                            </td>
                             <td class="text-center events-stats-td-status">
                                 <span
                                     class="event-status-dot <?= h($badgeClass) ?>"
@@ -1016,6 +1071,8 @@ $renderSplit = static function (
                 preview_bot: 'data-preview-bot',
                 external_human: 'data-external-human',
                 external_bot: 'data-external-bot',
+                media_page: 'data-media-page',
+                media_click: 'data-media-click',
                 preview: 'data-preview-views',
                 external: 'data-external-clicks',
                 unique: 'data-unique-human',
