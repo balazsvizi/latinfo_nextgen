@@ -5,7 +5,7 @@ require_once __DIR__ . '/event_view_tracking.php';
 require_once __DIR__ . '/admin_event_calendar.php';
 
 /**
- * @return array{date_from: string, date_to: string}
+ * @return array{date_from: string, date_to: string, mode: string}
  */
 function events_edit_stats_params_from_request(array $query): array
 {
@@ -14,6 +14,7 @@ function events_edit_stats_params_from_request(array $query): array
 
     $dateFrom = trim((string) ($query['stat_date_from'] ?? ''));
     $dateTo = trim((string) ($query['stat_date_to'] ?? ''));
+    $mode = events_edit_stats_normalize_mode($query['stat_mode'] ?? 'smart');
 
     if ($dateFrom === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
         $dateFrom = $defaultFrom->format('Y-m-d');
@@ -29,6 +30,7 @@ function events_edit_stats_params_from_request(array $query): array
         return [
             'date_from' => $defaultFrom->format('Y-m-d'),
             'date_to' => $today->format('Y-m-d'),
+            'mode' => $mode,
         ];
     }
 
@@ -39,7 +41,68 @@ function events_edit_stats_params_from_request(array $query): array
     return [
         'date_from' => $fromDt->format('Y-m-d'),
         'date_to' => $toDt->format('Y-m-d'),
+        'mode' => $mode,
     ];
+}
+
+/**
+ * @return 'smart'|'all'
+ */
+function events_edit_stats_normalize_mode(mixed $mode): string
+{
+    return ((string) $mode) === 'all' ? 'all' : 'smart';
+}
+
+function events_edit_stats_is_smart_mode(array $params): bool
+{
+    return events_edit_stats_normalize_mode($params['mode'] ?? 'smart') === 'smart';
+}
+
+/**
+ * Smart mode: csak az esemény záró napján vagy azelőtt történt megtekintések/kattintások.
+ * Üres string, ha a mód „összes”.
+ */
+function events_edit_stats_smart_cutoff_sql(
+    array $params,
+    string $viewAlias = 'v',
+    string $eventAlias = 'e'
+): string {
+    if (!events_edit_stats_is_smart_mode($params)) {
+        return '';
+    }
+    if (
+        preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $viewAlias) !== 1
+        || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $eventAlias) !== 1
+    ) {
+        return '';
+    }
+
+    return " AND (
+        COALESCE({$eventAlias}.`event_end`, {$eventAlias}.`event_start`) IS NULL
+        OR DATE({$viewAlias}.`létrehozva`) <= DATE(COALESCE({$eventAlias}.`event_end`, {$eventAlias}.`event_start`))
+    )";
+}
+
+/**
+ * INNER JOIN az esemény táblára smart cutoff-hoz. Üres, ha nem smart mód.
+ */
+function events_edit_stats_smart_event_join_sql(
+    array $params,
+    string $viewAlias = 'v',
+    string $eventAlias = 'e'
+): string {
+    if (!events_edit_stats_is_smart_mode($params)) {
+        return '';
+    }
+    if (
+        preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $viewAlias) !== 1
+        || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $eventAlias) !== 1
+    ) {
+        return '';
+    }
+
+    return " INNER JOIN `events_calendar_events` {$eventAlias}"
+        . " ON {$eventAlias}.`id` = {$viewAlias}.`esemény_id`";
 }
 
 /** Részletes adatlap megtekintés (emberi) — átlagos statisztikai egységérték. */
@@ -183,8 +246,8 @@ function events_edit_stats_detect_preset(array $params, ?string $allFromYmd = nu
 }
 
 /**
- * @param array{date_from: string, date_to: string} $range
- * @param array<string, scalar|null> $extraQuery
+ * @param array{date_from: string, date_to: string, mode?: string} $range
+ * @param array<string, scalar|null|list<scalar|null>> $extraQuery
  */
 function events_edit_stats_filter_url(string $baseUrl, array $range, array $extraQuery = []): string
 {
@@ -192,6 +255,9 @@ function events_edit_stats_filter_url(string $baseUrl, array $range, array $extr
         'stat_date_from' => $range['date_from'],
         'stat_date_to' => $range['date_to'],
     ]);
+    if (!array_key_exists('stat_mode', $query) && isset($range['mode'])) {
+        $query['stat_mode'] = events_edit_stats_normalize_mode($range['mode']);
+    }
     $qs = http_build_query($query);
     if ($qs === '') {
         return $baseUrl;
@@ -630,37 +696,45 @@ function events_edit_stats_for_event(PDO $db, int $eventId, array $params): arra
     $externalHumanByDay = array_fill_keys($labels, 0);
     $externalBotByDay = array_fill_keys($labels, 0);
     $window = events_edit_stats_view_window($params);
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
     try {
         if ($tableReady && $botReady) {
-            $stmt = $db->prepare('
-                SELECT DATE(`létrehozva`) AS bucket, `metric_type`, `is_bot`, COUNT(*) AS cnt
-                FROM `events_calendar_event_views`
-                WHERE `esemény_id` = ?
-                  AND `létrehozva` >= ?
-                  AND `létrehozva` < ?
-                GROUP BY bucket, `metric_type`, `is_bot`
-            ');
+            $stmt = $db->prepare("
+                SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, v.`is_bot`, COUNT(*) AS cnt
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`esemény_id` = ?
+                  AND v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$smartAnd}
+                GROUP BY bucket, v.`metric_type`, v.`is_bot`
+            ");
             $stmt->execute([$eventId, $window['start_inclusive'], $window['end_exclusive']]);
         } elseif ($tableReady) {
-            $stmt = $db->prepare('
-                SELECT DATE(`létrehozva`) AS bucket, `metric_type`, 0 AS is_bot, COUNT(*) AS cnt
-                FROM `events_calendar_event_views`
-                WHERE `esemény_id` = ?
-                  AND `létrehozva` >= ?
-                  AND `létrehozva` < ?
-                GROUP BY bucket, `metric_type`
-            ');
+            $stmt = $db->prepare("
+                SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`esemény_id` = ?
+                  AND v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$smartAnd}
+                GROUP BY bucket, v.`metric_type`
+            ");
             $stmt->execute([$eventId, $window['start_inclusive'], $window['end_exclusive']]);
         } else {
-            $stmt = $db->prepare('
-                SELECT DATE(`létrehozva`) AS bucket, 0 AS is_bot, COUNT(*) AS cnt
-                FROM `events_calendar_event_views`
-                WHERE `esemény_id` = ?
-                  AND `létrehozva` >= ?
-                  AND `létrehozva` < ?
+            $stmt = $db->prepare("
+                SELECT DATE(v.`létrehozva`) AS bucket, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`esemény_id` = ?
+                  AND v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$smartAnd}
                 GROUP BY bucket
-            ');
+            ");
             $stmt->execute([$eventId, $window['start_inclusive'], $window['end_exclusive']]);
         }
         events_edit_stats_apply_bucket_rows(
@@ -724,19 +798,23 @@ function events_edit_stats_unique_visitor_counts_for_event(
     $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
     $botReady = $botReady ?? events_view_tracking_bot_column_ready($db);
     $window = events_edit_stats_view_window($params);
-    $metricAnd = $tableReady ? " AND `metric_type` = 'page_view'" : '';
+    $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
-    $countFor = static function (string $botAnd) use ($db, $eventId, $window, $metricAnd): int {
+    $countFor = static function (string $botAnd) use ($db, $eventId, $window, $metricAnd, $smartJoin, $smartAnd): int {
         try {
             $stmt = $db->prepare("
-                SELECT COUNT(DISTINCT `ip_hash`)
-                FROM `events_calendar_event_views`
-                WHERE `esemény_id` = ?
-                  AND `létrehozva` >= ?
-                  AND `létrehozva` < ?
-                  AND `ip_hash` IS NOT NULL
-                  AND `ip_hash` <> ''
+                SELECT COUNT(DISTINCT v.`ip_hash`)
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`esemény_id` = ?
+                  AND v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  AND v.`ip_hash` IS NOT NULL
+                  AND v.`ip_hash` <> ''
                   {$metricAnd}
+                  {$smartAnd}
                   {$botAnd}
             ");
             $stmt->execute([$eventId, $window['start_inclusive'], $window['end_exclusive']]);
@@ -749,8 +827,8 @@ function events_edit_stats_unique_visitor_counts_for_event(
 
     if ($botReady) {
         return [
-            'human' => $countFor(' AND `is_bot` = 0'),
-            'bot' => $countFor(' AND `is_bot` = 1'),
+            'human' => $countFor(' AND v.`is_bot` = 0'),
+            'bot' => $countFor(' AND v.`is_bot` = 1'),
         ];
     }
 
@@ -806,6 +884,8 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
     $externalBotByDay = array_fill_keys($labels, 0);
     $window = events_edit_stats_view_window($params);
     $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
     try {
         if ($tableReady && $botReady) {
@@ -813,9 +893,11 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
                 SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, v.`is_bot`, COUNT(*) AS cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                {$smartJoin}
                 WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
+                  {$smartAnd}
                 GROUP BY bucket, v.`metric_type`, v.`is_bot`
             ");
             $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
@@ -824,9 +906,11 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
                 SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, 0 AS is_bot, COUNT(*) AS cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                {$smartJoin}
                 WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
+                  {$smartAnd}
                 GROUP BY bucket, v.`metric_type`
             ");
             $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
@@ -835,9 +919,11 @@ function events_edit_stats_for_organizers(PDO $db, array $organizerIds, array $p
                 SELECT DATE(v.`létrehozva`) AS bucket, 0 AS is_bot, COUNT(*) AS cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                {$smartJoin}
                 WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
+                  {$smartAnd}
                 GROUP BY bucket
             ");
             $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
@@ -914,19 +1000,23 @@ function events_edit_stats_unique_visitor_counts_for_organizers(
     $window = events_edit_stats_view_window($params);
     $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
     $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
-    $countFor = static function (string $botAnd) use ($db, $organizerIds, $orgPh, $window, $metricAnd): int {
+    $countFor = static function (string $botAnd) use ($db, $organizerIds, $orgPh, $window, $metricAnd, $smartJoin, $smartAnd): int {
         try {
             $stmt = $db->prepare("
                 SELECT COUNT(DISTINCT v.`ip_hash`)
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                {$smartJoin}
                 WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
                   AND v.`ip_hash` IS NOT NULL
                   AND v.`ip_hash` <> ''
                   {$metricAnd}
+                  {$smartAnd}
                   {$botAnd}
             ");
             $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
@@ -1103,8 +1193,9 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
     $dateFrom = (string) ($params['date_from'] ?? '');
     $dateTo = (string) ($params['date_to'] ?? '');
     $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
-    $timeAnd = ' AND v.`létrehozva` >= ? AND v.`létrehozva` < ?';
+    $timeAnd = " AND v.`létrehozva` >= ? AND v.`létrehozva` < ?{$smartAnd}";
     $pageBase = "FROM `events_calendar_event_views` v WHERE v.`esemény_id` = e.`id`{$timeAnd}";
     $previewBase = "FROM `events_calendar_event_views` v WHERE v.`esemény_id` = e.`id` AND v.`metric_type` = 'calendar_preview'{$timeAnd}";
     $externalBase = "FROM `events_calendar_event_views` v WHERE v.`esemény_id` = e.`id` AND v.`metric_type` = 'external_info_click'{$timeAnd}";
@@ -1265,16 +1356,20 @@ function events_edit_stats_page_views_all(PDO $db, array $params): array
     $window = events_edit_stats_view_window($params);
     $tableReady = events_edit_stats_table_ready($db);
     $botReady = events_view_tracking_bot_column_ready($db);
-    $metricAnd = $tableReady ? " AND `metric_type` = 'page_view'" : '';
+    $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
-    $countFor = static function (string $botAnd) use ($db, $window, $metricAnd): int {
+    $countFor = static function (string $botAnd) use ($db, $window, $metricAnd, $smartJoin, $smartAnd): int {
         try {
             $stmt = $db->prepare("
                 SELECT COUNT(*)
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?
-                  AND `létrehozva` < ?
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
                   {$metricAnd}
+                  {$smartAnd}
                   {$botAnd}
             ");
             $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
@@ -1286,8 +1381,8 @@ function events_edit_stats_page_views_all(PDO $db, array $params): array
     };
 
     if ($botReady) {
-        $human = $countFor(' AND `is_bot` = 0');
-        $bot = $countFor(' AND `is_bot` = 1');
+        $human = $countFor(' AND v.`is_bot` = 0');
+        $bot = $countFor(' AND v.`is_bot` = 1');
 
         return [
             'human' => $human,
@@ -1319,18 +1414,22 @@ function events_edit_stats_unique_visitor_counts_all(
     $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
     $botReady = $botReady ?? events_view_tracking_bot_column_ready($db);
     $window = events_edit_stats_view_window($params);
-    $metricAnd = $tableReady ? " AND `metric_type` = 'page_view'" : '';
+    $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
-    $countFor = static function (string $botAnd) use ($db, $window, $metricAnd): int {
+    $countFor = static function (string $botAnd) use ($db, $window, $metricAnd, $smartJoin, $smartAnd): int {
         try {
             $stmt = $db->prepare("
-                SELECT COUNT(DISTINCT `ip_hash`)
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?
-                  AND `létrehozva` < ?
-                  AND `ip_hash` IS NOT NULL
-                  AND `ip_hash` <> ''
+                SELECT COUNT(DISTINCT v.`ip_hash`)
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  AND v.`ip_hash` IS NOT NULL
+                  AND v.`ip_hash` <> ''
                   {$metricAnd}
+                  {$smartAnd}
                   {$botAnd}
             ");
             $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
@@ -1343,8 +1442,8 @@ function events_edit_stats_unique_visitor_counts_all(
 
     if ($botReady) {
         return [
-            'human' => $countFor(' AND `is_bot` = 0'),
-            'bot' => $countFor(' AND `is_bot` = 1'),
+            'human' => $countFor(' AND v.`is_bot` = 0'),
+            'bot' => $countFor(' AND v.`is_bot` = 1'),
         ];
     }
 
@@ -1383,34 +1482,42 @@ function events_edit_stats_for_all_events(PDO $db, array $params, int $eventList
     $externalHumanByDay = array_fill_keys($labels, 0);
     $externalBotByDay = array_fill_keys($labels, 0);
     $window = events_edit_stats_view_window($params);
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
     try {
         if ($tableReady && $botReady) {
-            $stmt = $db->prepare('
-                SELECT DATE(`létrehozva`) AS bucket, `metric_type`, `is_bot`, COUNT(*) AS cnt
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?
-                  AND `létrehozva` < ?
-                GROUP BY bucket, `metric_type`, `is_bot`
-            ');
+            $stmt = $db->prepare("
+                SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, v.`is_bot`, COUNT(*) AS cnt
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$smartAnd}
+                GROUP BY bucket, v.`metric_type`, v.`is_bot`
+            ");
             $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
         } elseif ($tableReady) {
-            $stmt = $db->prepare('
-                SELECT DATE(`létrehozva`) AS bucket, `metric_type`, 0 AS is_bot, COUNT(*) AS cnt
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?
-                  AND `létrehozva` < ?
-                GROUP BY bucket, `metric_type`
-            ');
+            $stmt = $db->prepare("
+                SELECT DATE(v.`létrehozva`) AS bucket, v.`metric_type`, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$smartAnd}
+                GROUP BY bucket, v.`metric_type`
+            ");
             $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
         } else {
-            $stmt = $db->prepare('
-                SELECT DATE(`létrehozva`) AS bucket, 0 AS is_bot, COUNT(*) AS cnt
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?
-                  AND `létrehozva` < ?
+            $stmt = $db->prepare("
+                SELECT DATE(v.`létrehozva`) AS bucket, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views` v
+                {$smartJoin}
+                WHERE v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$smartAnd}
                 GROUP BY bucket
-            ');
+            ");
             $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
         }
         events_edit_stats_apply_bucket_rows(
@@ -1490,6 +1597,7 @@ function events_edit_stats_all_events_list(
     $window = events_edit_stats_view_window($params);
     $dateFrom = (string) ($params['date_from'] ?? '');
     $dateTo = (string) ($params['date_to'] ?? '');
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
     $pageTypeAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
     $previewTypeAnd = $tableReady ? " AND v.`metric_type` = 'calendar_preview'" : ' AND 1=0';
@@ -1540,6 +1648,7 @@ function events_edit_stats_all_events_list(
             ON v.`esemény_id` = e.`id`
            AND v.`létrehozva` >= ?
            AND v.`létrehozva` < ?
+           {$smartAnd}
         WHERE e.`event_status` NOT IN ('draft', 'auto-draft')
         GROUP BY e.`id`
         ORDER BY megtekintesek DESC, e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
@@ -1556,12 +1665,15 @@ function events_edit_stats_all_events_list(
         ");
         $eventsTotal = (int) $totalStmt->fetchColumn();
 
-        $withViewsStmt = $db->prepare('
-            SELECT COUNT(DISTINCT `esemény_id`)
-            FROM `events_calendar_event_views`
-            WHERE `létrehozva` >= ?
-              AND `létrehozva` < ?
-        ');
+        $smartJoinForCount = events_edit_stats_smart_event_join_sql($params);
+        $withViewsStmt = $db->prepare("
+            SELECT COUNT(DISTINCT v.`esemény_id`)
+            FROM `events_calendar_event_views` v
+            {$smartJoinForCount}
+            WHERE v.`létrehozva` >= ?
+              AND v.`létrehozva` < ?
+              {$smartAnd}
+        ");
         $withViewsStmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
         $eventsWithViews = (int) $withViewsStmt->fetchColumn();
 
@@ -1860,6 +1972,8 @@ function events_edit_stats_organizers_period_rows(
     $tableReady = events_edit_stats_table_ready($db);
     $botReady = events_view_tracking_bot_column_ready($db);
     $window = events_edit_stats_view_window($params);
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
     $orgFilterSql = '';
     $paramsExec = [$window['start_inclusive'], $window['end_exclusive']];
@@ -1928,8 +2042,10 @@ function events_edit_stats_organizers_period_rows(
             FROM `events_organizers` o
             INNER JOIN `events_calendar_event_organizers` eo ON eo.`organizer_id` = o.`id`
             INNER JOIN `events_calendar_event_views` v ON v.`esemény_id` = eo.`event_id`
+            {$smartJoin}
             WHERE v.`létrehozva` >= ?
               AND v.`létrehozva` < ?
+              {$smartAnd}
               {$orgFilterSql}
             GROUP BY o.`id`, o.`name`
             {$havingSql}
@@ -2040,6 +2156,8 @@ function events_edit_stats_organizers_daily_page_series(
     $window = events_edit_stats_view_window($params);
     $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
     $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
     $names = [];
     try {
@@ -2073,10 +2191,12 @@ function events_edit_stats_organizers_daily_page_series(
                     COUNT(*) AS total_cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                {$smartJoin}
                 WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
                   {$metricAnd}
+                  {$smartAnd}
                 GROUP BY eo.`organizer_id`, bucket
             ");
         } else {
@@ -2088,10 +2208,12 @@ function events_edit_stats_organizers_daily_page_series(
                     COUNT(*) AS total_cnt
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                {$smartJoin}
                 WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
                   {$metricAnd}
+                  {$smartAnd}
                 GROUP BY eo.`organizer_id`, bucket
             ");
         }

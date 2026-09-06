@@ -399,23 +399,29 @@ function partner_portal_page_views_summary(
     $botReady = events_view_tracking_bot_column_ready($db);
     $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
     $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $smartJoin = events_edit_stats_smart_event_join_sql($params);
+    $smartAnd = events_edit_stats_smart_cutoff_sql($params);
 
     $countFor = static function (string $botAnd) use (
         $db,
         $organizerIds,
         $orgPh,
         $window,
-        $metricAnd
+        $metricAnd,
+        $smartJoin,
+        $smartAnd
     ): int {
         try {
             $stmt = $db->prepare("
                 SELECT COUNT(*)
                 FROM `events_calendar_event_views` v
                 INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                {$smartJoin}
                 WHERE eo.`organizer_id` IN ({$orgPh})
                   AND v.`létrehozva` >= ?
                   AND v.`létrehozva` < ?
                   {$metricAnd}
+                  {$smartAnd}
                   {$botAnd}
             ");
             $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);

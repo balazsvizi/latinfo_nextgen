@@ -52,6 +52,7 @@ $dateTo = (string) $statsParams['date_to'];
 $orgFilterBaseQuery = [
     'stat_date_from' => $dateFrom,
     'stat_date_to' => $dateTo,
+    'stat_mode' => (string) ($statsParams['mode'] ?? 'smart'),
 ];
 
 $chartOverlayJson = json_encode([

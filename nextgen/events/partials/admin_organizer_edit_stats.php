@@ -13,7 +13,11 @@ declare(strict_types=1);
 
 $statsFormAction = events_url('organizer_szerkeszt.php');
 $statsChartDomId = 'organizer-edit-stats-chart';
-$statsFilterExtraQuery = ['id' => (int) $id];
+$statsMode = events_edit_stats_normalize_mode($statsParams['mode'] ?? 'smart');
+$statsFilterExtraQuery = [
+    'id' => (int) $id,
+    'stat_mode' => $statsMode,
+];
 $statsAllDateFrom = isset($db) && $db instanceof PDO
     ? events_edit_stats_earliest_view_date_for_organizers($db, [(int) $id])
     : null;
@@ -84,6 +88,13 @@ $eventDateYmd = static function (array $row, string $key): string {
             <div class="form-group">
                 <label class="events-filter-label" for="stat_date_to">Időszak ig</label>
                 <input class="events-filter-input" type="date" name="stat_date_to" id="stat_date_to" value="<?= h($statsParams['date_to']) ?>">
+            </div>
+            <div class="form-group">
+                <label class="events-filter-label" for="stat_mode">Számítási mód</label>
+                <select class="events-filter-input" name="stat_mode" id="stat_mode">
+                    <option value="smart"<?= $statsMode === 'smart' ? ' selected' : '' ?>>Latinfo.hu smart stat</option>
+                    <option value="all"<?= $statsMode === 'all' ? ' selected' : '' ?>>Összes</option>
+                </select>
             </div>
             <div class="form-group events-edit-stats__filter-actions">
                 <button type="submit" class="btn btn-secondary btn-sm">Megjelenítés</button>

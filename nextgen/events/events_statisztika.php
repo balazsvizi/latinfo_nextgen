@@ -64,6 +64,7 @@ $statsEmptyEventsMessage = 'Nincs megtekintett esemény a választott időszakba
 $szervezokStatUrl = events_url('events_szervezok_statisztika.php?' . http_build_query([
     'stat_date_from' => $statsParams['date_from'],
     'stat_date_to' => $statsParams['date_to'],
+    'stat_mode' => $statsParams['mode'] ?? 'smart',
 ]));
 
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -90,6 +91,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <a href="<?= h(events_url('events_statisztika.php?' . http_build_query([
                 'stat_date_from' => $statsParams['date_from'],
                 'stat_date_to' => $statsParams['date_to'],
+                'stat_mode' => $statsParams['mode'] ?? 'smart',
             ]))) ?>" class="btn btn-secondary btn-sm">Szűrés törlése</a>
         <?php endif; ?>
         <a href="<?= h(events_url('events_stat.php')) ?>" class="btn btn-secondary btn-sm">Áttekintés</a>

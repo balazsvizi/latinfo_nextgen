@@ -4657,6 +4657,12 @@ body.event-edit-cover-lightbox-open {
     gap: 0.5rem;
     align-items: center;
 }
+.events-edit-stats__filter-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--text-muted, #6b7280);
+}
 .events-edit-stats__presets {
     display: inline-flex;
     flex-wrap: wrap;

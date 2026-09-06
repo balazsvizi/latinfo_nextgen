@@ -33,6 +33,10 @@ $statsEventListHint = $statsEventListHint ?? ($statsPreferPartnerLinks
     ? 'Kattints az eseményre a partner részletekhez. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).'
     : 'Alapból az időszakban megtekintéssel rendelkező események. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).');
 $statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDateFrom);
+$statsMode = events_edit_stats_normalize_mode($statsParams['mode'] ?? 'smart');
+$statsFilterQueryWithMode = array_merge($statsFilterExtraQuery, [
+    'stat_mode' => $statsMode,
+]);
 $statsPresetLinks = [];
 foreach (events_edit_stats_presets() as $preset) {
     $presetId = (string) $preset['id'];
@@ -42,7 +46,7 @@ foreach (events_edit_stats_presets() as $preset) {
         'url' => events_edit_stats_filter_url(
             $statsFormAction,
             events_edit_stats_range_for_preset($presetId, $statsAllDateFrom),
-            $statsFilterExtraQuery
+            $statsFilterQueryWithMode
         ),
         'active' => $statsActivePreset === $presetId,
     ];
@@ -218,6 +222,20 @@ $renderSplit = static function (
             <div class="form-group">
                 <label class="events-filter-label" for="stat_date_to">Időszak ig</label>
                 <input class="events-filter-input" type="date" name="stat_date_to" id="stat_date_to" value="<?= h($statsParams['date_to']) ?>">
+            </div>
+            <div class="form-group">
+                <label class="events-filter-label" for="stat_mode">Számítási mód</label>
+                <select class="events-filter-input" name="stat_mode" id="stat_mode">
+                    <option value="smart"<?= $statsMode === 'smart' ? ' selected' : '' ?>>Latinfo.hu smart stat</option>
+                    <option value="all"<?= $statsMode === 'all' ? ' selected' : '' ?>>Összes</option>
+                </select>
+                <p class="events-edit-stats__filter-hint">
+                    <?php if ($statsMode === 'smart'): ?>
+                        Csak az esemény záró napján vagy azelőtt történt megtekintések/kattintások.
+                    <?php else: ?>
+                        Minden megtekintés és kattintás a választott időszakban.
+                    <?php endif; ?>
+                </p>
             </div>
             <div class="form-group events-edit-stats__filter-actions">
                 <button type="submit" class="btn btn-secondary btn-sm">Megjelenítés</button>
