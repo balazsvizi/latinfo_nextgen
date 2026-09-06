@@ -14,6 +14,17 @@ $statsPreferPartnerLinks = !empty($statsPreferPartnerLinks);
 $statsShowEventRowActions = !empty($statsShowEventRowActions);
 $statsHideEventsList = !empty($statsHideEventsList);
 $statsFormExtraHtml = is_string($statsFormExtraHtml ?? null) ? (string) $statsFormExtraHtml : '';
+/** @var array{enabled?: bool, event_id?: int, ajax_url?: string, ymd_labels?: list<string>}|null $statsDayDrilldown */
+$statsDayDrilldown = is_array($statsDayDrilldown ?? null) ? $statsDayDrilldown : null;
+$statsDayDrillEnabled = !empty($statsDayDrilldown['enabled'])
+    && (int) ($statsDayDrilldown['event_id'] ?? 0) > 0
+    && trim((string) ($statsDayDrilldown['ajax_url'] ?? '')) !== '';
+$statsDayDrillEventId = (int) ($statsDayDrilldown['event_id'] ?? 0);
+$statsDayDrillAjaxUrl = trim((string) ($statsDayDrilldown['ajax_url'] ?? ''));
+$statsDayDrillYmdLabels = array_values(array_filter(
+    array_map('strval', $statsDayDrilldown['ymd_labels'] ?? []),
+    static fn (string $d): bool => preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) === 1
+));
 $statsPageTitle = $statsPageTitle ?? 'Statisztika';
 $statsIntro = $statsIntro ?? 'Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.';
 $statsEmptyEventsMessage = $statsEmptyEventsMessage ?? 'Nincs közzétett eseményed.';
@@ -289,8 +300,51 @@ $renderSplit = static function (
             <div class="events-edit-stats__chart-canvas">
                 <canvas id="<?= h($statsChartDomId) ?>" aria-label="Megtekintések grafikonja"></canvas>
             </div>
+            <?php if ($statsDayDrillEnabled): ?>
+            <p class="events-edit-stats__chart-hint events-edit-stats__chart-hint--drill">Kattints egy napra az órás bontáshoz és a tételekhez.</p>
+            <?php endif; ?>
         </div>
+        <?php if ($statsDayDrillEnabled): ?>
+        <div class="events-edit-stats__day-drill" id="<?= h($statsChartDomId) ?>-day-drill" hidden>
+            <div class="events-edit-stats__day-drill-head">
+                <h3 class="events-edit-stats__chart-title">
+                    Órás bontás —
+                    <span data-day-drill-label>—</span>
+                </h3>
+                <button type="button" class="btn btn-sm btn-secondary" data-day-drill-close>Bezárás</button>
+            </div>
+            <p class="events-edit-stats__chart-hint" data-day-drill-status>Betöltés…</p>
+            <div class="events-edit-stats__chart-canvas events-edit-stats__chart-canvas--hourly">
+                <canvas id="<?= h($statsChartDomId) ?>-hourly" aria-label="Órás megtekintések grafikonja"></canvas>
+            </div>
+            <h3 class="events-edit-stats__events-title">Tételek — <span data-day-drill-label>—</span></h3>
+            <p class="events-edit-stats__events-hint" data-day-drill-items-hint></p>
+            <div class="table-wrap events-admin-table-wrap">
+                <table class="events-admin-table events-edit-stats__day-items-table">
+                    <thead>
+                        <tr>
+                            <th>Idő</th>
+                            <th>Metrika</th>
+                            <th>Forrás</th>
+                            <th>Típus</th>
+                            <th>IP hash</th>
+                        </tr>
+                    </thead>
+                    <tbody data-day-drill-items-body>
+                        <tr><td colspan="5" class="events-org-stats-list-empty">Válassz egy napot a grafikonon.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
         <script type="application/json" id="<?= h($statsChartDomId) ?>-data"><?= $chartJson ?></script>
+        <?php if ($statsDayDrillEnabled): ?>
+        <script type="application/json" id="<?= h($statsChartDomId) ?>-day-drill-config"><?= json_encode([
+            'eventId' => $statsDayDrillEventId,
+            'ajaxUrl' => $statsDayDrillAjaxUrl,
+            'ymdLabels' => $statsDayDrillYmdLabels,
+        ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+        <?php endif; ?>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" crossorigin="anonymous"></script>
         <script>
         (function () {
@@ -304,8 +358,21 @@ $renderSplit = static function (
             var labels = payload.labels || [];
             var modes = payload.modes || {};
             var chart = null;
+            var hourlyChart = null;
+            var drillCfg = null;
+            var drillRoot = document.getElementById(<?= json_encode($statsChartDomId . '-day-drill', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
+            var drillCfgEl = document.getElementById(<?= json_encode($statsChartDomId . '-day-drill-config', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
+            var hourlyCanvas = document.getElementById(<?= json_encode($statsChartDomId . '-hourly', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
+            var selectedDay = null;
+            var drillAbort = null;
+            var lastHourly = null;
 
-            function mapDatasets(list) {
+            if (drillCfgEl) {
+                try { drillCfg = JSON.parse(drillCfgEl.textContent || '{}'); } catch (e) { drillCfg = null; }
+            }
+
+            function mapDatasets(list, pointRadius) {
+                var radius = pointRadius == null ? (labels.length > 45 ? 0 : 3) : pointRadius;
                 return (list || []).map(function (ds) {
                     return {
                         label: ds.label,
@@ -314,24 +381,167 @@ $renderSplit = static function (
                         backgroundColor: (ds.color || '#3d6b4f') + '22',
                         borderWidth: 2,
                         tension: 0.25,
-                        pointRadius: labels.length > 45 ? 0 : 3,
+                        pointRadius: radius,
                         pointHoverRadius: 5,
                         fill: false
                     };
                 });
             }
 
-            function datasetsForMode(mode) {
-                if (modes[mode] && modes[mode].datasets && modes[mode].datasets.length) {
-                    return mapDatasets(modes[mode].datasets);
+            function datasetsForMode(mode, sourcePayload, pointRadius) {
+                var src = sourcePayload || payload;
+                var srcModes = src.modes || {};
+                if (srcModes[mode] && srcModes[mode].datasets && srcModes[mode].datasets.length) {
+                    return mapDatasets(srcModes[mode].datasets, pointRadius);
                 }
-                return mapDatasets(payload.datasets || []);
+                return mapDatasets(src.datasets || [], pointRadius);
             }
 
             function currentMode() {
                 if (!modeWrap) return 'human';
                 var checked = modeWrap.querySelector('input[type="radio"]:checked');
                 return checked ? checked.value : 'human';
+            }
+
+            function esc(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function setDrillStatus(text) {
+                if (!drillRoot) return;
+                var el = drillRoot.querySelector('[data-day-drill-status]');
+                if (el) el.textContent = text || '';
+            }
+
+            function renderHourly(hourlyPayload) {
+                if (!hourlyCanvas || typeof Chart === 'undefined') return;
+                var mode = currentMode();
+                var hourLabels = (hourlyPayload && hourlyPayload.labels) || [];
+                var datasets = datasetsForMode(mode, hourlyPayload || {}, 3);
+                if (!hourlyChart) {
+                    hourlyChart = new Chart(hourlyCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: { labels: hourLabels, datasets: datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { boxWidth: 12, padding: 14, font: { size: 11 } }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: { display: true, text: 'Óra' },
+                                    ticks: { maxRotation: 0, autoSkip: false }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0 }
+                                }
+                            }
+                        }
+                    });
+                    return;
+                }
+                hourlyChart.data.labels = hourLabels;
+                hourlyChart.data.datasets = datasets;
+                hourlyChart.update();
+            }
+
+            function renderItems(items, truncated) {
+                if (!drillRoot) return;
+                var body = drillRoot.querySelector('[data-day-drill-items-body]');
+                var hint = drillRoot.querySelector('[data-day-drill-items-hint]');
+                if (!body) return;
+                if (!items || !items.length) {
+                    body.innerHTML = '<tr><td colspan="5" class="events-org-stats-list-empty">Nincs tétel ezen a napon.</td></tr>';
+                    if (hint) hint.textContent = '';
+                    return;
+                }
+                if (hint) {
+                    hint.textContent = truncated
+                        ? ('Az utolsó ' + items.length + ' tétel látszik (a lista csonkolva).')
+                        : (items.length + ' tétel, legújabb elöl.');
+                }
+                body.innerHTML = items.map(function (row) {
+                    var time = String(row.at || '');
+                    var timeShort = time.length >= 19 ? time.slice(11, 19) : time;
+                    return '<tr>'
+                        + '<td>' + esc(timeShort) + '</td>'
+                        + '<td>' + esc(row.metric_label || row.metric || '') + '</td>'
+                        + '<td>' + esc(row.source_label || row.source || '') + '</td>'
+                        + '<td>' + (row.is_bot ? '<span class="events-stats-cell--bot">Bot</span>' : 'Ember') + '</td>'
+                        + '<td><code>' + esc(row.ip_short || '—') + '</code></td>'
+                        + '</tr>';
+                }).join('');
+            }
+
+            function loadDay(dayYmd) {
+                if (!drillCfg || !drillRoot || !dayYmd) return;
+                selectedDay = dayYmd;
+                drillRoot.hidden = false;
+                drillRoot.querySelectorAll('[data-day-drill-label]').forEach(function (el) {
+                    el.textContent = dayYmd;
+                });
+                setDrillStatus('Betöltés…');
+                renderItems([], false);
+                if (drillAbort) {
+                    try { drillAbort.abort(); } catch (e) {}
+                }
+                drillAbort = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                var url = drillCfg.ajaxUrl
+                    + (drillCfg.ajaxUrl.indexOf('?') >= 0 ? '&' : '?')
+                    + 'id=' + encodeURIComponent(String(drillCfg.eventId))
+                    + '&day=' + encodeURIComponent(dayYmd);
+                fetch(url, {
+                    credentials: 'same-origin',
+                    signal: drillAbort ? drillAbort.signal : undefined,
+                    headers: { 'Accept': 'application/json' }
+                }).then(function (res) {
+                    return res.json().then(function (data) {
+                        return { okHttp: res.ok, data: data };
+                    });
+                }).then(function (pack) {
+                    if (selectedDay !== dayYmd) return;
+                    var data = pack.data || {};
+                    if (!pack.okHttp || !data.ok) {
+                        setDrillStatus(data.error || 'Nem sikerült betölteni a napot.');
+                        return;
+                    }
+                    drillRoot.querySelectorAll('[data-day-drill-label]').forEach(function (el) {
+                        el.textContent = data.day_label || dayYmd;
+                    });
+                    var totals = data.totals || {};
+                    setDrillStatus(
+                        'Oldal ' + (totals.page_views || 0)
+                        + ' · Előnézet ' + (totals.calendar_previews || 0)
+                        + ' · További info ' + (totals.external_info_clicks || 0)
+                    );
+                    renderHourly(data.hourly || {});
+                    lastHourly = data.hourly || null;
+                    renderItems(data.items || [], !!data.items_truncated);
+                }).catch(function (err) {
+                    if (err && err.name === 'AbortError') return;
+                    if (selectedDay !== dayYmd) return;
+                    setDrillStatus('Hálózati hiba a napi bontás betöltésekor.');
+                });
+            }
+
+            function onDayClick(evt, elements, chartInstance) {
+                if (!drillCfg || !chartInstance) return;
+                var points = chartInstance.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
+                if (!points || !points.length) return;
+                var idx = points[0].index;
+                var ymd = (drillCfg.ymdLabels && drillCfg.ymdLabels[idx]) || null;
+                if (!ymd) return;
+                loadDay(ymd);
             }
 
             function render() {
@@ -341,7 +551,7 @@ $renderSplit = static function (
                         ? 'Napi bontás — emberi + bot együtt (összes).'
                         : 'Napi bontás — csak emberi forgalom.';
                 }
-                var datasets = datasetsForMode(mode);
+                var datasets = datasetsForMode(mode, payload, drillCfg ? Math.max(3, labels.length > 45 ? 2 : 3) : null);
                 if (!chart) {
                     chart = new Chart(canvas.getContext('2d'), {
                         type: 'line',
@@ -350,6 +560,7 @@ $renderSplit = static function (
                             responsive: true,
                             maintainAspectRatio: false,
                             interaction: { mode: 'index', intersect: false },
+                            onClick: drillCfg ? onDayClick : undefined,
                             plugins: {
                                 legend: {
                                     position: 'bottom',
@@ -361,7 +572,10 @@ $renderSplit = static function (
                                             var v = ctx.parsed.y;
                                             if (v == null) return ctx.dataset.label;
                                             return ctx.dataset.label + ': ' + v;
-                                        }
+                                        },
+                                        afterBody: drillCfg ? function () {
+                                            return ['Kattints a nap órás bontásához'];
+                                        } : undefined
                                     }
                                 }
                             },
@@ -376,10 +590,30 @@ $renderSplit = static function (
                             }
                         }
                     });
+                    if (drillCfg) {
+                        canvas.style.cursor = 'pointer';
+                    }
                     return;
                 }
                 chart.data.datasets = datasets;
                 chart.update();
+                if (lastHourly) {
+                    renderHourly(lastHourly);
+                }
+            }
+
+            if (drillRoot) {
+                var closeBtn = drillRoot.querySelector('[data-day-drill-close]');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function () {
+                        selectedDay = null;
+                        lastHourly = null;
+                        drillRoot.hidden = true;
+                        if (drillAbort) {
+                            try { drillAbort.abort(); } catch (e) {}
+                        }
+                    });
+                }
             }
 
             if (modeWrap) {

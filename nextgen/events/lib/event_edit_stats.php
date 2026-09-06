@@ -1488,3 +1488,216 @@ function events_edit_stats_all_events_list(
         'events_in_period' => $eventsInPeriod,
     ];
 }
+
+/**
+ * Egy esemény egy napjának órás bontása + konkrét megtekintési tételek.
+ *
+ * @return array{
+ *   day: string,
+ *   table_ready: bool,
+ *   bot_ready: bool,
+ *   hourly: array<string, mixed>,
+ *   items: list<array<string, mixed>>,
+ *   items_truncated: bool,
+ *   totals: array<string, int>
+ * }
+ */
+function events_edit_stats_day_detail_for_event(PDO $db, int $eventId, string $dayYmd, int $itemsLimit = 500): array
+{
+    $emptyHourly = events_edit_stats_empty_hourly_chart();
+    $empty = [
+        'day' => $dayYmd,
+        'table_ready' => false,
+        'bot_ready' => false,
+        'hourly' => $emptyHourly,
+        'items' => [],
+        'items_truncated' => false,
+        'totals' => [
+            'page_views' => 0,
+            'page_views_human' => 0,
+            'page_views_bot' => 0,
+            'calendar_previews' => 0,
+            'calendar_previews_human' => 0,
+            'calendar_previews_bot' => 0,
+            'external_info_clicks' => 0,
+            'external_info_clicks_human' => 0,
+            'external_info_clicks_bot' => 0,
+            'rows' => 0,
+        ],
+    ];
+
+    if ($eventId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dayYmd)) {
+        return $empty;
+    }
+
+    try {
+        $dayStart = new DateTimeImmutable($dayYmd . ' 00:00:00');
+    } catch (Throwable) {
+        return $empty;
+    }
+    $dayEnd = $dayStart->modify('+1 day');
+    $startInclusive = $dayStart->format('Y-m-d H:i:s');
+    $endExclusive = $dayEnd->format('Y-m-d H:i:s');
+
+    events_view_tracking_ensure_bot_column($db);
+    $tableReady = events_edit_stats_table_ready($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $empty['table_ready'] = $tableReady;
+    $empty['bot_ready'] = $botReady;
+
+    $hourKeys = [];
+    for ($h = 0; $h < 24; $h++) {
+        $hourKeys[] = sprintf('%02d', $h);
+    }
+    $pageHumanByHour = array_fill_keys($hourKeys, 0);
+    $pageBotByHour = array_fill_keys($hourKeys, 0);
+    $previewHumanByHour = array_fill_keys($hourKeys, 0);
+    $previewBotByHour = array_fill_keys($hourKeys, 0);
+    $externalHumanByHour = array_fill_keys($hourKeys, 0);
+    $externalBotByHour = array_fill_keys($hourKeys, 0);
+
+    try {
+        if ($tableReady && $botReady) {
+            $stmt = $db->prepare('
+                SELECT HOUR(`létrehozva`) AS bucket_hour, `metric_type`, `is_bot`, COUNT(*) AS cnt
+                FROM `events_calendar_event_views`
+                WHERE `esemény_id` = ?
+                  AND `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                GROUP BY bucket_hour, `metric_type`, `is_bot`
+            ');
+            $stmt->execute([$eventId, $startInclusive, $endExclusive]);
+        } elseif ($tableReady) {
+            $stmt = $db->prepare('
+                SELECT HOUR(`létrehozva`) AS bucket_hour, `metric_type`, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views`
+                WHERE `esemény_id` = ?
+                  AND `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                GROUP BY bucket_hour, `metric_type`
+            ');
+            $stmt->execute([$eventId, $startInclusive, $endExclusive]);
+        } else {
+            $stmt = $db->prepare('
+                SELECT HOUR(`létrehozva`) AS bucket_hour, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views`
+                WHERE `esemény_id` = ?
+                  AND `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                GROUP BY bucket_hour
+            ');
+            $stmt->execute([$eventId, $startInclusive, $endExclusive]);
+        }
+
+        $bucketRows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $hour = sprintf('%02d', (int) ($row['bucket_hour'] ?? 0));
+            $bucketRows[] = [
+                'bucket' => $hour,
+                'metric_type' => $row['metric_type'] ?? EVENTS_VIEW_METRIC_PAGE,
+                'is_bot' => (int) ($row['is_bot'] ?? 0),
+                'cnt' => (int) ($row['cnt'] ?? 0),
+            ];
+        }
+        events_edit_stats_apply_bucket_rows(
+            $bucketRows,
+            $pageHumanByHour,
+            $pageBotByHour,
+            $previewHumanByHour,
+            $previewBotByHour,
+            $externalHumanByHour,
+            $externalBotByHour,
+            $tableReady,
+            $botReady
+        );
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_day_detail_for_event hourly: ' . $e->getMessage());
+
+        return $empty;
+    }
+
+    $built = events_edit_stats_build_result(
+        $hourKeys,
+        $pageHumanByHour,
+        $pageBotByHour,
+        $previewHumanByHour,
+        $previewBotByHour,
+        $externalHumanByHour,
+        $externalBotByHour,
+        $tableReady,
+        $botReady
+    );
+    // Órás tengely: 00–23 (ne m.d. formátum).
+    $built['chart']['labels'] = $hourKeys;
+
+    $itemsLimit = max(1, min(2000, $itemsLimit));
+    $items = [];
+    $itemsTruncated = false;
+    try {
+        $botSelect = $botReady ? '`is_bot`' : '0 AS `is_bot`';
+        $metricSelect = $tableReady ? '`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
+        $limitPlus = $itemsLimit + 1;
+        $stmt = $db->prepare("
+            SELECT `id`, `létrehozva`, {$metricSelect}, `source`, {$botSelect}, `ip_hash`
+            FROM `events_calendar_event_views`
+            WHERE `esemény_id` = ?
+              AND `létrehozva` >= ?
+              AND `létrehozva` < ?
+            ORDER BY `létrehozva` DESC, `id` DESC
+            LIMIT {$limitPlus}
+        ");
+        $stmt->execute([$eventId, $startInclusive, $endExclusive]);
+        $rawItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (count($rawItems) > $itemsLimit) {
+            $itemsTruncated = true;
+            $rawItems = array_slice($rawItems, 0, $itemsLimit);
+        }
+        foreach ($rawItems as $row) {
+            $ipHash = (string) ($row['ip_hash'] ?? '');
+            $items[] = [
+                'id' => (int) ($row['id'] ?? 0),
+                'at' => (string) ($row['létrehozva'] ?? ''),
+                'metric' => (string) ($row['metric_type'] ?? EVENTS_VIEW_METRIC_PAGE),
+                'source' => (string) ($row['source'] ?? ''),
+                'is_bot' => ((int) ($row['is_bot'] ?? 0)) === 1,
+                'ip_short' => $ipHash !== '' ? substr($ipHash, 0, 8) : '',
+            ];
+        }
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_day_detail_for_event items: ' . $e->getMessage());
+    }
+
+    $totals = $built['totals'];
+    $totals['rows'] = count($items) + ($itemsTruncated ? 1 : 0);
+
+    return [
+        'day' => $dayYmd,
+        'table_ready' => $tableReady,
+        'bot_ready' => $botReady,
+        'hourly' => $built['chart'],
+        'items' => $items,
+        'items_truncated' => $itemsTruncated,
+        'totals' => $totals,
+    ];
+}
+
+/**
+ * @return array{labels: list<string>, default_mode: string, modes: array<string, array{datasets: list<array<string, mixed>>}>, datasets: list<array<string, mixed>>}
+ */
+function events_edit_stats_empty_hourly_chart(): array
+{
+    $labels = [];
+    for ($h = 0; $h < 24; $h++) {
+        $labels[] = sprintf('%02d', $h);
+    }
+
+    return [
+        'labels' => $labels,
+        'default_mode' => 'human',
+        'modes' => [
+            'human' => ['datasets' => []],
+            'total' => ['datasets' => []],
+        ],
+        'datasets' => [],
+    ];
+}

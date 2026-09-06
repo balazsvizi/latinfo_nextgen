@@ -53,10 +53,19 @@ $statsEventDetailUrl = static function (array $row) use ($id): ?string {
 
 $statsFormAction = events_url('events_event_statisztika.php');
 $statsChartDomId = 'events-admin-event-stats-chart';
+$statsDayDrilldown = [
+    'enabled' => true,
+    'event_id' => $id,
+    'ajax_url' => events_url('ajax_event_stats_day.php'),
+    'ymd_labels' => events_edit_stats_date_labels(
+        (string) $statsParams['date_from'],
+        (string) $statsParams['date_to']
+    ),
+];
 $eventName = (string) ($event['event_name'] ?? '');
 $statsPageTitle = 'Esemény statisztika';
 $statsIntro = 'Ugyanaz a nézet, mint az összesített Stat oldalon, csak erre az eseményre: '
-    . $eventName . '.';
+    . $eventName . '. A napi grafikon egy napjára kattintva órás bontás és a konkrét tételek jelennek meg.';
 $statsEventListHint = '';
 $statsEmptyEventsMessage = '';
 
