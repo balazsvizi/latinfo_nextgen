@@ -109,11 +109,15 @@ $botHelpSuffix = ' A botok User-Agent alapján kerülnek jelölésre (keresőrob
 
 $statsCardHelp = [
     'Események' => 'Időszakban: azok az események, amelyek naptár-dátuma (kezdés–vég) a választott időszakba esik. Összes: ahány eseménynél volt legalább egy megtekintés, előnézet vagy további info kattintás ugyanebben az időszakban (megnyitottak).',
-    'Egyedi látogató' => 'Különböző IP-címek száma oldalmegtekintés alapján, emberi és bot bontásban.' . $botHelpSuffix,
-    'Oldal' => 'A nyilvános eseményoldal megnyitásainak száma emberi és bot bontásban a választott időszakban.' . $botHelpSuffix,
+    'Egyedi látogató' => 'Különböző IP-címek száma az oldalmegnyitásokból (nem érdeklődők száma). Emberi és bot bontás.' . $botHelpSuffix,
+    'Oldalmegnyitás' => 'A nyilvános eseményoldal betöltéseinek száma (minden frissítés / visszalépés számít). Nem egyenlő az érdeklődők számával.' . $botHelpSuffix,
     'Előnézet' => 'A naptárban vagy listában megnyitott előnézet-panelek száma emberi és bot bontásban.' . $botHelpSuffix,
     'További info' => 'A „További információ” / külső link átkattintások száma emberi és bot bontásban.' . $botHelpSuffix,
 ];
+
+$pagePerUniqueHuman = ($uniqueHuman > 0 && $pageHuman > 0)
+    ? round($pageHuman / $uniqueHuman, 1)
+    : null;
 
 $renderStatsCardHelp = static function (string $label) use ($statsCardHelp): void {
     $help = $statsCardHelp[$label] ?? '';
@@ -214,10 +218,15 @@ $renderSplit = static function (
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
-                <span class="events-edit-stats__card-label">Oldal</span>
-                <?php $renderStatsCardHelp('Oldal'); ?>
+                <span class="events-edit-stats__card-label">Oldalmegnyitás</span>
+                <?php $renderStatsCardHelp('Oldalmegnyitás'); ?>
             </p>
             <?php $renderSplit('Ember', $pageHuman, 'Bot (AI, search, stb)', $pageBot, true); ?>
+            <?php if ($pagePerUniqueHuman !== null): ?>
+                <p class="events-edit-stats__card-hint">≈ <?= h((string) $pagePerUniqueHuman) ?> megnyitás / egyedi ember</p>
+            <?php else: ?>
+                <p class="events-edit-stats__card-hint">Hit count — nem érdeklődő-szám</p>
+            <?php endif; ?>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">

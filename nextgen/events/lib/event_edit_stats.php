@@ -628,7 +628,7 @@ function events_edit_stats_for_event(PDO $db, int $eventId, array $params): arra
         return $empty;
     }
 
-    return events_edit_stats_build_result(
+    $result = events_edit_stats_build_result(
         $labels,
         $pageHumanByDay,
         $pageBotByDay,
@@ -639,6 +639,75 @@ function events_edit_stats_for_event(PDO $db, int $eventId, array $params): arra
         $tableReady,
         $botReady
     );
+    $uniqueCounts = events_edit_stats_unique_visitor_counts_for_event(
+        $db,
+        $eventId,
+        $params,
+        $tableReady,
+        $botReady
+    );
+    $result['totals']['unique_visitors'] = $uniqueCounts['human'];
+    $result['totals']['unique_visitors_human'] = $uniqueCounts['human'];
+    $result['totals']['unique_visitors_bot'] = $uniqueCounts['bot'];
+
+    return $result;
+}
+
+/**
+ * Egyedi oldal-látogatók (DISTINCT ip_hash) egy eseményre, emberi / bot bontásban.
+ *
+ * @param array{date_from: string, date_to: string} $params
+ * @return array{human: int, bot: int}
+ */
+function events_edit_stats_unique_visitor_counts_for_event(
+    PDO $db,
+    int $eventId,
+    array $params,
+    ?bool $tableReady = null,
+    ?bool $botReady = null
+): array {
+    $empty = ['human' => 0, 'bot' => 0];
+    if ($eventId <= 0) {
+        return $empty;
+    }
+
+    $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
+    $botReady = $botReady ?? events_view_tracking_bot_column_ready($db);
+    $window = events_edit_stats_view_window($params);
+    $metricAnd = $tableReady ? " AND `metric_type` = 'page_view'" : '';
+
+    $countFor = static function (string $botAnd) use ($db, $eventId, $window, $metricAnd): int {
+        try {
+            $stmt = $db->prepare("
+                SELECT COUNT(DISTINCT `ip_hash`)
+                FROM `events_calendar_event_views`
+                WHERE `esemény_id` = ?
+                  AND `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                  AND `ip_hash` IS NOT NULL
+                  AND `ip_hash` <> ''
+                  {$metricAnd}
+                  {$botAnd}
+            ");
+            $stmt->execute([$eventId, $window['start_inclusive'], $window['end_exclusive']]);
+
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    };
+
+    if ($botReady) {
+        return [
+            'human' => $countFor(' AND `is_bot` = 0'),
+            'bot' => $countFor(' AND `is_bot` = 1'),
+        ];
+    }
+
+    return [
+        'human' => $countFor(''),
+        'bot' => 0,
+    ];
 }
 
 /**
