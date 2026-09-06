@@ -4783,10 +4783,44 @@ body.event-edit-cover-lightbox-open {
     accent-color: #3d6b4f;
 }
 .events-edit-stats__rates-fields {
-    display: grid;
-    gap: 0.85rem 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-    margin-top: 0.85rem;
+    margin-top: 0.7rem;
+    max-width: 22rem;
+}
+.events-edit-stats__rates-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.55rem 0.65rem;
+}
+.events-edit-stats__rates-field {
+    flex: 0 0 auto;
+}
+.events-edit-stats__rates-field .events-filter-label {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
+}
+.events-edit-stats__rates-input-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.events-edit-stats__rates-input {
+    width: 4.75rem;
+    min-width: 0;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.events-edit-stats__rates-unit {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted, #6b7280);
+}
+.events-edit-stats__rates-actions {
+    flex: 0 0 auto;
+    padding-bottom: 0.05rem;
 }
 .events-edit-stats__presets {
     display: inline-flex;

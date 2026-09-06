@@ -285,34 +285,55 @@ $renderSplit = static function (
                     <span>Saját egységárak</span>
                 </label>
                 <div class="events-edit-stats__rates-fields" id="events-stats-rates-fields"<?= $statsCustomRates ? '' : ' hidden' ?>>
-                    <div class="form-group">
-                        <label class="events-filter-label" for="stat_page_ft">Megtekintés (Ft)</label>
-                        <input
-                            class="events-filter-input"
-                            type="number"
-                            name="stat_page_ft"
-                            id="stat_page_ft"
-                            min="0"
-                            max="1000000"
-                            step="1"
-                            value="<?= (int) $statsPageUnitFt ?>"
-                        >
-                        <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft</p>
+                    <div class="events-edit-stats__rates-row">
+                        <div class="events-edit-stats__rates-field">
+                            <label class="events-filter-label" for="stat_page_ft">Megtekintés</label>
+                            <div class="events-edit-stats__rates-input-wrap">
+                                <input
+                                    class="events-filter-input events-edit-stats__rates-input"
+                                    type="number"
+                                    name="stat_page_ft"
+                                    id="stat_page_ft"
+                                    min="0"
+                                    max="1000000"
+                                    step="1"
+                                    value="<?= (int) $statsPageUnitFt ?>"
+                                    title="Alapértelmezés: <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft"
+                                >
+                                <span class="events-edit-stats__rates-unit">Ft</span>
+                            </div>
+                        </div>
+                        <div class="events-edit-stats__rates-field">
+                            <label class="events-filter-label" for="stat_click_ft">Átkattintás</label>
+                            <div class="events-edit-stats__rates-input-wrap">
+                                <input
+                                    class="events-filter-input events-edit-stats__rates-input"
+                                    type="number"
+                                    name="stat_click_ft"
+                                    id="stat_click_ft"
+                                    min="0"
+                                    max="1000000"
+                                    step="1"
+                                    value="<?= (int) $statsClickUnitFt ?>"
+                                    title="Alapértelmezés: <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft"
+                                >
+                                <span class="events-edit-stats__rates-unit">Ft</span>
+                            </div>
+                        </div>
+                        <div class="events-edit-stats__rates-actions">
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-sm"
+                                name="stat_media_calc"
+                                id="stat_media_calc"
+                                value="1"
+                            >Számolás</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="events-filter-label" for="stat_click_ft">Átkattintás (Ft)</label>
-                        <input
-                            class="events-filter-input"
-                            type="number"
-                            name="stat_click_ft"
-                            id="stat_click_ft"
-                            min="0"
-                            max="1000000"
-                            step="1"
-                            value="<?= (int) $statsClickUnitFt ?>"
-                        >
-                        <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft</p>
-                    </div>
+                    <p class="events-edit-stats__filter-hint">
+                        Alap: <?= (int) events_edit_stats_media_value_page_view_ft() ?> / <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft ·
+                        A Számolás ment a naplóba és újraszámol.
+                    </p>
                 </div>
             </div>
             <?php endif; ?>
@@ -334,11 +355,19 @@ $renderSplit = static function (
         var customToggle = form.querySelector('#stat_custom_rates');
         var ratesFields = document.getElementById('events-stats-rates-fields');
         var modeBar = document.getElementById('events-stats-mode-bar');
+        var calcBtn = form.querySelector('#stat_media_calc');
         if (customToggle && ratesFields) {
             customToggle.addEventListener('change', function () {
                 var on = !!customToggle.checked;
                 ratesFields.hidden = !on;
                 if (modeBar) modeBar.classList.toggle('events-edit-stats__mode-bar--custom-rates', on);
+            });
+        }
+        if (calcBtn && customToggle) {
+            calcBtn.addEventListener('click', function () {
+                customToggle.checked = true;
+                if (ratesFields) ratesFields.hidden = false;
+                if (modeBar) modeBar.classList.add('events-edit-stats__mode-bar--custom-rates');
             });
         }
     })();

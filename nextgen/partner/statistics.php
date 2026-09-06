@@ -20,7 +20,11 @@ $statsEventDetailUrl = static function (array $row): ?string {
     return partner_portal_event_public_url($row);
 };
 
-if ($organizerIds !== [] && !empty($statsParams['custom_rates'])) {
+if (
+    $organizerIds !== []
+    && !empty($statsParams['custom_rates'])
+    && events_edit_stats_parse_custom_rates_flag($_GET['stat_media_calc'] ?? null)
+) {
     $totals = is_array($statsData['totals'] ?? null) ? $statsData['totals'] : [];
     $pageHuman = (int) ($totals['page_views_human'] ?? 0);
     $externalHuman = (int) ($totals['external_info_clicks_human'] ?? 0);
