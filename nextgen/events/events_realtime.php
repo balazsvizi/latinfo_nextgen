@@ -41,7 +41,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · oldal, előnézet és további információ</p>
         </div>
         <div class="events-list-actions">
-            <a href="<?= h(events_url('events_stat.php')) ?>" class="btn btn-secondary btn-sm">Stat kezdőlap</a>
+            <a href="<?= h(events_url('events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Statisztikák</a>
             <a href="<?= h($listaStatUrl) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
             <a href="<?= h($listUrl) ?>" class="btn btn-secondary btn-sm">Események lista</a>
         </div>

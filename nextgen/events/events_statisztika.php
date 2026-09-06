@@ -47,7 +47,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </p>
     </div>
     <div class="events-stat-page-actions">
-        <a href="<?= h(events_url('events_stat.php')) ?>" class="btn btn-secondary btn-sm">Stat kezdőlap</a>
+        <a href="<?= h(events_url('events_stat.php')) ?>" class="btn btn-secondary btn-sm">Áttekintés</a>
         <a href="<?= h(events_url('events_lista_stat.php')) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
         <a href="<?= h(events_url('events_realtime.php')) ?>" class="btn btn-secondary btn-sm">Valós idejű</a>
     </div>
