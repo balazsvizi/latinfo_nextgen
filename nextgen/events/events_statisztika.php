@@ -61,16 +61,10 @@ $statsIntro = 'Naptár előnézet, további információ kattintás és oldalmeg
 $statsEventListHint = 'A táblázat a periódusban legtöbb oldalmegtekintéssel rendelkező eseményeket mutatja. A teljes lista a Lista stat oldalon van.';
 $statsEmptyEventsMessage = 'Nincs megtekintett esemény a választott időszakban.';
 
-$szervezokStatUrl = events_url('events_szervezok_statisztika.php');
-if ($selectedOrganizerIds !== []) {
-    $szervezokStatUrl .= '?' . http_build_query(array_merge(
-        [
-            'stat_date_from' => $statsParams['date_from'],
-            'stat_date_to' => $statsParams['date_to'],
-        ],
-        ['org_id' => $selectedOrganizerIds]
-    ));
-}
+$szervezokStatUrl = events_url('events_szervezok_statisztika.php?' . http_build_query([
+    'stat_date_from' => $statsParams['date_from'],
+    'stat_date_to' => $statsParams['date_to'],
+]));
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Statisztikák';

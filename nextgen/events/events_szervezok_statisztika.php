@@ -2,45 +2,28 @@
 declare(strict_types=1);
 
 /**
- * Szervezők statisztikája — ugyanaz a nézet, mint a Stat oldal, szervezőkre szűrhetően.
+ * Szervezők statisztikája — összes szervező időszakos aggregátuma.
  * A lista szervezőnként aggregál; kapcsolókkal azonnal a grafikonra tehető a teljesítmény.
  */
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
-require_once __DIR__ . '/lib/admin_stats.php';
 requireLogin();
 
 $db = getDb();
 events_view_tracking_ensure_bot_column($db);
 
-$organizerOptions = events_admin_stats_organizer_options($db);
-$selectedOrganizerIds = events_admin_stats_organizer_ids_from_request();
-$validIds = [];
-foreach ($organizerOptions as $opt) {
-    $validIds[(int) $opt['id']] = true;
-}
-$selectedOrganizerIds = array_values(array_filter(
-    $selectedOrganizerIds,
-    static fn (int $id): bool => isset($validIds[$id])
-));
-
 $statsParams = events_edit_stats_params_from_request($_GET);
-if ($selectedOrganizerIds === []) {
-    $statsAllDateFrom = events_edit_stats_earliest_view_date_all($db);
-    $statsData = events_edit_stats_for_all_events($db, $statsParams);
-} else {
-    $statsAllDateFrom = events_edit_stats_earliest_view_date_for_organizers($db, $selectedOrganizerIds);
-    $statsData = events_edit_stats_for_organizers($db, $selectedOrganizerIds, $statsParams);
-}
+$statsAllDateFrom = events_edit_stats_earliest_view_date_all($db);
+$statsData = events_edit_stats_for_all_events($db, $statsParams);
 $statsEventRows = [];
 $statsPreferPartnerLinks = false;
 $statsShowEventRowActions = false;
 $statsHideEventsList = true;
 $statsExposeChartApi = true;
-$statsFilterExtraQuery = $selectedOrganizerIds !== [] ? ['org_id' => $selectedOrganizerIds] : [];
+$statsFilterExtraQuery = [];
 
-$organizerStatRows = events_edit_stats_organizers_period_rows($db, $selectedOrganizerIds, $statsParams);
+$organizerStatRows = events_edit_stats_organizers_period_rows($db, [], $statsParams);
 $seriesOrgIds = array_values(array_map(
     static fn (array $row): int => (int) $row['id'],
     $organizerStatRows
@@ -57,79 +40,10 @@ foreach ($seriesOrgIds as $idx => $oid) {
     $colorByOrg[(string) $oid] = $palette[$idx % count($palette)];
 }
 
-$selectedCount = count($selectedOrganizerIds);
-$totalOrgCount = count($organizerOptions);
-$pickerSummary = $selectedCount === 0
-    ? 'Összes szervező (nincs szűrés)'
-    : ($selectedCount . ' / ' . $totalOrgCount . ' szervező');
-
-ob_start();
-?>
-<details class="events-stats-org-picker"<?= $selectedCount > 0 ? ' open' : '' ?>>
-    <summary class="events-stats-org-picker__summary">
-        Szervezők szűrése: <strong><?= h($pickerSummary) ?></strong>
-    </summary>
-    <div class="events-stats-org-picker__body">
-        <p class="events-stats-org-picker__hint">
-            A szűrés a kártyák / alap szumma adatát határozza meg. A lista kapcsolóival külön vonalakat kapcsolhatsz a grafikonra.
-        </p>
-        <div class="events-stats-org-picker__toolbar">
-            <button type="button" class="btn btn-sm btn-secondary" data-org-picker-all>Összes be</button>
-            <button type="button" class="btn btn-sm btn-secondary" data-org-picker-none>Összes ki</button>
-            <input type="search" class="events-filter-input events-stats-org-picker__search" placeholder="Szervező keresése…" autocomplete="off" data-org-picker-search>
-        </div>
-        <div class="events-stats-org-picker__list" role="group" aria-label="Szervezők">
-            <?php foreach ($organizerOptions as $opt): ?>
-                <?php
-                $oid = (int) $opt['id'];
-                $checked = in_array($oid, $selectedOrganizerIds, true);
-                $search = mb_strtolower((string) $opt['name'], 'UTF-8');
-                ?>
-                <label class="events-stats-org-picker__item" data-org-name="<?= h($search) ?>">
-                    <input type="checkbox" name="org_id[]" value="<?= $oid ?>"<?= $checked ? ' checked' : '' ?>>
-                    <span><?= h((string) $opt['name']) ?></span>
-                </label>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</details>
-<script>
-(function () {
-    var root = document.querySelector('.events-stats-org-picker');
-    if (!root) return;
-    var items = Array.prototype.slice.call(root.querySelectorAll('.events-stats-org-picker__item'));
-    var search = root.querySelector('[data-org-picker-search]');
-    var allBtn = root.querySelector('[data-org-picker-all]');
-    var noneBtn = root.querySelector('[data-org-picker-none]');
-
-    function setAll(checked) {
-        items.forEach(function (item) {
-            if (item.hidden) return;
-            var cb = item.querySelector('input[type="checkbox"]');
-            if (cb) cb.checked = checked;
-        });
-    }
-
-    if (allBtn) allBtn.addEventListener('click', function () { setAll(true); });
-    if (noneBtn) noneBtn.addEventListener('click', function () { setAll(false); });
-    if (search) {
-        search.addEventListener('input', function () {
-            var q = (search.value || '').trim().toLowerCase();
-            items.forEach(function (item) {
-                var name = item.getAttribute('data-org-name') || '';
-                item.hidden = q !== '' && name.indexOf(q) === -1;
-            });
-        });
-    }
-})();
-</script>
-<?php
-$statsFormExtraHtml = (string) ob_get_clean();
-
 $statsFormAction = events_url('events_szervezok_statisztika.php');
 $statsChartDomId = 'events-admin-organizer-stats-chart';
 $statsPageTitle = 'Szervezők statisztika';
-$statsIntro = 'Kapcsold be a szervezőket a listában — azonnal megjelennek a grafikonon. A Szumma az aktuális szűrés összesített vonala.';
+$statsIntro = 'Kapcsold be a szervezőket a listában — azonnal megjelennek a grafikonon. A Szumma az összes szervező összesített vonala.';
 $statsEventListHint = '';
 $statsEmptyEventsMessage = '';
 
@@ -186,7 +100,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </p>
 
     <?php if ($organizerStatRows === []): ?>
-        <p class="help events-edit-stats__empty">Nincs forgalom a választott időszakban / szervezőknél.</p>
+        <p class="help events-edit-stats__empty">Nincs forgalom a választott időszakban.</p>
     <?php else: ?>
         <div class="events-org-stats-list-controls" id="organizer-agg-list-controls">
             <div class="events-org-agg-toolbar">
