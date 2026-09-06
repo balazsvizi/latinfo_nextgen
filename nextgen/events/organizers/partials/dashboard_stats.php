@@ -164,8 +164,19 @@ $renderSplit = static function (
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
         <?php
         foreach ($statsFilterExtraQuery as $extraKey => $extraValue):
-            // Tömbös szűrők (pl. org_id[]) a form-extra mezőkből jönnek, ne duplikáljuk.
             if (is_array($extraValue)) {
+                // Tömbös szűrők (pl. org_id[]) — ha van form-extra is, ott ne ismételd.
+                if ($statsFormExtraHtml !== '') {
+                    continue;
+                }
+                foreach ($extraValue as $item) {
+                    if ($item === null || $item === '') {
+                        continue;
+                    }
+                    ?>
+                    <input type="hidden" name="<?= h((string) $extraKey) ?>[]" value="<?= h((string) $item) ?>">
+                    <?php
+                }
                 continue;
             }
             ?>

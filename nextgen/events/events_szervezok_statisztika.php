@@ -182,6 +182,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <h3 class="events-edit-stats__events-title">Szervezők a választott időszakban</h3>
     <p class="events-edit-stats__events-hint">
         Oldalmegnyitás aggregátum időszakra. Kapcsoló = megjelenítés a grafikonon (napi oldalmegnyitás).
+        A névre kattintva az esemény-stat nyílik meg, ugyanerre az időszakra, csak erre a szervezőre szűrve.
     </p>
 
     <?php if ($organizerStatRows === []): ?>
@@ -233,7 +234,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         $oidKey = (string) $oid;
                         $color = $colorByOrg[$oidKey] ?? '#666666';
                         $filterQuery = array_merge($orgFilterBaseQuery, ['org_id' => [$oid]]);
-                        $filterUrl = events_url('events_szervezok_statisztika.php') . '?' . http_build_query($filterQuery);
+                        $filterUrl = events_url('events_statisztika.php') . '?' . http_build_query($filterQuery);
                         $editUrl = events_url('organizer_szerkeszt.php?id=') . $oid;
                         $searchName = mb_strtolower((string) $row['name'], 'UTF-8');
                         ?>
@@ -251,7 +252,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                     </a>
                                 </div>
-                                <a href="<?= h($filterUrl) ?>"><?= h((string) $row['name']) ?></a>
+                                <a href="<?= h($filterUrl) ?>" title="Esemény-stat erre a szervezőre"><?= h((string) $row['name']) ?></a>
                             </td>
                             <td class="text-center"><?= (int) $row['events_with_views'] ?></td>
                             <td class="text-center events-stats-cell--human"><?= (int) $row['egyedi_latogatok_human'] ?></td>
