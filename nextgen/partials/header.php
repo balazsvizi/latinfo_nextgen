@@ -82,6 +82,7 @@ if ($navZone === 'events') {
                     </span>
                     <ul class="nav-submenu" id="submenu-events-stat" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" role="menuitem">Statisztikák</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_szervezok_statisztika.php')) ?>" role="menuitem">Szervezők stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>

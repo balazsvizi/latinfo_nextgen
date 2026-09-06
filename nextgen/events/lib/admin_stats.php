@@ -160,3 +160,57 @@ function events_admin_stats_home_summary(PDO $db): array
 
     return $empty;
 }
+
+/**
+ * Többszörös szervező ID a GET-ből (org_id / org_id[]).
+ *
+ * @return list<int>
+ */
+function events_admin_stats_organizer_ids_from_request(array $query = []): array
+{
+    if ($query === []) {
+        $query = $_GET;
+    }
+    $raw = $query['org_id'] ?? [];
+    if (!is_array($raw)) {
+        $raw = ($raw !== '' && $raw !== null) ? [(string) $raw] : [];
+    }
+    $ids = [];
+    foreach ($raw as $item) {
+        $id = (int) $item;
+        if ($id > 0) {
+            $ids[$id] = $id;
+        }
+    }
+
+    return array_values($ids);
+}
+
+/**
+ * Szervezőlista a stat szűrőhöz.
+ *
+ * @return list<array{id: int, name: string}>
+ */
+function events_admin_stats_organizer_options(PDO $db): array
+{
+    try {
+        $stmt = $db->query('SELECT `id`, `name` FROM `events_organizers` ORDER BY `name` ASC, `id` ASC');
+        $rows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $rows[] = [
+                'id' => $id,
+                'name' => (string) ($row['name'] ?? ''),
+            ];
+        }
+
+        return $rows;
+    } catch (Throwable $e) {
+        error_log('events_admin_stats_organizer_options: ' . $e->getMessage());
+
+        return [];
+    }
+}

@@ -17,6 +17,7 @@ $statsAllDateFrom = events_edit_stats_earliest_view_date_all($db);
 $statsData = events_edit_stats_for_all_events($db, $statsParams);
 $statsEventRows = $statsData['event_rows'] ?? [];
 $statsPreferPartnerLinks = false;
+$statsShowEventRowActions = true;
 $statsEventDetailUrl = static function (array $row): ?string {
     $id = (int) ($row['id'] ?? 0);
     if ($id <= 0) {
@@ -47,6 +48,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </p>
     </div>
     <div class="events-stat-page-actions">
+        <a href="<?= h(events_url('events_szervezok_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Szervezők stat</a>
         <a href="<?= h(events_url('events_stat.php')) ?>" class="btn btn-secondary btn-sm">Áttekintés</a>
         <a href="<?= h(events_url('events_lista_stat.php')) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
         <a href="<?= h(events_url('events_realtime.php')) ?>" class="btn btn-secondary btn-sm">Valós idejű</a>
