@@ -34,9 +34,21 @@ $statsEventListHint = $statsEventListHint ?? ($statsPreferPartnerLinks
     : 'Alapból az időszakban megtekintéssel rendelkező események. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).');
 $statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDateFrom);
 $statsMode = events_edit_stats_normalize_mode($statsParams['mode'] ?? 'smart');
+$statsCustomRates = !empty($statsParams['custom_rates']);
+[$statsPageUnitFt, $statsClickUnitFt] = events_edit_stats_resolve_media_units($statsParams);
+$statsAllowCustomMediaRates = $statsAllowCustomMediaRates ?? true;
+$statsLogMediaValueTrialPartnerId = (int) ($statsLogMediaValueTrialPartnerId ?? 0);
+$statsMediaValueTrialContextLabel = is_string($statsMediaValueTrialContextLabel ?? null)
+    ? (string) $statsMediaValueTrialContextLabel
+    : null;
 $statsFilterQueryWithMode = array_merge($statsFilterExtraQuery, [
     'stat_mode' => $statsMode,
 ]);
+if ($statsCustomRates) {
+    $statsFilterQueryWithMode['stat_custom_rates'] = '1';
+    $statsFilterQueryWithMode['stat_page_ft'] = $statsPageUnitFt;
+    $statsFilterQueryWithMode['stat_click_ft'] = $statsClickUnitFt;
+}
 $statsPresetLinks = [];
 foreach (events_edit_stats_presets() as $preset) {
     $presetId = (string) $preset['id'];
@@ -121,15 +133,22 @@ $statsCardHelp = [
     'Generált médiaérték' => 'A Dashboard-érték átlagos statisztikai piaci árakon alapul (emberi forgalom, a leszűrt időszakra).'
         . ' Részletes adatlap megtekintés: ' . events_edit_stats_media_value_page_view_ft() . ' Ft / megtekintés (kvalifikált érdeklődés / Deep View Value).'
         . ' Átkattintás a szervezőhöz: ' . events_edit_stats_media_value_intent_click_ft() . ' Ft / kattintás (magas konverziójú átirányítás / Intent Click Value).'
-        . ' Képlet: Generált médiaérték = (adatlap megtekintések × ' . events_edit_stats_media_value_page_view_ft()
-        . ' Ft) + (átkattintások × ' . events_edit_stats_media_value_intent_click_ft() . ' Ft).',
+        . ' Képlet: Generált médiaérték = (adatlap megtekintések × egységár) + (átkattintások × egységár).'
+        . ($statsCustomRates
+            ? ' Most saját egységárakkal számol: ' . $statsPageUnitFt . ' Ft / megtekintés és ' . $statsClickUnitFt . ' Ft / átkattintás.'
+            : ''),
 ];
 
 $pagePerUniqueHuman = ($uniqueHuman > 0 && $pageHuman > 0)
     ? round($pageHuman / $uniqueHuman, 1)
     : null;
 
-$mediaValue = events_edit_stats_media_value($pageHuman, $externalHuman);
+$mediaValue = events_edit_stats_media_value(
+    $pageHuman,
+    $externalHuman,
+    $statsCustomRates ? $statsPageUnitFt : null,
+    $statsCustomRates ? $statsClickUnitFt : null
+);
 
 $renderStatsCardHelp = static function (string $label) use ($statsCardHelp): void {
     $help = $statsCardHelp[$label] ?? '';
@@ -249,6 +268,55 @@ $renderSplit = static function (
                 <button type="submit" class="btn btn-secondary btn-sm">Megjelenítés</button>
             </div>
         </div>
+        <?php if ($statsAllowCustomMediaRates): ?>
+        <div class="events-edit-stats__rates-bar<?= $statsCustomRates ? ' is-active' : '' ?>" id="events-stats-rates-bar">
+            <label class="events-edit-stats__rates-toggle">
+                <input
+                    type="checkbox"
+                    name="stat_custom_rates"
+                    id="stat_custom_rates"
+                    value="1"
+                    <?= $statsCustomRates ? ' checked' : '' ?>
+                >
+                <span>Saját egységárak a médiaértékhez</span>
+            </label>
+            <div class="events-edit-stats__rates-fields" id="events-stats-rates-fields"<?= $statsCustomRates ? '' : ' hidden' ?>>
+                <div class="form-group">
+                    <label class="events-filter-label" for="stat_page_ft">Megtekintés (Ft)</label>
+                    <input
+                        class="events-filter-input"
+                        type="number"
+                        name="stat_page_ft"
+                        id="stat_page_ft"
+                        min="0"
+                        max="1000000"
+                        step="1"
+                        value="<?= (int) $statsPageUnitFt ?>"
+                    >
+                    <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft</p>
+                </div>
+                <div class="form-group">
+                    <label class="events-filter-label" for="stat_click_ft">Átkattintás (Ft)</label>
+                    <input
+                        class="events-filter-input"
+                        type="number"
+                        name="stat_click_ft"
+                        id="stat_click_ft"
+                        min="0"
+                        max="1000000"
+                        step="1"
+                        value="<?= (int) $statsClickUnitFt ?>"
+                    >
+                    <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft</p>
+                </div>
+            </div>
+            <p class="events-edit-stats__rates-note">
+                <?= $statsCustomRates
+                    ? 'A generált médiaérték a megadott Ft-okkal számol.'
+                    : 'Kapcsold be, ha a 35 / 200 Ft helyett saját összegekkel szeretnél számolni.' ?>
+            </p>
+        </div>
+        <?php endif; ?>
     </form>
     <script>
     (function () {
@@ -263,6 +331,16 @@ $renderSplit = static function (
                 }
             });
         });
+        var customToggle = form.querySelector('#stat_custom_rates');
+        var ratesFields = document.getElementById('events-stats-rates-fields');
+        var ratesBar = document.getElementById('events-stats-rates-bar');
+        if (customToggle && ratesFields) {
+            customToggle.addEventListener('change', function () {
+                var on = !!customToggle.checked;
+                ratesFields.hidden = !on;
+                if (ratesBar) ratesBar.classList.toggle('is-active', on);
+            });
+        }
     })();
     </script>
 
@@ -323,6 +401,9 @@ $renderSplit = static function (
                 Ember: <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
                 + <?= (int) $mediaValue['external_clicks_human'] ?> × <?= (int) $mediaValue['click_unit_ft'] ?> Ft
                 · leszűrt időszak
+                <?php if (!empty($mediaValue['is_custom'])): ?>
+                    · <strong>saját egységár</strong>
+                <?php endif; ?>
             </p>
         </div>
     </div>
@@ -880,13 +961,13 @@ $renderSplit = static function (
                         </th>
                         <th
                             class="th-center events-stats-th-sub events-stats-th-sub--media events-stats-th-sub--human"
-                            title="Oldalmegnyitás (ember) × <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft"
+                            title="Oldalmegnyitás (ember) × <?= (int) $statsPageUnitFt ?> Ft"
                         >
                             <button type="button" class="th-sort" data-sort="media_page" aria-pressed="false">Oldal Ft</button>
                         </th>
                         <th
                             class="th-center events-stats-th-sub events-stats-th-sub--media events-stats-th-sub--human"
-                            title="További info (ember) × <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft"
+                            title="További info (ember) × <?= (int) $statsClickUnitFt ?> Ft"
                         >
                             <button type="button" class="th-sort" data-sort="media_click" aria-pressed="false">Átkatt Ft</button>
                         </th>
@@ -915,7 +996,9 @@ $renderSplit = static function (
                         $externalClicks = (int) $externalCounts['total'];
                         $rowMediaValue = events_edit_stats_media_value(
                             (int) $pageCounts['human'],
-                            (int) $externalCounts['human']
+                            (int) $externalCounts['human'],
+                            $statsCustomRates ? $statsPageUnitFt : null,
+                            $statsCustomRates ? $statsClickUnitFt : null
                         );
                         $hasViews = ($pageViews + $previewViews + $externalClicks) > 0 ? '1' : '0';
                         $eventStart = $eventDateYmd($row, 'event_start');

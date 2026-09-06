@@ -4752,6 +4752,44 @@ body.event-edit-cover-lightbox-open {
 .events-edit-stats__mode-bar--all .events-edit-stats__mode-option:has(input:checked) span {
     background: #4b5563;
 }
+.events-edit-stats__rates-bar {
+    margin: 0 0 1rem;
+    padding: 0.9rem 1.05rem;
+    border: 1px solid color-mix(in srgb, #c4a35a 30%, var(--border, #e5e7eb));
+    border-radius: 0.75rem;
+    background: linear-gradient(180deg, #fbf8f1 0%, #fff 100%);
+}
+.events-edit-stats__rates-bar.is-active {
+    border-color: color-mix(in srgb, #3d6b4f 30%, var(--border, #e5e7eb));
+    background: linear-gradient(180deg, #f3f7f4 0%, #fff 100%);
+}
+.events-edit-stats__rates-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 650;
+    color: var(--text-primary, #1a1a1a);
+    cursor: pointer;
+}
+.events-edit-stats__rates-toggle input {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: #3d6b4f;
+}
+.events-edit-stats__rates-fields {
+    display: grid;
+    gap: 0.85rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    margin-top: 0.85rem;
+}
+.events-edit-stats__rates-note {
+    margin: 0.65rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--text-muted, #6b7280);
+}
 .events-edit-stats__presets {
     display: inline-flex;
     flex-wrap: wrap;

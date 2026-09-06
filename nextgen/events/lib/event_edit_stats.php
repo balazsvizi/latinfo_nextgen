@@ -5,7 +5,14 @@ require_once __DIR__ . '/event_view_tracking.php';
 require_once __DIR__ . '/admin_event_calendar.php';
 
 /**
- * @return array{date_from: string, date_to: string, mode: string}
+ * @return array{
+ *   date_from: string,
+ *   date_to: string,
+ *   mode: string,
+ *   custom_rates: bool,
+ *   page_unit_ft: int|null,
+ *   click_unit_ft: int|null
+ * }
  */
 function events_edit_stats_params_from_request(array $query): array
 {
@@ -15,6 +22,12 @@ function events_edit_stats_params_from_request(array $query): array
     $dateFrom = trim((string) ($query['stat_date_from'] ?? ''));
     $dateTo = trim((string) ($query['stat_date_to'] ?? ''));
     $mode = events_edit_stats_normalize_mode($query['stat_mode'] ?? 'smart');
+    $customRates = events_edit_stats_parse_custom_rates_flag($query['stat_custom_rates'] ?? null);
+    [$pageUnitFt, $clickUnitFt] = events_edit_stats_parse_custom_rate_units(
+        $query['stat_page_ft'] ?? null,
+        $query['stat_click_ft'] ?? null,
+        $customRates
+    );
 
     if ($dateFrom === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
         $dateFrom = $defaultFrom->format('Y-m-d');
@@ -31,6 +44,9 @@ function events_edit_stats_params_from_request(array $query): array
             'date_from' => $defaultFrom->format('Y-m-d'),
             'date_to' => $today->format('Y-m-d'),
             'mode' => $mode,
+            'custom_rates' => $customRates,
+            'page_unit_ft' => $pageUnitFt,
+            'click_unit_ft' => $clickUnitFt,
         ];
     }
 
@@ -42,6 +58,64 @@ function events_edit_stats_params_from_request(array $query): array
         'date_from' => $fromDt->format('Y-m-d'),
         'date_to' => $toDt->format('Y-m-d'),
         'mode' => $mode,
+        'custom_rates' => $customRates,
+        'page_unit_ft' => $pageUnitFt,
+        'click_unit_ft' => $clickUnitFt,
+    ];
+}
+
+function events_edit_stats_parse_custom_rates_flag(mixed $raw): bool
+{
+    if (is_bool($raw)) {
+        return $raw;
+    }
+    $v = strtolower(trim((string) $raw));
+
+    return in_array($v, ['1', 'true', 'yes', 'on'], true);
+}
+
+/**
+ * @return array{0: int|null, 1: int|null}
+ */
+function events_edit_stats_parse_custom_rate_units(mixed $pageRaw, mixed $clickRaw, bool $customRates): array
+{
+    if (!$customRates) {
+        return [null, null];
+    }
+
+    $page = filter_var($pageRaw, FILTER_VALIDATE_INT);
+    $click = filter_var($clickRaw, FILTER_VALIDATE_INT);
+    if ($page === false || $page < 0) {
+        $page = events_edit_stats_media_value_page_view_ft();
+    }
+    if ($click === false || $click < 0) {
+        $click = events_edit_stats_media_value_intent_click_ft();
+    }
+
+    return [
+        min(1_000_000, (int) $page),
+        min(1_000_000, (int) $click),
+    ];
+}
+
+/**
+ * @param array{custom_rates?: bool, page_unit_ft?: int|null, click_unit_ft?: int|null} $params
+ * @return array{0: int, 1: int}
+ */
+function events_edit_stats_resolve_media_units(array $params): array
+{
+    $defaultPage = events_edit_stats_media_value_page_view_ft();
+    $defaultClick = events_edit_stats_media_value_intent_click_ft();
+    if (empty($params['custom_rates'])) {
+        return [$defaultPage, $defaultClick];
+    }
+
+    $page = $params['page_unit_ft'] ?? null;
+    $click = $params['click_unit_ft'] ?? null;
+
+    return [
+        is_int($page) ? max(0, min(1_000_000, $page)) : $defaultPage,
+        is_int($click) ? max(0, min(1_000_000, $click)) : $defaultClick,
     ];
 }
 
@@ -127,15 +201,22 @@ function events_edit_stats_media_value_intent_click_ft(): int
  *   click_value_ft: int,
  *   total_ft: int,
  *   page_unit_ft: int,
- *   click_unit_ft: int
+ *   click_unit_ft: int,
+ *   is_custom: bool
  * }
  */
-function events_edit_stats_media_value(int $pageViewsHuman, int $externalClicksHuman): array
-{
+function events_edit_stats_media_value(
+    int $pageViewsHuman,
+    int $externalClicksHuman,
+    ?int $pageUnitFt = null,
+    ?int $clickUnitFt = null
+): array {
     $pageViewsHuman = max(0, $pageViewsHuman);
     $externalClicksHuman = max(0, $externalClicksHuman);
-    $pageUnit = events_edit_stats_media_value_page_view_ft();
-    $clickUnit = events_edit_stats_media_value_intent_click_ft();
+    $defaultPage = events_edit_stats_media_value_page_view_ft();
+    $defaultClick = events_edit_stats_media_value_intent_click_ft();
+    $pageUnit = $pageUnitFt !== null ? max(0, min(1_000_000, $pageUnitFt)) : $defaultPage;
+    $clickUnit = $clickUnitFt !== null ? max(0, min(1_000_000, $clickUnitFt)) : $defaultClick;
     $pageValue = $pageViewsHuman * $pageUnit;
     $clickValue = $externalClicksHuman * $clickUnit;
 
@@ -147,6 +228,7 @@ function events_edit_stats_media_value(int $pageViewsHuman, int $externalClicksH
         'total_ft' => $pageValue + $clickValue,
         'page_unit_ft' => $pageUnit,
         'click_unit_ft' => $clickUnit,
+        'is_custom' => $pageUnit !== $defaultPage || $clickUnit !== $defaultClick,
     ];
 }
 
