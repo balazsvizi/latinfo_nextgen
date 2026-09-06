@@ -1770,3 +1770,183 @@ function events_edit_stats_empty_hourly_chart(): array
         'datasets' => [],
     ];
 }
+
+/**
+ * Szervezőnként aggregált metrikák a választott időszakra.
+ * Üres $organizerIds = minden szervező, akinek van forgalma a periódusban.
+ *
+ * @param list<int> $organizerIds
+ * @param array{date_from: string, date_to: string} $params
+ * @return list<array{
+ *   id: int,
+ *   name: string,
+ *   events_with_views: int,
+ *   megtekintesek_human: int,
+ *   megtekintesek_bot: int,
+ *   megtekintesek: int,
+ *   egyedi_latogatok_human: int,
+ *   egyedi_latogatok_bot: int,
+ *   naptar_elonezetek_human: int,
+ *   naptar_elonezetek_bot: int,
+ *   naptar_elonezetek: int,
+ *   tovabbi_info_kattintasok_human: int,
+ *   tovabbi_info_kattintasok_bot: int,
+ *   tovabbi_info_kattintasok: int
+ * }>
+ */
+function events_edit_stats_organizers_period_rows(
+    PDO $db,
+    array $organizerIds,
+    array $params,
+    int $limit = 300
+): array {
+    $organizerIds = array_values(array_unique(array_filter(
+        array_map(static fn (mixed $id): int => (int) $id, $organizerIds),
+        static fn (int $id): bool => $id > 0
+    )));
+    $limit = max(1, min(1000, $limit));
+
+    events_view_tracking_ensure_bot_column($db);
+    $tableReady = events_edit_stats_table_ready($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $window = events_edit_stats_view_window($params);
+
+    $orgFilterSql = '';
+    $paramsExec = [$window['start_inclusive'], $window['end_exclusive']];
+    if ($organizerIds !== []) {
+        $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
+        $orgFilterSql = " AND o.`id` IN ({$orgPh})";
+        $paramsExec = array_merge($paramsExec, $organizerIds);
+    }
+
+    $pageMetric = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $previewMetric = $tableReady ? " AND v.`metric_type` = 'calendar_preview'" : ' AND 1=0';
+    $externalMetric = $tableReady ? " AND v.`metric_type` = 'external_info_click'" : ' AND 1=0';
+    $ipOk = " AND v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> ''";
+
+    if ($botReady) {
+        $pageHuman = "SUM(CASE WHEN 1=1{$pageMetric} AND v.`is_bot` = 0 THEN 1 ELSE 0 END)";
+        $pageBot = "SUM(CASE WHEN 1=1{$pageMetric} AND v.`is_bot` = 1 THEN 1 ELSE 0 END)";
+        $pageTotal = "SUM(CASE WHEN 1=1{$pageMetric} THEN 1 ELSE 0 END)";
+        $uniqueHuman = "COUNT(DISTINCT CASE WHEN 1=1{$pageMetric} AND v.`is_bot` = 0{$ipOk} THEN v.`ip_hash` END)";
+        $uniqueBot = "COUNT(DISTINCT CASE WHEN 1=1{$pageMetric} AND v.`is_bot` = 1{$ipOk} THEN v.`ip_hash` END)";
+        $previewHuman = "SUM(CASE WHEN 1=1{$previewMetric} AND v.`is_bot` = 0 THEN 1 ELSE 0 END)";
+        $previewBot = "SUM(CASE WHEN 1=1{$previewMetric} AND v.`is_bot` = 1 THEN 1 ELSE 0 END)";
+        $previewTotal = "SUM(CASE WHEN 1=1{$previewMetric} THEN 1 ELSE 0 END)";
+        $externalHuman = "SUM(CASE WHEN 1=1{$externalMetric} AND v.`is_bot` = 0 THEN 1 ELSE 0 END)";
+        $externalBot = "SUM(CASE WHEN 1=1{$externalMetric} AND v.`is_bot` = 1 THEN 1 ELSE 0 END)";
+        $externalTotal = "SUM(CASE WHEN 1=1{$externalMetric} THEN 1 ELSE 0 END)";
+    } else {
+        $pageHuman = "SUM(CASE WHEN 1=1{$pageMetric} THEN 1 ELSE 0 END)";
+        $pageBot = '0';
+        $pageTotal = $pageHuman;
+        $uniqueHuman = "COUNT(DISTINCT CASE WHEN 1=1{$pageMetric}{$ipOk} THEN v.`ip_hash` END)";
+        $uniqueBot = '0';
+        $previewHuman = "SUM(CASE WHEN 1=1{$previewMetric} THEN 1 ELSE 0 END)";
+        $previewBot = '0';
+        $previewTotal = $previewHuman;
+        $externalHuman = "SUM(CASE WHEN 1=1{$externalMetric} THEN 1 ELSE 0 END)";
+        $externalBot = '0';
+        $externalTotal = $externalHuman;
+    }
+
+    $havingSql = $organizerIds === []
+        ? 'HAVING (
+            megtekintesek > 0
+            OR naptar_elonezetek > 0
+            OR tovabbi_info_kattintasok > 0
+          )'
+        : '';
+
+    try {
+        $sql = "
+            SELECT
+                o.`id`,
+                o.`name`,
+                COUNT(DISTINCT v.`esemény_id`) AS events_with_views,
+                {$pageHuman} AS megtekintesek_human,
+                {$pageBot} AS megtekintesek_bot,
+                {$pageTotal} AS megtekintesek,
+                {$uniqueHuman} AS egyedi_latogatok_human,
+                {$uniqueBot} AS egyedi_latogatok_bot,
+                {$previewHuman} AS naptar_elonezetek_human,
+                {$previewBot} AS naptar_elonezetek_bot,
+                {$previewTotal} AS naptar_elonezetek,
+                {$externalHuman} AS tovabbi_info_kattintasok_human,
+                {$externalBot} AS tovabbi_info_kattintasok_bot,
+                {$externalTotal} AS tovabbi_info_kattintasok
+            FROM `events_organizers` o
+            INNER JOIN `events_calendar_event_organizers` eo ON eo.`organizer_id` = o.`id`
+            INNER JOIN `events_calendar_event_views` v ON v.`esemény_id` = eo.`event_id`
+            WHERE v.`létrehozva` >= ?
+              AND v.`létrehozva` < ?
+              {$orgFilterSql}
+            GROUP BY o.`id`, o.`name`
+            {$havingSql}
+            ORDER BY megtekintesek DESC, o.`name` ASC, o.`id` ASC
+            LIMIT {$limit}
+        ";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($paramsExec);
+        $rows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $rows[] = [
+                'id' => (int) ($row['id'] ?? 0),
+                'name' => (string) ($row['name'] ?? ''),
+                'events_with_views' => (int) ($row['events_with_views'] ?? 0),
+                'megtekintesek_human' => (int) ($row['megtekintesek_human'] ?? 0),
+                'megtekintesek_bot' => (int) ($row['megtekintesek_bot'] ?? 0),
+                'megtekintesek' => (int) ($row['megtekintesek'] ?? 0),
+                'egyedi_latogatok_human' => (int) ($row['egyedi_latogatok_human'] ?? 0),
+                'egyedi_latogatok_bot' => (int) ($row['egyedi_latogatok_bot'] ?? 0),
+                'naptar_elonezetek_human' => (int) ($row['naptar_elonezetek_human'] ?? 0),
+                'naptar_elonezetek_bot' => (int) ($row['naptar_elonezetek_bot'] ?? 0),
+                'naptar_elonezetek' => (int) ($row['naptar_elonezetek'] ?? 0),
+                'tovabbi_info_kattintasok_human' => (int) ($row['tovabbi_info_kattintasok_human'] ?? 0),
+                'tovabbi_info_kattintasok_bot' => (int) ($row['tovabbi_info_kattintasok_bot'] ?? 0),
+                'tovabbi_info_kattintasok' => (int) ($row['tovabbi_info_kattintasok'] ?? 0),
+            ];
+        }
+
+        // Kiválasztott szervezők 0 forgalommal is megjelenjenek.
+        if ($organizerIds !== []) {
+            $found = [];
+            foreach ($rows as $row) {
+                $found[(int) $row['id']] = true;
+            }
+            $missing = array_values(array_filter(
+                $organizerIds,
+                static fn (int $id): bool => !isset($found[$id])
+            ));
+            if ($missing !== []) {
+                $missPh = implode(',', array_fill(0, count($missing), '?'));
+                $nameStmt = $db->prepare("SELECT `id`, `name` FROM `events_organizers` WHERE `id` IN ({$missPh})");
+                $nameStmt->execute($missing);
+                foreach ($nameStmt->fetchAll(PDO::FETCH_ASSOC) as $org) {
+                    $rows[] = [
+                        'id' => (int) ($org['id'] ?? 0),
+                        'name' => (string) ($org['name'] ?? ''),
+                        'events_with_views' => 0,
+                        'megtekintesek_human' => 0,
+                        'megtekintesek_bot' => 0,
+                        'megtekintesek' => 0,
+                        'egyedi_latogatok_human' => 0,
+                        'egyedi_latogatok_bot' => 0,
+                        'naptar_elonezetek_human' => 0,
+                        'naptar_elonezetek_bot' => 0,
+                        'naptar_elonezetek' => 0,
+                        'tovabbi_info_kattintasok_human' => 0,
+                        'tovabbi_info_kattintasok_bot' => 0,
+                        'tovabbi_info_kattintasok' => 0,
+                    ];
+                }
+            }
+        }
+
+        return $rows;
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_organizers_period_rows: ' . $e->getMessage());
+
+        return [];
+    }
+}
