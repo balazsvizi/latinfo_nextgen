@@ -71,6 +71,8 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_naptar.php')) ?>" role="menuitem">Naptár</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/venues.php')) ?>" role="menuitem">Helyszínek</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/organizers.php')) ?>" role="menuitem">Szervezők</a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu">
@@ -85,12 +87,6 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                     </ul>
                 </li>
-                <li class="nav-item">
-                    <a href="<?= h(nextgen_url('events/venues.php')) ?>" class="nav-parent-link">Helyszínek</a>
-                </li>
-                <li class="nav-item">
-                    <a href="<?= h(nextgen_url('events/organizers.php')) ?>" class="nav-parent-link">Szervezők</a>
-                </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('events/finance.php')) ?>" class="nav-parent-link">Finance</a>
@@ -103,15 +99,13 @@ if ($navZone === 'events') {
                 <li class="nav-item">
                     <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="nav-parent-link">Partnerek</a>
                 </li>
-                <li role="none" class="nav-item">
-                    <a href="<?= h(nextgen_url('events/styles.php')) ?>" class="nav-parent-link">Stílusok</a>
-                </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
                         <span class="nav-parent-link nav-parent-link--label" tabindex="0">Egyéb</span>
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-egyeb" aria-label="Egyéb almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('events/styles.php')) ?>" role="menuitem">Stílusok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/categories.php')) ?>" role="menuitem">Kategóriák</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/tag_types.php')) ?>" role="menuitem">Címke típusok</a></li>
@@ -169,12 +163,20 @@ if ($navZone === 'events') {
                 </li>
                 <?php endif; ?>
                 <?php endif; ?>
-                <?php if (isLoggedIn()): ?>
-                <li class="nav-item"><a href="<?= h(nextgen_url('logout.php')) ?>" class="nav-link-logout">Kijelentkezés</a></li>
-                <?php endif; ?>
             </ul>
         </nav>
-        <?php if (isLoggedIn()): ?><a href="<?= h(nextgen_url('jelszo.php')) ?>" class="header-user"><?= h($_SESSION['admin_nev']) ?></a><?php endif; ?>
+        <?php if (isLoggedIn()): ?>
+        <div class="header-account">
+            <a href="<?= h(nextgen_url('jelszo.php')) ?>" class="header-user"><?= h($_SESSION['admin_nev']) ?></a>
+            <a href="<?= h(nextgen_url('logout.php')) ?>" class="header-logout" title="Kijelentkezés" aria-label="Kijelentkezés">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+            </a>
+        </div>
+        <?php endif; ?>
         <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Menü" aria-expanded="false">
             <span class="icon">☰</span>
         </button>
