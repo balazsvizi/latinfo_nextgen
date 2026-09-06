@@ -11,6 +11,9 @@ declare(strict_types=1);
 $statsAllDateFrom = $statsAllDateFrom ?? null;
 $statsFilterExtraQuery = $statsFilterExtraQuery ?? [];
 $statsPreferPartnerLinks = !empty($statsPreferPartnerLinks);
+$statsShowEventRowActions = !empty($statsShowEventRowActions);
+$statsHideEventsList = !empty($statsHideEventsList);
+$statsFormExtraHtml = is_string($statsFormExtraHtml ?? null) ? (string) $statsFormExtraHtml : '';
 $statsPageTitle = $statsPageTitle ?? 'Statisztika';
 $statsIntro = $statsIntro ?? 'Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.';
 $statsEmptyEventsMessage = $statsEmptyEventsMessage ?? 'Nincs közzétett eseményed.';
@@ -143,6 +146,24 @@ $renderSplit = static function (
     <p class="events-edit-stats__intro"><?= h($statsIntro) ?></p>
 
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
+        <?php
+        foreach ($statsFilterExtraQuery as $extraKey => $extraValue):
+            if (is_array($extraValue)):
+                foreach ($extraValue as $extraItem):
+                    ?>
+                    <input type="hidden" name="<?= h((string) $extraKey) ?>[]" value="<?= h((string) $extraItem) ?>">
+                    <?php
+                endforeach;
+            else:
+                ?>
+                <input type="hidden" name="<?= h((string) $extraKey) ?>" value="<?= h((string) $extraValue) ?>">
+                <?php
+            endif;
+        endforeach;
+        ?>
+        <?php if ($statsFormExtraHtml !== ''): ?>
+            <div class="events-edit-stats__form-extra"><?= $statsFormExtraHtml ?></div>
+        <?php endif; ?>
         <div class="events-edit-stats__presets-row">
             <span class="events-filter-label">Gyors időszak</span>
             <div class="events-edit-stats__presets" role="group" aria-label="Gyors időszak">
@@ -375,12 +396,14 @@ $renderSplit = static function (
         <p class="help events-edit-stats__empty">Nincs naplózott megtekintés a választott időszakban.</p>
     <?php endif; ?>
 
+    <?php if (!$statsHideEventsList): ?>
     <h3 class="events-edit-stats__events-title">Események</h3>
     <p class="events-edit-stats__events-hint"><?= h($statsEventListHint) ?></p>
 
     <?php if ($statsEventRows === []): ?>
         <p class="help events-edit-stats__empty"><?= h($statsEmptyEventsMessage) ?></p>
     <?php else: ?>
+        <?php $statsEventsColspan = $statsShowEventRowActions ? 13 : 12; ?>
         <div class="events-org-stats-list-controls" id="organizer-stats-list-controls">
             <div class="events-org-stats-list-controls__row">
                 <fieldset class="events-org-stats-fieldset">
@@ -449,6 +472,9 @@ $renderSplit = static function (
             <table class="sortable-table events-admin-table events-edit-stats__events-table" id="organizer-stats-events-table">
                 <thead>
                     <tr class="events-stats-thead-primary">
+                        <?php if ($statsShowEventRowActions): ?>
+                        <th class="events-th-actions" scope="col" rowspan="2"><span class="visually-hidden">Műveletek</span></th>
+                        <?php endif; ?>
                         <th scope="col" rowspan="2">
                             <button type="button" class="th-sort" data-sort="date" aria-pressed="false">Dátum</button>
                         </th>
@@ -533,6 +559,10 @@ $renderSplit = static function (
                             ? ($detailUrl ?? $publicUrl)
                             : ($publicUrl ?? $detailUrl);
                         $eventName = (string) ($row['event_name'] ?? '');
+                        $eventId = (int) ($row['id'] ?? 0);
+                        $eventStatUrl = $eventId > 0
+                            ? events_url('events_event_statisztika.php?id=') . $eventId
+                            : null;
                         ?>
                         <tr
                             data-org-event-row
@@ -554,6 +584,22 @@ $renderSplit = static function (
                             data-unique-human="<?= $uniqueHumanRow ?>"
                             data-unique-bot="<?= $uniqueBotRow ?>"
                         >
+                            <?php if ($statsShowEventRowActions): ?>
+                            <td class="events-td-actions">
+                                <div class="events-action-icons">
+                                    <?php if ($eventStatUrl !== null): ?>
+                                        <a href="<?= h($eventStatUrl) ?>" class="events-icon-action" title="Esemény statisztika" aria-label="Esemény statisztika">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if ($publicUrl !== null): ?>
+                                        <a href="<?= h($publicUrl) ?>" class="events-icon-action" title="Esemény megtekintése (új lap)" aria-label="Esemény megtekintése új lapon" target="_blank" rel="noopener">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <?php endif; ?>
                             <td class="events-stats-td-date"><?= h($dateDisplay) ?></td>
                             <td>
                                 <?php if ($primaryUrl !== null): ?>
@@ -581,7 +627,7 @@ $renderSplit = static function (
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-stats-events-empty" hidden>
-                        <td colspan="12" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
+                        <td colspan="<?= (int) $statsEventsColspan ?>" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
                     </tr>
                 </tbody>
             </table>
@@ -808,5 +854,6 @@ $renderSplit = static function (
             applyFilters();
         })();
         </script>
+    <?php endif; ?>
     <?php endif; ?>
 </div>

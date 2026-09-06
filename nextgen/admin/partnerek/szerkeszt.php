@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/events/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
+require_once dirname(__DIR__, 2) . '/lib/partner/login_invite.php';
 requireLogin();
 
 $db = getDb();
@@ -70,6 +71,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
                 }
                 $hiba = (string) ($result['error'] ?? 'Jelszó mentése sikertelen.');
+            }
+        } elseif ($action === 'login_invite') {
+            $loginInviteTempPassword = trim((string) ($_POST['login_invite_password'] ?? ''));
+            $loginInviteSubject = trim((string) ($_POST['login_invite_subject'] ?? ''));
+            $loginInviteHtml = trim((string) ($_POST['login_invite_html'] ?? ''));
+            $loginInviteTemplateId = (int) ($_POST['login_invite_template_id'] ?? 0);
+            $loginInviteSmtpId = (int) ($_POST['login_invite_smtp'] ?? 0);
+
+            if (!empty($_POST['login_invite_regen'])) {
+                $loginInviteTempPassword = nextgen_partner_generate_temporary_password();
+            } elseif (!empty($_POST['login_invite_load_template'])) {
+                $templates = nextgen_partner_login_invite_list_templates($db);
+                $selected = nextgen_partner_login_invite_find_template($templates, $loginInviteTemplateId);
+                if ($selected !== null) {
+                    $loginInviteSubject = (string) $selected['targy'];
+                    $loginInviteHtml = (string) $selected['html_tartalom'];
+                }
+            } else {
+                $result = nextgen_partner_login_invite_create_and_notify(
+                    $db,
+                    $id,
+                    $loginInviteTempPassword,
+                    $loginInviteSubject,
+                    $loginInviteHtml,
+                    !empty($_POST['login_invite_activate']),
+                    $loginInviteSmtpId > 0 ? $loginInviteSmtpId : null
+                );
+                if ($result['ok']) {
+                    flash('success', 'Partner login létrehozva, kiértesítő elküldve.');
+                    redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                }
+                $hiba = (string) ($result['error'] ?? 'Login létrehozása sikertelen.');
+                $partner = nextgen_partner_by_id($db, $id) ?? $partner;
             }
         } elseif ($action === 'toggle') {
             $active = empty($partner['aktív']);
@@ -171,6 +205,43 @@ if ($djRowsForForm === []) {
 $allOrganizers = nextgen_partner_selectable_events_organizers($db);
 $allDjs = nextgen_partner_selectable_djs($db);
 $partnerActivityLog = nextgen_partner_activity_log_for_partner($db, $id);
+
+$loginInviteTemplates = nextgen_partner_login_invite_list_templates($db);
+$loginInviteSelected = nextgen_partner_login_invite_find_template(
+    $loginInviteTemplates,
+    (int) ($_POST['login_invite_template_id'] ?? 0)
+);
+if (!isset($loginInviteTempPassword) || trim((string) $loginInviteTempPassword) === '') {
+    $loginInviteTempPassword = nextgen_partner_generate_temporary_password();
+}
+if (!isset($loginInviteSubject) || !isset($loginInviteHtml)) {
+    $defaults = nextgen_partner_login_invite_default_template_content();
+    $loginInviteSubject = (string) ($loginInviteSelected['targy'] ?? $defaults['targy']);
+    $loginInviteHtml = (string) ($loginInviteSelected['html_tartalom'] ?? $defaults['html_tartalom']);
+}
+$loginInviteSmtpAccounts = [];
+$loginInviteSmtpId = (int) ($_POST['login_invite_smtp'] ?? 0);
+try {
+    $loginInviteSmtpAccounts = $db->query(
+        'SELECT `id`, `név`, `from_email`, `from_name`, `alapértelmezett`
+         FROM `finance_email_accounts`
+         ORDER BY `alapértelmezett` DESC, `név` ASC'
+    )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable) {
+    $loginInviteSmtpAccounts = [];
+}
+if ($loginInviteSmtpId <= 0) {
+    foreach ($loginInviteSmtpAccounts as $acc) {
+        if (!empty($acc['alapértelmezett'])) {
+            $loginInviteSmtpId = (int) $acc['id'];
+            break;
+        }
+    }
+    if ($loginInviteSmtpId <= 0 && $loginInviteSmtpAccounts !== []) {
+        $loginInviteSmtpId = (int) ($loginInviteSmtpAccounts[0]['id'] ?? 0);
+    }
+}
+$loginInviteCanEmail = nextgen_partner_email_is_deliverable((string) ($partner['email'] ?? ''));
 
 $pageTitle = 'Partner: ' . (string) ($partner['név'] ?? '');
 require_once dirname(__DIR__, 2) . '/partials/header.php';
@@ -303,6 +374,8 @@ require __DIR__ . '/partials/partner_dj_assign_row.php';
 ?>
 </template>
 
+<?php require __DIR__ . '/partials/partner_login_invite.php'; ?>
+
 <div class="card">
     <h3>Jelszó és státusz</h3>
     <?php if (!empty($partner['jelszó_csere_kötelező'])): ?>
@@ -357,5 +430,6 @@ require __DIR__ . '/partials/activity_log.php';
 
 <?php require dirname(__DIR__, 2) . '/events/partials/wp_token_input_script.php'; ?>
 <?php require __DIR__ . '/partials/partner_assignment_script.php'; ?>
+<?php require dirname(__DIR__, 2) . '/events/partials/html_editor_script.php'; ?>
 
 <?php require_once dirname(__DIR__, 2) . '/partials/footer.php'; ?>
