@@ -10,6 +10,13 @@ declare(strict_types=1);
 
 $statsAllDateFrom = $statsAllDateFrom ?? null;
 $statsFilterExtraQuery = $statsFilterExtraQuery ?? [];
+$statsPreferPartnerLinks = !empty($statsPreferPartnerLinks);
+$statsPageTitle = $statsPageTitle ?? 'Statisztika';
+$statsIntro = $statsIntro ?? 'Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.';
+$statsEmptyEventsMessage = $statsEmptyEventsMessage ?? 'Nincs közzétett eseményed.';
+$statsEventListHint = $statsEventListHint ?? ($statsPreferPartnerLinks
+    ? 'Kattints az eseményre a partner részletekhez. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).'
+    : 'Alapból az időszakban megtekintéssel rendelkező események. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).');
 $statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDateFrom);
 $statsPresetLinks = [];
 foreach (events_edit_stats_presets() as $preset) {
@@ -71,7 +78,6 @@ $eventPublicUrl = static function (array $row) use ($publishedStatus): ?string {
 
 /** @var (callable(array<string,mixed>): ?string)|null $statsEventDetailUrl */
 $statsEventDetailUrl = $statsEventDetailUrl ?? null;
-$statsPreferPartnerLinks = !empty($statsPreferPartnerLinks);
 
 $eventDateYmd = static function (array $row, string $key): string {
     $raw = trim((string) ($row[$key] ?? ''));
@@ -133,8 +139,8 @@ $renderSplit = static function (
 };
 ?>
 <div class="card events-edit-stats events-edit-stats--organizer">
-    <h2 class="card-title">Statisztika</h2>
-    <p class="events-edit-stats__intro">Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.</p>
+    <h2 class="card-title"><?= h($statsPageTitle) ?></h2>
+    <p class="events-edit-stats__intro"><?= h($statsIntro) ?></p>
 
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
         <div class="events-edit-stats__presets-row">
@@ -370,12 +376,10 @@ $renderSplit = static function (
     <?php endif; ?>
 
     <h3 class="events-edit-stats__events-title">Események</h3>
-    <p class="events-edit-stats__events-hint"><?= $statsPreferPartnerLinks
-        ? 'Kattints az eseményre a partner részletekhez. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).'
-        : 'Alapból az időszakban megtekintéssel rendelkező események. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).' ?></p>
+    <p class="events-edit-stats__events-hint"><?= h($statsEventListHint) ?></p>
 
     <?php if ($statsEventRows === []): ?>
-        <p class="help events-edit-stats__empty">Nincs közzétett eseményed.</p>
+        <p class="help events-edit-stats__empty"><?= h($statsEmptyEventsMessage) ?></p>
     <?php else: ?>
         <div class="events-org-stats-list-controls" id="organizer-stats-list-controls">
             <div class="events-org-stats-list-controls__row">

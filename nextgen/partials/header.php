@@ -69,10 +69,20 @@ if ($navZone === 'events') {
                     </span>
                     <ul class="nav-submenu" id="submenu-events-app" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_naptar.php')) ?>" role="menuitem">Naptár</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('events/events_stat.php')) ?>" class="nav-parent-link">Stat</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-stat" aria-label="Stat almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-events-stat" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Kezdőlap</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" role="menuitem">Statisztikák</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">

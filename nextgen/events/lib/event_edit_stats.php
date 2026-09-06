@@ -1114,3 +1114,377 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
         'events_in_period' => $eventsInPeriod,
     ];
 }
+
+/**
+ * Legkorábbi megtekintés napja az összes eseményen, vagy null.
+ */
+function events_edit_stats_earliest_view_date_all(PDO $db): ?string
+{
+    try {
+        $day = $db->query('SELECT DATE(MIN(`létrehozva`)) AS first_day FROM `events_calendar_event_views`')->fetchColumn();
+        if (!is_string($day) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) !== 1) {
+            return null;
+        }
+
+        return $day;
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_earliest_view_date_all: ' . $e->getMessage());
+
+        return null;
+    }
+}
+
+/**
+ * Oldalmegtekintések (emberi / bot) az összes eseményen, adott időszakban.
+ *
+ * @param array{date_from: string, date_to: string} $params
+ * @return array{human: int, bot: int, total: int}
+ */
+function events_edit_stats_page_views_all(PDO $db, array $params): array
+{
+    $empty = ['human' => 0, 'bot' => 0, 'total' => 0];
+    $window = events_edit_stats_view_window($params);
+    $tableReady = events_edit_stats_table_ready($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $metricAnd = $tableReady ? " AND `metric_type` = 'page_view'" : '';
+
+    $countFor = static function (string $botAnd) use ($db, $window, $metricAnd): int {
+        try {
+            $stmt = $db->prepare("
+                SELECT COUNT(*)
+                FROM `events_calendar_event_views`
+                WHERE `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                  {$metricAnd}
+                  {$botAnd}
+            ");
+            $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
+
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    };
+
+    if ($botReady) {
+        $human = $countFor(' AND `is_bot` = 0');
+        $bot = $countFor(' AND `is_bot` = 1');
+
+        return [
+            'human' => $human,
+            'bot' => $bot,
+            'total' => $human + $bot,
+        ];
+    }
+
+    $total = $countFor('');
+
+    return [
+        'human' => $total,
+        'bot' => 0,
+        'total' => $total,
+    ];
+}
+
+/**
+ * @param array{date_from: string, date_to: string} $params
+ * @return array{human: int, bot: int}
+ */
+function events_edit_stats_unique_visitor_counts_all(
+    PDO $db,
+    array $params,
+    ?bool $tableReady = null,
+    ?bool $botReady = null
+): array {
+    $empty = ['human' => 0, 'bot' => 0];
+    $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
+    $botReady = $botReady ?? events_view_tracking_bot_column_ready($db);
+    $window = events_edit_stats_view_window($params);
+    $metricAnd = $tableReady ? " AND `metric_type` = 'page_view'" : '';
+
+    $countFor = static function (string $botAnd) use ($db, $window, $metricAnd): int {
+        try {
+            $stmt = $db->prepare("
+                SELECT COUNT(DISTINCT `ip_hash`)
+                FROM `events_calendar_event_views`
+                WHERE `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                  AND `ip_hash` IS NOT NULL
+                  AND `ip_hash` <> ''
+                  {$metricAnd}
+                  {$botAnd}
+            ");
+            $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
+
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    };
+
+    if ($botReady) {
+        return [
+            'human' => $countFor(' AND `is_bot` = 0'),
+            'bot' => $countFor(' AND `is_bot` = 1'),
+        ];
+    }
+
+    return [
+        'human' => $countFor(''),
+        'bot' => 0,
+    ];
+}
+
+/**
+ * Statisztika az összes eseményre (admin Stat modul).
+ *
+ * @param array{date_from: string, date_to: string} $params
+ * @return array<string, mixed>
+ */
+function events_edit_stats_for_all_events(PDO $db, array $params, int $eventListLimit = 80): array
+{
+    $empty = events_edit_stats_empty_result();
+    $empty['event_rows'] = [];
+    $empty['draft_rows'] = [];
+
+    $dateFrom = (string) ($params['date_from'] ?? '');
+    $dateTo = (string) ($params['date_to'] ?? '');
+    $labels = events_edit_stats_date_labels($dateFrom, $dateTo);
+    if ($labels === []) {
+        return $empty;
+    }
+
+    events_view_tracking_ensure_bot_column($db);
+    $tableReady = events_edit_stats_table_ready($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $pageHumanByDay = array_fill_keys($labels, 0);
+    $pageBotByDay = array_fill_keys($labels, 0);
+    $previewHumanByDay = array_fill_keys($labels, 0);
+    $previewBotByDay = array_fill_keys($labels, 0);
+    $externalHumanByDay = array_fill_keys($labels, 0);
+    $externalBotByDay = array_fill_keys($labels, 0);
+    $window = events_edit_stats_view_window($params);
+
+    try {
+        if ($tableReady && $botReady) {
+            $stmt = $db->prepare('
+                SELECT DATE(`létrehozva`) AS bucket, `metric_type`, `is_bot`, COUNT(*) AS cnt
+                FROM `events_calendar_event_views`
+                WHERE `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                GROUP BY bucket, `metric_type`, `is_bot`
+            ');
+            $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
+        } elseif ($tableReady) {
+            $stmt = $db->prepare('
+                SELECT DATE(`létrehozva`) AS bucket, `metric_type`, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views`
+                WHERE `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                GROUP BY bucket, `metric_type`
+            ');
+            $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
+        } else {
+            $stmt = $db->prepare('
+                SELECT DATE(`létrehozva`) AS bucket, 0 AS is_bot, COUNT(*) AS cnt
+                FROM `events_calendar_event_views`
+                WHERE `létrehozva` >= ?
+                  AND `létrehozva` < ?
+                GROUP BY bucket
+            ');
+            $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
+        }
+        events_edit_stats_apply_bucket_rows(
+            $stmt->fetchAll(PDO::FETCH_ASSOC),
+            $pageHumanByDay,
+            $pageBotByDay,
+            $previewHumanByDay,
+            $previewBotByDay,
+            $externalHumanByDay,
+            $externalBotByDay,
+            $tableReady,
+            $botReady
+        );
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_for_all_events: ' . $e->getMessage());
+
+        return $empty;
+    }
+
+    $result = events_edit_stats_build_result(
+        $labels,
+        $pageHumanByDay,
+        $pageBotByDay,
+        $previewHumanByDay,
+        $previewBotByDay,
+        $externalHumanByDay,
+        $externalBotByDay,
+        $tableReady,
+        $botReady
+    );
+
+    $eventsList = events_edit_stats_all_events_list($db, $params, $tableReady, $eventListLimit);
+    $result['totals']['events_total'] = $eventsList['events_total'];
+    $result['totals']['events_with_views'] = $eventsList['events_with_views'];
+    $result['totals']['events_in_period'] = $eventsList['events_in_period'];
+    $result['totals']['events_opened'] = $eventsList['events_with_views'];
+    $uniqueCounts = events_edit_stats_unique_visitor_counts_all($db, $params, $tableReady, $botReady);
+    $result['totals']['unique_visitors'] = $uniqueCounts['human'];
+    $result['totals']['unique_visitors_human'] = $uniqueCounts['human'];
+    $result['totals']['unique_visitors_bot'] = $uniqueCounts['bot'];
+    $result['event_rows'] = $eventsList['rows'];
+    $result['draft_rows'] = $eventsList['draft_rows'];
+
+    return $result;
+}
+
+/**
+ * Top események megtekintés szerint + összesített eseményszámok (draft nélkül).
+ *
+ * @param array{date_from: string, date_to: string} $params
+ * @return array{
+ *   rows: list<array<string, mixed>>,
+ *   draft_rows: list<array<string, mixed>>,
+ *   events_total: int,
+ *   events_with_views: int,
+ *   events_in_period: int
+ * }
+ */
+function events_edit_stats_all_events_list(
+    PDO $db,
+    array $params,
+    ?bool $tableReady = null,
+    int $limit = 80
+): array {
+    $empty = [
+        'rows' => [],
+        'draft_rows' => [],
+        'events_total' => 0,
+        'events_with_views' => 0,
+        'events_in_period' => 0,
+    ];
+
+    $limit = max(1, min(200, $limit));
+    events_view_tracking_ensure_bot_column($db);
+    $tableReady = $tableReady ?? events_edit_stats_table_ready($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $window = events_edit_stats_view_window($params);
+    $dateFrom = (string) ($params['date_from'] ?? '');
+    $dateTo = (string) ($params['date_to'] ?? '');
+
+    $pageTypeAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+    $previewTypeAnd = $tableReady ? " AND v.`metric_type` = 'calendar_preview'" : ' AND 1=0';
+    $externalTypeAnd = $tableReady ? " AND v.`metric_type` = 'external_info_click'" : ' AND 1=0';
+    $ipOk = "v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> ''";
+
+    if ($botReady) {
+        $pageHumanSql = "SUM(CASE WHEN 1=1{$pageTypeAnd} AND v.`is_bot` = 0 THEN 1 ELSE 0 END)";
+        $pageBotSql = "SUM(CASE WHEN 1=1{$pageTypeAnd} AND v.`is_bot` = 1 THEN 1 ELSE 0 END)";
+        $pageTotalSql = "SUM(CASE WHEN 1=1{$pageTypeAnd} THEN 1 ELSE 0 END)";
+        $pageUniqueHumanSql = "COUNT(DISTINCT CASE WHEN 1=1{$pageTypeAnd} AND v.`is_bot` = 0 AND {$ipOk} THEN v.`ip_hash` END)";
+        $pageUniqueBotSql = "COUNT(DISTINCT CASE WHEN 1=1{$pageTypeAnd} AND v.`is_bot` = 1 AND {$ipOk} THEN v.`ip_hash` END)";
+        $previewHumanSql = "SUM(CASE WHEN 1=1{$previewTypeAnd} AND v.`is_bot` = 0 THEN 1 ELSE 0 END)";
+        $previewBotSql = "SUM(CASE WHEN 1=1{$previewTypeAnd} AND v.`is_bot` = 1 THEN 1 ELSE 0 END)";
+        $previewTotalSql = "SUM(CASE WHEN 1=1{$previewTypeAnd} THEN 1 ELSE 0 END)";
+        $externalHumanSql = "SUM(CASE WHEN 1=1{$externalTypeAnd} AND v.`is_bot` = 0 THEN 1 ELSE 0 END)";
+        $externalBotSql = "SUM(CASE WHEN 1=1{$externalTypeAnd} AND v.`is_bot` = 1 THEN 1 ELSE 0 END)";
+        $externalTotalSql = "SUM(CASE WHEN 1=1{$externalTypeAnd} THEN 1 ELSE 0 END)";
+    } else {
+        $pageTotalSql = "SUM(CASE WHEN 1=1{$pageTypeAnd} THEN 1 ELSE 0 END)";
+        $pageHumanSql = $pageTotalSql;
+        $pageBotSql = '0';
+        $pageUniqueHumanSql = "COUNT(DISTINCT CASE WHEN 1=1{$pageTypeAnd} AND {$ipOk} THEN v.`ip_hash` END)";
+        $pageUniqueBotSql = '0';
+        $previewTotalSql = "SUM(CASE WHEN 1=1{$previewTypeAnd} THEN 1 ELSE 0 END)";
+        $previewHumanSql = $previewTotalSql;
+        $previewBotSql = '0';
+        $externalTotalSql = "SUM(CASE WHEN 1=1{$externalTypeAnd} THEN 1 ELSE 0 END)";
+        $externalHumanSql = $externalTotalSql;
+        $externalBotSql = '0';
+    }
+
+    $sql = "
+        SELECT e.`id`, e.`event_name`, e.`event_slug`, e.`event_status`, e.`event_start`, e.`event_end`, e.`created`,
+            {$pageHumanSql} AS megtekintesek_human,
+            {$pageBotSql} AS megtekintesek_bot,
+            {$pageTotalSql} AS megtekintesek,
+            {$pageUniqueHumanSql} AS egyedi_latogatok_human,
+            {$pageUniqueBotSql} AS egyedi_latogatok_bot,
+            {$previewHumanSql} AS naptar_elonezetek_human,
+            {$previewBotSql} AS naptar_elonezetek_bot,
+            {$previewTotalSql} AS naptar_elonezetek,
+            {$externalHumanSql} AS tovabbi_info_kattintasok_human,
+            {$externalBotSql} AS tovabbi_info_kattintasok_bot,
+            {$externalTotalSql} AS tovabbi_info_kattintasok
+        FROM `events_calendar_events` e
+        INNER JOIN `events_calendar_event_views` v
+            ON v.`esemény_id` = e.`id`
+           AND v.`létrehozva` >= ?
+           AND v.`létrehozva` < ?
+        WHERE e.`event_status` NOT IN ('draft', 'auto-draft')
+        GROUP BY e.`id`
+        ORDER BY megtekintesek DESC, e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
+        LIMIT {$limit}
+    ";
+
+    $eventsTotal = 0;
+    $eventsWithViews = 0;
+    $eventsInPeriod = 0;
+    try {
+        $totalStmt = $db->query("
+            SELECT COUNT(*) FROM `events_calendar_events`
+            WHERE `event_status` NOT IN ('draft', 'auto-draft')
+        ");
+        $eventsTotal = (int) $totalStmt->fetchColumn();
+
+        $withViewsStmt = $db->prepare('
+            SELECT COUNT(DISTINCT `esemény_id`)
+            FROM `events_calendar_event_views`
+            WHERE `létrehozva` >= ?
+              AND `létrehozva` < ?
+        ');
+        $withViewsStmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
+        $eventsWithViews = (int) $withViewsStmt->fetchColumn();
+
+        $inPeriodStmt = $db->prepare("
+            SELECT COUNT(*)
+            FROM `events_calendar_events`
+            WHERE `event_status` NOT IN ('draft', 'auto-draft')
+              AND `event_start` IS NOT NULL
+              AND DATE(`event_start`) <= ?
+              AND DATE(COALESCE(`event_end`, `event_start`)) >= ?
+        ");
+        $inPeriodStmt->execute([$dateTo, $dateFrom]);
+        $eventsInPeriod = (int) $inPeriodStmt->fetchColumn();
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$window['start_inclusive'], $window['end_exclusive']]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_all_events_list: ' . $e->getMessage());
+
+        return $empty;
+    }
+
+    foreach ($rows as $idx => $row) {
+        $rows[$idx]['live_days'] = events_edit_stats_live_days_in_period($row, $dateFrom, $dateTo);
+        $rows[$idx]['egyedi_latogatok'] = (int) ($row['egyedi_latogatok_human'] ?? 0);
+        $rows[$idx]['egyedi_latogatok_bot'] = (int) ($row['egyedi_latogatok_bot'] ?? 0);
+        if (!$tableReady) {
+            $rows[$idx]['naptar_elonezetek'] = 0;
+            $rows[$idx]['naptar_elonezetek_human'] = 0;
+            $rows[$idx]['naptar_elonezetek_bot'] = 0;
+            $rows[$idx]['tovabbi_info_kattintasok'] = 0;
+            $rows[$idx]['tovabbi_info_kattintasok_human'] = 0;
+            $rows[$idx]['tovabbi_info_kattintasok_bot'] = 0;
+        }
+    }
+
+    return [
+        'rows' => $rows,
+        'draft_rows' => [],
+        'events_total' => $eventsTotal,
+        'events_with_views' => $eventsWithViews,
+        'events_in_period' => $eventsInPeriod,
+    ];
+}
