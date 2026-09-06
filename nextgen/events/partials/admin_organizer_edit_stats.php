@@ -80,28 +80,6 @@ $eventDateYmd = static function (array $row, string $key): string {
 
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
         <input type="hidden" name="id" value="<?= (int) $id ?>">
-        <div class="events-edit-stats__mode-bar<?= $statsMode === 'smart' ? ' events-edit-stats__mode-bar--smart' : ' events-edit-stats__mode-bar--all' ?>">
-            <div class="events-edit-stats__mode-bar-copy">
-                <p class="events-edit-stats__mode-bar-title">Számítási mód</p>
-                <p class="events-edit-stats__mode-bar-hint">
-                    <?php if ($statsMode === 'smart'): ?>
-                        <strong>Latinfo.hu smart stat</strong> — csak az esemény záró napján vagy azelőtt történt megtekintések/kattintások.
-                    <?php else: ?>
-                        <strong>Összes</strong> — minden megtekintés és kattintás a választott időszakban.
-                    <?php endif; ?>
-                </p>
-            </div>
-            <div class="events-edit-stats__mode-toggle" role="group" aria-label="Számítási mód">
-                <label class="events-edit-stats__mode-option<?= $statsMode === 'smart' ? ' is-active' : '' ?>">
-                    <input type="radio" name="stat_mode" value="smart"<?= $statsMode === 'smart' ? ' checked' : '' ?>>
-                    <span>Latinfo.hu smart stat</span>
-                </label>
-                <label class="events-edit-stats__mode-option<?= $statsMode === 'all' ? ' is-active' : '' ?>">
-                    <input type="radio" name="stat_mode" value="all"<?= $statsMode === 'all' ? ' checked' : '' ?>>
-                    <span>Összes</span>
-                </label>
-            </div>
-        </div>
         <div class="events-edit-stats__filter-grid">
             <div class="form-group">
                 <label class="events-filter-label" for="stat_date_from">Időszak tól</label>
@@ -120,6 +98,30 @@ $eventDateYmd = static function (array $row, string $key): string {
                             href="<?= h((string) $presetLink['url']) ?>"
                         ><?= h((string) $presetLink['label']) ?></a>
                     <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <div class="events-edit-stats__mode-bar<?= $statsMode === 'smart' ? ' events-edit-stats__mode-bar--smart' : ' events-edit-stats__mode-bar--all' ?>">
+            <div class="events-edit-stats__mode-bar-top">
+                <div class="events-edit-stats__mode-bar-copy">
+                    <p class="events-edit-stats__mode-bar-title">Számítási mód</p>
+                    <p class="events-edit-stats__mode-bar-hint">
+                        <?php if ($statsMode === 'smart'): ?>
+                            <strong>Latinfo.hu smart stat</strong> — csak az esemény záró napján vagy azelőtt történt megtekintések/kattintások.
+                        <?php else: ?>
+                            <strong>Összes</strong> — minden megtekintés és kattintás a választott időszakban.
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <div class="events-edit-stats__mode-toggle" role="group" aria-label="Számítási mód">
+                    <label class="events-edit-stats__mode-option<?= $statsMode === 'smart' ? ' is-active' : '' ?>">
+                        <input type="radio" name="stat_mode" value="smart"<?= $statsMode === 'smart' ? ' checked' : '' ?>>
+                        <span>Latinfo.hu smart stat</span>
+                    </label>
+                    <label class="events-edit-stats__mode-option<?= $statsMode === 'all' ? ' is-active' : '' ?>">
+                        <input type="radio" name="stat_mode" value="all"<?= $statsMode === 'all' ? ' checked' : '' ?>>
+                        <span>Összes</span>
+                    </label>
                 </div>
             </div>
         </div>

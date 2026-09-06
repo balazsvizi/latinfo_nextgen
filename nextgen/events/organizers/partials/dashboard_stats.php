@@ -233,28 +233,6 @@ $renderSplit = static function (
                 <?php endforeach; ?>
             </div>
         </div>
-        <div class="events-edit-stats__mode-bar<?= $statsMode === 'smart' ? ' events-edit-stats__mode-bar--smart' : ' events-edit-stats__mode-bar--all' ?>">
-            <div class="events-edit-stats__mode-bar-copy">
-                <p class="events-edit-stats__mode-bar-title">Számítási mód</p>
-                <p class="events-edit-stats__mode-bar-hint">
-                    <?php if ($statsMode === 'smart'): ?>
-                        <strong>Latinfo.hu smart stat</strong> — csak az esemény záró napján vagy azelőtt történt megtekintések/kattintások.
-                    <?php else: ?>
-                        <strong>Összes</strong> — minden megtekintés és kattintás a választott időszakban.
-                    <?php endif; ?>
-                </p>
-            </div>
-            <div class="events-edit-stats__mode-toggle" role="group" aria-label="Számítási mód">
-                <label class="events-edit-stats__mode-option<?= $statsMode === 'smart' ? ' is-active' : '' ?>">
-                    <input type="radio" name="stat_mode" value="smart"<?= $statsMode === 'smart' ? ' checked' : '' ?>>
-                    <span>Latinfo.hu smart stat</span>
-                </label>
-                <label class="events-edit-stats__mode-option<?= $statsMode === 'all' ? ' is-active' : '' ?>">
-                    <input type="radio" name="stat_mode" value="all"<?= $statsMode === 'all' ? ' checked' : '' ?>>
-                    <span>Összes</span>
-                </label>
-            </div>
-        </div>
         <div class="events-edit-stats__filter-grid">
             <div class="form-group">
                 <label class="events-filter-label" for="stat_date_from">Időszak tól</label>
@@ -268,55 +246,77 @@ $renderSplit = static function (
                 <button type="submit" class="btn btn-secondary btn-sm">Megjelenítés</button>
             </div>
         </div>
-        <?php if ($statsAllowCustomMediaRates): ?>
-        <div class="events-edit-stats__rates-bar<?= $statsCustomRates ? ' is-active' : '' ?>" id="events-stats-rates-bar">
-            <label class="events-edit-stats__rates-toggle">
-                <input
-                    type="checkbox"
-                    name="stat_custom_rates"
-                    id="stat_custom_rates"
-                    value="1"
-                    <?= $statsCustomRates ? ' checked' : '' ?>
-                >
-                <span>Saját egységárak a médiaértékhez</span>
-            </label>
-            <div class="events-edit-stats__rates-fields" id="events-stats-rates-fields"<?= $statsCustomRates ? '' : ' hidden' ?>>
-                <div class="form-group">
-                    <label class="events-filter-label" for="stat_page_ft">Megtekintés (Ft)</label>
-                    <input
-                        class="events-filter-input"
-                        type="number"
-                        name="stat_page_ft"
-                        id="stat_page_ft"
-                        min="0"
-                        max="1000000"
-                        step="1"
-                        value="<?= (int) $statsPageUnitFt ?>"
-                    >
-                    <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft</p>
+        <div class="events-edit-stats__mode-bar<?= $statsMode === 'smart' ? ' events-edit-stats__mode-bar--smart' : ' events-edit-stats__mode-bar--all' ?><?= $statsCustomRates ? ' events-edit-stats__mode-bar--custom-rates' : '' ?>" id="events-stats-mode-bar">
+            <div class="events-edit-stats__mode-bar-top">
+                <div class="events-edit-stats__mode-bar-copy">
+                    <p class="events-edit-stats__mode-bar-title">Számítási mód</p>
+                    <p class="events-edit-stats__mode-bar-hint">
+                        <?php if ($statsMode === 'smart'): ?>
+                            <strong>Latinfo.hu smart stat</strong> — csak az esemény záró napján vagy azelőtt történt megtekintések/kattintások.
+                        <?php else: ?>
+                            <strong>Összes</strong> — minden megtekintés és kattintás a választott időszakban.
+                        <?php endif; ?>
+                        <?php if ($statsCustomRates): ?>
+                            <br><strong>Saját egységárak</strong> — a médiaérték a megadott Ft-okkal számol.
+                        <?php endif; ?>
+                    </p>
                 </div>
-                <div class="form-group">
-                    <label class="events-filter-label" for="stat_click_ft">Átkattintás (Ft)</label>
-                    <input
-                        class="events-filter-input"
-                        type="number"
-                        name="stat_click_ft"
-                        id="stat_click_ft"
-                        min="0"
-                        max="1000000"
-                        step="1"
-                        value="<?= (int) $statsClickUnitFt ?>"
-                    >
-                    <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft</p>
+                <div class="events-edit-stats__mode-toggle" role="group" aria-label="Számítási mód">
+                    <label class="events-edit-stats__mode-option<?= $statsMode === 'smart' ? ' is-active' : '' ?>">
+                        <input type="radio" name="stat_mode" value="smart"<?= $statsMode === 'smart' ? ' checked' : '' ?>>
+                        <span>Latinfo.hu smart stat</span>
+                    </label>
+                    <label class="events-edit-stats__mode-option<?= $statsMode === 'all' ? ' is-active' : '' ?>">
+                        <input type="radio" name="stat_mode" value="all"<?= $statsMode === 'all' ? ' checked' : '' ?>>
+                        <span>Összes</span>
+                    </label>
                 </div>
             </div>
-            <p class="events-edit-stats__rates-note">
-                <?= $statsCustomRates
-                    ? 'A generált médiaérték a megadott Ft-okkal számol.'
-                    : 'Kapcsold be, ha a 35 / 200 Ft helyett saját összegekkel szeretnél számolni.' ?>
-            </p>
+            <?php if ($statsAllowCustomMediaRates): ?>
+            <div class="events-edit-stats__mode-rates">
+                <label class="events-edit-stats__rates-toggle">
+                    <input
+                        type="checkbox"
+                        name="stat_custom_rates"
+                        id="stat_custom_rates"
+                        value="1"
+                        <?= $statsCustomRates ? ' checked' : '' ?>
+                    >
+                    <span>Saját egységárak</span>
+                </label>
+                <div class="events-edit-stats__rates-fields" id="events-stats-rates-fields"<?= $statsCustomRates ? '' : ' hidden' ?>>
+                    <div class="form-group">
+                        <label class="events-filter-label" for="stat_page_ft">Megtekintés (Ft)</label>
+                        <input
+                            class="events-filter-input"
+                            type="number"
+                            name="stat_page_ft"
+                            id="stat_page_ft"
+                            min="0"
+                            max="1000000"
+                            step="1"
+                            value="<?= (int) $statsPageUnitFt ?>"
+                        >
+                        <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="events-filter-label" for="stat_click_ft">Átkattintás (Ft)</label>
+                        <input
+                            class="events-filter-input"
+                            type="number"
+                            name="stat_click_ft"
+                            id="stat_click_ft"
+                            min="0"
+                            max="1000000"
+                            step="1"
+                            value="<?= (int) $statsClickUnitFt ?>"
+                        >
+                        <p class="events-edit-stats__filter-hint">Alapértelmezés: <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft</p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
     </form>
     <script>
     (function () {
@@ -333,12 +333,12 @@ $renderSplit = static function (
         });
         var customToggle = form.querySelector('#stat_custom_rates');
         var ratesFields = document.getElementById('events-stats-rates-fields');
-        var ratesBar = document.getElementById('events-stats-rates-bar');
+        var modeBar = document.getElementById('events-stats-mode-bar');
         if (customToggle && ratesFields) {
             customToggle.addEventListener('change', function () {
                 var on = !!customToggle.checked;
                 ratesFields.hidden = !on;
-                if (ratesBar) ratesBar.classList.toggle('is-active', on);
+                if (modeBar) modeBar.classList.toggle('events-edit-stats__mode-bar--custom-rates', on);
             });
         }
     })();
