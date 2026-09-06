@@ -157,6 +157,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Partnerek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Partner üzenetek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/adminok/')) ?>" role="menuitem">Adminok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/rate_limit.php')) ?>" role="menuitem">Belépési korlát</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/log.php')) ?>" role="menuitem">Logok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/cron_log.php')) ?>" role="menuitem">Cron log</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/email/')) ?>" role="menuitem">E-mail</a></li>

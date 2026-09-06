@@ -370,13 +370,31 @@ function csrf_require(string $scope = 'default', string $field = '_csrf', ?strin
 }
 
 /**
+ * Rate limit tároló könyvtár.
+ */
+function rate_limit_dir(): string
+{
+    return dirname(__DIR__) . '/data/rate_limit';
+}
+
+/**
+ * Bucket név biztonságosítása (fájlnév).
+ */
+function rate_limit_sanitize_bucket(string $bucket): string
+{
+    $clean = preg_replace('/[^a-zA-Z0-9._-]/', '_', $bucket);
+
+    return ($clean !== null && $clean !== '') ? $clean : 'default';
+}
+
+/**
  * Egyszerű fájl-alapú rate limit (login, publikus AJAX).
  * true = engedélyezett, false = túl sok próbálkozás.
  */
 function rate_limit_allow(string $bucket, int $maxAttempts, int $windowSeconds): bool
 {
-    $bucket = preg_replace('/[^a-zA-Z0-9._-]/', '_', $bucket) ?: 'default';
-    $dir = dirname(__DIR__) . '/data/rate_limit';
+    $bucket = rate_limit_sanitize_bucket($bucket);
+    $dir = rate_limit_dir();
     if (!is_dir($dir)) {
         @mkdir($dir, 0755, true);
     }
@@ -430,6 +448,84 @@ function rate_limit_client_key(string $prefix): string
     $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
 
     return $prefix . '_' . hash('sha256', $ip);
+}
+
+/**
+ * Egy rate-limit bucket törlése (nullázás).
+ */
+function rate_limit_reset(string $bucket): bool
+{
+    $bucket = rate_limit_sanitize_bucket($bucket);
+    $path = rate_limit_dir() . '/' . $bucket . '.json';
+    if (!is_file($path)) {
+        return true;
+    }
+
+    return @unlink($path);
+}
+
+/**
+ * Összes rate-limit bucket törlése.
+ *
+ * @return int Törölt fájlok száma
+ */
+function rate_limit_reset_all(): int
+{
+    $dir = rate_limit_dir();
+    if (!is_dir($dir)) {
+        return 0;
+    }
+    $deleted = 0;
+    foreach (glob($dir . '/*.json') ?: [] as $path) {
+        if (is_file($path) && @unlink($path)) {
+            $deleted++;
+        }
+    }
+
+    return $deleted;
+}
+
+/**
+ * Aktív rate-limit bucketek listája (admin UI).
+ *
+ * @return list<array{bucket: string, hits: int, oldest: int|null, newest: int|null}>
+ */
+function rate_limit_list(): array
+{
+    $dir = rate_limit_dir();
+    if (!is_dir($dir)) {
+        return [];
+    }
+    $items = [];
+    foreach (glob($dir . '/*.json') ?: [] as $path) {
+        if (!is_file($path)) {
+            continue;
+        }
+        $bucket = basename($path, '.json');
+        $raw = @file_get_contents($path);
+        $hits = [];
+        if (is_string($raw) && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $ts) {
+                    $t = (int) $ts;
+                    if ($t > 0) {
+                        $hits[] = $t;
+                    }
+                }
+            }
+        }
+        sort($hits);
+        $items[] = [
+            'bucket' => $bucket,
+            'hits' => count($hits),
+            'oldest' => $hits[0] ?? null,
+            'newest' => $hits !== [] ? $hits[array_key_last($hits)] : null,
+        ];
+    }
+    usort($items, static fn(array $a, array $b): int => ($b['newest'] ?? 0) <=> ($a['newest'] ?? 0));
+
+    return $items;
 }
 
 /**

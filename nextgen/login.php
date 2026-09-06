@@ -12,25 +12,28 @@ if (isLoggedIn()) {
 
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!rate_limit_allow(rate_limit_client_key('admin_login'), 8, 900)) {
-        $hiba = 'Túl sok sikertelen próbálkozás. Próbáld újra később.';
-    } else {
-        $fh = trim($_POST['felhasznalonev'] ?? '');
-        $jelszo = $_POST['jelszo'] ?? '';
-        if ($fh === '' || $jelszo === '') {
-            $hiba = 'Kérjük, töltse ki mindkét mezőt.';
-        } elseif (login($fh, $jelszo)) {
-            $url = (string) ($_SESSION['_redirect_after_login'] ?? '');
-            unset($_SESSION['_redirect_after_login']);
-            if ($url === '' || !alatinfo_is_safe_post_login_redirect($url)) {
-                $url = nextgen_url('apps.php');
-            } elseif ($url !== '' && $url[0] !== '/') {
-                $url = rtrim(BASE_URL, '/') . '/' . ltrim($url, '/');
-            }
-            redirect($url);
-        } else {
-            $hiba = 'Hibás felhasználónév vagy jelszó.';
+    $fh = trim((string) ($_POST['felhasznalonev'] ?? ''));
+    $jelszo = (string) ($_POST['jelszo'] ?? '');
+    // A „vba” fejlesztői fióknál rövidebb (1 perc) lockout ablak.
+    $isVbaUser = strcasecmp($fh, 'vba') === 0;
+    $windowSeconds = $isVbaUser ? 60 : 900;
+    if (!rate_limit_allow(rate_limit_client_key('admin_login'), 8, $windowSeconds)) {
+        $hiba = $isVbaUser
+            ? 'Túl sok sikertelen próbálkozás. Próbáld újra kb. 1 perc múlva.'
+            : 'Túl sok sikertelen próbálkozás. Próbáld újra később.';
+    } elseif ($fh === '' || $jelszo === '') {
+        $hiba = 'Kérjük, töltse ki mindkét mezőt.';
+    } elseif (login($fh, $jelszo)) {
+        $url = (string) ($_SESSION['_redirect_after_login'] ?? '');
+        unset($_SESSION['_redirect_after_login']);
+        if ($url === '' || !alatinfo_is_safe_post_login_redirect($url)) {
+            $url = nextgen_url('apps.php');
+        } elseif ($url !== '' && $url[0] !== '/') {
+            $url = rtrim(BASE_URL, '/') . '/' . ltrim($url, '/');
         }
+        redirect($url);
+    } else {
+        $hiba = 'Hibás felhasználónév vagy jelszó.';
     }
 }
 
