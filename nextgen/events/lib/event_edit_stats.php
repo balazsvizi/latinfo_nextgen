@@ -1950,3 +1950,136 @@ function events_edit_stats_organizers_period_rows(
         return [];
     }
 }
+
+/**
+ * Szervezőnként napi oldalmegnyitás-sorozat a grafikon overlayhez.
+ *
+ * @param list<int> $organizerIds
+ * @param array{date_from: string, date_to: string} $params
+ * @return array{
+ *   labels: list<string>,
+ *   ymd_labels: list<string>,
+ *   organizers: array<string, array{id: int, name: string, human: list<int>, total: list<int>}>
+ * }
+ */
+function events_edit_stats_organizers_daily_page_series(
+    PDO $db,
+    array $organizerIds,
+    array $params
+): array {
+    $ymdLabels = events_edit_stats_date_labels(
+        (string) ($params['date_from'] ?? ''),
+        (string) ($params['date_to'] ?? '')
+    );
+    $empty = [
+        'labels' => events_edit_stats_chart_labels($ymdLabels),
+        'ymd_labels' => $ymdLabels,
+        'organizers' => [],
+    ];
+    $organizerIds = array_values(array_unique(array_filter(
+        array_map(static fn (mixed $id): int => (int) $id, $organizerIds),
+        static fn (int $id): bool => $id > 0
+    )));
+    if ($organizerIds === [] || $ymdLabels === []) {
+        return $empty;
+    }
+
+    events_view_tracking_ensure_bot_column($db);
+    $tableReady = events_edit_stats_table_ready($db);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $window = events_edit_stats_view_window($params);
+    $orgPh = implode(',', array_fill(0, count($organizerIds), '?'));
+    $metricAnd = $tableReady ? " AND v.`metric_type` = 'page_view'" : '';
+
+    $names = [];
+    try {
+        $nameStmt = $db->prepare("SELECT `id`, `name` FROM `events_organizers` WHERE `id` IN ({$orgPh})");
+        $nameStmt->execute($organizerIds);
+        foreach ($nameStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $names[(int) $row['id']] = (string) ($row['name'] ?? '');
+        }
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_organizers_daily_page_series names: ' . $e->getMessage());
+
+        return $empty;
+    }
+
+    /** @var array<int, array{human: array<string, int>, total: array<string, int>}> $buckets */
+    $buckets = [];
+    foreach ($organizerIds as $oid) {
+        $buckets[$oid] = [
+            'human' => array_fill_keys($ymdLabels, 0),
+            'total' => array_fill_keys($ymdLabels, 0),
+        ];
+    }
+
+    try {
+        if ($botReady) {
+            $stmt = $db->prepare("
+                SELECT
+                    eo.`organizer_id` AS oid,
+                    DATE(v.`létrehozva`) AS bucket,
+                    SUM(CASE WHEN v.`is_bot` = 0 THEN 1 ELSE 0 END) AS human_cnt,
+                    COUNT(*) AS total_cnt
+                FROM `events_calendar_event_views` v
+                INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                WHERE eo.`organizer_id` IN ({$orgPh})
+                  AND v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$metricAnd}
+                GROUP BY eo.`organizer_id`, bucket
+            ");
+        } else {
+            $stmt = $db->prepare("
+                SELECT
+                    eo.`organizer_id` AS oid,
+                    DATE(v.`létrehozva`) AS bucket,
+                    COUNT(*) AS human_cnt,
+                    COUNT(*) AS total_cnt
+                FROM `events_calendar_event_views` v
+                INNER JOIN `events_calendar_event_organizers` eo ON eo.`event_id` = v.`esemény_id`
+                WHERE eo.`organizer_id` IN ({$orgPh})
+                  AND v.`létrehozva` >= ?
+                  AND v.`létrehozva` < ?
+                  {$metricAnd}
+                GROUP BY eo.`organizer_id`, bucket
+            ");
+        }
+        $stmt->execute([...$organizerIds, $window['start_inclusive'], $window['end_exclusive']]);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $oid = (int) ($row['oid'] ?? 0);
+            $bucket = (string) ($row['bucket'] ?? '');
+            if ($oid <= 0 || !isset($buckets[$oid]) || !array_key_exists($bucket, $buckets[$oid]['human'])) {
+                continue;
+            }
+            $buckets[$oid]['human'][$bucket] = (int) ($row['human_cnt'] ?? 0);
+            $buckets[$oid]['total'][$bucket] = (int) ($row['total_cnt'] ?? 0);
+        }
+    } catch (Throwable $e) {
+        error_log('events_edit_stats_organizers_daily_page_series: ' . $e->getMessage());
+
+        return $empty;
+    }
+
+    $organizers = [];
+    foreach ($organizerIds as $oid) {
+        $humanData = [];
+        $totalData = [];
+        foreach ($ymdLabels as $ymd) {
+            $humanData[] = (int) ($buckets[$oid]['human'][$ymd] ?? 0);
+            $totalData[] = (int) ($buckets[$oid]['total'][$ymd] ?? 0);
+        }
+        $organizers[(string) $oid] = [
+            'id' => $oid,
+            'name' => $names[$oid] ?? ('#' . $oid),
+            'human' => $humanData,
+            'total' => $totalData,
+        ];
+    }
+
+    return [
+        'labels' => events_edit_stats_chart_labels($ymdLabels),
+        'ymd_labels' => $ymdLabels,
+        'organizers' => $organizers,
+    ];
+}

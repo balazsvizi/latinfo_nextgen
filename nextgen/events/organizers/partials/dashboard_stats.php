@@ -25,6 +25,7 @@ $statsDayDrillYmdLabels = array_values(array_filter(
     array_map('strval', $statsDayDrilldown['ymd_labels'] ?? []),
     static fn (string $d): bool => preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) === 1
 ));
+$statsExposeChartApi = !empty($statsExposeChartApi);
 $statsPageTitle = $statsPageTitle ?? 'Statisztika';
 $statsIntro = $statsIntro ?? 'Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.';
 $statsEmptyEventsMessage = $statsEmptyEventsMessage ?? 'Nincs közzétett eseményed.';
@@ -375,6 +376,9 @@ $renderSplit = static function (
             var selectedDay = null;
             var drillAbort = null;
             var lastHourly = null;
+            var overlayBuilder = null;
+            var chartDomId = <?= json_encode($statsChartDomId, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+            var exposeApi = <?= $statsExposeChartApi ? 'true' : 'false' ?>;
 
             if (drillCfgEl) {
                 try { drillCfg = JSON.parse(drillCfgEl.textContent || '{}'); } catch (e) { drillCfg = null; }
@@ -386,9 +390,9 @@ $renderSplit = static function (
                     return {
                         label: ds.label,
                         data: ds.data,
-                        borderColor: ds.color,
-                        backgroundColor: (ds.color || '#3d6b4f') + '22',
-                        borderWidth: 2,
+                        borderColor: ds.color || ds.borderColor || '#3d6b4f',
+                        backgroundColor: ((ds.color || ds.borderColor || '#3d6b4f')) + '22',
+                        borderWidth: ds.borderWidth != null ? ds.borderWidth : 2,
                         tension: 0.25,
                         pointRadius: radius,
                         pointHoverRadius: 5,
@@ -560,7 +564,20 @@ $renderSplit = static function (
                         ? 'Napi bontás — emberi + bot együtt (összes).'
                         : 'Napi bontás — csak emberi forgalom.';
                 }
-                var datasets = datasetsForMode(mode, payload, drillCfg ? Math.max(3, labels.length > 45 ? 2 : 3) : null);
+                var pointRadius = drillCfg ? Math.max(3, labels.length > 45 ? 2 : 3) : null;
+                var datasets = datasetsForMode(mode, payload, pointRadius);
+                if (typeof overlayBuilder === 'function') {
+                    var overlay = overlayBuilder(mode, {
+                        baseDatasets: datasets,
+                        labels: labels,
+                        payload: payload,
+                        mapDatasets: mapDatasets,
+                        pointRadius: pointRadius == null ? (labels.length > 45 ? 0 : 3) : pointRadius
+                    });
+                    if (Array.isArray(overlay)) {
+                        datasets = overlay;
+                    }
+                }
                 if (!chart) {
                     chart = new Chart(canvas.getContext('2d'), {
                         type: 'line',
@@ -602,6 +619,9 @@ $renderSplit = static function (
                     if (drillCfg) {
                         canvas.style.cursor = 'pointer';
                     }
+                    if (exposeApi) {
+                        registerChartApi();
+                    }
                     return;
                 }
                 chart.data.datasets = datasets;
@@ -609,6 +629,24 @@ $renderSplit = static function (
                 if (lastHourly) {
                     renderHourly(lastHourly);
                 }
+            }
+
+            function registerChartApi() {
+                window.EventsStatsCharts = window.EventsStatsCharts || {};
+                window.EventsStatsCharts[chartDomId] = {
+                    getMode: currentMode,
+                    refresh: render,
+                    setOverlayBuilder: function (fn) {
+                        overlayBuilder = typeof fn === 'function' ? fn : null;
+                        render();
+                    },
+                    getPayload: function () { return payload; },
+                    getLabels: function () { return labels; },
+                    mapDatasets: mapDatasets
+                };
+                document.dispatchEvent(new CustomEvent('events-stats-chart-ready', {
+                    detail: { chartId: chartDomId }
+                }));
             }
 
             if (drillRoot) {
@@ -629,6 +667,9 @@ $renderSplit = static function (
                 modeWrap.addEventListener('change', render);
             }
             render();
+            if (exposeApi && chart) {
+                registerChartApi();
+            }
         })();
         </script>
     <?php else: ?>
