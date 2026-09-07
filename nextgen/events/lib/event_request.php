@@ -606,7 +606,8 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
 /**
  * Esemény másolása új létrehozáshoz: minden mező, kivéve slug és további információ URL.
- * Az időpont (dátum/idő), egész napos jelölő, címkék, stílusok és piszkozat státusz átmásolódik.
+ * A kezdő és záró dátum az űrlapon üresen jelenik meg; az időpontok, egész napos jelölő,
+ * címkék, stílusok és piszkozat státusz átmásolódik.
  *
  * @return array<string,mixed>|null forrás DB sor + kapcsolók, vagy null ha nincs ilyen esemény
  */
@@ -640,6 +641,19 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['finance_amount_paid'] = null;
 
     return $event;
+}
+
+/**
+ * Másolat űrlap: kezdő és záró dátum üres, az időpontok megmaradnak.
+ *
+ * @param array<string,mixed> $e events_row_for_form eredmény
+ * @return array<string,mixed>
+ */
+function events_copy_form_blank_dates(array $e): array {
+    $e['event_start_date'] = '';
+    $e['event_end_date'] = '';
+
+    return $e;
 }
 
 /**

@@ -61,7 +61,15 @@ $calendarColorLegend = [];
 $calendarPreviewById = [];
 if ($view === 'cal' || $view === 'mcal') {
     $organizersByEventId = events_calendar_load_organizers_by_event_id($db, $rows);
-    $calendarPreviewById = events_calendar_preview_build_map($rows, $categoriesByEventId, $organizersByEventId, $lang);
+    $stylesByEventId = events_public_load_styles_by_event_id($db, $rows);
+    $calendarPreviewById = events_calendar_preview_build_map(
+        $rows,
+        $categoriesByEventId,
+        $organizersByEventId,
+        $lang,
+        $stylesByEventId['main'],
+        $stylesByEventId['supplementary']
+    );
     if ($view === 'cal') {
         $calendarColorLegend = events_admin_calendar_category_legend_items($db, $lang);
     }

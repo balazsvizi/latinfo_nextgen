@@ -52,10 +52,10 @@ $copyFromId = (int) ($_GET['copy_from'] ?? 0);
 if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     $copied = events_load_event_copy_template($db, $copyFromId);
     if ($copied !== null) {
-        $e = events_row_for_form($copied);
+        $e = events_copy_form_blank_dates(events_row_for_form($copied));
         $eventFormIsCopy = true;
         $eventCopySourceFeaturedImage = trim((string) ($e['event_featured_image_url'] ?? ''));
-        $copyNotice = 'Esemény másolva piszkozatként. A címkék és stílusok is átkerültek. A további információ URL nem — ellenőrizd az adatokat, majd mentsd.';
+        $copyNotice = 'Esemény másolva piszkozatként. A címkék és stílusok is átkerültek, a dátumokat add meg újra (az időpontok megmaradtak). A további információ URL nem — ellenőrizd az adatokat, majd mentsd.';
     } else {
         flash('error', 'A másolandó esemény nem található.');
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/admin_event_calendar.php';
 require_once __DIR__ . '/public_event_calendar.php';
 require_once __DIR__ . '/event_change.php';
+require_once __DIR__ . '/event_public_styles.php';
 
 /**
  * Naptár esemény előnézet popup — adatok és segédek (nyilvános naptár).
@@ -69,13 +70,17 @@ function events_calendar_load_organizers_by_event_id(PDO $db, array $rows): arra
  * @param list<array<string, mixed>> $rows
  * @param array<int, list<array{id: int, name: string, color: string}>> $categoriesByEventId
  * @param array<int, list<string>> $organizersByEventId
+ * @param array<int, list<array{id: int, name: string}>> $mainStylesByEventId
+ * @param array<int, list<array{id: int, name: string}>> $supplementaryStylesByEventId
  * @return array<int, array<string, mixed>>
  */
 function events_calendar_preview_build_map(
     array $rows,
     array $categoriesByEventId,
     array $organizersByEventId,
-    string $lang = 'hu'
+    string $lang = 'hu',
+    array $mainStylesByEventId = [],
+    array $supplementaryStylesByEventId = []
 ): array {
     require_once __DIR__ . '/event_public_lang.php';
     $strings = events_public_megjelenit_strings($lang);
@@ -114,6 +119,8 @@ function events_calendar_preview_build_map(
                 ],
                 $cats
             )),
+            'mainStyles' => events_calendar_preview_style_names($mainStylesByEventId[$eid] ?? []),
+            'supplementaryStyles' => events_calendar_preview_style_names($supplementaryStylesByEventId[$eid] ?? []),
             'accent' => $accent,
             'image' => events_calendar_preview_featured_image_url($ev),
             'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
@@ -122,4 +129,22 @@ function events_calendar_preview_build_map(
     }
 
     return $map;
+}
+
+/**
+ * @param list<array{id?: int, name?: string}> $styles
+ * @return list<string>
+ */
+function events_calendar_preview_style_names(array $styles): array
+{
+    $names = [];
+    foreach ($styles as $style) {
+        $name = trim((string) ($style['name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+        $names[] = $name;
+    }
+
+    return $names;
 }
