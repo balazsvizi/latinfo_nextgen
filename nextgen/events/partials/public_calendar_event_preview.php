@@ -11,7 +11,10 @@ declare(strict_types=1);
             <img class="events-cal-preview__img" id="events-cal-preview-img" src="" alt="" decoding="async">
         </div>
         <div class="events-cal-preview__body">
-            <p class="events-cal-preview__meta" id="events-cal-preview-meta"></p>
+            <div class="events-cal-preview__topline" id="events-cal-preview-topline" hidden>
+                <p class="events-cal-preview__meta" id="events-cal-preview-meta"></p>
+                <div class="events-cal-preview__cats" id="events-cal-preview-cats" hidden></div>
+            </div>
             <div class="events-cal-preview__change" id="events-cal-preview-change" hidden>
                 <div class="events-cal-preview__change-inner">
                     <span class="events-cal-preview__change-icon" id="events-cal-preview-change-icon" aria-hidden="true"></span>
@@ -30,10 +33,7 @@ declare(strict_types=1);
                 </div>
                 <div class="events-cal-preview__fact" id="events-cal-preview-organizer-wrap" hidden>
                     <dt><?= h((string) ($D['cal_preview_organizer'] ?? 'Szervező')) ?></dt>
-                    <dd class="events-cal-preview__organizer-row">
-                        <span class="events-cal-preview__organizer-name" id="events-cal-preview-organizer" hidden></span>
-                        <span class="events-cal-preview__cats" id="events-cal-preview-cats" hidden></span>
-                    </dd>
+                    <dd id="events-cal-preview-organizer"></dd>
                 </div>
             </dl>
             <div class="events-cal-preview__style-chips" id="events-cal-preview-styles" hidden></div>
@@ -57,6 +57,7 @@ declare(strict_types=1);
     }
 
     var titleEl = document.getElementById('events-cal-preview-title');
+    var toplineEl = document.getElementById('events-cal-preview-topline');
     var metaEl = document.getElementById('events-cal-preview-meta');
     var changeWrap = document.getElementById('events-cal-preview-change');
     var changeIconEl = document.getElementById('events-cal-preview-change-icon');
@@ -73,7 +74,7 @@ declare(strict_types=1);
     var catsEl = document.getElementById('events-cal-preview-cats');
     var ctaEl = document.getElementById('events-cal-preview-cta');
     var closeBtn = document.getElementById('events-cal-preview-close');
-    if (!titleEl || !metaEl || !mediaEl || !imgEl || !venueWrap || !venueEl || !orgWrap || !orgEl || !stylesEl || !catsEl || !ctaEl) return;
+    if (!titleEl || !toplineEl || !metaEl || !mediaEl || !imgEl || !venueWrap || !venueEl || !orgWrap || !orgEl || !stylesEl || !catsEl || !ctaEl) return;
 
     function setVisible(wrap, el, text) {
         var t = (text || '').trim();
@@ -150,8 +151,11 @@ declare(strict_types=1);
         var metaParts = [];
         if (data.date) metaParts.push(data.date);
         else if (data.time) metaParts.push(data.time);
-        metaEl.textContent = metaParts.join(' · ');
-        metaEl.hidden = metaParts.length === 0;
+        var metaText = metaParts.join(' · ');
+        metaEl.textContent = metaText;
+        metaEl.hidden = metaText === '';
+        var catCount = fillCategories(catsEl, data.categories);
+        toplineEl.hidden = metaText === '' && catCount === 0;
 
         if (changeWrap && changeTitleEl && changeNoteEl) {
             var change = data.change || null;
@@ -209,18 +213,7 @@ declare(strict_types=1);
         }
 
         setVisible(venueWrap, venueEl, data.venue || '');
-
-        var organizer = String(data.organizer || '').trim();
-        if (organizer !== '') {
-            orgEl.textContent = organizer;
-            orgEl.hidden = false;
-        } else {
-            orgEl.textContent = '';
-            orgEl.hidden = true;
-        }
-        var catCount = fillCategories(catsEl, data.categories);
-        orgWrap.hidden = organizer === '' && catCount === 0;
-
+        setVisible(orgWrap, orgEl, data.organizer || '');
         fillStyles(stylesEl, data.mainStyles, data.supplementaryStyles);
 
         ctaEl.href = data.url || '#';

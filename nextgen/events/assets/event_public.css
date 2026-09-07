@@ -4778,13 +4778,27 @@ a.home-public-map-popup__title:hover {
     overflow: auto;
 }
 
-.events-cal-preview__meta {
+.events-cal-preview__topline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem 0.65rem;
     margin: 0 0 0.35rem;
+}
+
+.events-cal-preview__topline[hidden] {
+    display: none !important;
+}
+
+.events-cal-preview__meta {
+    margin: 0;
     font-family: var(--ev-sans);
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--li-green-dark);
     line-height: 1.4;
+    min-width: 0;
 }
 
 .events-cal-preview__meta[hidden] {
@@ -4832,17 +4846,6 @@ a.home-public-map-popup__title:hover {
     color: var(--li-text);
 }
 
-.events-cal-preview__organizer-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem 0.45rem;
-}
-
-.events-cal-preview__organizer-name[hidden] {
-    display: none !important;
-}
-
 .events-cal-preview__style-chips {
     display: flex;
     flex-wrap: wrap;
@@ -4882,8 +4885,9 @@ a.home-public-map-popup__title:hover {
 .events-cal-preview__cats {
     display: inline-flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.3rem;
-    margin: 0;
+    margin: 0 0 0 auto;
 }
 
 .events-cal-preview__cats[hidden] {
