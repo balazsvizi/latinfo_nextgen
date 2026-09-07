@@ -117,6 +117,9 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     <div class="events-edit-stats__cards">
         <?php
         $totals = $statsData['totals'] ?? [];
+        $pageHumanMedia = (int) ($totals['page_views_human'] ?? $totals['page_views'] ?? 0);
+        $externalHumanMedia = (int) ($totals['external_info_clicks_human'] ?? $totals['external_info_clicks'] ?? 0);
+        $mediaValue = events_edit_stats_media_value($pageHumanMedia, $externalHumanMedia);
         $statCards = [
             [
                 'label' => 'Oldal — emberi',
@@ -154,6 +157,14 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                 <p class="events-edit-stats__card-hint"><?= h((string) $card['hint']) ?></p>
             </div>
         <?php endforeach; ?>
+            <div class="events-edit-stats__card events-edit-stats__card--media-value">
+                <p class="events-edit-stats__card-label">Generált médiaérték</p>
+                <p class="events-edit-stats__card-value"><?= h(events_edit_stats_format_media_ft((int) $mediaValue['total_ft'])) ?></p>
+                <p class="events-edit-stats__card-hint">
+                    Ember: <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
+                    + <?= (int) $mediaValue['external_clicks_human'] ?> × <?= (int) $mediaValue['click_unit_ft'] ?> Ft
+                </p>
+            </div>
     </div>
 
     <?php if ($hasChart): ?>

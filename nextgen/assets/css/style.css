@@ -4870,6 +4870,10 @@ body.event-edit-cover-lightbox-open {
     border-color: color-mix(in srgb, #6d8f63 28%, var(--border, #e5e7eb));
     background: linear-gradient(180deg, #f5f8f4 0%, #fff 100%);
 }
+.events-stats-summary__card--media {
+    border-color: color-mix(in srgb, #c4a35a 32%, var(--border, #e5e7eb));
+    background: linear-gradient(180deg, #fbf8f1 0%, #fff 100%);
+}
 .events-stats-summary__label {
     margin: 0;
     font-size: 0.72rem;

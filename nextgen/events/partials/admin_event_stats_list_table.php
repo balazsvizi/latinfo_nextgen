@@ -21,12 +21,15 @@ declare(strict_types=1);
                     <th class="th-center events-stats-th-group events-stats-th-group--preview" rowspan="2" scope="col" title="Naptár előnézet"><?= sort_th('Előnézet', 'cal_previews', $order, $dir_param, $get_params) ?></th>
                     <th class="th-center events-stats-th-group events-stats-th-group--external" rowspan="2" scope="col" title="További információ gombra kattintás"><?= sort_th('Tov. info', 'external_clicks', $order, $dir_param, $get_params) ?></th>
                     <th class="events-stats-th-group events-stats-th-group--page" colspan="3" scope="colgroup">Oldal</th>
+                    <th class="events-stats-th-group events-stats-th-group--media" colspan="2" scope="colgroup">Médiaérték</th>
                     <th rowspan="2"><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                 </tr>
                 <tr class="events-stats-thead-secondary">
                     <th class="th-center events-stats-th-sub events-stats-th-sub--page" title="Eseményoldal — emberi"><?= sort_th('Ember', 'views_human', $order, $dir_param, $get_params) ?></th>
                     <th class="th-center events-stats-th-sub events-stats-th-sub--page" title="Eseményoldal — bot"><?= sort_th('Bot', 'views_bot', $order, $dir_param, $get_params) ?></th>
                     <th class="th-center events-stats-th-sub events-stats-th-sub--page events-stats-th-sub--total" title="Eseményoldal — összesen"><?= sort_th('Össz', 'views', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center events-stats-th-sub events-stats-th-sub--media" title="Oldalmegnyitás (ember) × egységár"><?= sort_th('Oldal Ft', 'media_page', $order, $dir_param, $get_params) ?></th>
+                    <th class="th-center events-stats-th-sub events-stats-th-sub--media" title="További info (ember) × egységár"><?= sort_th('Átkatt Ft', 'media_click', $order, $dir_param, $get_params) ?></th>
                 </tr>
             </thead>
             <tbody>

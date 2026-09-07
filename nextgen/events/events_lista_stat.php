@@ -9,6 +9,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/admin_event_calendar.php';
 require_once __DIR__ . '/lib/event_view_tracking.php';
+require_once __DIR__ . '/lib/event_edit_stats.php';
 requireLogin();
 
 $db = getDb();
@@ -20,6 +21,7 @@ $allowedOrder = [
     'id', 'organizer', 'name', 'start', 'status',
     'cal_previews', 'external_clicks',
     'views', 'views_human', 'views_bot',
+    'media_page', 'media_click', 'media_total',
 ];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
@@ -33,6 +35,9 @@ $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['whe
 $params = $filters['params'];
 $poolFromSql = events_admin_list_pool_from_sql($filters['list_limit']);
 
+$mediaPageUnitFt = events_edit_stats_media_value_page_view_ft();
+$mediaClickUnitFt = events_edit_stats_media_value_intent_click_ft();
+
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
     'id' => "e.id {$dirSql}",
@@ -45,6 +50,9 @@ $orderSql = match ($order) {
     'views' => "megtekintesek {$dirSql}",
     'views_human' => "megtekintesek_human {$dirSql}",
     'views_bot' => "megtekintesek_bot {$dirSql}",
+    'media_page' => "(megtekintesek_human * {$mediaPageUnitFt}) {$dirSql}",
+    'media_click' => "(tovabbi_info_kattintasok_human * {$mediaClickUnitFt}) {$dirSql}",
+    'media_total' => "((megtekintesek_human * {$mediaPageUnitFt}) + (tovabbi_info_kattintasok_human * {$mediaClickUnitFt})) {$dirSql}",
     default => 'megtekintesek DESC',
 };
 
@@ -70,6 +78,8 @@ $sql = "
         {$pageCounts['bot']} AS megtekintesek_bot,
         {$pageCounts['total']} AS megtekintesek,
         {$previewCounts['total']} AS naptar_elonezetek,
+        {$externalCounts['human']} AS tovabbi_info_kattintasok_human,
+        {$externalCounts['bot']} AS tovabbi_info_kattintasok_bot,
         {$externalCounts['total']} AS tovabbi_info_kattintasok
     FROM {$poolFromSql}
     {$whereSql}
@@ -83,19 +93,28 @@ $statsSummary = [
     'events' => count($rows),
     'preview_total' => 0,
     'external_total' => 0,
+    'external_human' => 0,
     'page_human' => 0,
     'page_bot' => 0,
     'page_total' => 0,
+    'media_total_ft' => 0,
+    'media_page_ft' => 0,
+    'media_click_ft' => 0,
 ];
 foreach ($rows as $summaryRow) {
     $preview = events_view_metric_counts_from_row($summaryRow, 'naptar_elonezetek');
     $external = events_view_metric_counts_from_row($summaryRow, 'tovabbi_info_kattintasok');
     $page = events_view_metric_counts_from_row($summaryRow, 'megtekintesek');
+    $rowMedia = events_edit_stats_media_value((int) $page['human'], (int) $external['human']);
     $statsSummary['preview_total'] += $preview['total'];
     $statsSummary['external_total'] += $external['total'];
+    $statsSummary['external_human'] += $external['human'];
     $statsSummary['page_human'] += $page['human'];
     $statsSummary['page_bot'] += $page['bot'];
     $statsSummary['page_total'] += $page['total'];
+    $statsSummary['media_total_ft'] += (int) $rowMedia['total_ft'];
+    $statsSummary['media_page_ft'] += (int) $rowMedia['page_value_ft'];
+    $statsSummary['media_click_ft'] += (int) $rowMedia['click_value_ft'];
 }
 
 $editBase = events_url('szerkeszt.php?id=');
@@ -151,7 +170,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <p class="events-stats-page__intro">Naptár előnézet, további információ kattintás (összes) és oldalmegtekintés emberi / bot / össz bontásban. Alapból oldal össz szerint csökkenő.</p>
+        <p class="events-stats-page__intro">Naptár előnézet, további információ kattintás és oldalmegtekintés emberi / bot / össz bontásban, plusz generált médiaérték. Alapból oldal össz szerint csökkenő.</p>
 
         <?php if ($rows !== []): ?>
             <div class="events-stats-summary" aria-label="Összesítés a megjelenített listára">
@@ -176,6 +195,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <p class="events-stats-summary__hint">
                         <span class="events-stats-summary__chip events-stats-summary__chip--human"><?= (int) $statsSummary['page_human'] ?> ember</span>
                         <span class="events-stats-summary__chip events-stats-summary__chip--bot"><?= (int) $statsSummary['page_bot'] ?> bot</span>
+                    </p>
+                </div>
+                <div class="events-stats-summary__card events-stats-summary__card--media">
+                    <p class="events-stats-summary__label">Médiaérték</p>
+                    <p class="events-stats-summary__value"><?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_total_ft'])) ?></p>
+                    <p class="events-stats-summary__hint">
+                        <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_page_ft'])) ?> megtekintés
+                        · <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_click_ft'])) ?> átkatt
+                        (<?= (int) $mediaPageUnitFt ?> / <?= (int) $mediaClickUnitFt ?> Ft)
                     </p>
                 </div>
             </div>

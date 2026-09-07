@@ -49,11 +49,17 @@ $statsEmptyEventsMessage = '';
 
 $dateFrom = (string) $statsParams['date_from'];
 $dateTo = (string) $statsParams['date_to'];
+[$orgMediaPageUnitFt, $orgMediaClickUnitFt] = events_edit_stats_resolve_media_units($statsParams);
 $orgFilterBaseQuery = [
     'stat_date_from' => $dateFrom,
     'stat_date_to' => $dateTo,
     'stat_mode' => (string) ($statsParams['mode'] ?? 'smart'),
 ];
+if (!empty($statsParams['custom_rates'])) {
+    $orgFilterBaseQuery['stat_custom_rates'] = '1';
+    $orgFilterBaseQuery['stat_page_ft'] = $orgMediaPageUnitFt;
+    $orgFilterBaseQuery['stat_click_ft'] = $orgMediaClickUnitFt;
+}
 
 $chartOverlayJson = json_encode([
     'chartId' => $statsChartDomId,
@@ -130,6 +136,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th class="th-center events-stats-th-group events-stats-th-group--page" colspan="2" scope="colgroup">Oldalmegnyitás</th>
                         <th class="th-center events-stats-th-group events-stats-th-group--preview" colspan="2" scope="colgroup">Előnézet</th>
                         <th class="th-center events-stats-th-group events-stats-th-group--external" colspan="2" scope="colgroup">Átkatt</th>
+                        <th class="th-center events-stats-th-group events-stats-th-group--media" colspan="2" scope="colgroup">Médiaérték</th>
                     </tr>
                     <tr class="events-stats-thead-secondary">
                         <th class="th-center events-stats-th-sub events-stats-th-sub--unique events-stats-th-sub--human">Ember</th>
@@ -140,6 +147,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th class="th-center events-stats-th-sub events-stats-th-sub--preview">Bot</th>
                         <th class="th-center events-stats-th-sub events-stats-th-sub--external events-stats-th-sub--human">Ember</th>
                         <th class="th-center events-stats-th-sub events-stats-th-sub--external">Bot</th>
+                        <th
+                            class="th-center events-stats-th-sub events-stats-th-sub--media events-stats-th-sub--human"
+                            title="Oldalmegnyitás (ember) × <?= (int) $orgMediaPageUnitFt ?> Ft"
+                        >Oldal Ft</th>
+                        <th
+                            class="th-center events-stats-th-sub events-stats-th-sub--media events-stats-th-sub--human"
+                            title="További info (ember) × <?= (int) $orgMediaClickUnitFt ?> Ft"
+                        >Átkatt Ft</th>
                     </tr>
                 </thead>
                 <tbody id="organizer-agg-tbody">
@@ -152,6 +167,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         $filterUrl = events_url('events_statisztika.php') . '?' . http_build_query($filterQuery);
                         $editUrl = events_url('organizer_szerkeszt.php?id=') . $oid;
                         $searchName = mb_strtolower((string) $row['name'], 'UTF-8');
+                        $rowMediaValue = events_edit_stats_media_value(
+                            (int) $row['megtekintesek_human'],
+                            (int) $row['tovabbi_info_kattintasok_human'],
+                            !empty($statsParams['custom_rates']) ? $orgMediaPageUnitFt : null,
+                            !empty($statsParams['custom_rates']) ? $orgMediaClickUnitFt : null
+                        );
                         ?>
                         <tr data-org-agg-row data-search="<?= h($searchName) ?>" data-org-id="<?= $oid ?>">
                             <td class="events-td-actions">
@@ -178,10 +199,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <td class="text-center events-stats-cell--bot"><?= (int) $row['naptar_elonezetek_bot'] ?></td>
                             <td class="text-center events-stats-cell--human"><?= (int) $row['tovabbi_info_kattintasok_human'] ?></td>
                             <td class="text-center events-stats-cell--bot"><?= (int) $row['tovabbi_info_kattintasok_bot'] ?></td>
+                            <td class="text-center events-stats-cell--media" title="<?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['total_ft'])) ?>">
+                                <?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['page_value_ft'])) ?>
+                            </td>
+                            <td class="text-center events-stats-cell--media">
+                                <?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['click_value_ft'])) ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-agg-empty" hidden>
-                        <td colspan="11" class="events-org-stats-list-empty">Nincs találat a keresésre.</td>
+                        <td colspan="13" class="events-org-stats-list-empty">Nincs találat a keresésre.</td>
                     </tr>
                 </tbody>
             </table>
