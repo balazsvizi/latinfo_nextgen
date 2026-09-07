@@ -374,6 +374,7 @@ $renderSplit = static function (
         }
     })();
     </script>
+    <?php require dirname(__DIR__, 2) . '/partials/stats_loading_overlay.php'; ?>
 
     <div class="events-edit-stats__cards">
         <div class="events-edit-stats__card">

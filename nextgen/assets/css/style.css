@@ -4828,6 +4828,81 @@ body.event-edit-cover-lightbox-open {
     gap: 0.35rem;
     align-items: center;
 }
+.events-stats-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: color-mix(in srgb, #1a1a1a 32%, transparent);
+    backdrop-filter: blur(2px);
+}
+.events-stats-loading[hidden] {
+    display: none !important;
+}
+.events-stats-loading__panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 11rem;
+    max-width: 18rem;
+    padding: 1.15rem 1.35rem;
+    border: 1px solid color-mix(in srgb, #c4a35a 28%, var(--border, #e5e7eb));
+    border-radius: 0.85rem;
+    background: linear-gradient(180deg, #fbf8f1 0%, #fff 100%);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+    text-align: center;
+}
+.events-stats-loading__hourglass {
+    width: 2.1rem;
+    height: 2.1rem;
+    display: inline-block;
+    position: relative;
+    animation: events-stats-hourglass-flip 1.35s ease-in-out infinite;
+}
+.events-stats-loading__hourglass::before,
+.events-stats-loading__hourglass::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 1.35rem;
+    height: 0.95rem;
+    margin-left: -0.675rem;
+    border: 2px solid #8a6d2f;
+    box-sizing: border-box;
+}
+.events-stats-loading__hourglass::before {
+    top: 0.05rem;
+    border-bottom: 0;
+    border-radius: 0.15rem 0.15rem 0 0;
+    clip-path: polygon(0 0, 100% 0, 58% 100%, 42% 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, #c4a35a 55%, #fff) 0%, transparent 85%);
+}
+.events-stats-loading__hourglass::after {
+    bottom: 0.05rem;
+    border-top: 0;
+    border-radius: 0 0 0.15rem 0.15rem;
+    clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+    background: linear-gradient(0deg, color-mix(in srgb, #c4a35a 55%, #fff) 0%, transparent 85%);
+}
+.events-stats-loading__text {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary, #1a1a1a);
+}
+html.events-stats-loading-active,
+html.events-stats-loading-active body {
+    cursor: wait;
+}
+@keyframes events-stats-hourglass-flip {
+    0%, 35% { transform: rotate(0deg); }
+    50%, 85% { transform: rotate(180deg); }
+    100% { transform: rotate(360deg); }
+}
 .events-edit-stats__cards {
     display: grid;
     gap: 0.85rem;

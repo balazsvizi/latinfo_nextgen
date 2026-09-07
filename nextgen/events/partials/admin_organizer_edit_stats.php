@@ -145,6 +145,7 @@ $eventDateYmd = static function (array $row, string $key): string {
         });
     })();
     </script>
+    <?php require __DIR__ . '/stats_loading_overlay.php'; ?>
 
     <div class="events-edit-stats__cards">
         <div class="events-edit-stats__card">

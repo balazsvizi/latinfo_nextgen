@@ -113,6 +113,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         });
     })();
     </script>
+    <?php require __DIR__ . '/stats_loading_overlay.php'; ?>
 
     <div class="events-edit-stats__cards">
         <?php
