@@ -113,7 +113,7 @@ $partnerActivityLogGlobal = true;
         <a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" class="btn btn-secondary btn-sm">
             Üzenetek<?= $unread > 0 ? ' (' . $unread . ')' : '' ?>
         </a>
-        <a href="<?= h(nextgen_url('admin/partnerek/mediaertek_probak.php')) ?>" class="btn btn-secondary btn-sm">Médiaérték próbák</a>
+        <a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" class="btn btn-secondary btn-sm">Médiaérték</a>
         <a href="<?= h(partner_url('')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
     </div>
     <div class="table-wrap">

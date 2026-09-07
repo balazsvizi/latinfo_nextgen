@@ -4,6 +4,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/event_view_tracking.php';
 require_once __DIR__ . '/admin_event_calendar.php';
 
+$nextgenMediaValueLib = dirname(__DIR__, 2) . '/lib/partner/media_value_trials.php';
+if (is_file($nextgenMediaValueLib)) {
+    require_once $nextgenMediaValueLib;
+}
+
 /**
  * @return array{
  *   date_from: string,
@@ -179,16 +184,28 @@ function events_edit_stats_smart_event_join_sql(
         . " ON {$eventAlias}.`id` = {$viewAlias}.`esemény_id`";
 }
 
-/** Oldalmegnyitás / Detail Page View (emberi) — átlagos reklámérték egységár. */
+/** Oldalmegnyitás / Detail Page View (emberi) — adminban beállított reklámérték egységár. */
 function events_edit_stats_media_value_page_view_ft(): int
 {
-    return 80;
+    if (function_exists('nextgen_media_value_rates_get')) {
+        return (int) nextgen_media_value_rates_get()['page_unit_ft'];
+    }
+
+    return function_exists('nextgen_media_value_rates_builtin_page_ft')
+        ? nextgen_media_value_rates_builtin_page_ft()
+        : 80;
 }
 
-/** További info / Click-out (emberi) — átlagos reklámérték egységár. */
+/** További info / Click-out (emberi) — adminban beállított reklámérték egységár. */
 function events_edit_stats_media_value_intent_click_ft(): int
 {
-    return 70;
+    if (function_exists('nextgen_media_value_rates_get')) {
+        return (int) nextgen_media_value_rates_get()['click_unit_ft'];
+    }
+
+    return function_exists('nextgen_media_value_rates_builtin_click_ft')
+        ? nextgen_media_value_rates_builtin_click_ft()
+        : 70;
 }
 
 /**

@@ -199,3 +199,147 @@ function nextgen_partner_media_value_trials_list(
         return [];
     }
 }
+
+function nextgen_media_value_rates_builtin_page_ft(): int
+{
+    return 80;
+}
+
+function nextgen_media_value_rates_builtin_click_ft(): int
+{
+    return 70;
+}
+
+function nextgen_media_value_rates_table_ready(PDO $db): bool
+{
+    static $cached = null;
+    if ($cached === true) {
+        return true;
+    }
+    try {
+        $db->query('SELECT 1 FROM `nextgen_media_value_rates` LIMIT 1');
+        $cached = true;
+    } catch (Throwable) {
+        $cached = false;
+    }
+
+    return $cached;
+}
+
+function nextgen_media_value_rates_ensure_schema(PDO $db): bool
+{
+    if (nextgen_media_value_rates_table_ready($db)) {
+        return true;
+    }
+    try {
+        $db->exec('
+            CREATE TABLE IF NOT EXISTS `nextgen_media_value_rates` (
+                `id` TINYINT UNSIGNED NOT NULL,
+                `page_unit_ft` INT UNSIGNED NOT NULL,
+                `click_unit_ft` INT UNSIGNED NOT NULL,
+                `frissítve` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ');
+        $ins = $db->prepare('
+            INSERT IGNORE INTO `nextgen_media_value_rates` (`id`, `page_unit_ft`, `click_unit_ft`)
+            VALUES (1, ?, ?)
+        ');
+        $ins->execute([
+            nextgen_media_value_rates_builtin_page_ft(),
+            nextgen_media_value_rates_builtin_click_ft(),
+        ]);
+        // Invalidate negative cache from the failed pre-check.
+        $db->query('SELECT 1 FROM `nextgen_media_value_rates` LIMIT 1');
+
+        return true;
+    } catch (Throwable $ex) {
+        error_log('nextgen_media_value_rates_ensure_schema: ' . $ex->getMessage());
+
+        return false;
+    }
+}
+
+/**
+ * @return array{page_unit_ft: int, click_unit_ft: int}
+ */
+function nextgen_media_value_rates_get(?PDO $db = null): array
+{
+    if (isset($GLOBALS['__nextgen_media_value_rates_cache']) && is_array($GLOBALS['__nextgen_media_value_rates_cache'])) {
+        /** @var array{page_unit_ft: int, click_unit_ft: int} $cached */
+        $cached = $GLOBALS['__nextgen_media_value_rates_cache'];
+
+        return $cached;
+    }
+
+    $fallback = [
+        'page_unit_ft' => nextgen_media_value_rates_builtin_page_ft(),
+        'click_unit_ft' => nextgen_media_value_rates_builtin_click_ft(),
+    ];
+
+    if ($db === null && function_exists('getDb')) {
+        try {
+            $db = getDb();
+        } catch (Throwable) {
+            $db = null;
+        }
+    }
+    if (!$db instanceof PDO) {
+        return $fallback;
+    }
+    if (!nextgen_media_value_rates_ensure_schema($db)) {
+        return $fallback;
+    }
+
+    try {
+        $row = $db->query('
+            SELECT `page_unit_ft`, `click_unit_ft`
+            FROM `nextgen_media_value_rates`
+            WHERE `id` = 1
+            LIMIT 1
+        ')->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($row)) {
+            return $fallback;
+        }
+        $rates = [
+            'page_unit_ft' => max(0, min(1_000_000, (int) ($row['page_unit_ft'] ?? $fallback['page_unit_ft']))),
+            'click_unit_ft' => max(0, min(1_000_000, (int) ($row['click_unit_ft'] ?? $fallback['click_unit_ft']))),
+        ];
+        $GLOBALS['__nextgen_media_value_rates_cache'] = $rates;
+
+        return $rates;
+    } catch (Throwable $ex) {
+        error_log('nextgen_media_value_rates_get: ' . $ex->getMessage());
+
+        return $fallback;
+    }
+}
+
+function nextgen_media_value_rates_save(PDO $db, int $pageUnitFt, int $clickUnitFt): bool
+{
+    if (!nextgen_media_value_rates_ensure_schema($db)) {
+        return false;
+    }
+    $pageUnitFt = max(0, min(1_000_000, $pageUnitFt));
+    $clickUnitFt = max(0, min(1_000_000, $clickUnitFt));
+    try {
+        $stmt = $db->prepare('
+            INSERT INTO `nextgen_media_value_rates` (`id`, `page_unit_ft`, `click_unit_ft`)
+            VALUES (1, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                `page_unit_ft` = VALUES(`page_unit_ft`),
+                `click_unit_ft` = VALUES(`click_unit_ft`)
+        ');
+        $stmt->execute([$pageUnitFt, $clickUnitFt]);
+        $GLOBALS['__nextgen_media_value_rates_cache'] = [
+            'page_unit_ft' => $pageUnitFt,
+            'click_unit_ft' => $clickUnitFt,
+        ];
+
+        return true;
+    } catch (Throwable $ex) {
+        error_log('nextgen_media_value_rates_save: ' . $ex->getMessage());
+
+        return false;
+    }
+}

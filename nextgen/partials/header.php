@@ -105,7 +105,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-events-partnerek" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Lista</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Üzenetek</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek_probak.php')) ?>" role="menuitem">Médiaérték próbák</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu">
@@ -159,7 +159,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-admin" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Partnerek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Partner üzenetek</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek_probak.php')) ?>" role="menuitem">Médiaérték próbák</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/adminok/')) ?>" role="menuitem">Adminok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/rate_limit.php')) ?>" role="menuitem">Belépési korlát</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/log.php')) ?>" role="menuitem">Logok</a></li>
