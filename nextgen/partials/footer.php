@@ -60,5 +60,6 @@
     });
 })();
 </script>
+<?php require_once __DIR__ . '/../events/partials/stats_loading_overlay.php'; ?>
 </body>
 </html>
