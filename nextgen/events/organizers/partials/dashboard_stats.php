@@ -331,8 +331,7 @@ $renderSplit = static function (
                         </div>
                     </div>
                     <p class="events-edit-stats__filter-hint">
-                        Alap: <?= (int) events_edit_stats_media_value_page_view_ft() ?> / <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft ·
-                        A Számolás ment a naplóba és újraszámol.
+                        Alap: <?= (int) events_edit_stats_media_value_page_view_ft() ?> / <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft
                     </p>
                 </div>
             </div>
