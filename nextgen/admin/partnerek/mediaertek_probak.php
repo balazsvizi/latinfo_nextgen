@@ -25,7 +25,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             <h2 style="margin:0;">Médiaérték egységár-próbák</h2>
             <p class="help" style="margin:0.35rem 0 0;">
                 A partnerportálon megadott saját megtekintés / átkattintás Ft-ok naplója.
-                Alapértelmezés: <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft + <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft.
+                Alapértelmezés (DPV / Click-out): <?= (int) events_edit_stats_media_value_page_view_ft() ?> Ft + <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft.
             </p>
         </div>
         <div class="toolbar">

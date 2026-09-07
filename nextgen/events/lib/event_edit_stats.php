@@ -179,16 +179,16 @@ function events_edit_stats_smart_event_join_sql(
         . " ON {$eventAlias}.`id` = {$viewAlias}.`esemény_id`";
 }
 
-/** Részletes adatlap megtekintés (emberi) — átlagos statisztikai egységérték. */
+/** Oldalmegnyitás / Detail Page View (emberi) — átlagos reklámérték egységár. */
 function events_edit_stats_media_value_page_view_ft(): int
 {
-    return 35;
+    return 80;
 }
 
-/** Átkattintás a szervezőhöz (emberi) — átlagos statisztikai egységérték. */
+/** További info / Click-out (emberi) — átlagos reklámérték egységár. */
 function events_edit_stats_media_value_intent_click_ft(): int
 {
-    return 200;
+    return 70;
 }
 
 /**

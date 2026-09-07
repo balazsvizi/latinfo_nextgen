@@ -130,10 +130,13 @@ $statsCardHelp = [
     'Oldalmegnyitás' => 'A nyilvános eseményoldal betöltéseinek száma (minden frissítés / visszalépés számít). Nem egyenlő az érdeklődők számával.' . $botHelpSuffix,
     'Előnézet' => 'A naptárban vagy listában megnyitott előnézet-panelek száma emberi és bot bontásban.' . $botHelpSuffix,
     'További info' => 'A „További információ” / külső link átkattintások száma emberi és bot bontásban.' . $botHelpSuffix,
-    'Generált médiaérték' => 'A Dashboard-érték átlagos statisztikai piaci árakon alapul (emberi forgalom, a leszűrt időszakra).'
-        . ' Részletes adatlap megtekintés: ' . events_edit_stats_media_value_page_view_ft() . ' Ft / megtekintés (kvalifikált érdeklődés / Deep View Value).'
-        . ' Átkattintás a szervezőhöz: ' . events_edit_stats_media_value_intent_click_ft() . ' Ft / kattintás (magas konverziójú átirányítás / Intent Click Value).'
-        . ' Képlet: Generált médiaérték = (adatlap megtekintések × egységár) + (átkattintások × egységár).'
+    'Generált médiaérték' => 'Becsült reklámérték emberi forgalom alapján, a leszűrt időszakra.'
+        . ' Oldalmegnyitás (Detail Page View): a részletes eseményoldal megnyitása — '
+        . events_edit_stats_media_value_page_view_ft() . ' Ft / megtekintés (elfogadható tartomány: 60–120 Ft).'
+        . ' További info (Click-out): átkattintás a szervező Facebook-eseményére — '
+        . events_edit_stats_media_value_intent_click_ft() . ' Ft / kattintás (elfogadható tartomány: 50–100 Ft).'
+        . ' Képlet: (oldalmegnyitások × egységár) + (további info kattintások × egységár).'
+        . ' A benchmark magyar Facebook CPC / landing page view piaci árakon alapul.'
         . ($statsCustomRates
             ? ' Most saját egységárakkal számol: ' . $statsPageUnitFt . ' Ft / megtekintés és ' . $statsClickUnitFt . ' Ft / átkattintás.'
             : ''),
