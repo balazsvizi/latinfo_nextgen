@@ -30,18 +30,13 @@ declare(strict_types=1);
                 </div>
                 <div class="events-cal-preview__fact" id="events-cal-preview-organizer-wrap" hidden>
                     <dt><?= h((string) ($D['cal_preview_organizer'] ?? 'Szervező')) ?></dt>
-                    <dd id="events-cal-preview-organizer"></dd>
-                </div>
-                <div class="events-cal-preview__fact" id="events-cal-preview-main-styles-wrap" hidden>
-                    <dt><?= h((string) ($D['cal_preview_main_styles'] ?? 'Fő stílus')) ?></dt>
-                    <dd class="events-cal-preview__style-chips" id="events-cal-preview-main-styles"></dd>
-                </div>
-                <div class="events-cal-preview__fact" id="events-cal-preview-supp-styles-wrap" hidden>
-                    <dt><?= h((string) ($D['cal_preview_supp_styles'] ?? 'Alstílus')) ?></dt>
-                    <dd class="events-cal-preview__style-chips" id="events-cal-preview-supp-styles"></dd>
+                    <dd class="events-cal-preview__organizer-row">
+                        <span class="events-cal-preview__organizer-name" id="events-cal-preview-organizer" hidden></span>
+                        <span class="events-cal-preview__cats" id="events-cal-preview-cats" hidden></span>
+                    </dd>
                 </div>
             </dl>
-            <div class="events-cal-preview__cats" id="events-cal-preview-cats" hidden></div>
+            <div class="events-cal-preview__style-chips" id="events-cal-preview-styles" hidden></div>
             <a class="events-cal-preview__cta" id="events-cal-preview-cta" href="#"><?= h((string) ($D['cal_preview_details'] ?? 'Részletek')) ?></a>
         </div>
     </div>
@@ -74,20 +69,11 @@ declare(strict_types=1);
     var venueEl = document.getElementById('events-cal-preview-venue');
     var orgWrap = document.getElementById('events-cal-preview-organizer-wrap');
     var orgEl = document.getElementById('events-cal-preview-organizer');
-    var mainStylesWrap = document.getElementById('events-cal-preview-main-styles-wrap');
-    var mainStylesEl = document.getElementById('events-cal-preview-main-styles');
-    var suppStylesWrap = document.getElementById('events-cal-preview-supp-styles-wrap');
-    var suppStylesEl = document.getElementById('events-cal-preview-supp-styles');
+    var stylesEl = document.getElementById('events-cal-preview-styles');
     var catsEl = document.getElementById('events-cal-preview-cats');
     var ctaEl = document.getElementById('events-cal-preview-cta');
     var closeBtn = document.getElementById('events-cal-preview-close');
-    if (!titleEl || !metaEl || !mediaEl || !imgEl || !venueWrap || !venueEl || !orgWrap || !orgEl || !catsEl || !ctaEl) return;
-
-    function esc(s) {
-        var d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
-    }
+    if (!titleEl || !metaEl || !mediaEl || !imgEl || !venueWrap || !venueEl || !orgWrap || !orgEl || !stylesEl || !catsEl || !ctaEl) return;
 
     function setVisible(wrap, el, text) {
         var t = (text || '').trim();
@@ -100,9 +86,7 @@ declare(strict_types=1);
         el.textContent = t;
     }
 
-    function fillStyleChips(wrap, el, names, modifier) {
-        if (!wrap || !el) return;
-        el.innerHTML = '';
+    function appendStyleChips(el, names, modifier) {
         var list = Array.isArray(names) ? names : [];
         var shown = 0;
         list.forEach(function (name) {
@@ -114,7 +98,36 @@ declare(strict_types=1);
             el.appendChild(span);
             shown += 1;
         });
-        wrap.hidden = shown === 0;
+        return shown;
+    }
+
+    function fillStyles(el, mainNames, suppNames) {
+        el.innerHTML = '';
+        var shown = 0;
+        shown += appendStyleChips(el, mainNames, 'main');
+        shown += appendStyleChips(el, suppNames, 'supplementary');
+        el.hidden = shown === 0;
+    }
+
+    function fillCategories(el, cats) {
+        el.innerHTML = '';
+        var list = Array.isArray(cats) ? cats : [];
+        var shown = 0;
+        list.forEach(function (cat) {
+            var name = String((cat && cat.name) || '').trim();
+            if (name === '') return;
+            var span = document.createElement('span');
+            span.className = 'events-cal-preview__cat';
+            var color = String((cat && cat.color) || '#6d8f63').trim();
+            if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+                span.style.setProperty('--cal-preview-cat', color);
+            }
+            span.textContent = name;
+            el.appendChild(span);
+            shown += 1;
+        });
+        el.hidden = shown === 0;
+        return shown;
     }
 
     function trackPreviewOpen(id) {
@@ -196,27 +209,19 @@ declare(strict_types=1);
         }
 
         setVisible(venueWrap, venueEl, data.venue || '');
-        setVisible(orgWrap, orgEl, data.organizer || '');
-        fillStyleChips(mainStylesWrap, mainStylesEl, data.mainStyles, 'main');
-        fillStyleChips(suppStylesWrap, suppStylesEl, data.supplementaryStyles, 'supplementary');
 
-        catsEl.innerHTML = '';
-        var cats = Array.isArray(data.categories) ? data.categories : [];
-        if (cats.length > 0) {
-            catsEl.hidden = false;
-            cats.forEach(function (cat) {
-                var span = document.createElement('span');
-                span.className = 'events-cal-preview__cat';
-                var color = (cat.color || '#6d8f63').trim();
-                if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
-                    span.style.setProperty('--cal-preview-cat', color);
-                }
-                span.textContent = cat.name || '';
-                catsEl.appendChild(span);
-            });
+        var organizer = String(data.organizer || '').trim();
+        if (organizer !== '') {
+            orgEl.textContent = organizer;
+            orgEl.hidden = false;
         } else {
-            catsEl.hidden = true;
+            orgEl.textContent = '';
+            orgEl.hidden = true;
         }
+        var catCount = fillCategories(catsEl, data.categories);
+        orgWrap.hidden = organizer === '' && catCount === 0;
+
+        fillStyles(stylesEl, data.mainStyles, data.supplementaryStyles);
 
         ctaEl.href = data.url || '#';
         if (data.accent && /^#[0-9A-Fa-f]{6}$/.test(data.accent)) {

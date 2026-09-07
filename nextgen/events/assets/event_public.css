@@ -4832,10 +4832,26 @@ a.home-public-map-popup__title:hover {
     color: var(--li-text);
 }
 
+.events-cal-preview__organizer-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.45rem;
+}
+
+.events-cal-preview__organizer-name[hidden] {
+    display: none !important;
+}
+
 .events-cal-preview__style-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 0.3rem;
+    margin: 0 0 0.9rem;
+}
+
+.events-cal-preview__style-chips[hidden] {
+    display: none !important;
 }
 
 .events-cal-preview__style {
@@ -4864,10 +4880,10 @@ a.home-public-map-popup__title:hover {
 }
 
 .events-cal-preview__cats {
-    display: flex;
+    display: inline-flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-bottom: 0.9rem;
+    gap: 0.3rem;
+    margin: 0;
 }
 
 .events-cal-preview__cats[hidden] {
@@ -4877,7 +4893,7 @@ a.home-public-map-popup__title:hover {
 .events-cal-preview__cat {
     display: inline-flex;
     align-items: center;
-    padding: 0.22rem 0.55rem;
+    padding: 0.18rem 0.5rem;
     border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--cal-preview-cat, var(--li-green)) 35%, transparent);
     background: color-mix(in srgb, var(--cal-preview-cat, var(--li-green)) 12%, #fff);
