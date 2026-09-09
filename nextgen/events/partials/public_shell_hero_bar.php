@@ -14,6 +14,7 @@ declare(strict_types=1);
  * @var string $heroInlineTitle Opcionális cím a logó mellett (főoldal)
  * @var string|null $mcalToggleUrl Hun/Eng közti „/” → mobil / klasszikus naptár váltó
  * @var string|null $mcalToggleTitle
+ * @var list<array{href:string,label:string,aria?:string}> $heroExtraBackLinks Extra vissza-linkek a „← Naptár” mellett
  */
 $isEventsHome = $isEventsHome ?? false;
 $showAdminEdit = $showAdminEdit ?? false;
@@ -21,6 +22,7 @@ $adminEditUrl = $adminEditUrl ?? '';
 $heroInlineTitle = trim((string) ($heroInlineTitle ?? ''));
 $mcalToggleUrl = trim((string) ($mcalToggleUrl ?? ''));
 $mcalToggleTitle = trim((string) ($mcalToggleTitle ?? ''));
+$heroExtraBackLinks = is_array($heroExtraBackLinks ?? null) ? $heroExtraBackLinks : [];
 $C = events_public_common_nav_strings($lang);
 $eventsHomeUrl = events_public_home_page_url($lang);
 $latinfoLogoSrc = events_public_logo_src();
@@ -28,7 +30,20 @@ $L = events_public_lang_switch_link_labels();
 ?>
 <div class="event-public__hero-chrome">
     <?php if (!$isEventsHome): ?>
-        <a class="event-public__hero-back" href="<?= h($eventsHomeUrl) ?>" aria-label="<?= h($C['events_home_aria']) ?>"><?= h($C['events_home_back']) ?></a>
+        <nav class="event-public__hero-backs" aria-label="<?= h($C['events_home_aria']) ?>">
+            <a class="event-public__hero-back" href="<?= h($eventsHomeUrl) ?>" aria-label="<?= h($C['events_home_aria']) ?>"><?= h($C['events_home_back']) ?></a>
+            <?php foreach ($heroExtraBackLinks as $extraBack): ?>
+                <?php
+                $extraHref = trim((string) ($extraBack['href'] ?? ''));
+                $extraLabel = trim((string) ($extraBack['label'] ?? ''));
+                if ($extraHref === '' || $extraLabel === '') {
+                    continue;
+                }
+                $extraAria = trim((string) ($extraBack['aria'] ?? $extraLabel));
+                ?>
+                <a class="event-public__hero-back" href="<?= h($extraHref) ?>" aria-label="<?= h($extraAria) ?>"><?= h($extraLabel) ?></a>
+            <?php endforeach; ?>
+        </nav>
     <?php endif; ?>
     <div class="event-public__hero-bar">
         <div class="event-public__hero-bar-start">

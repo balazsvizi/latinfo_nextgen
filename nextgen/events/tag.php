@@ -178,7 +178,18 @@ header('Content-Type: text/html; charset=UTF-8');
 <div class="event-shell">
 <article class="event-public organizer-public<?= $tagIsDj ? ' dj-public' : '' ?>">
     <header class="event-public__hero">
-        <?php $S = $G; require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
+        <?php
+        $S = $G;
+        $heroExtraBackLinks = [];
+        if ($tagIsDj) {
+            $heroExtraBackLinks[] = [
+                'href' => events_public_djs_page_url($lang),
+                'label' => '← ' . (string) $G['all_djs_link'],
+                'aria' => (string) $G['all_djs_link'],
+            ];
+        }
+        require __DIR__ . '/partials/public_shell_hero_bar.php';
+        ?>
         <div class="event-public__hero-inner<?= $tagIsDj ? ' dj-public__hero-inner' : '' ?>">
             <?php if ($tagIsDj): ?>
                 <div class="dj-public__identity">
@@ -215,9 +226,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                 <strong><?= (int) $eventsTotalCount ?></strong>
                                 <?= h((string) ($G['events_heading'] ?? ($lang === 'en' ? 'Events' : 'Események'))) ?>
                             </span>
-                        </p>
-                        <p class="tag-public__nav-link">
-                            <a href="<?= h(events_public_djs_page_url($lang)) ?>">← <?= h($G['all_djs_link']) ?></a>
                         </p>
                     </div>
                 </div>

@@ -320,10 +320,18 @@ a.event-lang-switch__sep--mcal:focus-visible {
     border-bottom: 1px solid var(--li-border);
 }
 
+.event-public__hero-backs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.85rem;
+    margin: 0 0 0.65rem;
+}
+
 .event-public__hero-back {
     display: inline-flex;
     align-items: center;
-    margin: 0 0 0.65rem;
+    margin: 0;
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--li-green);
@@ -2431,10 +2439,6 @@ a.event-hero-chip--category-link:hover {
 
 .dj-public__meta-sep {
     opacity: 0.55;
-}
-
-.dj-public__identity-text .tag-public__nav-link {
-    margin-top: 0.7rem;
 }
 
 .dj-public__profile {
