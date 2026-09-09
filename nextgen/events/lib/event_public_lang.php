@@ -576,7 +576,10 @@ function events_public_organizer_page_url(int $organizerId, string $lang, array 
 }
 
 function events_public_organizer_lang_switch_url(int $organizerId, string $targetLang, array $extraParams = []): string {
-    return events_public_organizer_page_url($organizerId, $targetLang, $extraParams);
+    $q = array_merge(['id' => $organizerId], $extraParams);
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
+
+    return events_url('organizer.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
 }
 
 /**
@@ -1070,7 +1073,11 @@ function events_public_djs_page_url(string $lang, array $extraParams = []): stri
 }
 
 function events_public_djs_lang_switch_url(string $targetLang, array $extraParams = []): string {
-    return events_public_djs_page_url($targetLang, $extraParams);
+    // Explicit lang=hu|en kötelező: különben az angol süti megmarad magyar URL-nél.
+    $q = $extraParams;
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
+
+    return events_public_append_query(events_public_djs_hub_canonical_url(), $q);
 }
 
 function events_public_organizers_catalog_page_url(string $lang, array $extraParams = []): string {
@@ -1099,7 +1106,11 @@ function events_public_dj_page_url(string $slug, string $lang, array $extraParam
 }
 
 function events_public_dj_lang_switch_url(string $slug, string $targetLang, array $extraParams = []): string {
-    return events_public_dj_page_url($slug, $targetLang, $extraParams);
+    // Explicit lang=hu|en kötelező a süti felülírásához.
+    $q = $extraParams;
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
+
+    return events_public_append_query(events_public_dj_canonical_url($slug), $q);
 }
 
 /**
@@ -1125,7 +1136,21 @@ function events_public_tag_page_url(int $tagId, string $lang, array $extraParams
 }
 
 function events_public_tag_lang_switch_url(int $tagId, string $targetLang, array $extraParams = []): string {
-    return events_public_tag_page_url($tagId, $targetLang, $extraParams);
+    $lang = $targetLang === 'en' ? 'en' : 'hu';
+    if ($tagId > 0) {
+        try {
+            require_once __DIR__ . '/tag_type.php';
+            $db = getDb();
+            $djSlug = events_public_tag_dj_slug($db, $tagId);
+            if ($djSlug !== null && $djSlug !== '') {
+                return events_public_dj_lang_switch_url($djSlug, $lang, $extraParams);
+            }
+        } catch (Throwable) {
+            // fallback query URL
+        }
+    }
+
+    return events_url('tag.php?' . http_build_query(array_merge(['id' => $tagId, 'lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
 }
 
 /**
