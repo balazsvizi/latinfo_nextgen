@@ -1541,7 +1541,7 @@ a.event-hero-chip--category-link:hover {
 }
 
 .event-hero-chip--dj::before {
-    content: '??';
+    content: '🎧';
     margin-right: 0.3rem;
     font-size: 0.75rem;
     line-height: 1;
@@ -2944,7 +2944,7 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public__filters-summary::after {
-    content: '?';
+    content: '▾';
     flex-shrink: 0;
     font-size: 1rem;
     line-height: 1;
