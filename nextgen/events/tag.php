@@ -179,26 +179,64 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public organizer-public<?= $tagIsDj ? ' dj-public' : '' ?>">
     <header class="event-public__hero">
         <?php $S = $G; require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
-        <div class="event-public__hero-inner">
-            <?php if ($tagTypeRows !== []): ?>
-                <div class="tag-public__types" aria-label="<?= h($lang === 'en' ? 'Tag types' : 'Címke típusok') ?>">
-                    <?php foreach ($tagTypeRows as $typeRow): ?>
-                        <?php
-                        $tone = (string) ($typeRow['tone'] ?? 'default');
-                        $icon = (string) ($typeRow['icon'] ?? '🏷️');
-                        ?>
-                        <span class="tag-public__type-pill tag-public__type-pill--<?= h($tone) ?>">
-                            <span class="tag-public__type-pill__icon" aria-hidden="true"><?= h($icon) ?></span>
-                            <span class="tag-public__type-pill__label"><?= h((string) ($typeRow['name'] ?? '')) ?></span>
-                        </span>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-            <h1 class="event-public__title"><?= h($title) ?></h1>
+        <div class="event-public__hero-inner<?= $tagIsDj ? ' dj-public__hero-inner' : '' ?>">
             <?php if ($tagIsDj): ?>
-                <p class="tag-public__nav-link">
-                    <a href="<?= h(events_public_djs_page_url($lang)) ?>">← <?= h($G['all_djs_link']) ?></a>
-                </p>
+                <div class="dj-public__identity">
+                    <div class="dj-public__avatar" aria-hidden="true">
+                        <?php if ($djPhotoAbs !== ''): ?>
+                            <img class="dj-public__avatar-img" src="<?= h($djPhotoAbs) ?>" alt="" loading="eager" decoding="async">
+                        <?php else: ?>
+                            <span class="dj-public__avatar-initials"><?= h(events_public_dj_initials($tagName)) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="dj-public__identity-text">
+                        <?php if ($tagTypeRows !== []): ?>
+                            <div class="tag-public__types" aria-label="<?= h($lang === 'en' ? 'Tag types' : 'Címke típusok') ?>">
+                                <?php foreach ($tagTypeRows as $typeRow): ?>
+                                    <?php
+                                    $tone = (string) ($typeRow['tone'] ?? 'default');
+                                    $icon = (string) ($typeRow['icon'] ?? '🏷️');
+                                    ?>
+                                    <span class="tag-public__type-pill tag-public__type-pill--<?= h($tone) ?>">
+                                        <span class="tag-public__type-pill__icon" aria-hidden="true"><?= h($icon) ?></span>
+                                        <span class="tag-public__type-pill__label"><?= h((string) ($typeRow['name'] ?? '')) ?></span>
+                                    </span>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                        <h1 class="event-public__title"><?= h($title) ?></h1>
+                        <p class="dj-public__meta">
+                            <span class="dj-public__meta-item">
+                                <strong><?= (int) $eventsUpcomingCount ?></strong>
+                                <?= h((string) ($G['section_upcoming'] ?? ($lang === 'en' ? 'Upcoming' : 'Aktuális'))) ?>
+                            </span>
+                            <span class="dj-public__meta-sep" aria-hidden="true">·</span>
+                            <span class="dj-public__meta-item">
+                                <strong><?= (int) $eventsTotalCount ?></strong>
+                                <?= h((string) ($G['events_heading'] ?? ($lang === 'en' ? 'Events' : 'Események'))) ?>
+                            </span>
+                        </p>
+                        <p class="tag-public__nav-link">
+                            <a href="<?= h(events_public_djs_page_url($lang)) ?>">← <?= h($G['all_djs_link']) ?></a>
+                        </p>
+                    </div>
+                </div>
+            <?php else: ?>
+                <?php if ($tagTypeRows !== []): ?>
+                    <div class="tag-public__types" aria-label="<?= h($lang === 'en' ? 'Tag types' : 'Címke típusok') ?>">
+                        <?php foreach ($tagTypeRows as $typeRow): ?>
+                            <?php
+                            $tone = (string) ($typeRow['tone'] ?? 'default');
+                            $icon = (string) ($typeRow['icon'] ?? '🏷️');
+                            ?>
+                            <span class="tag-public__type-pill tag-public__type-pill--<?= h($tone) ?>">
+                                <span class="tag-public__type-pill__icon" aria-hidden="true"><?= h($icon) ?></span>
+                                <span class="tag-public__type-pill__label"><?= h((string) ($typeRow['name'] ?? '')) ?></span>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+                <h1 class="event-public__title"><?= h($title) ?></h1>
             <?php endif; ?>
         </div>
     </header>

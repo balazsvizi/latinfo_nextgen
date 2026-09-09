@@ -59,6 +59,10 @@ endif;
             <input type="url" id="tag_soundcloud_url_<?= h($fid) ?>" name="tag_soundcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['soundcloud_url'] ?? '')) ?>" placeholder="https://soundcloud.com/…">
         </div>
         <div class="form-group">
+            <label for="tag_youtube_url_<?= h($fid) ?>">YouTube</label>
+            <input type="url" id="tag_youtube_url_<?= h($fid) ?>" name="tag_youtube_url" maxlength="2000" value="<?= h((string) ($tagProfile['youtube_url'] ?? '')) ?>" placeholder="https://youtube.com/…">
+        </div>
+        <div class="form-group">
             <label for="tag_email_<?= h($fid) ?>">E-mail</label>
             <input type="email" id="tag_email_<?= h($fid) ?>" name="tag_email" maxlength="255" value="<?= h((string) ($tagProfile['email'] ?? '')) ?>" placeholder="dj@example.com">
         </div>

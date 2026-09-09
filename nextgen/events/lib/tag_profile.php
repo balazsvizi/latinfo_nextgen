@@ -18,6 +18,7 @@ function events_tag_profile_column_names(): array {
         'facebook_url',
         'instagram_url',
         'soundcloud_url',
+        'youtube_url',
         'email',
         'phone',
     ];
@@ -51,9 +52,6 @@ function events_tags_ensure_profile_columns(PDO $db): void {
     if (!events_tags_tables_available($db)) {
         return;
     }
-    if (events_tags_profile_columns_available($db)) {
-        return;
-    }
     $alters = [
         'description' => 'ALTER TABLE `events_tags` ADD COLUMN `description` TEXT NULL DEFAULT NULL',
         'photo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_url` VARCHAR(2000) NULL DEFAULT NULL',
@@ -61,6 +59,7 @@ function events_tags_ensure_profile_columns(PDO $db): void {
         'facebook_url' => 'ALTER TABLE `events_tags` ADD COLUMN `facebook_url` VARCHAR(2000) NULL DEFAULT NULL',
         'instagram_url' => 'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` VARCHAR(2000) NULL DEFAULT NULL',
         'soundcloud_url' => 'ALTER TABLE `events_tags` ADD COLUMN `soundcloud_url` VARCHAR(2000) NULL DEFAULT NULL',
+        'youtube_url' => 'ALTER TABLE `events_tags` ADD COLUMN `youtube_url` VARCHAR(2000) NULL DEFAULT NULL',
         'email' => 'ALTER TABLE `events_tags` ADD COLUMN `email` VARCHAR(255) NULL DEFAULT NULL',
         'phone' => 'ALTER TABLE `events_tags` ADD COLUMN `phone` VARCHAR(64) NULL DEFAULT NULL',
     ];
@@ -92,6 +91,7 @@ function events_tags_ensure_profile_columns(PDO $db): void {
  *   facebook_url: string,
  *   instagram_url: string,
  *   soundcloud_url: string,
+ *   youtube_url: string,
  *   email: string,
  *   phone: string
  * }
@@ -104,6 +104,7 @@ function events_tag_profile_empty(): array {
         'facebook_url' => '',
         'instagram_url' => '',
         'soundcloud_url' => '',
+        'youtube_url' => '',
         'email' => '',
         'phone' => '',
     ];
@@ -118,6 +119,7 @@ function events_tag_profile_empty(): array {
  *   facebook_url: string,
  *   instagram_url: string,
  *   soundcloud_url: string,
+ *   youtube_url: string,
  *   email: string,
  *   phone: string
  * }
@@ -139,6 +141,7 @@ function events_tag_profile_from_row(array $row): array {
  *   facebook_url: string,
  *   instagram_url: string,
  *   soundcloud_url: string,
+ *   youtube_url: string,
  *   email: string,
  *   phone: string
  * }
@@ -181,6 +184,7 @@ function events_tag_profile_from_post(): array {
         'facebook_url' => 'tag_facebook_url',
         'instagram_url' => 'tag_instagram_url',
         'soundcloud_url' => 'tag_soundcloud_url',
+        'youtube_url' => 'tag_youtube_url',
     ];
     foreach ($urlFields as $key => $postKey) {
         [$url, $err] = events_normalize_safe_url((string) ($_POST[$postKey] ?? ''), true);
@@ -220,6 +224,7 @@ function events_tag_profile_from_post(): array {
  *   facebook_url: string,
  *   instagram_url: string,
  *   soundcloud_url: string,
+ *   youtube_url: string,
  *   email: string,
  *   phone: string
  * } $profile
@@ -240,6 +245,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
             `facebook_url` = ?,
             `instagram_url` = ?,
             `soundcloud_url` = ?,
+            `youtube_url` = ?,
             `email` = ?,
             `phone` = ?
         WHERE `id` = ?
@@ -251,6 +257,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
         $profile['facebook_url'] !== '' ? $profile['facebook_url'] : null,
         $profile['instagram_url'] !== '' ? $profile['instagram_url'] : null,
         $profile['soundcloud_url'] !== '' ? $profile['soundcloud_url'] : null,
+        $profile['youtube_url'] !== '' ? $profile['youtube_url'] : null,
         $profile['email'] !== '' ? $profile['email'] : null,
         $profile['phone'] !== '' ? $profile['phone'] : null,
         $tagId,
@@ -293,6 +300,7 @@ function events_tag_profile_from_post_without_photo(): array {
         'facebook_url' => 'tag_facebook_url',
         'instagram_url' => 'tag_instagram_url',
         'soundcloud_url' => 'tag_soundcloud_url',
+        'youtube_url' => 'tag_youtube_url',
     ];
     foreach ($urlFields as $key => $postKey) {
         [$url, $err] = events_normalize_safe_url((string) ($_POST[$postKey] ?? ''), true);
@@ -330,7 +338,7 @@ function events_tag_profile_from_post_without_photo(): array {
  * @param array<string, string> $profile
  */
 function events_tag_profile_has_public_content(array $profile): bool {
-    foreach (['description', 'photo_url', 'website_url', 'facebook_url', 'instagram_url', 'soundcloud_url', 'email', 'phone'] as $key) {
+    foreach (['description', 'photo_url', 'website_url', 'facebook_url', 'instagram_url', 'soundcloud_url', 'youtube_url', 'email', 'phone'] as $key) {
         if (trim((string) ($profile[$key] ?? '')) !== '') {
             return true;
         }

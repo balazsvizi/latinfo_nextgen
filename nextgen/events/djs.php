@@ -86,10 +86,15 @@ header('Content-Type: text/html; charset=UTF-8');
 <article class="event-public organizer-public djs-public">
     <header class="event-public__hero">
         <?php $S = $D; require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
-        <div class="event-public__hero-inner">
+        <div class="event-public__hero-inner djs-public__hero-inner">
             <p class="event-public__eyebrow">🎧 <?= h((string) $D['eyebrow']) ?></p>
             <h1 class="event-public__title"><?= h($title) ?></h1>
             <p class="djs-public__intro"><?= h((string) $D['page_intro']) ?></p>
+            <?php if ($djRows !== []): ?>
+                <p class="djs-public__hero-cta">
+                    <a class="djs-public__hero-cta-link" href="#djs-catalog-heading"><?= h((string) $D['catalog_heading']) ?></a>
+                </p>
+            <?php endif; ?>
         </div>
     </header>
 
@@ -221,6 +226,8 @@ header('Content-Type: text/html; charset=UTF-8');
                     $djId = (int) ($dj['id'] ?? 0);
                     $djName = (string) ($dj['name'] ?? '');
                     $djSlug = trim((string) ($dj['slug'] ?? ''));
+                    $djPhoto = trim((string) ($dj['photo_url'] ?? ''));
+                    $djPhotoAbs = $djPhoto !== '' ? events_absolute_url($djPhoto) : '';
                     $total = (int) ($dj['event_total'] ?? 0);
                     $upcoming = (int) ($dj['event_upcoming'] ?? 0);
                     $nextStart = (string) ($dj['next_event_start'] ?? '');
@@ -230,6 +237,8 @@ header('Content-Type: text/html; charset=UTF-8');
                         ? events_public_event_start_date_time_display(false, $nextTs, $lang)
                         : '';
                     $nameSort = mb_strtolower($djName, 'UTF-8');
+                    $initials = events_public_dj_initials($djName);
+                    $cardMod = $upcoming > 0 ? ' djs-public__card--live' : '';
                     ?>
                     <li
                         class="djs-public__cell"
@@ -237,22 +246,30 @@ header('Content-Type: text/html; charset=UTF-8');
                         data-events="<?= $total ?>"
                         data-upcoming="<?= $upcoming ?>"
                     >
-                        <a class="djs-public__card" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
-                            <span class="djs-public__card-icon" aria-hidden="true">🎧</span>
-                            <span class="djs-public__card-name"><?= h($djName) ?></span>
-                            <span class="djs-public__card-stats">
-                                <span class="djs-public__card-stat djs-public__card-stat--muted">
-                                    <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
-                                </span>
-                                <span class="djs-public__card-stat djs-public__card-stat--upcoming">
-                                    <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
-                                </span>
+                        <a class="djs-public__card djs-public__card--person<?= h($cardMod) ?>" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
+                            <span class="djs-public__card-media" aria-hidden="true">
+                                <?php if ($djPhotoAbs !== ''): ?>
+                                    <img class="djs-public__card-photo" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async">
+                                <?php else: ?>
+                                    <span class="djs-public__card-initials"><?= h($initials) ?></span>
+                                <?php endif; ?>
                             </span>
-                            <?php if ($nextDisplay !== ''): ?>
-                                <span class="djs-public__card-next">
-                                    <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
+                            <span class="djs-public__card-body">
+                                <span class="djs-public__card-name"><?= h($djName) ?></span>
+                                <span class="djs-public__card-stats">
+                                    <span class="djs-public__card-stat djs-public__card-stat--muted">
+                                        <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
+                                    </span>
+                                    <span class="djs-public__card-stat djs-public__card-stat--upcoming">
+                                        <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
+                                    </span>
                                 </span>
-                            <?php endif; ?>
+                                <?php if ($nextDisplay !== ''): ?>
+                                    <span class="djs-public__card-next">
+                                        <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </span>
                         </a>
                     </li>
                 <?php endforeach; ?>

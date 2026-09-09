@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/tag_type.php';
+require_once __DIR__ . '/tag_profile.php';
 require_once __DIR__ . '/event_public_organizers.php';
 
 /**
@@ -15,10 +16,42 @@ function events_public_tag_has_type_code(PDO $db, int $tagId, string $typeCode):
 }
 
 /**
+ * Kezdőbetűk avatárhoz (max 2).
+ */
+function events_public_dj_initials(string $name): string {
+    $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+    if ($name === '') {
+        return 'DJ';
+    }
+    $parts = preg_split('/\s+/u', $name) ?: [];
+    $letters = '';
+    foreach ($parts as $part) {
+        $part = trim((string) $part);
+        if ($part === '') {
+            continue;
+        }
+        // "DJ Greg" → D + G
+        $ch = mb_substr($part, 0, 1, 'UTF-8');
+        if ($ch !== '') {
+            $letters .= mb_strtoupper($ch, 'UTF-8');
+        }
+        if (mb_strlen($letters, 'UTF-8') >= 2) {
+            break;
+        }
+    }
+    if ($letters === '') {
+        return 'DJ';
+    }
+
+    return mb_substr($letters, 0, 2, 'UTF-8');
+}
+
+/**
  * @return list<array{
  *   id: int,
  *   name: string,
  *   slug: string,
+ *   photo_url: string,
  *   event_total: int,
  *   event_upcoming: int,
  *   next_event_start: ?string
@@ -29,6 +62,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
         return [];
     }
     events_tags_ensure_dj_slugs($db);
+    events_tags_ensure_profile_columns($db);
     $djTypeId = events_tag_type_id_by_code($db, 'dj');
     if ($djTypeId === null || $djTypeId <= 0) {
         return [];
@@ -37,9 +71,10 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
     require_once __DIR__ . '/admin_event_filters.php';
     $poolFrom = events_admin_table_pool_from_sql('events_tags', 't', $listLimit);
     $slugSelect = events_tags_slug_column_available($db) ? 't.`slug`' : 'NULL AS `slug`';
+    $photoSelect = events_tags_profile_columns_available($db) ? 't.`photo_url`' : 'NULL AS `photo_url`';
 
     $st = $db->prepare('
-        SELECT t.`id`, t.`name`, ' . $slugSelect . '
+        SELECT t.`id`, t.`name`, ' . $slugSelect . ', ' . $photoSelect . '
         FROM ' . $poolFrom . '
         INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
         ORDER BY t.`name` ASC, t.`id` ASC
@@ -60,6 +95,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
             'id' => $id,
             'name' => (string) ($row['name'] ?? ''),
             'slug' => trim((string) ($row['slug'] ?? '')),
+            'photo_url' => trim((string) ($row['photo_url'] ?? '')),
             'event_total' => 0,
             'event_upcoming' => 0,
             'next_event_start' => null,

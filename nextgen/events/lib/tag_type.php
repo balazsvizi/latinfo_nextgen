@@ -626,6 +626,7 @@ function events_public_tag_dj_slug(PDO $db, int $tagId): ?string {
  *   facebook_url:string,
  *   instagram_url:string,
  *   soundcloud_url:string,
+ *   youtube_url:string,
  *   email:string,
  *   phone:string
  * }|null

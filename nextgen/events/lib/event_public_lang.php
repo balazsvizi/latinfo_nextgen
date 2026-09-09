@@ -611,6 +611,7 @@ function events_public_tag_strings(string $lang): array {
         'dj_link_facebook' => 'Facebook',
         'dj_link_instagram' => 'Instagram',
         'dj_link_soundcloud' => 'SoundCloud',
+        'dj_link_youtube' => 'YouTube',
         'list_display_label' => 'Megjelenítve:',
         'list_display_all' => 'Mind',
     ];
@@ -642,6 +643,7 @@ function events_public_tag_strings(string $lang): array {
         'dj_link_facebook' => 'Facebook',
         'dj_link_instagram' => 'Instagram',
         'dj_link_soundcloud' => 'SoundCloud',
+        'dj_link_youtube' => 'YouTube',
         'list_display_label' => 'Showing:',
         'list_display_all' => 'All',
     ];
