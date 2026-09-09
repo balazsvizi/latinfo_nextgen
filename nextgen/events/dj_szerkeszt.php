@@ -33,7 +33,7 @@ if (!$tag) {
     redirect(events_url('djs_admin.php'));
 }
 
-if (!events_public_tag_has_type_code($db, $id, 'dj')) {
+if (!in_array('dj', events_load_tag_type_codes($db, $id), true)) {
     events_save_tag_types($db, $id, array_values(array_unique(array_merge(events_load_tag_type_codes($db, $id), ['dj']))));
 }
 

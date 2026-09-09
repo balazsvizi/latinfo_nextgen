@@ -94,91 +94,99 @@ header('Content-Type: text/html; charset=UTF-8');
     </header>
 
     <?php if ($djRows !== []): ?>
-        <section class="djs-public__stats" aria-labelledby="djs-stats-heading">
-            <h2 class="djs-public__section-title" id="djs-stats-heading"><?= h((string) $D['stats_heading']) ?></h2>
-            <ul class="djs-public__stat-grid" role="list">
-                <li class="djs-public__stat">
-                    <span class="djs-public__stat-value"><?= (int) $hubStats['dj_total'] ?></span>
-                    <span class="djs-public__stat-label"><?= h((string) $D['stat_djs']) ?></span>
-                </li>
-                <li class="djs-public__stat">
-                    <span class="djs-public__stat-value"><?= (int) $hubStats['dj_with_events'] ?></span>
-                    <span class="djs-public__stat-label"><?= h((string) $D['stat_djs_with_events']) ?></span>
-                </li>
-                <li class="djs-public__stat">
-                    <span class="djs-public__stat-value"><?= (int) $hubStats['dj_with_upcoming'] ?></span>
-                    <span class="djs-public__stat-label"><?= h((string) $D['stat_djs_upcoming']) ?></span>
-                </li>
-                <li class="djs-public__stat">
-                    <span class="djs-public__stat-value"><?= (int) $hubStats['events_total'] ?></span>
-                    <span class="djs-public__stat-label"><?= h((string) $D['stat_events']) ?></span>
-                </li>
-                <li class="djs-public__stat">
-                    <span class="djs-public__stat-value"><?= (int) $hubStats['events_upcoming'] ?></span>
-                    <span class="djs-public__stat-label"><?= h((string) $D['stat_events_upcoming']) ?></span>
-                </li>
-            </ul>
-        </section>
+        <div class="djs-public__dashboard">
+            <section class="djs-public__stats" aria-labelledby="djs-stats-heading">
+                <h2 class="djs-public__section-title" id="djs-stats-heading"><?= h((string) $D['stats_heading']) ?></h2>
+                <ul class="djs-public__stat-grid" role="list">
+                    <li class="djs-public__stat">
+                        <span class="djs-public__stat-value"><?= (int) $hubStats['dj_total'] ?></span>
+                        <span class="djs-public__stat-label"><?= h((string) $D['stat_djs']) ?></span>
+                    </li>
+                    <li class="djs-public__stat">
+                        <span class="djs-public__stat-value"><?= (int) $hubStats['dj_with_events'] ?></span>
+                        <span class="djs-public__stat-label"><?= h((string) $D['stat_djs_with_events']) ?></span>
+                    </li>
+                    <li class="djs-public__stat djs-public__stat--accent">
+                        <span class="djs-public__stat-value"><?= (int) $hubStats['dj_with_upcoming'] ?></span>
+                        <span class="djs-public__stat-label"><?= h((string) $D['stat_djs_upcoming']) ?></span>
+                    </li>
+                    <li class="djs-public__stat">
+                        <span class="djs-public__stat-value"><?= (int) $hubStats['events_total'] ?></span>
+                        <span class="djs-public__stat-label"><?= h((string) $D['stat_events']) ?></span>
+                    </li>
+                    <li class="djs-public__stat djs-public__stat--accent">
+                        <span class="djs-public__stat-value"><?= (int) $hubStats['events_upcoming'] ?></span>
+                        <span class="djs-public__stat-label"><?= h((string) $D['stat_events_upcoming']) ?></span>
+                    </li>
+                </ul>
+            </section>
 
-        <section class="djs-public__rankings" aria-label="<?= h((string) $D['stats_heading']) ?>">
-            <div class="djs-public__rank-col">
-                <h2 class="djs-public__section-title"><?= h((string) $D['rank_events_heading']) ?></h2>
-                <?php if ($hubStats['top_by_events'] === []): ?>
-                    <p class="djs-public__rank-empty"><?= h((string) $D['rank_empty']) ?></p>
-                <?php else: ?>
-                    <ol class="djs-public__rank-list">
-                        <?php foreach ($hubStats['top_by_events'] as $rankRow): ?>
-                            <li>
-                                <a class="djs-public__rank-link" href="<?= h($djHref($rankRow, $lang)) ?>">
-                                    <span class="djs-public__rank-name"><?= h((string) $rankRow['name']) ?></span>
-                                    <span class="djs-public__rank-count"><?= (int) $rankRow['count'] ?></span>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ol>
-                <?php endif; ?>
-            </div>
-            <div class="djs-public__rank-col">
-                <h2 class="djs-public__section-title"><?= h((string) $D['rank_upcoming_heading']) ?></h2>
-                <?php if ($hubStats['top_by_upcoming'] === []): ?>
-                    <p class="djs-public__rank-empty"><?= h((string) $D['rank_empty']) ?></p>
-                <?php else: ?>
-                    <ol class="djs-public__rank-list">
-                        <?php foreach ($hubStats['top_by_upcoming'] as $rankRow): ?>
-                            <li>
-                                <a class="djs-public__rank-link" href="<?= h($djHref($rankRow, $lang)) ?>">
-                                    <span class="djs-public__rank-name"><?= h((string) $rankRow['name']) ?></span>
-                                    <span class="djs-public__rank-count"><?= (int) $rankRow['count'] ?></span>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ol>
-                <?php endif; ?>
-            </div>
-            <div class="djs-public__rank-col">
-                <h2 class="djs-public__section-title"><?= h((string) $D['rank_next_heading']) ?></h2>
-                <?php if ($hubStats['next_up'] === []): ?>
-                    <p class="djs-public__rank-empty"><?= h((string) $D['rank_empty']) ?></p>
-                <?php else: ?>
-                    <ol class="djs-public__rank-list">
-                        <?php foreach ($hubStats['next_up'] as $rankRow): ?>
-                            <?php
-                            $nextTs = strtotime((string) $rankRow['next_event_start']);
-                            $nextDisplay = $nextTs !== false
-                                ? events_public_event_start_date_time_display(false, $nextTs, $lang)
-                                : '';
-                            ?>
-                            <li>
-                                <a class="djs-public__rank-link" href="<?= h($djHref($rankRow, $lang)) ?>">
-                                    <span class="djs-public__rank-name"><?= h((string) $rankRow['name']) ?></span>
-                                    <span class="djs-public__rank-meta"><?= h($nextDisplay) ?></span>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ol>
-                <?php endif; ?>
-            </div>
-        </section>
+            <section class="djs-public__rankings" aria-label="<?= h((string) $D['stats_heading']) ?>">
+                <div class="djs-public__rank-col">
+                    <h2 class="djs-public__section-title"><?= h((string) $D['rank_events_heading']) ?></h2>
+                    <?php if ($hubStats['top_by_events'] === []): ?>
+                        <p class="djs-public__rank-empty"><?= h((string) $D['rank_empty']) ?></p>
+                    <?php else: ?>
+                        <ol class="djs-public__rank-list">
+                            <?php foreach ($hubStats['top_by_events'] as $rankRow): ?>
+                                <li>
+                                    <a class="djs-public__rank-link" href="<?= h($djHref($rankRow, $lang)) ?>">
+                                        <span class="djs-public__rank-name"><?= h((string) $rankRow['name']) ?></span>
+                                        <span class="djs-public__rank-count"><?= (int) $rankRow['count'] ?></span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ol>
+                    <?php endif; ?>
+                </div>
+                <div class="djs-public__rank-col">
+                    <h2 class="djs-public__section-title"><?= h((string) $D['rank_upcoming_heading']) ?></h2>
+                    <?php if ($hubStats['top_by_upcoming'] === []): ?>
+                        <p class="djs-public__rank-empty"><?= h((string) $D['rank_empty']) ?></p>
+                    <?php else: ?>
+                        <ol class="djs-public__rank-list">
+                            <?php foreach ($hubStats['top_by_upcoming'] as $rankRow): ?>
+                                <li>
+                                    <a class="djs-public__rank-link" href="<?= h($djHref($rankRow, $lang)) ?>">
+                                        <span class="djs-public__rank-name"><?= h((string) $rankRow['name']) ?></span>
+                                        <span class="djs-public__rank-count"><?= (int) $rankRow['count'] ?></span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ol>
+                    <?php endif; ?>
+                </div>
+                <div class="djs-public__rank-col djs-public__rank-col--next">
+                    <h2 class="djs-public__section-title"><?= h((string) $D['rank_next_heading']) ?></h2>
+                    <?php if ($hubStats['next_up'] === []): ?>
+                        <p class="djs-public__rank-empty"><?= h((string) $D['rank_empty']) ?></p>
+                    <?php else: ?>
+                        <ol class="djs-public__rank-list">
+                            <?php foreach ($hubStats['next_up'] as $rankRow): ?>
+                                <?php
+                                $nextTs = strtotime((string) $rankRow['next_event_start']);
+                                if ($nextTs === false) {
+                                    $nextDisplay = '';
+                                } elseif ($lang === 'en') {
+                                    $nextDisplay = date('M j, Y', $nextTs);
+                                } else {
+                                    $nextDisplay = date('Y.m.d.', $nextTs);
+                                }
+                                ?>
+                                <li>
+                                    <a class="djs-public__rank-link djs-public__rank-link--stacked" href="<?= h($djHref($rankRow, $lang)) ?>">
+                                        <span class="djs-public__rank-name"><?= h((string) $rankRow['name']) ?></span>
+                                        <?php if ($nextDisplay !== ''): ?>
+                                            <span class="djs-public__rank-meta"><?= h($nextDisplay) ?></span>
+                                        <?php endif; ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ol>
+                    <?php endif; ?>
+                </div>
+            </section>
+        </div>
     <?php endif; ?>
 
     <section class="djs-public__catalog" aria-labelledby="djs-catalog-heading">
