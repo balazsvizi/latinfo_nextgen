@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
 require_once __DIR__ . '/lib/event_public_djs.php';
+require_once __DIR__ . '/lib/tag_profile.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 
@@ -16,6 +17,7 @@ $slugParam = trim((string) ($_GET['slug'] ?? ''));
 $tagId = (int) ($_GET['id'] ?? 0);
 $tagSlug = '';
 $fromDjPretty = events_public_is_dj_pretty_request();
+$djProfile = events_tag_profile_empty();
 
 if (!events_tags_tables_available($db)) {
     http_response_code(404);
@@ -26,6 +28,7 @@ if (!events_tags_tables_available($db)) {
 }
 
 events_tags_ensure_dj_slugs($db);
+events_tags_ensure_profile_columns($db);
 
 if ($slugParam !== '') {
     $djRow = events_public_dj_by_slug($db, $slugParam);
@@ -39,6 +42,7 @@ if ($slugParam !== '') {
     $tagId = (int) $djRow['id'];
     $tagSlug = (string) $djRow['slug'];
     $tagName = (string) $djRow['name'];
+    $djProfile = events_tag_profile_from_row($djRow);
     $tag = ['id' => $tagId, 'name' => $tagName, 'slug' => $tagSlug];
 } elseif ($tagId > 0) {
     $slugSelect = events_tags_slug_column_available($db) ? ', `slug`' : '';
@@ -54,6 +58,7 @@ if ($slugParam !== '') {
     }
     $tagName = (string) ($tag['name'] ?? '');
     $tagSlug = trim((string) ($tag['slug'] ?? ''));
+    $djProfile = events_tag_profile_load($db, $tagId);
 } else {
     http_response_code(404);
     events_public_send_noindex_header();
@@ -107,9 +112,14 @@ $eventsUpcomingCount = count($eventsUpcoming);
 $eventsPastCount = count($eventsPast);
 
 $title = $tagName !== '' ? $tagName : ('#' . $tagId);
-$desc = $lang === 'en'
-    ? ($tagName !== '' ? 'Published events tagged with ' . $tagName . ' on Latinfo.hu.' : 'Published events on Latinfo.hu.')
-    : ($tagName !== '' ? $tagName . ' címkéjű közzétett események a Latinfo.hu-n.' : 'Közzétett események a Latinfo.hu-n.');
+$bioPlain = trim(strip_tags((string) ($djProfile['description'] ?? '')));
+if ($tagIsDj && $bioPlain !== '') {
+    $desc = function_exists('mb_substr') ? mb_substr($bioPlain, 0, 160, 'UTF-8') : substr($bioPlain, 0, 160);
+} else {
+    $desc = $lang === 'en'
+        ? ($tagName !== '' ? 'Published events tagged with ' . $tagName . ' on Latinfo.hu.' : 'Published events on Latinfo.hu.')
+        : ($tagName !== '' ? $tagName . ' címkéjű közzétett események a Latinfo.hu-n.' : 'Közzétett események a Latinfo.hu-n.');
+}
 
 if ($tagIsDj && $tagSlug !== '') {
     $canonical = events_absolute_url(events_public_dj_page_url($tagSlug, 'hu'));
@@ -127,6 +137,11 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $G;
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('tags.php?open_tag=') . $tagId;
+$djPhotoAbs = '';
+if ($tagIsDj) {
+    $photoRaw = trim((string) ($djProfile['photo_url'] ?? ''));
+    $djPhotoAbs = $photoRaw !== '' ? events_absolute_url($photoRaw) : '';
+}
 
 events_public_send_noindex_follow_header();
 header('Content-Type: text/html; charset=UTF-8');
@@ -146,7 +161,10 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta property="og:title" content="<?= h($title) ?>">
     <meta property="og:description" content="<?= h($desc) ?>">
     <meta property="og:url" content="<?= h($ogPageUrl) ?>">
-    <meta name="twitter:card" content="summary">
+    <?php if ($djPhotoAbs !== ''): ?>
+        <meta property="og:image" content="<?= h($djPhotoAbs) ?>">
+    <?php endif; ?>
+    <meta name="twitter:card" content="<?= $djPhotoAbs !== '' ? 'summary_large_image' : 'summary' ?>">
     <meta name="twitter:title" content="<?= h($title) ?>">
     <meta name="twitter:description" content="<?= h($desc) ?>">
     <link rel="canonical" href="<?= h($canonical) ?>">
@@ -158,7 +176,7 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page">
 <div class="event-shell">
-<article class="event-public organizer-public">
+<article class="event-public organizer-public<?= $tagIsDj ? ' dj-public' : '' ?>">
     <header class="event-public__hero">
         <?php $S = $G; require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
@@ -184,6 +202,13 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php endif; ?>
         </div>
     </header>
+
+    <?php if ($tagIsDj): ?>
+        <?php
+        $djDisplayName = $tagName;
+        require __DIR__ . '/partials/public_dj_profile.php';
+        ?>
+    <?php endif; ?>
 
     <section class="organizer-public__events" aria-labelledby="tag-events-heading">
         <div class="organizer-public__events-head">

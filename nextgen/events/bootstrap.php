@@ -119,6 +119,15 @@ if (!function_exists('events_public_dj_canonical_url')) {
     }
 }
 
+if (!function_exists('events_public_djs_hub_canonical_url')) {
+    /** Publikus DJ kezdőlap: /DJ/ */
+    function events_public_djs_hub_canonical_url(): string {
+        $seg = defined('EVENTS_DJ_PATH') ? EVENTS_DJ_PATH : 'DJ';
+
+        return rtrim(site_url($seg), '/') . '/';
+    }
+}
+
 if (!function_exists('events_public_is_legacy_tag_request')) {
     /**
      * Csak akkor igaz, ha a kliens közvetlenül a tag.php-t kérte.
@@ -142,6 +151,21 @@ if (!function_exists('events_public_is_dj_pretty_request')) {
         $seg = defined('EVENTS_DJ_PATH') ? EVENTS_DJ_PATH : 'DJ';
 
         return $seg !== '' && preg_match('#/' . preg_quote($seg, '#') . '/([^/]+)/?$#i', $path) === 1;
+    }
+}
+
+if (!function_exists('events_public_is_legacy_djs_request')) {
+    /**
+     * Közvetlen djs.php kérés (nem a /DJ/ rewrite).
+     */
+    function events_public_is_legacy_djs_request(): bool {
+        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        $seg = defined('EVENTS_DJ_PATH') ? EVENTS_DJ_PATH : 'DJ';
+        if ($seg !== '' && preg_match('#/' . preg_quote($seg, '#') . '/?$#i', $path) === 1) {
+            return false;
+        }
+
+        return str_contains($path, 'djs.php');
     }
 }
 

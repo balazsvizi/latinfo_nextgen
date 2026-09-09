@@ -13,6 +13,9 @@ RewriteEngine On
 # Egy esemény: /event/{slug}/  →  nextgen/events/megjelenit.php
 RewriteRule ^event/([^/]+)/?$ nextgen/events/megjelenit.php?slug=$1 [L,QSA,NC]
 
+# DJ kezdőlap: /DJ/  →  nextgen/events/djs.php
+RewriteRule ^DJ/?$ nextgen/events/djs.php [L,QSA,NC]
+
 # DJ oldal: /DJ/{slug}/  →  nextgen/events/tag.php?slug=
 RewriteRule ^DJ/([^/]+)/?$ nextgen/events/tag.php?slug=$1 [L,QSA,NC]
 

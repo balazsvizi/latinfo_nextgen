@@ -120,3 +120,115 @@ function events_public_dj_total_count(PDO $db): int {
 
     return (int) $st->fetchColumn();
 }
+
+/**
+ * Egyedi közzétett események száma, amelyekhez legalább egy DJ címke tartozik.
+ *
+ * @return array{total:int,upcoming:int}
+ */
+function events_public_dj_unique_events_counts(PDO $db, string $publishedStatus): array {
+    if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+        return ['total' => 0, 'upcoming' => 0];
+    }
+    $djTypeId = events_tag_type_id_by_code($db, 'dj');
+    if ($djTypeId === null || $djTypeId <= 0) {
+        return ['total' => 0, 'upcoming' => 0];
+    }
+
+    $st = $db->prepare('
+        SELECT DISTINCT e.`id`, e.`event_start`, e.`event_end`, e.`event_allday`
+        FROM `events_calendar_events` e
+        INNER JOIN `events_calendar_event_tags` et ON et.`event_id` = e.`id`
+        INNER JOIN `events_tag_type_links` l ON l.`tag_id` = et.`tag_id` AND l.`tag_type_id` = ?
+        WHERE e.`event_status` = ?
+    ');
+    $st->execute([$djTypeId, $publishedStatus]);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    $nowTs = time();
+    $upcoming = 0;
+    foreach ($rows as $row) {
+        if (!events_public_event_row_is_past($row, $nowTs)) {
+            $upcoming++;
+        }
+    }
+
+    return [
+        'total' => count($rows),
+        'upcoming' => $upcoming,
+    ];
+}
+
+/**
+ * DJ hub összesítő + toplisták a katalógus sorokból.
+ *
+ * @param list<array{id:int,name:string,slug:string,event_total:int,event_upcoming:int,next_event_start:?string}> $catalog
+ * @return array{
+ *   dj_total: int,
+ *   dj_with_events: int,
+ *   dj_with_upcoming: int,
+ *   events_total: int,
+ *   events_upcoming: int,
+ *   top_by_events: list<array{id:int,name:string,slug:string,count:int}>,
+ *   top_by_upcoming: list<array{id:int,name:string,slug:string,count:int}>,
+ *   next_up: list<array{id:int,name:string,slug:string,next_event_start:string}>
+ * }
+ */
+function events_public_dj_hub_stats(PDO $db, string $publishedStatus, array $catalog, int $topLimit = 8): array {
+    $topLimit = max(1, min(20, $topLimit));
+    $djWithEvents = 0;
+    $djWithUpcoming = 0;
+    $byEvents = [];
+    $byUpcoming = [];
+    $nextUp = [];
+
+    foreach ($catalog as $row) {
+        $id = (int) ($row['id'] ?? 0);
+        $name = (string) ($row['name'] ?? '');
+        $slug = trim((string) ($row['slug'] ?? ''));
+        $total = (int) ($row['event_total'] ?? 0);
+        $upcoming = (int) ($row['event_upcoming'] ?? 0);
+        $nextStart = trim((string) ($row['next_event_start'] ?? ''));
+        if ($id <= 0) {
+            continue;
+        }
+        if ($total > 0) {
+            $djWithEvents++;
+            $byEvents[] = ['id' => $id, 'name' => $name, 'slug' => $slug, 'count' => $total];
+        }
+        if ($upcoming > 0) {
+            $djWithUpcoming++;
+            $byUpcoming[] = ['id' => $id, 'name' => $name, 'slug' => $slug, 'count' => $upcoming];
+        }
+        if ($nextStart !== '') {
+            $nextUp[] = [
+                'id' => $id,
+                'name' => $name,
+                'slug' => $slug,
+                'next_event_start' => $nextStart,
+            ];
+        }
+    }
+
+    usort($byEvents, static function (array $a, array $b): int {
+        return ($b['count'] <=> $a['count']) ?: strcmp($a['name'], $b['name']);
+    });
+    usort($byUpcoming, static function (array $a, array $b): int {
+        return ($b['count'] <=> $a['count']) ?: strcmp($a['name'], $b['name']);
+    });
+    usort($nextUp, static function (array $a, array $b): int {
+        return strcmp($a['next_event_start'], $b['next_event_start']) ?: strcmp($a['name'], $b['name']);
+    });
+
+    $eventCounts = events_public_dj_unique_events_counts($db, $publishedStatus);
+
+    return [
+        'dj_total' => count($catalog),
+        'dj_with_events' => $djWithEvents,
+        'dj_with_upcoming' => $djWithUpcoming,
+        'events_total' => $eventCounts['total'],
+        'events_upcoming' => $eventCounts['upcoming'],
+        'top_by_events' => array_slice($byEvents, 0, $topLimit),
+        'top_by_upcoming' => array_slice($byUpcoming, 0, $topLimit),
+        'next_up' => array_slice($nextUp, 0, $topLimit),
+    ];
+}

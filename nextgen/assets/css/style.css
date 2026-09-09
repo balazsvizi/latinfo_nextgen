@@ -3280,6 +3280,25 @@ dialog.eventpics-modal::backdrop {
     box-shadow: 0 0 0 1px #ea580c;
 }
 
+.events-tag-dj-profile {
+    margin: 1rem 0 0.5rem;
+    padding: 0.9rem 1rem 0.35rem;
+    border: 1px solid var(--border, #d8e0d4);
+    border-radius: 8px;
+    background: #f7faf5;
+}
+
+.events-tag-dj-profile__title {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+}
+
+.events-tag-dj-profile__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 0.65rem 1rem;
+}
+
 /* Címke típus chip-ek a táblázatban */
 .events-tag-type-table-pills {
     display: inline-flex;

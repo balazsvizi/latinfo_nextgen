@@ -5,11 +5,13 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/tag_type.php';
+require_once __DIR__ . '/lib/tag_profile.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
 $db = getDb();
+events_tags_ensure_profile_columns($db);
 
 if (!events_tags_tables_available($db)) {
     $mainContentClass = 'main-content main-content--fullwidth';
@@ -39,6 +41,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $typeRaw = $_POST['tag_type_codes'] ?? [];
         $typeCodes = events_tag_type_normalize_codes(is_array($typeRaw) ? $typeRaw : [], $db);
+        [$profile, $profileErr] = events_tag_profile_from_post();
+        if ($profileErr !== null) {
+            flash('error', $profileErr);
+            redirect(events_url('tags.php?open_tag=') . ($id > 0 ? (string) $id : 'new'));
+        }
+        // Profil mezőket csak DJ típusnál tartjuk meg; egyébként ürítjük.
+        if (!in_array('dj', $typeCodes, true)) {
+            $profile = events_tag_profile_empty();
+        }
 
         if ($id > 0) {
             $db->beginTransaction();
@@ -47,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $st->execute([$name, $id]);
                 events_save_tag_types($db, $id, $typeCodes);
                 events_tag_sync_dj_slug($db, $id, $name, $typeCodes);
+                events_tag_profile_save($db, $id, $profile);
                 $db->commit();
             } catch (Throwable $e) {
                 $db->rollBack();
@@ -64,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newId = (int) $db->lastInsertId();
             events_save_tag_types($db, $newId, $typeCodes);
             events_tag_sync_dj_slug($db, $newId, $name, $typeCodes);
+            events_tag_profile_save($db, $newId, $profile);
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();
@@ -167,9 +180,15 @@ $tagRows = $db->query('
 $listDisplayedCount = count($tagRows);
 
 $tagTypesByTag = [];
+$tagProfilesById = [];
 if (events_tag_types_tables_available($db) && $tagRows !== []) {
     $tagIdsForTypes = array_values(array_unique(array_map(static fn (array $tr): int => (int) $tr['id'], $tagRows)));
     $tagTypesByTag = events_load_tag_types_map($db, $tagIdsForTypes);
+    foreach ($tagIdsForTypes as $tidLoad) {
+        if (in_array('dj', $tagTypesByTag[$tidLoad] ?? [], true)) {
+            $tagProfilesById[$tidLoad] = events_tag_profile_load($db, $tidLoad);
+        }
+    }
 }
 
 $typeDisplayMeta = events_tag_type_display_meta($db);
@@ -290,6 +309,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <?php
                                 $tagTypeSelected = [];
                                 require __DIR__ . '/partials/tags_types_fieldset.php';
+                                $tagFormId = 0;
+                                $tagProfile = events_tag_profile_empty();
+                                $tagProfileVisible = false;
+                                require __DIR__ . '/partials/tag_dj_profile_fields.php';
                                 ?>
                                 <div class="toolbar">
                                     <button type="submit" class="btn btn-primary">Mentés</button>
@@ -360,6 +383,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     <?php
                                     $tagTypeSelected = $typeCodesRow;
                                     require __DIR__ . '/partials/tags_types_fieldset.php';
+                                    $tagFormId = $tid;
+                                    $tagProfile = $tagProfilesById[$tid] ?? events_tag_profile_empty();
+                                    $tagProfileVisible = in_array('dj', $typeCodesRow, true);
+                                    require __DIR__ . '/partials/tag_dj_profile_fields.php';
                                     ?>
                                     <div class="toolbar">
                                         <button type="submit" class="btn btn-primary">Mentés</button>
@@ -662,6 +689,24 @@ require_once dirname(__DIR__) . '/partials/header.php';
     }
 
     syncTagsBulkMaster();
+
+    function syncTagDjProfilePanels(root) {
+        var scope = root || document;
+        scope.querySelectorAll('form').forEach(function (form) {
+            var panel = form.querySelector('[data-tag-dj-profile]');
+            if (!panel) return;
+            var djCb = form.querySelector('input[name="tag_type_codes[]"][value="dj"]');
+            var show = !!(djCb && djCb.checked);
+            panel.hidden = !show;
+        });
+    }
+
+    document.querySelectorAll('input[name="tag_type_codes[]"][value="dj"]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            syncTagDjProfilePanels(cb.form || document);
+        });
+    });
+    syncTagDjProfilePanels(document);
 })();
 </script>
 

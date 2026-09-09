@@ -603,6 +603,14 @@ function events_public_tag_strings(string $lang): array {
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Címke szerkesztése az adminban',
         'all_djs_link' => 'Összes DJ',
+        'dj_profile_aria' => 'DJ profil',
+        'dj_contacts_aria' => 'Elérhetőségek',
+        'dj_bio_heading' => 'Bemutatkozás',
+        'dj_photo_alt' => 'DJ fotó',
+        'dj_link_website' => 'Weboldal',
+        'dj_link_facebook' => 'Facebook',
+        'dj_link_instagram' => 'Instagram',
+        'dj_link_soundcloud' => 'SoundCloud',
         'list_display_label' => 'Megjelenítve:',
         'list_display_all' => 'Mind',
     ];
@@ -626,6 +634,14 @@ function events_public_tag_strings(string $lang): array {
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this tag in admin',
         'all_djs_link' => 'All DJs',
+        'dj_profile_aria' => 'DJ profile',
+        'dj_contacts_aria' => 'Contact links',
+        'dj_bio_heading' => 'About',
+        'dj_photo_alt' => 'DJ photo',
+        'dj_link_website' => 'Website',
+        'dj_link_facebook' => 'Facebook',
+        'dj_link_instagram' => 'Instagram',
+        'dj_link_soundcloud' => 'SoundCloud',
         'list_display_label' => 'Showing:',
         'list_display_all' => 'All',
     ];
@@ -640,7 +656,8 @@ function events_public_djs_strings(string $lang): array {
     $hu = [
         'html_title_suffix' => ' – ',
         'page_title' => 'DJ-k',
-        'page_desc' => 'DJ-k és közzétett eseményeik a Latinfo.hu-n.',
+        'page_desc' => 'Összes DJ, statisztikák és közzétett eseményeik a Latinfo.hu-n.',
+        'page_intro' => 'Itt találod a Latinfo.hu DJ-it: összesítő számok, toplisták és a teljes névsor.',
         'eyebrow' => 'DJ-k',
         'lang_nav' => 'Nyelv',
         'lang_hu' => 'Magyar',
@@ -649,6 +666,17 @@ function events_public_djs_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu kezdőoldala',
         'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
         'footer_home_link' => 'Latinfo.hu',
+        'stats_heading' => 'Áttekintés',
+        'stat_djs' => 'DJ',
+        'stat_djs_with_events' => 'Eseményes DJ',
+        'stat_djs_upcoming' => 'Aktív DJ',
+        'stat_events' => 'DJ-s esemény',
+        'stat_events_upcoming' => 'Aktuális esemény',
+        'rank_events_heading' => 'Legtöbb esemény',
+        'rank_upcoming_heading' => 'Legtöbb aktuális',
+        'rank_next_heading' => 'Következő fellépések',
+        'rank_empty' => 'Még nincs adat.',
+        'catalog_heading' => 'Összes DJ',
         'filter_label' => 'Keresés név szerint',
         'filter_placeholder' => 'DJ neve…',
         'sort_label' => 'Rendezés',
@@ -669,7 +697,8 @@ function events_public_djs_strings(string $lang): array {
     $en = [
         'html_title_suffix' => ' – ',
         'page_title' => 'DJs',
-        'page_desc' => 'DJs and their published events on Latinfo.hu.',
+        'page_desc' => 'All DJs, stats and published events on Latinfo.hu.',
+        'page_intro' => 'Browse Latinfo.hu DJs: summary stats, rankings and the full directory.',
         'eyebrow' => 'DJs',
         'lang_nav' => 'Language',
         'lang_hu' => 'Hungarian',
@@ -678,6 +707,17 @@ function events_public_djs_strings(string $lang): array {
         'logo_home_title' => 'Latinfo.hu home',
         'logo_home_aria' => 'Go to the Latinfo.hu homepage',
         'footer_home_link' => 'Latinfo.hu',
+        'stats_heading' => 'Overview',
+        'stat_djs' => 'DJs',
+        'stat_djs_with_events' => 'DJs with events',
+        'stat_djs_upcoming' => 'Active DJs',
+        'stat_events' => 'Events with DJs',
+        'stat_events_upcoming' => 'Upcoming events',
+        'rank_events_heading' => 'Most events',
+        'rank_upcoming_heading' => 'Most upcoming',
+        'rank_next_heading' => 'Next appearances',
+        'rank_empty' => 'No data yet.',
+        'catalog_heading' => 'All DJs',
         'filter_label' => 'Search by name',
         'filter_placeholder' => 'DJ name…',
         'sort_label' => 'Sort',
@@ -1016,7 +1056,15 @@ function events_public_venue_lang_switch_url(string $slug, string $targetLang, a
 }
 
 function events_public_djs_page_url(string $lang, array $extraParams = []): string {
-    return events_url('djs.php?' . http_build_query(array_merge(['lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
+    $url = events_public_djs_hub_canonical_url();
+    $q = $extraParams;
+    if ($lang === 'en') {
+        $q['lang'] = 'en';
+    } else {
+        unset($q['lang']);
+    }
+
+    return events_public_append_query($url, $q);
 }
 
 function events_public_djs_lang_switch_url(string $targetLang, array $extraParams = []): string {

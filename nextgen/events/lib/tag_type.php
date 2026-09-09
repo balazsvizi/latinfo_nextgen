@@ -616,7 +616,19 @@ function events_public_tag_dj_slug(PDO $db, int $tagId): ?string {
 /**
  * DJ címke betöltése slug alapján.
  *
- * @return array{id:int,name:string,slug:string}|null
+ * @return array{
+ *   id:int,
+ *   name:string,
+ *   slug:string,
+ *   description:string,
+ *   photo_url:string,
+ *   website_url:string,
+ *   facebook_url:string,
+ *   instagram_url:string,
+ *   soundcloud_url:string,
+ *   email:string,
+ *   phone:string
+ * }|null
  */
 function events_public_dj_by_slug(PDO $db, string $slug): ?array {
     $slug = trim($slug);
@@ -627,12 +639,14 @@ function events_public_dj_by_slug(PDO $db, string $slug): ?array {
     if (!events_tags_slug_column_available($db)) {
         return null;
     }
+    require_once __DIR__ . '/tag_profile.php';
     $djTypeId = events_tag_type_id_by_code($db, 'dj');
     if ($djTypeId === null || $djTypeId <= 0) {
         return null;
     }
+    $profileSelect = events_tag_profile_sql_select($db, 't');
     $st = $db->prepare('
-        SELECT t.`id`, t.`name`, t.`slug`
+        SELECT t.`id`, t.`name`, t.`slug`, ' . $profileSelect . '
         FROM `events_tags` t
         INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
         WHERE t.`slug` = ?
@@ -643,12 +657,13 @@ function events_public_dj_by_slug(PDO $db, string $slug): ?array {
     if (!$row) {
         return null;
     }
+    $profile = events_tag_profile_from_row($row);
 
-    return [
+    return array_merge([
         'id' => (int) ($row['id'] ?? 0),
         'name' => (string) ($row['name'] ?? ''),
         'slug' => (string) ($row['slug'] ?? $slug),
-    ];
+    ], $profile);
 }
 
 /**
