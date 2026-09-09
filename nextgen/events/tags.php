@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/tag_type.php';
+require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 requireLogin();
 
@@ -45,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $st = $db->prepare('UPDATE `events_tags` SET `name` = ? WHERE `id` = ?');
                 $st->execute([$name, $id]);
                 events_save_tag_types($db, $id, $typeCodes);
+                events_tag_sync_dj_slug($db, $id, $name, $typeCodes);
                 $db->commit();
             } catch (Throwable $e) {
                 $db->rollBack();
@@ -61,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ins->execute([$name]);
             $newId = (int) $db->lastInsertId();
             events_save_tag_types($db, $newId, $typeCodes);
+            events_tag_sync_dj_slug($db, $newId, $name, $typeCodes);
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();
@@ -123,6 +126,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue;
                 }
                 events_save_tag_types($db, $tagId, $typeCodes);
+                if (in_array('dj', $typeCodes, true)) {
+                    $nameSt = $db->prepare('SELECT `name` FROM `events_tags` WHERE `id` = ? LIMIT 1');
+                    $nameSt->execute([$tagId]);
+                    $tagName = (string) ($nameSt->fetchColumn() ?: '');
+                    if ($tagName !== '') {
+                        events_tag_sync_dj_slug($db, $tagId, $tagName, $typeCodes);
+                    }
+                }
                 $updated++;
             }
             $db->commit();
@@ -352,7 +363,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     ?>
                                     <div class="toolbar">
                                         <button type="submit" class="btn btn-primary">Mentés</button>
-                                        <a href="<?= h(events_url('tag.php?id=') . $tid) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>
+                                        <a href="<?= h(events_public_tag_page_url($tid, 'hu')) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>
                                     </div>
                                 </form>
                                 <form method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-delete-form" onsubmit="return confirm('Biztosan törlöd ezt a címkét?');">

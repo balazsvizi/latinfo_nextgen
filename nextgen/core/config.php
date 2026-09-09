@@ -157,6 +157,11 @@ if (!defined('EVENTS_PUBLIC_PATH')) {
     define('EVENTS_PUBLIC_PATH', trim((string) cfg_get('EVENTS_PUBLIC_PATH', 'event', $localConfig), '/'));
 }
 
+/** Nyilvános DJ oldal URL szegmens (pl. DJ → /DJ/{slug}/). */
+if (!defined('EVENTS_DJ_PATH')) {
+    define('EVENTS_DJ_PATH', trim((string) cfg_get('EVENTS_DJ_PATH', 'DJ', $localConfig), '/'));
+}
+
 /** Nyilvános főoldal (logó / lábléc link a megjelenítőn). Fejlesztői felülírás: config.local.php vagy LATINFO_PUBLIC_HOME_URL env. */
 if (!defined('LATINFO_PUBLIC_HOME_URL')) {
     $pubHome = rtrim((string) cfg_get('LATINFO_PUBLIC_HOME_URL', 'https://latinfo.hu', $localConfig), '/');

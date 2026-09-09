@@ -1032,9 +1032,45 @@ function events_public_organizers_catalog_lang_switch_url(string $targetLang, ar
 }
 
 /**
- * Nyilvános címke-oldal URL.
+ * Nyilvános DJ oldal URL (/DJ/{slug}/).
+ *
+ * @param array<string, scalar|null> $extraParams
+ */
+function events_public_dj_page_url(string $slug, string $lang, array $extraParams = []): string {
+    $url = events_public_dj_canonical_url($slug);
+    $q = $extraParams;
+    if ($lang === 'en') {
+        $q['lang'] = 'en';
+    } else {
+        unset($q['lang']);
+    }
+
+    return events_public_append_query($url, $q);
+}
+
+function events_public_dj_lang_switch_url(string $slug, string $targetLang, array $extraParams = []): string {
+    return events_public_dj_page_url($slug, $targetLang, $extraParams);
+}
+
+/**
+ * Nyilvános címke-oldal URL (DJ típusnál pretty /DJ/{slug}/).
+ *
+ * @param array<string, scalar|null> $extraParams
  */
 function events_public_tag_page_url(int $tagId, string $lang, array $extraParams = []): string {
+    if ($tagId > 0) {
+        try {
+            require_once __DIR__ . '/tag_type.php';
+            $db = getDb();
+            $djSlug = events_public_tag_dj_slug($db, $tagId);
+            if ($djSlug !== null && $djSlug !== '') {
+                return events_public_dj_page_url($djSlug, $lang, $extraParams);
+            }
+        } catch (Throwable) {
+            // fallback query URL
+        }
+    }
+
     return events_url('tag.php?' . http_build_query(array_merge(['id' => $tagId, 'lang' => $lang], $extraParams), '', '&', PHP_QUERY_RFC3986));
 }
 

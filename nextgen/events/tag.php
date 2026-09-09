@@ -11,16 +11,12 @@ require_once __DIR__ . '/lib/public_event_filters.php';
 $lang = events_public_resolve_megjelenit_lang();
 $G = events_public_tag_strings($lang);
 
-$tagId = (int) ($_GET['id'] ?? 0);
-if ($tagId <= 0) {
-    http_response_code(404);
-    events_public_send_noindex_header();
-    header('Content-Type: text/html; charset=UTF-8');
-    echo events_public_tag_not_found_html($lang);
-    exit;
-}
-
 $db = getDb();
+$slugParam = trim((string) ($_GET['slug'] ?? ''));
+$tagId = (int) ($_GET['id'] ?? 0);
+$tagSlug = '';
+$fromDjPretty = events_public_is_dj_pretty_request();
+
 if (!events_tags_tables_available($db)) {
     http_response_code(404);
     events_public_send_noindex_header();
@@ -29,10 +25,36 @@ if (!events_tags_tables_available($db)) {
     exit;
 }
 
-$st = $db->prepare('SELECT `id`, `name` FROM `events_tags` WHERE `id` = ? LIMIT 1');
-$st->execute([$tagId]);
-$tag = $st->fetch(PDO::FETCH_ASSOC);
-if (!$tag) {
+events_tags_ensure_dj_slugs($db);
+
+if ($slugParam !== '') {
+    $djRow = events_public_dj_by_slug($db, $slugParam);
+    if ($djRow === null || (int) $djRow['id'] <= 0) {
+        http_response_code(404);
+        events_public_send_noindex_header();
+        header('Content-Type: text/html; charset=UTF-8');
+        echo events_public_tag_not_found_html($lang);
+        exit;
+    }
+    $tagId = (int) $djRow['id'];
+    $tagSlug = (string) $djRow['slug'];
+    $tagName = (string) $djRow['name'];
+    $tag = ['id' => $tagId, 'name' => $tagName, 'slug' => $tagSlug];
+} elseif ($tagId > 0) {
+    $slugSelect = events_tags_slug_column_available($db) ? ', `slug`' : '';
+    $st = $db->prepare('SELECT `id`, `name`' . $slugSelect . ' FROM `events_tags` WHERE `id` = ? LIMIT 1');
+    $st->execute([$tagId]);
+    $tag = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$tag) {
+        http_response_code(404);
+        events_public_send_noindex_header();
+        header('Content-Type: text/html; charset=UTF-8');
+        echo events_public_tag_not_found_html($lang);
+        exit;
+    }
+    $tagName = (string) ($tag['name'] ?? '');
+    $tagSlug = trim((string) ($tag['slug'] ?? ''));
+} else {
     http_response_code(404);
     events_public_send_noindex_header();
     header('Content-Type: text/html; charset=UTF-8');
@@ -40,9 +62,36 @@ if (!$tag) {
     exit;
 }
 
-$tagName = (string) ($tag['name'] ?? '');
 $tagTypeRows = events_public_tag_type_rows_for_display($db, $tagId);
 $tagIsDj = events_public_tag_has_type_code($db, $tagId, 'dj');
+
+if ($fromDjPretty && !$tagIsDj) {
+    http_response_code(404);
+    events_public_send_noindex_header();
+    header('Content-Type: text/html; charset=UTF-8');
+    echo events_public_tag_not_found_html($lang);
+    exit;
+}
+
+if ($tagIsDj && $tagSlug === '') {
+    $synced = events_tag_sync_dj_slug($db, $tagId, $tagName, ['dj']);
+    if ($synced !== null) {
+        $tagSlug = $synced;
+    }
+}
+
+if ($tagIsDj && $tagSlug !== '' && events_public_is_legacy_tag_request()) {
+    $legacyParams = [];
+    foreach (['lang', 'limit'] as $param) {
+        if (isset($_GET[$param]) && (string) $_GET[$param] !== '') {
+            $legacyParams[$param] = (string) $_GET[$param];
+        }
+    }
+    $targetLang = ($legacyParams['lang'] ?? $lang) === 'en' ? 'en' : 'hu';
+    unset($legacyParams['lang']);
+    events_public_redirect_to(events_public_dj_page_url($tagSlug, $targetLang, $legacyParams));
+}
+
 $publishedStatus = events_public_post_status();
 $listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
 $list_limit = $listLimitParsed['sql_limit'];
@@ -62,11 +111,18 @@ $desc = $lang === 'en'
     ? ($tagName !== '' ? 'Published events tagged with ' . $tagName . ' on Latinfo.hu.' : 'Published events on Latinfo.hu.')
     : ($tagName !== '' ? $tagName . ' címkéjű közzétett események a Latinfo.hu-n.' : 'Közzétett események a Latinfo.hu-n.');
 
-$canonical = events_absolute_url(events_url('tag.php?id=' . $tagId));
-$ogPageUrl = events_absolute_url(events_public_tag_page_url($tagId, $lang, $limitParams));
+if ($tagIsDj && $tagSlug !== '') {
+    $canonical = events_absolute_url(events_public_dj_page_url($tagSlug, 'hu'));
+    $ogPageUrl = events_absolute_url(events_public_dj_page_url($tagSlug, $lang, $limitParams));
+    $urlHu = events_public_dj_lang_switch_url($tagSlug, 'hu', $limitParams);
+    $urlEn = events_public_dj_lang_switch_url($tagSlug, 'en', $limitParams);
+} else {
+    $canonical = events_absolute_url(events_url('tag.php?id=' . $tagId));
+    $ogPageUrl = events_absolute_url(events_public_tag_page_url($tagId, $lang, $limitParams));
+    $urlHu = events_public_tag_lang_switch_url($tagId, 'hu', $limitParams);
+    $urlEn = events_public_tag_lang_switch_url($tagId, 'en', $limitParams);
+}
 $cssUrl = events_url('assets/event_public.css');
-$urlHu = events_public_tag_lang_switch_url($tagId, 'hu', $limitParams);
-$urlEn = events_public_tag_lang_switch_url($tagId, 'en', $limitParams);
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $G;
 $showAdminEdit = isLoggedIn();

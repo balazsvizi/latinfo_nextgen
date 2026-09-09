@@ -95,14 +95,17 @@ header('Content-Type: text/html; charset=UTF-8');
                     <?php
                     $djId = (int) ($dj['id'] ?? 0);
                     $djName = (string) ($dj['name'] ?? '');
+                    $djSlug = trim((string) ($dj['slug'] ?? ''));
                     $total = (int) ($dj['event_total'] ?? 0);
                     $upcoming = (int) ($dj['event_upcoming'] ?? 0);
                     $nextStart = (string) ($dj['next_event_start'] ?? '');
+                    $href = $djSlug !== ''
+                        ? events_public_dj_page_url($djSlug, $lang)
+                        : events_public_tag_page_url($djId, $lang);
                     $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
                     $nextDisplay = $nextTs !== false
                         ? events_public_event_start_date_time_display(false, $nextTs, $lang)
                         : '';
-                    $href = events_public_tag_page_url($djId, $lang);
                     $nameSort = mb_strtolower($djName, 'UTF-8');
                     ?>
                     <li

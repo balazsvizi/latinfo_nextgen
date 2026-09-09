@@ -18,6 +18,7 @@ function events_public_tag_has_type_code(PDO $db, int $tagId, string $typeCode):
  * @return list<array{
  *   id: int,
  *   name: string,
+ *   slug: string,
  *   event_total: int,
  *   event_upcoming: int,
  *   next_event_start: ?string
@@ -27,6 +28,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
     if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
         return [];
     }
+    events_tags_ensure_dj_slugs($db);
     $djTypeId = events_tag_type_id_by_code($db, 'dj');
     if ($djTypeId === null || $djTypeId <= 0) {
         return [];
@@ -34,9 +36,10 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
 
     require_once __DIR__ . '/admin_event_filters.php';
     $poolFrom = events_admin_table_pool_from_sql('events_tags', 't', $listLimit);
+    $slugSelect = events_tags_slug_column_available($db) ? 't.`slug`' : 'NULL AS `slug`';
 
     $st = $db->prepare('
-        SELECT t.`id`, t.`name`
+        SELECT t.`id`, t.`name`, ' . $slugSelect . '
         FROM ' . $poolFrom . '
         INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
         ORDER BY t.`name` ASC, t.`id` ASC
@@ -56,6 +59,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
         $byId[$id] = [
             'id' => $id,
             'name' => (string) ($row['name'] ?? ''),
+            'slug' => trim((string) ($row['slug'] ?? '')),
             'event_total' => 0,
             'event_upcoming' => 0,
             'next_event_start' => null,

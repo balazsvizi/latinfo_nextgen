@@ -415,7 +415,7 @@ function events_load_tag_options_by_types(PDO $db, array $typeCodes): array {
 
 /**
  * @param list<string> $typeCodes
- * @return list<array{id:int,name:string}>
+ * @return list<array{id:int,name:string,slug:string}>
  */
 function events_public_event_tags_by_types(PDO $db, int $eventId, array $typeCodes): array {
     if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db) || $eventId <= 0) {
@@ -425,9 +425,13 @@ function events_public_event_tags_by_types(PDO $db, int $eventId, array $typeCod
     if ($typeCodes === []) {
         return [];
     }
+    if (in_array('dj', $typeCodes, true)) {
+        events_tags_ensure_dj_slugs($db);
+    }
     $ph = implode(',', array_fill(0, count($typeCodes), '?'));
+    $slugSelect = events_tags_slug_column_available($db) ? 't.`slug`' : 'NULL AS `slug`';
     $st = $db->prepare("
-        SELECT DISTINCT t.`id`, t.`name`
+        SELECT DISTINCT t.`id`, t.`name`, {$slugSelect}
         FROM `events_tags` t
         INNER JOIN `events_calendar_event_tags` et ON et.`tag_id` = t.`id`
         INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id`
@@ -438,7 +442,11 @@ function events_public_event_tags_by_types(PDO $db, int $eventId, array $typeCod
     $st->execute(array_merge([$eventId], $typeCodes));
     $out = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $out[] = ['id' => (int) $r['id'], 'name' => (string) $r['name']];
+        $out[] = [
+            'id' => (int) $r['id'],
+            'name' => (string) $r['name'],
+            'slug' => trim((string) ($r['slug'] ?? '')),
+        ];
     }
 
     return $out;
@@ -542,4 +550,132 @@ function events_tag_type_count_links(PDO $db, int $typeId): int {
     $st->execute([$typeId]);
 
     return (int) $st->fetchColumn();
+}
+
+/**
+ * Hiányzó DJ slugok kitöltése (névből, underscore konvenció).
+ */
+function events_tags_ensure_dj_slugs(PDO $db): void {
+    if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+        return;
+    }
+    events_tags_ensure_slug_column($db);
+    if (!events_tags_slug_column_available($db)) {
+        return;
+    }
+    $djTypeId = events_tag_type_id_by_code($db, 'dj');
+    if ($djTypeId === null || $djTypeId <= 0) {
+        return;
+    }
+    try {
+        $st = $db->prepare('
+            SELECT t.`id`, t.`name`, t.`slug`
+            FROM `events_tags` t
+            INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
+            WHERE t.`slug` IS NULL OR t.`slug` = \'\'
+            ORDER BY t.`id` ASC
+        ');
+        $st->execute([$djTypeId]);
+        $upd = $db->prepare('UPDATE `events_tags` SET `slug` = ? WHERE `id` = ?');
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            $name = (string) ($row['name'] ?? '');
+            if ($id <= 0 || $name === '') {
+                continue;
+            }
+            $slug = events_ensure_unique_tag_slug($db, events_dj_slugify($name), $id);
+            $upd->execute([$slug, $id]);
+        }
+    } catch (PDOException) {
+        // schema / race – csendben kihagyjuk
+    }
+}
+
+/**
+ * Egy címke DJ slugja (ha DJ típusú és van slug).
+ */
+function events_public_tag_dj_slug(PDO $db, int $tagId): ?string {
+    if ($tagId <= 0 || !events_tags_tables_available($db) || !events_tags_slug_column_available($db)) {
+        return null;
+    }
+    if (!in_array('dj', events_load_tag_type_codes($db, $tagId), true)) {
+        return null;
+    }
+    $st = $db->prepare('SELECT `slug` FROM `events_tags` WHERE `id` = ? LIMIT 1');
+    $st->execute([$tagId]);
+    $slug = trim((string) ($st->fetchColumn() ?: ''));
+    if ($slug === '') {
+        events_tags_ensure_dj_slugs($db);
+        $st->execute([$tagId]);
+        $slug = trim((string) ($st->fetchColumn() ?: ''));
+    }
+
+    return $slug !== '' ? $slug : null;
+}
+
+/**
+ * DJ címke betöltése slug alapján.
+ *
+ * @return array{id:int,name:string,slug:string}|null
+ */
+function events_public_dj_by_slug(PDO $db, string $slug): ?array {
+    $slug = trim($slug);
+    if ($slug === '' || !events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+        return null;
+    }
+    events_tags_ensure_slug_column($db);
+    if (!events_tags_slug_column_available($db)) {
+        return null;
+    }
+    $djTypeId = events_tag_type_id_by_code($db, 'dj');
+    if ($djTypeId === null || $djTypeId <= 0) {
+        return null;
+    }
+    $st = $db->prepare('
+        SELECT t.`id`, t.`name`, t.`slug`
+        FROM `events_tags` t
+        INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
+        WHERE t.`slug` = ?
+        LIMIT 1
+    ');
+    $st->execute([$djTypeId, $slug]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+
+    return [
+        'id' => (int) ($row['id'] ?? 0),
+        'name' => (string) ($row['name'] ?? ''),
+        'slug' => (string) ($row['slug'] ?? $slug),
+    ];
+}
+
+/**
+ * Címke mentés után: ha DJ típusú, slug biztosítása névből.
+ *
+ * @param list<string> $typeCodes
+ */
+function events_tag_sync_dj_slug(PDO $db, int $tagId, string $name, array $typeCodes): ?string {
+    if ($tagId <= 0) {
+        return null;
+    }
+    $typeCodes = events_tag_type_normalize_codes($typeCodes, $db);
+    if (!in_array('dj', $typeCodes, true)) {
+        return null;
+    }
+    events_tags_ensure_slug_column($db);
+    if (!events_tags_slug_column_available($db)) {
+        return null;
+    }
+    $st = $db->prepare('SELECT `slug` FROM `events_tags` WHERE `id` = ? LIMIT 1');
+    $st->execute([$tagId]);
+    $current = trim((string) ($st->fetchColumn() ?: ''));
+    if ($current !== '') {
+        return $current;
+    }
+    $slug = events_ensure_unique_tag_slug($db, events_dj_slugify($name), $tagId);
+    $db->prepare('UPDATE `events_tags` SET `slug` = ? WHERE `id` = ?')->execute([$slug, $tagId]);
+
+    return $slug;
 }

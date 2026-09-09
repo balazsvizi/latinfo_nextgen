@@ -11,7 +11,7 @@ declare(strict_types=1);
  * @var list<array{name:string}> $eventSupplementaryStyles
  * @var list<array{id:int,color:string,name:string}> $eventCategories
  * @var list<array{id:int,name:string}> $eventTags
- * @var list<array{id:int,name:string}> $eventDjs
+ * @var list<array{id:int,name:string,slug?:string}> $eventDjs
  * @var string|null $costText
  */
 $hasOrganizers = $eventOrganizers !== [];
@@ -94,7 +94,14 @@ if (!$hasOrganizers && !$hasStyles && !$hasCategories && !$hasTags && !$hasDjs &
             <span class="event-hero-meta__label"><?= h($T['section_djs']) ?></span>
             <div class="event-hero-meta__chips">
                 <?php foreach ($eventDjs as $djRow): ?>
-                    <a class="event-hero-chip event-hero-chip--link event-hero-chip--dj" href="<?= h(events_public_tag_page_url((int) $djRow['id'], $lang)) ?>"><?= h((string) $djRow['name']) ?></a>
+                    <?php
+                    $djChipId = (int) $djRow['id'];
+                    $djChipSlug = trim((string) ($djRow['slug'] ?? ''));
+                    $djChipHref = $djChipSlug !== ''
+                        ? events_public_dj_page_url($djChipSlug, $lang)
+                        : events_public_tag_page_url($djChipId, $lang);
+                    ?>
+                    <a class="event-hero-chip event-hero-chip--link event-hero-chip--dj" href="<?= h($djChipHref) ?>"><?= h((string) $djRow['name']) ?></a>
                 <?php endforeach; ?>
             </div>
         </div>
