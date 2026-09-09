@@ -195,7 +195,9 @@ header('Content-Type: text/html; charset=UTF-8');
     <?php endif; ?>
 
     <section class="djs-public__catalog" aria-labelledby="djs-catalog-heading">
-        <h2 class="djs-public__section-title" id="djs-catalog-heading"><?= h((string) $D['catalog_heading']) ?></h2>
+        <div class="djs-public__catalog-head">
+            <h2 class="djs-public__catalog-title" id="djs-catalog-heading"><?= h((string) $D['catalog_heading']) ?></h2>
+        </div>
 
         <?php if ($djRows === []): ?>
             <p class="organizer-public__empty"><?= h($D['empty']) ?></p>
