@@ -73,6 +73,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/venues.php')) ?>" role="menuitem">Helyszínek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/organizers.php')) ?>" role="menuitem">Szervezők</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/djs_admin.php')) ?>" role="menuitem">DJ-k</a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu">

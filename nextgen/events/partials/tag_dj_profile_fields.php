@@ -2,17 +2,21 @@
 declare(strict_types=1);
 
 /**
- * Admin: DJ profil mezők (csak DJ típusnál releváns).
+ * DJ profil szöveges / link mezők (fotó külön partial).
  *
  * @var int $tagFormId
  * @var array<string, string> $tagProfile
+ * @var bool $tagProfileStandalone  ha true: nincs rejtő wrapper (önálló DJ szerkesztő)
  * @var bool $tagProfileVisible
  */
 
 $tagFormId = (int) ($tagFormId ?? 0);
 $tagProfile = is_array($tagProfile ?? null) ? $tagProfile : events_tag_profile_empty();
-$tagProfileVisible = (bool) ($tagProfileVisible ?? false);
+$tagProfileStandalone = (bool) ($tagProfileStandalone ?? false);
+$tagProfileVisible = (bool) ($tagProfileVisible ?? $tagProfileStandalone);
 $fid = $tagFormId > 0 ? (string) $tagFormId : 'new';
+
+if (!$tagProfileStandalone):
 ?>
 <div
     class="events-tag-dj-profile"
@@ -20,24 +24,19 @@ $fid = $tagFormId > 0 ? (string) $tagFormId : 'new';
     <?= $tagProfileVisible ? '' : 'hidden' ?>
 >
     <h4 class="events-tag-dj-profile__title">DJ profil</h4>
-    <p class="help">Ezek a mezők a nyilvános DJ oldalon jelennek meg (/DJ/…).</p>
-    <div class="form-group">
-        <label for="tag_photo_url_<?= h($fid) ?>">Fotó URL</label>
-        <input
-            type="url"
-            id="tag_photo_url_<?= h($fid) ?>"
-            name="tag_photo_url"
-            maxlength="2000"
-            value="<?= h((string) ($tagProfile['photo_url'] ?? '')) ?>"
-            placeholder="https://… vagy /nextgen/…"
-        >
-    </div>
+    <p class="help">A részletes adatlap a <a href="<?= h(events_url('djs_admin.php')) ?>">DJ-k</a> menüpontban szerkeszthető.</p>
+</div>
+<?php
+    return;
+endif;
+?>
+<div class="events-tag-dj-profile events-tag-dj-profile--standalone">
     <div class="form-group">
         <label for="tag_description_<?= h($fid) ?>">Bio / leírás</label>
         <textarea
             id="tag_description_<?= h($fid) ?>"
             name="tag_description"
-            rows="5"
+            rows="6"
             placeholder="Rövid bemutatkozás…"
         ><?= h((string) ($tagProfile['description'] ?? '')) ?></textarea>
         <p class="help">Egyszerű HTML megengedett (bekezdések, linkek, listák).</p>

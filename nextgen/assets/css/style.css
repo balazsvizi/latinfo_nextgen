@@ -3288,6 +3288,13 @@ dialog.eventpics-modal::backdrop {
     background: #f7faf5;
 }
 
+.events-tag-dj-profile--standalone {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
 .events-tag-dj-profile__title {
     margin: 0 0 0.35rem;
     font-size: 1rem;
@@ -3297,6 +3304,73 @@ dialog.eventpics-modal::backdrop {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
     gap: 0.65rem 1rem;
+}
+
+.events-djs-admin__th-photo,
+.events-djs-admin__td-photo {
+    width: 3.25rem;
+}
+
+.events-djs-admin__thumb-link {
+    display: inline-flex;
+}
+
+.events-djs-admin__thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--border, #d8e0d4);
+    background: #eef3eb;
+}
+
+.events-djs-admin__thumb--empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.events-dj-photo__preview-wrap {
+    margin: 0 0 0.75rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border, #d8e0d4);
+    background: #eef3eb;
+    aspect-ratio: 1 / 1;
+    max-width: 220px;
+}
+
+.events-dj-photo__preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.events-dj-photo__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 8rem;
+    color: #6b7a66;
+    font-size: 0.9rem;
+}
+
+.events-dj-photo__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem 1rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.events-dj-photo__clear {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+    font-size: 0.875rem;
 }
 
 /* Címke típus chip-ek a táblázatban */

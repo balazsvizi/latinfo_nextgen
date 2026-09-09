@@ -86,6 +86,10 @@ function pm_tools_page_catalog(): array
             'display_name' => 'Szervezők (events)',
             'purpose' => 'Esemény szervezők listája az Event Adminban.',
         ],
+        '/nextgen/events/djs_admin.php' => [
+            'display_name' => 'DJ-k (events)',
+            'purpose' => 'DJ adatlapok listája és szerkesztése az Event Adminban.',
+        ],
         '/nextgen/config/cimkek.php' => [
             'display_name' => 'Címkék',
             'purpose' => 'NextGen config – címkék kezelése.',

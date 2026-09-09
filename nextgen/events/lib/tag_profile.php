@@ -279,6 +279,52 @@ function events_tag_profile_sql_select(PDO $db, string $alias = 't'): string {
 }
 
 /**
+ * POST → profil mezők fotó nélkül (a fotót a djpics feltöltés kezeli).
+ *
+ * @return array{0: array<string, string>, 1: ?string} [profile, error]
+ */
+function events_tag_profile_from_post_without_photo(): array {
+    $profile = events_tag_profile_empty();
+    $rawDesc = (string) ($_POST['tag_description'] ?? '');
+    $profile['description'] = events_sanitize_html_fragment($rawDesc);
+
+    $urlFields = [
+        'website_url' => 'tag_website_url',
+        'facebook_url' => 'tag_facebook_url',
+        'instagram_url' => 'tag_instagram_url',
+        'soundcloud_url' => 'tag_soundcloud_url',
+    ];
+    foreach ($urlFields as $key => $postKey) {
+        [$url, $err] = events_normalize_safe_url((string) ($_POST[$postKey] ?? ''), true);
+        if ($err !== null) {
+            return [$profile, $err];
+        }
+        $profile[$key] = $url ?? '';
+    }
+
+    $email = trim((string) ($_POST['tag_email'] ?? ''));
+    if ($email !== '') {
+        if (strlen($email) > 255 || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return [$profile, 'Érvénytelen e-mail cím.'];
+        }
+        $profile['email'] = $email;
+    }
+
+    $phone = trim((string) ($_POST['tag_phone'] ?? ''));
+    if ($phone !== '') {
+        if (strlen($phone) > 64) {
+            return [$profile, 'A telefonszám legfeljebb 64 karakter lehet.'];
+        }
+        if (!preg_match('/^[0-9+\s().\-\/]+$/u', $phone)) {
+            return [$profile, 'A telefonszám érvénytelen karaktereket tartalmaz.'];
+        }
+        $profile['phone'] = $phone;
+    }
+
+    return [$profile, null];
+}
+
+/**
  * Van-e megjeleníthető profil tartalom.
  *
  * @param array<string, string> $profile
