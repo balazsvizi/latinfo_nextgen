@@ -3311,6 +3311,13 @@ dialog.eventpics-modal::backdrop {
     width: 3.25rem;
 }
 
+.events-admin-table.sortable-table th a.th-sort {
+    display: flex;
+    width: 100%;
+    min-height: 1.25em;
+    text-align: inherit;
+}
+
 .events-djs-admin__thumb-link {
     display: inline-flex;
 }
@@ -3331,6 +3338,7 @@ dialog.eventpics-modal::backdrop {
     font-size: 1.1rem;
 }
 
+.events-dj-media__preview-wrap,
 .events-dj-photo__preview-wrap {
     margin: 0 0 0.75rem;
     border-radius: 8px;
@@ -3341,6 +3349,16 @@ dialog.eventpics-modal::backdrop {
     max-width: 220px;
 }
 
+.events-dj-media__preview-wrap--logo {
+    background:
+        linear-gradient(45deg, #f0f2ee 25%, transparent 25%) 0 0 / 12px 12px,
+        linear-gradient(-45deg, #f0f2ee 25%, transparent 25%) 0 6px / 12px 12px,
+        linear-gradient(45deg, transparent 75%, #f0f2ee 75%) 6px -6px / 12px 12px,
+        linear-gradient(-45deg, transparent 75%, #f0f2ee 75%) -6px 0 / 12px 12px,
+        #fff;
+}
+
+.events-dj-media__preview,
 .events-dj-photo__preview {
     display: block;
     width: 100%;
@@ -3348,6 +3366,14 @@ dialog.eventpics-modal::backdrop {
     object-fit: cover;
 }
 
+.events-dj-media__preview--contain {
+    object-fit: contain;
+    padding: 0.65rem;
+    box-sizing: border-box;
+    background: transparent;
+}
+
+.events-dj-media__placeholder,
 .events-dj-photo__placeholder {
     display: flex;
     align-items: center;
@@ -3358,6 +3384,7 @@ dialog.eventpics-modal::backdrop {
     font-size: 0.9rem;
 }
 
+.events-dj-media__actions,
 .events-dj-photo__actions {
     display: flex;
     flex-wrap: wrap;
@@ -3366,11 +3393,16 @@ dialog.eventpics-modal::backdrop {
     margin-bottom: 0.5rem;
 }
 
+.events-dj-media__clear,
 .events-dj-photo__clear {
     display: inline-flex;
     gap: 0.35rem;
     align-items: center;
     font-size: 0.875rem;
+}
+
+.events-dj-edit-form .events-edit-sidebar .events-edit-panel + .events-edit-panel {
+    margin-top: 0.85rem;
 }
 
 /* Címke típus chip-ek a táblázatban */

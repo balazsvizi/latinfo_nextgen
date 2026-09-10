@@ -144,15 +144,19 @@ function events_djpics_extract_selected_from_photo(?string $photoUrl): string {
 /**
  * Mentéshez: új feltöltés / pick / megtartás / törlés.
  *
- * @return array{0:?string,1:?string} [photo_url|null (null = törlés üresre), error]
- *         Ha nincs változás, a második null és az első a currentPhotoUrl (string, lehet '').
+ * @return array{0:?string,1:?string} [url|null (null csak hibánál), error]
  */
-function events_djpics_resolve_photo_for_save(string $currentPhotoUrl, bool $clearPhoto): array {
-    if ($clearPhoto) {
+function events_djpics_resolve_image_for_save(
+    string $currentUrl,
+    bool $clear,
+    string $fileField,
+    string $pickField
+): array {
+    if ($clear) {
         return ['', null];
     }
 
-    $file = $_FILES['dj_photo_upload'] ?? null;
+    $file = $_FILES[$fileField] ?? null;
     if (is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
         [$webPath, $err] = events_djpics_handle_upload($file);
         if ($err !== null) {
@@ -163,7 +167,7 @@ function events_djpics_resolve_photo_for_save(string $currentPhotoUrl, bool $cle
         }
     }
 
-    $pick = trim((string) ($_POST['dj_photo_pick'] ?? ''));
+    $pick = trim((string) ($_POST[$pickField] ?? ''));
     if ($pick !== '') {
         [$webPath, $err] = events_djpics_normalize_selected($pick);
         if ($err !== null) {
@@ -174,5 +178,32 @@ function events_djpics_resolve_photo_for_save(string $currentPhotoUrl, bool $cle
         }
     }
 
-    return [$currentPhotoUrl, null];
+    return [$currentUrl, null];
+}
+
+/**
+ * Mentéshez: új feltöltés / pick / megtartás / törlés.
+ *
+ * @return array{0:?string,1:?string} [photo_url|null (null = törlés üresre), error]
+ *         Ha nincs változás, a második null és az első a currentPhotoUrl (string, lehet '').
+ */
+function events_djpics_resolve_photo_for_save(string $currentPhotoUrl, bool $clearPhoto): array {
+    return events_djpics_resolve_image_for_save(
+        $currentPhotoUrl,
+        $clearPhoto,
+        'dj_photo_upload',
+        'dj_photo_pick'
+    );
+}
+
+/**
+ * @return array{0:?string,1:?string}
+ */
+function events_djpics_resolve_logo_for_save(string $currentLogoUrl, bool $clearLogo): array {
+    return events_djpics_resolve_image_for_save(
+        $currentLogoUrl,
+        $clearLogo,
+        'dj_logo_upload',
+        'dj_logo_pick'
+    );
 }

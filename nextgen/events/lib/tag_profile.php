@@ -14,6 +14,7 @@ function events_tag_profile_column_names(): array {
     return [
         'description',
         'photo_url',
+        'logo_url',
         'website_url',
         'facebook_url',
         'instagram_url',
@@ -55,6 +56,7 @@ function events_tags_ensure_profile_columns(PDO $db): void {
     $alters = [
         'description' => 'ALTER TABLE `events_tags` ADD COLUMN `description` TEXT NULL DEFAULT NULL',
         'photo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_url` VARCHAR(2000) NULL DEFAULT NULL',
+        'logo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_url` VARCHAR(2000) NULL DEFAULT NULL',
         'website_url' => 'ALTER TABLE `events_tags` ADD COLUMN `website_url` VARCHAR(2000) NULL DEFAULT NULL',
         'facebook_url' => 'ALTER TABLE `events_tags` ADD COLUMN `facebook_url` VARCHAR(2000) NULL DEFAULT NULL',
         'instagram_url' => 'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` VARCHAR(2000) NULL DEFAULT NULL',
@@ -87,6 +89,7 @@ function events_tags_ensure_profile_columns(PDO $db): void {
  * @return array{
  *   description: string,
  *   photo_url: string,
+ *   logo_url: string,
  *   website_url: string,
  *   facebook_url: string,
  *   instagram_url: string,
@@ -100,6 +103,7 @@ function events_tag_profile_empty(): array {
     return [
         'description' => '',
         'photo_url' => '',
+        'logo_url' => '',
         'website_url' => '',
         'facebook_url' => '',
         'instagram_url' => '',
@@ -241,6 +245,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
         UPDATE `events_tags` SET
             `description` = ?,
             `photo_url` = ?,
+            `logo_url` = ?,
             `website_url` = ?,
             `facebook_url` = ?,
             `instagram_url` = ?,
@@ -253,6 +258,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
     $st->execute([
         $profile['description'] !== '' ? $profile['description'] : null,
         $profile['photo_url'] !== '' ? $profile['photo_url'] : null,
+        $profile['logo_url'] !== '' ? $profile['logo_url'] : null,
         $profile['website_url'] !== '' ? $profile['website_url'] : null,
         $profile['facebook_url'] !== '' ? $profile['facebook_url'] : null,
         $profile['instagram_url'] !== '' ? $profile['instagram_url'] : null,
@@ -338,7 +344,7 @@ function events_tag_profile_from_post_without_photo(): array {
  * @param array<string, string> $profile
  */
 function events_tag_profile_has_public_content(array $profile): bool {
-    foreach (['description', 'photo_url', 'website_url', 'facebook_url', 'instagram_url', 'soundcloud_url', 'youtube_url', 'email', 'phone'] as $key) {
+    foreach (['description', 'photo_url', 'logo_url', 'website_url', 'facebook_url', 'instagram_url', 'soundcloud_url', 'youtube_url', 'email', 'phone'] as $key) {
         if (trim((string) ($profile[$key] ?? '')) !== '') {
             return true;
         }

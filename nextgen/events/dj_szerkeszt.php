@@ -42,6 +42,7 @@ $slug = trim((string) ($tag['slug'] ?? ''));
 $profile = events_tag_profile_load($db, $id);
 $hiba = '';
 $djPhotoPick = '';
+$djLogoPick = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('dj_szerkeszt')) {
@@ -55,11 +56,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hiba = $profileErr;
         } else {
             $currentPhoto = (string) ($profile['photo_url'] ?? '');
+            $currentLogo = (string) ($profile['logo_url'] ?? '');
             [$photoUrl, $photoErr] = events_djpics_resolve_photo_for_save($currentPhoto, !empty($_POST['dj_photo_clear']));
+            [$logoUrl, $logoErr] = $photoErr === null
+                ? events_djpics_resolve_logo_for_save($currentLogo, !empty($_POST['dj_logo_clear']))
+                : [null, $photoErr];
             if ($photoErr !== null) {
                 $hiba = $photoErr;
+            } elseif ($logoErr !== null) {
+                $hiba = $logoErr;
             } else {
                 $profileIn['photo_url'] = $photoUrl ?? '';
+                $profileIn['logo_url'] = $logoUrl ?? '';
                 $dup = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? AND `id` <> ? LIMIT 1');
                 $dup->execute([$name, $id]);
                 if ($dup->fetchColumn() !== false) {
@@ -102,6 +110,7 @@ if ($hiba === '') {
     $profile = events_tag_profile_load($db, $id);
 } else {
     $djPhotoPick = trim((string) ($_POST['dj_photo_pick'] ?? ''));
+    $djLogoPick = trim((string) ($_POST['dj_logo_pick'] ?? ''));
 }
 
 $publicUrl = $slug !== ''
@@ -151,6 +160,13 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     $djPhotoUrl = (string) ($profile['photo_url'] ?? '');
                     $djPhotoPick = $djPhotoPick ?? '';
                     require __DIR__ . '/partials/dj_photo_fields.php';
+                    ?>
+                </div>
+                <div class="events-edit-panel">
+                    <?php
+                    $djLogoUrl = (string) ($profile['logo_url'] ?? '');
+                    $djLogoPick = $djLogoPick ?? '';
+                    require __DIR__ . '/partials/dj_logo_fields.php';
                     ?>
                 </div>
                 <div class="toolbar">

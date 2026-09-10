@@ -14,7 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-if (!csrf_validate('events_djpics', 'djpics_csrf')) {
+$csrfOk = csrf_validate('events_djpics', 'djpics_csrf')
+    || csrf_validate('events_djpics', 'djpics_logo_csrf');
+if (!$csrfOk) {
     echo json_encode(['ok' => false, 'error' => 'Érvénytelen vagy lejárt munkamenet.'], JSON_UNESCAPED_UNICODE);
     exit;
 }

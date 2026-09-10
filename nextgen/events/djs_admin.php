@@ -36,7 +36,22 @@ $get_params = events_admin_list_limit_merge_get_params($filters['get_params'], $
 $rows = events_djs_admin_fetch($db, $filters, $list_limit);
 $listDisplayedCount = count($rows);
 $hasFilters = $f_q !== '';
-$colspan = 5;
+$colspan = 9;
+
+/** @param array<string, string> $params */
+$djSortTh = static function (string $label, string $orderCol, string $currentOrder, string $currentDir, array $params): string {
+    $rel = sort_url($params, $orderCol, $currentOrder, $currentDir);
+    $qs = ltrim($rel, '?');
+    $href = events_url('djs_admin.php' . ($qs !== '' ? '?' . $qs : ''));
+    $arrow = '';
+    if ($currentOrder === $orderCol) {
+        $arrow = $currentDir === 'asc'
+            ? ' <span class="sort-arrow" aria-hidden="true">↑</span>'
+            : ' <span class="sort-arrow" aria-hidden="true">↓</span>';
+    }
+
+    return '<a href="' . h($href) . '" class="th-sort">' . h($label) . $arrow . '</a>';
+};
 
 $pageTitle = 'DJ-k';
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -79,11 +94,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <table class="sortable-table events-admin-table">
                 <thead>
                     <tr>
-                        <th class="events-djs-admin__th-photo">Fotó</th>
-                        <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
-                        <th><?= sort_th('Slug', 'slug', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num"><?= sort_th('Események', 'events', $order, $dir_param, $get_params) ?></th>
+                        <th class="events-djs-admin__th-photo"><?= $djSortTh('Fotó', 'photo', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $djSortTh('ID', 'id', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $djSortTh('Név', 'name', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $djSortTh('Slug', 'slug', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num"><?= $djSortTh('Események', 'events', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num"><?= $djSortTh('Közzétéve', 'published', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num"><?= $djSortTh('Közelgő', 'upcoming', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $djSortTh('Utolsó esemény', 'last_event', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $djSortTh('Következő', 'next_event', $order, $dir_param, $get_params) ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -109,6 +128,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $publicUrl = $dslug !== ''
                                 ? events_public_dj_page_url($dslug, 'hu')
                                 : events_public_tag_page_url($did, 'hu');
+                            $eventsUrl = events_djs_admin_events_filter_url($did);
+                            $eventCount = (int) ($r['event_count'] ?? 0);
+                            $publishedCount = (int) ($r['published_count'] ?? 0);
+                            $upcomingCount = (int) ($r['upcoming_count'] ?? 0);
                             ?>
                             <tr>
                                 <td class="events-djs-admin__td-photo">
@@ -128,7 +151,29 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     </div>
                                 </td>
                                 <td><code><?= h($dslug !== '' ? $dslug : '—') ?></code></td>
-                                <td class="td-num"><?= (int) $r['event_count'] ?></td>
+                                <td class="td-num">
+                                    <?php if ($eventCount > 0): ?>
+                                        <a href="<?= h($eventsUrl) ?>" class="events-cell-link" title="Események szűrése erre a DJ-re"><?= $eventCount ?></a>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-num">
+                                    <?php if ($publishedCount > 0): ?>
+                                        <?= $publishedCount ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-num">
+                                    <?php if ($upcomingCount > 0): ?>
+                                        <?= $upcomingCount ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= h(events_djs_admin_format_datetime($r['last_event_at'] ?? null)) ?></td>
+                                <td><?= h(events_djs_admin_format_datetime($r['next_event_at'] ?? null)) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -138,5 +183,35 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </form>
 </div>
 <?php
-require __DIR__ . '/partials/admin_list_display_limit_script.php';
+require __DIR__ . '/partials/admin_event_filters_script.php';
+?>
+<script>
+(function () {
+    var key = 'djs-admin-search-focus';
+    var input = document.getElementById('dj-f-q');
+    if (!input) return;
+    try {
+        var raw = sessionStorage.getItem(key);
+        if (raw) {
+            sessionStorage.removeItem(key);
+            var data = JSON.parse(raw);
+            if (data && typeof data.pos === 'number') {
+                input.focus({ preventScroll: true });
+                var pos = Math.min(Math.max(0, data.pos), (input.value || '').length);
+                if (typeof input.setSelectionRange === 'function') {
+                    input.setSelectionRange(pos, pos);
+                }
+            }
+        }
+    } catch (e) {}
+    input.addEventListener('input', function () {
+        try {
+            sessionStorage.setItem(key, JSON.stringify({
+                pos: typeof input.selectionStart === 'number' ? input.selectionStart : (input.value || '').length
+            }));
+        } catch (e) {}
+    });
+})();
+</script>
+<?php
 require_once dirname(__DIR__) . '/partials/footer.php';
