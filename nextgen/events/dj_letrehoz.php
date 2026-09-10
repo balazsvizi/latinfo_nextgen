@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hiba = 'Már létezik ilyen nevű címke / DJ.';
                 } else {
                     try {
+                        events_tags_ensure_profile_columns($db);
                         $db->beginTransaction();
                         $ins = $db->prepare('INSERT INTO `events_tags` (`name`) VALUES (?)');
                         $ins->execute([$name]);
@@ -62,7 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         events_save_tag_types($db, $newId, ['dj']);
                         $slug = events_tag_set_dj_slug($db, $newId, $name, $slug) ?? $slug;
                         events_tag_profile_save($db, $newId, $profile);
-                        $db->commit();
+                        if ($db->inTransaction()) {
+                            $db->commit();
+                        }
                         rendszer_log('tag', $newId, 'DJ létrehozva', $name);
                         flash('success', 'DJ létrehozva.');
                         redirect(events_url('dj_szerkeszt.php?id=') . $newId);

@@ -78,6 +78,10 @@ function events_tags_ensure_profile_columns(PDO $db): void {
     if (!events_tags_tables_available($db)) {
         return;
     }
+    // DDL tranzakción belül implicit commitot okoz (MySQL) — ne futtassuk.
+    if ($db->inTransaction()) {
+        return;
+    }
     $alters = [
         'description' => 'ALTER TABLE `events_tags` ADD COLUMN `description` TEXT NULL DEFAULT NULL',
         'photo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_url` VARCHAR(2000) NULL DEFAULT NULL',
@@ -349,7 +353,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
     if ($tagId <= 0) {
         return;
     }
-    events_tags_ensure_profile_columns($db);
+    // Ne hívjunk itt ALTER-t: tranzakción belül implicit commitot okozhat.
     $cols = events_tag_profile_present_columns($db);
     if ($cols === []) {
         return;

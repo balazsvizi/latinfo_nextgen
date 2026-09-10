@@ -166,6 +166,9 @@ function events_tags_ensure_slug_column(PDO $db): void {
     if (events_tags_slug_column_available($db)) {
         return;
     }
+    if ($db->inTransaction()) {
+        return;
+    }
     try {
         $db->exec('ALTER TABLE `events_tags` ADD COLUMN `slug` VARCHAR(255) NULL DEFAULT NULL AFTER `name`');
     } catch (PDOException) {
