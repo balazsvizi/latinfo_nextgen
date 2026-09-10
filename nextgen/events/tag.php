@@ -136,7 +136,9 @@ $cssUrl = events_url('assets/event_public.css');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $G;
 $showAdminEdit = isLoggedIn();
-$adminEditUrl = events_url('tags.php?open_tag=') . $tagId;
+$adminEditUrl = $tagIsDj
+    ? events_url('dj_szerkeszt.php?id=') . $tagId
+    : events_url('tags.php?open_tag=') . $tagId;
 $djPhotoAbs = '';
 $djLogoAbs = '';
 if ($tagIsDj) {

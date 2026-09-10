@@ -21,6 +21,7 @@ if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db
 
 $hiba = '';
 $name = '';
+$slug = '';
 $profile = events_tag_profile_empty();
 $djPhotoPick = '';
 $djLogoPick = '';
@@ -30,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Lejárt vagy érvénytelen munkamenet.';
     } else {
         $name = trim((string) ($_POST['name'] ?? ''));
+        $slug = trim((string) ($_POST['slug'] ?? ''));
         [$profile, $profileErr] = events_tag_profile_from_post_without_photo();
         if ($name === '') {
             $hiba = 'A név megadása kötelező.';
@@ -58,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ins->execute([$name]);
                         $newId = (int) $db->lastInsertId();
                         events_save_tag_types($db, $newId, ['dj']);
-                        events_tag_sync_dj_slug($db, $newId, $name, ['dj']);
+                        $slug = events_tag_set_dj_slug($db, $newId, $name, $slug) ?? $slug;
                         events_tag_profile_save($db, $newId, $profile);
                         $db->commit();
                         rendszer_log('tag', $newId, 'DJ létrehozva', $name);
@@ -80,9 +82,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Új DJ';
+
+$adminFloatTools = [
+    [
+        'submit_form' => 'dj-edit-form',
+        'title' => 'Létrehozás',
+        'aria' => 'DJ létrehozása',
+        'icon' => 'save',
+    ],
+    [
+        'href' => events_url('djs_admin.php'),
+        'title' => 'Vissza a DJ-k listájához',
+        'aria' => 'Vissza a DJ-k listájához',
+        'icon' => 'back',
+    ],
+];
+$adminFloatToolsRequireLogin = false;
+
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="card">
     <div class="events-list-head">
         <h1 class="card-title" style="margin:0;">Új DJ</h1>
@@ -91,16 +111,24 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </div>
     <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <form method="post" enctype="multipart/form-data" class="venue-form events-dj-edit-form">
+    <form method="post" enctype="multipart/form-data" class="venue-form events-dj-edit-form" id="dj-edit-form">
         <?= csrf_input('dj_letrehoz') ?>
         <div class="events-edit-layout">
             <div class="events-edit-main">
                 <div class="events-edit-panel">
                     <h3 class="events-edit-panel__title">Alapadatok</h3>
-                    <div class="form-group">
-                        <label for="dj_name">Név *</label>
-                        <input type="text" id="dj_name" name="name" value="<?= h($name) ?>" required maxlength="255" autofocus placeholder="DJ Példa">
+                    <div class="events-edit-title-row venue-edit-title-row">
+                        <div class="form-group venue-edit-name-field">
+                            <label for="dj_name">Név *</label>
+                            <input type="text" id="dj_name" name="name" value="<?= h($name) ?>" required maxlength="255" autofocus placeholder="DJ Példa">
+                        </div>
+                        <button type="button" class="btn btn-secondary events-edit-slug-refresh" id="dj-slug-refresh" title="Slug frissítése a névből" aria-label="Slug frissítése a névből">🔄</button>
+                        <div class="form-group venue-edit-slug-field">
+                            <label for="dj_slug">Slug (URL)</label>
+                            <input type="text" id="dj_slug" name="slug" value="<?= h($slug) ?>" maxlength="255" pattern="[a-z0-9_]*" title="Kisbetű, szám és aláhúzás" placeholder="dj_pelda">
+                        </div>
                     </div>
+                    <p class="help">Üres slug esetén mentéskor a névből generálódik. Nyilvános URL: <code>/DJ/…/</code></p>
                 </div>
                 <div class="events-edit-panel">
                     <h3 class="events-edit-panel__title">Profil</h3>
@@ -132,4 +160,33 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </form>
 </div>
+<script>
+(function () {
+    var nameEl = document.getElementById('dj_name');
+    var slugEl = document.getElementById('dj_slug');
+    var refreshBtn = document.getElementById('dj-slug-refresh');
+    if (!nameEl || !slugEl) return;
+    var ajaxPath = <?= json_encode(events_url('ajax_dj_unique_slug.php'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+    function fetchSlugFromName(force) {
+        if (!force && slugEl.value.trim() !== '') return;
+        var nm = nameEl.value.trim();
+        if (nm === '') return;
+        var u = new URL(ajaxPath, window.location.href);
+        u.searchParams.set('name', nm);
+        fetch(u.toString(), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!force && slugEl.value.trim() !== '') return;
+                if (data && data.ok && typeof data.slug === 'string') slugEl.value = data.slug;
+            })
+            .catch(function () {});
+    }
+
+    nameEl.addEventListener('blur', function () { fetchSlugFromName(false); });
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () { fetchSlugFromName(true); });
+    }
+})();
+</script>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

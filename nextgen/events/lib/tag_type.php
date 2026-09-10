@@ -691,7 +691,24 @@ function events_tag_sync_dj_slug(PDO $db, int $tagId, string $name, array $typeC
     if ($current !== '') {
         return $current;
     }
-    $slug = events_ensure_unique_tag_slug($db, events_dj_slugify($name), $tagId);
+
+    return events_tag_set_dj_slug($db, $tagId, $name, '');
+}
+
+/**
+ * DJ slug beállítása: üres input → névből; különben normalizálás + egyediség.
+ */
+function events_tag_set_dj_slug(PDO $db, int $tagId, string $name, string $slugInput = ''): ?string {
+    if ($tagId <= 0) {
+        return null;
+    }
+    events_tags_ensure_slug_column($db);
+    if (!events_tags_slug_column_available($db)) {
+        return null;
+    }
+    $slugInput = trim($slugInput);
+    $base = $slugInput !== '' ? events_dj_slugify($slugInput) : events_dj_slugify($name);
+    $slug = events_ensure_unique_tag_slug($db, $base, $tagId);
     $db->prepare('UPDATE `events_tags` SET `slug` = ? WHERE `id` = ?')->execute([$slug, $tagId]);
 
     return $slug;

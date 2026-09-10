@@ -64,43 +64,47 @@ endif;
             <label for="tag_youtube_url_<?= h($fid) ?>">YouTube</label>
             <input type="url" id="tag_youtube_url_<?= h($fid) ?>" name="tag_youtube_url" maxlength="2000" value="<?= h((string) ($tagProfile['youtube_url'] ?? '')) ?>" placeholder="https://youtube.com/…">
         </div>
-        <div class="form-group">
+        <div class="form-group events-tag-dj-privacy<?= $emailIsPrivate ? ' is-private' : '' ?>" data-dj-privacy-field>
             <div class="events-tag-dj-profile__field-head">
                 <label for="tag_email_<?= h($fid) ?>">E-mail</label>
-                <label class="events-toggle events-toggle--inline" for="tag_email_is_private_<?= h($fid) ?>">
+                <label class="events-tag-dj-privacy__switch" for="tag_email_is_private_<?= h($fid) ?>">
                     <input
                         type="checkbox"
                         name="tag_email_is_private"
                         value="1"
                         id="tag_email_is_private_<?= h($fid) ?>"
-                        class="events-toggle__input"
+                        class="events-tag-dj-privacy__input"
+                        data-dj-privacy-toggle
                         <?= $emailIsPrivate ? 'checked' : '' ?>
                     >
-                    <span class="events-toggle__ui" aria-hidden="true"></span>
-                    <span class="events-toggle__label">Privát</span>
+                    <span class="events-tag-dj-privacy__track" aria-hidden="true"></span>
+                    <span class="events-tag-dj-privacy__text">Privát</span>
                 </label>
             </div>
             <input type="email" id="tag_email_<?= h($fid) ?>" name="tag_email" maxlength="255" value="<?= h((string) ($tagProfile['email'] ?? '')) ?>" placeholder="dj@example.com">
-            <p class="help">Ha privát, nem jelenik meg a nyilvános oldalon.</p>
+            <p class="help events-tag-dj-privacy__help-public">Publikus: megjelenik a nyilvános oldalon.</p>
+            <p class="help events-tag-dj-privacy__help-private">Privát: csak adminnak látszik.</p>
         </div>
-        <div class="form-group">
+        <div class="form-group events-tag-dj-privacy<?= $phoneIsPrivate ? ' is-private' : '' ?>" data-dj-privacy-field>
             <div class="events-tag-dj-profile__field-head">
                 <label for="tag_phone_<?= h($fid) ?>">Telefon</label>
-                <label class="events-toggle events-toggle--inline" for="tag_phone_is_private_<?= h($fid) ?>">
+                <label class="events-tag-dj-privacy__switch" for="tag_phone_is_private_<?= h($fid) ?>">
                     <input
                         type="checkbox"
                         name="tag_phone_is_private"
                         value="1"
                         id="tag_phone_is_private_<?= h($fid) ?>"
-                        class="events-toggle__input"
+                        class="events-tag-dj-privacy__input"
+                        data-dj-privacy-toggle
                         <?= $phoneIsPrivate ? 'checked' : '' ?>
                     >
-                    <span class="events-toggle__ui" aria-hidden="true"></span>
-                    <span class="events-toggle__label">Privát</span>
+                    <span class="events-tag-dj-privacy__track" aria-hidden="true"></span>
+                    <span class="events-tag-dj-privacy__text">Privát</span>
                 </label>
             </div>
             <input type="tel" id="tag_phone_<?= h($fid) ?>" name="tag_phone" maxlength="64" value="<?= h((string) ($tagProfile['phone'] ?? '')) ?>" placeholder="+36 …">
-            <p class="help">Ha privát, nem jelenik meg a nyilvános oldalon.</p>
+            <p class="help events-tag-dj-privacy__help-public">Publikus: megjelenik a nyilvános oldalon.</p>
+            <p class="help events-tag-dj-privacy__help-private">Privát: csak adminnak látszik.</p>
         </div>
     </div>
     <div class="form-group">
@@ -115,3 +119,16 @@ endif;
         <p class="help">Csak az adminisztrációnak látszik – nem jelenik meg a nyilvános oldalon.</p>
     </div>
 </div>
+<script>
+(function () {
+    document.querySelectorAll('[data-dj-privacy-field]').forEach(function (field) {
+        var toggle = field.querySelector('[data-dj-privacy-toggle]');
+        if (!toggle) return;
+        function sync() {
+            field.classList.toggle('is-private', !!toggle.checked);
+        }
+        toggle.addEventListener('change', sync);
+        sync();
+    });
+})();
+</script>

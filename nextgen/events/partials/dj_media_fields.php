@@ -44,12 +44,18 @@ $fitClass = $isLogo ? ' events-dj-media__preview--contain' : '';
 <div class="events-dj-media events-dj-media--<?= h($djMediaKind) ?>" id="<?= h($panelId) ?>" data-upload-url="<?= h($uploadUrl) ?>" data-ok-msg="<?= h($okMsg) ?>" data-clear-msg="<?= h($clearMsg) ?>">
     <h3 class="events-edit-panel__title"><?= h($title) ?></h3>
     <div class="events-dj-media__preview-wrap<?= $isLogo ? ' events-dj-media__preview-wrap--logo' : '' ?>">
-        <?php if ($previewSrc !== ''): ?>
-            <img class="events-dj-media__preview<?= h($fitClass) ?>" id="<?= h($prefix) ?>-preview" src="<?= h($previewSrc) ?>" alt="">
-        <?php else: ?>
-            <img class="events-dj-media__preview<?= h($fitClass) ?>" id="<?= h($prefix) ?>-preview" src="" alt="" hidden>
-            <div class="events-dj-media__placeholder" id="<?= h($prefix) ?>-placeholder"><?= h($placeholder) ?></div>
-        <?php endif; ?>
+        <img
+            class="events-dj-media__preview<?= h($fitClass) ?>"
+            id="<?= h($prefix) ?>-preview"
+            <?= $previewSrc !== '' ? 'src="' . h($previewSrc) . '"' : '' ?>
+            alt=""
+            <?= $previewSrc !== '' ? '' : 'hidden' ?>
+        >
+        <div
+            class="events-dj-media__placeholder"
+            id="<?= h($prefix) ?>-placeholder"
+            <?= $previewSrc !== '' ? 'hidden' : '' ?>
+        ><?= h($placeholder) ?></div>
     </div>
     <input type="hidden" name="<?= h($prefix) ?>_pick" id="<?= h($prefix) ?>_pick" value="<?= h($djMediaPick) ?>">
     <div class="events-dj-media__actions">
@@ -99,6 +105,16 @@ $fitClass = $isLogo ? ' events-dj-media__preview--contain' : '';
         if (!statusEl) return;
         statusEl.textContent = msg;
         statusEl.classList.toggle('alert-error', !!isError);
+    }
+
+    if (preview) {
+        preview.addEventListener('error', function () {
+            if (!preview.getAttribute('src')) {
+                return;
+            }
+            setPreview('');
+            setStatus('A kép nem tölthető be.', true);
+        });
     }
 
     if (fileInp) {

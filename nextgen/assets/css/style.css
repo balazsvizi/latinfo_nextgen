@@ -3319,6 +3319,101 @@ dialog.eventpics-modal::backdrop {
     margin: 0;
 }
 
+.events-tag-dj-privacy {
+    margin: 0;
+    padding: 0.7rem 0.8rem 0.55rem;
+    border: 1.5px solid var(--border, #d8e0d4);
+    border-radius: 8px;
+    background: #fff;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.events-tag-dj-privacy.is-private {
+    border-color: #dc2626;
+    background: #fff7f7;
+    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+.events-tag-dj-privacy__switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.15rem 0.35rem 0.15rem 0.15rem;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.events-tag-dj-privacy__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.events-tag-dj-privacy__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 2.1rem;
+    height: 1.15rem;
+    border-radius: 999px;
+    background: #cbd5e1;
+    transition: background-color 0.18s ease;
+}
+
+.events-tag-dj-privacy__track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+    transition: transform 0.18s ease;
+}
+
+.events-tag-dj-privacy__input:checked + .events-tag-dj-privacy__track {
+    background: #dc2626;
+}
+
+.events-tag-dj-privacy__input:checked + .events-tag-dj-privacy__track::after {
+    transform: translateX(0.9rem);
+}
+
+.events-tag-dj-privacy__input:focus-visible + .events-tag-dj-privacy__track {
+    outline: 2px solid #dc2626;
+    outline-offset: 2px;
+}
+
+.events-tag-dj-privacy.is-private .events-tag-dj-privacy__text {
+    color: #b91c1c;
+}
+
+.events-tag-dj-privacy__help-private {
+    display: none;
+}
+
+.events-tag-dj-privacy.is-private .events-tag-dj-privacy__help-public {
+    display: none;
+}
+
+.events-tag-dj-privacy.is-private .events-tag-dj-privacy__help-private {
+    display: block;
+    color: #b91c1c;
+}
+
 .events-djs-admin__th-photo,
 .events-djs-admin__td-photo {
     width: 3.25rem;
@@ -3384,6 +3479,16 @@ dialog.eventpics-modal::backdrop {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.events-dj-media__preview[hidden],
+.events-dj-photo__preview[hidden] {
+    display: none !important;
+}
+
+.events-dj-media__placeholder[hidden],
+.events-dj-photo__placeholder[hidden] {
+    display: none !important;
 }
 
 .events-dj-media__preview--contain {

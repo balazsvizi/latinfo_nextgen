@@ -5,10 +5,11 @@ declare(strict_types=1);
  * Lebegő mini eszköztár — bal felső sarok, csak bejelentkezett adminoknak.
  *
  * @var list<array{
- *     href: string,
+ *     href?: string,
+ *     submit_form?: string,
  *     title: string,
  *     aria?: string,
- *     icon: 'eye'|'copy'|'back'|'calendar'|'plus'|'edit'|'list'|'map'|'home'|string,
+ *     icon: 'eye'|'copy'|'back'|'calendar'|'plus'|'edit'|'list'|'map'|'home'|'save'|string,
  *     target?: string,
  *     rel?: string
  * }> $adminFloatTools
@@ -23,14 +24,21 @@ if ($adminFloatToolsRequireLogin && !(function_exists('isLoggedIn') && isLoggedI
 
 $adminFloatTools = array_values(array_filter(
     $adminFloatTools,
-    static fn (mixed $btn): bool => is_array($btn)
-        && isset($btn['href'], $btn['title'], $btn['icon'])
-        && is_string($btn['href'])
-        && $btn['href'] !== ''
-        && is_string($btn['title'])
-        && $btn['title'] !== ''
-        && is_string($btn['icon'])
-        && $btn['icon'] !== ''
+    static function (mixed $btn): bool {
+        if (!is_array($btn) || !isset($btn['title'], $btn['icon'])) {
+            return false;
+        }
+        if (!is_string($btn['title']) || $btn['title'] === '') {
+            return false;
+        }
+        if (!is_string($btn['icon']) || $btn['icon'] === '') {
+            return false;
+        }
+        $href = isset($btn['href']) && is_string($btn['href']) ? $btn['href'] : '';
+        $submitForm = isset($btn['submit_form']) && is_string($btn['submit_form']) ? $btn['submit_form'] : '';
+
+        return $href !== '' || $submitForm !== '';
+    }
 ));
 
 if ($adminFloatTools === []) {
@@ -47,16 +55,32 @@ $adminFloatToolIcons = [
     'list' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>',
     'map' => '<path stroke-linecap="round" stroke-linejoin="round" d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     'home' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 9.5V20h14V9.5"/>',
+    'save' => '<path stroke-linecap="round" stroke-linejoin="round" d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-8H7v8M7 3v5h8"/>',
 ];
 ?>
 <nav class="events-edit-float-tools" aria-label="Gyors műveletek">
     <?php foreach ($adminFloatTools as $btn): ?>
         <?php
-        $href = (string) $btn['href'];
         $title = (string) $btn['title'];
         $aria = trim((string) ($btn['aria'] ?? $title));
         $icon = (string) $btn['icon'];
         $iconMarkup = $adminFloatToolIcons[$icon] ?? $adminFloatToolIcons['edit'];
+        $submitForm = trim((string) ($btn['submit_form'] ?? ''));
+        if ($submitForm !== ''):
+            ?>
+            <button
+                type="submit"
+                form="<?= h($submitForm) ?>"
+                class="events-edit-float-tools__btn"
+                title="<?= h($title) ?>"
+                aria-label="<?= h($aria !== '' ? $aria : $title) ?>"
+            >
+                <svg class="events-edit-float-tools__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><?= $iconMarkup ?></svg>
+            </button>
+            <?php
+            continue;
+        endif;
+        $href = (string) ($btn['href'] ?? '');
         $target = trim((string) ($btn['target'] ?? ''));
         $rel = trim((string) ($btn['rel'] ?? ''));
         if ($target === '_blank' && $rel === '') {
