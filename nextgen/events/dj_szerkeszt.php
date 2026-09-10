@@ -186,6 +186,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
             </div>
             <aside class="events-edit-sidebar">
+                <div class="toolbar">
+                    <button type="submit" class="btn btn-primary">Mentés</button>
+                    <a href="<?= h(events_url('djs_admin.php')) ?>" class="btn btn-secondary">← DJ-k listája</a>
+                </div>
                 <div class="events-edit-panel">
                     <?php
                     $djPhotoUrl = (string) ($profile['photo_url'] ?? '');
