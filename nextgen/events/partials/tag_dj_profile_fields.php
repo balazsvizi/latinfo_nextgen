@@ -61,13 +61,17 @@ endif;
             <input type="url" id="tag_soundcloud_url_<?= h($fid) ?>" name="tag_soundcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['soundcloud_url'] ?? '')) ?>" placeholder="https://soundcloud.com/…">
         </div>
         <div class="form-group">
+            <label for="tag_mixcloud_url_<?= h($fid) ?>">Mixcloud</label>
+            <input type="url" id="tag_mixcloud_url_<?= h($fid) ?>" name="tag_mixcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['mixcloud_url'] ?? '')) ?>" placeholder="https://www.mixcloud.com/…">
+        </div>
+        <div class="form-group">
             <label for="tag_youtube_url_<?= h($fid) ?>">YouTube</label>
             <input type="url" id="tag_youtube_url_<?= h($fid) ?>" name="tag_youtube_url" maxlength="2000" value="<?= h((string) ($tagProfile['youtube_url'] ?? '')) ?>" placeholder="https://youtube.com/…">
         </div>
         <div class="form-group events-tag-dj-privacy<?= $emailIsPrivate ? ' is-private' : '' ?>" data-dj-privacy-field>
             <div class="events-tag-dj-profile__field-head">
                 <label for="tag_email_<?= h($fid) ?>">E-mail</label>
-                <label class="events-tag-dj-privacy__switch" for="tag_email_is_private_<?= h($fid) ?>">
+                <label class="events-tag-dj-privacy__chip" for="tag_email_is_private_<?= h($fid) ?>">
                     <input
                         type="checkbox"
                         name="tag_email_is_private"
@@ -77,8 +81,7 @@ endif;
                         data-dj-privacy-toggle
                         <?= $emailIsPrivate ? 'checked' : '' ?>
                     >
-                    <span class="events-tag-dj-privacy__track" aria-hidden="true"></span>
-                    <span class="events-tag-dj-privacy__text">Privát</span>
+                    <span class="events-tag-dj-privacy__chip-label">Privát</span>
                 </label>
             </div>
             <input type="email" id="tag_email_<?= h($fid) ?>" name="tag_email" maxlength="255" value="<?= h((string) ($tagProfile['email'] ?? '')) ?>" placeholder="dj@example.com">
@@ -88,7 +91,7 @@ endif;
         <div class="form-group events-tag-dj-privacy<?= $phoneIsPrivate ? ' is-private' : '' ?>" data-dj-privacy-field>
             <div class="events-tag-dj-profile__field-head">
                 <label for="tag_phone_<?= h($fid) ?>">Telefon</label>
-                <label class="events-tag-dj-privacy__switch" for="tag_phone_is_private_<?= h($fid) ?>">
+                <label class="events-tag-dj-privacy__chip" for="tag_phone_is_private_<?= h($fid) ?>">
                     <input
                         type="checkbox"
                         name="tag_phone_is_private"
@@ -98,8 +101,7 @@ endif;
                         data-dj-privacy-toggle
                         <?= $phoneIsPrivate ? 'checked' : '' ?>
                     >
-                    <span class="events-tag-dj-privacy__track" aria-hidden="true"></span>
-                    <span class="events-tag-dj-privacy__text">Privát</span>
+                    <span class="events-tag-dj-privacy__chip-label">Privát</span>
                 </label>
             </div>
             <input type="tel" id="tag_phone_<?= h($fid) ?>" name="tag_phone" maxlength="64" value="<?= h((string) ($tagProfile['phone'] ?? '')) ?>" placeholder="+36 …">

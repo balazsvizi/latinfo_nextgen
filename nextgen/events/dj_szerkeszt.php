@@ -204,9 +204,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     require __DIR__ . '/partials/dj_logo_fields.php';
                     ?>
                 </div>
-                <div class="toolbar">
-                    <button type="submit" class="btn btn-primary">Mentés</button>
-                    <a href="<?= h(events_url('djs_admin.php')) ?>" class="btn btn-secondary">← DJ-k listája</a>
+                <div class="toolbar events-dj-edit-toolbar--bottom">
+                    <button type="submit" class="btn btn-primary events-dj-edit-save-wide">Mentés</button>
                 </div>
             </aside>
         </div>

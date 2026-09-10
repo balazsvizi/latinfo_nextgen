@@ -3334,71 +3334,54 @@ dialog.eventpics-modal::backdrop {
     box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12);
 }
 
-.events-tag-dj-privacy__switch {
+.events-tag-dj-privacy__chip {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
     margin: 0;
-    padding: 0.15rem 0.35rem 0.15rem 0.15rem;
+    padding: 0.2rem 0.7rem;
+    border: 1.5px solid #cbd5e1;
     border-radius: 999px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
     cursor: pointer;
     user-select: none;
-    color: #64748b;
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.events-tag-dj-privacy__chip:hover {
+    border-color: #94a3b8;
+    color: #475569;
 }
 
 .events-tag-dj-privacy__input {
     position: absolute;
+    opacity: 0;
     width: 1px;
     height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    margin: 0;
+    pointer-events: none;
 }
 
-.events-tag-dj-privacy__track {
-    position: relative;
-    flex-shrink: 0;
-    width: 2.1rem;
-    height: 1.15rem;
-    border-radius: 999px;
-    background: #cbd5e1;
-    transition: background-color 0.18s ease;
+.events-tag-dj-privacy__chip-label {
+    display: inline-block;
 }
 
-.events-tag-dj-privacy__track::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 0.9rem;
-    height: 0.9rem;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
-    transition: transform 0.18s ease;
-}
-
-.events-tag-dj-privacy__input:checked + .events-tag-dj-privacy__track {
-    background: #dc2626;
-}
-
-.events-tag-dj-privacy__input:checked + .events-tag-dj-privacy__track::after {
-    transform: translateX(0.9rem);
-}
-
-.events-tag-dj-privacy__input:focus-visible + .events-tag-dj-privacy__track {
+.events-tag-dj-privacy__chip:has(.events-tag-dj-privacy__input:focus-visible) {
     outline: 2px solid #dc2626;
     outline-offset: 2px;
 }
 
-.events-tag-dj-privacy.is-private .events-tag-dj-privacy__text {
-    color: #b91c1c;
+.events-tag-dj-privacy__chip:has(.events-tag-dj-privacy__input:checked),
+.events-tag-dj-privacy.is-private .events-tag-dj-privacy__chip {
+    border-color: #dc2626;
+    background: #dc2626;
+    color: #fff;
 }
 
 .events-tag-dj-privacy__help-private {
@@ -3528,6 +3511,15 @@ dialog.eventpics-modal::backdrop {
 
 .events-dj-edit-form .events-edit-sidebar .events-edit-panel + .events-edit-panel {
     margin-top: 0.85rem;
+}
+
+.events-dj-edit-form .events-dj-edit-toolbar--bottom {
+    margin-top: 0.85rem;
+}
+
+.events-dj-edit-form .events-dj-edit-save-wide {
+    width: 100%;
+    justify-content: center;
 }
 
 /* Címke típus chip-ek a táblázatban */

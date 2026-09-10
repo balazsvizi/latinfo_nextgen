@@ -20,6 +20,7 @@ function events_tag_profile_column_names(): array {
         'instagram_url',
         'soundcloud_url',
         'youtube_url',
+        'mixcloud_url',
         'email',
         'email_is_private',
         'phone',
@@ -65,6 +66,7 @@ function events_tags_ensure_profile_columns(PDO $db): void {
         'instagram_url' => 'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` VARCHAR(2000) NULL DEFAULT NULL',
         'soundcloud_url' => 'ALTER TABLE `events_tags` ADD COLUMN `soundcloud_url` VARCHAR(2000) NULL DEFAULT NULL',
         'youtube_url' => 'ALTER TABLE `events_tags` ADD COLUMN `youtube_url` VARCHAR(2000) NULL DEFAULT NULL',
+        'mixcloud_url' => 'ALTER TABLE `events_tags` ADD COLUMN `mixcloud_url` VARCHAR(2000) NULL DEFAULT NULL',
         'email' => 'ALTER TABLE `events_tags` ADD COLUMN `email` VARCHAR(255) NULL DEFAULT NULL',
         'email_is_private' => 'ALTER TABLE `events_tags` ADD COLUMN `email_is_private` TINYINT(1) NOT NULL DEFAULT 0',
         'phone' => 'ALTER TABLE `events_tags` ADD COLUMN `phone` VARCHAR(64) NULL DEFAULT NULL',
@@ -129,6 +131,7 @@ function events_tag_profile_empty(): array {
         'instagram_url' => '',
         'soundcloud_url' => '',
         'youtube_url' => '',
+        'mixcloud_url' => '',
         'email' => '',
         'email_is_private' => '0',
         'phone' => '',
@@ -282,6 +285,7 @@ function events_tag_profile_from_post(): array {
         'instagram_url' => 'tag_instagram_url',
         'soundcloud_url' => 'tag_soundcloud_url',
         'youtube_url' => 'tag_youtube_url',
+        'mixcloud_url' => 'tag_mixcloud_url',
     ];
     foreach ($urlFields as $key => $postKey) {
         [$url, $err] = events_normalize_safe_url((string) ($_POST[$postKey] ?? ''), true);
@@ -304,10 +308,12 @@ function events_tag_profile_from_post(): array {
  *   instagram_url: string,
  *   soundcloud_url: string,
  *   youtube_url: string,
+ *   mixcloud_url: string,
  *   email: string,
  *   email_is_private: string,
  *   phone: string,
- *   phone_is_private: string
+ *   phone_is_private: string,
+ *   admin_notes: string
  * } $profile
  */
 function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
@@ -328,6 +334,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
             `instagram_url` = ?,
             `soundcloud_url` = ?,
             `youtube_url` = ?,
+            `mixcloud_url` = ?,
             `email` = ?,
             `email_is_private` = ?,
             `phone` = ?,
@@ -344,6 +351,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
         $profile['instagram_url'] !== '' ? $profile['instagram_url'] : null,
         $profile['soundcloud_url'] !== '' ? $profile['soundcloud_url'] : null,
         $profile['youtube_url'] !== '' ? $profile['youtube_url'] : null,
+        $profile['mixcloud_url'] !== '' ? $profile['mixcloud_url'] : null,
         $profile['email'] !== '' ? $profile['email'] : null,
         events_tag_profile_flag_is_on($profile['email_is_private'] ?? '0') ? 1 : 0,
         $profile['phone'] !== '' ? $profile['phone'] : null,
@@ -390,6 +398,7 @@ function events_tag_profile_from_post_without_photo(): array {
         'instagram_url' => 'tag_instagram_url',
         'soundcloud_url' => 'tag_soundcloud_url',
         'youtube_url' => 'tag_youtube_url',
+        'mixcloud_url' => 'tag_mixcloud_url',
     ];
     foreach ($urlFields as $key => $postKey) {
         [$url, $err] = events_normalize_safe_url((string) ($_POST[$postKey] ?? ''), true);
@@ -409,7 +418,7 @@ function events_tag_profile_from_post_without_photo(): array {
  */
 function events_tag_profile_has_public_content(array $profile): bool {
     $public = events_tag_profile_for_public($profile);
-    foreach (['description', 'photo_url', 'logo_url', 'website_url', 'facebook_url', 'instagram_url', 'soundcloud_url', 'youtube_url', 'email', 'phone'] as $key) {
+    foreach (['description', 'photo_url', 'logo_url', 'website_url', 'facebook_url', 'instagram_url', 'soundcloud_url', 'youtube_url', 'mixcloud_url', 'email', 'phone'] as $key) {
         if (trim((string) ($public[$key] ?? '')) !== '') {
             return true;
         }

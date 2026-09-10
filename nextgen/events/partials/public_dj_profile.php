@@ -28,10 +28,11 @@ $facebook = trim((string) ($djProfile['facebook_url'] ?? ''));
 $instagram = trim((string) ($djProfile['instagram_url'] ?? ''));
 $soundcloud = trim((string) ($djProfile['soundcloud_url'] ?? ''));
 $youtube = trim((string) ($djProfile['youtube_url'] ?? ''));
+$mixcloud = trim((string) ($djProfile['mixcloud_url'] ?? ''));
 $email = trim((string) ($djProfile['email'] ?? ''));
 $phone = trim((string) ($djProfile['phone'] ?? ''));
 
-$hasLinks = $website !== '' || $facebook !== '' || $instagram !== '' || $soundcloud !== '' || $youtube !== '' || $email !== '' || $phone !== '';
+$hasLinks = $website !== '' || $facebook !== '' || $instagram !== '' || $soundcloud !== '' || $youtube !== '' || $mixcloud !== '' || $email !== '' || $phone !== '';
 $hasBody = $bioHtml !== '';
 
 if (!$hasBody && !$hasLinks) {
@@ -72,6 +73,12 @@ $svgAttrs = 'class="dj-public__contact-svg" viewBox="0 0 24 24" width="16" heigh
                     <a class="dj-public__contact" href="<?= h($soundcloud) ?>" target="_blank" rel="noopener noreferrer">
                         <svg <?= $svgAttrs ?>><path d="M4 14v3M7 11v6M10 9v8M13 7v10M16 10v7M19 12v5"/></svg>
                         <span><?= h((string) ($G['dj_link_soundcloud'] ?? 'SoundCloud')) ?></span>
+                    </a>
+                <?php endif; ?>
+                <?php if ($mixcloud !== ''): ?>
+                    <a class="dj-public__contact" href="<?= h($mixcloud) ?>" target="_blank" rel="noopener noreferrer">
+                        <svg <?= $svgAttrs ?>><path d="M4 12h2M8 8v8M11 6v12M14 9v6M17 7v10M20 10v4"/></svg>
+                        <span><?= h((string) ($G['dj_link_mixcloud'] ?? 'Mixcloud')) ?></span>
                     </a>
                 <?php endif; ?>
                 <?php if ($email !== ''): ?>
