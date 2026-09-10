@@ -44,28 +44,41 @@ function events_tag_profile_present_columns(PDO $db, bool $forceRefresh = false)
         return $cached;
     }
     $wanted = events_tag_profile_column_names();
+    $wantedMap = array_fill_keys($wanted, true);
+    $found = [];
     try {
-        $placeholders = implode(',', array_fill(0, count($wanted), '?'));
-        $st = $db->prepare("
-            SELECT `COLUMN_NAME`
-            FROM `information_schema`.`COLUMNS`
-            WHERE `TABLE_SCHEMA` = DATABASE()
-              AND `TABLE_NAME` = 'events_tags'
-              AND `COLUMN_NAME` IN ({$placeholders})
-        ");
-        $st->execute($wanted);
-        $found = [];
-        while (($name = $st->fetchColumn()) !== false) {
-            $found[(string) $name] = true;
-        }
-        $cached = [];
-        foreach ($wanted as $col) {
-            if (isset($found[$col])) {
-                $cached[] = $col;
+        $st = $db->query('SHOW COLUMNS FROM `events_tags`');
+        while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+            $name = (string) ($row['Field'] ?? '');
+            if ($name !== '' && isset($wantedMap[$name])) {
+                $found[$name] = true;
             }
         }
     } catch (PDOException) {
-        $cached = [];
+        try {
+            $placeholders = implode(',', array_fill(0, count($wanted), '?'));
+            $st = $db->prepare("
+                SELECT `COLUMN_NAME`
+                FROM `information_schema`.`COLUMNS`
+                WHERE `TABLE_SCHEMA` = DATABASE()
+                  AND `TABLE_NAME` = 'events_tags'
+                  AND `COLUMN_NAME` IN ({$placeholders})
+            ");
+            $st->execute($wanted);
+            while (($name = $st->fetchColumn()) !== false) {
+                $found[(string) $name] = true;
+            }
+        } catch (PDOException) {
+            $cached = [];
+
+            return $cached;
+        }
+    }
+    $cached = [];
+    foreach ($wanted as $col) {
+        if (isset($found[$col])) {
+            $cached[] = $col;
+        }
     }
 
     return $cached;
@@ -224,7 +237,7 @@ function events_tag_profile_load(PDO $db, int $tagId): array {
         return $empty;
     }
     events_tags_ensure_profile_columns($db);
-    $colsList = events_tag_profile_present_columns($db);
+    $colsList = events_tag_profile_present_columns($db, true);
     if ($colsList === []) {
         return $empty;
     }

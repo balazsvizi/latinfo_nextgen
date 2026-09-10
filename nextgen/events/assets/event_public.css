@@ -2374,7 +2374,7 @@ a.event-hero-chip--category-link:hover {
     display: grid;
     grid-template-columns: minmax(6.5rem, 8.5rem) minmax(0, 1fr);
     gap: 1.15rem 1.4rem;
-    align-items: center;
+    align-items: start;
 }
 
 .dj-public__media {
@@ -2481,6 +2481,22 @@ a.event-hero-chip--category-link:hover {
 
 .dj-public__identity-text .dj-public__contacts {
     margin-top: 0.85rem;
+}
+
+.dj-public__contacts-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.dj-public__contacts-title {
+    margin: 0;
+    font-family: var(--ev-sans);
+    font-size: 0.78rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--li-green-dark);
 }
 
 .dj-public__profile {
