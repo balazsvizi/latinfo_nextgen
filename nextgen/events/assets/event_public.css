@@ -2479,6 +2479,10 @@ a.event-hero-chip--category-link:hover {
     opacity: 0.55;
 }
 
+.dj-public__identity-text .dj-public__contacts {
+    margin-top: 0.85rem;
+}
+
 .dj-public__profile {
     margin: 0 0 1.75rem;
 }
