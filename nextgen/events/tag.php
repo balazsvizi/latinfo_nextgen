@@ -42,8 +42,7 @@ if ($slugParam !== '') {
     $tagId = (int) $djRow['id'];
     $tagSlug = (string) $djRow['slug'];
     $tagName = (string) $djRow['name'];
-    $djProfile = events_tag_profile_from_row($djRow);
-    unset($djProfile['contact_email']);
+    $djProfile = events_tag_profile_for_public(events_tag_profile_from_row($djRow));
     $tag = ['id' => $tagId, 'name' => $tagName, 'slug' => $tagSlug];
 } elseif ($tagId > 0) {
     $slugSelect = events_tags_slug_column_available($db) ? ', `slug`' : '';
@@ -59,8 +58,7 @@ if ($slugParam !== '') {
     }
     $tagName = (string) ($tag['name'] ?? '');
     $tagSlug = trim((string) ($tag['slug'] ?? ''));
-    $djProfile = events_tag_profile_load($db, $tagId);
-    unset($djProfile['contact_email']);
+    $djProfile = events_tag_profile_for_public(events_tag_profile_load($db, $tagId));
 } else {
     http_response_code(404);
     events_public_send_noindex_header();

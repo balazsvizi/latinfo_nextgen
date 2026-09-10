@@ -55,10 +55,31 @@ $djSortTh = static function (string $label, string $orderCol, string $currentOrd
 
 $pageTitle = 'DJ-k';
 $mainContentClass = 'main-content main-content--fullwidth';
+
+$publicDjHubUrl = events_public_djs_page_url('hu');
+$adminFloatTools = [
+    [
+        'href' => events_url('dj_letrehoz.php'),
+        'title' => 'Új DJ',
+        'aria' => 'Új DJ létrehozása',
+        'icon' => 'plus',
+    ],
+    [
+        'href' => $publicDjHubUrl,
+        'title' => 'Megnyitás megtekintésre',
+        'aria' => 'Nyilvános DJ lista megnyitása megtekintésre',
+        'icon' => 'eye',
+        'target' => '_blank',
+    ],
+];
+$adminFloatToolsRequireLogin = false;
+
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 
 <div class="card events-admin-card">
     <form method="get" action="<?= h(events_url('djs_admin.php')) ?>" class="events-admin-form" id="djs-admin-filter-form">
@@ -78,6 +99,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <a href="<?= h(events_url('djs_admin.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
                 <a href="<?= h(events_url('dj_letrehoz.php')) ?>" class="btn btn-primary">Új DJ</a>
                 <a href="<?= h(events_url('organizers.php')) ?>" class="btn btn-secondary">Szervezők</a>
+                <a href="<?= h($publicDjHubUrl) ?>" class="events-icon-action events-edit-preview-action" title="Nyilvános DJ lista megtekintése (új lap)" aria-label="Nyilvános DJ lista megtekintése új lapon" target="_blank" rel="noopener">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                </a>
             </div>
         </div>
 

@@ -3306,25 +3306,17 @@ dialog.eventpics-modal::backdrop {
     gap: 0.65rem 1rem;
 }
 
-.events-tag-dj-profile__email-row {
+.events-tag-dj-profile__field-head {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
     align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
 }
 
-.events-tag-dj-profile__email-row input[type="email"] {
-    flex: 1 1 12rem;
-    min-width: 0;
-}
-
-.events-tag-dj-profile__email-row .btn {
-    flex: 0 0 auto;
-    white-space: nowrap;
-}
-
-.events-tag-dj-profile__grid > .form-group:has([data-dj-contact-email]) {
-    grid-column: 1 / -1;
+.events-tag-dj-profile__field-head > label:first-child {
+    margin: 0;
 }
 
 .events-djs-admin__th-photo,

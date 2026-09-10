@@ -15,6 +15,8 @@ $tagProfile = is_array($tagProfile ?? null) ? $tagProfile : events_tag_profile_e
 $tagProfileStandalone = (bool) ($tagProfileStandalone ?? false);
 $tagProfileVisible = (bool) ($tagProfileVisible ?? $tagProfileStandalone);
 $fid = $tagFormId > 0 ? (string) $tagFormId : 'new';
+$emailIsPrivate = events_tag_profile_flag_is_on($tagProfile['email_is_private'] ?? '0');
+$phoneIsPrivate = events_tag_profile_flag_is_on($tagProfile['phone_is_private'] ?? '0');
 
 if (!$tagProfileStandalone):
 ?>
@@ -63,64 +65,53 @@ endif;
             <input type="url" id="tag_youtube_url_<?= h($fid) ?>" name="tag_youtube_url" maxlength="2000" value="<?= h((string) ($tagProfile['youtube_url'] ?? '')) ?>" placeholder="https://youtube.com/…">
         </div>
         <div class="form-group">
-            <label for="tag_email_<?= h($fid) ?>">Publikus e-mail</label>
-            <input
-                type="email"
-                id="tag_email_<?= h($fid) ?>"
-                name="tag_email"
-                maxlength="255"
-                value="<?= h((string) ($tagProfile['email'] ?? '')) ?>"
-                placeholder="dj@example.com"
-                data-dj-public-email
-            >
-            <p class="help">Ez jelenik meg a nyilvános DJ oldalon.</p>
-        </div>
-        <div class="form-group">
-            <label for="tag_contact_email_<?= h($fid) ?>">Kapcsolati e-mail</label>
-            <div class="events-tag-dj-profile__email-row">
-                <input
-                    type="email"
-                    id="tag_contact_email_<?= h($fid) ?>"
-                    name="tag_contact_email"
-                    maxlength="255"
-                    value="<?= h((string) ($tagProfile['contact_email'] ?? '')) ?>"
-                    placeholder="kapcsolat@example.com"
-                    data-dj-contact-email
-                >
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    data-dj-copy-public-email
-                    title="Másolás a publikus e-mailből"
-                >Másolás a publikusból</button>
+            <div class="events-tag-dj-profile__field-head">
+                <label for="tag_email_<?= h($fid) ?>">E-mail</label>
+                <label class="events-toggle events-toggle--inline" for="tag_email_is_private_<?= h($fid) ?>">
+                    <input
+                        type="checkbox"
+                        name="tag_email_is_private"
+                        value="1"
+                        id="tag_email_is_private_<?= h($fid) ?>"
+                        class="events-toggle__input"
+                        <?= $emailIsPrivate ? 'checked' : '' ?>
+                    >
+                    <span class="events-toggle__ui" aria-hidden="true"></span>
+                    <span class="events-toggle__label">Privát</span>
+                </label>
             </div>
-            <p class="help">Csak adminisztrációnak – nem jelenik meg publikuson.</p>
+            <input type="email" id="tag_email_<?= h($fid) ?>" name="tag_email" maxlength="255" value="<?= h((string) ($tagProfile['email'] ?? '')) ?>" placeholder="dj@example.com">
+            <p class="help">Ha privát, nem jelenik meg a nyilvános oldalon.</p>
         </div>
         <div class="form-group">
-            <label for="tag_phone_<?= h($fid) ?>">Telefon</label>
+            <div class="events-tag-dj-profile__field-head">
+                <label for="tag_phone_<?= h($fid) ?>">Telefon</label>
+                <label class="events-toggle events-toggle--inline" for="tag_phone_is_private_<?= h($fid) ?>">
+                    <input
+                        type="checkbox"
+                        name="tag_phone_is_private"
+                        value="1"
+                        id="tag_phone_is_private_<?= h($fid) ?>"
+                        class="events-toggle__input"
+                        <?= $phoneIsPrivate ? 'checked' : '' ?>
+                    >
+                    <span class="events-toggle__ui" aria-hidden="true"></span>
+                    <span class="events-toggle__label">Privát</span>
+                </label>
+            </div>
             <input type="tel" id="tag_phone_<?= h($fid) ?>" name="tag_phone" maxlength="64" value="<?= h((string) ($tagProfile['phone'] ?? '')) ?>" placeholder="+36 …">
+            <p class="help">Ha privát, nem jelenik meg a nyilvános oldalon.</p>
         </div>
     </div>
+    <div class="form-group">
+        <label for="tag_admin_notes_<?= h($fid) ?>">Megjegyzés</label>
+        <textarea
+            id="tag_admin_notes_<?= h($fid) ?>"
+            name="tag_admin_notes"
+            rows="4"
+            maxlength="10000"
+            placeholder="Belső megjegyzés (csak adminnak)…"
+        ><?= h((string) ($tagProfile['admin_notes'] ?? '')) ?></textarea>
+        <p class="help">Csak az adminisztrációnak látszik – nem jelenik meg a nyilvános oldalon.</p>
+    </div>
 </div>
-<script>
-(function () {
-    document.querySelectorAll('[data-dj-copy-public-email]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var root = btn.closest('.events-tag-dj-profile') || document;
-            var publicInput = root.querySelector('[data-dj-public-email]');
-            var contactInput = root.querySelector('[data-dj-contact-email]');
-            if (!publicInput || !contactInput) {
-                return;
-            }
-            var value = (publicInput.value || '').trim();
-            if (value === '') {
-                publicInput.focus();
-                return;
-            }
-            contactInput.value = value;
-            contactInput.focus();
-            contactInput.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-    });
-})();
-</script>

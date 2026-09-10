@@ -117,17 +117,35 @@ $publicUrl = $slug !== ''
     ? events_public_dj_page_url($slug, 'hu')
     : events_public_tag_page_url($id, 'hu');
 
+$adminFloatTools = [
+    [
+        'href' => $publicUrl,
+        'title' => 'Megnyitás megtekintésre',
+        'aria' => 'Nyilvános DJ oldal megnyitása megtekintésre',
+        'icon' => 'eye',
+        'target' => '_blank',
+    ],
+    [
+        'href' => events_url('djs_admin.php'),
+        'title' => 'Vissza a DJ-k listájához',
+        'aria' => 'Vissza a DJ-k listájához',
+        'icon' => 'back',
+    ],
+];
+$adminFloatToolsRequireLogin = false;
+
 $pageTitle = 'DJ szerkesztése: ' . $name;
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
-<div class="card">
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
+<div class="card events-admin-card">
     <div class="events-list-head">
         <h1 class="card-title" style="margin:0;">DJ szerkesztése</h1>
         <div class="events-list-actions">
             <a href="<?= h($publicUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>
-            <a href="<?= h(events_url('djs_admin.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
+            <a href="<?= h(events_url('djs_admin.php')) ?>" class="btn btn-secondary">← DJ-k listája</a>
         </div>
     </div>
     <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
@@ -171,6 +189,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
                 <div class="toolbar">
                     <button type="submit" class="btn btn-primary">Mentés</button>
+                    <a href="<?= h(events_url('djs_admin.php')) ?>" class="btn btn-secondary">← DJ-k listája</a>
                 </div>
             </aside>
         </div>

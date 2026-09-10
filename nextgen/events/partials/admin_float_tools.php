@@ -8,7 +8,9 @@ declare(strict_types=1);
  *     href: string,
  *     title: string,
  *     aria?: string,
- *     icon: 'eye'|'copy'|'back'|'calendar'|'plus'|'edit'|'list'|'map'|'home'|string
+ *     icon: 'eye'|'copy'|'back'|'calendar'|'plus'|'edit'|'list'|'map'|'home'|string,
+ *     target?: string,
+ *     rel?: string
  * }> $adminFloatTools
  * @var bool $adminFloatToolsRequireLogin Alapértelmezés: true
  */
@@ -55,12 +57,19 @@ $adminFloatToolIcons = [
         $aria = trim((string) ($btn['aria'] ?? $title));
         $icon = (string) $btn['icon'];
         $iconMarkup = $adminFloatToolIcons[$icon] ?? $adminFloatToolIcons['edit'];
+        $target = trim((string) ($btn['target'] ?? ''));
+        $rel = trim((string) ($btn['rel'] ?? ''));
+        if ($target === '_blank' && $rel === '') {
+            $rel = 'noopener noreferrer';
+        }
         ?>
         <a
             href="<?= h($href) ?>"
             class="events-edit-float-tools__btn"
             title="<?= h($title) ?>"
             aria-label="<?= h($aria !== '' ? $aria : $title) ?>"
+            <?= $target !== '' ? 'target="' . h($target) . '"' : '' ?>
+            <?= $rel !== '' ? 'rel="' . h($rel) . '"' : '' ?>
         >
             <svg class="events-edit-float-tools__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><?= $iconMarkup ?></svg>
         </a>
