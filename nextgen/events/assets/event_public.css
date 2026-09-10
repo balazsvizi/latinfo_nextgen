@@ -2441,6 +2441,7 @@ a.event-hero-chip--category-link:hover {
     background: #fff;
     box-shadow: 0 6px 16px rgba(45, 58, 40, 0.14);
     z-index: 1;
+    overflow: hidden;
 }
 
 .dj-public__logo-badge-img {

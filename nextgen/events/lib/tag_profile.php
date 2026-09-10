@@ -14,7 +14,15 @@ function events_tag_profile_column_names(): array {
     return [
         'description',
         'photo_url',
+        'photo_fit',
+        'photo_focus_x',
+        'photo_focus_y',
+        'photo_zoom',
         'logo_url',
+        'logo_fit',
+        'logo_focus_x',
+        'logo_focus_y',
+        'logo_zoom',
         'website_url',
         'facebook_url',
         'instagram_url',
@@ -98,7 +106,15 @@ function events_tags_ensure_profile_columns(PDO $db): void {
     $alters = [
         'description' => 'ALTER TABLE `events_tags` ADD COLUMN `description` TEXT NULL DEFAULT NULL',
         'photo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_url` VARCHAR(2000) NULL DEFAULT NULL',
+        'photo_fit' => "ALTER TABLE `events_tags` ADD COLUMN `photo_fit` VARCHAR(16) NOT NULL DEFAULT 'cover'",
+        'photo_focus_x' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_focus_x` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        'photo_focus_y' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_focus_y` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        'photo_zoom' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_zoom` SMALLINT UNSIGNED NOT NULL DEFAULT 100',
         'logo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_url` VARCHAR(2000) NULL DEFAULT NULL',
+        'logo_fit' => "ALTER TABLE `events_tags` ADD COLUMN `logo_fit` VARCHAR(16) NOT NULL DEFAULT 'contain'",
+        'logo_focus_x' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_focus_x` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        'logo_focus_y' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_focus_y` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        'logo_zoom' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_zoom` SMALLINT UNSIGNED NOT NULL DEFAULT 100',
         'website_url' => 'ALTER TABLE `events_tags` ADD COLUMN `website_url` VARCHAR(2000) NULL DEFAULT NULL',
         'facebook_url' => 'ALTER TABLE `events_tags` ADD COLUMN `facebook_url` VARCHAR(2000) NULL DEFAULT NULL',
         'instagram_url' => 'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` VARCHAR(2000) NULL DEFAULT NULL',
@@ -133,9 +149,81 @@ function events_tag_profile_sql_value(string $column, array $profile): mixed {
     if ($column === 'email_is_private' || $column === 'phone_is_private') {
         return events_tag_profile_flag_is_on($profile[$column] ?? '0') ? 1 : 0;
     }
+    if ($column === 'photo_fit' || $column === 'logo_fit') {
+        $default = $column === 'logo_fit' ? 'contain' : 'cover';
+
+        return events_dj_media_fit_normalize((string) ($profile[$column] ?? ''), $default);
+    }
+    if ($column === 'photo_focus_x' || $column === 'photo_focus_y' || $column === 'logo_focus_x' || $column === 'logo_focus_y') {
+        return events_dj_media_pct_normalize($profile[$column] ?? 50, 50);
+    }
+    if ($column === 'photo_zoom' || $column === 'logo_zoom') {
+        return events_dj_media_zoom_normalize($profile[$column] ?? 100, 100);
+    }
     $value = trim((string) ($profile[$column] ?? ''));
 
     return $value !== '' ? $value : null;
+}
+
+function events_dj_media_fit_normalize(string $fit, string $default = 'cover'): string {
+    $fit = strtolower(trim($fit));
+
+    return in_array($fit, ['cover', 'contain'], true) ? $fit : $default;
+}
+
+function events_dj_media_pct_normalize(mixed $value, int $default = 50): int {
+    if ($value === null || $value === '') {
+        return $default;
+    }
+    $n = (int) $value;
+    if ($n < 0) {
+        return 0;
+    }
+    if ($n > 100) {
+        return 100;
+    }
+
+    return $n;
+}
+
+function events_dj_media_zoom_normalize(mixed $value, int $default = 100): int {
+    if ($value === null || $value === '') {
+        return $default;
+    }
+    $n = (int) $value;
+    if ($n < 100) {
+        return 100;
+    }
+    if ($n > 200) {
+        return 200;
+    }
+
+    return $n;
+}
+
+/**
+ * Publikus / admin kép stílus (object-fit, fókusz, zoom).
+ *
+ * @param array<string, string> $profile
+ */
+function events_dj_media_img_style(array $profile, string $kind): string {
+    $kind = $kind === 'logo' ? 'logo' : 'photo';
+    $defaultFit = $kind === 'logo' ? 'contain' : 'cover';
+    $fit = events_dj_media_fit_normalize((string) ($profile[$kind . '_fit'] ?? ''), $defaultFit);
+    $x = events_dj_media_pct_normalize($profile[$kind . '_focus_x'] ?? 50, 50);
+    $y = events_dj_media_pct_normalize($profile[$kind . '_focus_y'] ?? 50, 50);
+    $zoom = events_dj_media_zoom_normalize($profile[$kind . '_zoom'] ?? 100, 100);
+    $parts = [
+        'object-fit:' . $fit,
+        'object-position:' . $x . '% ' . $y . '%',
+    ];
+    if ($zoom !== 100) {
+        $scale = number_format($zoom / 100, 2, '.', '');
+        $parts[] = 'transform:scale(' . $scale . ')';
+        $parts[] = 'transform-origin:' . $x . '% ' . $y . '%';
+    }
+
+    return implode(';', $parts);
 }
 
 function events_tag_profile_flag_is_on(mixed $value): bool {
@@ -170,7 +258,15 @@ function events_tag_profile_empty(): array {
     return [
         'description' => '',
         'photo_url' => '',
+        'photo_fit' => 'cover',
+        'photo_focus_x' => '50',
+        'photo_focus_y' => '50',
+        'photo_zoom' => '100',
         'logo_url' => '',
+        'logo_fit' => 'contain',
+        'logo_focus_x' => '50',
+        'logo_focus_y' => '50',
+        'logo_zoom' => '100',
         'website_url' => '',
         'facebook_url' => '',
         'instagram_url' => '',
@@ -207,6 +303,19 @@ function events_tag_profile_from_row(array $row): array {
     foreach (array_keys($out) as $key) {
         if ($key === 'email_is_private' || $key === 'phone_is_private') {
             $out[$key] = events_tag_profile_flag_is_on($row[$key] ?? false) ? '1' : '0';
+            continue;
+        }
+        if ($key === 'photo_fit' || $key === 'logo_fit') {
+            $default = $key === 'logo_fit' ? 'contain' : 'cover';
+            $out[$key] = events_dj_media_fit_normalize((string) ($row[$key] ?? ''), $default);
+            continue;
+        }
+        if ($key === 'photo_focus_x' || $key === 'photo_focus_y' || $key === 'logo_focus_x' || $key === 'logo_focus_y') {
+            $out[$key] = (string) events_dj_media_pct_normalize($row[$key] ?? 50, 50);
+            continue;
+        }
+        if ($key === 'photo_zoom' || $key === 'logo_zoom') {
+            $out[$key] = (string) events_dj_media_zoom_normalize($row[$key] ?? 100, 100);
             continue;
         }
         $out[$key] = trim((string) ($row[$key] ?? ''));
@@ -310,6 +419,26 @@ function events_tag_profile_parse_contact_fields(array $profile): array {
 }
 
 /**
+ * Fotó / logó illesztés, fókusz és zoom POST mezők.
+ *
+ * @param array<string, string> $profile
+ * @return array<string, string>
+ */
+function events_tag_profile_parse_media_display_fields(array $profile): array {
+    $profile['photo_fit'] = events_dj_media_fit_normalize((string) ($_POST['tag_photo_fit'] ?? ''), 'cover');
+    $profile['photo_focus_x'] = (string) events_dj_media_pct_normalize($_POST['tag_photo_focus_x'] ?? 50, 50);
+    $profile['photo_focus_y'] = (string) events_dj_media_pct_normalize($_POST['tag_photo_focus_y'] ?? 50, 50);
+    $profile['photo_zoom'] = (string) events_dj_media_zoom_normalize($_POST['tag_photo_zoom'] ?? 100, 100);
+
+    $profile['logo_fit'] = events_dj_media_fit_normalize((string) ($_POST['tag_logo_fit'] ?? ''), 'contain');
+    $profile['logo_focus_x'] = (string) events_dj_media_pct_normalize($_POST['tag_logo_focus_x'] ?? 50, 50);
+    $profile['logo_focus_y'] = (string) events_dj_media_pct_normalize($_POST['tag_logo_focus_y'] ?? 50, 50);
+    $profile['logo_zoom'] = (string) events_dj_media_zoom_normalize($_POST['tag_logo_zoom'] ?? 100, 100);
+
+    return $profile;
+}
+
+/**
  * POST → profil mezők (validációval).
  *
  * @return array{0: array<string, string>, 1: ?string} [profile, error]
@@ -340,6 +469,8 @@ function events_tag_profile_from_post(): array {
         }
         $profile[$key] = $url ?? '';
     }
+
+    $profile = events_tag_profile_parse_media_display_fields($profile);
 
     return events_tag_profile_parse_contact_fields($profile);
 }
@@ -425,6 +556,8 @@ function events_tag_profile_from_post_without_photo(): array {
         }
         $profile[$key] = $url ?? '';
     }
+
+    $profile = events_tag_profile_parse_media_display_fields($profile);
 
     return events_tag_profile_parse_contact_fields($profile);
 }

@@ -3438,6 +3438,7 @@ dialog.eventpics-modal::backdrop {
 
 .events-dj-media__preview-wrap,
 .events-dj-photo__preview-wrap {
+    position: relative;
     margin: 0 0 0.75rem;
     border-radius: 8px;
     overflow: hidden;
@@ -3445,6 +3446,79 @@ dialog.eventpics-modal::backdrop {
     background: #eef3eb;
     aspect-ratio: 1 / 1;
     max-width: 220px;
+    cursor: crosshair;
+}
+
+.events-dj-media__focus-mark {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(45, 58, 40, 0.55), 0 1px 4px rgba(0, 0, 0, 0.25);
+    background: rgba(109, 143, 99, 0.85);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.events-dj-media__focus-mark[hidden] {
+    display: none !important;
+}
+
+.events-dj-media__display {
+    margin: 0 0 0.75rem;
+    max-width: 220px;
+}
+
+.events-dj-media__display-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.55rem;
+}
+
+.events-dj-media__display-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #4a5a46;
+}
+
+.events-dj-media__fit {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.75rem;
+}
+
+.events-dj-media__fit-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.events-dj-media__zoom {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.events-dj-media__zoom input[type="range"] {
+    flex: 1;
+    min-width: 0;
+}
+
+.events-dj-media__zoom-val {
+    min-width: 2.75rem;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: #5a6a56;
+}
+
+.events-dj-media__focus-help {
+    margin: 0;
+    font-size: 0.78rem;
 }
 
 .events-dj-media__preview-wrap--logo {

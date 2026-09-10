@@ -202,16 +202,16 @@ header('Content-Type: text/html; charset=UTF-8');
                     <div class="dj-public__media<?= ($djPhotoAbs !== '' && $djLogoAbs !== '') ? ' dj-public__media--both' : '' ?>">
                         <div class="dj-public__avatar<?= ($djPhotoAbs === '' && $djLogoAbs !== '') ? ' dj-public__avatar--logo' : '' ?>" aria-hidden="true">
                             <?php if ($djPhotoAbs !== ''): ?>
-                                <img class="dj-public__avatar-img" src="<?= h($djPhotoAbs) ?>" alt="" loading="eager" decoding="async">
+                                <img class="dj-public__avatar-img" src="<?= h($djPhotoAbs) ?>" alt="" loading="eager" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'photo')) ?>">
                             <?php elseif ($djLogoAbs !== ''): ?>
-                                <img class="dj-public__avatar-img dj-public__avatar-img--logo" src="<?= h($djLogoAbs) ?>" alt="" loading="eager" decoding="async">
+                                <img class="dj-public__avatar-img dj-public__avatar-img--logo" src="<?= h($djLogoAbs) ?>" alt="" loading="eager" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'logo')) ?>">
                             <?php else: ?>
                                 <span class="dj-public__avatar-initials"><?= h(events_public_dj_initials($tagName)) ?></span>
                             <?php endif; ?>
                         </div>
                         <?php if ($djPhotoAbs !== '' && $djLogoAbs !== ''): ?>
                             <div class="dj-public__logo-badge" aria-hidden="true">
-                                <img class="dj-public__logo-badge-img" src="<?= h($djLogoAbs) ?>" alt="" loading="lazy" decoding="async">
+                                <img class="dj-public__logo-badge-img" src="<?= h($djLogoAbs) ?>" alt="" loading="lazy" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'logo')) ?>">
                             </div>
                         <?php endif; ?>
                     </div>
