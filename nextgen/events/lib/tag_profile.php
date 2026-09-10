@@ -21,6 +21,7 @@ function events_tag_profile_column_names(): array {
         'soundcloud_url',
         'youtube_url',
         'email',
+        'contact_email',
         'phone',
     ];
 }
@@ -63,6 +64,7 @@ function events_tags_ensure_profile_columns(PDO $db): void {
         'soundcloud_url' => 'ALTER TABLE `events_tags` ADD COLUMN `soundcloud_url` VARCHAR(2000) NULL DEFAULT NULL',
         'youtube_url' => 'ALTER TABLE `events_tags` ADD COLUMN `youtube_url` VARCHAR(2000) NULL DEFAULT NULL',
         'email' => 'ALTER TABLE `events_tags` ADD COLUMN `email` VARCHAR(255) NULL DEFAULT NULL',
+        'contact_email' => 'ALTER TABLE `events_tags` ADD COLUMN `contact_email` VARCHAR(255) NULL DEFAULT NULL',
         'phone' => 'ALTER TABLE `events_tags` ADD COLUMN `phone` VARCHAR(64) NULL DEFAULT NULL',
     ];
     foreach ($alters as $col => $sql) {
@@ -110,6 +112,7 @@ function events_tag_profile_empty(): array {
         'soundcloud_url' => '',
         'youtube_url' => '',
         'email' => '',
+        'contact_email' => '',
         'phone' => '',
     ];
 }
@@ -206,6 +209,14 @@ function events_tag_profile_from_post(): array {
         $profile['email'] = $email;
     }
 
+    $contactEmail = trim((string) ($_POST['tag_contact_email'] ?? ''));
+    if ($contactEmail !== '') {
+        if (strlen($contactEmail) > 255 || filter_var($contactEmail, FILTER_VALIDATE_EMAIL) === false) {
+            return [$profile, 'Érvénytelen kapcsolati e-mail cím.'];
+        }
+        $profile['contact_email'] = $contactEmail;
+    }
+
     $phone = trim((string) ($_POST['tag_phone'] ?? ''));
     if ($phone !== '') {
         if (strlen($phone) > 64) {
@@ -224,12 +235,14 @@ function events_tag_profile_from_post(): array {
  * @param array{
  *   description: string,
  *   photo_url: string,
+ *   logo_url: string,
  *   website_url: string,
  *   facebook_url: string,
  *   instagram_url: string,
  *   soundcloud_url: string,
  *   youtube_url: string,
  *   email: string,
+ *   contact_email: string,
  *   phone: string
  * } $profile
  */
@@ -252,6 +265,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
             `soundcloud_url` = ?,
             `youtube_url` = ?,
             `email` = ?,
+            `contact_email` = ?,
             `phone` = ?
         WHERE `id` = ?
     ');
@@ -265,6 +279,7 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
         $profile['soundcloud_url'] !== '' ? $profile['soundcloud_url'] : null,
         $profile['youtube_url'] !== '' ? $profile['youtube_url'] : null,
         $profile['email'] !== '' ? $profile['email'] : null,
+        $profile['contact_email'] !== '' ? $profile['contact_email'] : null,
         $profile['phone'] !== '' ? $profile['phone'] : null,
         $tagId,
     ]);
@@ -324,6 +339,14 @@ function events_tag_profile_from_post_without_photo(): array {
         $profile['email'] = $email;
     }
 
+    $contactEmail = trim((string) ($_POST['tag_contact_email'] ?? ''));
+    if ($contactEmail !== '') {
+        if (strlen($contactEmail) > 255 || filter_var($contactEmail, FILTER_VALIDATE_EMAIL) === false) {
+            return [$profile, 'Érvénytelen kapcsolati e-mail cím.'];
+        }
+        $profile['contact_email'] = $contactEmail;
+    }
+
     $phone = trim((string) ($_POST['tag_phone'] ?? ''));
     if ($phone !== '') {
         if (strlen($phone) > 64) {
@@ -340,6 +363,7 @@ function events_tag_profile_from_post_without_photo(): array {
 
 /**
  * Van-e megjeleníthető profil tartalom.
+ * (A contact_email szándékosan nem publikus.)
  *
  * @param array<string, string> $profile
  */

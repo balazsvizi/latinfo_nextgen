@@ -23,6 +23,7 @@ $hiba = '';
 $name = '';
 $profile = events_tag_profile_empty();
 $djPhotoPick = '';
+$djLogoPick = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('dj_letrehoz')) {
@@ -36,10 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hiba = $profileErr;
         } else {
             [$photoUrl, $photoErr] = events_djpics_resolve_photo_for_save('', !empty($_POST['dj_photo_clear']));
+            [$logoUrl, $logoErr] = $photoErr === null
+                ? events_djpics_resolve_logo_for_save('', !empty($_POST['dj_logo_clear']))
+                : [null, $photoErr];
             if ($photoErr !== null) {
                 $hiba = $photoErr;
+            } elseif ($logoErr !== null) {
+                $hiba = $logoErr;
             } else {
                 $profile['photo_url'] = $photoUrl ?? '';
+                $profile['logo_url'] = $logoUrl ?? '';
                 $dup = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
                 $dup->execute([$name]);
                 if ($dup->fetchColumn() !== false) {
@@ -68,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         $djPhotoPick = trim((string) ($_POST['dj_photo_pick'] ?? ''));
+        $djLogoPick = trim((string) ($_POST['dj_logo_pick'] ?? ''));
     }
 }
 
@@ -109,6 +117,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <?php
                     $djPhotoUrl = (string) ($profile['photo_url'] ?? '');
                     require __DIR__ . '/partials/dj_photo_fields.php';
+                    ?>
+                </div>
+                <div class="events-edit-panel">
+                    <?php
+                    $djLogoUrl = (string) ($profile['logo_url'] ?? '');
+                    require __DIR__ . '/partials/dj_logo_fields.php';
                     ?>
                 </div>
                 <div class="toolbar">

@@ -43,6 +43,7 @@ if ($slugParam !== '') {
     $tagSlug = (string) $djRow['slug'];
     $tagName = (string) $djRow['name'];
     $djProfile = events_tag_profile_from_row($djRow);
+    unset($djProfile['contact_email']);
     $tag = ['id' => $tagId, 'name' => $tagName, 'slug' => $tagSlug];
 } elseif ($tagId > 0) {
     $slugSelect = events_tags_slug_column_available($db) ? ', `slug`' : '';
@@ -59,6 +60,7 @@ if ($slugParam !== '') {
     $tagName = (string) ($tag['name'] ?? '');
     $tagSlug = trim((string) ($tag['slug'] ?? ''));
     $djProfile = events_tag_profile_load($db, $tagId);
+    unset($djProfile['contact_email']);
 } else {
     http_response_code(404);
     events_public_send_noindex_header();
@@ -138,10 +140,14 @@ $S = $G;
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('tags.php?open_tag=') . $tagId;
 $djPhotoAbs = '';
+$djLogoAbs = '';
 if ($tagIsDj) {
     $photoRaw = trim((string) ($djProfile['photo_url'] ?? ''));
+    $logoRaw = trim((string) ($djProfile['logo_url'] ?? ''));
     $djPhotoAbs = $photoRaw !== '' ? events_absolute_url($photoRaw) : '';
+    $djLogoAbs = $logoRaw !== '' ? events_absolute_url($logoRaw) : '';
 }
+$djOgImage = $djPhotoAbs !== '' ? $djPhotoAbs : $djLogoAbs;
 
 events_public_send_noindex_follow_header();
 header('Content-Type: text/html; charset=UTF-8');
@@ -161,10 +167,10 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta property="og:title" content="<?= h($title) ?>">
     <meta property="og:description" content="<?= h($desc) ?>">
     <meta property="og:url" content="<?= h($ogPageUrl) ?>">
-    <?php if ($djPhotoAbs !== ''): ?>
-        <meta property="og:image" content="<?= h($djPhotoAbs) ?>">
+    <?php if ($djOgImage !== ''): ?>
+        <meta property="og:image" content="<?= h($djOgImage) ?>">
     <?php endif; ?>
-    <meta name="twitter:card" content="<?= $djPhotoAbs !== '' ? 'summary_large_image' : 'summary' ?>">
+    <meta name="twitter:card" content="<?= $djOgImage !== '' ? 'summary_large_image' : 'summary' ?>">
     <meta name="twitter:title" content="<?= h($title) ?>">
     <meta name="twitter:description" content="<?= h($desc) ?>">
     <link rel="canonical" href="<?= h($canonical) ?>">
@@ -193,11 +199,20 @@ header('Content-Type: text/html; charset=UTF-8');
         <div class="event-public__hero-inner<?= $tagIsDj ? ' dj-public__hero-inner' : '' ?>">
             <?php if ($tagIsDj): ?>
                 <div class="dj-public__identity">
-                    <div class="dj-public__avatar" aria-hidden="true">
-                        <?php if ($djPhotoAbs !== ''): ?>
-                            <img class="dj-public__avatar-img" src="<?= h($djPhotoAbs) ?>" alt="" loading="eager" decoding="async">
-                        <?php else: ?>
-                            <span class="dj-public__avatar-initials"><?= h(events_public_dj_initials($tagName)) ?></span>
+                    <div class="dj-public__media<?= ($djPhotoAbs !== '' && $djLogoAbs !== '') ? ' dj-public__media--both' : '' ?>">
+                        <div class="dj-public__avatar<?= ($djPhotoAbs === '' && $djLogoAbs !== '') ? ' dj-public__avatar--logo' : '' ?>" aria-hidden="true">
+                            <?php if ($djPhotoAbs !== ''): ?>
+                                <img class="dj-public__avatar-img" src="<?= h($djPhotoAbs) ?>" alt="" loading="eager" decoding="async">
+                            <?php elseif ($djLogoAbs !== ''): ?>
+                                <img class="dj-public__avatar-img dj-public__avatar-img--logo" src="<?= h($djLogoAbs) ?>" alt="" loading="eager" decoding="async">
+                            <?php else: ?>
+                                <span class="dj-public__avatar-initials"><?= h(events_public_dj_initials($tagName)) ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($djPhotoAbs !== '' && $djLogoAbs !== ''): ?>
+                            <div class="dj-public__logo-badge" aria-hidden="true">
+                                <img class="dj-public__logo-badge-img" src="<?= h($djLogoAbs) ?>" alt="" loading="lazy" decoding="async">
+                            </div>
                         <?php endif; ?>
                     </div>
                     <div class="dj-public__identity-text">

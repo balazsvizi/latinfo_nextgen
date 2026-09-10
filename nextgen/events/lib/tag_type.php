@@ -622,6 +622,7 @@ function events_public_tag_dj_slug(PDO $db, int $tagId): ?string {
  *   slug:string,
  *   description:string,
  *   photo_url:string,
+ *   logo_url:string,
  *   website_url:string,
  *   facebook_url:string,
  *   instagram_url:string,

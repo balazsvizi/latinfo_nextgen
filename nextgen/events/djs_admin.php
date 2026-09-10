@@ -123,7 +123,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $dname = (string) $r['name'];
                             $dslug = (string) $r['slug'];
                             $photo = trim((string) $r['photo_url']);
-                            $photoAbs = $photo !== '' ? events_absolute_url($photo) : '';
+                            $logo = trim((string) ($r['logo_url'] ?? ''));
+                            $thumb = $photo !== '' ? $photo : $logo;
+                            $photoAbs = $thumb !== '' ? events_absolute_url($thumb) : '';
+                            $thumbIsLogo = $photo === '' && $logo !== '';
                             $editUrl = events_url('dj_szerkeszt.php?id=') . $did;
                             $publicUrl = $dslug !== ''
                                 ? events_public_dj_page_url($dslug, 'hu')
@@ -137,7 +140,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td class="events-djs-admin__td-photo">
                                     <a href="<?= h($editUrl) ?>" class="events-djs-admin__thumb-link" title="Szerkesztés">
                                         <?php if ($photoAbs !== ''): ?>
-                                            <img class="events-djs-admin__thumb" src="<?= h($photoAbs) ?>" alt="" loading="lazy" width="40" height="40">
+                                            <img class="events-djs-admin__thumb<?= $thumbIsLogo ? ' events-djs-admin__thumb--logo' : '' ?>" src="<?= h($photoAbs) ?>" alt="" loading="lazy" width="40" height="40">
                                         <?php else: ?>
                                             <span class="events-djs-admin__thumb events-djs-admin__thumb--empty" aria-hidden="true">🎧</span>
                                         <?php endif; ?>

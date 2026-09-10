@@ -229,7 +229,10 @@ header('Content-Type: text/html; charset=UTF-8');
                     $djName = (string) ($dj['name'] ?? '');
                     $djSlug = trim((string) ($dj['slug'] ?? ''));
                     $djPhoto = trim((string) ($dj['photo_url'] ?? ''));
-                    $djPhotoAbs = $djPhoto !== '' ? events_absolute_url($djPhoto) : '';
+                    $djLogo = trim((string) ($dj['logo_url'] ?? ''));
+                    $djMedia = $djPhoto !== '' ? $djPhoto : $djLogo;
+                    $djPhotoAbs = $djMedia !== '' ? events_absolute_url($djMedia) : '';
+                    $djMediaIsLogo = $djPhoto === '' && $djLogo !== '';
                     $total = (int) ($dj['event_total'] ?? 0);
                     $upcoming = (int) ($dj['event_upcoming'] ?? 0);
                     $nextStart = (string) ($dj['next_event_start'] ?? '');
@@ -249,9 +252,9 @@ header('Content-Type: text/html; charset=UTF-8');
                         data-upcoming="<?= $upcoming ?>"
                     >
                         <a class="djs-public__card djs-public__card--person<?= h($cardMod) ?>" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
-                            <span class="djs-public__card-media" aria-hidden="true">
+                            <span class="djs-public__card-media<?= $djMediaIsLogo ? ' djs-public__card-media--logo' : '' ?>" aria-hidden="true">
                                 <?php if ($djPhotoAbs !== ''): ?>
-                                    <img class="djs-public__card-photo" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async">
+                                    <img class="djs-public__card-photo<?= $djMediaIsLogo ? ' djs-public__card-photo--logo' : '' ?>" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async">
                                 <?php else: ?>
                                     <span class="djs-public__card-initials"><?= h($initials) ?></span>
                                 <?php endif; ?>

@@ -63,8 +63,38 @@ endif;
             <input type="url" id="tag_youtube_url_<?= h($fid) ?>" name="tag_youtube_url" maxlength="2000" value="<?= h((string) ($tagProfile['youtube_url'] ?? '')) ?>" placeholder="https://youtube.com/…">
         </div>
         <div class="form-group">
-            <label for="tag_email_<?= h($fid) ?>">E-mail</label>
-            <input type="email" id="tag_email_<?= h($fid) ?>" name="tag_email" maxlength="255" value="<?= h((string) ($tagProfile['email'] ?? '')) ?>" placeholder="dj@example.com">
+            <label for="tag_email_<?= h($fid) ?>">Publikus e-mail</label>
+            <input
+                type="email"
+                id="tag_email_<?= h($fid) ?>"
+                name="tag_email"
+                maxlength="255"
+                value="<?= h((string) ($tagProfile['email'] ?? '')) ?>"
+                placeholder="dj@example.com"
+                data-dj-public-email
+            >
+            <p class="help">Ez jelenik meg a nyilvános DJ oldalon.</p>
+        </div>
+        <div class="form-group">
+            <label for="tag_contact_email_<?= h($fid) ?>">Kapcsolati e-mail</label>
+            <div class="events-tag-dj-profile__email-row">
+                <input
+                    type="email"
+                    id="tag_contact_email_<?= h($fid) ?>"
+                    name="tag_contact_email"
+                    maxlength="255"
+                    value="<?= h((string) ($tagProfile['contact_email'] ?? '')) ?>"
+                    placeholder="kapcsolat@example.com"
+                    data-dj-contact-email
+                >
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-dj-copy-public-email
+                    title="Másolás a publikus e-mailből"
+                >Másolás a publikusból</button>
+            </div>
+            <p class="help">Csak adminisztrációnak – nem jelenik meg publikuson.</p>
         </div>
         <div class="form-group">
             <label for="tag_phone_<?= h($fid) ?>">Telefon</label>
@@ -72,3 +102,25 @@ endif;
         </div>
     </div>
 </div>
+<script>
+(function () {
+    document.querySelectorAll('[data-dj-copy-public-email]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var root = btn.closest('.events-tag-dj-profile') || document;
+            var publicInput = root.querySelector('[data-dj-public-email]');
+            var contactInput = root.querySelector('[data-dj-contact-email]');
+            if (!publicInput || !contactInput) {
+                return;
+            }
+            var value = (publicInput.value || '').trim();
+            if (value === '') {
+                publicInput.focus();
+                return;
+            }
+            contactInput.value = value;
+            contactInput.focus();
+            contactInput.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    });
+})();
+</script>

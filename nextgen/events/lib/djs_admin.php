@@ -125,7 +125,7 @@ function events_djs_admin_fetch(PDO $db, array $filters, ?int $listLimit = null)
         'id' => 't.`id` ' . $dir,
         'slug' => 't.`slug` ' . $dir . ', t.`name` ASC',
         'photo' => $hasPhotoCol
-            ? '(CASE WHEN COALESCE(t.`photo_url`, \'\') = \'\' THEN 0 ELSE 1 END) ' . $dir . ', t.`name` ASC'
+            ? '(CASE WHEN COALESCE(t.`photo_url`, \'\') <> \'\' OR COALESCE(t.`logo_url`, \'\') <> \'\' THEN 1 ELSE 0 END) ' . $dir . ', t.`name` ASC'
             : 't.`name` ' . $dir . ', t.`id` ASC',
         'events' => 'COALESCE(st.`event_count`, 0) ' . $dir . ', t.`name` ASC',
         'published' => 'COALESCE(st.`published_count`, 0) ' . $dir . ', t.`name` ASC',
@@ -136,7 +136,9 @@ function events_djs_admin_fetch(PDO $db, array $filters, ?int $listLimit = null)
     };
 
     $slugSelect = events_tags_slug_column_available($db) ? 't.`slug`' : 'NULL AS `slug`';
-    $photoSelect = events_tags_profile_columns_available($db) ? 't.`photo_url`' : 'NULL AS `photo_url`';
+    $photoSelect = events_tags_profile_columns_available($db)
+        ? 't.`photo_url`, t.`logo_url`'
+        : 'NULL AS `photo_url`, NULL AS `logo_url`';
     $limitSql = $listLimit === null ? '' : ' LIMIT ' . (int) $listLimit;
     $statsSql = events_djs_admin_stats_subquery_sql();
 
@@ -164,6 +166,7 @@ function events_djs_admin_fetch(PDO $db, array $filters, ?int $listLimit = null)
             'name' => (string) ($row['name'] ?? ''),
             'slug' => trim((string) ($row['slug'] ?? '')),
             'photo_url' => trim((string) ($row['photo_url'] ?? '')),
+            'logo_url' => trim((string) ($row['logo_url'] ?? '')),
             'event_count' => (int) ($row['event_count'] ?? 0),
             'published_count' => (int) ($row['published_count'] ?? 0),
             'upcoming_count' => (int) ($row['upcoming_count'] ?? 0),

@@ -3306,6 +3306,27 @@ dialog.eventpics-modal::backdrop {
     gap: 0.65rem 1rem;
 }
 
+.events-tag-dj-profile__email-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.events-tag-dj-profile__email-row input[type="email"] {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.events-tag-dj-profile__email-row .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.events-tag-dj-profile__grid > .form-group:has([data-dj-contact-email]) {
+    grid-column: 1 / -1;
+}
+
 .events-djs-admin__th-photo,
 .events-djs-admin__td-photo {
     width: 3.25rem;
@@ -3329,6 +3350,13 @@ dialog.eventpics-modal::backdrop {
     object-fit: cover;
     border: 1px solid var(--border, #d8e0d4);
     background: #eef3eb;
+}
+
+.events-djs-admin__thumb--logo {
+    object-fit: contain;
+    padding: 3px;
+    box-sizing: border-box;
+    background: #fff;
 }
 
 .events-djs-admin__thumb--empty {

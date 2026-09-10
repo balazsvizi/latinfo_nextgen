@@ -52,6 +52,7 @@ function events_public_dj_initials(string $name): string {
  *   name: string,
  *   slug: string,
  *   photo_url: string,
+ *   logo_url: string,
  *   event_total: int,
  *   event_upcoming: int,
  *   next_event_start: ?string
@@ -71,7 +72,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
     require_once __DIR__ . '/admin_event_filters.php';
     $poolFrom = events_admin_table_pool_from_sql('events_tags', 't', $listLimit);
     $slugSelect = events_tags_slug_column_available($db) ? 't.`slug`' : 'NULL AS `slug`';
-    $photoSelect = events_tags_profile_columns_available($db) ? 't.`photo_url`' : 'NULL AS `photo_url`';
+    $photoSelect = events_tags_profile_columns_available($db) ? 't.`photo_url`, t.`logo_url`' : 'NULL AS `photo_url`, NULL AS `logo_url`';
 
     $st = $db->prepare('
         SELECT t.`id`, t.`name`, ' . $slugSelect . ', ' . $photoSelect . '
@@ -96,6 +97,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
             'name' => (string) ($row['name'] ?? ''),
             'slug' => trim((string) ($row['slug'] ?? '')),
             'photo_url' => trim((string) ($row['photo_url'] ?? '')),
+            'logo_url' => trim((string) ($row['logo_url'] ?? '')),
             'event_total' => 0,
             'event_upcoming' => 0,
             'next_event_start' => null,
