@@ -30,21 +30,42 @@ function events_tag_profile_column_names(): array {
 }
 
 function events_tags_profile_columns_available(PDO $db, bool $forceRefresh = false): bool {
+    return count(events_tag_profile_present_columns($db, $forceRefresh)) >= 4;
+}
+
+/**
+ * Ténylegesen létező profil-oszlopok (wanted sorrendben).
+ *
+ * @return list<string>
+ */
+function events_tag_profile_present_columns(PDO $db, bool $forceRefresh = false): array {
     static $cached = null;
-    if (!$forceRefresh && $cached !== null) {
+    if (!$forceRefresh && is_array($cached)) {
         return $cached;
     }
+    $wanted = events_tag_profile_column_names();
     try {
-        $st = $db->query("
-            SELECT COUNT(*)
+        $placeholders = implode(',', array_fill(0, count($wanted), '?'));
+        $st = $db->prepare("
+            SELECT `COLUMN_NAME`
             FROM `information_schema`.`COLUMNS`
             WHERE `TABLE_SCHEMA` = DATABASE()
               AND `TABLE_NAME` = 'events_tags'
-              AND `COLUMN_NAME` IN ('description','photo_url','website_url','email')
+              AND `COLUMN_NAME` IN ({$placeholders})
         ");
-        $cached = ((int) $st->fetchColumn()) >= 4;
+        $st->execute($wanted);
+        $found = [];
+        while (($name = $st->fetchColumn()) !== false) {
+            $found[(string) $name] = true;
+        }
+        $cached = [];
+        foreach ($wanted as $col) {
+            if (isset($found[$col])) {
+                $cached[] = $col;
+            }
+        }
     } catch (PDOException) {
-        $cached = false;
+        $cached = [];
     }
 
     return $cached;
@@ -73,24 +94,31 @@ function events_tags_ensure_profile_columns(PDO $db): void {
         'phone_is_private' => 'ALTER TABLE `events_tags` ADD COLUMN `phone_is_private` TINYINT(1) NOT NULL DEFAULT 0',
         'admin_notes' => 'ALTER TABLE `events_tags` ADD COLUMN `admin_notes` TEXT NULL DEFAULT NULL',
     ];
+    $present = array_fill_keys(events_tag_profile_present_columns($db, true), true);
     foreach ($alters as $col => $sql) {
+        if (isset($present[$col])) {
+            continue;
+        }
         try {
-            $chk = $db->query("
-                SELECT COUNT(*)
-                FROM `information_schema`.`COLUMNS`
-                WHERE `TABLE_SCHEMA` = DATABASE()
-                  AND `TABLE_NAME` = 'events_tags'
-                  AND `COLUMN_NAME` = " . $db->quote($col) . '
-            ');
-            if (((int) $chk->fetchColumn()) > 0) {
-                continue;
-            }
             $db->exec($sql);
-        } catch (PDOException) {
-            // párhuzamos / már létezik
+            $present[$col] = true;
+        } catch (PDOException $e) {
+            error_log('events_tags_ensure_profile_columns ' . $col . ': ' . $e->getMessage());
         }
     }
-    events_tags_profile_columns_available($db, true);
+    events_tag_profile_present_columns($db, true);
+}
+
+/**
+ * Profil mező érték mentéshez (üres → NULL, flag → 0/1).
+ */
+function events_tag_profile_sql_value(string $column, array $profile): mixed {
+    if ($column === 'email_is_private' || $column === 'phone_is_private') {
+        return events_tag_profile_flag_is_on($profile[$column] ?? '0') ? 1 : 0;
+    }
+    $value = trim((string) ($profile[$column] ?? ''));
+
+    return $value !== '' ? $value : null;
 }
 
 function events_tag_profile_flag_is_on(mixed $value): bool {
@@ -192,10 +220,11 @@ function events_tag_profile_load(PDO $db, int $tagId): array {
         return $empty;
     }
     events_tags_ensure_profile_columns($db);
-    if (!events_tags_profile_columns_available($db)) {
+    $colsList = events_tag_profile_present_columns($db);
+    if ($colsList === []) {
         return $empty;
     }
-    $cols = '`' . implode('`, `', events_tag_profile_column_names()) . '`';
+    $cols = '`' . implode('`, `', $colsList) . '`';
     $st = $db->prepare("SELECT {$cols} FROM `events_tags` WHERE `id` = ? LIMIT 1");
     $st->execute([$tagId]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
@@ -321,44 +350,19 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
         return;
     }
     events_tags_ensure_profile_columns($db);
-    if (!events_tags_profile_columns_available($db)) {
+    $cols = events_tag_profile_present_columns($db);
+    if ($cols === []) {
         return;
     }
-    $st = $db->prepare('
-        UPDATE `events_tags` SET
-            `description` = ?,
-            `photo_url` = ?,
-            `logo_url` = ?,
-            `website_url` = ?,
-            `facebook_url` = ?,
-            `instagram_url` = ?,
-            `soundcloud_url` = ?,
-            `youtube_url` = ?,
-            `mixcloud_url` = ?,
-            `email` = ?,
-            `email_is_private` = ?,
-            `phone` = ?,
-            `phone_is_private` = ?,
-            `admin_notes` = ?
-        WHERE `id` = ?
-    ');
-    $st->execute([
-        $profile['description'] !== '' ? $profile['description'] : null,
-        $profile['photo_url'] !== '' ? $profile['photo_url'] : null,
-        $profile['logo_url'] !== '' ? $profile['logo_url'] : null,
-        $profile['website_url'] !== '' ? $profile['website_url'] : null,
-        $profile['facebook_url'] !== '' ? $profile['facebook_url'] : null,
-        $profile['instagram_url'] !== '' ? $profile['instagram_url'] : null,
-        $profile['soundcloud_url'] !== '' ? $profile['soundcloud_url'] : null,
-        $profile['youtube_url'] !== '' ? $profile['youtube_url'] : null,
-        $profile['mixcloud_url'] !== '' ? $profile['mixcloud_url'] : null,
-        $profile['email'] !== '' ? $profile['email'] : null,
-        events_tag_profile_flag_is_on($profile['email_is_private'] ?? '0') ? 1 : 0,
-        $profile['phone'] !== '' ? $profile['phone'] : null,
-        events_tag_profile_flag_is_on($profile['phone_is_private'] ?? '0') ? 1 : 0,
-        $profile['admin_notes'] !== '' ? $profile['admin_notes'] : null,
-        $tagId,
-    ]);
+    $sets = [];
+    $params = [];
+    foreach ($cols as $col) {
+        $sets[] = '`' . $col . '` = ?';
+        $params[] = events_tag_profile_sql_value($col, $profile);
+    }
+    $params[] = $tagId;
+    $st = $db->prepare('UPDATE `events_tags` SET ' . implode(', ', $sets) . ' WHERE `id` = ?');
+    $st->execute($params);
 }
 
 /**
@@ -366,17 +370,14 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
  */
 function events_tag_profile_sql_select(PDO $db, string $alias = 't'): string {
     events_tags_ensure_profile_columns($db);
-    if (!events_tags_profile_columns_available($db)) {
-        $parts = [];
-        foreach (events_tag_profile_column_names() as $col) {
-            $parts[] = 'NULL AS `' . $col . '`';
-        }
-
-        return implode(', ', $parts);
-    }
+    $present = array_fill_keys(events_tag_profile_present_columns($db), true);
     $parts = [];
     foreach (events_tag_profile_column_names() as $col) {
-        $parts[] = $alias . '.`' . $col . '`';
+        if (isset($present[$col])) {
+            $parts[] = $alias . '.`' . $col . '`';
+        } else {
+            $parts[] = 'NULL AS `' . $col . '`';
+        }
     }
 
     return implode(', ', $parts);
