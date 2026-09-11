@@ -7,6 +7,7 @@ require_once __DIR__ . '/lib/event_request.php';
 require_once __DIR__ . '/lib/tag_type.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/tag_event_copy.php';
 requireLogin();
 
 $db = getDb();
@@ -150,6 +151,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(events_url('tags.php'));
     }
 
+    if ($action === 'apply_tag_copy') {
+        $fromId = (int) ($_POST['from_tag'] ?? 0);
+        $toId = (int) ($_POST['to_tag'] ?? 0);
+        $pair = events_tag_copy_validate_pair($db, $fromId, $toId);
+        $copyReturn = [
+            'from_tag' => $fromId,
+            'to_tag' => $toId,
+        ];
+        $postLimit = trim((string) ($_POST['list_limit'] ?? ''));
+        if ($postLimit !== '') {
+            $copyReturn['list_limit'] = $postLimit;
+        }
+        if (!$pair['ok'] || $pair['from'] === null || $pair['to'] === null) {
+            flash('error', $pair['error'] ?? 'Érvénytelen címkepár.');
+            redirect(events_tags_admin_url($copyReturn));
+        }
+        $fromName = $pair['from']['name'];
+        $toName = $pair['to']['name'];
+        $before = events_tag_copy_preview($db, $pair['from'], $pair['to']);
+        if ($before['pending_count'] === 0) {
+            flash('success', 'Nem volt teendő: a «' . $toName . '» címke már szerepel minden érintett eseményen.');
+            redirect(events_tags_admin_url($copyReturn));
+        }
+        try {
+            $db->beginTransaction();
+            events_tag_copy_apply($db, $fromId, $toId);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            error_log('events tags apply_tag_copy hiba: ' . $e->getMessage());
+            flash('error', 'A címke beírása nem sikerült. Kérlek próbáld újra.');
+            redirect(events_tags_admin_url($copyReturn));
+        }
+        $after = events_tag_copy_preview($db, $pair['from'], $pair['to']);
+        $applied = max(0, $before['pending_count'] - $after['pending_count']);
+        if ($applied === 0) {
+            flash('success', 'Nem volt teendő: a «' . $toName . '» címke már szerepel minden érintett eseményen.');
+        } else {
+            flash('success', $applied . ' eseményre beírva: «' . $fromName . '» → «' . $toName . '».');
+        }
+        rendszer_log(
+            'tag',
+            $toId,
+            'Címke áttöltés',
+            $fromName . ' (' . $fromId . ') → ' . $toName . ' (' . $toId . '); ' . $applied . ' esemény'
+        );
+        redirect(events_tags_admin_url($copyReturn));
+    }
+
     redirect(events_url('tags.php'));
 }
 
@@ -187,6 +239,31 @@ if ($openTagRaw === 'new') {
     $openTagGroup = (string) (int) $openTagRaw;
 }
 
+$tagCopyPickerAll = [];
+foreach (events_load_tag_options($db) as $tid => $tnev) {
+    $tagCopyPickerAll[] = ['id' => (int) $tid, 'name' => (string) $tnev];
+}
+$tagCopyFromId = (int) ($_GET['from_tag'] ?? 0);
+$tagCopyToId = (int) ($_GET['to_tag'] ?? 0);
+$tagCopyCheckError = null;
+$tagCopyPreview = null;
+if ($tagCopyFromId > 0 || $tagCopyToId > 0) {
+    $tagCopyPair = events_tag_copy_validate_pair($db, $tagCopyFromId, $tagCopyToId);
+    if (!$tagCopyPair['ok'] || $tagCopyPair['from'] === null || $tagCopyPair['to'] === null) {
+        $tagCopyCheckError = $tagCopyPair['error'];
+        if ($tagCopyPair['from'] !== null) {
+            $tagCopyFromId = $tagCopyPair['from']['id'];
+        }
+        if ($tagCopyPair['to'] !== null) {
+            $tagCopyToId = $tagCopyPair['to']['id'];
+        }
+    } else {
+        $tagCopyPreview = events_tag_copy_preview($db, $tagCopyPair['from'], $tagCopyPair['to']);
+        $tagCopyFromId = $tagCopyPair['from']['id'];
+        $tagCopyToId = $tagCopyPair['to']['id'];
+    }
+}
+
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Címkék';
 require_once dirname(__DIR__) . '/partials/header.php';
@@ -209,6 +286,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események listája</a>
         </div>
     </div>
+
+    <?php require __DIR__ . '/partials/admin_tag_copy.php'; ?>
 
     <?php if ($tagRows !== [] && $tagBulkTypesEnabled): ?>
     <form method="post" action="<?= h(events_url('tags.php')) ?>" class="events-tags-bulk" id="events-tags-bulk-form">
@@ -670,8 +749,41 @@ require_once dirname(__DIR__) . '/partials/header.php';
     }
 
     syncTagsBulkMaster();
+
+    var tagCopyForm = document.getElementById('events-tags-copy-form');
+    if (tagCopyForm) {
+        tagCopyForm.addEventListener('submit', function (e) {
+            var fromEl = tagCopyForm.querySelector('input[name="from_tag"]');
+            var toEl = tagCopyForm.querySelector('input[name="to_tag"]');
+            var fromId = fromEl ? parseInt(fromEl.value || '0', 10) : 0;
+            var toId = toEl ? parseInt(toEl.value || '0', 10) : 0;
+            if (fromId <= 0 || toId <= 0) {
+                e.preventDefault();
+                window.alert('Válassz ki két címkét: miből és mi legyen.');
+                return;
+            }
+            if (fromId === toId) {
+                e.preventDefault();
+                window.alert('A „miből” és a „mi legyen” címke legyen különböző.');
+            }
+        });
+    }
+
+    var tagCopyApply = document.getElementById('events-tags-copy-apply');
+    if (tagCopyApply) {
+        tagCopyApply.addEventListener('submit', function (e) {
+            var n = parseInt(tagCopyApply.getAttribute('data-pending') || '0', 10);
+            var fromName = tagCopyApply.getAttribute('data-from') || '';
+            var toName = tagCopyApply.getAttribute('data-to') || '';
+            var msg = 'Beírod a «' + toName + '» címkét ' + n + ' eseményre, ahol szerepel a «' + fromName + '»? A forráscímke megmarad.';
+            if (!window.confirm(msg)) {
+                e.preventDefault();
+            }
+        });
+    }
 })();
 </script>
 
+<?php require __DIR__ . '/partials/wp_token_input_script.php'; ?>
 <?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

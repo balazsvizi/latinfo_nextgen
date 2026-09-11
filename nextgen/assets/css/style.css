@@ -3762,6 +3762,60 @@ dialog.eventpics-modal::backdrop {
 .events-tags-bulk__hint {
     margin: 0.75rem 0 0;
 }
+.events-tags-copy {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+    max-width: 52rem;
+}
+.events-tags-copy__title {
+    margin: 0 0 0.4rem;
+    font-size: 1.05rem;
+}
+.events-tags-copy__lead {
+    margin: 0 0 0.9rem;
+}
+.events-tags-copy__pickers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem 1.1rem;
+    margin-bottom: 0.85rem;
+}
+@media (max-width: 720px) {
+    .events-tags-copy__pickers {
+        grid-template-columns: 1fr;
+    }
+}
+.events-tags-copy__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+}
+.events-tags-copy__alert {
+    margin: 0.85rem 0 0;
+}
+.events-tags-copy__result {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+.events-tags-copy__summary {
+    margin: 0 0 0.75rem;
+}
+.events-tags-copy__apply {
+    margin: 0 0 0.9rem;
+}
+.events-tags-copy__caption {
+    caption-side: top;
+    text-align: left;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+.events-tags-copy__table-wrap {
+    margin-top: 0.35rem;
+}
 .events-tags-admin__th-check,
 .events-tags-admin__td-check {
     width: 2.75rem;
