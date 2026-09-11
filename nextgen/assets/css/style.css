@@ -3807,6 +3807,13 @@ dialog.eventpics-modal::backdrop {
 .events-tags-copy__apply {
     margin: 0 0 0.9rem;
 }
+.events-tags-copy__apply-opts {
+    margin: 0 0 0.75rem;
+}
+.events-tags-copy__apply-hint {
+    margin: 0.4rem 0 0;
+    max-width: 38rem;
+}
 .events-tags-copy__caption {
     caption-side: top;
     text-align: left;

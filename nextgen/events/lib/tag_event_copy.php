@@ -182,3 +182,20 @@ function events_tag_copy_apply(PDO $db, int $fromId, int $toId): int {
 
     return $ins->rowCount();
 }
+
+/**
+ * Leválasztja a forráscímkét azokról az eseményekről, ahol a célcímke már szerepel.
+ */
+function events_tag_copy_remove_source(PDO $db, int $fromId, int $toId): int {
+    $st = $db->prepare('
+        DELETE src
+        FROM `events_calendar_event_tags` AS src
+        INNER JOIN `events_calendar_event_tags` AS dst
+            ON dst.`event_id` = src.`event_id` AND dst.`tag_id` = ?
+        WHERE src.`tag_id` = ?
+    ');
+    $st->execute([$toId, $fromId]);
+
+    return $st->rowCount();
+}
+

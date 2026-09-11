@@ -34,7 +34,7 @@ $listLimitHidden = trim((string) ($_GET['list_limit'] ?? ''));
     <h3 class="events-tags-copy__title" id="events-tags-copy-title">Címke ellenőrző</h3>
     <p class="help events-tags-copy__lead">
         Válassz ki két címkét: <strong>miből</strong> (ami az eseményen már szerepel) és <strong>mi legyen</strong> (amit beírunk).
-        A forráscímke megmarad; a célcímke csak oda kerül, ahol még nincs.
+        A célcímke csak oda kerül, ahol még nincs. A beírásnál opcionálisan a forráscímke is levételre kerülhet.
     </p>
 
     <form method="get" action="<?= h(events_url('tags.php')) ?>" class="events-tags-copy__form" id="events-tags-copy-form">
@@ -105,18 +105,21 @@ $listLimitHidden = trim((string) ($_GET['list_limit'] ?? ''));
                 Ebből <?= (int) $alreadyCount ?> eseményen már ott van a <strong><?= h($toName) ?></strong>.
                 <?php if ($pendingCount > 0): ?>
                     <strong><?= (int) $pendingCount ?> eseményre</strong> írható be.
+                <?php elseif ($sourceCount > 0): ?>
+                    A célcímke minden érintett eseményen megvan; a forráscímke opcionálisan törölhető róluk.
                 <?php else: ?>
-                    Nincs teendő: a célcímke minden érintett eseményen megvan, vagy a forráscímke egy eseményen sem szerepel.
+                    Nincs teendő: a forráscímke egy eseményen sem szerepel.
                 <?php endif; ?>
             </p>
 
-            <?php if ($pendingCount > 0): ?>
+            <?php if ($sourceCount > 0): ?>
                 <form
                     method="post"
                     action="<?= h(events_url('tags.php')) ?>"
                     class="events-tags-copy__apply"
                     id="events-tags-copy-apply"
                     data-pending="<?= (int) $pendingCount ?>"
+                    data-source="<?= (int) $sourceCount ?>"
                     data-from="<?= h($fromName) ?>"
                     data-to="<?= h($toName) ?>"
                 >
@@ -127,8 +130,22 @@ $listLimitHidden = trim((string) ($_GET['list_limit'] ?? ''));
                     <?php if ($listLimitHidden !== ''): ?>
                         <input type="hidden" name="list_limit" value="<?= h($listLimitHidden) ?>">
                     <?php endif; ?>
-                    <button type="submit" class="btn btn-primary">
-                        Beírás <?= (int) $pendingCount ?> eseményre
+                    <div class="events-tags-copy__apply-opts">
+                        <label class="events-toggle" for="remove_source_tag">
+                            <input type="checkbox" name="remove_source_tag" value="1" id="remove_source_tag" class="events-toggle__input">
+                            <span class="events-toggle__ui" aria-hidden="true"></span>
+                            <span class="events-toggle__label">Forráscímke törlése az eseményekről</span>
+                        </label>
+                        <p class="help events-tags-copy__apply-hint">
+                            Ha be van kapcsolva, a <strong><?= h($fromName) ?></strong> címke lekerül az érintett eseményekről, miután a <strong><?= h($toName) ?></strong> rajtuk van. Maga a címke nem törlődik a listából.
+                        </p>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="events-tags-copy-apply-btn">
+                        <?php if ($pendingCount > 0): ?>
+                            Beírás <?= (int) $pendingCount ?> eseményre
+                        <?php else: ?>
+                            Alkalmazás
+                        <?php endif; ?>
                     </button>
                 </form>
             <?php endif; ?>

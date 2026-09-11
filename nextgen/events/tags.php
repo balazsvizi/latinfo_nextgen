@@ -169,14 +169,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $fromName = $pair['from']['name'];
         $toName = $pair['to']['name'];
+        $removeSource = (string) ($_POST['remove_source_tag'] ?? '') === '1';
         $before = events_tag_copy_preview($db, $pair['from'], $pair['to']);
-        if ($before['pending_count'] === 0) {
+        if ($before['source_count'] === 0) {
+            flash('success', 'Nem volt teendő: a «' . $fromName . '» címke egy eseményen sem szerepel.');
+            redirect(events_tags_admin_url($copyReturn));
+        }
+        if ($before['pending_count'] === 0 && !$removeSource) {
             flash('success', 'Nem volt teendő: a «' . $toName . '» címke már szerepel minden érintett eseményen.');
             redirect(events_tags_admin_url($copyReturn));
         }
         try {
             $db->beginTransaction();
-            events_tag_copy_apply($db, $fromId, $toId);
+            if ($before['pending_count'] > 0) {
+                events_tag_copy_apply($db, $fromId, $toId);
+            }
+            if ($removeSource) {
+                events_tag_copy_remove_source($db, $fromId, $toId);
+            }
             $db->commit();
         } catch (Throwable $e) {
             if ($db->inTransaction()) {
@@ -188,16 +198,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $after = events_tag_copy_preview($db, $pair['from'], $pair['to']);
         $applied = max(0, $before['pending_count'] - $after['pending_count']);
-        if ($applied === 0) {
+        if ($removeSource) {
+            $applied = max($applied, $before['pending_count']);
+        }
+        $removed = max(0, $before['source_count'] - $after['source_count']);
+        $parts = [];
+        if ($applied > 0) {
+            $parts[] = $applied . ' eseményre beírva: «' . $fromName . '» → «' . $toName . '»';
+        }
+        if ($removeSource && $removed > 0) {
+            $parts[] = 'a forráscímke lekerült ' . $removed . ' eseményről';
+        }
+        if ($parts === []) {
             flash('success', 'Nem volt teendő: a «' . $toName . '» címke már szerepel minden érintett eseményen.');
         } else {
-            flash('success', $applied . ' eseményre beírva: «' . $fromName . '» → «' . $toName . '».');
+            flash('success', implode('; ', $parts) . '.');
+        }
+        $logBits = [$fromName . ' (' . $fromId . ') → ' . $toName . ' (' . $toId . ')', $applied . ' esemény'];
+        if ($removeSource) {
+            $logBits[] = 'forrás törölve: ' . $removed . ' esemény';
         }
         rendszer_log(
             'tag',
             $toId,
             'Címke áttöltés',
-            $fromName . ' (' . $fromId . ') → ' . $toName . ' (' . $toId . '); ' . $applied . ' esemény'
+            implode('; ', $logBits)
         );
         redirect(events_tags_admin_url($copyReturn));
     }
@@ -771,11 +796,36 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
     var tagCopyApply = document.getElementById('events-tags-copy-apply');
     if (tagCopyApply) {
+        var removeSourceCb = document.getElementById('remove_source_tag');
+        var applyBtn = document.getElementById('events-tags-copy-apply-btn');
+        function syncTagCopyApplyBtn() {
+            if (!applyBtn) return;
+            var pending = parseInt(tagCopyApply.getAttribute('data-pending') || '0', 10);
+            var removeOn = !!(removeSourceCb && removeSourceCb.checked);
+            applyBtn.disabled = pending <= 0 && !removeOn;
+        }
+        if (removeSourceCb) {
+            removeSourceCb.addEventListener('change', syncTagCopyApplyBtn);
+        }
+        syncTagCopyApplyBtn();
         tagCopyApply.addEventListener('submit', function (e) {
             var n = parseInt(tagCopyApply.getAttribute('data-pending') || '0', 10);
+            var sourceN = parseInt(tagCopyApply.getAttribute('data-source') || '0', 10);
             var fromName = tagCopyApply.getAttribute('data-from') || '';
             var toName = tagCopyApply.getAttribute('data-to') || '';
-            var msg = 'Beírod a «' + toName + '» címkét ' + n + ' eseményre, ahol szerepel a «' + fromName + '»? A forráscímke megmarad.';
+            var removeOn = !!(removeSourceCb && removeSourceCb.checked);
+            if (n <= 0 && !removeOn) {
+                e.preventDefault();
+                return;
+            }
+            var msg;
+            if (removeOn && n > 0) {
+                msg = 'Beírod a «' + toName + '» címkét ' + n + ' eseményre, és törlöd a «' + fromName + '» címkét az érintett eseményekről?';
+            } else if (removeOn) {
+                msg = 'Törlöd a «' + fromName + '» címkét ' + sourceN + ' eseményről? A «' + toName + '» címke megmarad.';
+            } else {
+                msg = 'Beírod a «' + toName + '» címkét ' + n + ' eseményre, ahol szerepel a «' + fromName + '»? A forráscímke megmarad.';
+            }
             if (!window.confirm(msg)) {
                 e.preventDefault();
             }
