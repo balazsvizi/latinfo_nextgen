@@ -75,26 +75,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hiba = 'Már létezik ilyen nevű címke / DJ.';
                 } else {
                     try {
-                        events_tags_ensure_profile_columns($db);
-                        $db->beginTransaction();
-                        $upd = $db->prepare('UPDATE `events_tags` SET `name` = ? WHERE `id` = ?');
-                        $upd->execute([$name, $id]);
-                        $typeCodes = events_load_tag_type_codes($db, $id);
-                        if (!in_array('dj', $typeCodes, true)) {
-                            $typeCodes[] = 'dj';
+                        $ensure = events_tags_ensure_profile_columns($db);
+                        $blockErr = events_tag_profile_ensure_blocking_error($ensure, $profileIn);
+                        if ($blockErr !== null) {
+                            $hiba = $blockErr;
+                        } else {
+                            $db->beginTransaction();
+                            $upd = $db->prepare('UPDATE `events_tags` SET `name` = ? WHERE `id` = ?');
+                            $upd->execute([$name, $id]);
+                            $typeCodes = events_load_tag_type_codes($db, $id);
+                            if (!in_array('dj', $typeCodes, true)) {
+                                $typeCodes[] = 'dj';
+                            }
+                            events_save_tag_types($db, $id, $typeCodes);
+                            $slug = events_tag_set_dj_slug($db, $id, $name, $slug) ?? $slug;
+                            $saveErr = events_tag_profile_save($db, $id, $profileIn);
+                            if ($saveErr !== null) {
+                                throw new RuntimeException($saveErr);
+                            }
+                            if ($db->inTransaction()) {
+                                $db->commit();
+                            }
+                            rendszer_log('tag', $id, 'DJ módosítva', $name);
+                            flash('success', 'Mentve.');
+                            redirect(events_url('dj_szerkeszt.php?id=') . $id);
                         }
-                        events_save_tag_types($db, $id, $typeCodes);
-                        $slug = events_tag_set_dj_slug($db, $id, $name, $slug) ?? $slug;
-                        $saveErr = events_tag_profile_save($db, $id, $profileIn);
-                        if ($saveErr !== null) {
-                            throw new RuntimeException($saveErr);
-                        }
-                        if ($db->inTransaction()) {
-                            $db->commit();
-                        }
-                        rendszer_log('tag', $id, 'DJ módosítva', $name);
-                        flash('success', 'Mentve.');
-                        redirect(events_url('dj_szerkeszt.php?id=') . $id);
                     } catch (Throwable $e) {
                         if ($db->inTransaction()) {
                             $db->rollBack();

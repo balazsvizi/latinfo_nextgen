@@ -93,74 +93,210 @@ function events_tag_profile_present_columns(PDO $db, bool $forceRefresh = false)
 }
 
 /**
+ * Profil oszlop ALTER utasítások (első sikeres változat érvényes).
+ * URL mezők TEXT: elkerüli a MySQL „Row size too large” hibát sok VARCHAR(2000) mellett.
+ *
+ * @return array<string, list<string>>
+ */
+function events_tag_profile_column_alter_sqls(): array {
+    return [
+        'description' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `description` TEXT NULL',
+        ],
+        'photo_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `photo_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `photo_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'photo_fit' => [
+            "ALTER TABLE `events_tags` ADD COLUMN `photo_fit` VARCHAR(16) NOT NULL DEFAULT 'cover'",
+        ],
+        'photo_focus_x' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `photo_focus_x` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        ],
+        'photo_focus_y' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `photo_focus_y` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        ],
+        'photo_zoom' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `photo_zoom` SMALLINT UNSIGNED NOT NULL DEFAULT 100',
+        ],
+        'logo_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `logo_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `logo_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'logo_fit' => [
+            "ALTER TABLE `events_tags` ADD COLUMN `logo_fit` VARCHAR(16) NOT NULL DEFAULT 'contain'",
+        ],
+        'logo_focus_x' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `logo_focus_x` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        ],
+        'logo_focus_y' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `logo_focus_y` TINYINT UNSIGNED NOT NULL DEFAULT 50',
+        ],
+        'logo_zoom' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `logo_zoom` SMALLINT UNSIGNED NOT NULL DEFAULT 100',
+        ],
+        'website_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `website_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `website_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'facebook_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `facebook_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `facebook_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'instagram_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'soundcloud_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `soundcloud_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `soundcloud_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'youtube_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `youtube_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `youtube_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'mixcloud_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `mixcloud_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `mixcloud_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'email' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `email` VARCHAR(255) NULL DEFAULT NULL',
+        ],
+        'email_is_private' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `email_is_private` TINYINT(1) NOT NULL DEFAULT 0',
+        ],
+        'phone' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `phone` VARCHAR(64) NULL DEFAULT NULL',
+        ],
+        'phone_is_private' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `phone_is_private` TINYINT(1) NOT NULL DEFAULT 0',
+        ],
+        'admin_notes' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `admin_notes` TEXT NULL',
+        ],
+    ];
+}
+
+/**
  * Profil oszlopok létrehozása futás közben (migráció nélkül).
  *
- * @return list<string> még mindig hiányzó oszlopnevek
+ * @return array{missing: list<string>, errors: array<string, string>}
  */
 function events_tags_ensure_profile_columns(PDO $db): array {
+    $wanted = events_tag_profile_column_names();
+
     if (!events_tags_tables_available($db)) {
-        return events_tag_profile_column_names();
+        return [
+            'missing' => $wanted,
+            'errors' => ['_table' => 'Az events_tags tábla nem elérhető.'],
+        ];
     }
     // DDL tranzakción belül implicit commitot okoz (MySQL) — ne futtassuk.
     if ($db->inTransaction()) {
-        return array_values(array_diff(
-            events_tag_profile_column_names(),
-            events_tag_profile_present_columns($db, true)
-        ));
+        return [
+            'missing' => array_values(array_diff($wanted, events_tag_profile_present_columns($db, true))),
+            'errors' => ['_tx' => 'Tranzakción belül nem futtatható ALTER.'],
+        ];
     }
-    $alters = [
-        'description' => 'ALTER TABLE `events_tags` ADD COLUMN `description` TEXT NULL DEFAULT NULL',
-        'photo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'photo_fit' => "ALTER TABLE `events_tags` ADD COLUMN `photo_fit` VARCHAR(16) NOT NULL DEFAULT 'cover'",
-        'photo_focus_x' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_focus_x` TINYINT UNSIGNED NOT NULL DEFAULT 50',
-        'photo_focus_y' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_focus_y` TINYINT UNSIGNED NOT NULL DEFAULT 50',
-        'photo_zoom' => 'ALTER TABLE `events_tags` ADD COLUMN `photo_zoom` SMALLINT UNSIGNED NOT NULL DEFAULT 100',
-        'logo_url' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'logo_fit' => "ALTER TABLE `events_tags` ADD COLUMN `logo_fit` VARCHAR(16) NOT NULL DEFAULT 'contain'",
-        'logo_focus_x' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_focus_x` TINYINT UNSIGNED NOT NULL DEFAULT 50',
-        'logo_focus_y' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_focus_y` TINYINT UNSIGNED NOT NULL DEFAULT 50',
-        'logo_zoom' => 'ALTER TABLE `events_tags` ADD COLUMN `logo_zoom` SMALLINT UNSIGNED NOT NULL DEFAULT 100',
-        'website_url' => 'ALTER TABLE `events_tags` ADD COLUMN `website_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'facebook_url' => 'ALTER TABLE `events_tags` ADD COLUMN `facebook_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'instagram_url' => 'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'soundcloud_url' => 'ALTER TABLE `events_tags` ADD COLUMN `soundcloud_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'youtube_url' => 'ALTER TABLE `events_tags` ADD COLUMN `youtube_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'mixcloud_url' => 'ALTER TABLE `events_tags` ADD COLUMN `mixcloud_url` VARCHAR(2000) NULL DEFAULT NULL',
-        'email' => 'ALTER TABLE `events_tags` ADD COLUMN `email` VARCHAR(255) NULL DEFAULT NULL',
-        'email_is_private' => 'ALTER TABLE `events_tags` ADD COLUMN `email_is_private` TINYINT(1) NOT NULL DEFAULT 0',
-        'phone' => 'ALTER TABLE `events_tags` ADD COLUMN `phone` VARCHAR(64) NULL DEFAULT NULL',
-        'phone_is_private' => 'ALTER TABLE `events_tags` ADD COLUMN `phone_is_private` TINYINT(1) NOT NULL DEFAULT 0',
-        'admin_notes' => 'ALTER TABLE `events_tags` ADD COLUMN `admin_notes` TEXT NULL DEFAULT NULL',
-    ];
+
+    $alters = events_tag_profile_column_alter_sqls();
     $present = array_fill_keys(events_tag_profile_present_columns($db, true), true);
-    foreach ($alters as $col => $sql) {
+    $errors = [];
+
+    foreach ($alters as $col => $sqlList) {
         if (isset($present[$col])) {
             continue;
         }
-        try {
-            $db->exec($sql);
-            $present[$col] = true;
-        } catch (PDOException $e) {
-            $msg = $e->getMessage();
-            // Már létezik → sikeresnek tekintjük.
-            if (
-                str_contains($msg, 'Duplicate column')
-                || str_contains($msg, '1060')
-                || str_contains(strtolower($msg), 'already exists')
-            ) {
-                $present[$col] = true;
-                continue;
+        $lastErr = '';
+        $ok = false;
+        foreach ($sqlList as $sql) {
+            try {
+                $db->exec($sql);
+                $ok = true;
+                break;
+            } catch (PDOException $e) {
+                $msg = $e->getMessage();
+                if (
+                    str_contains($msg, 'Duplicate column')
+                    || str_contains($msg, '1060')
+                    || str_contains(strtolower($msg), 'already exists')
+                ) {
+                    $ok = true;
+                    break;
+                }
+                $lastErr = $msg;
             }
-            error_log('events_tags_ensure_profile_columns ' . $col . ': ' . $msg);
+        }
+        if ($ok) {
+            $present[$col] = true;
+            continue;
+        }
+        if ($lastErr !== '') {
+            $errors[$col] = $lastErr;
+            error_log('events_tags_ensure_profile_columns ' . $col . ': ' . $lastErr);
         }
     }
+
     $fresh = events_tag_profile_present_columns($db, true);
-    $missing = array_values(array_diff(events_tag_profile_column_names(), $fresh));
+    $missing = array_values(array_diff($wanted, $fresh));
     if ($missing !== []) {
         error_log('events_tags_ensure_profile_columns still missing: ' . implode(', ', $missing));
     }
 
-    return $missing;
+    return [
+        'missing' => $missing,
+        'errors' => $errors,
+    ];
+}
+
+/**
+ * Hiányzó oszlopokhoz ajánlott ALTER SQL (kézi futtatáshoz).
+ *
+ * @param list<string> $columns
+ * @return list<string>
+ */
+function events_tag_profile_manual_alter_sql(array $columns): array {
+    $map = events_tag_profile_column_alter_sqls();
+    $out = [];
+    foreach ($columns as $col) {
+        $col = (string) $col;
+        if ($col === '' || !isset($map[$col][0])) {
+            continue;
+        }
+        $out[] = rtrim((string) $map[$col][0], ';') . ';';
+    }
+
+    return $out;
+}
+
+/**
+ * Ensure eredmény + profil → mentést blokkoló hibaüzenet, vagy null.
+ *
+ * @param array{missing: list<string>, errors: array<string, string>} $ensure
+ * @param array<string, string> $profile
+ */
+function events_tag_profile_ensure_blocking_error(array $ensure, array $profile): ?string {
+    $blocking = [];
+    foreach ($ensure['missing'] as $missingCol) {
+        if (events_tag_profile_column_has_value((string) $missingCol, $profile)) {
+            $blocking[] = (string) $missingCol;
+        }
+    }
+    if ($blocking === []) {
+        return null;
+    }
+    $sqls = events_tag_profile_manual_alter_sql($blocking);
+    $msg = 'Egyes profilmezők nem menthetők (hiányzó adatbázis-oszlop: '
+        . implode(', ', $blocking) . ').';
+    if ($sqls !== []) {
+        $msg .= ' Futtasd phpMyAdminban: ' . implode(' ', $sqls);
+    }
+    $firstErr = (string) ($ensure['errors'][$blocking[0]] ?? '');
+    if ($firstErr !== '') {
+        $msg .= ' (' . $firstErr . ')';
+    }
+
+    return $msg;
 }
 
 /**
@@ -517,9 +653,11 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): ?string {
     if ($tagId <= 0) {
         return null;
     }
+    $ensureErrors = [];
     // Ne hívjunk ALTER-t tranzakción belül.
     if (!$db->inTransaction()) {
-        events_tags_ensure_profile_columns($db);
+        $ensure = events_tags_ensure_profile_columns($db);
+        $ensureErrors = $ensure['errors'];
     }
     $cols = events_tag_profile_present_columns($db, true);
     if ($cols === []) {
@@ -537,10 +675,21 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): ?string {
     }
     if ($unpersistable !== []) {
         error_log('events_tag_profile_save missing columns: ' . implode(', ', $unpersistable));
-
-        return 'Egyes profilmezők nem menthetők (hiányzó adatbázis-oszlop: '
+        $sqls = events_tag_profile_manual_alter_sql($unpersistable);
+        $msg = 'Egyes profilmezők nem menthetők (hiányzó adatbázis-oszlop: '
             . implode(', ', $unpersistable)
-            . '). Ellenőrizd az adatbázis jogosultságokat, vagy futtasd az ALTER-t kézzel.';
+            . ').';
+        if ($sqls !== []) {
+            $msg .= ' Futtasd phpMyAdminban: ' . implode(' ', $sqls);
+        }
+        foreach ($unpersistable as $col) {
+            if (isset($ensureErrors[$col]) && $ensureErrors[$col] !== '') {
+                $msg .= ' (' . $col . ': ' . $ensureErrors[$col] . ')';
+                break;
+            }
+        }
+
+        return $msg;
     }
     $sets = [];
     $params = [];
