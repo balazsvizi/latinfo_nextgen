@@ -2550,6 +2550,12 @@ a.event-hero-chip--category-link:hover {
     opacity: 0.85;
 }
 
+.dj-public__contact-emoji {
+    flex: 0 0 auto;
+    font-size: 0.95em;
+    line-height: 1;
+}
+
 .dj-public__bio {
     margin: 0;
 }

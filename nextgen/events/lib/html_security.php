@@ -148,7 +148,12 @@ function events_normalize_safe_url(?string $raw, bool $allowRelative = true): ar
         return [$u, null];
     }
     if (!preg_match('#^https?://#i', $u)) {
-        return [null, 'A link csak http:// vagy https:// lehet.'];
+        // www.példa.hu/... → https://www.példa.hu/...
+        if (preg_match('#^(www\.)?[a-z0-9][a-z0-9.-]*\.[a-z]{2,}([/:?\#].*)?$#i', $u)) {
+            $u = 'https://' . $u;
+        } else {
+            return [null, 'A link csak http:// vagy https:// lehet.'];
+        }
     }
     if (!events_http_https_url_is_acceptable($u)) {
         return [null, 'A link formátuma érvénytelen.'];

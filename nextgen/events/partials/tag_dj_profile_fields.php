@@ -46,27 +46,27 @@ endif;
     <div class="events-tag-dj-profile__grid">
         <div class="form-group">
             <label for="tag_website_url_<?= h($fid) ?>">Weboldal</label>
-            <input type="url" id="tag_website_url_<?= h($fid) ?>" name="tag_website_url" maxlength="2000" value="<?= h((string) ($tagProfile['website_url'] ?? '')) ?>" placeholder="https://…">
+            <input type="text" id="tag_website_url_<?= h($fid) ?>" name="tag_website_url" maxlength="2000" value="<?= h((string) ($tagProfile['website_url'] ?? '')) ?>" placeholder="https://…" inputmode="url" autocomplete="url">
         </div>
         <div class="form-group">
             <label for="tag_facebook_url_<?= h($fid) ?>">Facebook</label>
-            <input type="url" id="tag_facebook_url_<?= h($fid) ?>" name="tag_facebook_url" maxlength="2000" value="<?= h((string) ($tagProfile['facebook_url'] ?? '')) ?>" placeholder="https://facebook.com/…">
+            <input type="text" id="tag_facebook_url_<?= h($fid) ?>" name="tag_facebook_url" maxlength="2000" value="<?= h((string) ($tagProfile['facebook_url'] ?? '')) ?>" placeholder="https://facebook.com/…" inputmode="url" autocomplete="url">
         </div>
         <div class="form-group">
             <label for="tag_instagram_url_<?= h($fid) ?>">Instagram</label>
-            <input type="url" id="tag_instagram_url_<?= h($fid) ?>" name="tag_instagram_url" maxlength="2000" value="<?= h((string) ($tagProfile['instagram_url'] ?? '')) ?>" placeholder="https://instagram.com/…">
+            <input type="text" id="tag_instagram_url_<?= h($fid) ?>" name="tag_instagram_url" maxlength="2000" value="<?= h((string) ($tagProfile['instagram_url'] ?? '')) ?>" placeholder="https://instagram.com/…" inputmode="url" autocomplete="url">
         </div>
         <div class="form-group">
             <label for="tag_soundcloud_url_<?= h($fid) ?>">SoundCloud</label>
-            <input type="url" id="tag_soundcloud_url_<?= h($fid) ?>" name="tag_soundcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['soundcloud_url'] ?? '')) ?>" placeholder="https://soundcloud.com/…">
+            <input type="text" id="tag_soundcloud_url_<?= h($fid) ?>" name="tag_soundcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['soundcloud_url'] ?? '')) ?>" placeholder="https://soundcloud.com/…" inputmode="url" autocomplete="url">
         </div>
         <div class="form-group">
             <label for="tag_mixcloud_url_<?= h($fid) ?>">Mixcloud</label>
-            <input type="url" id="tag_mixcloud_url_<?= h($fid) ?>" name="tag_mixcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['mixcloud_url'] ?? '')) ?>" placeholder="https://www.mixcloud.com/…">
+            <input type="text" id="tag_mixcloud_url_<?= h($fid) ?>" name="tag_mixcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['mixcloud_url'] ?? '')) ?>" placeholder="https://www.mixcloud.com/…" inputmode="url" autocomplete="url">
         </div>
         <div class="form-group">
             <label for="tag_youtube_url_<?= h($fid) ?>">YouTube</label>
-            <input type="url" id="tag_youtube_url_<?= h($fid) ?>" name="tag_youtube_url" maxlength="2000" value="<?= h((string) ($tagProfile['youtube_url'] ?? '')) ?>" placeholder="https://youtube.com/…">
+            <input type="text" id="tag_youtube_url_<?= h($fid) ?>" name="tag_youtube_url" maxlength="2000" value="<?= h((string) ($tagProfile['youtube_url'] ?? '')) ?>" placeholder="https://youtube.com/…" inputmode="url" autocomplete="url">
         </div>
         <div class="form-group events-tag-dj-privacy<?= $emailIsPrivate ? ' is-private' : '' ?>" data-dj-privacy-field>
             <div class="events-tag-dj-profile__field-head">

@@ -62,7 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $newId = (int) $db->lastInsertId();
                         events_save_tag_types($db, $newId, ['dj']);
                         $slug = events_tag_set_dj_slug($db, $newId, $name, $slug) ?? $slug;
-                        events_tag_profile_save($db, $newId, $profile);
+                        $saveErr = events_tag_profile_save($db, $newId, $profile);
+                        if ($saveErr !== null) {
+                            throw new RuntimeException($saveErr);
+                        }
                         if ($db->inTransaction()) {
                             $db->commit();
                         }
@@ -74,7 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $db->rollBack();
                         }
                         error_log('dj_letrehoz: ' . $e->getMessage());
-                        $hiba = 'Mentési hiba történt. Kérlek próbáld újra.';
+                        $hiba = $e instanceof RuntimeException
+                            ? $e->getMessage()
+                            : 'Mentési hiba történt. Kérlek próbáld újra.';
                     }
                 }
             }

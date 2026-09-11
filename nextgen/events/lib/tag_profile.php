@@ -94,14 +94,19 @@ function events_tag_profile_present_columns(PDO $db, bool $forceRefresh = false)
 
 /**
  * Profil oszlopok létrehozása futás közben (migráció nélkül).
+ *
+ * @return list<string> még mindig hiányzó oszlopnevek
  */
-function events_tags_ensure_profile_columns(PDO $db): void {
+function events_tags_ensure_profile_columns(PDO $db): array {
     if (!events_tags_tables_available($db)) {
-        return;
+        return events_tag_profile_column_names();
     }
     // DDL tranzakción belül implicit commitot okoz (MySQL) — ne futtassuk.
     if ($db->inTransaction()) {
-        return;
+        return array_values(array_diff(
+            events_tag_profile_column_names(),
+            events_tag_profile_present_columns($db, true)
+        ));
     }
     $alters = [
         'description' => 'ALTER TABLE `events_tags` ADD COLUMN `description` TEXT NULL DEFAULT NULL',
@@ -136,10 +141,39 @@ function events_tags_ensure_profile_columns(PDO $db): void {
             $db->exec($sql);
             $present[$col] = true;
         } catch (PDOException $e) {
-            error_log('events_tags_ensure_profile_columns ' . $col . ': ' . $e->getMessage());
+            $msg = $e->getMessage();
+            // Már létezik → sikeresnek tekintjük.
+            if (
+                str_contains($msg, 'Duplicate column')
+                || str_contains($msg, '1060')
+                || str_contains(strtolower($msg), 'already exists')
+            ) {
+                $present[$col] = true;
+                continue;
+            }
+            error_log('events_tags_ensure_profile_columns ' . $col . ': ' . $msg);
         }
     }
-    events_tag_profile_present_columns($db, true);
+    $fresh = events_tag_profile_present_columns($db, true);
+    $missing = array_values(array_diff(events_tag_profile_column_names(), $fresh));
+    if ($missing !== []) {
+        error_log('events_tags_ensure_profile_columns still missing: ' . implode(', ', $missing));
+    }
+
+    return $missing;
+}
+
+/**
+ * Van-e mentendő érték egy profiloszlophoz (üres defaultól eltérő).
+ *
+ * @param array<string, string> $profile
+ */
+function events_tag_profile_column_has_value(string $column, array $profile): bool {
+    $empty = events_tag_profile_empty();
+    $current = (string) ($profile[$column] ?? '');
+    $default = (string) ($empty[$column] ?? '');
+
+    return $current !== $default;
 }
 
 /**
@@ -476,31 +510,37 @@ function events_tag_profile_from_post(): array {
 }
 
 /**
- * @param array{
- *   description: string,
- *   photo_url: string,
- *   logo_url: string,
- *   website_url: string,
- *   facebook_url: string,
- *   instagram_url: string,
- *   soundcloud_url: string,
- *   youtube_url: string,
- *   mixcloud_url: string,
- *   email: string,
- *   email_is_private: string,
- *   phone: string,
- *   phone_is_private: string,
- *   admin_notes: string
- * } $profile
+ * @param array<string, string> $profile
+ * @return ?string hibaüzenet, vagy null siker esetén
  */
-function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
+function events_tag_profile_save(PDO $db, int $tagId, array $profile): ?string {
     if ($tagId <= 0) {
-        return;
+        return null;
     }
-    // Ne hívjunk itt ALTER-t: tranzakción belül implicit commitot okozhat.
-    $cols = events_tag_profile_present_columns($db);
+    // Ne hívjunk ALTER-t tranzakción belül.
+    if (!$db->inTransaction()) {
+        events_tags_ensure_profile_columns($db);
+    }
+    $cols = events_tag_profile_present_columns($db, true);
     if ($cols === []) {
-        return;
+        return 'A profilmezők mentése sikertelen (nincsenek profil-oszlopok).';
+    }
+    $present = array_fill_keys($cols, true);
+    $unpersistable = [];
+    foreach (events_tag_profile_column_names() as $col) {
+        if (isset($present[$col])) {
+            continue;
+        }
+        if (events_tag_profile_column_has_value($col, $profile)) {
+            $unpersistable[] = $col;
+        }
+    }
+    if ($unpersistable !== []) {
+        error_log('events_tag_profile_save missing columns: ' . implode(', ', $unpersistable));
+
+        return 'Egyes profilmezők nem menthetők (hiányzó adatbázis-oszlop: '
+            . implode(', ', $unpersistable)
+            . '). Ellenőrizd az adatbázis jogosultságokat, vagy futtasd az ALTER-t kézzel.';
     }
     $sets = [];
     $params = [];
@@ -511,6 +551,8 @@ function events_tag_profile_save(PDO $db, int $tagId, array $profile): void {
     $params[] = $tagId;
     $st = $db->prepare('UPDATE `events_tags` SET ' . implode(', ', $sets) . ' WHERE `id` = ?');
     $st->execute($params);
+
+    return null;
 }
 
 /**

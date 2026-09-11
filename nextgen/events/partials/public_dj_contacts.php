@@ -64,8 +64,8 @@ $svgAttrs = 'class="dj-public__contact-svg" viewBox="0 0 24 24" width="16" heigh
     <?php endif; ?>
     <?php if ($email !== ''): ?>
         <a class="dj-public__contact" href="mailto:<?= h($email) ?>">
-            <svg <?= $svgAttrs ?>><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></svg>
-            <span><?= h($email) ?></span>
+            <span class="dj-public__contact-emoji" aria-hidden="true">✉️</span>
+            <span><?= h((string) ($G['dj_link_email'] ?? 'e-mail')) ?></span>
         </a>
     <?php endif; ?>
     <?php if ($phone !== ''): ?>
