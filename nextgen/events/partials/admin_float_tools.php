@@ -7,6 +7,8 @@ declare(strict_types=1);
  * @var list<array{
  *     href?: string,
  *     submit_form?: string,
+ *     name?: string,
+ *     value?: string,
  *     title: string,
  *     aria?: string,
  *     icon: 'eye'|'copy'|'back'|'calendar'|'plus'|'edit'|'list'|'map'|'home'|'save'|string,
@@ -67,6 +69,8 @@ $adminFloatToolIcons = [
         $iconMarkup = $adminFloatToolIcons[$icon] ?? $adminFloatToolIcons['edit'];
         $submitForm = trim((string) ($btn['submit_form'] ?? ''));
         if ($submitForm !== ''):
+            $submitName = isset($btn['name']) && is_string($btn['name']) ? trim($btn['name']) : '';
+            $submitValue = isset($btn['value']) && is_string($btn['value']) ? $btn['value'] : null;
             ?>
             <button
                 type="submit"
@@ -74,6 +78,8 @@ $adminFloatToolIcons = [
                 class="events-edit-float-tools__btn"
                 title="<?= h($title) ?>"
                 aria-label="<?= h($aria !== '' ? $aria : $title) ?>"
+                <?= $submitName !== '' ? 'name="' . h($submitName) . '"' : '' ?>
+                <?= $submitName !== '' && $submitValue !== null ? 'value="' . h($submitValue) . '"' : '' ?>
             >
                 <svg class="events-edit-float-tools__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><?= $iconMarkup ?></svg>
             </button>

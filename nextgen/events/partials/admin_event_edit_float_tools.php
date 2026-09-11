@@ -11,7 +11,16 @@ declare(strict_types=1);
  */
 $eventEditPreviewUrl = $eventEditPreviewUrl ?? null;
 
-$adminFloatTools = [];
+$adminFloatTools = [
+    [
+        'submit_form' => 'events-edit-form',
+        'title' => 'Mentés',
+        'aria' => 'Mentés',
+        'icon' => 'save',
+        'name' => 'form_action',
+        'value' => 'save',
+    ],
+];
 if ($eventEditPreviewUrl !== null && $eventEditPreviewUrl !== '') {
     $adminFloatTools[] = [
         'href' => $eventEditPreviewUrl,

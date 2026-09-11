@@ -92,9 +92,10 @@
         var form = textarea.closest('form');
         if (form) {
             // Capture: a böngésző HTML5 validációja előtt (pl. required a rejtett textarea-n).
-            form.addEventListener('click', function (e) {
+            // A lebegő eszköztár submit gombja a formon kívül van (form attribútummal).
+            document.addEventListener('click', function (e) {
                 var submitter = e.target.closest('button[type="submit"], input[type="submit"]');
-                if (!submitter || !form.contains(submitter)) {
+                if (!submitter || submitter.form !== form) {
                     return;
                 }
                 syncEditorToTextarea();
