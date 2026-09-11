@@ -53,10 +53,6 @@ $orderSql = match ($order) {
     default => 'e.id DESC',
 };
 
-$countSql = "SELECT COUNT(*) FROM {$poolFromSql} {$whereSql}";
-$countStmt = $db->prepare($countSql);
-$countStmt->execute($params);
-$listDisplayedCount = (int) $countStmt->fetchColumn();
 $listLimitValue = $filters['list_limit_value'];
 $listTotalInDb = events_admin_table_total_count($db, 'events_calendar_events');
 
@@ -73,6 +69,7 @@ $sql = "
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$listDisplayedCount = count($rows);
 
 $categoriesByEventId = [];
 $tagsByEventId = [];

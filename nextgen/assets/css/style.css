@@ -3587,6 +3587,16 @@ dialog.eventpics-modal::backdrop {
     margin-top: 0.85rem;
 }
 
+.events-dj-edit-form .events-dj-edit-toolbar--top,
+.events-dj-edit-form .events-dj-edit-toolbar--bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+}
+.events-dj-edit-form .events-dj-edit-toolbar--top {
+    margin-bottom: 0.85rem;
+}
 .events-dj-edit-form .events-dj-edit-toolbar--bottom {
     margin-top: 0.85rem;
 }
@@ -3594,6 +3604,10 @@ dialog.eventpics-modal::backdrop {
 .events-dj-edit-form .events-dj-edit-save-wide {
     width: 100%;
     justify-content: center;
+}
+
+.events-dj-edit-form .events-dj-edit-delete-hint {
+    margin: 0.15rem 0 0;
 }
 
 /* Címke típus chip-ek a táblázatban */

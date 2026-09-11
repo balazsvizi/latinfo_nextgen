@@ -47,6 +47,31 @@ $djLogoPick = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('dj_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet.';
+    } elseif ((string) ($_POST['form_action'] ?? 'save') === 'delete') {
+        $stUse = $db->prepare('SELECT COUNT(*) FROM `events_calendar_event_tags` WHERE `tag_id` = ?');
+        $stUse->execute([$id]);
+        $useCnt = (int) $stUse->fetchColumn();
+        if ($useCnt > 0) {
+            $hiba = 'A DJ nem törölhető, mert ' . $useCnt . ' eseményhez van rendelve.';
+        } else {
+            try {
+                $db->beginTransaction();
+                if (events_tag_types_tables_available($db)) {
+                    $db->prepare('DELETE FROM `events_tag_type_links` WHERE `tag_id` = ?')->execute([$id]);
+                }
+                $db->prepare('DELETE FROM `events_tags` WHERE `id` = ?')->execute([$id]);
+                $db->commit();
+                rendszer_log('tag', $id, 'DJ törölve', $name);
+                flash('success', 'DJ törölve.');
+                redirect(events_url('djs_admin.php'));
+            } catch (Throwable $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                error_log('dj_szerkeszt torles: ' . $e->getMessage());
+                $hiba = 'A törlés nem sikerült. Kérlek próbáld újra.';
+            }
+        }
     } else {
         $name = trim((string) ($_POST['name'] ?? ''));
         $slug = trim((string) ($_POST['slug'] ?? ''));
@@ -130,6 +155,14 @@ $publicUrl = $slug !== ''
     ? events_public_dj_page_url($slug, 'hu')
     : events_public_tag_page_url($id, 'hu');
 
+$djEventCount = 0;
+if (events_tags_tables_available($db)) {
+    $stUse = $db->prepare('SELECT COUNT(*) FROM `events_calendar_event_tags` WHERE `tag_id` = ?');
+    $stUse->execute([$id]);
+    $djEventCount = (int) $stUse->fetchColumn();
+}
+$djEventsListUrl = events_url('events_admin.php') . '?' . http_build_query(['f_dj' => (string) $id], '', '&', PHP_QUERY_RFC3986);
+
 $adminFloatTools = [
     [
         'submit_form' => 'dj-edit-form',
@@ -199,9 +232,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
             </div>
             <aside class="events-edit-sidebar">
-                <div class="toolbar">
-                    <button type="submit" class="btn btn-primary">Mentés</button>
-                    <a href="<?= h(events_url('djs_admin.php')) ?>" class="btn btn-secondary">← DJ-k listája</a>
+                <div class="toolbar events-dj-edit-toolbar--top">
+                    <button type="submit" class="btn btn-primary events-dj-edit-save-wide" name="form_action" value="save">Mentés</button>
                 </div>
                 <div class="events-edit-panel">
                     <?php
@@ -218,7 +250,23 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     ?>
                 </div>
                 <div class="toolbar events-dj-edit-toolbar--bottom">
-                    <button type="submit" class="btn btn-primary events-dj-edit-save-wide">Mentés</button>
+                    <button type="submit" class="btn btn-primary events-dj-edit-save-wide" name="form_action" value="save">Mentés</button>
+                    <?php if ($djEventCount === 0): ?>
+                        <button
+                            type="submit"
+                            class="btn btn-danger events-dj-edit-save-wide"
+                            name="form_action"
+                            value="delete"
+                            formnovalidate
+                            onclick="return confirm('Biztosan törlöd ezt a DJ-t? A művelet nem vonható vissza.');"
+                        >Törlés</button>
+                    <?php else: ?>
+                        <p class="help events-dj-edit-delete-hint">
+                            Nem törölhető:
+                            <a href="<?= h($djEventsListUrl) ?>"><?= (int) $djEventCount ?> esemény</a>
+                            használja.
+                        </p>
+                    <?php endif; ?>
                 </div>
             </aside>
         </div>

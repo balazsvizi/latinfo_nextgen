@@ -2,6 +2,7 @@
 declare(strict_types=1);
 /** @var string $listLimitValue */
 /** @var int $listTotalInDb */
+/** @var int|null $listDisplayedCount Látható (szűrt) darabszám; ha nincs, a limitből számol */
 /** @var bool $listLimitInForm select name= a szülő űrlapban */
 /** @var string $listLimitSelectId */
 /** @var int|null $listLimitDefault */
@@ -19,7 +20,11 @@ $listLimitAllLabel = $listLimitAllLabel ?? 'Mind';
 $listCountSuffix = $listCountSuffix ?? ' megjelenítve';
 $standaloneClass = empty($listLimitStandalone) ? '' : ' events-admin-list-display--standalone';
 $inlineHeadClass = !empty($listLimitInlineHead) ? ' events-admin-list-display--inline-head' : '';
-$displayCount = events_admin_list_display_limit_count($listLimitValue, $listTotalInDb);
+if (isset($listDisplayedCount) && is_int($listDisplayedCount)) {
+    $displayCount = max(0, $listDisplayedCount);
+} else {
+    $displayCount = events_admin_list_display_limit_count($listLimitValue, $listTotalInDb);
+}
 $formatCount = static fn (int $n): string => events_admin_list_format_count_compact($n);
 $countAriaLabel = $formatCount($displayCount) . ' / ' . $formatCount($listTotalInDb) . $listCountSuffix;
 $labelText = rtrim(trim((string) $listLimitLabel), ':');
