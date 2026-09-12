@@ -5342,6 +5342,23 @@ a.home-public-map-popup__title:hover {
     overflow: hidden;
 }
 
+.events-cal-preview__media-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.events-cal-preview__media-link:hover .events-cal-preview__img,
+.events-cal-preview__media-link:focus-visible .events-cal-preview__img {
+    filter: brightness(1.04);
+}
+
 .events-cal-preview__img {
     display: block;
     max-width: 100%;
@@ -5403,6 +5420,17 @@ a.home-public-map-popup__title:hover {
     font-weight: 700;
     line-height: 1.25;
     color: var(--li-green-dark);
+}
+
+.events-cal-preview__title-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.events-cal-preview__title-link:hover,
+.events-cal-preview__title-link:focus-visible {
+    color: var(--cal-preview-accent, var(--li-green-dark));
+    text-decoration: underline;
 }
 
 .events-cal-preview__facts {

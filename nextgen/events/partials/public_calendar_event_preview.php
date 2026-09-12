@@ -8,7 +8,9 @@ declare(strict_types=1);
         <button type="button" class="events-cal-preview__close" id="events-cal-preview-close" aria-label="<?= h((string) ($D['cal_preview_close'] ?? 'Bezárás')) ?>">×</button>
         <div class="events-cal-preview__handle" aria-hidden="true"></div>
         <div class="events-cal-preview__media" id="events-cal-preview-media" hidden>
-            <img class="events-cal-preview__img" id="events-cal-preview-img" src="" alt="" decoding="async">
+            <a class="events-cal-preview__media-link" id="events-cal-preview-media-link" href="#" aria-label="<?= h((string) ($D['cal_preview_details'] ?? 'Részletek')) ?>">
+                <img class="events-cal-preview__img" id="events-cal-preview-img" src="" alt="" decoding="async">
+            </a>
         </div>
         <div class="events-cal-preview__body">
             <div class="events-cal-preview__topline" id="events-cal-preview-topline" hidden>
@@ -25,7 +27,9 @@ declare(strict_types=1);
                     </div>
                 </div>
             </div>
-            <h2 class="events-cal-preview__title" id="events-cal-preview-title"></h2>
+            <h2 class="events-cal-preview__title" id="events-cal-preview-title">
+                <a class="events-cal-preview__title-link" id="events-cal-preview-title-link" href="#"></a>
+            </h2>
             <dl class="events-cal-preview__facts">
                 <div class="events-cal-preview__fact" id="events-cal-preview-venue-wrap" hidden>
                     <dt><?= h((string) ($D['cal_preview_venue'] ?? 'Helyszín')) ?></dt>
@@ -56,7 +60,8 @@ declare(strict_types=1);
         return;
     }
 
-    var titleEl = document.getElementById('events-cal-preview-title');
+    var titleEl = document.getElementById('events-cal-preview-title-link');
+    var mediaLinkEl = document.getElementById('events-cal-preview-media-link');
     var toplineEl = document.getElementById('events-cal-preview-topline');
     var metaEl = document.getElementById('events-cal-preview-meta');
     var changeWrap = document.getElementById('events-cal-preview-change');
@@ -74,7 +79,7 @@ declare(strict_types=1);
     var catsEl = document.getElementById('events-cal-preview-cats');
     var ctaEl = document.getElementById('events-cal-preview-cta');
     var closeBtn = document.getElementById('events-cal-preview-close');
-    if (!titleEl || !toplineEl || !metaEl || !mediaEl || !imgEl || !venueWrap || !venueEl || !orgWrap || !orgEl || !stylesEl || !catsEl || !ctaEl) return;
+    if (!titleEl || !mediaLinkEl || !toplineEl || !metaEl || !mediaEl || !imgEl || !venueWrap || !venueEl || !orgWrap || !orgEl || !stylesEl || !catsEl || !ctaEl) return;
 
     function setVisible(wrap, el, text) {
         var t = (text || '').trim();
@@ -216,7 +221,10 @@ declare(strict_types=1);
         setVisible(orgWrap, orgEl, data.organizer || '');
         fillStyles(stylesEl, data.mainStyles, data.supplementaryStyles);
 
-        ctaEl.href = data.url || '#';
+        var detailsUrl = data.url || '#';
+        ctaEl.href = detailsUrl;
+        titleEl.href = detailsUrl;
+        mediaLinkEl.href = detailsUrl;
         if (data.accent && /^#[0-9A-Fa-f]{6}$/.test(data.accent)) {
             dialog.style.setProperty('--cal-preview-accent', data.accent);
         } else {
