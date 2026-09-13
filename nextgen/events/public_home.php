@@ -167,7 +167,7 @@ $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];
 $canonical = events_absolute_url(events_public_home_page_url($lang));
 $ogPageUrl = $canonical;
-$cssUrl = events_url('assets/event_public.css');
+$cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $urlHu = events_public_home_lang_switch_url('hu');
 $urlEn = events_public_home_lang_switch_url('en');
 $htmlLang = $lang === 'en' ? 'en' : 'hu';

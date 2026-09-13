@@ -36,6 +36,7 @@ $headerDateLabel = events_public_calendar_month_label($monthFirst, $lang);
 $searchNameValue = trim((string) ($filters['f_name'] ?? ''));
 $searchOpen = $searchNameValue !== '';
 $emptyDayLabel = (string) ($D['mcal_empty_day'] ?? ($lang === 'en' ? 'No events on this day.' : 'Nincs esemény ezen a napon.'));
+$moreEventsLabel = (string) ($D['mcal_more_events'] ?? ($lang === 'en' ? 'More events' : 'További események'));
 $searchPh = (string) ($D['filter_name_ph'] ?? ($lang === 'en' ? 'Search in title…' : 'Keresés a címben…'));
 $viewListLabel = (string) ($D['view_list'] ?? 'Lista');
 $viewMonthLabel = (string) ($D['mcal_view_month'] ?? ($lang === 'en' ? 'Month' : 'Hónap'));
@@ -197,10 +198,19 @@ $maxDots = 3;
                                 <span class="mcal__event-change<?= ($item['changeType'] ?? '') === 'cancelled' ? ' mcal__event-change--cancelled' : (($item['changeType'] ?? '') === 'modified' ? ' mcal__event-change--modified' : '') ?>"><?= h((string) $item['changeBadge']) ?></span>
                             <?php endif; ?>
                             <span class="<?= h($nameClass) ?>"><?= h((string) $item['name']) ?></span>
+                            <?php if (trim((string) ($item['city'] ?? '')) !== ''): ?>
+                                <span class="mcal__event-city"><?= h((string) $item['city']) ?></span>
+                            <?php endif; ?>
                         </span>
                     </a>
                 <?php endforeach; ?>
             <?php endif; ?>
+        </div>
+        <div class="mcal__more" id="mcal-more" hidden>
+            <button type="button" class="mcal__more-btn" id="mcal-more-btn">
+                <span><?= h($moreEventsLabel) ?></span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
         </div>
     </section>
 </div>
@@ -233,6 +243,8 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
     var emptyLabel = root.getAttribute('data-empty') || '';
     var eventsEl = document.getElementById('mcal-events');
     var headingEl = document.getElementById('mcal-day-heading');
+    var moreEl = document.getElementById('mcal-more');
+    var moreBtn = document.getElementById('mcal-more-btn');
     var viewBtn = document.getElementById('mcal-view-btn');
     var viewMenu = document.getElementById('mcal-view-menu');
     var monthInput = document.getElementById('mcal-month-picker');
@@ -254,6 +266,35 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    function scrollMetrics() {
+        var el = document.scrollingElement || document.documentElement;
+        return {
+            scrollTop: el.scrollTop || window.pageYOffset || 0,
+            client: window.innerHeight,
+            scroll: el.scrollHeight
+        };
+    }
+
+    function updateMoreHint() {
+        if (!moreEl) return;
+        var m = scrollMetrics();
+        var canScroll = m.scroll > m.client + 12;
+        var remaining = m.scroll - (m.scrollTop + m.client);
+        moreEl.hidden = !(canScroll && remaining > 18);
+    }
+
+    function scheduleMoreHint() {
+        window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(updateMoreHint);
+        });
+    }
+
+    function scrollMore() {
+        var m = scrollMetrics();
+        var delta = Math.min(Math.max(m.client * 0.55, 120), 260);
+        window.scrollBy({ top: delta, behavior: 'smooth' });
     }
 
     function syncDayModeLink(dayKey) {
@@ -280,11 +321,13 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
             else if (it.changeType === 'modified') bClass += ' mcal__event-change--modified';
             badge = '<span class="' + bClass + '">' + esc(it.changeBadge) + '</span>';
         }
+        var city = it.city ? '<span class="mcal__event-city">' + esc(it.city) + '</span>' : '';
         return '<a class="mcal__event js-cal-event-preview" href="' + esc(it.url) + '" data-preview-id="' + esc(String(it.id)) + '" aria-haspopup="dialog">'
             + '<span class="mcal__event-meta">' + esc(it.meta) + '</span>'
             + '<span class="' + barClass + '" style="--mcal-event-accent: ' + esc(it.accent) + '">'
             + badge
             + '<span class="' + nameClass + '">' + esc(it.name) + '</span>'
+            + city
             + '</span>'
             + '</a>';
     }
@@ -299,6 +342,7 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
         if (!eventsEl) return;
         if (!items.length) {
             eventsEl.innerHTML = '<p class="mcal__empty" id="mcal-empty">' + esc(emptyLabel) + '</p>';
+            scheduleMoreHint();
             return;
         }
         var html = '';
@@ -306,6 +350,7 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
             html += renderEventHtml(items[i]);
         }
         eventsEl.innerHTML = html;
+        scheduleMoreHint();
     }
 
     function selectDay(dayKey, btn) {
@@ -463,5 +508,14 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
             }
         });
     }
+
+    if (moreBtn) {
+        moreBtn.addEventListener('click', function () {
+            scrollMore();
+        });
+    }
+    window.addEventListener('scroll', updateMoreHint, { passive: true });
+    window.addEventListener('resize', scheduleMoreHint);
+    scheduleMoreHint();
 })();
 </script>

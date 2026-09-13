@@ -55,10 +55,7 @@ $byDay = $bucket['byDay'];
 $gridDays = events_admin_calendar_grid_days($monthFirst, $monthLast);
 $gridWeeks = array_chunk($gridDays, 7);
 $weekdayLetters = events_public_mobile_calendar_weekday_letters($lang);
-$eventsByDayPayload = mcal_prototype_enrich_events_payload(
-    events_public_mobile_calendar_events_by_day_payload($byDay, $categoriesByEventId, $lang),
-    $byDay
-);
+$eventsByDayPayload = events_public_mobile_calendar_events_by_day_payload($byDay, $categoriesByEventId, $lang);
 $selectedDayKey = events_public_mobile_calendar_resolve_selected_day(
     $monthFirst,
     $byDay,

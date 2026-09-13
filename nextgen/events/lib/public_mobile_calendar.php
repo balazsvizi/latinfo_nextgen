@@ -129,6 +129,32 @@ function events_public_mobile_calendar_resolve_selected_day(
     return $monthFirst->format('Y-m-d');
 }
 
+function events_public_mobile_calendar_city_is_budapest(string $city): bool
+{
+    $normalized = mb_strtolower(trim($city), 'UTF-8');
+    if ($normalized === '') {
+        return false;
+    }
+    if ($normalized === 'budapest' || $normalized === 'bp' || $normalized === 'bp.') {
+        return true;
+    }
+
+    return str_starts_with($normalized, 'budapest');
+}
+
+/**
+ * Település a kártyán: üres, ha Budapest vagy nincs megadva.
+ */
+function events_public_mobile_calendar_outside_budapest_city(array $ev): string
+{
+    $city = trim((string) ($ev['venue_city'] ?? ''));
+    if ($city === '' || events_public_mobile_calendar_city_is_budapest($city)) {
+        return '';
+    }
+
+    return $city;
+}
+
 /**
  * @param list<array<string, mixed>> $dayEvents
  * @param array<int, list<array{color?: string}>> $categoriesByEventId
@@ -138,6 +164,7 @@ function events_public_mobile_calendar_resolve_selected_day(
  *   url: string,
  *   accent: string,
  *   meta: string,
+ *   city: string,
  *   changeBadge: string,
  *   changeType: string,
  *   nameStruck: bool
@@ -169,6 +196,7 @@ function events_public_mobile_calendar_day_event_payload(
             'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
             'accent' => events_public_mobile_calendar_event_accent($ev, $categoriesByEventId),
             'meta' => events_public_mobile_calendar_event_meta($ev, $lang),
+            'city' => events_public_mobile_calendar_outside_budapest_city($ev),
             'changeBadge' => $changeBadge,
             'changeType' => $changeType,
             'nameStruck' => $nameStruck,

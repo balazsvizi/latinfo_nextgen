@@ -968,6 +968,7 @@ function events_public_home_strings(string $lang): array {
         'mcal_search_aria' => 'Keresés az események között',
         'mcal_grid_aria' => 'Havi naptár',
         'mcal_empty_day' => 'Nincs esemény ezen a napon.',
+        'mcal_more_events' => 'További események',
         'mcal_search_go' => 'Keresés',
     ];
     $en = [
@@ -1080,6 +1081,7 @@ function events_public_home_strings(string $lang): array {
         'mcal_search_aria' => 'Search events',
         'mcal_grid_aria' => 'Month calendar',
         'mcal_empty_day' => 'No events on this day.',
+        'mcal_more_events' => 'More events',
         'mcal_search_go' => 'Search',
     ];
 
