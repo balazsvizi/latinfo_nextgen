@@ -185,3 +185,60 @@ function events_organizers_admin_events_filter_url(string $organizerName): strin
 
     return events_url('events_admin.php') . '?' . http_build_query($params);
 }
+
+/**
+ * Szervező törlése: események megmaradnak, a kapcsolatok és a szervező rekord törlődik.
+ *
+ * @return array{ok: true, name: string}|array{ok: false, error: string}
+ */
+function events_organizers_admin_delete(PDO $db, int $id): array
+{
+    if ($id <= 0) {
+        return ['ok' => false, 'error' => 'Érvénytelen azonosító.'];
+    }
+
+    $st = $db->prepare('SELECT `id`, `name` FROM `events_organizers` WHERE `id` = ? LIMIT 1');
+    $st->execute([$id]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return ['ok' => false, 'error' => 'Szervező nem található.'];
+    }
+    $name = (string) ($row['name'] ?? '');
+
+    $hasPayerColumn = false;
+    try {
+        $payerCol = $db->query("SHOW COLUMNS FROM `events_calendar_events` LIKE 'finance_payer_organizer_id'")->fetch(PDO::FETCH_ASSOC);
+        $hasPayerColumn = $payerCol !== false;
+    } catch (Throwable) {
+        $hasPayerColumn = false;
+    }
+    $hasOrganizerAccounts = db_table_exists($db, 'events_organizer_accounts');
+    $hasPartnerLinks = db_table_exists($db, 'nextgen_partner_events_organizers');
+
+    try {
+        $db->beginTransaction();
+        $db->prepare('DELETE FROM `events_calendar_event_organizers` WHERE `organizer_id` = ?')->execute([$id]);
+        if ($hasPayerColumn) {
+            $db->prepare('UPDATE `events_calendar_events` SET `finance_payer_organizer_id` = NULL WHERE `finance_payer_organizer_id` = ?')->execute([$id]);
+        }
+        if ($hasOrganizerAccounts) {
+            $db->prepare('DELETE FROM `events_organizer_accounts` WHERE `organizer_id` = ?')->execute([$id]);
+        }
+        if ($hasPartnerLinks) {
+            $db->prepare('DELETE FROM `nextgen_partner_events_organizers` WHERE `organizer_id` = ?')->execute([$id]);
+        }
+        $db->prepare('DELETE FROM `events_organizers` WHERE `id` = ?')->execute([$id]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('events_organizers_admin_delete: ' . $e->getMessage());
+
+        return ['ok' => false, 'error' => 'A törlés nem sikerült. Kérlek próbáld újra.'];
+    }
+
+    rendszer_log('szervező', $id, 'Törölve', $name);
+
+    return ['ok' => true, 'name' => $name];
+}

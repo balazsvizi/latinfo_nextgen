@@ -2336,6 +2336,20 @@ tr:hover td { background: var(--bg); }
     flex-shrink: 0;
 }
 
+button.events-icon-action {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+}
+
+button.events-icon-action--danger:hover,
+button.events-icon-action--danger:focus-visible {
+    color: var(--danger);
+    background: #fef2f2;
+}
+
 .events-organizers-fieldset,
 .events-venue-address-fieldset {
     border: 1px solid var(--border);

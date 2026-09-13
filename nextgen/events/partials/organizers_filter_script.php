@@ -25,3 +25,22 @@
     });
 })();
 </script>
+<script>
+(function () {
+    document.querySelectorAll('.organizers-admin-delete-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            var name = form.getAttribute('data-name') || 'ezt a szervezőt';
+            var n = parseInt(form.getAttribute('data-events') || '0', 10);
+            var msg;
+            if (n > 0) {
+                msg = 'A(z) „' + name + '” szervezőnek ' + n + ' eseménye van. A szervező törlődik, az események megmaradnak, de leválnak róla. Biztosan törlöd?';
+            } else {
+                msg = 'Biztosan törlöd a(z) „' + name + '” szervezőt?';
+            }
+            if (!window.confirm(msg)) {
+                e.preventDefault();
+            }
+        });
+    });
+})();
+</script>
