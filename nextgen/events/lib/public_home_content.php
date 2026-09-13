@@ -345,9 +345,6 @@ function events_public_home_load(PDO $db): array {
             'notice_schema_ok' => $noticeOk,
             'notice_version_id' => 0,
         ];
-        if ($noticeOk) {
-            $loaded['notice_version_id'] = events_public_home_notice_sync_version($db, $loaded) ?? 0;
-        }
 
         return $loaded;
     } catch (Throwable $e) {
@@ -368,71 +365,26 @@ function events_public_home_load(PDO $db): array {
  * } $notice
  */
 function events_public_home_save(PDO $db, string $contentTop, string $contentBottom, array $notice = []): void {
+    unset($notice);
     if (!events_public_home_table_available($db)) {
         throw new RuntimeException('Hiányzik az events_public_home tábla.');
     }
     $top = events_sanitize_html_fragment($contentTop);
     $bottom = events_sanitize_html_fragment($contentBottom);
 
-    $defaults = events_public_home_notice_defaults();
-    $noticeOk = events_public_home_ensure_notice_schema($db);
-
-    if (!$noticeOk) {
-        $st = $db->prepare('
-            INSERT INTO `events_public_home` (`id`, `content_top`, `content_bottom`)
-            VALUES (1, ?, ?)
-            ON DUPLICATE KEY UPDATE `content_top` = VALUES(`content_top`), `content_bottom` = VALUES(`content_bottom`)
-        ');
-        $st->execute([$top, $bottom]);
-
-        return;
-    }
-
-    $textHu = mb_substr(trim((string) ($notice['notice_text'] ?? '')), 0, 500);
-    $textEn = mb_substr(trim((string) ($notice['notice_text_en'] ?? '')), 0, 500);
-    $urlRaw = (string) ($notice['notice_url'] ?? '');
-    $url = events_public_home_sanitize_notice_url($urlRaw);
-    if ($url === null) {
-        throw new InvalidArgumentException('Érvénytelen átkattintás URL.');
-    }
-    $scheme = trim((string) ($notice['notice_color_scheme'] ?? $defaults['notice_color_scheme']));
-    $presets = events_public_home_notice_color_presets();
-    if ($scheme !== 'custom' && !isset($presets[$scheme])) {
-        $scheme = $defaults['notice_color_scheme'];
-    }
-    $custom = events_public_home_normalize_hex_color((string) ($notice['notice_custom_color'] ?? ''))
-        ?? $defaults['notice_custom_color'];
-    $newTab = events_public_home_notice_new_tab_enabled($notice['notice_url_new_tab'] ?? false) ? 1 : 0;
-
     $st = $db->prepare('
-        INSERT INTO `events_public_home` (
-            `id`, `content_top`, `content_bottom`,
-            `notice_text`, `notice_text_en`, `notice_url`, `notice_url_new_tab`,
-            `notice_color_scheme`, `notice_custom_color`
-        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-            `content_top` = VALUES(`content_top`),
-            `content_bottom` = VALUES(`content_bottom`),
-            `notice_text` = VALUES(`notice_text`),
-            `notice_text_en` = VALUES(`notice_text_en`),
-            `notice_url` = VALUES(`notice_url`),
-            `notice_url_new_tab` = VALUES(`notice_url_new_tab`),
-            `notice_color_scheme` = VALUES(`notice_color_scheme`),
-            `notice_custom_color` = VALUES(`notice_custom_color`)
+        INSERT INTO `events_public_home` (`id`, `content_top`, `content_bottom`)
+        VALUES (1, ?, ?)
+        ON DUPLICATE KEY UPDATE `content_top` = VALUES(`content_top`), `content_bottom` = VALUES(`content_bottom`)
     ');
-    $st->execute([$top, $bottom, $textHu, $textEn, $url, $newTab, $scheme, $custom]);
-    events_public_home_notice_sync_version($db, [
-        'notice_text' => $textHu,
-        'notice_text_en' => $textEn,
-        'notice_url' => $url,
-    ]);
+    $st->execute([$top, $bottom]);
 }
 
 /**
  * Nyilvános megjelenítéshez: szöveg a nyelv szerint, CSS, URL.
  *
  * @param array<string, mixed> $content events_public_home_load() eredmény
- * @return array{visible: bool, text: string, aria: string, url: string, open_new_tab: bool, style: string, version_id: int, lang: string}|null
+ * @return array{visible: bool, text: string, aria: string, url: string, open_new_tab: bool, style: string, version_id: int, notice_id: int, lang: string}|null
  */
 function events_public_home_notice_for_display(array $content, string $lang, array $langStrings = []): ?array {
     $textHu = trim((string) ($content['notice_text'] ?? ''));
@@ -457,7 +409,8 @@ function events_public_home_notice_for_display(array $content, string $lang, arr
         'url' => $url,
         'open_new_tab' => events_public_home_notice_new_tab_enabled($content['notice_url_new_tab'] ?? false),
         'style' => events_public_home_notice_css_vars_style($scheme, $custom),
-        'version_id' => (int) ($content['notice_version_id'] ?? 0),
+        'version_id' => (int) ($content['notice_version_id'] ?? $content['version_id'] ?? 0),
+        'notice_id' => (int) ($content['id'] ?? $content['notice_id'] ?? 0),
         'lang' => $displayLang,
     ];
 }

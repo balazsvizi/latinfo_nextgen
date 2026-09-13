@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/public_home_content.php';
+require_once __DIR__ . '/lib/public_home_notices.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
 require_once __DIR__ . '/lib/public_home_notice_stats.php';
 requireLogin();
@@ -12,6 +13,12 @@ $db = getDb();
 $tableOk = events_public_home_table_available($db);
 $hiba = '';
 $noticePresets = events_public_home_notice_color_presets();
+$selfUrl = events_url('fooldal_szerkeszt.php');
+$noticesOk = $tableOk && events_public_home_notices_ensure_schema($db);
+
+$noticeEditorUrl = static function (int $id) use ($selfUrl): string {
+    return $id > 0 ? $selfUrl . '?open=' . $id . '#fooldal-notice-' . $id : $selfUrl . '#fooldal-notices';
+};
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_fooldal')) {
@@ -19,20 +26,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!$tableOk) {
         $hiba = 'Hiányzik az events_public_home tábla. Futtasd: events/sql/migration_public_home.sql';
     } else {
-        $top = (string) ($_POST['content_top'] ?? '');
-        $bottom = (string) ($_POST['content_bottom'] ?? '');
-        $notice = [
-            'notice_text' => (string) ($_POST['notice_text'] ?? ''),
-            'notice_text_en' => (string) ($_POST['notice_text_en'] ?? ''),
-            'notice_url' => (string) ($_POST['notice_url'] ?? ''),
-            'notice_url_new_tab' => events_public_home_notice_new_tab_enabled($_POST['notice_url_new_tab'] ?? '0'),
-            'notice_color_scheme' => (string) ($_POST['notice_color_scheme'] ?? 'neon_green'),
-            'notice_custom_color' => (string) ($_POST['notice_custom_color'] ?? '#39FF14'),
-        ];
+        $action = (string) ($_POST['notice_action'] ?? '');
+        $noticeId = filter_var($_POST['notice_id'] ?? 0, FILTER_VALIDATE_INT);
+        $noticeId = ($noticeId === false || $noticeId < 0) ? 0 : (int) $noticeId;
+
         try {
-            events_public_home_save($db, $top, $bottom, $notice);
-            flash('success', 'A főoldal szövegei mentve.');
-            redirect(events_url('fooldal_szerkeszt.php'));
+            if ($action === 'create') {
+                if (!$noticesOk) {
+                    throw new RuntimeException('A tip tábla nem érhető el.');
+                }
+                $newId = events_public_home_notices_create($db);
+                if (function_exists('rendszer_log')) {
+                    rendszer_log('fooldal_tip', $newId, 'Létrehozva', '');
+                }
+                flash('success', 'Új tip létrehozva. Töltsd ki, majd mentsd — üres szöveggel nem jelenik meg.');
+                redirect($noticeEditorUrl($newId));
+            } elseif ($action === 'save') {
+                if (!$noticesOk) {
+                    throw new RuntimeException('A tip tábla nem érhető el.');
+                }
+                events_public_home_notices_save($db, $noticeId, [
+                    'is_active' => events_public_home_notice_new_tab_enabled($_POST['is_active'] ?? '0'),
+                    'notice_text' => (string) ($_POST['notice_text'] ?? ''),
+                    'notice_text_en' => (string) ($_POST['notice_text_en'] ?? ''),
+                    'notice_url' => (string) ($_POST['notice_url'] ?? ''),
+                    'notice_url_new_tab' => events_public_home_notice_new_tab_enabled($_POST['notice_url_new_tab'] ?? '0'),
+                    'notice_color_scheme' => (string) ($_POST['notice_color_scheme'] ?? 'neon_green'),
+                    'notice_custom_color' => (string) ($_POST['notice_custom_color'] ?? '#39FF14'),
+                ]);
+                if (function_exists('rendszer_log')) {
+                    rendszer_log('fooldal_tip', $noticeId, 'Mentve', trim((string) ($_POST['notice_text'] ?? '')));
+                }
+                flash('success', 'A tip mentve.');
+                redirect($noticeEditorUrl($noticeId));
+            } elseif ($action === 'toggle') {
+                if (!$noticesOk) {
+                    throw new RuntimeException('A tip tábla nem érhető el.');
+                }
+                $active = events_public_home_notice_new_tab_enabled($_POST['is_active'] ?? '0');
+                events_public_home_notices_set_active($db, $noticeId, $active);
+                flash('success', $active ? 'A tip bekapcsolva, a látogatóknak kiosztható.' : 'A tip kikapcsolva, nem jelenik meg.');
+                redirect($selfUrl . '#fooldal-notices');
+            } elseif ($action === 'delete') {
+                if (!$noticesOk) {
+                    throw new RuntimeException('A tip tábla nem érhető el.');
+                }
+                events_public_home_notices_delete($db, $noticeId);
+                if (function_exists('rendszer_log')) {
+                    rendszer_log('fooldal_tip', $noticeId, 'Törölve', '');
+                }
+                flash('success', 'A tip törölve. A korábbi átkattintások a statisztikában megmaradnak.');
+                redirect($selfUrl . '#fooldal-notices');
+            } else {
+                $top = (string) ($_POST['content_top'] ?? '');
+                $bottom = (string) ($_POST['content_bottom'] ?? '');
+                events_public_home_save($db, $top, $bottom);
+                flash('success', 'A főoldal szövegei mentve.');
+                redirect($selfUrl);
+            }
         } catch (InvalidArgumentException $e) {
             $hiba = $e->getMessage();
         } catch (Throwable $e) {
@@ -43,11 +94,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $content = events_public_home_load($db);
-$noticeScheme = (string) ($content['notice_color_scheme'] ?? 'neon_green');
-$noticeCustom = (string) ($content['notice_custom_color'] ?? '#39FF14');
-$previewStyle = events_public_home_notice_css_vars_style($noticeScheme, $noticeCustom);
+$homeNotices = $noticesOk ? events_public_home_notices_all($db) : [];
+$openRaw = (string) ($_GET['open'] ?? '');
+$openNoticeId = ctype_digit($openRaw) ? (int) $openRaw : 0;
+$activeNoticeCount = 0;
+foreach ($homeNotices as $homeNotice) {
+    if (!empty($homeNotice['is_active']) && events_public_home_notices_has_displayable_text($homeNotice)) {
+        $activeNoticeCount++;
+    }
+}
 
-$noticeStatsFormAction = events_url('fooldal_szerkeszt.php');
+$noticeStatsFormAction = $selfUrl;
 $noticeStatsParams = events_public_home_notice_stats_params_from_request($_GET);
 $noticeStatsData = $tableOk
     ? events_public_home_notice_stats($db, $noticeStatsParams)
@@ -59,17 +116,20 @@ $noticeStatsData = $tableOk
             'clicks_bot' => 0,
             'unique_human' => 0,
             'versions_in_period' => 0,
+            'impressions' => 0,
+            'impressions_human' => 0,
+            'impressions_bot' => 0,
         ],
         'chart' => ['labels' => [], 'datasets' => []],
         'version_chart' => ['labels' => [], 'data' => [], 'ids' => []],
         'versions' => [],
     ];
-$noticeVersionOptions = $tableOk ? events_public_home_notice_list_versions($db) : [];
+$noticeVersionOptions = $tableOk ? events_public_home_notice_list_for_filter($db) : [];
 $noticeStatsAllFrom = $tableOk ? events_public_home_notice_earliest_click_date($db) : null;
 $noticeStatsActivePreset = events_edit_stats_detect_preset($noticeStatsParams, $noticeStatsAllFrom);
 $noticeStatsPresetLinks = [];
 $noticeStatsExtraQuery = array_filter([
-    'notice_version' => $noticeStatsParams['version_id'] > 0 ? $noticeStatsParams['version_id'] : null,
+    'notice_tip' => ($noticeStatsParams['notice_id'] ?? 0) > 0 ? $noticeStatsParams['notice_id'] : null,
     'notice_lang' => $noticeStatsParams['lang'] !== 'all' ? $noticeStatsParams['lang'] : null,
     'notice_visitor' => $noticeStatsParams['visitor'] !== 'all' ? $noticeStatsParams['visitor'] : null,
 ], static fn ($v): bool => $v !== null && $v !== '');
@@ -107,83 +167,195 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <p class="alert alert-error">Hiányzik az <code>events_public_home</code> tábla. Futtasd: <code>events/sql/migration_public_home.sql</code></p>
     <?php else: ?>
         <p class="text-muted" style="margin-top:0">A szövegek a nyilvános esemény főoldalon jelennek meg a naptár felett és alatt. Csak közzétett események látszanak a naptárban.</p>
-        <?php if (empty($content['notice_schema_ok'])): ?>
-            <p class="alert alert-warning">A tip mezőkhöz futtasd: <code>events/sql/migration_public_home_notice.sql</code> (vagy mentsd el az űrlapot, ha az auto-migráció engedélyezett).</p>
-        <?php endif; ?>
-        <form method="post" action="<?= h(events_url('fooldal_szerkeszt.php')) ?>" class="events-admin-form" id="fooldal-szerkeszt-form">
-            <?= csrf_input('events_fooldal') ?>
 
-            <fieldset class="events-fooldal-notice">
-                <legend class="events-fooldal-notice__legend">Fejléc tip (logó mellett)</legend>
-                <p class="help" style="margin-top:0">Üres magyar és angol szöveg esetén a tip nem jelenik meg. A színminták a jelenlegi neon stílus változatai; saját színt a „Egyedi” opcióval adhatsz meg. Az átkattintásokat a <a href="#notice-click-stats">lap alján</a> követheted.</p>
+        <section class="events-fooldal-notice" id="fooldal-notices">
+            <h3 class="events-fooldal-notice__legend">Fejléc tip (logó mellett)</h3>
+            <p class="help" style="margin-top:0">
+                Több tipet is felvehetsz; a látogatók a <strong>használatban</strong> lévőket kapják véletlenszerűen.
+                Egy munkamenetben ugyanaz marad, a következő alkalommal lehetőleg egy másik (amit még nem látott).
+                Üres magyar és angol szöveg esetén a tip nem jelenik meg. Az átkattintásokat a <a href="#notice-click-stats">lap alján</a> tipenként követheted.
+            </p>
+            <p class="help">Most <?= (int) $activeNoticeCount ?> tip van kiosztásban, összesen <?= count($homeNotices) ?>.</p>
 
-                <div class="form-group">
-                    <label for="notice_text">Tip szöveg (magyar)</label>
-                    <input type="text" id="notice_text" name="notice_text" maxlength="500" value="<?= h((string) $content['notice_text']) ?>">
-                </div>
+            <?php if (!$noticesOk): ?>
+                <p class="alert alert-warning">A tip táblához futtasd: <code>events/sql/migration_public_home_notices.sql</code> (vagy töltsd újra az oldalt, ha az auto-migráció engedélyezett).</p>
+            <?php else: ?>
+                <form method="post" action="<?= h($selfUrl) ?>" class="events-fooldal-notice__create">
+                    <?= csrf_input('events_fooldal') ?>
+                    <input type="hidden" name="notice_action" value="create">
+                    <button type="submit" class="btn btn-primary btn-sm">+ Új tip</button>
+                </form>
 
-                <div class="form-group">
-                    <label for="notice_text_en">Tip szöveg (angol)</label>
-                    <input type="text" id="notice_text_en" name="notice_text_en" maxlength="500" value="<?= h((string) $content['notice_text_en']) ?>">
-                </div>
-
-                <div class="form-group">
-                    <label for="notice_url">Átkattintás URL</label>
-                    <div class="events-fooldal-notice__url-row">
-                        <input type="text" id="notice_url" name="notice_url" maxlength="500" value="<?= h((string) $content['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
-                        <?php $newTabOn = !empty($content['notice_url_new_tab']); ?>
-                        <label class="events-fooldal-notice__newtab" for="notice_url_new_tab">
-                            <input
-                                class="events-fooldal-notice__newtab-input"
-                                type="checkbox"
-                                id="notice_url_new_tab"
-                                name="notice_url_new_tab"
-                                value="1"
-                                role="switch"
-                                <?= $newTabOn ? 'checked' : '' ?>
-                            >
-                            <span class="events-fooldal-notice__newtab-text">Új ablak</span>
-                        </label>
-                    </div>
-                    <p class="help">Relatív útvonal (<code>/lanueva/</code>) vagy teljes http(s) URL. A kapcsolóval új lapon nyílik a link.</p>
-                </div>
-
-                <div class="form-group">
-                    <span class="events-fooldal-notice__color-label">Színséma</span>
-                    <div class="events-fooldal-notice__swatches" role="radiogroup" aria-label="Tip színséma">
-                        <?php foreach ($noticePresets as $key => $preset): ?>
+                <?php if ($homeNotices === []): ?>
+                    <p class="alert alert-warning">Még nincs tip. Hozz létre egyet a fenti gombbal.</p>
+                <?php else: ?>
+                    <div class="events-fooldal-notice-list" id="fooldal-notice-list">
+                        <?php foreach ($homeNotices as $noticeRow): ?>
                             <?php
-                            $accent = (string) $preset['accent'];
-                            $checked = $noticeScheme === $key;
+                            $nid = (int) $noticeRow['id'];
+                            $isOpen = $openNoticeId === $nid;
+                            $isActive = !empty($noticeRow['is_active']);
+                            $scheme = (string) $noticeRow['notice_color_scheme'];
+                            $customColor = (string) $noticeRow['notice_custom_color'];
+                            $previewStyle = events_public_home_notice_css_vars_style($scheme, $customColor);
+                            $summary = trim((string) $noticeRow['notice_text']);
+                            if ($summary === '') {
+                                $summary = trim((string) $noticeRow['notice_text_en']);
+                            }
+                            if ($summary === '') {
+                                $summary = '(üres tip)';
+                            }
+                            $displayable = events_public_home_notices_has_displayable_text($noticeRow);
                             ?>
-                            <label class="events-fooldal-notice__swatch<?= $checked ? ' is-selected' : '' ?>">
-                                <input type="radio" name="notice_color_scheme" value="<?= h($key) ?>" <?= $checked ? 'checked' : '' ?>>
-                                <span class="events-fooldal-notice__swatch-chip" style="--swatch-accent: <?= h($accent) ?>; --swatch-bg-from: <?= h((string) $preset['bg_from']) ?>; --swatch-bg-to: <?= h((string) $preset['bg_to']) ?>;" aria-hidden="true"></span>
-                                <span class="events-fooldal-notice__swatch-name"><?= h((string) $preset['label']) ?></span>
-                            </label>
+                            <article
+                                class="events-fooldal-notice-card<?= $isActive ? '' : ' is-inactive' ?>"
+                                id="fooldal-notice-<?= $nid ?>"
+                                data-notice-card="<?= $nid ?>"
+                            >
+                                <header class="events-fooldal-notice-card__bar">
+                                    <span class="events-fooldal-notice-card__summary"><?= h($summary) ?></span>
+                                    <?php if (!$isActive): ?>
+                                        <span class="events-fooldal-notice-stats__badge">Kikapcsolva</span>
+                                    <?php elseif (!$displayable): ?>
+                                        <span class="events-fooldal-notice-stats__badge">Üres — nem jelenik meg</span>
+                                    <?php else: ?>
+                                        <span class="events-fooldal-notice-stats__badge">Használatban</span>
+                                    <?php endif; ?>
+                                    <div class="events-fooldal-notice-card__bar-actions">
+                                        <form method="post" class="events-fooldal-notice-card__mini-form">
+                                            <?= csrf_input('events_fooldal') ?>
+                                            <input type="hidden" name="notice_action" value="toggle">
+                                            <input type="hidden" name="notice_id" value="<?= $nid ?>">
+                                            <label class="events-fooldal-notice__newtab" for="notice_active_bar_<?= $nid ?>">
+                                                <input
+                                                    class="events-fooldal-notice__newtab-input js-notice-toggle"
+                                                    type="checkbox"
+                                                    id="notice_active_bar_<?= $nid ?>"
+                                                    name="is_active"
+                                                    value="1"
+                                                    role="switch"
+                                                    <?= $isActive ? 'checked' : '' ?>
+                                                >
+                                                <span class="events-fooldal-notice__newtab-text">Használatban</span>
+                                            </label>
+                                        </form>
+                                        <button
+                                            type="button"
+                                            class="btn btn-secondary btn-sm"
+                                            data-notice-toggle="<?= $nid ?>"
+                                            aria-expanded="<?= $isOpen ? 'true' : 'false' ?>"
+                                            aria-controls="fooldal-notice-body-<?= $nid ?>"
+                                        ><?= $isOpen ? 'Bezárás' : 'Szerkesztés' ?></button>
+                                    </div>
+                                </header>
+
+                                <div class="events-fooldal-notice-card__body" id="fooldal-notice-body-<?= $nid ?>"<?= $isOpen ? '' : ' hidden' ?>>
+                                    <form method="post" action="<?= h($selfUrl) ?>" class="events-admin-form js-notice-editor">
+                                        <?= csrf_input('events_fooldal') ?>
+                                        <input type="hidden" name="notice_action" value="save">
+                                        <input type="hidden" name="notice_id" value="<?= $nid ?>">
+
+                                        <label class="events-fooldal-notice__newtab events-fooldal-notice-card__active" for="notice_active_<?= $nid ?>">
+                                            <input
+                                                class="events-fooldal-notice__newtab-input"
+                                                type="checkbox"
+                                                id="notice_active_<?= $nid ?>"
+                                                name="is_active"
+                                                value="1"
+                                                role="switch"
+                                                <?= $isActive ? 'checked' : '' ?>
+                                            >
+                                            <span class="events-fooldal-notice__newtab-text">Használatban (kiosztásra kerül)</span>
+                                        </label>
+
+                                        <div class="form-group">
+                                            <label for="notice_text_<?= $nid ?>">Tip szöveg (magyar)</label>
+                                            <input type="text" id="notice_text_<?= $nid ?>" name="notice_text" maxlength="500" value="<?= h((string) $noticeRow['notice_text']) ?>" class="js-notice-text">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="notice_text_en_<?= $nid ?>">Tip szöveg (angol)</label>
+                                            <input type="text" id="notice_text_en_<?= $nid ?>" name="notice_text_en" maxlength="500" value="<?= h((string) $noticeRow['notice_text_en']) ?>">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="notice_url_<?= $nid ?>">Átkattintás URL</label>
+                                            <div class="events-fooldal-notice__url-row">
+                                                <input type="text" id="notice_url_<?= $nid ?>" name="notice_url" maxlength="500" value="<?= h((string) $noticeRow['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
+                                                <?php $newTabOn = !empty($noticeRow['notice_url_new_tab']); ?>
+                                                <label class="events-fooldal-notice__newtab" for="notice_url_new_tab_<?= $nid ?>">
+                                                    <input
+                                                        class="events-fooldal-notice__newtab-input"
+                                                        type="checkbox"
+                                                        id="notice_url_new_tab_<?= $nid ?>"
+                                                        name="notice_url_new_tab"
+                                                        value="1"
+                                                        role="switch"
+                                                        <?= $newTabOn ? 'checked' : '' ?>
+                                                    >
+                                                    <span class="events-fooldal-notice__newtab-text">Új ablak</span>
+                                                </label>
+                                            </div>
+                                            <p class="help">Relatív útvonal (<code>/lanueva/</code>) vagy teljes http(s) URL. A kapcsolóval új lapon nyílik a link.</p>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <span class="events-fooldal-notice__color-label">Színséma</span>
+                                            <div class="events-fooldal-notice__swatches" role="radiogroup" aria-label="Tip színséma">
+                                                <?php foreach ($noticePresets as $key => $preset): ?>
+                                                    <?php
+                                                    $accent = (string) $preset['accent'];
+                                                    $checked = $scheme === $key;
+                                                    ?>
+                                                    <label class="events-fooldal-notice__swatch<?= $checked ? ' is-selected' : '' ?>">
+                                                        <input type="radio" name="notice_color_scheme" value="<?= h($key) ?>" <?= $checked ? 'checked' : '' ?>>
+                                                        <span class="events-fooldal-notice__swatch-chip" style="--swatch-accent: <?= h($accent) ?>; --swatch-bg-from: <?= h((string) $preset['bg_from']) ?>; --swatch-bg-to: <?= h((string) $preset['bg_to']) ?>;" aria-hidden="true"></span>
+                                                        <span class="events-fooldal-notice__swatch-name"><?= h((string) $preset['label']) ?></span>
+                                                    </label>
+                                                <?php endforeach; ?>
+                                                <?php $customChecked = $scheme === 'custom'; ?>
+                                                <label class="events-fooldal-notice__swatch events-fooldal-notice__swatch--custom<?= $customChecked ? ' is-selected' : '' ?>">
+                                                    <input type="radio" name="notice_color_scheme" value="custom" <?= $customChecked ? 'checked' : '' ?>>
+                                                    <span class="events-fooldal-notice__swatch-chip events-fooldal-notice__swatch-chip--custom" style="--swatch-accent: <?= h($customColor) ?>;" aria-hidden="true"></span>
+                                                    <span class="events-fooldal-notice__swatch-name">Egyedi</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group js-notice-custom-color"<?= $scheme === 'custom' ? '' : ' hidden' ?>>
+                                            <label for="notice_custom_color_<?= $nid ?>">Egyedi szín (hex)</label>
+                                            <div class="events-category-color-input-row">
+                                                <input type="color" class="js-notice-color-picker" value="<?= h($customColor) ?>" aria-label="Egyedi tip szín">
+                                                <input type="text" id="notice_custom_color_<?= $nid ?>" name="notice_custom_color" class="js-notice-color-text" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$" value="<?= h($customColor) ?>" placeholder="#39FF14">
+                                            </div>
+                                        </div>
+
+                                        <div class="events-fooldal-notice__preview" aria-live="polite">
+                                            <span class="events-fooldal-notice__preview-label">Előnézet</span>
+                                            <span class="home-public__renewal-notice-link events-fooldal-notice__preview-link js-notice-preview" style="<?= h($previewStyle) ?>"><?= h($summary !== '(üres tip)' ? $summary : 'Tip előnézet') ?></span>
+                                        </div>
+
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn btn-primary">Tip mentése</button>
+                                        </div>
+                                    </form>
+
+                                    <form method="post" class="events-fooldal-notice-card__delete" onsubmit="return confirm('Biztosan törlöd ezt a tipet? A statisztikák megmaradnak.');">
+                                        <?= csrf_input('events_fooldal') ?>
+                                        <input type="hidden" name="notice_action" value="delete">
+                                        <input type="hidden" name="notice_id" value="<?= $nid ?>">
+                                        <button type="submit" class="btn btn-secondary btn-sm">Tip törlése</button>
+                                    </form>
+                                </div>
+                            </article>
                         <?php endforeach; ?>
-                        <?php $customChecked = $noticeScheme === 'custom'; ?>
-                        <label class="events-fooldal-notice__swatch events-fooldal-notice__swatch--custom<?= $customChecked ? ' is-selected' : '' ?>">
-                            <input type="radio" name="notice_color_scheme" value="custom" <?= $customChecked ? 'checked' : '' ?>>
-                            <span class="events-fooldal-notice__swatch-chip events-fooldal-notice__swatch-chip--custom" style="--swatch-accent: <?= h($noticeCustom) ?>;" aria-hidden="true"></span>
-                            <span class="events-fooldal-notice__swatch-name">Egyedi</span>
-                        </label>
                     </div>
-                </div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </section>
 
-                <div class="form-group" id="notice-custom-color-group"<?= $noticeScheme === 'custom' ? '' : ' hidden' ?>>
-                    <label for="notice_custom_color">Egyedi szín (hex)</label>
-                    <div class="events-category-color-input-row">
-                        <input type="color" id="notice_custom_color_picker" value="<?= h($noticeCustom) ?>" aria-label="Egyedi tip szín">
-                        <input type="text" id="notice_custom_color" name="notice_custom_color" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$" value="<?= h($noticeCustom) ?>" placeholder="#39FF14">
-                    </div>
-                </div>
-
-                <div class="events-fooldal-notice__preview" aria-live="polite">
-                    <span class="events-fooldal-notice__preview-label">Előnézet</span>
-                    <span class="home-public__renewal-notice-link events-fooldal-notice__preview-link" id="notice-preview" style="<?= h($previewStyle) ?>"><?= h((string) ($content['notice_text'] !== '' ? $content['notice_text'] : 'Tip előnézet')) ?></span>
-                </div>
-            </fieldset>
+        <form method="post" action="<?= h($selfUrl) ?>" class="events-admin-form" id="fooldal-szerkeszt-form">
+            <?= csrf_input('events_fooldal') ?>
 
             <div class="form-group">
                 <label for="content_top">Szöveg felül (HTML)</label>
@@ -196,7 +368,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Mentés</button>
+                <button type="submit" class="btn btn-primary">Szövegek mentése</button>
             </div>
         </form>
     <?php endif; ?>
@@ -206,11 +378,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <?php require __DIR__ . '/partials/fooldal_notice_stats.php'; ?>
 <?php endif; ?>
 
-<?php if ($tableOk): ?>
+<?php if ($tableOk && $noticesOk): ?>
 <script>
 (function () {
-    var form = document.getElementById('fooldal-szerkeszt-form');
-    if (!form) return;
+    var list = document.getElementById('fooldal-notice-list');
+    if (!list) return;
 
     var presets = <?= json_encode(
         array_map(static fn (array $p): array => [
@@ -220,13 +392,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
         ], $noticePresets),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     ) ?>;
-
-    var picker = document.getElementById('notice_custom_color_picker');
-    var text = document.getElementById('notice_custom_color');
-    var customGroup = document.getElementById('notice-custom-color-group');
-    var preview = document.getElementById('notice-preview');
-    var noticeText = document.getElementById('notice_text');
-    var radios = form.querySelectorAll('input[name="notice_color_scheme"]');
 
     function lightenHex(hex, amount) {
         hex = (hex || '').replace(/^#/, '');
@@ -251,14 +416,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
         return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha.toFixed(2) + ')';
     }
 
-    function selectedScheme() {
-        var checked = form.querySelector('input[name="notice_color_scheme"]:checked');
+    function selectedScheme(card) {
+        var checked = card.querySelector('input[name="notice_color_scheme"]:checked');
         return checked ? checked.value : 'neon_green';
     }
 
-    function resolveTheme() {
-        var scheme = selectedScheme();
+    function resolveTheme(card) {
+        var scheme = selectedScheme(card);
         if (scheme === 'custom') {
+            var text = card.querySelector('.js-notice-color-text');
             var c = ((text && text.value) || '#39FF14').trim().toUpperCase();
             if (c.charAt(0) !== '#') c = '#' + c;
             if (!/^#[0-9A-F]{6}$/.test(c)) c = '#39FF14';
@@ -267,9 +433,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
         return presets[scheme] || presets.neon_green;
     }
 
-    function applyPreview() {
+    function applyPreview(card) {
+        var preview = card.querySelector('.js-notice-preview');
         if (!preview) return;
-        var theme = resolveTheme();
+        var theme = resolveTheme(card);
         var accent = theme.accent;
         var hover = lightenHex(accent, 0.28);
         preview.style.setProperty('--rn-accent', accent);
@@ -282,44 +449,66 @@ require_once dirname(__DIR__) . '/partials/header.php';
         preview.style.setProperty('--rn-glow-soft', hexToRgba(accent, 0.25));
         preview.style.setProperty('--rn-bg-from', theme.bg_from);
         preview.style.setProperty('--rn-bg-to', theme.bg_to);
+        var noticeText = card.querySelector('.js-notice-text');
         if (noticeText) {
             preview.textContent = (noticeText.value || '').trim() || 'Tip előnézet';
         }
     }
 
-    function syncCustomVisibility() {
-        var isCustom = selectedScheme() === 'custom';
+    function syncCard(card) {
+        var isCustom = selectedScheme(card) === 'custom';
+        var customGroup = card.querySelector('.js-notice-custom-color');
         if (customGroup) customGroup.hidden = !isCustom;
-        form.querySelectorAll('.events-fooldal-notice__swatch').forEach(function (el) {
+        card.querySelectorAll('.events-fooldal-notice__swatch').forEach(function (el) {
             el.classList.toggle('is-selected', !!(el.querySelector('input') || {}).checked);
         });
-        applyPreview();
+        applyPreview(card);
     }
 
-    radios.forEach(function (r) {
-        r.addEventListener('change', syncCustomVisibility);
+    list.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-notice-toggle]');
+        if (!btn || !list.contains(btn)) return;
+        var id = btn.getAttribute('data-notice-toggle');
+        var body = document.getElementById('fooldal-notice-body-' + id);
+        if (!body) return;
+        var open = body.hidden;
+        body.hidden = !open;
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.textContent = open ? 'Bezárás' : 'Szerkesztés';
     });
-    if (noticeText) noticeText.addEventListener('input', applyPreview);
 
-    if (picker && text) {
-        picker.addEventListener('input', function () {
-            text.value = (picker.value || '').toUpperCase();
-            var chip = form.querySelector('.events-fooldal-notice__swatch-chip--custom');
-            if (chip) chip.style.setProperty('--swatch-accent', text.value);
-            applyPreview();
-        });
-        text.addEventListener('input', function () {
-            var v = (text.value || '').trim();
+    list.addEventListener('change', function (e) {
+        var toggle = e.target.closest('.js-notice-toggle');
+        if (toggle && toggle.form) {
+            toggle.form.submit();
+            return;
+        }
+        var card = e.target.closest('[data-notice-card]');
+        if (card) syncCard(card);
+    });
+
+    list.addEventListener('input', function (e) {
+        var card = e.target.closest('[data-notice-card]');
+        if (!card) return;
+        if (e.target.classList.contains('js-notice-color-picker')) {
+            var text = card.querySelector('.js-notice-color-text');
+            if (text) text.value = (e.target.value || '').toUpperCase();
+            var chip = card.querySelector('.events-fooldal-notice__swatch-chip--custom');
+            if (chip && text) chip.style.setProperty('--swatch-accent', text.value);
+        }
+        if (e.target.classList.contains('js-notice-color-text')) {
+            var v = (e.target.value || '').trim();
             if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
-                picker.value = v;
-                var chip = form.querySelector('.events-fooldal-notice__swatch-chip--custom');
+                var picker = card.querySelector('.js-notice-color-picker');
+                if (picker) picker.value = v;
+                var chip = card.querySelector('.events-fooldal-notice__swatch-chip--custom');
                 if (chip) chip.style.setProperty('--swatch-accent', v.toUpperCase());
-                applyPreview();
             }
-        });
-    }
+        }
+        applyPreview(card);
+    });
 
-    syncCustomVisibility();
+    list.querySelectorAll('[data-notice-card]').forEach(syncCard);
 })();
 </script>
 <?php endif; ?>

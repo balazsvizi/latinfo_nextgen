@@ -200,7 +200,6 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
                         </div>
                         </div>
                         <div class="mcal-proto-more" id="mcal-more" hidden>
-                            <span class="mcal-proto-more__fade" aria-hidden="true"></span>
                             <button type="button" class="mcal-proto-more__btn" id="mcal-more-btn">
                                 <span>További események</span>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>

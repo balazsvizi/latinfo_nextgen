@@ -8,6 +8,7 @@ $lang = events_public_resolve_megjelenit_lang();
 events_public_maybe_redirect_legacy_home($lang);
 
 require_once __DIR__ . '/lib/public_home_content.php';
+require_once __DIR__ . '/lib/public_home_notices.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_calendar.php';
@@ -22,7 +23,7 @@ $langNav = events_public_lang_nav_params($lang);
 
 $db = getDb();
 $homeContent = events_public_home_load($db);
-$renewalNotice = events_public_home_notice_for_display($homeContent, $lang, $D);
+$renewalNotice = events_public_home_notice_pick_for_visitor($db, $lang, $D);
 $filters = events_public_filters_from_request($db);
 $filtersActive = events_public_filters_are_active($filters);
 $view = (string) ($filters['view'] ?? events_public_default_home_calendar_view());

@@ -77,6 +77,10 @@ function events_partnerlogos_handle_upload(?array $file): array {
     if ($ext === '' && in_array($origExt, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
         $ext = $origExt === 'jpeg' ? 'jpg' : $origExt;
     }
+    // Néhány rendszer az SVG-t text/xml vagy text/plain néven adja vissza.
+    if ($ext === '' && $origExt === 'svg' && in_array($mime, ['text/xml', 'application/xml', 'text/plain'], true)) {
+        $ext = 'svg';
+    }
     if ($ext === '') {
         return [null, 'Csak JPG, PNG, WEBP, GIF vagy SVG logó tölthető fel.'];
     }

@@ -3084,9 +3084,69 @@ dialog.eventpics-modal::backdrop {
     background: var(--bg-muted, #f6f7f5);
 }
 .events-fooldal-notice__legend {
+    margin: 0 0 0.5rem;
     padding: 0 0.35rem;
     font-size: 1rem;
     font-weight: 700;
+}
+.events-fooldal-notice__create {
+    margin: 0.35rem 0 0.9rem;
+}
+.events-fooldal-notice-list {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0 0 0.35rem;
+}
+.events-fooldal-notice-card {
+    border: 1px solid var(--border, #d9dee5);
+    border-left: 4px solid var(--accent, #3d6b4f);
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+.events-fooldal-notice-card.is-inactive {
+    border-left-color: #9aa5b1;
+    background: #f7f7f8;
+    opacity: 0.92;
+}
+.events-fooldal-notice-card__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem 0.75rem;
+    padding: 0.65rem 0.85rem;
+}
+.events-fooldal-notice-card__summary {
+    flex: 1 1 12rem;
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.events-fooldal-notice-card__bar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-left: auto;
+}
+.events-fooldal-notice-card__mini-form {
+    margin: 0;
+}
+.events-fooldal-notice-card__body {
+    padding: 0 0.85rem 0.95rem;
+    border-top: 1px solid var(--border, #e6e8eb);
+}
+.events-fooldal-notice-card__active {
+    margin: 0.85rem 0 0.75rem;
+}
+.events-fooldal-notice-card__delete {
+    margin: 0.35rem 0 0;
+}
+@media (max-width: 720px) {
+    .events-fooldal-notice-card__bar-actions {
+        width: 100%;
+        margin-left: 0;
+    }
 }
 .events-fooldal-notice__url-row {
     display: flex;

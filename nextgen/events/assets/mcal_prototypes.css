@@ -276,17 +276,9 @@
 
 .mcal-proto-more {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
     pointer-events: none;
     z-index: 8;
-}
-
-.mcal-proto-more__fade {
-    display: block;
-    width: 100%;
-    height: 2.6rem;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 78%);
 }
 
 .mcal-proto-more__btn {
@@ -294,7 +286,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.28rem;
-    margin: -0.55rem 0 0.55rem;
+    margin: 0;
     padding: 0.28rem 0.7rem;
     border: 1px solid var(--mcal-border, #e8eaee);
     border-radius: 999px;
@@ -321,10 +313,21 @@
 
 .mcal-proto-page--dense .mcal-proto-more {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 50%;
+    right: auto;
+    bottom: 0.45rem;
+    width: auto;
+    transform: translateX(-50%);
     padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mcal-proto-page--split .mcal-proto-more {
+    position: absolute;
+    left: 50%;
+    right: auto;
+    bottom: 0.45rem;
+    width: auto;
+    transform: translateX(-50%);
 }
 
 .mcal-proto-page--split .mcal__day-panel {
@@ -339,13 +342,6 @@
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-}
-
-.mcal-proto-page--split .mcal-proto-more {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
 }
 
 html.mcal-proto-html--split,

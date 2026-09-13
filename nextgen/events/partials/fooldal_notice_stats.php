@@ -4,15 +4,24 @@ declare(strict_types=1);
 /**
  * Fejléc tip átkattintás-statisztika a főoldal-szerkesztőn.
  *
- * @var array{date_from: string, date_to: string, version_id: int, lang: string, visitor: string} $noticeStatsParams
+ * @var array{date_from: string, date_to: string, notice_id: int, lang: string, visitor: string} $noticeStatsParams
  * @var array{
  *   table_ready: bool,
- *   totals: array{clicks: int, clicks_human: int, clicks_bot: int, unique_human: int, versions_in_period: int},
+ *   totals: array{
+ *     clicks: int,
+ *     clicks_human: int,
+ *     clicks_bot: int,
+ *     unique_human: int,
+ *     versions_in_period: int,
+ *     impressions?: int,
+ *     impressions_human?: int,
+ *     impressions_bot?: int
+ *   },
  *   chart: array{labels: list<string>, datasets: list<array{label: string, data: list<int>, color: string, total: int}>},
  *   version_chart: array{labels: list<string>, data: list<int>, ids: list<int>},
  *   versions: list<array<string, mixed>>
  * } $noticeStatsData
- * @var list<array{id: int, notice_text: string, notice_text_en: string, notice_url: string, started_at: string, ended_at: ?string, is_current: bool}> $noticeVersionOptions
+ * @var list<array{id: int, notice_text: string, notice_text_en: string, notice_url: string, is_active?: bool, is_deleted?: bool}> $noticeVersionOptions
  * @var string $noticeStatsFormAction
  * @var list<array{id: string, label: string, url: string, active: bool}> $noticeStatsPresetLinks
  */
@@ -20,7 +29,7 @@ declare(strict_types=1);
 $noticeStatsParams = $noticeStatsParams ?? [
     'date_from' => '',
     'date_to' => '',
-    'version_id' => 0,
+    'notice_id' => 0,
     'lang' => 'all',
     'visitor' => 'all',
 ];
@@ -32,6 +41,9 @@ $noticeStatsData = $noticeStatsData ?? [
         'clicks_bot' => 0,
         'unique_human' => 0,
         'versions_in_period' => 0,
+        'impressions' => 0,
+        'impressions_human' => 0,
+        'impressions_bot' => 0,
     ],
     'chart' => ['labels' => [], 'datasets' => []],
     'version_chart' => ['labels' => [], 'data' => [], 'ids' => []],
@@ -53,7 +65,7 @@ $versionChartJson = json_encode($versionChartPayload, JSON_UNESCAPED_UNICODE | J
 
 $totals = $noticeStatsData['totals'] ?? [];
 $versionRows = $noticeStatsData['versions'] ?? [];
-$selectedVersion = (int) ($noticeStatsParams['version_id'] ?? 0);
+$selectedNotice = (int) ($noticeStatsParams['notice_id'] ?? 0);
 $selectedLang = (string) ($noticeStatsParams['lang'] ?? 'all');
 $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
 ?>
@@ -62,8 +74,8 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
         <h2 class="events-list-title">Tip átkattintások</h2>
     </div>
     <p class="events-edit-stats__intro">
-        A naptár főoldalán, a logó mellett megjelenő tipre kattintások.
-        Minden szövegváltozathoz mentjük, mikortól meddig volt kint, és hány átkattintás érkezett.
+        A naptár főoldalán, a logó mellett megjelenő tipekre kattintások.
+        A használatban lévő tipeket a látogatók felváltva kapják; minden tiphez külön számoljuk a megjelenítést és az átkattintást.
     </p>
 
     <?php if (empty($noticeStatsData['table_ready'])): ?>
@@ -80,9 +92,9 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
                     <input class="events-filter-input" type="date" name="stat_date_to" id="notice_stat_date_to" value="<?= h((string) $noticeStatsParams['date_to']) ?>">
                 </div>
                 <div class="form-group">
-                    <label class="events-filter-label" for="notice_version">Szövegverzió</label>
-                    <select class="events-filter-input" name="notice_version" id="notice_version">
-                        <option value="0"<?= $selectedVersion === 0 ? ' selected' : '' ?>>Összes verzió</option>
+                    <label class="events-filter-label" for="notice_tip">Tip</label>
+                    <select class="events-filter-input" name="notice_tip" id="notice_tip">
+                        <option value="0"<?= $selectedNotice === 0 ? ' selected' : '' ?>>Összes tip</option>
                         <?php foreach ($noticeVersionOptions as $opt): ?>
                             <?php
                             $labelText = trim((string) $opt['notice_text']);
@@ -92,14 +104,16 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
                             if ($labelText === '') {
                                 $labelText = '(üres tip)';
                             }
-                            $from = events_public_home_notice_format_dt((string) $opt['started_at']);
-                            $to = $opt['is_current'] ? 'mostanáig' : events_public_home_notice_format_dt($opt['ended_at']);
-                            $optLabel = $from . ' – ' . $to . ' · ' . events_public_home_notice_truncate($labelText, 48);
-                            if (!empty($opt['is_current'])) {
-                                $optLabel = 'Aktív · ' . $optLabel;
+                            $optLabel = events_public_home_notice_truncate($labelText, 56);
+                            if (!empty($opt['is_deleted'])) {
+                                $optLabel = 'Törölt · ' . $optLabel;
+                            } elseif (!empty($opt['is_active'])) {
+                                $optLabel = 'Használatban · ' . $optLabel;
+                            } else {
+                                $optLabel = 'Kikapcsolva · ' . $optLabel;
                             }
                             ?>
-                            <option value="<?= (int) $opt['id'] ?>"<?= $selectedVersion === (int) $opt['id'] ? ' selected' : '' ?>><?= h($optLabel) ?></option>
+                            <option value="<?= (int) $opt['id'] ?>"<?= $selectedNotice === (int) $opt['id'] ? ' selected' : '' ?>><?= h($optLabel) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -138,21 +152,33 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
 
         <div class="events-edit-stats__cards">
             <?php
+            $impressionsHuman = (int) ($totals['impressions_human'] ?? 0);
+            $clicksHumanCard = (int) ($totals['clicks_human'] ?? 0);
+            $ctrLabel = '—';
+            if ($impressionsHuman > 0) {
+                $ctrLabel = rtrim(rtrim(number_format(($clicksHumanCard / $impressionsHuman) * 100, 1, ',', ' '), '0'), ',') . '%';
+            }
             $statCards = [
                 [
                     'label' => 'Emberi',
-                    'value' => (int) ($totals['clicks_human'] ?? 0),
+                    'value' => $clicksHumanCard,
                     'hint' => 'Átkattintás (nem bot)',
+                ],
+                [
+                    'label' => 'Megjelenítés',
+                    'value' => $impressionsHuman,
+                    'hint' => 'Hányszor látták (emberi)',
+                ],
+                [
+                    'label' => 'CTR',
+                    'value' => $ctrLabel,
+                    'hint' => 'Emberi átkattintás / megjelenítés',
+                    'raw' => true,
                 ],
                 [
                     'label' => 'Bot',
                     'value' => (int) ($totals['clicks_bot'] ?? 0),
-                    'hint' => 'Robot / crawler',
-                ],
-                [
-                    'label' => 'Összesen',
-                    'value' => (int) ($totals['clicks'] ?? 0),
-                    'hint' => 'Minden átkattintás',
+                    'hint' => 'Robot / crawler kattintás',
                 ],
                 [
                     'label' => 'Egyedi látogató',
@@ -160,16 +186,16 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
                     'hint' => 'Emberi, IP-hash alapján',
                 ],
                 [
-                    'label' => 'Szövegek',
+                    'label' => 'Tipek',
                     'value' => (int) ($totals['versions_in_period'] ?? 0),
-                    'hint' => 'Kint volt az időszakban',
+                    'hint' => 'A szűrt listában',
                 ],
             ];
             foreach ($statCards as $card):
             ?>
                 <div class="events-edit-stats__card">
                     <p class="events-edit-stats__card-label"><?= h((string) $card['label']) ?></p>
-                    <p class="events-edit-stats__card-value"><?= (int) $card['value'] ?></p>
+                    <p class="events-edit-stats__card-value"><?= !empty($card['raw']) ? h((string) $card['value']) : (int) $card['value'] ?></p>
                     <p class="events-edit-stats__card-hint"><?= h((string) $card['hint']) ?></p>
                 </div>
             <?php endforeach; ?>
@@ -196,8 +222,8 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
             <div class="events-edit-stats__chart-wrap events-fooldal-notice-stats__version-chart">
                 <div class="events-edit-stats__chart-head">
                     <div>
-                        <h3 class="events-edit-stats__chart-title">Szövegenként</h3>
-                        <p class="events-edit-stats__chart-hint">Melyik kint lévő szövegre mennyit kattintottak az időszakban.</p>
+                        <h3 class="events-edit-stats__chart-title">Tipenként</h3>
+                        <p class="events-edit-stats__chart-hint">Melyik használatban lévő (vagy korábbi) tipre mennyit kattintottak az időszakban.</p>
                     </div>
                 </div>
                 <div class="events-edit-stats__chart-canvas events-fooldal-notice-stats__version-canvas">
@@ -207,19 +233,21 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
             <script type="application/json" id="fooldal-notice-versions-chart-data"><?= $versionChartJson ?></script>
         <?php endif; ?>
 
-        <h3 class="events-fooldal-notice-stats__table-title">Mikor melyik szöveg volt kint</h3>
+        <h3 class="events-fooldal-notice-stats__table-title">Tipenként</h3>
         <?php if ($versionRows === []): ?>
-            <p class="help">Nincs szövegverzió a választott időszakban.</p>
+            <p class="help">Nincs tip a választott szűrőkkel.</p>
         <?php else: ?>
             <div class="table-wrap events-admin-table-wrap">
                 <table class="events-admin-table events-fooldal-notice-stats__table">
                     <thead>
                         <tr>
-                            <th scope="col">Időszak</th>
+                            <th scope="col">Állapot</th>
                             <th scope="col">Magyar szöveg</th>
                             <th scope="col">Angol szöveg</th>
                             <th scope="col">URL</th>
+                            <th class="th-center" scope="col">Megjelenítés</th>
                             <th class="th-center" scope="col">Ember</th>
+                            <th class="th-center" scope="col">CTR</th>
                             <th class="th-center" scope="col">Bot</th>
                             <th class="th-center" scope="col">Össz</th>
                         </tr>
@@ -227,18 +255,20 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
                     <tbody>
                         <?php foreach ($versionRows as $row): ?>
                             <?php
-                            $from = events_public_home_notice_format_dt((string) ($row['started_at'] ?? ''));
-                            $to = !empty($row['is_current'])
-                                ? 'mostanáig'
-                                : events_public_home_notice_format_dt($row['ended_at'] ?? null);
                             $url = trim((string) ($row['notice_url'] ?? ''));
-                            $isCurrent = !empty($row['is_current']);
+                            $isActive = !empty($row['is_active']) || !empty($row['is_current']);
+                            $isDeleted = !empty($row['is_deleted']);
+                            $imprHuman = (int) ($row['impressions_human'] ?? 0);
+                            $ctr = $row['ctr_human'] ?? null;
                             ?>
-                            <tr class="<?= $isCurrent ? 'is-current' : '' ?>">
+                            <tr class="<?= $isActive ? 'is-current' : '' ?>">
                                 <td class="events-fooldal-notice-stats__period">
-                                    <?= h($from) ?> – <?= h($to) ?>
-                                    <?php if ($isCurrent): ?>
-                                        <span class="events-fooldal-notice-stats__badge">Aktív</span>
+                                    <?php if ($isDeleted): ?>
+                                        <span class="events-fooldal-notice-stats__badge">Törölt</span>
+                                    <?php elseif ($isActive): ?>
+                                        <span class="events-fooldal-notice-stats__badge">Használatban</span>
+                                    <?php else: ?>
+                                        <span class="events-fooldal-notice-stats__badge">Kikapcsolva</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="events-fooldal-notice-stats__text"><?php
@@ -256,7 +286,15 @@ $selectedVisitor = (string) ($noticeStatsParams['visitor'] ?? 'all');
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
+                                <td class="th-center"><?= $imprHuman ?></td>
                                 <td class="th-center"><?= (int) ($row['clicks_human'] ?? 0) ?></td>
+                                <td class="th-center"><?php
+                                    if ($ctr === null || $imprHuman <= 0) {
+                                        echo '<span class="text-muted">—</span>';
+                                    } else {
+                                        echo h(rtrim(rtrim(number_format((float) $ctr, 1, ',', ' '), '0'), ',') . '%');
+                                    }
+                                ?></td>
                                 <td class="th-center"><?= (int) ($row['clicks_bot'] ?? 0) ?></td>
                                 <td class="th-center"><strong><?= (int) ($row['clicks'] ?? 0) ?></strong></td>
                             </tr>
