@@ -86,6 +86,6 @@ $N = events_public_nav_strings($lang);
                 <span class="event-nav__toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span>
             </button>
         </div>
+        <?php require __DIR__ . '/public_shell_nav.php'; ?>
     </div>
-    <?php require __DIR__ . '/public_shell_nav.php'; ?>
 </div>
