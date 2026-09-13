@@ -484,14 +484,8 @@ function events_public_home_notice_choose_id(array $activeIds, array $seenIds, i
     ));
 
     if ($unseen === []) {
-        $last = $seen !== [] ? (int) $seen[count($seen) - 1] : 0;
+        // Minden tipet látott: új kör, teljesen véletlenszerű a teljes aktív listából.
         $unseen = $activeIds;
-        if (count($unseen) > 1 && $last > 0) {
-            $withoutLast = array_values(array_filter($unseen, static fn (int $id): bool => $id !== $last));
-            if ($withoutLast !== []) {
-                $unseen = $withoutLast;
-            }
-        }
         $seen = [];
     }
 
