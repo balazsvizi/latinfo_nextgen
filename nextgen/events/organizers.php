@@ -29,15 +29,28 @@ if ($get_params !== []) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string) ($_POST['action'] ?? '');
-    if ($action === 'delete_organizer') {
+    if ($action === 'delete_organizer' || $action === 'delete_organizers') {
         if (!csrf_validate('organizers_admin')) {
             flash('error', 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.');
             redirect($listUrl);
         }
-        $deleteId = (int) ($_POST['id'] ?? 0);
-        $deleted = events_organizers_admin_delete($db, $deleteId);
+        if ($action === 'delete_organizer') {
+            $deleteId = (int) ($_POST['id'] ?? 0);
+            $deleted = events_organizers_admin_delete($db, $deleteId);
+            if ($deleted['ok']) {
+                flash('success', 'Szervező törölve: ' . $deleted['name']);
+            } else {
+                flash('error', $deleted['error']);
+            }
+            redirect($listUrl);
+        }
+        $ids = events_organizers_admin_ids_from_post($_POST['ids'] ?? null);
+        $deleted = events_organizers_admin_delete_many($db, $ids);
         if ($deleted['ok']) {
-            flash('success', 'Szervező törölve: ' . $deleted['name']);
+            $n = (int) $deleted['deleted'];
+            flash('success', $n === 1
+                ? 'Szervező törölve: ' . ($deleted['names'][0] ?? '')
+                : $n . ' szervező törölve.');
         } else {
             flash('error', $deleted['error']);
         }
@@ -49,7 +62,7 @@ $rows = events_organizers_admin_fetch($db, $filters, $list_limit);
 $listDisplayedCount = count($rows);
 
 $hasFilters = $f_q !== '' || $f_id !== '' || $f_events !== '' || $f_published !== '';
-$colspan = 7;
+$colspan = $rows !== [] ? 8 : 7;
 
 $pageTitle = 'Szervezők';
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -113,10 +126,27 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </section>
     </form>
 
+    <?php if ($rows !== []): ?>
+        <form method="post" action="<?= h($listUrl) ?>" class="organizers-admin-bulk" id="organizers-bulk-form">
+            <?= csrf_input('organizers_admin') ?>
+            <input type="hidden" name="action" value="delete_organizers">
+            <div class="organizers-admin-bulk__toolbar">
+                <span class="organizers-admin-bulk__selected" id="organizers-selected-label" aria-live="polite">0 kiválasztva</span>
+                <button type="submit" class="btn btn-danger" id="organizers-bulk-delete-btn" disabled>Kijelöltek törlése</button>
+            </div>
+            <p class="help organizers-admin-bulk__hint">A kijelölt szervezők törlődnek. Ha van eseményük, az események megmaradnak, de leválnak róluk.</p>
+        </form>
+    <?php endif; ?>
+
         <div class="table-wrap events-admin-table-wrap">
-            <table class="sortable-table events-admin-table">
+            <table class="sortable-table events-admin-table" id="organizers-admin-table">
                 <thead>
                     <tr>
+                        <?php if ($rows !== []): ?>
+                        <th scope="col" class="organizers-admin-th-check">
+                            <input type="checkbox" id="organizers-check-all" aria-label="Látható szervezők kijelölése" title="Összes kijelölése">
+                        </th>
+                        <?php endif; ?>
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= sort_th('Események', 'events', $order, $dir_param, $get_params) ?></th>
@@ -150,6 +180,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $upcomingCount = (int) ($r['upcoming_count'] ?? 0);
                             ?>
                             <tr>
+                                <td class="organizers-admin-td-check">
+                                    <input
+                                        type="checkbox"
+                                        class="organizers-admin-row-check"
+                                        form="organizers-bulk-form"
+                                        name="ids[]"
+                                        value="<?= $oid ?>"
+                                        data-events="<?= (int) $eventCount ?>"
+                                        aria-label="Kijelölés: <?= h($name) ?>"
+                                    >
+                                </td>
                                 <td><?= $oid ?></td>
                                 <td class="venues-td-name">
                                     <span class="venues-name-with-action">
