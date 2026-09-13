@@ -10,6 +10,9 @@ $lang = events_public_resolve_megjelenit_lang();
 $D = events_public_partners_strings($lang);
 
 $db = getDb();
+if (events_partner_blocks_table_available($db)) {
+    events_partner_blocks_ensure_schema($db);
+}
 $blocks = events_partner_blocks_table_available($db)
     ? events_partner_blocks_all($db, true)
     : [];
@@ -50,7 +53,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page">
+<body class="event-public-page event-public-page--partners">
 <div class="event-shell">
 <article class="event-public partners-public">
     <header class="event-public__hero">
@@ -82,29 +85,38 @@ header('Content-Type: text/html; charset=UTF-8');
                 <?php
                 $partnerName = $block['title'];
                 $partnerUrl = $block['link_url'];
-                $partnerLogo = $block['logo_url'] !== '' ? events_absolute_url($block['logo_url']) : '';
-                $partnerAria = sprintf((string) $D['partner_link_aria'], $partnerName);
+                $partnerLogo = ($block['show_logo'] && $block['logo_url'] !== '')
+                    ? events_absolute_url($block['logo_url'])
+                    : '';
+                $showName = $block['show_name'] && $partnerName !== '';
+                $logoSize = $block['logo_size'];
+                $hasCardVisual = $partnerLogo !== '' || $showName;
+                $partnerAria = sprintf((string) $D['partner_link_aria'], $partnerName !== '' ? $partnerName : (string) $D['page_title']);
                 ?>
                 <div class="partners-public__partner">
                     <?php if (trim($block['note_before']) !== ''): ?>
                         <div class="partners-public__note partners-public__note--before event-rich-text"><?= $block['note_before'] ?></div>
                     <?php endif; ?>
 
-                    <?php if ($partnerUrl !== ''): ?>
-                        <a class="partners-public__card" href="<?= h($partnerUrl) ?>" target="_blank" rel="noopener noreferrer" aria-label="<?= h($partnerAria) ?>">
-                    <?php else: ?>
-                        <div class="partners-public__card partners-public__card--static">
-                    <?php endif; ?>
-                        <?php if ($partnerLogo !== ''): ?>
-                            <span class="partners-public__logo">
-                                <img src="<?= h($partnerLogo) ?>" alt="" loading="lazy" decoding="async">
-                            </span>
+                    <?php if ($hasCardVisual): ?>
+                        <?php if ($partnerUrl !== ''): ?>
+                            <a class="partners-public__card partners-public__card--<?= h($logoSize) ?>" href="<?= h($partnerUrl) ?>" target="_blank" rel="noopener noreferrer" aria-label="<?= h($partnerAria) ?>">
+                        <?php else: ?>
+                            <div class="partners-public__card partners-public__card--static partners-public__card--<?= h($logoSize) ?>">
                         <?php endif; ?>
-                        <span class="partners-public__name"><?= h($partnerName) ?></span>
-                    <?php if ($partnerUrl !== ''): ?>
-                        </a>
-                    <?php else: ?>
-                        </div>
+                            <?php if ($partnerLogo !== ''): ?>
+                                <span class="partners-public__logo partners-public__logo--<?= h($logoSize) ?>">
+                                    <img src="<?= h($partnerLogo) ?>" alt="" loading="lazy" decoding="async">
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($showName): ?>
+                                <span class="partners-public__name"><?= h($partnerName) ?></span>
+                            <?php endif; ?>
+                        <?php if ($partnerUrl !== ''): ?>
+                            </a>
+                        <?php else: ?>
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if (trim($block['note_after']) !== ''): ?>

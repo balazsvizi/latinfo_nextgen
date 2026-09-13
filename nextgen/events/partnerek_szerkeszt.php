@@ -66,6 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'heading_level' => (int) ($_POST['heading_level'] ?? 2),
             'link_url' => (string) ($_POST['link_url'] ?? ''),
             'logo_url' => (string) ($_POST['logo_url'] ?? ''),
+            'show_logo' => !empty($_POST['show_logo']),
+            'show_name' => !empty($_POST['show_name']),
+            'logo_size' => (string) ($_POST['logo_size'] ?? 'md'),
             'body' => (string) ($_POST['body'] ?? ''),
             'body_en' => (string) ($_POST['body_en'] ?? ''),
             'note_before' => (string) ($_POST['note_before'] ?? ''),
@@ -259,10 +262,34 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <input type="url" id="link_url_<?= $bid ?>" name="link_url" maxlength="500" value="<?= h($linkUrl) ?>" placeholder="https://partner.hu">
                             </div>
 
+                            <?php
+                            $showLogo = (int) ($block['show_logo'] ?? 1) === 1;
+                            $showName = (int) ($block['show_name'] ?? 1) === 1;
+                            $logoSize = events_partner_blocks_normalize_logo_size((string) ($block['logo_size'] ?? 'md'));
+                            ?>
+                            <div class="partner-blocks-admin__display-opts">
+                                <label class="partner-blocks-admin__check">
+                                    <input type="checkbox" name="show_name" value="1"<?= $showName ? ' checked' : '' ?>>
+                                    Név megjelenik
+                                </label>
+                                <label class="partner-blocks-admin__check">
+                                    <input type="checkbox" name="show_logo" value="1"<?= $showLogo ? ' checked' : '' ?>>
+                                    Logó megjelenik
+                                </label>
+                                <div class="form-group partner-blocks-admin__logo-size">
+                                    <label for="logo_size_<?= $bid ?>">Logó mérete</label>
+                                    <select id="logo_size_<?= $bid ?>" name="logo_size">
+                                        <?php foreach (events_partner_logo_size_labels() as $sizeKey => $sizeLabel): ?>
+                                            <option value="<?= h($sizeKey) ?>"<?= $logoSize === $sizeKey ? ' selected' : '' ?>><?= h($sizeLabel) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
                             <fieldset class="partner-blocks-admin__logo">
                                 <legend>Logó</legend>
                                 <div class="partner-blocks-admin__logo-grid">
-                                    <div class="partner-blocks-admin__logo-preview">
+                                    <div class="partner-blocks-admin__logo-preview partner-blocks-admin__logo-preview--<?= h($logoSize) ?>">
                                         <?php if ($logoUrl !== ''): ?>
                                             <img src="<?= h($logoUrl) ?>" alt="<?= h($title) ?> logó" loading="lazy" decoding="async">
                                         <?php else: ?>

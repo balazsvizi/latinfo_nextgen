@@ -8411,3 +8411,32 @@ table select:focus {
         white-space: normal;
     }
 }
+
+.partner-blocks-admin__display-opts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem 1.25rem;
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border-color, #d9dee5);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.partner-blocks-admin__logo-size {
+    margin: 0;
+    min-width: 10rem;
+}
+
+.partner-blocks-admin__logo-preview--sm {
+    height: 4rem;
+}
+
+.partner-blocks-admin__logo-preview--lg {
+    height: 7.5rem;
+}
+
+.partner-blocks-admin__logo-preview--xl {
+    height: 9.5rem;
+}

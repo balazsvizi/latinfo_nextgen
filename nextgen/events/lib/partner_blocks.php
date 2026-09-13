@@ -10,6 +10,23 @@ require_once __DIR__ . '/html_security.php';
 
 const EVENTS_PARTNER_BLOCK_TYPES = ['partner', 'heading', 'html'];
 const EVENTS_PARTNER_BLOCK_SORT_STEP = 10;
+const EVENTS_PARTNER_LOGO_SIZES = ['sm', 'md', 'lg', 'xl'];
+
+/**
+ * @return array<string, string>
+ */
+function events_partner_logo_size_labels(): array {
+    return [
+        'sm' => 'Kicsi',
+        'md' => 'Közepes',
+        'lg' => 'Nagy',
+        'xl' => 'Extra nagy',
+    ];
+}
+
+function events_partner_blocks_normalize_logo_size(string $size): string {
+    return in_array($size, EVENTS_PARTNER_LOGO_SIZES, true) ? $size : 'md';
+}
 
 /**
  * @return array<string, string>
@@ -37,43 +54,56 @@ function events_partner_blocks_table_available(PDO $db): bool {
 }
 
 /**
- * Tábla létrehozása, ha hiányzik (idempotens).
+ * Tábla létrehozása / hiányzó oszlopok pótlása (idempotens).
  */
 function events_partner_blocks_ensure_schema(PDO $db): bool {
     static $done = false;
     if ($done) {
         return true;
     }
-    if (events_partner_blocks_table_available($db)) {
-        $done = true;
-
-        return true;
-    }
 
     try {
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS `events_partner_blocks` (
-                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                `block_type` VARCHAR(16) NOT NULL DEFAULT \'partner\',
-                `sort_order` INT UNSIGNED NOT NULL DEFAULT 0,
-                `is_visible` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
-                `title` VARCHAR(255) NOT NULL DEFAULT \'\',
-                `title_en` VARCHAR(255) NOT NULL DEFAULT \'\',
-                `heading_level` TINYINT UNSIGNED NOT NULL DEFAULT 2,
-                `link_url` VARCHAR(500) NOT NULL DEFAULT \'\',
-                `logo_url` VARCHAR(500) NOT NULL DEFAULT \'\',
-                `body` MEDIUMTEXT NOT NULL,
-                `body_en` MEDIUMTEXT NOT NULL,
-                `note_before` MEDIUMTEXT NOT NULL,
-                `note_before_en` MEDIUMTEXT NOT NULL,
-                `note_after` MEDIUMTEXT NOT NULL,
-                `note_after_en` MEDIUMTEXT NOT NULL,
-                `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (`id`),
-                KEY `idx_events_partner_blocks_sort` (`sort_order`, `id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ');
+        if (!events_partner_blocks_table_available($db)) {
+            $db->exec('
+                CREATE TABLE IF NOT EXISTS `events_partner_blocks` (
+                    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    `block_type` VARCHAR(16) NOT NULL DEFAULT \'partner\',
+                    `sort_order` INT UNSIGNED NOT NULL DEFAULT 0,
+                    `is_visible` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                    `title` VARCHAR(255) NOT NULL DEFAULT \'\',
+                    `title_en` VARCHAR(255) NOT NULL DEFAULT \'\',
+                    `heading_level` TINYINT UNSIGNED NOT NULL DEFAULT 2,
+                    `link_url` VARCHAR(500) NOT NULL DEFAULT \'\',
+                    `logo_url` VARCHAR(500) NOT NULL DEFAULT \'\',
+                    `show_logo` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                    `show_name` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                    `logo_size` VARCHAR(8) NOT NULL DEFAULT \'md\',
+                    `body` MEDIUMTEXT NOT NULL,
+                    `body_en` MEDIUMTEXT NOT NULL,
+                    `note_before` MEDIUMTEXT NOT NULL,
+                    `note_before_en` MEDIUMTEXT NOT NULL,
+                    `note_after` MEDIUMTEXT NOT NULL,
+                    `note_after_en` MEDIUMTEXT NOT NULL,
+                    `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    KEY `idx_events_partner_blocks_sort` (`sort_order`, `id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+        }
+
+        $cols = [
+            'show_logo' => "ADD COLUMN `show_logo` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 AFTER `logo_url`",
+            'show_name' => "ADD COLUMN `show_name` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 AFTER `show_logo`",
+            'logo_size' => "ADD COLUMN `logo_size` VARCHAR(8) NOT NULL DEFAULT 'md' AFTER `show_name`",
+        ];
+        foreach ($cols as $name => $ddl) {
+            $st = $db->query('SHOW COLUMNS FROM `events_partner_blocks` LIKE ' . $db->quote($name));
+            if ($st && $st->fetch(PDO::FETCH_ASSOC) === false) {
+                $db->exec('ALTER TABLE `events_partner_blocks` ' . $ddl);
+            }
+        }
+
         $done = true;
 
         return true;
@@ -173,6 +203,9 @@ function events_partner_blocks_save(PDO $db, int $id, array $input): void {
 
     $linkUrl = '';
     $logoUrl = '';
+    $showLogo = 1;
+    $showName = 1;
+    $logoSize = 'md';
     if ($type === 'partner') {
         [$normalizedLink, $linkError] = events_normalize_safe_url((string) ($input['link_url'] ?? ''), false);
         if ($linkError !== null) {
@@ -187,6 +220,12 @@ function events_partner_blocks_save(PDO $db, int $id, array $input): void {
         $logoUrl = (string) ($normalizedLogo ?? '');
         if (mb_strlen($linkUrl) > 500 || mb_strlen($logoUrl) > 500) {
             throw new InvalidArgumentException('A link és a logó URL legfeljebb 500 karakter lehet.');
+        }
+        $showLogo = empty($input['show_logo']) ? 0 : 1;
+        $showName = empty($input['show_name']) ? 0 : 1;
+        $logoSize = events_partner_blocks_normalize_logo_size((string) ($input['logo_size'] ?? 'md'));
+        if ($showLogo === 0 && $showName === 0) {
+            throw new InvalidArgumentException('A logó vagy a név megjelenítése közül legalább az egyiket pipáld be.');
         }
     }
 
@@ -204,7 +243,7 @@ function events_partner_blocks_save(PDO $db, int $id, array $input): void {
     $st = $db->prepare('
         UPDATE `events_partner_blocks`
         SET `is_visible` = ?, `title` = ?, `title_en` = ?, `heading_level` = ?,
-            `link_url` = ?, `logo_url` = ?,
+            `link_url` = ?, `logo_url` = ?, `show_logo` = ?, `show_name` = ?, `logo_size` = ?,
             `body` = ?, `body_en` = ?,
             `note_before` = ?, `note_before_en` = ?, `note_after` = ?, `note_after_en` = ?
         WHERE `id` = ?
@@ -216,6 +255,9 @@ function events_partner_blocks_save(PDO $db, int $id, array $input): void {
         $headingLevel,
         $linkUrl,
         $logoUrl,
+        $showLogo,
+        $showName,
+        $logoSize,
         $body,
         $bodyEn,
         $noteBefore,
@@ -281,7 +323,19 @@ function events_partner_blocks_move(PDO $db, int $id, int $direction): bool {
  * Nyelvi feloldás: üres EN mező esetén a magyar tartalom jelenik meg.
  *
  * @param array<string, mixed> $row
- * @return array{type: string, title: string, heading_level: int, link_url: string, logo_url: string, body: string, note_before: string, note_after: string}
+ * @return array{
+ *   type: string,
+ *   title: string,
+ *   heading_level: int,
+ *   link_url: string,
+ *   logo_url: string,
+ *   show_logo: bool,
+ *   show_name: bool,
+ *   logo_size: string,
+ *   body: string,
+ *   note_before: string,
+ *   note_after: string
+ * }
  */
 function events_partner_block_localized(array $row, string $lang): array {
     $pick = static function (string $hu, string $en) use ($lang): string {
@@ -297,6 +351,9 @@ function events_partner_block_localized(array $row, string $lang): array {
         'heading_level' => in_array((int) ($row['heading_level'] ?? 2), [2, 3], true) ? (int) $row['heading_level'] : 2,
         'link_url' => trim((string) ($row['link_url'] ?? '')),
         'logo_url' => trim((string) ($row['logo_url'] ?? '')),
+        'show_logo' => (int) ($row['show_logo'] ?? 1) === 1,
+        'show_name' => (int) ($row['show_name'] ?? 1) === 1,
+        'logo_size' => events_partner_blocks_normalize_logo_size((string) ($row['logo_size'] ?? 'md')),
         'body' => $pick((string) ($row['body'] ?? ''), (string) ($row['body_en'] ?? '')),
         'note_before' => $pick((string) ($row['note_before'] ?? ''), (string) ($row['note_before_en'] ?? '')),
         'note_after' => $pick((string) ($row['note_after'] ?? ''), (string) ($row['note_after_en'] ?? '')),
