@@ -2892,7 +2892,7 @@ a.event-hero-chip--category-link:hover {
 }
 
 .djs-public__catalog {
-    padding: 0.35rem clamp(1.25rem, 4vw, 2.25rem) 1.75rem;
+    padding: 1rem clamp(1.25rem, 4vw, 2.25rem) 1.75rem;
 }
 
 .djs-public__catalog-head {
@@ -2953,7 +2953,7 @@ a.event-hero-chip--category-link:hover {
 }
 
 .djs-public__dashboard {
-    margin: 0 clamp(1.25rem, 4vw, 2.25rem) 1.75rem;
+    margin: 0.35rem clamp(1.25rem, 4vw, 2.25rem) 1.75rem;
     padding: 1.15rem 1.15rem 1.25rem;
     border: 1px solid var(--li-border);
     border-radius: calc(var(--ev-radius) + 2px);

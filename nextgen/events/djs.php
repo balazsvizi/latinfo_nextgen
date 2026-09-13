@@ -90,13 +90,96 @@ header('Content-Type: text/html; charset=UTF-8');
             <p class="event-public__eyebrow">🎧 <?= h((string) $D['eyebrow']) ?></p>
             <h1 class="event-public__title"><?= h($title) ?></h1>
             <p class="djs-public__intro"><?= h((string) $D['page_intro']) ?></p>
-            <?php if ($djRows !== []): ?>
-                <p class="djs-public__hero-cta">
-                    <a class="djs-public__hero-cta-link" href="#djs-catalog-heading"><?= h((string) $D['catalog_heading']) ?></a>
-                </p>
-            <?php endif; ?>
         </div>
     </header>
+
+    <section class="djs-public__catalog" aria-labelledby="djs-catalog-heading">
+        <div class="djs-public__catalog-head">
+            <h2 class="djs-public__catalog-title" id="djs-catalog-heading"><?= h((string) $D['catalog_heading']) ?></h2>
+        </div>
+
+        <?php if ($djRows === []): ?>
+            <p class="organizer-public__empty"><?= h($D['empty']) ?></p>
+        <?php else: ?>
+            <?php require __DIR__ . '/partials/public_catalog_display_limit.php'; ?>
+            <div class="djs-public__toolbar">
+                <div class="djs-public__filter">
+                    <label class="djs-public__filter-label" for="djs-filter-input"><?= h($D['filter_label']) ?></label>
+                    <input type="search" id="djs-filter-input" class="djs-public__filter-input" placeholder="<?= h($D['filter_placeholder']) ?>" autocomplete="off">
+                </div>
+                <div class="djs-public__sort">
+                    <label class="djs-public__sort-label" for="djs-sort-select"><?= h($D['sort_label']) ?></label>
+                    <select id="djs-sort-select" class="djs-public__sort-select">
+                        <option value="name_asc"><?= h($D['sort_name_asc']) ?></option>
+                        <option value="name_desc"><?= h($D['sort_name_desc']) ?></option>
+                        <option value="events_desc"><?= h($D['sort_events_desc']) ?></option>
+                        <option value="events_asc"><?= h($D['sort_events_asc']) ?></option>
+                        <option value="upcoming_desc"><?= h($D['sort_upcoming_desc']) ?></option>
+                    </select>
+                </div>
+            </div>
+
+            <p class="djs-public__empty-filter" id="djs-empty-filter" hidden><?= h($D['empty_filter']) ?></p>
+
+            <ul class="djs-public__grid" id="djs-grid" role="list">
+                <?php foreach ($djRows as $dj): ?>
+                    <?php
+                    $djId = (int) ($dj['id'] ?? 0);
+                    $djName = (string) ($dj['name'] ?? '');
+                    $djSlug = trim((string) ($dj['slug'] ?? ''));
+                    $djPhoto = trim((string) ($dj['photo_url'] ?? ''));
+                    $djLogo = trim((string) ($dj['logo_url'] ?? ''));
+                    $djMedia = $djPhoto !== '' ? $djPhoto : $djLogo;
+                    $djPhotoAbs = $djMedia !== '' ? events_absolute_url($djMedia) : '';
+                    $djMediaIsLogo = $djPhoto === '' && $djLogo !== '';
+                    $total = (int) ($dj['event_total'] ?? 0);
+                    $upcoming = (int) ($dj['event_upcoming'] ?? 0);
+                    $nextStart = (string) ($dj['next_event_start'] ?? '');
+                    $href = $djHref(['id' => $djId, 'name' => $djName, 'slug' => $djSlug], $lang);
+                    $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
+                    $nextDisplay = $nextTs !== false
+                        ? events_public_event_start_date_time_display(false, $nextTs, $lang)
+                        : '';
+                    $nameSort = mb_strtolower($djName, 'UTF-8');
+                    $initials = events_public_dj_initials($djName);
+                    $cardMod = $upcoming > 0 ? ' djs-public__card--live' : '';
+                    ?>
+                    <li
+                        class="djs-public__cell"
+                        data-name="<?= h($nameSort) ?>"
+                        data-events="<?= $total ?>"
+                        data-upcoming="<?= $upcoming ?>"
+                    >
+                        <a class="djs-public__card djs-public__card--person<?= h($cardMod) ?>" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
+                            <span class="djs-public__card-media<?= $djMediaIsLogo ? ' djs-public__card-media--logo' : '' ?>" aria-hidden="true">
+                                <?php if ($djPhotoAbs !== ''): ?>
+                                    <img class="djs-public__card-photo<?= $djMediaIsLogo ? ' djs-public__card-photo--logo' : '' ?>" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async">
+                                <?php else: ?>
+                                    <span class="djs-public__card-initials"><?= h($initials) ?></span>
+                                <?php endif; ?>
+                            </span>
+                            <span class="djs-public__card-body">
+                                <span class="djs-public__card-name"><?= h($djName) ?></span>
+                                <span class="djs-public__card-stats">
+                                    <span class="djs-public__card-stat djs-public__card-stat--muted">
+                                        <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
+                                    </span>
+                                    <span class="djs-public__card-stat djs-public__card-stat--upcoming">
+                                        <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
+                                    </span>
+                                </span>
+                                <?php if ($nextDisplay !== ''): ?>
+                                    <span class="djs-public__card-next">
+                                        <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </span>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </section>
 
     <?php if ($djRows !== []): ?>
         <div class="djs-public__dashboard">
@@ -193,94 +276,6 @@ header('Content-Type: text/html; charset=UTF-8');
             </section>
         </div>
     <?php endif; ?>
-
-    <section class="djs-public__catalog" aria-labelledby="djs-catalog-heading">
-        <div class="djs-public__catalog-head">
-            <h2 class="djs-public__catalog-title" id="djs-catalog-heading"><?= h((string) $D['catalog_heading']) ?></h2>
-        </div>
-
-        <?php if ($djRows === []): ?>
-            <p class="organizer-public__empty"><?= h($D['empty']) ?></p>
-        <?php else: ?>
-            <?php require __DIR__ . '/partials/public_catalog_display_limit.php'; ?>
-            <div class="djs-public__toolbar">
-                <div class="djs-public__filter">
-                    <label class="djs-public__filter-label" for="djs-filter-input"><?= h($D['filter_label']) ?></label>
-                    <input type="search" id="djs-filter-input" class="djs-public__filter-input" placeholder="<?= h($D['filter_placeholder']) ?>" autocomplete="off">
-                </div>
-                <div class="djs-public__sort">
-                    <label class="djs-public__sort-label" for="djs-sort-select"><?= h($D['sort_label']) ?></label>
-                    <select id="djs-sort-select" class="djs-public__sort-select">
-                        <option value="name_asc"><?= h($D['sort_name_asc']) ?></option>
-                        <option value="name_desc"><?= h($D['sort_name_desc']) ?></option>
-                        <option value="events_desc"><?= h($D['sort_events_desc']) ?></option>
-                        <option value="events_asc"><?= h($D['sort_events_asc']) ?></option>
-                        <option value="upcoming_desc"><?= h($D['sort_upcoming_desc']) ?></option>
-                    </select>
-                </div>
-            </div>
-
-            <p class="djs-public__empty-filter" id="djs-empty-filter" hidden><?= h($D['empty_filter']) ?></p>
-
-            <ul class="djs-public__grid" id="djs-grid" role="list">
-                <?php foreach ($djRows as $dj): ?>
-                    <?php
-                    $djId = (int) ($dj['id'] ?? 0);
-                    $djName = (string) ($dj['name'] ?? '');
-                    $djSlug = trim((string) ($dj['slug'] ?? ''));
-                    $djPhoto = trim((string) ($dj['photo_url'] ?? ''));
-                    $djLogo = trim((string) ($dj['logo_url'] ?? ''));
-                    $djMedia = $djPhoto !== '' ? $djPhoto : $djLogo;
-                    $djPhotoAbs = $djMedia !== '' ? events_absolute_url($djMedia) : '';
-                    $djMediaIsLogo = $djPhoto === '' && $djLogo !== '';
-                    $total = (int) ($dj['event_total'] ?? 0);
-                    $upcoming = (int) ($dj['event_upcoming'] ?? 0);
-                    $nextStart = (string) ($dj['next_event_start'] ?? '');
-                    $href = $djHref(['id' => $djId, 'name' => $djName, 'slug' => $djSlug], $lang);
-                    $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
-                    $nextDisplay = $nextTs !== false
-                        ? events_public_event_start_date_time_display(false, $nextTs, $lang)
-                        : '';
-                    $nameSort = mb_strtolower($djName, 'UTF-8');
-                    $initials = events_public_dj_initials($djName);
-                    $cardMod = $upcoming > 0 ? ' djs-public__card--live' : '';
-                    ?>
-                    <li
-                        class="djs-public__cell"
-                        data-name="<?= h($nameSort) ?>"
-                        data-events="<?= $total ?>"
-                        data-upcoming="<?= $upcoming ?>"
-                    >
-                        <a class="djs-public__card djs-public__card--person<?= h($cardMod) ?>" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
-                            <span class="djs-public__card-media<?= $djMediaIsLogo ? ' djs-public__card-media--logo' : '' ?>" aria-hidden="true">
-                                <?php if ($djPhotoAbs !== ''): ?>
-                                    <img class="djs-public__card-photo<?= $djMediaIsLogo ? ' djs-public__card-photo--logo' : '' ?>" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async">
-                                <?php else: ?>
-                                    <span class="djs-public__card-initials"><?= h($initials) ?></span>
-                                <?php endif; ?>
-                            </span>
-                            <span class="djs-public__card-body">
-                                <span class="djs-public__card-name"><?= h($djName) ?></span>
-                                <span class="djs-public__card-stats">
-                                    <span class="djs-public__card-stat djs-public__card-stat--muted">
-                                        <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
-                                    </span>
-                                    <span class="djs-public__card-stat djs-public__card-stat--upcoming">
-                                        <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
-                                    </span>
-                                </span>
-                                <?php if ($nextDisplay !== ''): ?>
-                                    <span class="djs-public__card-next">
-                                        <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
-                                    </span>
-                                <?php endif; ?>
-                            </span>
-                        </a>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-    </section>
 
     <footer class="event-public__footer">
         <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>
