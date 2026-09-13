@@ -81,7 +81,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page event-public-page--djs">
+<body class="event-public-page event-public-page--catalog">
 <div class="event-shell">
 <article class="event-public organizer-public djs-public">
     <header class="event-public__hero">

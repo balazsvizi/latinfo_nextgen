@@ -3466,8 +3466,28 @@ a.event-hero-chip--category-link:hover {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(16.5rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(16.5rem, 100%), 1fr));
     gap: 0.95rem;
+}
+
+@media (max-width: 639px) {
+    .djs-public__toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem 0.85rem;
+    }
+
+    .djs-public__filter,
+    .djs-public__sort {
+        min-width: 0;
+        width: 100%;
+        flex: 1 1 auto;
+    }
+
+    .djs-public__grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
 }
 
 .djs-public__cell[hidden] {
@@ -3635,15 +3655,15 @@ a.event-hero-chip--category-link:hover {
     margin-top: 0.5rem;
 }
 
-/* Publikus esemény főoldal (public_home.php) és DJ katalógus: teljes szélesség */
+/* Publikus esemény főoldal, DJ- és szervezőkatalógus: teljes szélesség */
 body.event-public-page--home .event-shell,
-body.event-public-page--djs .event-shell {
+body.event-public-page--catalog .event-shell {
     max-width: none;
     padding: clamp(0.85rem, 2vw, 1.5rem) clamp(0.75rem, 2.5vw, 2.5rem) 2.5rem;
 }
 
 body.event-public-page--home .event-public.home-public,
-body.event-public-page--djs .event-public.djs-public {
+body.event-public-page--catalog .event-public.djs-public {
     border-radius: clamp(10px, 1.2vw, var(--ev-radius));
     overflow: visible;
 }
@@ -3792,7 +3812,7 @@ body.event-public-page--home .event-public__hero-inner {
         justify-self: center;
     }
 
-    body.event-public-page--djs .event-public__hero-bar {
+    body.event-public-page--catalog .event-public__hero-bar {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
         grid-template-rows: auto;
@@ -3800,19 +3820,19 @@ body.event-public-page--home .event-public__hero-inner {
         gap: 0.5rem 0.75rem;
     }
 
-    body.event-public-page--djs .event-public__hero-bar-start {
+    body.event-public-page--catalog .event-public__hero-bar-start {
         grid-column: 1;
         grid-row: 1;
     }
 
-    body.event-public-page--djs .event-public__hero-bar .event-nav {
+    body.event-public-page--catalog .event-public__hero-bar .event-nav {
         grid-column: 2;
         grid-row: 1;
         flex: unset;
         order: unset;
     }
 
-    body.event-public-page--djs .event-public__hero .event-public__hero-actions {
+    body.event-public-page--catalog .event-public__hero .event-public__hero-actions {
         grid-column: 3;
         grid-row: 1;
         justify-self: end;
@@ -5545,14 +5565,14 @@ a.home-public-map-popup__title:hover {
 
 @media (max-width: 639px) {
     body.event-public-page--home .event-shell,
-    body.event-public-page--djs .event-shell {
+    body.event-public-page--catalog .event-shell {
         padding-left: 0.65rem;
         padding-right: 0.65rem;
         padding-bottom: 1.75rem;
     }
 
     body.event-public-page--home .event-public.home-public,
-    body.event-public-page--djs .event-public.djs-public {
+    body.event-public-page--catalog .event-public.djs-public {
         border-radius: 12px;
     }
 
