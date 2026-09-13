@@ -3158,6 +3158,59 @@ dialog.eventpics-modal::backdrop {
     font-weight: 600;
     color: rgba(255, 255, 255, 0.65);
 }
+.events-fooldal-notice-stats {
+    margin-top: 1.5rem;
+}
+.events-fooldal-notice-stats__filters {
+    margin-bottom: 1.15rem;
+}
+.events-fooldal-notice-stats__version-chart {
+    margin-top: 1rem;
+}
+.events-fooldal-notice-stats__version-canvas {
+    height: min(18rem, 50vh);
+}
+.events-fooldal-notice-stats__table-title {
+    margin: 1.35rem 0 0.65rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+.events-fooldal-notice-stats__table td,
+.events-fooldal-notice-stats__table th {
+    vertical-align: top;
+}
+.events-fooldal-notice-stats__table tr.is-current {
+    background: color-mix(in srgb, var(--accent, #3d6b4f) 7%, #fff);
+}
+.events-fooldal-notice-stats__period {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+}
+.events-fooldal-notice-stats__badge {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.08rem 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent, #3d6b4f) 16%, #fff);
+    color: var(--accent, #3d6b4f);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.events-fooldal-notice-stats__text {
+    max-width: 18rem;
+    overflow-wrap: anywhere;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+.events-fooldal-notice-stats__url {
+    max-width: 12rem;
+    overflow-wrap: anywhere;
+    font-size: 0.8125rem;
+}
+
 .events-fooldal-notice__preview-link {
     /* Admin előnézet: ugyanaz a tip osztály, de a nyilvános CSS nem mindig töltődik */
     --rn-accent: #39ff14;

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/html_security.php';
+require_once __DIR__ . '/public_home_notice_stats.php';
 
 /**
  * Publikus esemény főoldal szerkeszthető HTML blokkjai (felül / alul) + fejléc tip.
@@ -269,7 +270,8 @@ function events_public_home_notice_css_vars_style(string $scheme, string $custom
  *   notice_url: string,
  *   notice_color_scheme: string,
  *   notice_custom_color: string,
- *   notice_schema_ok: bool
+ *   notice_schema_ok: bool,
+ *   notice_version_id: int
  * }
  */
 function events_public_home_load(PDO $db): array {
@@ -283,6 +285,7 @@ function events_public_home_load(PDO $db): array {
         'notice_color_scheme' => $defaults['notice_color_scheme'],
         'notice_custom_color' => $defaults['notice_custom_color'],
         'notice_schema_ok' => false,
+        'notice_version_id' => 0,
     ];
     if (!events_public_home_table_available($db)) {
         return $empty;
@@ -314,7 +317,7 @@ function events_public_home_load(PDO $db): array {
         $custom = events_public_home_normalize_hex_color((string) ($row['notice_custom_color'] ?? ''))
             ?? $defaults['notice_custom_color'];
 
-        return [
+        $loaded = [
             'content_top' => (string) ($row['content_top'] ?? ''),
             'content_bottom' => (string) ($row['content_bottom'] ?? ''),
             'notice_text' => (string) ($row['notice_text'] ?? $defaults['notice_text']),
@@ -323,7 +326,13 @@ function events_public_home_load(PDO $db): array {
             'notice_color_scheme' => $scheme,
             'notice_custom_color' => $custom,
             'notice_schema_ok' => $noticeOk,
+            'notice_version_id' => 0,
         ];
+        if ($noticeOk) {
+            $loaded['notice_version_id'] = events_public_home_notice_sync_version($db, $loaded) ?? 0;
+        }
+
+        return $loaded;
     } catch (Throwable $e) {
         error_log('events_public_home_load: ' . $e->getMessage());
 
@@ -392,18 +401,24 @@ function events_public_home_save(PDO $db, string $contentTop, string $contentBot
             `notice_custom_color` = VALUES(`notice_custom_color`)
     ');
     $st->execute([$top, $bottom, $textHu, $textEn, $url, $scheme, $custom]);
+    events_public_home_notice_sync_version($db, [
+        'notice_text' => $textHu,
+        'notice_text_en' => $textEn,
+        'notice_url' => $url,
+    ]);
 }
 
 /**
  * Nyilvános megjelenítéshez: szöveg a nyelv szerint, CSS, URL.
  *
  * @param array<string, mixed> $content events_public_home_load() eredmény
- * @return array{visible: bool, text: string, aria: string, url: string, style: string}|null
+ * @return array{visible: bool, text: string, aria: string, url: string, style: string, version_id: int, lang: string}|null
  */
 function events_public_home_notice_for_display(array $content, string $lang, array $langStrings = []): ?array {
     $textHu = trim((string) ($content['notice_text'] ?? ''));
     $textEn = trim((string) ($content['notice_text_en'] ?? ''));
-    $text = $lang === 'en'
+    $displayLang = $lang === 'en' ? 'en' : 'hu';
+    $text = $displayLang === 'en'
         ? ($textEn !== '' ? $textEn : $textHu)
         : ($textHu !== '' ? $textHu : $textEn);
     if ($text === '') {
@@ -421,5 +436,7 @@ function events_public_home_notice_for_display(array $content, string $lang, arr
         'aria' => $aria,
         'url' => $url,
         'style' => events_public_home_notice_css_vars_style($scheme, $custom),
+        'version_id' => (int) ($content['notice_version_id'] ?? 0),
+        'lang' => $displayLang,
     ];
 }

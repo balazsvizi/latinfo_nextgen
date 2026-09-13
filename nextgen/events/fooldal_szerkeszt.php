@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/public_home_content.php';
+require_once __DIR__ . '/lib/event_edit_stats.php';
+require_once __DIR__ . '/lib/public_home_notice_stats.php';
 requireLogin();
 
 $db = getDb();
@@ -44,6 +46,46 @@ $noticeScheme = (string) ($content['notice_color_scheme'] ?? 'neon_green');
 $noticeCustom = (string) ($content['notice_custom_color'] ?? '#39FF14');
 $previewStyle = events_public_home_notice_css_vars_style($noticeScheme, $noticeCustom);
 
+$noticeStatsFormAction = events_url('fooldal_szerkeszt.php');
+$noticeStatsParams = events_public_home_notice_stats_params_from_request($_GET);
+$noticeStatsData = $tableOk
+    ? events_public_home_notice_stats($db, $noticeStatsParams)
+    : [
+        'table_ready' => false,
+        'totals' => [
+            'clicks' => 0,
+            'clicks_human' => 0,
+            'clicks_bot' => 0,
+            'unique_human' => 0,
+            'versions_in_period' => 0,
+        ],
+        'chart' => ['labels' => [], 'datasets' => []],
+        'version_chart' => ['labels' => [], 'data' => [], 'ids' => []],
+        'versions' => [],
+    ];
+$noticeVersionOptions = $tableOk ? events_public_home_notice_list_versions($db) : [];
+$noticeStatsAllFrom = $tableOk ? events_public_home_notice_earliest_click_date($db) : null;
+$noticeStatsActivePreset = events_edit_stats_detect_preset($noticeStatsParams, $noticeStatsAllFrom);
+$noticeStatsPresetLinks = [];
+$noticeStatsExtraQuery = array_filter([
+    'notice_version' => $noticeStatsParams['version_id'] > 0 ? $noticeStatsParams['version_id'] : null,
+    'notice_lang' => $noticeStatsParams['lang'] !== 'all' ? $noticeStatsParams['lang'] : null,
+    'notice_visitor' => $noticeStatsParams['visitor'] !== 'all' ? $noticeStatsParams['visitor'] : null,
+], static fn ($v): bool => $v !== null && $v !== '');
+foreach (events_edit_stats_presets() as $preset) {
+    $presetId = (string) $preset['id'];
+    $noticeStatsPresetLinks[] = [
+        'id' => $presetId,
+        'label' => (string) $preset['label'],
+        'url' => events_edit_stats_filter_url(
+            $noticeStatsFormAction,
+            events_edit_stats_range_for_preset($presetId, $noticeStatsAllFrom),
+            $noticeStatsExtraQuery
+        ) . '#notice-click-stats',
+        'active' => $noticeStatsActivePreset === $presetId,
+    ];
+}
+
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Publikus főoldal szövegei';
 require_once dirname(__DIR__) . '/partials/header.php';
@@ -55,6 +97,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head">
         <h2 class="events-list-title">Publikus főoldal szövegei</h2>
         <div class="events-list-actions">
+            <a href="#notice-click-stats" class="btn btn-secondary btn-sm">Átkattintások</a>
             <a href="<?= h(events_public_home_url('hu')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Előnézet</a>
         </div>
     </div>
@@ -71,7 +114,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
             <fieldset class="events-fooldal-notice">
                 <legend class="events-fooldal-notice__legend">Fejléc tip (logó mellett)</legend>
-                <p class="help" style="margin-top:0">Üres magyar és angol szöveg esetén a tip nem jelenik meg. A színminták a jelenlegi neon stílus változatai; saját színt a „Egyedi” opcióval adhatsz meg.</p>
+                <p class="help" style="margin-top:0">Üres magyar és angol szöveg esetén a tip nem jelenik meg. A színminták a jelenlegi neon stílus változatai; saját színt a „Egyedi” opcióval adhatsz meg. Az átkattintásokat a <a href="#notice-click-stats">lap alján</a> követheted.</p>
 
                 <div class="form-group">
                     <label for="notice_text">Tip szöveg (magyar)</label>
@@ -142,6 +185,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </form>
     <?php endif; ?>
 </div>
+
+<?php if ($tableOk): ?>
+    <?php require __DIR__ . '/partials/fooldal_notice_stats.php'; ?>
+<?php endif; ?>
 
 <?php if ($tableOk): ?>
 <script>
