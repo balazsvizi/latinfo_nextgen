@@ -268,21 +268,16 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
             .replace(/"/g, '&quot;');
     }
 
-    function scrollMetrics() {
-        var el = document.scrollingElement || document.documentElement;
-        return {
-            scrollTop: el.scrollTop || window.pageYOffset || 0,
-            client: window.innerHeight,
-            scroll: el.scrollHeight
-        };
-    }
-
     function updateMoreHint() {
-        if (!moreEl) return;
-        var m = scrollMetrics();
-        var canScroll = m.scroll > m.client + 12;
-        var remaining = m.scroll - (m.scrollTop + m.client);
-        moreEl.hidden = !(canScroll && remaining > 18);
+        if (!moreEl || !eventsEl) return;
+        var last = eventsEl.querySelector('.mcal__event:last-child');
+        if (!last) {
+            moreEl.hidden = true;
+            return;
+        }
+        var bottom = last.getBoundingClientRect().bottom;
+        // Csak akkor, ha az utolsó esemény még a viewport alatt van (lábléc ne számítson).
+        moreEl.hidden = !(bottom > window.innerHeight - 12);
     }
 
     function scheduleMoreHint() {
@@ -292,9 +287,13 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
     }
 
     function scrollMore() {
-        var m = scrollMetrics();
-        var delta = Math.min(Math.max(m.client * 0.55, 120), 260);
-        window.scrollBy({ top: delta, behavior: 'smooth' });
+        if (!eventsEl) return;
+        var last = eventsEl.querySelector('.mcal__event:last-child');
+        if (last) {
+            last.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            return;
+        }
+        window.scrollBy({ top: 160, behavior: 'smooth' });
     }
 
     function syncDayModeLink(dayKey) {

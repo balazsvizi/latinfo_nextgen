@@ -243,29 +243,20 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
     var dayScroll = document.getElementById('mcal-day-scroll');
     var isSplit = document.documentElement.classList.contains('mcal-proto-html--split');
 
-    function scrollMetrics() {
-        if (isSplit && dayScroll) {
-            return {
-                scrollTop: dayScroll.scrollTop,
-                client: dayScroll.clientHeight,
-                scroll: dayScroll.scrollHeight
-            };
-        }
-        var el = document.scrollingElement || document.documentElement;
-        return {
-            scrollTop: el.scrollTop || window.pageYOffset || 0,
-            client: window.innerHeight,
-            scroll: el.scrollHeight
-        };
-    }
-
     function updateMoreHint() {
-        if (!moreEl) return;
-        var m = scrollMetrics();
-        var canScroll = m.scroll > m.client + 12;
-        var remaining = m.scroll - (m.scrollTop + m.client);
-        var show = canScroll && remaining > 18;
-        moreEl.hidden = !show;
+        if (!moreEl || !eventsEl) return;
+        var last = eventsEl.querySelector('.mcal__event:last-child');
+        if (!last) {
+            moreEl.hidden = true;
+            return;
+        }
+        var rect = last.getBoundingClientRect();
+        if (isSplit && dayScroll) {
+            var box = dayScroll.getBoundingClientRect();
+            moreEl.hidden = !(rect.bottom > box.bottom - 12);
+            return;
+        }
+        moreEl.hidden = !(rect.bottom > window.innerHeight - 12);
     }
 
     function scheduleMoreHint() {
@@ -275,13 +266,20 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
     }
 
     function scrollMore() {
-        var m = scrollMetrics();
-        var delta = Math.min(Math.max(m.client * 0.55, 120), 260);
+        var last = eventsEl ? eventsEl.querySelector('.mcal__event:last-child') : null;
         if (isSplit && dayScroll) {
-            dayScroll.scrollBy({ top: delta, behavior: 'smooth' });
+            if (last) {
+                last.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                return;
+            }
+            dayScroll.scrollBy({ top: 160, behavior: 'smooth' });
             return;
         }
-        window.scrollBy({ top: delta, behavior: 'smooth' });
+        if (last) {
+            last.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            return;
+        }
+        window.scrollBy({ top: 160, behavior: 'smooth' });
     }
 
     function esc(s) {
