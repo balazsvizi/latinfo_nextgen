@@ -132,11 +132,21 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <div class="events-fooldal-notice__url-row">
                         <input type="text" id="notice_url" name="notice_url" maxlength="500" value="<?= h((string) $content['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
                         <?php $newTabOn = !empty($content['notice_url_new_tab']); ?>
-                        <label class="events-fooldal-notice__newtab" for="notice_url_new_tab">
-                            <input type="checkbox" id="notice_url_new_tab" name="notice_url_new_tab" value="1" role="switch" <?= $newTabOn ? 'checked' : '' ?>>
-                            <span class="events-fooldal-notice__switch" aria-hidden="true"></span>
-                            <span class="events-fooldal-notice__newtab-text">Új ablak</span>
-                        </label>
+                        <div class="events-fooldal-notice__newtab">
+                            <input
+                                class="events-fooldal-notice__newtab-input"
+                                type="checkbox"
+                                id="notice_url_new_tab"
+                                name="notice_url_new_tab"
+                                value="1"
+                                role="switch"
+                                <?= $newTabOn ? 'checked' : '' ?>
+                            >
+                            <label class="events-fooldal-notice__newtab-ui" for="notice_url_new_tab">
+                                <span class="events-fooldal-notice__switch" aria-hidden="true"></span>
+                                <span class="events-fooldal-notice__newtab-text">Új ablak</span>
+                            </label>
+                        </div>
                     </div>
                     <p class="help">Relatív útvonal (<code>/lanueva/</code>) vagy teljes http(s) URL. A kapcsolóval új lapon nyílik a link.</p>
                 </div>

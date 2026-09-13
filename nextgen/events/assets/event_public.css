@@ -209,83 +209,371 @@ body.event-public-page {
     outline-offset: 2px;
 }
 
+/* Nyelvvalto: kompakt szegmentalt kapcsolo (HU / EN) */
 .event-lang-switch {
-    display: flex;
-    flex-wrap: wrap;
+    display: inline-flex;
     align-items: center;
-    gap: 0.35rem 0.5rem;
-    margin-left: auto;
-    font-size: 0.8125rem;
-    font-weight: 600;
-}
-
-.event-lang-switch__sep {
-    color: var(--li-text-soft);
-    font-weight: 400;
-    user-select: none;
-    padding: 0 0.05rem;
-}
-
-a.event-lang-switch__sep--mcal {
-    text-decoration: none;
-    color: var(--li-text-soft);
-    cursor: pointer;
-    border-radius: 4px;
-    padding: 0.15rem 0.35rem;
+    flex-shrink: 0;
+    gap: 1px;
+    padding: 2px;
+    border: 1px solid var(--li-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: inset 0 1px 2px rgba(45, 58, 40, 0.05);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     line-height: 1;
-    transition: color 0.15s ease, background 0.15s ease;
-}
-
-a.event-lang-switch__sep--mcal:hover,
-a.event-lang-switch__sep--mcal:focus-visible {
-    color: var(--li-green-dark);
-    background: var(--li-green-soft);
-    outline: none;
-}
-
-a.event-lang-switch__sep--mcal:focus-visible {
-    outline: 2px solid var(--li-green);
-    outline-offset: 2px;
-}
-
-.event-lang-switch__text--long {
-    display: none;
-}
-
-@media (min-width: 36rem) {
-    .event-lang-switch__text--short {
-        display: none;
-    }
-
-    .event-lang-switch__text--long {
-        display: inline;
-    }
+    text-transform: uppercase;
 }
 
 .event-lang-switch__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0.33rem 0.4rem;
+    border-radius: 999px;
     color: var(--li-text-muted);
     text-decoration: none;
-    padding: 0.2rem 0.45rem;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    transition: color 0.15s ease, background 0.15s ease;
 }
 
 .event-lang-switch__link:hover {
-    color: var(--li-green-hover);
+    color: var(--li-green-dark);
     background: var(--li-green-soft);
 }
 
 .event-lang-switch__link.is-active {
-    color: var(--li-green-dark);
-    background: var(--li-green-soft);
-    border: 1px solid var(--li-border-strong);
+    color: #fff;
+    background: var(--li-green);
+    box-shadow: 0 1px 3px rgba(45, 58, 40, 0.2);
     pointer-events: none;
 }
 
 .event-lang-switch__link:focus-visible {
     outline: 2px solid var(--li-green);
     outline-offset: 2px;
+}
+
+/* Vekony valaszto vonal; linkkent a mobil / klasszikus naptar valto */
+.event-lang-switch__sep {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    width: 0.6rem;
+    font-size: 0;
+    color: transparent;
+    text-decoration: none;
+    user-select: none;
+}
+
+.event-lang-switch__sep::before {
+    content: "";
+    width: 1px;
+    height: 0.85rem;
+    border-radius: 1px;
+    background: var(--li-border-strong);
+    transition: background 0.15s ease;
+}
+
+a.event-lang-switch__sep--mcal {
+    cursor: pointer;
+    border-radius: 999px;
+    transition: background 0.15s ease;
+}
+
+a.event-lang-switch__sep--mcal:hover,
+a.event-lang-switch__sep--mcal:focus-visible {
+    background: var(--li-green-soft);
+    outline: none;
+}
+
+a.event-lang-switch__sep--mcal:hover::before,
+a.event-lang-switch__sep--mcal:focus-visible::before {
+    background: var(--li-green);
+}
+
+a.event-lang-switch__sep--mcal:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 1px;
+}
+
+/* --- Nyilvanos fomenu: hamburger mobilon, vizszintes sav desktopon --- */
+.event-public__hero-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.event-nav__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border: 1px solid var(--li-border);
+    border-radius: 10px;
+    background: var(--li-card);
+    color: var(--li-green-dark);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.event-nav__toggle:hover {
+    background: var(--li-green-soft);
+    border-color: var(--li-border-strong);
+}
+
+.event-nav__toggle:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
+.event-nav__toggle-bars {
+    position: relative;
+    display: block;
+    width: 1.15rem;
+    height: 0.75rem;
+}
+
+.event-nav__toggle-bars > span {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform 0.2s ease, opacity 0.15s ease, top 0.2s ease;
+}
+
+.event-nav__toggle-bars > span:nth-child(1) {
+    top: 0;
+}
+
+.event-nav__toggle-bars > span:nth-child(2) {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.event-nav__toggle-bars > span:nth-child(3) {
+    top: 100%;
+    transform: translateY(-100%);
+}
+
+.event-nav__toggle.is-open .event-nav__toggle-bars > span:nth-child(1) {
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.event-nav__toggle.is-open .event-nav__toggle-bars > span:nth-child(2) {
+    opacity: 0;
+}
+
+.event-nav__toggle.is-open .event-nav__toggle-bars > span:nth-child(3) {
+    top: 50%;
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+/* Alap (mobil): lenyilo panel a fejlec alatt */
+.event-nav {
+    display: none;
+    margin-top: 0.75rem;
+    font-family: var(--ev-sans);
+}
+
+.event-nav.is-open {
+    display: block;
+}
+
+.event-nav__list,
+.event-nav__submenu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.event-nav__list {
+    border: 1px solid var(--li-border);
+    border-radius: var(--ev-radius-sm);
+    background: var(--li-card);
+    box-shadow: var(--li-shadow);
+    overflow: hidden;
+}
+
+.event-nav__item + .event-nav__item {
+    border-top: 1px solid var(--li-border);
+}
+
+.event-nav__row {
+    display: flex;
+    align-items: stretch;
+}
+
+.event-nav__link {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--li-text);
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.event-nav__link:hover {
+    color: var(--li-green-dark);
+    background: var(--li-green-soft);
+}
+
+.event-nav__link:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: -2px;
+}
+
+.event-nav__item.is-active > .event-nav__row > .event-nav__link {
+    color: var(--li-green-dark);
+    background: var(--li-green-soft);
+}
+
+.event-nav__link--sub {
+    padding-left: 1.7rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--li-text-muted);
+}
+
+.event-nav__branch {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--li-border);
+    background: transparent;
+    color: var(--li-text-soft);
+    cursor: pointer;
+}
+
+.event-nav__branch:hover {
+    color: var(--li-green-dark);
+    background: var(--li-green-soft);
+}
+
+.event-nav__branch:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: -2px;
+}
+
+.event-nav__chevron {
+    transition: transform 0.2s ease;
+}
+
+.event-nav__item.is-open > .event-nav__row > .event-nav__branch .event-nav__chevron {
+    transform: rotate(180deg);
+}
+
+.event-nav__submenu {
+    display: none;
+    border-top: 1px solid var(--li-border);
+    background: var(--li-bg);
+}
+
+.event-nav__item.is-open > .event-nav__submenu {
+    display: block;
+}
+
+@media (min-width: 900px) {
+    body:not(.event-public-page--mcal) .event-nav__toggle {
+        display: none;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav {
+        display: block;
+        margin-top: 0.6rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--li-border);
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.15rem;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        overflow: visible;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__item {
+        position: relative;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__item + .event-nav__item {
+        border-top: 0;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__row {
+        align-items: center;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__link {
+        padding: 0.45rem 0.7rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        color: var(--li-text-muted);
+        white-space: nowrap;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__item--parent > .event-nav__row > .event-nav__link {
+        padding-right: 0.3rem;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__branch {
+        width: 1.5rem;
+        border-left: 0;
+        border-radius: 8px;
+    }
+
+    /* A lenyilo a menupont aljahoz simul, hogy a hover ne szakadjon meg. */
+    body:not(.event-public-page--mcal) .event-nav__submenu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 40;
+        min-width: 12rem;
+        padding: 0.3rem;
+        border: 1px solid var(--li-border);
+        border-radius: var(--ev-radius-sm);
+        background: var(--li-card);
+        box-shadow: var(--li-shadow-lg);
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__submenu .event-nav__submenu {
+        top: -0.3rem;
+        left: 100%;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__item--parent:hover > .event-nav__submenu,
+    body:not(.event-public-page--mcal) .event-nav__item--parent:focus-within > .event-nav__submenu {
+        display: block;
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__link--sub {
+        padding: 0.45rem 0.6rem;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
 }
 
 .event-public {
@@ -387,7 +675,7 @@ body.event-public-page--home .event-public__hero {
     padding-bottom: clamp(0.85rem, 2vw, 1.15rem);
 }
 
-.event-public__hero .event-lang-switch {
+.event-public__hero .event-public__hero-actions {
     margin-left: auto;
     flex-shrink: 0;
 }
@@ -3363,7 +3651,7 @@ body.event-public-page--home .event-public__hero-bar-start {
     grid-row: 1;
 }
 
-body.event-public-page--home .event-public__hero .event-lang-switch {
+body.event-public-page--home .event-public__hero .event-public__hero-actions {
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
@@ -3451,7 +3739,7 @@ body.event-public-page--home .event-public__hero-inner {
         max-width: 100%;
     }
 
-    body.event-public-page--home:not(.event-public-page--mcal) .event-public__hero .event-lang-switch {
+    body.event-public-page--home:not(.event-public-page--mcal) .event-public__hero .event-public__hero-actions {
         grid-column: 3;
         grid-row: 1;
         justify-self: end;
@@ -3596,6 +3884,89 @@ body.event-public-page--home .event-public__hero-inner {
 .home-public__clear-filters:hover {
     color: #b91c1c;
     text-decoration: underline;
+}
+
+/* Inline valtozat: nyitogomb a honap lapozo mellett, legordulo panel a fejlec alatt */
+.home-public__filters-panel--inline {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.home-public__filters-panel--inline > .home-public__filters-summary {
+    gap: 0.45rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--li-border);
+    border-radius: 999px;
+    background: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--li-text);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.home-public__filters-panel--inline > .home-public__filters-summary::after {
+    font-size: 0.8rem;
+}
+
+.home-public__filters-panel--inline > .home-public__filters-summary:hover,
+.home-public__filters-panel--inline[open] > .home-public__filters-summary {
+    border-color: var(--li-green);
+    background: var(--li-green-soft);
+    color: var(--li-green-dark);
+}
+
+.home-public__filters-panel--inline > .home-public__filters-body {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    padding: 0.35rem 1.1rem 1.15rem;
+    border: 1px solid var(--li-border);
+    border-radius: var(--ev-radius);
+    background: var(--li-card);
+    box-shadow: var(--li-shadow-lg);
+}
+
+/* Keskeny nezetben visszaall a teljes szelessegu, lenyilo kartya */
+@media (max-width: 899px) {
+    .home-public .events-cal-toolbar--with-filters .events-cal-toolbar__left {
+        flex-wrap: wrap;
+    }
+
+    .home-public__filters-panel--inline {
+        flex: 1 1 100%;
+        order: -1;
+        margin-bottom: 0.35rem;
+        border: 1px solid var(--li-border);
+        border-radius: var(--ev-radius);
+        background: var(--li-card);
+        box-shadow: var(--li-shadow);
+    }
+
+    .home-public__filters-panel--inline > .home-public__filters-summary {
+        padding: 0.8rem 0.95rem;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--li-green-dark);
+        white-space: normal;
+    }
+
+    .home-public__filters-panel--inline > .home-public__filters-body {
+        position: static;
+        padding: 0 0.95rem 1rem;
+        border: 0;
+        border-top: 1px solid var(--li-border);
+        border-radius: 0;
+        box-shadow: none;
+    }
 }
 
 .home-public .events-filters-shell {
@@ -3881,6 +4252,7 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .home-public .events-cal-toolbar {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -5878,13 +6250,61 @@ body.event-public-page--mcal .home-public--mcal .event-public__hero-chrome {
     margin-bottom: 0;
 }
 
-/* A shell max. ~26rem: mindig rövid nyelvfelirat, ne a viewport döntsön. */
-body.event-public-page--mcal .event-lang-switch__text--short {
-    display: inline;
+/* A shell max. ~26rem: a menu itt is hamburgerrel nyilik, mcal palettaval. */
+body.event-public-page--mcal .event-nav {
+    margin-top: 0.5rem;
 }
 
-body.event-public-page--mcal .event-lang-switch__text--long {
-    display: none;
+body.event-public-page--mcal .event-nav__toggle {
+    border-color: var(--mcal-border);
+    color: var(--mcal-text);
+}
+
+body.event-public-page--mcal .event-nav__toggle:hover {
+    border-color: var(--mcal-accent);
+    background: var(--mcal-accent-soft);
+}
+
+body.event-public-page--mcal .event-nav__list {
+    border-color: var(--mcal-border);
+}
+
+body.event-public-page--mcal .event-nav__item + .event-nav__item,
+body.event-public-page--mcal .event-nav__submenu,
+body.event-public-page--mcal .event-nav__branch {
+    border-color: var(--mcal-border);
+}
+
+body.event-public-page--mcal .event-nav__link {
+    color: var(--mcal-text);
+}
+
+body.event-public-page--mcal .event-nav__link:hover,
+body.event-public-page--mcal .event-nav__item.is-active > .event-nav__row > .event-nav__link {
+    color: var(--mcal-accent);
+    background: var(--mcal-accent-soft);
+}
+
+body.event-public-page--mcal .event-lang-switch {
+    border-color: var(--mcal-border);
+}
+
+body.event-public-page--mcal .event-lang-switch__link:hover {
+    color: var(--mcal-accent);
+    background: var(--mcal-accent-soft);
+}
+
+body.event-public-page--mcal .event-lang-switch__link.is-active {
+    background: var(--mcal-accent);
+    box-shadow: none;
+}
+
+body.event-public-page--mcal a.event-lang-switch__sep--mcal:hover {
+    background: var(--mcal-accent-soft);
+}
+
+body.event-public-page--mcal a.event-lang-switch__sep--mcal:hover::before {
+    background: var(--mcal-accent);
 }
 
 body.event-public-page--mcal .home-public__filters-panel--mcal > .home-public__filters-summary {

@@ -23,10 +23,12 @@ $heroInlineTitle = trim((string) ($heroInlineTitle ?? ''));
 $mcalToggleUrl = trim((string) ($mcalToggleUrl ?? ''));
 $mcalToggleTitle = trim((string) ($mcalToggleTitle ?? ''));
 $heroExtraBackLinks = is_array($heroExtraBackLinks ?? null) ? $heroExtraBackLinks : [];
+require_once __DIR__ . '/../lib/public_nav_menu.php';
 $C = events_public_common_nav_strings($lang);
 $eventsHomeUrl = events_public_home_page_url($lang);
 $latinfoLogoSrc = events_public_logo_src();
 $L = events_public_lang_switch_link_labels();
+$N = events_public_nav_strings($lang);
 ?>
 <div class="event-public__hero-chrome">
     <?php if (!$isEventsHome): ?>
@@ -62,20 +64,28 @@ $L = events_public_lang_switch_link_labels();
         <?php if ($isEventsHome): ?>
             <?php require __DIR__ . '/public_home_renewal_notice.php'; ?>
         <?php endif; ?>
-        <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">
-            <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu" aria-label="<?= h($L['hu_aria']) ?>" title="<?= h($L['hu_aria']) ?>">
-                <span class="event-lang-switch__text event-lang-switch__text--short"><?= h($L['hu_short']) ?></span>
-                <span class="event-lang-switch__text event-lang-switch__text--long"><?= h($L['hu_long']) ?></span>
-            </a>
-            <?php if ($mcalToggleUrl !== ''): ?>
-                <a class="event-lang-switch__sep event-lang-switch__sep--mcal" href="<?= h($mcalToggleUrl) ?>" title="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>" aria-label="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>">/</a>
-            <?php else: ?>
-                <span class="event-lang-switch__sep" aria-hidden="true">/</span>
-            <?php endif; ?>
-            <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en" aria-label="<?= h($L['en_aria']) ?>" title="<?= h($L['en_aria']) ?>">
-                <span class="event-lang-switch__text event-lang-switch__text--short"><?= h($L['en_short']) ?></span>
-                <span class="event-lang-switch__text event-lang-switch__text--long"><?= h($L['en_long']) ?></span>
-            </a>
+        <div class="event-public__hero-actions">
+            <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">
+                <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu" aria-label="<?= h($L['hu_aria']) ?>" title="<?= h($L['hu_aria']) ?>"><?= h($L['hu_short']) ?></a>
+                <?php if ($mcalToggleUrl !== ''): ?>
+                    <a class="event-lang-switch__sep event-lang-switch__sep--mcal" href="<?= h($mcalToggleUrl) ?>" title="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>" aria-label="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>">/</a>
+                <?php else: ?>
+                    <span class="event-lang-switch__sep" aria-hidden="true">/</span>
+                <?php endif; ?>
+                <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en" aria-label="<?= h($L['en_aria']) ?>" title="<?= h($L['en_aria']) ?>"><?= h($L['en_short']) ?></a>
+            </div>
+            <button
+                type="button"
+                class="event-nav__toggle"
+                id="event-nav-toggle"
+                aria-controls="event-primary-nav"
+                aria-expanded="false"
+                aria-label="<?= h($N['toggle_open']) ?>"
+                title="<?= h($N['toggle_open']) ?>"
+            >
+                <span class="event-nav__toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+            </button>
         </div>
     </div>
+    <?php require __DIR__ . '/public_shell_nav.php'; ?>
 </div>

@@ -277,23 +277,13 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <section class="home-public__main" aria-label="<?= h((string) $D['calendar_aria']) ?>">
         <form method="get" action="<?= h($filterFormAction) ?>" class="home-public__form" id="events-home-filter-form">
-            <details class="home-public__filters-panel<?= $view === 'mcal' ? ' home-public__filters-panel--mcal' : '' ?>" id="home-filters-panel"<?= $filtersPanelOpen ? ' open' : '' ?>>
-                <summary class="home-public__filters-summary">
-                    <span class="home-public__filters-summary-text"><?= h((string) $D['filters_toggle']) ?></span>
-                    <?php if ($filtersActive): ?>
-                        <span class="home-public__filters-meta">
-                            <span class="home-public__filters-badge"><?= h((string) $D['filters_active_badge']) ?></span>
-                            <a href="<?= h($filterClearUrl) ?>" class="home-public__clear-filters" onclick="event.stopPropagation();"><?= h((string) $D['clear_filters']) ?></a>
-                        </span>
-                    <?php endif; ?>
-                </summary>
-                <div class="home-public__filters-body">
-                    <?php
-                    $hideMapDateFiltersInPanel = ($view === 'map');
-                    require __DIR__ . '/partials/public_event_filters.php';
-                    ?>
-                </div>
-            </details>
+            <?php
+            // Klasszikus naptárnál a szűrő nyitógomb a hónap lapozó mellé kerül.
+            $filtersPanelInline = ($view === 'cal');
+            ?>
+            <?php if (!$filtersPanelInline): ?>
+                <?php require __DIR__ . '/partials/public_home_filters_panel.php'; ?>
+            <?php endif; ?>
 
             <?php
             $homeActiveView = ($view === 'mcal' || $view === 'cal') ? 'cal' : $view;
@@ -306,8 +296,9 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php if ($view === 'mcal'): ?>
                 <?php require __DIR__ . '/partials/public_mobile_calendar.php'; ?>
             <?php elseif ($view === 'cal'): ?>
-                <div class="events-cal-toolbar" aria-label="<?= h((string) $D['cal_controls_aria']) ?>">
+                <div class="events-cal-toolbar events-cal-toolbar--with-filters" aria-label="<?= h((string) $D['cal_controls_aria']) ?>">
                     <div class="events-cal-toolbar__left">
+                        <?php require __DIR__ . '/partials/public_home_filters_panel.php'; ?>
                         <div class="events-cal-toolbar__nav" aria-label="<?= h((string) $D['month_nav_aria']) ?>">
                             <a class="events-cal-toolbar__arrow" href="<?= h($prevMonthUrl) ?>" rel="prev" aria-label="<?= h((string) $D['prev_month']) ?>">‹</a>
                             <a class="events-cal-toolbar__today" href="<?= h($todayMonthUrl) ?>"><?= h((string) $D['this_month']) ?></a>

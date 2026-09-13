@@ -109,16 +109,14 @@ function events_public_common_nav_strings(string $lang): array {
 }
 
 /**
- * Nyelvváltó link feliratok (rövid mobilon, teljes asztali nézetben).
+ * Nyelvváltó feliratok: kompakt kódok a kapcsolóban, teljes név a címkékben.
  *
- * @return array{hu_short: string, en_short: string, hu_long: string, en_long: string, hu_aria: string, en_aria: string}
+ * @return array{hu_short: string, en_short: string, hu_aria: string, en_aria: string}
  */
 function events_public_lang_switch_link_labels(): array {
     return [
-        'hu_short' => 'Hun',
-        'en_short' => 'Eng',
-        'hu_long' => 'Magyar',
-        'en_long' => 'English',
+        'hu_short' => 'HU',
+        'en_short' => 'EN',
         'hu_aria' => 'Magyar',
         'en_aria' => 'English',
     ];
