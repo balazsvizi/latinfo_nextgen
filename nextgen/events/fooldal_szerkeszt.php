@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'notice_text' => (string) ($_POST['notice_text'] ?? ''),
             'notice_text_en' => (string) ($_POST['notice_text_en'] ?? ''),
             'notice_url' => (string) ($_POST['notice_url'] ?? ''),
+            'notice_url_new_tab' => events_public_home_notice_new_tab_enabled($_POST['notice_url_new_tab'] ?? '0'),
             'notice_color_scheme' => (string) ($_POST['notice_color_scheme'] ?? 'neon_green'),
             'notice_custom_color' => (string) ($_POST['notice_custom_color'] ?? '#39FF14'),
         ];
@@ -127,9 +128,19 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
 
                 <div class="form-group">
-                    <label for="notice_url">Átkattintás URL</label>
-                    <input type="text" id="notice_url" name="notice_url" maxlength="500" value="<?= h((string) $content['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
-                    <p class="help">Relatív útvonal (<code>/lanueva/</code>) vagy teljes http(s) URL.</p>
+                    <div class="events-fooldal-notice__url-row">
+                        <div class="events-fooldal-notice__url-field">
+                            <label for="notice_url">Átkattintás URL</label>
+                            <input type="text" id="notice_url" name="notice_url" maxlength="500" value="<?= h((string) $content['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
+                        </div>
+                        <?php $newTabOn = !empty($content['notice_url_new_tab']); ?>
+                        <label class="events-fooldal-notice__newtab" for="notice_url_new_tab">
+                            <input type="checkbox" id="notice_url_new_tab" name="notice_url_new_tab" value="1" role="switch" <?= $newTabOn ? 'checked' : '' ?>>
+                            <span class="events-fooldal-notice__switch" aria-hidden="true"></span>
+                            <span class="events-fooldal-notice__newtab-text">Új ablak</span>
+                        </label>
+                    </div>
+                    <p class="help">Relatív útvonal (<code>/lanueva/</code>) vagy teljes http(s) URL. A kapcsolóval új lapon nyílik a link.</p>
                 </div>
 
                 <div class="form-group">

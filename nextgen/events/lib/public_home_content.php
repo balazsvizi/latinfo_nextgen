@@ -35,7 +35,8 @@ function events_public_home_ensure_notice_schema(PDO $db): bool {
             'notice_text' => "ADD COLUMN `notice_text` VARCHAR(500) NOT NULL DEFAULT '' AFTER `content_bottom`",
             'notice_text_en' => "ADD COLUMN `notice_text_en` VARCHAR(500) NOT NULL DEFAULT '' AFTER `notice_text`",
             'notice_url' => "ADD COLUMN `notice_url` VARCHAR(500) NOT NULL DEFAULT '' AFTER `notice_text_en`",
-            'notice_color_scheme' => "ADD COLUMN `notice_color_scheme` VARCHAR(32) NOT NULL DEFAULT 'neon_green' AFTER `notice_url`",
+            'notice_url_new_tab' => "ADD COLUMN `notice_url_new_tab` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0 AFTER `notice_url`",
+            'notice_color_scheme' => "ADD COLUMN `notice_color_scheme` VARCHAR(32) NOT NULL DEFAULT 'neon_green' AFTER `notice_url_new_tab`",
             'notice_custom_color' => "ADD COLUMN `notice_custom_color` CHAR(7) NOT NULL DEFAULT '#39FF14' AFTER `notice_color_scheme`",
         ];
         $added = false;
@@ -127,6 +128,7 @@ function events_public_home_notice_color_presets(): array {
  *   notice_text: string,
  *   notice_text_en: string,
  *   notice_url: string,
+ *   notice_url_new_tab: bool,
  *   notice_color_scheme: string,
  *   notice_custom_color: string
  * }
@@ -138,9 +140,21 @@ function events_public_home_notice_defaults(): array {
         'notice_text' => 'Megújult a Latinfo.hu naptár! Neked hogy tetszik? Írd meg nekünk!',
         'notice_text_en' => 'The Latinfo.hu calendar has been renewed! How do you like it? Tell us!',
         'notice_url' => $defaultUrl,
+        'notice_url_new_tab' => false,
         'notice_color_scheme' => 'neon_green',
         'notice_custom_color' => '#39FF14',
     ];
+}
+
+function events_public_home_notice_new_tab_enabled(mixed $raw): bool {
+    if (is_bool($raw)) {
+        return $raw;
+    }
+    if (is_int($raw) || is_float($raw)) {
+        return ((int) $raw) === 1;
+    }
+
+    return in_array(strtolower(trim((string) $raw)), ['1', 'true', 'yes', 'on'], true);
 }
 
 function events_public_home_normalize_hex_color(string $raw): ?string {
@@ -268,6 +282,7 @@ function events_public_home_notice_css_vars_style(string $scheme, string $custom
  *   notice_text: string,
  *   notice_text_en: string,
  *   notice_url: string,
+ *   notice_url_new_tab: bool,
  *   notice_color_scheme: string,
  *   notice_custom_color: string,
  *   notice_schema_ok: bool,
@@ -282,6 +297,7 @@ function events_public_home_load(PDO $db): array {
         'notice_text' => $defaults['notice_text'],
         'notice_text_en' => $defaults['notice_text_en'],
         'notice_url' => $defaults['notice_url'],
+        'notice_url_new_tab' => $defaults['notice_url_new_tab'],
         'notice_color_scheme' => $defaults['notice_color_scheme'],
         'notice_custom_color' => $defaults['notice_custom_color'],
         'notice_schema_ok' => false,
@@ -296,7 +312,7 @@ function events_public_home_load(PDO $db): array {
         if ($noticeOk) {
             $row = $db->query(
                 'SELECT `content_top`, `content_bottom`, `notice_text`, `notice_text_en`, `notice_url`,
-                        `notice_color_scheme`, `notice_custom_color`
+                        `notice_url_new_tab`, `notice_color_scheme`, `notice_custom_color`
                  FROM `events_public_home` WHERE `id` = 1 LIMIT 1'
             )->fetch(PDO::FETCH_ASSOC);
         } else {
@@ -323,6 +339,7 @@ function events_public_home_load(PDO $db): array {
             'notice_text' => (string) ($row['notice_text'] ?? $defaults['notice_text']),
             'notice_text_en' => (string) ($row['notice_text_en'] ?? $defaults['notice_text_en']),
             'notice_url' => (string) ($row['notice_url'] ?? $defaults['notice_url']),
+            'notice_url_new_tab' => events_public_home_notice_new_tab_enabled($row['notice_url_new_tab'] ?? $defaults['notice_url_new_tab']),
             'notice_color_scheme' => $scheme,
             'notice_custom_color' => $custom,
             'notice_schema_ok' => $noticeOk,
@@ -345,6 +362,7 @@ function events_public_home_load(PDO $db): array {
  *   notice_text?: string,
  *   notice_text_en?: string,
  *   notice_url?: string,
+ *   notice_url_new_tab?: bool|int|string,
  *   notice_color_scheme?: string,
  *   notice_custom_color?: string
  * } $notice
@@ -384,23 +402,25 @@ function events_public_home_save(PDO $db, string $contentTop, string $contentBot
     }
     $custom = events_public_home_normalize_hex_color((string) ($notice['notice_custom_color'] ?? ''))
         ?? $defaults['notice_custom_color'];
+    $newTab = events_public_home_notice_new_tab_enabled($notice['notice_url_new_tab'] ?? false) ? 1 : 0;
 
     $st = $db->prepare('
         INSERT INTO `events_public_home` (
             `id`, `content_top`, `content_bottom`,
-            `notice_text`, `notice_text_en`, `notice_url`,
+            `notice_text`, `notice_text_en`, `notice_url`, `notice_url_new_tab`,
             `notice_color_scheme`, `notice_custom_color`
-        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             `content_top` = VALUES(`content_top`),
             `content_bottom` = VALUES(`content_bottom`),
             `notice_text` = VALUES(`notice_text`),
             `notice_text_en` = VALUES(`notice_text_en`),
             `notice_url` = VALUES(`notice_url`),
+            `notice_url_new_tab` = VALUES(`notice_url_new_tab`),
             `notice_color_scheme` = VALUES(`notice_color_scheme`),
             `notice_custom_color` = VALUES(`notice_custom_color`)
     ');
-    $st->execute([$top, $bottom, $textHu, $textEn, $url, $scheme, $custom]);
+    $st->execute([$top, $bottom, $textHu, $textEn, $url, $newTab, $scheme, $custom]);
     events_public_home_notice_sync_version($db, [
         'notice_text' => $textHu,
         'notice_text_en' => $textEn,
@@ -412,7 +432,7 @@ function events_public_home_save(PDO $db, string $contentTop, string $contentBot
  * Nyilvános megjelenítéshez: szöveg a nyelv szerint, CSS, URL.
  *
  * @param array<string, mixed> $content events_public_home_load() eredmény
- * @return array{visible: bool, text: string, aria: string, url: string, style: string, version_id: int, lang: string}|null
+ * @return array{visible: bool, text: string, aria: string, url: string, open_new_tab: bool, style: string, version_id: int, lang: string}|null
  */
 function events_public_home_notice_for_display(array $content, string $lang, array $langStrings = []): ?array {
     $textHu = trim((string) ($content['notice_text'] ?? ''));
@@ -435,6 +455,7 @@ function events_public_home_notice_for_display(array $content, string $lang, arr
         'text' => $text,
         'aria' => $aria,
         'url' => $url,
+        'open_new_tab' => events_public_home_notice_new_tab_enabled($content['notice_url_new_tab'] ?? false),
         'style' => events_public_home_notice_css_vars_style($scheme, $custom),
         'version_id' => (int) ($content['notice_version_id'] ?? 0),
         'lang' => $displayLang,
