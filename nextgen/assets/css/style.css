@@ -8143,3 +8143,211 @@ table select:focus {
         grid-row: auto;
     }
 }
+
+/* ===== Partnereink blokkos szerkeszto (events/partnerek_szerkeszt.php) ===== */
+.partner-blocks-admin__create {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0 1.25rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border-color, #d9dee5);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.partner-blocks-admin__create-label {
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+.partner-blocks-admin__list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.partner-blocks-admin__item {
+    border: 1px solid var(--border-color, #d9dee5);
+    border-left: 4px solid #9aa5b1;
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.partner-blocks-admin__item--partner {
+    border-left-color: #6d8f63;
+}
+
+.partner-blocks-admin__item--heading {
+    border-left-color: #c08a3e;
+}
+
+.partner-blocks-admin__item--html {
+    border-left-color: #5b7fb5;
+}
+
+.partner-blocks-admin__item.is-hidden-block {
+    background: #f7f7f8;
+    opacity: 0.85;
+}
+
+.partner-blocks-admin__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
+}
+
+.partner-blocks-admin__badge {
+    flex: 0 0 auto;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: #eef1f4;
+    color: #40505f;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.partner-blocks-admin__badge--partner {
+    background: #e8f1e5;
+    color: #3d4f38;
+}
+
+.partner-blocks-admin__badge--heading {
+    background: #f8eedd;
+    color: #7a5a21;
+}
+
+.partner-blocks-admin__badge--html {
+    background: #e6edf8;
+    color: #33507c;
+}
+
+.partner-blocks-admin__summary {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.partner-blocks-admin__flag {
+    flex: 0 0 auto;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: #fdeaea;
+    color: #8d2f2f;
+    font-size: 0.75rem;
+}
+
+.partner-blocks-admin__bar-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.partner-blocks-admin__mini-form {
+    display: inline;
+    margin: 0;
+}
+
+.partner-blocks-admin__move {
+    min-width: 2.1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    line-height: 1;
+}
+
+.partner-blocks-admin__move[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.partner-blocks-admin__body {
+    padding: 0.9rem 0.9rem 1rem;
+    border-top: 1px solid var(--border-color, #d9dee5);
+    background: #fbfcfd;
+}
+
+.partner-blocks-admin__html {
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+.partner-blocks-admin__logo {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border-color, #d9dee5);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.partner-blocks-admin__logo legend {
+    padding: 0 0.35rem;
+    font-weight: 600;
+}
+
+.partner-blocks-admin__logo-grid {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.partner-blocks-admin__logo-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 6rem;
+    padding: 0.4rem;
+    border: 1px dashed #c8cfd8;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.partner-blocks-admin__logo-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.partner-blocks-admin__logo-empty {
+    color: #8a939c;
+    font-size: 0.85rem;
+}
+
+.partner-blocks-admin__check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0.35rem 0 0;
+    font-weight: 500;
+}
+
+.partner-blocks-admin__delete {
+    margin: 0.75rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #d9dee5;
+}
+
+@media (max-width: 640px) {
+    .partner-blocks-admin__logo-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .partner-blocks-admin__bar {
+        flex-wrap: wrap;
+    }
+
+    .partner-blocks-admin__summary {
+        order: 5;
+        flex-basis: 100%;
+        white-space: normal;
+    }
+}

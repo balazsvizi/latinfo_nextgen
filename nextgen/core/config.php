@@ -162,6 +162,11 @@ if (!defined('EVENTS_DJ_PATH')) {
     define('EVENTS_DJ_PATH', trim((string) cfg_get('EVENTS_DJ_PATH', 'DJ', $localConfig), '/'));
 }
 
+/** Nyilvános partner oldal URL szegmens (pl. partnereink → /partnereink/). */
+if (!defined('EVENTS_PARTNERS_PATH')) {
+    define('EVENTS_PARTNERS_PATH', trim((string) cfg_get('EVENTS_PARTNERS_PATH', 'partnereink', $localConfig), '/'));
+}
+
 /** Nyilvános főoldal (logó / lábléc link a megjelenítőn). Fejlesztői felülírás: config.local.php vagy LATINFO_PUBLIC_HOME_URL env. */
 if (!defined('LATINFO_PUBLIC_HOME_URL')) {
     $pubHome = rtrim((string) cfg_get('LATINFO_PUBLIC_HOME_URL', 'https://latinfo.hu', $localConfig), '/');

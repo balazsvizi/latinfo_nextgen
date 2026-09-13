@@ -749,6 +749,48 @@ function events_public_djs_strings(string $lang): array {
 /**
  * @return array<string, string>
  */
+function events_public_partners_strings(string $lang): array {
+    $hu = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Partnereink',
+        'page_desc' => 'A Latinfo.hu partnerei: klubok, iskolák, szervezők és támogatók.',
+        'eyebrow' => 'Partnereink',
+        'lang_nav' => 'Nyelv',
+        'lang_hu' => 'Magyar',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'footer_home_link' => 'Latinfo.hu',
+        'empty' => 'Hamarosan bemutatjuk partnereinket.',
+        'partner_link_aria' => '%s megnyitása új ablakban',
+        'admin_edit_title' => 'Szerkesztés',
+        'admin_edit_aria' => 'Partnereink szerkesztése az adminban',
+    ];
+    $en = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Our partners',
+        'page_desc' => 'Latinfo.hu partners: clubs, schools, organizers and supporters.',
+        'eyebrow' => 'Our partners',
+        'lang_nav' => 'Language',
+        'lang_hu' => 'Hungarian',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
+        'footer_home_link' => 'Latinfo.hu',
+        'empty' => 'Our partners will be introduced here soon.',
+        'partner_link_aria' => 'Open %s in a new window',
+        'admin_edit_title' => 'Edit',
+        'admin_edit_aria' => 'Edit partners in the admin',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+/**
+ * @return array<string, string>
+ */
 function events_public_organizers_catalog_strings(string $lang): array {
     $hu = [
         'html_title_suffix' => ' – ',
@@ -1080,6 +1122,25 @@ function events_public_djs_lang_switch_url(string $targetLang, array $extraParam
     $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
 
     return events_public_append_query(events_public_djs_hub_canonical_url(), $q);
+}
+
+function events_public_partners_page_url(string $lang, array $extraParams = []): string {
+    $q = $extraParams;
+    if ($lang === 'en') {
+        $q['lang'] = 'en';
+    } else {
+        unset($q['lang']);
+    }
+
+    return events_public_append_query(events_public_partners_canonical_url(), $q);
+}
+
+function events_public_partners_lang_switch_url(string $targetLang, array $extraParams = []): string {
+    // Explicit lang=hu|en kötelező: különben az angol süti megmarad magyar URL-nél.
+    $q = $extraParams;
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
+
+    return events_public_append_query(events_public_partners_canonical_url(), $q);
 }
 
 function events_public_organizers_catalog_page_url(string $lang, array $extraParams = []): string {

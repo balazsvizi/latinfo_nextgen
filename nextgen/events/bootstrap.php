@@ -128,6 +128,15 @@ if (!function_exists('events_public_djs_hub_canonical_url')) {
     }
 }
 
+if (!function_exists('events_public_partners_canonical_url')) {
+    /** Publikus partner oldal: /partnereink/ */
+    function events_public_partners_canonical_url(): string {
+        $seg = defined('EVENTS_PARTNERS_PATH') ? EVENTS_PARTNERS_PATH : 'partnereink';
+
+        return rtrim(site_url($seg), '/') . '/';
+    }
+}
+
 if (!function_exists('events_public_is_legacy_tag_request')) {
     /**
      * Csak akkor igaz, ha a kliens közvetlenül a tag.php-t kérte.

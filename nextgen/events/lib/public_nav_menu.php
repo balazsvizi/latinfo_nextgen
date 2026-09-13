@@ -24,6 +24,7 @@ function events_public_nav_strings(string $lang): array {
         'djs' => 'DJ-k',
         'organizers' => 'Szervezők',
         'latinfo' => 'Latinfo.hu',
+        'partners' => 'Partnereink',
     ];
     $en = [
         'nav_aria' => 'Main menu',
@@ -36,6 +37,7 @@ function events_public_nav_strings(string $lang): array {
         'djs' => 'DJs',
         'organizers' => 'Organizers',
         'latinfo' => 'Latinfo.hu',
+        'partners' => 'Our partners',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -82,6 +84,13 @@ function events_public_nav_menu_items(string $lang): array {
             'label' => $N['latinfo'],
             'href' => LATINFO_PUBLIC_HOME_URL,
             'external' => true,
+            'children' => [
+                [
+                    'key' => 'partners',
+                    'label' => $N['partners'],
+                    'href' => events_public_partners_page_url($lang),
+                ],
+            ],
         ],
     ];
 }
@@ -104,6 +113,7 @@ function events_public_nav_active_keys(): array {
         'megjelenit.php', 'helyszin_megjelenit.php' => ['calendar'],
         'djs.php', 'tag.php' => ['djs'],
         'szervezok.php', 'organizer.php' => ['organizers'],
+        'partnereink.php' => ['latinfo', 'partners'],
         default => [],
     };
 }

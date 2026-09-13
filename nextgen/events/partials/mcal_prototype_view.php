@@ -159,8 +159,9 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
                     </div>
 
                     <section class="mcal__day-panel" aria-live="polite">
-                        <h2 class="mcal__day-heading" id="mcal-day-heading"><?= h($selectedDayHeading) ?></h2>
-                        <div class="mcal__events" id="mcal-events">
+                        <div class="mcal__day-scroll" id="mcal-day-scroll">
+                            <h2 class="mcal__day-heading" id="mcal-day-heading"><?= h($selectedDayHeading) ?></h2>
+                            <div class="mcal__events" id="mcal-events">
                             <?php if ($selectedEvents === []): ?>
                                 <p class="mcal__empty" id="mcal-empty"><?= h($emptyDayLabel) ?></p>
                             <?php else: ?>
@@ -197,6 +198,14 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </div>
+                        </div>
+                        <div class="mcal-proto-more" id="mcal-more" hidden>
+                            <span class="mcal-proto-more__fade" aria-hidden="true"></span>
+                            <button type="button" class="mcal-proto-more__btn" id="mcal-more-btn">
+                                <span>További események</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                        </div>
                     </section>
                 </div>
             </section>
@@ -230,6 +239,51 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
     var headingEl = document.getElementById('mcal-day-heading');
     var monthInput = document.getElementById('mcal-month-picker');
     var dateBtn = document.getElementById('mcal-date-btn');
+    var moreEl = document.getElementById('mcal-more');
+    var moreBtn = document.getElementById('mcal-more-btn');
+    var dayScroll = document.getElementById('mcal-day-scroll');
+    var isSplit = document.documentElement.classList.contains('mcal-proto-html--split');
+
+    function scrollMetrics() {
+        if (isSplit && dayScroll) {
+            return {
+                scrollTop: dayScroll.scrollTop,
+                client: dayScroll.clientHeight,
+                scroll: dayScroll.scrollHeight
+            };
+        }
+        var el = document.scrollingElement || document.documentElement;
+        return {
+            scrollTop: el.scrollTop || window.pageYOffset || 0,
+            client: window.innerHeight,
+            scroll: el.scrollHeight
+        };
+    }
+
+    function updateMoreHint() {
+        if (!moreEl) return;
+        var m = scrollMetrics();
+        var canScroll = m.scroll > m.client + 12;
+        var remaining = m.scroll - (m.scrollTop + m.client);
+        var show = canScroll && remaining > 18;
+        moreEl.hidden = !show;
+    }
+
+    function scheduleMoreHint() {
+        window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(updateMoreHint);
+        });
+    }
+
+    function scrollMore() {
+        var m = scrollMetrics();
+        var delta = Math.min(Math.max(m.client * 0.55, 120), 260);
+        if (isSplit && dayScroll) {
+            dayScroll.scrollBy({ top: delta, behavior: 'smooth' });
+            return;
+        }
+        window.scrollBy({ top: delta, behavior: 'smooth' });
+    }
 
     function esc(s) {
         return String(s)
@@ -272,6 +326,7 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
         if (!eventsEl) return;
         if (!items.length) {
             eventsEl.innerHTML = '<p class="mcal__empty" id="mcal-empty">' + esc(emptyLabel) + '</p>';
+            scheduleMoreHint();
             return;
         }
         var html = '';
@@ -279,6 +334,7 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
             html += renderEventHtml(items[i]);
         }
         eventsEl.innerHTML = html;
+        scheduleMoreHint();
     }
 
     function selectDay(dayKey, btn) {
@@ -339,6 +395,19 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
             dateBtn.setAttribute('aria-expanded', 'false');
         });
     }
+
+    if (moreBtn) {
+        moreBtn.addEventListener('click', function () {
+            scrollMore();
+        });
+    }
+    if (isSplit && dayScroll) {
+        dayScroll.addEventListener('scroll', updateMoreHint, { passive: true });
+    } else {
+        window.addEventListener('scroll', updateMoreHint, { passive: true });
+    }
+    window.addEventListener('resize', scheduleMoreHint);
+    scheduleMoreHint();
 })();
 </script>
 <?php require __DIR__ . '/event_image_orientation_script.php'; ?>
