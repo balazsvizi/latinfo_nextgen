@@ -38,7 +38,7 @@ $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];
 $canonical = events_absolute_url(events_public_djs_page_url('hu'));
 $ogPageUrl = events_absolute_url(events_public_djs_page_url($lang, $limitParams));
-$cssUrl = events_url('assets/event_public.css');
+$cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $urlHu = events_public_djs_lang_switch_url('hu', $limitParams);
 $urlEn = events_public_djs_lang_switch_url('en', $limitParams);
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
@@ -81,7 +81,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page">
+<body class="event-public-page event-public-page--djs">
 <div class="event-shell">
 <article class="event-public organizer-public djs-public">
     <header class="event-public__hero">
