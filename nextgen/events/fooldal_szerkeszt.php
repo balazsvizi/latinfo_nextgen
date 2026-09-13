@@ -128,11 +128,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
 
                 <div class="form-group">
+                    <label for="notice_url">Átkattintás URL</label>
                     <div class="events-fooldal-notice__url-row">
-                        <div class="events-fooldal-notice__url-field">
-                            <label for="notice_url">Átkattintás URL</label>
-                            <input type="text" id="notice_url" name="notice_url" maxlength="500" value="<?= h((string) $content['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
-                        </div>
+                        <input type="text" id="notice_url" name="notice_url" maxlength="500" value="<?= h((string) $content['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
                         <?php $newTabOn = !empty($content['notice_url_new_tab']); ?>
                         <label class="events-fooldal-notice__newtab" for="notice_url_new_tab">
                             <input type="checkbox" id="notice_url_new_tab" name="notice_url_new_tab" value="1" role="switch" <?= $newTabOn ? 'checked' : '' ?>>

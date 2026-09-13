@@ -3091,36 +3091,45 @@ dialog.eventpics-modal::backdrop {
 .events-fooldal-notice__url-row {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 0.7rem 1rem;
+    align-items: center;
+    gap: 0.75rem 0.9rem;
 }
-.events-fooldal-notice__url-field {
-    flex: 1 1 16rem;
+.events-fooldal-notice .events-fooldal-notice__url-row > input[type="text"] {
+    flex: 1 1 14rem;
+    width: auto;
     min-width: 0;
-}
-.events-fooldal-notice__url-field label {
-    display: block;
+    max-width: 26.25rem;
 }
 .events-fooldal-notice__newtab {
     position: relative;
     display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
     gap: 0.5rem;
-    margin: 0 0 0.2rem;
-    padding: 0.35rem 0 0.15rem;
+    margin: 0;
+    padding: 0;
     cursor: pointer;
     user-select: none;
     font-weight: 600;
     font-size: 0.875rem;
+    line-height: 1.2;
     color: var(--text-primary, #1a1a1a);
 }
-.events-fooldal-notice__newtab input {
+.events-fooldal-notice .events-fooldal-notice__newtab input[type="checkbox"] {
     position: absolute;
-    opacity: 0;
     width: 1px;
     height: 1px;
-    margin: 0;
+    max-width: none;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
     pointer-events: none;
+    appearance: none;
 }
 .events-fooldal-notice__switch {
     position: relative;
