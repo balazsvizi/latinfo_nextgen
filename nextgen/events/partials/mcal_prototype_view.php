@@ -28,9 +28,7 @@ declare(strict_types=1);
  * @var int $maxDots
  */
 $mcalRootClass = 'mcal mcal--proto-dense';
-if ($layout === 'week') {
-    $mcalRootClass .= ' mcal--proto-week is-week-collapsed';
-} elseif ($layout === 'split') {
+if ($layout === 'split') {
     $mcalRootClass .= ' mcal--proto-split';
 }
 $pageClass = 'mcal-proto-page mcal-proto-page--' . $layout;
@@ -99,9 +97,6 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
                                 tabindex="-1"
                             >
                         </div>
-                        <?php if ($layout === 'week'): ?>
-                            <button type="button" class="mcal-proto-week-toggle" id="mcal-week-toggle" aria-expanded="false">Teljes hónap</button>
-                        <?php endif; ?>
                     </div>
 
                     <div class="mcal__grid-wrap" id="mcal-grid-wrap">
@@ -112,17 +107,7 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
                         </div>
                         <div class="mcal__grid" role="grid" aria-label="<?= h((string) ($D['mcal_grid_aria'] ?? 'Havi naptár')) ?>">
                             <?php foreach ($gridWeeks as $weekDays): ?>
-                                <?php
-                                $weekHasSelected = false;
-                                foreach ($weekDays as $weekDay) {
-                                    if ((string) $weekDay['key'] === $selectedDayKey) {
-                                        $weekHasSelected = true;
-                                        break;
-                                    }
-                                }
-                                $weekClass = 'mcal__week' . ($weekHasSelected ? ' is-active-week' : '');
-                                ?>
-                                <div class="<?= h($weekClass) ?>">
+                                <div class="mcal__week">
                                     <?php foreach ($weekDays as $day): ?>
                                         <?php
                                         $dayKey = (string) $day['key'];
@@ -203,8 +188,10 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
                                             <?php if (($item['changeBadge'] ?? '') !== ''): ?>
                                                 <span class="mcal__event-change<?= ($item['changeType'] ?? '') === 'cancelled' ? ' mcal__event-change--cancelled' : (($item['changeType'] ?? '') === 'modified' ? ' mcal__event-change--modified' : '') ?>"><?= h((string) $item['changeBadge']) ?></span>
                                             <?php endif; ?>
-                                            <span class="mcal__event-time"><?= h((string) ($item['time'] ?? '')) ?></span>
                                             <span class="<?= h($nameClass) ?>"><?= h((string) $item['name']) ?></span>
+                                            <?php if (trim((string) ($item['city'] ?? '')) !== ''): ?>
+                                                <span class="mcal__event-city"><?= h((string) $item['city']) ?></span>
+                                            <?php endif; ?>
                                         </span>
                                     </a>
                                 <?php endforeach; ?>
@@ -239,12 +226,10 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
     } catch (e) { headings = {}; }
 
     var emptyLabel = root.getAttribute('data-empty') || '';
-    var layout = root.getAttribute('data-layout') || '';
     var eventsEl = document.getElementById('mcal-events');
     var headingEl = document.getElementById('mcal-day-heading');
     var monthInput = document.getElementById('mcal-month-picker');
     var dateBtn = document.getElementById('mcal-date-btn');
-    var weekToggle = document.getElementById('mcal-week-toggle');
 
     function esc(s) {
         return String(s)
@@ -252,24 +237,6 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
-    }
-
-    function markActiveWeek(btn) {
-        var weeks = root.querySelectorAll('.mcal__week');
-        for (var i = 0; i < weeks.length; i++) {
-            weeks[i].classList.remove('is-active-week');
-        }
-        var week = btn ? btn.closest('.mcal__week') : root.querySelector('.mcal__week:has(.is-selected)');
-        if (week) week.classList.add('is-active-week');
-    }
-
-    function setWeekCollapsed(collapsed) {
-        if (layout !== 'week') return;
-        root.classList.toggle('is-week-collapsed', collapsed);
-        if (weekToggle) {
-            weekToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-            weekToggle.textContent = collapsed ? 'Teljes hónap' : 'Csak a hét';
-        }
     }
 
     function renderEventHtml(it) {
@@ -285,13 +252,13 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
             else if (it.changeType === 'modified') bClass += ' mcal__event-change--modified';
             badge = '<span class="' + bClass + '">' + esc(it.changeBadge) + '</span>';
         }
-        var time = it.time ? '<span class="mcal__event-time">' + esc(it.time) + '</span>' : '';
+        var city = it.city ? '<span class="mcal__event-city">' + esc(it.city) + '</span>' : '';
         return '<a class="mcal__event js-cal-event-preview" href="' + esc(it.url) + '" data-preview-id="' + esc(String(it.id)) + '" aria-haspopup="dialog">'
             + '<span class="mcal__event-meta">' + esc(it.meta) + '</span>'
             + '<span class="' + barClass + '" style="--mcal-event-accent: ' + esc(it.accent) + '">'
             + badge
-            + time
             + '<span class="' + nameClass + '">' + esc(it.name) + '</span>'
+            + city
             + '</span>'
             + '</a>';
     }
@@ -324,10 +291,6 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
             btn.classList.add('is-selected');
             btn.setAttribute('aria-pressed', 'true');
         }
-        markActiveWeek(btn);
-        if (layout === 'week') {
-            setWeekCollapsed(true);
-        }
         renderDay(dayKey);
         try {
             var url = new URL(window.location.href);
@@ -354,13 +317,6 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
             selectDay(dayKey, dayBtn);
         }
     });
-
-    if (weekToggle) {
-        weekToggle.addEventListener('click', function () {
-            var collapsed = root.classList.contains('is-week-collapsed');
-            setWeekCollapsed(!collapsed);
-        });
-    }
 
     if (dateBtn && monthInput) {
         dateBtn.addEventListener('click', function () {

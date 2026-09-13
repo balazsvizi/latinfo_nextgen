@@ -10,7 +10,7 @@ $liveMcalUrl = events_public_home_url('hu', ['view' => 'mcal']);
 ?>
 <div class="card mcal-proto-hub">
     <h1 class="mcal-proto-hub__title">Mobil naptár minták</h1>
-    <p class="mcal-proto-hub__lead">Három kipróbálható elrendezés a publikus mobil naptárhoz. Csak bejelentkezett adminnak látszanak, a nyilvános oldalt nem módosítják. Érdemes telefonon vagy a böngésző mobilos nézetében (kb. 375×812) nézni.</p>
+    <p class="mcal-proto-hub__lead">Két kipróbálható elrendezés a publikus mobil naptárhoz. Csak bejelentkezett adminnak látszanak, a nyilvános oldalt nem módosítják. Érdemes telefonon vagy a böngésző mobilos nézetében (kb. 375×812) nézni.</p>
     <p class="mcal-proto-hub__compare">
         <a href="<?= h($liveMcalUrl) ?>" target="_blank" rel="noopener noreferrer">Jelenlegi élő mobil naptár</a>
         <span aria-hidden="true">·</span>

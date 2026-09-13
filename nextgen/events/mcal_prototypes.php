@@ -57,7 +57,7 @@ $gridWeeks = array_chunk($gridDays, 7);
 $weekdayLetters = events_public_mobile_calendar_weekday_letters($lang);
 $eventsByDayPayload = mcal_prototype_enrich_events_payload(
     events_public_mobile_calendar_events_by_day_payload($byDay, $categoriesByEventId, $lang),
-    $lang
+    $byDay
 );
 $selectedDayKey = events_public_mobile_calendar_resolve_selected_day(
     $monthFirst,

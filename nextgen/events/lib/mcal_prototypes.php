@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Admin-only mobil naptár prototípusok (sűrű / hét / split).
+ * Admin-only mobil naptár prototípusok (sűrű / split).
  */
 
 /**
@@ -15,15 +15,8 @@ function mcal_prototype_layouts(): array
             'id' => 'dense',
             'letter' => 'A',
             'title' => 'Sűrű',
-            'lead' => 'Kompakt havi rács és egy soros eseménykártya: idő + cím, a dátum csak a nap fejlécében.',
+            'lead' => 'Kompakt havi rács és egy soros eseménykártya: cím, jobbra a település, ha nem Budapest.',
             'hint' => 'Ugyanaz a teljes hónap, kevesebb üres hely. Cél: 3–4 esemény görgetés nélkül.',
-        ],
-        'week' => [
-            'id' => 'week',
-            'letter' => 'B',
-            'title' => 'Hét',
-            'lead' => 'Sűrű kártyák + a hónap a kiválasztott hétre zsugorodik. A „Teljes hónap” gombbal kinyitható.',
-            'hint' => 'Napválasztás után csak az aktuális hét marad. Cél: 5–6 esemény görgetés nélkül.',
         ],
         'split' => [
             'id' => 'split',
@@ -43,27 +36,50 @@ function mcal_prototype_resolve_layout(string $raw): ?string
     return isset($layouts[$id]) ? $id : null;
 }
 
-function mcal_prototype_time_label(string $meta, string $lang): string
+function mcal_prototype_city_is_budapest(string $city): bool
 {
-    if (preg_match('/@\s*(.+)$/u', $meta, $m) === 1) {
-        $time = trim($m[1]);
-        $time = preg_replace('/\s+[A-Z]{3,5}$/', '', $time) ?? $time;
-
-        return trim($time);
+    $normalized = mb_strtolower(trim($city), 'UTF-8');
+    if ($normalized === '') {
+        return false;
+    }
+    if ($normalized === 'budapest' || $normalized === 'bp' || $normalized === 'bp.') {
+        return true;
     }
 
-    return $lang === 'en' ? 'All day' : 'Egész nap';
+    return str_starts_with($normalized, 'budapest');
+}
+
+/**
+ * Település a kártyán: üres, ha Budapest vagy nincs megadva.
+ */
+function mcal_prototype_outside_budapest_city(array $ev): string
+{
+    $city = trim((string) ($ev['venue_city'] ?? ''));
+    if ($city === '' || mcal_prototype_city_is_budapest($city)) {
+        return '';
+    }
+
+    return $city;
 }
 
 /**
  * @param array<string, list<array<string, mixed>>> $payload
+ * @param array<string, list<array<string, mixed>>> $byDay
  * @return array<string, list<array<string, mixed>>>
  */
-function mcal_prototype_enrich_events_payload(array $payload, string $lang): array
+function mcal_prototype_enrich_events_payload(array $payload, array $byDay): array
 {
     foreach ($payload as $dayKey => $items) {
+        $byId = [];
+        foreach ($byDay[$dayKey] ?? [] as $ev) {
+            $eid = (int) ($ev['id'] ?? 0);
+            if ($eid > 0) {
+                $byId[$eid] = $ev;
+            }
+        }
         foreach ($items as $i => $item) {
-            $payload[$dayKey][$i]['time'] = mcal_prototype_time_label((string) ($item['meta'] ?? ''), $lang);
+            $ev = $byId[(int) ($item['id'] ?? 0)] ?? [];
+            $payload[$dayKey][$i]['city'] = mcal_prototype_outside_budapest_city($ev);
         }
     }
 

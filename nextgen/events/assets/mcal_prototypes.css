@@ -1,4 +1,4 @@
-/* Admin-only mobil naptár prototípusok (sűrű / hét / split). */
+/* Admin-only mobil naptár prototípusok (sűrű / split). */
 
 .mcal-proto-hub__title {
     margin: 0 0 0.5rem;
@@ -32,7 +32,8 @@
 
 @media (min-width: 720px) {
     .mcal-proto-hub__grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: 44rem;
     }
 }
 
@@ -142,25 +143,6 @@
     background: #f4f5f7;
 }
 
-.mcal-proto-week-toggle {
-    margin: 0 0 0 auto;
-    padding: 0.28rem 0.6rem;
-    border: 1px solid var(--mcal-border, #e8eaee);
-    border-radius: 999px;
-    background: #fff;
-    color: var(--mcal-accent, #3b50ff);
-    font: inherit;
-    font-size: 0.75rem;
-    font-weight: 650;
-    cursor: pointer;
-}
-
-.mcal-proto-week-toggle:hover,
-.mcal-proto-week-toggle:focus-visible {
-    background: var(--mcal-accent-soft, rgba(59, 80, 255, 0.12));
-    outline: none;
-}
-
 .mcal-proto-page .home-public__main {
     padding-left: 0;
     padding-right: 0;
@@ -257,22 +239,8 @@
     border-radius: 3px;
 }
 
-.mcal--proto-dense .mcal__event-time {
-    order: 1;
-    flex: 0 0 auto;
-    font-size: 0.7rem;
-    font-weight: 650;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    opacity: 0.92;
-    max-width: 5.4rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .mcal--proto-dense .mcal__event-name {
-    order: 2;
+    order: 1;
     flex: 1 1 auto;
     min-width: 0;
     white-space: nowrap;
@@ -280,19 +248,26 @@
     text-overflow: ellipsis;
 }
 
-.mcal--proto-dense .mcal__event-change {
-    order: 3;
+.mcal--proto-dense .mcal__event-city {
+    order: 2;
+    flex: 0 1 auto;
     margin-left: auto;
+    text-align: right;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    opacity: 0.92;
+    max-width: 42%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mcal--proto-dense .mcal__event-change {
+    order: 0;
+    margin-left: 0;
     padding: 0.08rem 0.32rem;
     font-size: 0.55rem;
-}
-
-.mcal--proto-week.is-week-collapsed .mcal__week:not(.is-active-week) {
-    display: none;
-}
-
-.mcal--proto-week.is-week-collapsed .mcal__grid-wrap {
-    padding-bottom: 0.15rem;
 }
 
 html.mcal-proto-html--split,
