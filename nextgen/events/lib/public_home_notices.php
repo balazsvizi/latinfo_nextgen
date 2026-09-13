@@ -6,6 +6,7 @@ require_once __DIR__ . '/public_home_notice_stats.php';
 
 const EVENTS_HOME_NOTICE_SESSION_KEY = 'events_home_notice_id';
 const EVENTS_HOME_NOTICE_SEEN_COOKIE = 'events_home_notice_seen';
+const EVENTS_HOME_NOTICE_CURRENT_COOKIE = 'events_home_notice_current';
 const EVENTS_HOME_NOTICE_SORT_STEP = 10;
 
 function events_public_home_notices_table_available(PDO $db): bool
@@ -390,7 +391,8 @@ function events_public_home_notices_has_displayable_text(array $notice): bool
 }
 
 /**
- * Látogatónként: munkamenetben ugyanaz a tip, következő alkalommal másik (ha van).
+ * Látogatónként: tiszta főoldal-betöltéskor új tip (előnyben a még nem látott),
+ * naptár-/szűrőnavigációnál ugyanaz marad. Ha már mindet látta, RND a teljes listából.
  *
  * @param array<string, string> $langStrings
  * @return array{visible: bool, text: string, aria: string, url: string, open_new_tab: bool, style: string, version_id: int, notice_id: int, lang: string}|null
@@ -420,18 +422,27 @@ function events_public_home_notice_pick_for_visitor(PDO $db, string $lang, array
         return null;
     }
 
-    $sessionId = (int) ($_SESSION[EVENTS_HOME_NOTICE_SESSION_KEY] ?? 0);
+    $currentId = events_public_home_notice_current_id_from_cookie();
+    $keepCurrent = events_public_home_notice_should_keep_current($currentId, $activeIds);
     $seen = events_public_home_notice_seen_ids_from_cookie();
-    $choice = events_public_home_notice_choose_id($activeIds, $seen, $sessionId);
-    $chosenId = (int) $choice['id'];
+
+    if ($keepCurrent) {
+        $chosenId = $currentId;
+        $rotated = false;
+    } else {
+        $choice = events_public_home_notice_choose_id($activeIds, $seen, $currentId);
+        $chosenId = (int) $choice['id'];
+        $seen = $choice['seen'];
+        $rotated = true;
+    }
+
     if ($chosenId <= 0 || !isset($byId[$chosenId])) {
         return null;
     }
 
-    if (!empty($choice['rotated'])) {
-        $_SESSION[EVENTS_HOME_NOTICE_SESSION_KEY] = $chosenId;
-        events_public_home_notice_write_seen_cookie($choice['seen']);
-    } elseif ($sessionId !== $chosenId) {
+    if ($rotated) {
+        events_public_home_notice_write_seen_cookie($seen);
+        events_public_home_notice_write_current_cookie($chosenId);
         $_SESSION[EVENTS_HOME_NOTICE_SESSION_KEY] = $chosenId;
     }
 
@@ -455,11 +466,35 @@ function events_public_home_notice_pick_for_visitor(PDO $db, string $lang, array
 }
 
 /**
+ * Naptár / szűrő navigáció közben tartsuk a tipet; tiszta /events/ (és ?lang=) esetén cseréljük.
+ *
+ * @param list<int> $activeIds
+ */
+function events_public_home_notice_should_keep_current(int $currentId, array $activeIds): bool
+{
+    if ($currentId <= 0 || !in_array($currentId, $activeIds, true)) {
+        return false;
+    }
+
+    foreach (array_keys($_GET) as $key) {
+        $key = (string) $key;
+        if ($key === 'lang') {
+            continue;
+        }
+
+        // Bármilyen más query → naptár/szűrő navigáció, ne váltsunk tipet.
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * @param list<int> $activeIds
  * @param list<int> $seenIds
  * @return array{id: int, seen: list<int>, rotated: bool}
  */
-function events_public_home_notice_choose_id(array $activeIds, array $seenIds, int $sessionCurrentId): array
+function events_public_home_notice_choose_id(array $activeIds, array $seenIds, int $lastId = 0): array
 {
     $activeIds = array_values(array_unique(array_filter(
         array_map('intval', $activeIds),
@@ -469,10 +504,6 @@ function events_public_home_notice_choose_id(array $activeIds, array $seenIds, i
         return ['id' => 0, 'seen' => [], 'rotated' => false];
     }
     $activeSet = array_fill_keys($activeIds, true);
-
-    if ($sessionCurrentId > 0 && isset($activeSet[$sessionCurrentId])) {
-        return ['id' => $sessionCurrentId, 'seen' => $seenIds, 'rotated' => false];
-    }
 
     $seen = array_values(array_filter(
         array_map('intval', $seenIds),
@@ -485,11 +516,20 @@ function events_public_home_notice_choose_id(array $activeIds, array $seenIds, i
 
     if ($unseen === []) {
         // Minden tipet látott: új kör, teljesen véletlenszerű a teljes aktív listából.
-        $unseen = $activeIds;
+        $pool = $activeIds;
         $seen = [];
+    } else {
+        $pool = $unseen;
+        // Ha van több jelölt, ne ismételjük azonnal az előző tipet.
+        if ($lastId > 0 && count($pool) > 1) {
+            $withoutLast = array_values(array_filter($pool, static fn (int $id): bool => $id !== $lastId));
+            if ($withoutLast !== []) {
+                $pool = $withoutLast;
+            }
+        }
     }
 
-    $chosen = $unseen[random_int(0, count($unseen) - 1)];
+    $chosen = $pool[random_int(0, count($pool) - 1)];
     $seen[] = $chosen;
 
     return [
@@ -497,6 +537,29 @@ function events_public_home_notice_choose_id(array $activeIds, array $seenIds, i
         'seen' => array_values(array_unique($seen)),
         'rotated' => true,
     ];
+}
+
+function events_public_home_notice_current_id_from_cookie(): int
+{
+    $id = filter_var($_COOKIE[EVENTS_HOME_NOTICE_CURRENT_COOKIE] ?? 0, FILTER_VALIDATE_INT);
+
+    return ($id === false || $id < 0) ? 0 : (int) $id;
+}
+
+function events_public_home_notice_write_current_cookie(int $id): void
+{
+    $id = max(0, $id);
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+
+    setcookie(EVENTS_HOME_NOTICE_CURRENT_COOKIE, (string) $id, [
+        'expires' => time() + 180 * 86400,
+        'path' => '/',
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    $_COOKIE[EVENTS_HOME_NOTICE_CURRENT_COOKIE] = (string) $id;
 }
 
 /**

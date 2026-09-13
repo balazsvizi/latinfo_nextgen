@@ -171,9 +171,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <section class="events-fooldal-notice" id="fooldal-notices">
             <h3 class="events-fooldal-notice__legend">Fejléc tip (logó mellett)</h3>
             <p class="help" style="margin-top:0">
-                Több tipet is felvehetsz; a látogatók a <strong>használatban</strong> lévőket kapják véletlenszerűen.
-                Egy munkamenetben ugyanaz marad; a következő alkalommal lehetőleg olyat kap, amit még nem látott.
-                Ha már mindet látta, ismét teljesen véletlenszerűen választunk a használatban lévőkből.
+                Több tipet is felvehetsz; a látogatók a <strong>használatban</strong> lévőket kapják.
+                Tiszta főoldal-betöltéskor (pl. /events/) lehetőleg olyat kapnak, amit még nem láttak; ha már mindet látták, véletlenszerűen választunk.
+                Hónap-/szűrőváltáskor ugyanaz a tip marad.
                 Üres magyar és angol szöveg esetén a tip nem jelenik meg. Az átkattintásokat a <a href="#notice-click-stats">lap alján</a> tipenként követheted.
             </p>
             <p class="help">Most <?= (int) $activeNoticeCount ?> tip van kiosztásban, összesen <?= count($homeNotices) ?>.</p>
