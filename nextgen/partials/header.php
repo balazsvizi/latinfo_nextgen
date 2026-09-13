@@ -18,7 +18,7 @@ if ($navZone === 'events') {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= h(app_backoffice_brand_line()) ?><?= isset($pageTitle) ? ' – ' . h($pageTitle) : '' ?></title>
     <?php require __DIR__ . '/../includes/favicon_head.php'; ?>
-    <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>">
+    <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>?v=<?= h(rawurlencode(nextgen_app_version())) ?>">
     <?php if (!empty($extraHead)) { echo $extraHead; } ?>
 </head>
 <body>

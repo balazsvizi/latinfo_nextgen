@@ -132,7 +132,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <div class="events-fooldal-notice__url-row">
                         <input type="text" id="notice_url" name="notice_url" maxlength="500" value="<?= h((string) $content['notice_url']) ?>" placeholder="/lanueva/ vagy https://…">
                         <?php $newTabOn = !empty($content['notice_url_new_tab']); ?>
-                        <div class="events-fooldal-notice__newtab">
+                        <label class="events-fooldal-notice__newtab" for="notice_url_new_tab">
                             <input
                                 class="events-fooldal-notice__newtab-input"
                                 type="checkbox"
@@ -142,11 +142,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 role="switch"
                                 <?= $newTabOn ? 'checked' : '' ?>
                             >
-                            <label class="events-fooldal-notice__newtab-ui" for="notice_url_new_tab">
-                                <span class="events-fooldal-notice__switch" aria-hidden="true"></span>
-                                <span class="events-fooldal-notice__newtab-text">Új ablak</span>
-                            </label>
-                        </div>
+                            <span class="events-fooldal-notice__newtab-text">Új ablak</span>
+                        </label>
                     </div>
                     <p class="help">Relatív útvonal (<code>/lanueva/</code>) vagy teljes http(s) URL. A kapcsolóval új lapon nyílik a link.</p>
                 </div>
