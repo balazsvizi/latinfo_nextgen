@@ -40,6 +40,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !empty($_POST['google_login
 }
 
 $pageTitle = 'Mentés Google Drive-ra';
+$mainContentClass = 'main-content main-content--fullwidth';
 $extraHead = '<link rel="stylesheet" href="' . h(nextgen_url('assets/css/backup-drive.css')) . '">';
 require_once __DIR__ . '/../../partials/header.php';
 
@@ -283,7 +284,7 @@ $backupSteps = array(
 						<td><?= h($fileParts !== array() ? implode(', ', $fileParts) : '—') ?></td>
 						<td>
 							<?php if (!empty($logRow['log_text'])): ?>
-							<details><summary>Log</summary><pre class="backup-drive-log-pre"><?= h((string) $logRow['log_text']) ?></pre></details>
+							<pre class="backup-drive-log-pre"><?= h((string) $logRow['log_text']) ?></pre>
 							<?php else: ?>—<?php endif; ?>
 						</td>
 					</tr>
