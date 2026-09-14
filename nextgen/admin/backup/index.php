@@ -79,7 +79,7 @@ $backupSteps = array(
 <div class="backup-drive-wrap card">
 	<header class="backup-drive-header">
 		<h2>Mentés Google Drive-ra</h2>
-		<p class="backup-drive-intro">SQL közvetlenül a Drive-ra megy (nincs temp SQL). A ZIP ideiglenesen a szerveren készül, feltöltés után törlődik. A mentéshez a mappához jogosult Google fiók kell – <a href="<?= h($urlSettings) ?>">állítsd be a felhasználói beállításoknál</a>.</p>
+		<p class="backup-drive-intro">SQL közvetlenül a Drive-ra megy. A ZIP több rövid lépésben készül (timeout ellen), feltöltés után törlődik. Google fiók: <a href="<?= h($urlSettings) ?>">beállítások</a>.</p>
 	</header>
 
 	<?php if ($flashSuccess): ?>
@@ -413,6 +413,8 @@ $backupSteps = array(
 				var m = trimmed.match(/<b>(Fatal error|Warning|Notice|Parse error|Deprecated)<\/b>\s*:\s*([^<\n]+)/i);
 				if (m) {
 					msg = (m[1] + ': ' + m[2]).replace(/\s+/g, ' ').trim();
+				} else if (/Oldal nem található|Page not found|404/i.test(trimmed)) {
+					msg = 'A szerver 404 HTML oldalt adott vissza (HTTP ' + resp.status + '). Gyakori ok: hosting timeout a hosszú ZIP lépésnél. Próbáld újra a frissített (batch) mentéssel.';
 				} else if (trimmed.indexOf('<') === 0) {
 					msg = 'Szerver HTML hibát küldött. Részlet: ' + trimmed.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
 				} else {
@@ -654,44 +656,51 @@ $backupSteps = array(
 				});
 		}
 
+		function runStepUntilDone(stepName) {
+			return runStep(stepName).then(function (j) {
+				if (activeRun.userCancelled) {
+					throw new Error('user_cancelled');
+				}
+				if (j && j.cancelled) {
+					activeRun.userCancelled = true;
+					var cancelMsgs = (j.messages && j.messages.length) ? j.messages : ['Megszakítva a felhasználó által.'];
+					showResult(false, allMessages.concat(cancelMsgs), true);
+					updateProgress({ percent: 0, message: 'Megszakítva.', step: 'cleanup' });
+					throw new Error('user_cancelled');
+				}
+				if (!j || !j.ok) {
+					if (j && j.progress) {
+						updateProgress(j.progress);
+					}
+					var msgs = (j && j.messages) ? j.messages : ['Ismeretlen hiba.'];
+					showResult(false, allMessages.concat(msgs));
+					throw new Error('step_failed');
+				}
+				if (j.job_id) {
+					activeRun.jobId = j.job_id;
+				}
+				if (j.progress) {
+					updateProgress(j.progress);
+				}
+				if (Array.isArray(j.messages) && j.messages.length) {
+					allMessages = allMessages.concat(j.messages);
+				}
+				if (j.continue) {
+					return runStepUntilDone(stepName);
+				}
+				if (j.done) {
+					updateProgress({ percent: 100, message: 'Kész.', step: 'cleanup' });
+					showResult(true, allMessages);
+					setTimeout(function () { window.location.reload(); }, 1500);
+				}
+			});
+		}
+
 		var backupStepsOrder = buildStepsOrder();
 
 		backupStepsOrder.reduce(function (chain, stepName) {
 			return chain.then(function () {
-				return runStep(stepName).then(function (j) {
-					if (activeRun.userCancelled) {
-						throw new Error('user_cancelled');
-					}
-					if (j && j.cancelled) {
-						activeRun.userCancelled = true;
-						var cancelMsgs = (j.messages && j.messages.length) ? j.messages : ['Megszakítva a felhasználó által.'];
-						showResult(false, allMessages.concat(cancelMsgs), true);
-						updateProgress({ percent: 0, message: 'Megszakítva.', step: 'cleanup' });
-						throw new Error('user_cancelled');
-					}
-					if (!j || !j.ok) {
-						if (j && j.progress) {
-							updateProgress(j.progress);
-						}
-						var msgs = (j && j.messages) ? j.messages : ['Ismeretlen hiba.'];
-						showResult(false, allMessages.concat(msgs));
-						throw new Error('step_failed');
-					}
-					if (j.job_id) {
-						activeRun.jobId = j.job_id;
-					}
-					if (j.progress) {
-						updateProgress(j.progress);
-					}
-					if (Array.isArray(j.messages)) {
-						allMessages = allMessages.concat(j.messages);
-					}
-					if (j.done) {
-						updateProgress({ percent: 100, message: 'Kész.', step: 'cleanup' });
-						showResult(true, allMessages);
-						setTimeout(function () { window.location.reload(); }, 1500);
-					}
-				});
+				return runStepUntilDone(stepName);
 			});
 		}, Promise.resolve())
 			.catch(function (err) {

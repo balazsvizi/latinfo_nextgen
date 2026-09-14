@@ -470,6 +470,7 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 					'messages' => $stepMessages,
 					'progress' => $progress,
 					'done' => false,
+					'continue' => false,
 				));
 				return;
 			}
@@ -501,10 +502,12 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				@mkdir($zipDir, 0700, true);
 			}
 			alatinfo_backup_drive_session_release();
-			$zip = alatinfo_backup_zip_dir(
+			$zip = alatinfo_backup_zip_pack_batch(
 				$root,
 				$zipPath,
+				(string) $job['tmp'],
 				alatinfo_backup_default_exclude_paths(),
+				$minMtime,
 				static function (int $count, int $total = 0) use ($jobId, $zipPctStart, $zipPctEnd): void {
 					if ($count % 10 !== 0 && $count !== 1 && ($total <= 0 || $count !== $total)) {
 						return;
@@ -528,8 +531,7 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 							? ($count . ' / ' . $total . ' fájl hozzáadva')
 							: ($count . ' fájl hozzáadva'),
 					));
-				},
-				$minMtime
+				}
 			);
 			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
 				return;
@@ -547,8 +549,41 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				));
 				return;
 			}
-			$zipSize = is_file((string) $job['zip_path']) ? (int) filesize((string) $job['zip_path']) : 0;
+
 			$fileCount = (int) ($zip['file_count'] ?? 0);
+			$totalFiles = (int) ($zip['total'] ?? 0);
+			$zipDone = !empty($zip['done']);
+			$stepPct = $totalFiles > 0
+				? (int) floor(min(100.0, ($fileCount * 100) / $totalFiles))
+				: ($zipDone ? 100 : 0);
+			$overallRatio = $totalFiles > 0 ? min(1.0, $fileCount / $totalFiles) : ($zipDone ? 1.0 : 0.0);
+			$zipPct = min(
+				$zipPctEnd,
+				$zipPctStart + (int) floor($overallRatio * max(1, $zipPctEnd - $zipPctStart))
+			);
+
+			if (!$zipDone) {
+				$progress = alatinfo_backup_google_drive_step_progress(
+					$jobId,
+					'zip',
+					'ZIP készítése…',
+					$zipPct,
+					$totalFiles > 0
+						? ($fileCount . ' / ' . $totalFiles . ' fájl hozzáadva')
+						: ($fileCount . ' fájl hozzáadva'),
+					$stepPct
+				);
+				alatinfo_backup_drive_json_response(array(
+					'ok' => true,
+					'job_id' => $jobId,
+					'messages' => array(),
+					'progress' => $progress,
+					'done' => false,
+					'continue' => true,
+				));
+				return;
+			}
+
 			$stepMessages[] = $zip['message'];
 			alatinfo_gdrive_backup_log_append($logId, $zip['message']);
 			if (!empty($zip['skipped'])) {
@@ -556,13 +591,14 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 			}
 			$job['messages'] = array_merge($job['messages'], $stepMessages);
 			alatinfo_backup_drive_job_set($job);
+			$zipSize = is_file((string) $job['zip_path']) ? (int) filesize((string) $job['zip_path']) : 0;
 			$progress = alatinfo_backup_google_drive_step_progress(
 				$jobId,
 				'zip',
 				'ZIP kész.',
 				$zipPctEnd,
 				($fileCount > 0 ? ($fileCount . ' fájl, ') : '') . ($zipSize > 0 ? alatinfo_backup_format_bytes($zipSize) : ''),
-				$fileCount > 0 ? 100 : null
+				100
 			);
 			alatinfo_backup_drive_json_response(array(
 				'ok' => true,
@@ -570,6 +606,7 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				'messages' => $stepMessages,
 				'progress' => $progress,
 				'done' => false,
+				'continue' => false,
 			));
 			return;
 		}

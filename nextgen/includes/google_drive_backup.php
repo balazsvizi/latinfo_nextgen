@@ -2636,6 +2636,316 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 	}
 }
 
+if (!function_exists('alatinfo_backup_zip_batch_size')) {
+	function alatinfo_backup_zip_batch_size(): int
+	{
+		return 80;
+	}
+}
+
+if (!function_exists('alatinfo_backup_zip_pack_batch')) {
+	/**
+	 * ZIP készítése több rövid HTTP kérésben (hosting timeout ellen).
+	 *
+	 * @param callable(int $fileCount, int $totalFiles): void|null $onFileProgress
+	 * @return array{
+	 *   ok:bool,
+	 *   done:bool,
+	 *   skipped:bool,
+	 *   message:string,
+	 *   file_count:int,
+	 *   total:int,
+	 *   index:int,
+	 *   next_index:int
+	 * }
+	 */
+	function alatinfo_backup_zip_pack_batch(
+		string $rootDir,
+		string $outZip,
+		string $tmpDir,
+		array $excludeRel = array(),
+		?int $minMtime = null,
+		?callable $onFileProgress = null
+	): array {
+		@ini_set('memory_limit', '256M');
+		@set_time_limit(0);
+
+		$entriesPath = rtrim($tmpDir, '/\\') . DIRECTORY_SEPARATOR . 'entries.json';
+		$statePath = rtrim($tmpDir, '/\\') . DIRECTORY_SEPARATOR . 'zip_state.json';
+		$cdPath = $outZip . '.cd';
+		$batchSize = alatinfo_backup_zip_batch_size();
+
+		if (!is_file($entriesPath) || !is_file($statePath)) {
+			$collected = alatinfo_backup_zip_collect_entries($rootDir, $excludeRel, $minMtime);
+			if (!$collected['ok']) {
+				return array(
+					'ok' => false,
+					'done' => true,
+					'skipped' => false,
+					'message' => $collected['message'],
+					'file_count' => 0,
+					'total' => 0,
+					'index' => 0,
+					'next_index' => 0,
+				);
+			}
+			$entries = $collected['entries'];
+			$total = count($entries);
+			if ($total === 0) {
+				$msg = 'Nincs a szűrőnek megfelelő fájl.';
+				if ((int) $collected['skipped_by_date'] > 0) {
+					$msg .= ' (' . (int) $collected['skipped_by_date'] . ' fájl kihagyva dátum miatt.)';
+				}
+				@file_put_contents($statePath, json_encode(array(
+					'index' => 0,
+					'offset' => 0,
+					'count' => 0,
+					'total' => 0,
+					'skipped_by_date' => (int) $collected['skipped_by_date'],
+					'done' => true,
+				), JSON_UNESCAPED_UNICODE));
+				return array(
+					'ok' => true,
+					'done' => true,
+					'skipped' => true,
+					'message' => $msg,
+					'file_count' => 0,
+					'total' => 0,
+					'index' => 0,
+					'next_index' => 0,
+				);
+			}
+			$json = json_encode($entries, JSON_UNESCAPED_UNICODE);
+			if ($json === false || @file_put_contents($entriesPath, $json) === false) {
+				return array(
+					'ok' => false,
+					'done' => true,
+					'skipped' => false,
+					'message' => 'ZIP fájllista mentése sikertelen.',
+					'file_count' => 0,
+					'total' => 0,
+					'index' => 0,
+					'next_index' => 0,
+				);
+			}
+			unset($json, $entries);
+			@file_put_contents($statePath, json_encode(array(
+				'index' => 0,
+				'offset' => 0,
+				'count' => 0,
+				'total' => $total,
+				'skipped_by_date' => (int) $collected['skipped_by_date'],
+				'done' => false,
+			), JSON_UNESCAPED_UNICODE));
+			if (is_file($outZip)) {
+				@unlink($outZip);
+			}
+			if (is_file($cdPath)) {
+				@unlink($cdPath);
+			}
+		}
+
+		$stateRaw = @file_get_contents($statePath);
+		$state = is_string($stateRaw) ? json_decode($stateRaw, true) : null;
+		if (!is_array($state)) {
+			return array(
+				'ok' => false,
+				'done' => true,
+				'skipped' => false,
+				'message' => 'ZIP állapot olvashatatlan.',
+				'file_count' => 0,
+				'total' => 0,
+				'index' => 0,
+				'next_index' => 0,
+			);
+		}
+		if (!empty($state['done'])) {
+			$count = (int) ($state['count'] ?? 0);
+			$total = (int) ($state['total'] ?? 0);
+			$skipped = $total === 0;
+			$msg = $skipped
+				? 'Nincs a szűrőnek megfelelő fájl.'
+				: ('ZIP kész (' . $count . ' fájl).');
+			if ((int) ($state['skipped_by_date'] ?? 0) > 0) {
+				$msg .= ' Kihagyva dátum miatt: ' . (int) $state['skipped_by_date'] . '.';
+			}
+			return array(
+				'ok' => true,
+				'done' => true,
+				'skipped' => $skipped,
+				'message' => $msg,
+				'file_count' => $count,
+				'total' => $total,
+				'index' => (int) ($state['index'] ?? 0),
+				'next_index' => (int) ($state['index'] ?? 0),
+			);
+		}
+
+		$entriesRaw = @file_get_contents($entriesPath);
+		$entries = is_string($entriesRaw) ? json_decode($entriesRaw, true) : null;
+		if (!is_array($entries)) {
+			return array(
+				'ok' => false,
+				'done' => true,
+				'skipped' => false,
+				'message' => 'ZIP fájllista olvashatatlan.',
+				'file_count' => 0,
+				'total' => 0,
+				'index' => 0,
+				'next_index' => 0,
+			);
+		}
+
+		$index = max(0, (int) ($state['index'] ?? 0));
+		$offset = max(0, (int) ($state['offset'] ?? 0));
+		$count = max(0, (int) ($state['count'] ?? 0));
+		$total = count($entries);
+		$end = min($total, $index + $batchSize);
+
+		$mode = $index === 0 ? 'wb' : 'ab';
+		$fp = @fopen($outZip, $mode);
+		if ($fp === false) {
+			return array(
+				'ok' => false,
+				'done' => true,
+				'skipped' => false,
+				'message' => 'ZIP fájl megnyitása sikertelen.',
+				'file_count' => $count,
+				'total' => $total,
+				'index' => $index,
+				'next_index' => $index,
+			);
+		}
+		$cdMode = $index === 0 ? 'wb+' : 'ab+';
+		$cdFp = @fopen($cdPath, $cdMode);
+		if ($cdFp === false) {
+			fclose($fp);
+			return array(
+				'ok' => false,
+				'done' => true,
+				'skipped' => false,
+				'message' => 'ZIP központi könyvtár megnyitása sikertelen.',
+				'file_count' => $count,
+				'total' => $total,
+				'index' => $index,
+				'next_index' => $index,
+			);
+		}
+
+		$firstFail = null;
+		$failSample = null;
+		for ($i = $index; $i < $end; $i++) {
+			$entry = $entries[$i] ?? null;
+			if (!is_array($entry) || count($entry) < 2) {
+				continue;
+			}
+			$reason = null;
+			$added = alatinfo_backup_zip_append_entry($fp, $cdFp, (string) $entry[0], (string) $entry[1], $offset, $reason);
+			if ($added === null) {
+				if ($firstFail === null) {
+					$firstFail = $reason ?? 'ismeretlen';
+					$failSample = (string) $entry[1];
+				}
+				continue;
+			}
+			$offset = $added['offset'];
+			$count++;
+			if ($onFileProgress !== null) {
+				$onFileProgress($count, $total);
+			}
+		}
+		fclose($fp);
+		fclose($cdFp);
+
+		$nextIndex = $end;
+		$done = $nextIndex >= $total;
+		if ($done) {
+			$fp = @fopen($outZip, 'ab');
+			$cdFp = @fopen($cdPath, 'rb');
+			if ($fp === false || $cdFp === false) {
+				if (is_resource($fp)) {
+					fclose($fp);
+				}
+				if (is_resource($cdFp)) {
+					fclose($cdFp);
+				}
+				return array(
+					'ok' => false,
+					'done' => true,
+					'skipped' => false,
+					'message' => 'ZIP lezárása sikertelen.',
+					'file_count' => $count,
+					'total' => $total,
+					'index' => $index,
+					'next_index' => $nextIndex,
+				);
+			}
+			$cdSize = (int) filesize($cdPath);
+			stream_copy_to_stream($cdFp, $fp);
+			fclose($cdFp);
+			fwrite($fp, pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, $cdSize, $offset, 0));
+			fclose($fp);
+			@unlink($cdPath);
+			@unlink($entriesPath);
+			if ($count <= 0 || !is_file($outZip) || (int) filesize($outZip) < 64) {
+				@unlink($outZip);
+				$detail = 'Egyetlen fájl sem került a ZIP-be (' . $total . ' jelölt).';
+				if ($firstFail !== null) {
+					$detail .= ' Első hiba: ' . $firstFail;
+					if (is_string($failSample) && $failSample !== '') {
+						$detail .= ' [' . $failSample . ']';
+					}
+				}
+				@file_put_contents($statePath, json_encode(array(
+					'index' => $nextIndex,
+					'offset' => $offset,
+					'count' => 0,
+					'total' => $total,
+					'skipped_by_date' => (int) ($state['skipped_by_date'] ?? 0),
+					'done' => true,
+				), JSON_UNESCAPED_UNICODE));
+				return array(
+					'ok' => false,
+					'done' => true,
+					'skipped' => false,
+					'message' => $detail,
+					'file_count' => 0,
+					'total' => $total,
+					'index' => $index,
+					'next_index' => $nextIndex,
+				);
+			}
+		}
+
+		@file_put_contents($statePath, json_encode(array(
+			'index' => $nextIndex,
+			'offset' => $offset,
+			'count' => $count,
+			'total' => $total,
+			'skipped_by_date' => (int) ($state['skipped_by_date'] ?? 0),
+			'done' => $done,
+		), JSON_UNESCAPED_UNICODE));
+
+		$msg = $done
+			? ('ZIP kész (' . $count . ' fájl).')
+			: ('ZIP csomagolás: ' . $count . ' / ' . $total . ' fájl.');
+		if ($done && (int) ($state['skipped_by_date'] ?? 0) > 0) {
+			$msg .= ' Kihagyva dátum miatt: ' . (int) $state['skipped_by_date'] . '.';
+		}
+
+		return array(
+			'ok' => true,
+			'done' => $done,
+			'skipped' => false,
+			'message' => $msg,
+			'file_count' => $count,
+			'total' => $total,
+			'index' => $index,
+			'next_index' => $nextIndex,
+		);
+	}
+}
+
 if (!function_exists('alatinfo_backup_zip_write_stream_sink')) {
 	/**
 	 * ZIP streamelése callback-be (pl. Drive feltöltés) – nincs site.zip temp fájl.
