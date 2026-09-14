@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `events_calendar_events` (
     `created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `event_status` VARCHAR(20) NOT NULL DEFAULT 'draft' COMMENT 'wp_posts.post_status (publish, draft, …)',
+    `event_published_at` DATETIME NULL DEFAULT NULL COMMENT 'Első közzététel ideje (slug rögzítés késleltetéséhez)',
     `event_start` DATETIME NULL,
     `event_end` DATETIME NULL,
     `event_allday` TINYINT(1) NOT NULL DEFAULT 0,

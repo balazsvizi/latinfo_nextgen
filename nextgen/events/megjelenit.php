@@ -60,6 +60,19 @@ $stmt = $db->prepare('
 $stmt->execute([$slug, events_public_post_status()]);
 $event = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$event) {
+    $redirectSlug = events_slug_redirect_target($db, $slug);
+    if ($redirectSlug !== null) {
+        $redirParams = [];
+        foreach (['lang', 'ref'] as $param) {
+            if (isset($_GET[$param]) && (string) $_GET[$param] !== '') {
+                $redirParams[$param] = (string) $_GET[$param];
+            }
+        }
+        $targetLang = ($redirParams['lang'] ?? $lang) === 'en' ? 'en' : 'hu';
+        $target = events_public_event_page_url($redirectSlug, $targetLang);
+        unset($redirParams['lang']);
+        events_public_redirect_to(events_public_append_query($target, $redirParams));
+    }
     http_response_code(404);
     header('Content-Type: text/html; charset=UTF-8');
     echo events_public_megjelenit_not_found_html($lang);

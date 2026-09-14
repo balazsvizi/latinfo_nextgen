@@ -19,6 +19,7 @@ if ($id <= 0) {
 
 $db = getDb();
 events_organizer_finance_ensure_schema($db);
+events_slug_redirects_ensure_schema($db);
 $stmt = $db->prepare('SELECT * FROM `events_calendar_events` WHERE id = ?');
 $stmt->execute([$id]);
 $event = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -72,11 +73,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $e['supplementary_style_ids'] = $supplementaryStyleIds;
         $e['finance_payer_organizer_ids'] = $row['finance_payer_organizer_ids'] ?? events_finance_payer_organizer_ids_from_post();
     } else {
+        $oldSlug = trim((string) ($event['event_slug'] ?? ''));
+        $newSlug = trim((string) ($row['event_slug'] ?? ''));
+        $publishedAt = events_slug_published_at_for_save(
+            isset($event['event_published_at']) ? (string) $event['event_published_at'] : null,
+            (string) $row['event_status']
+        );
+        $row['event_published_at'] = $publishedAt;
+        $recordSlugRedirect = $oldSlug !== '' && $newSlug !== '' && $oldSlug !== $newSlug && events_slug_is_locked($db, $event);
         try {
             $db->beginTransaction();
             $upd = $db->prepare('
                 UPDATE `events_calendar_events` SET
-                    event_name = ?, event_slug = ?, event_content = ?, event_status = ?,
+                    event_name = ?, event_slug = ?, event_content = ?, event_status = ?, event_published_at = ?,
                     event_start = ?, event_end = ?, event_allday = ?,
                     event_change_active = ?, event_change_type = ?, event_change_note = ?,
                     event_cost_from = ?, event_cost_to = ?, finance_payer_organizer_id = ?, finance_note = ?, finance_organizer_fee = ?, finance_amount_paid = ?,
@@ -89,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_slug'],
                 $row['event_content'],
                 $row['event_status'],
+                $row['event_published_at'],
                 $row['event_start'],
                 $row['event_end'],
                 $row['event_allday'],
@@ -107,19 +117,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['venue_id'],
                 $id,
             ]);
+            if ($recordSlugRedirect) {
+                events_slug_redirect_record($db, $id, $oldSlug, $newSlug);
+            }
             events_save_event_organizers($db, $id, $organizerIds);
             events_save_event_categories($db, $id, $categoryIds);
             events_save_event_tags($db, $id, $tagIds);
             events_save_event_main_styles($db, $id, $mainStyleIds);
             events_save_event_supplementary_styles($db, $id, $supplementaryStyleIds);
             $db->commit();
+            $logDetails = events_build_log_details($db, $row, $organizerIds, $categoryIds);
+            if ($recordSlugRedirect) {
+                $logDetails .= "\nÁtirányítás: " . $oldSlug . ' → ' . $newSlug;
+            }
             rendszer_log(
                 'esemény',
                 $id,
                 'Módosítva',
-                events_build_log_details($db, $row, $organizerIds, $categoryIds)
+                $logDetails
             );
-            flash('success', 'Mentve.');
+            flash('success', $recordSlugRedirect
+                ? 'Mentve. A régi slug (' . $oldSlug . ') az újra irányít.'
+                : 'Mentve.');
             redirect(events_url('szerkeszt.php?id=') . $id);
         } catch (Throwable $ex) {
             if ($db->inTransaction()) {
@@ -163,6 +182,8 @@ if ((string) ($event['event_status'] ?? '') === events_public_post_status()
     && trim((string) ($event['event_slug'] ?? '')) !== '') {
     $eventEditPreviewUrl = events_megjelenit_url((string) $event['event_slug']);
 }
+$eventSlugLockInfo = events_slug_lock_info($db, $event);
+$eventSlugRedirectCount = events_slug_redirect_count_for_event($db, $id);
 
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');

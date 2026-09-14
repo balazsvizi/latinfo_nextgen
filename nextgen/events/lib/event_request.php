@@ -634,6 +634,7 @@ function events_load_event_copy_template(PDO $db, int $sourceId): ?array {
     $event['event_change_type'] = null;
     $event['event_change_note'] = null;
     $event['event_status'] = events_default_post_status();
+    $event['event_published_at'] = null;
     $event['event_url'] = null;
     $event['finance_payer_organizer_id'] = null;
     $event['finance_note'] = null;

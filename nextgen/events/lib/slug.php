@@ -27,7 +27,12 @@ function events_slug_exists(PDO $db, string $slug, ?int $excludeId): bool {
     }
     $stmt = $db->prepare($sql . ' LIMIT 1');
     $stmt->execute($params);
-    return (bool) $stmt->fetchColumn();
+    if ((bool) $stmt->fetchColumn()) {
+        return true;
+    }
+
+    return function_exists('events_slug_redirect_taken')
+        && events_slug_redirect_taken($db, $slug, $excludeId);
 }
 
 /**

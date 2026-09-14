@@ -70,6 +70,10 @@ function events_permanent_delete_event_junctions(PDO $db, int $eventId): void {
 
     $db->prepare('DELETE FROM `events_calendar_event_views` WHERE `esemény_id` = ?')->execute([$eventId]);
 
+    if (function_exists('events_slug_redirects_delete_for_event')) {
+        events_slug_redirects_delete_for_event($db, $eventId);
+    }
+
     if (function_exists('db_table_exists') && db_table_exists($db, 'events_calendar_event_djs')) {
         $db->prepare('DELETE FROM `events_calendar_event_djs` WHERE `event_id` = ?')->execute([$eventId]);
     }

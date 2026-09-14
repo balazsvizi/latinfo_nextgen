@@ -6,6 +6,7 @@ declare(strict_types=1);
  */
 require_once dirname(__DIR__) . '/init.php';
 require_once __DIR__ . '/lib/slug.php';
+require_once __DIR__ . '/lib/slug_redirects.php';
 require_once __DIR__ . '/lib/event_status.php';
 require_once __DIR__ . '/lib/html_security.php';
 

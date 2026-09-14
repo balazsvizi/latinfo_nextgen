@@ -108,6 +108,26 @@ if ($organizerFinanceJson === false) {
             </a>
         <?php endif; ?>
     </div>
+    <?php
+    $slugLock = isset($eventSlugLockInfo) && is_array($eventSlugLockInfo) ? $eventSlugLockInfo : null;
+    $slugRedirectCount = isset($eventSlugRedirectCount) ? (int) $eventSlugRedirectCount : 0;
+    if ($slugLock !== null):
+        $delayMin = (int) ($slugLock['delay_minutes'] ?? EVENTS_SLUG_SAVE_DELAY_DEFAULT);
+        if (!empty($slugLock['locked'])):
+            ?>
+            <p class="help events-edit-slug-lock-hint">A slug rögzítve van. Átírásakor a régi URL az újra irányít.
+                <?php if ($slugRedirectCount > 0): ?>
+                    <a href="<?= h(events_url('slug_atiranyitasok.php')) ?>"><?= $slugRedirectCount ?> mentett átirányítás</a>
+                <?php else: ?>
+                    <a href="<?= h(events_url('slug_atiranyitasok.php')) ?>">Átirányítások</a>
+                <?php endif; ?>
+            </p>
+        <?php elseif (!empty($slugLock['published'])): ?>
+            <p class="help events-edit-slug-lock-hint">A slug még nem rögzült: a közzététel után még kb. <?= (int) ($slugLock['remaining_minutes'] ?? $delayMin) ?> percig szabadon módosítható, átirányítás nélkül.</p>
+        <?php else: ?>
+            <p class="help events-edit-slug-lock-hint">Új eseménynél a slug a közzététel után <?= $delayMin ?> percig még nem rögzül. Addig átírható átirányítás nélkül.</p>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-dates">
     <div class="events-edit-panel__title-row events-edit-panel__title-row--datetime">

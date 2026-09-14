@@ -25,6 +25,8 @@ function events_data_tables_registry(): array {
         'events_tag_type_links' => ['label' => 'Címke – típus kapcsolók', 'group' => 'Törzsadatok'],
         'events_styles' => ['label' => 'Stílusok', 'group' => 'Törzsadatok'],
         'events_import_settings' => ['label' => 'CSV import beállítások', 'group' => 'Rendszer'],
+        'events_app_settings' => ['label' => 'Esemény alkalmazásbeállítások', 'group' => 'Rendszer'],
+        'events_slug_redirects' => ['label' => 'Esemény slug átirányítások', 'group' => 'Rendszer'],
         'events_specialtags' => ['label' => 'Speciális címke csoportok (régi)', 'group' => 'Régi / opcionális'],
         'events_special_tags' => ['label' => 'Címke – speciális csoport kapcsolók (régi)', 'group' => 'Régi / opcionális'],
         'events_djs' => ['label' => 'DJ-k (régi)', 'group' => 'Régi / opcionális'],

@@ -10,6 +10,7 @@ requireLogin();
 
 $db = getDb();
 events_organizer_finance_ensure_schema($db);
+events_slug_redirects_ensure_schema($db);
 $organizers = events_load_organizer_options($db);
 $organizerFinanceMap = events_load_organizer_finance_map($db);
 $categories = events_load_category_options($db);
@@ -90,21 +91,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $db->beginTransaction();
+            $publishedAt = events_slug_published_at_for_save(null, (string) $row['event_status']);
             $stmt = $db->prepare('
                 INSERT INTO `events_calendar_events` (
-                    event_name, event_slug, event_content, event_status,
+                    event_name, event_slug, event_content, event_status, event_published_at,
                     event_start, event_end, event_allday,
                     event_change_active, event_change_type, event_change_note,
                     event_cost_from, event_cost_to, finance_payer_organizer_id, finance_note, finance_organizer_fee, finance_amount_paid,
                     event_url, event_featured_image_url, event_latinfohu_partner,
                     venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
                 $row['event_slug'],
                 $row['event_content'],
                 $row['event_status'],
+                $publishedAt,
                 $row['event_start'],
                 $row['event_end'],
                 $row['event_allday'],
@@ -189,6 +192,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php
         $eventFormAutoSlug = true;
         $eventFormCancelUrl = events_url('events_admin.php');
+        $eventSlugLockInfo = [
+            'locked' => false,
+            'published' => false,
+            'delay_minutes' => events_slug_save_delay_minutes($db),
+            'remaining_minutes' => null,
+        ];
         require __DIR__ . '/partials/event_fields.php';
         $eventFormActionsPlacement = 'footer';
         require __DIR__ . '/partials/event_form_actions.php';

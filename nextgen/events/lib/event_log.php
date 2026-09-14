@@ -59,6 +59,10 @@ function events_build_log_details(
             isset($row['event_change_type']) ? (string) $row['event_change_type'] : null
         );
         $lines[] = 'Változás jelzés: ' . $changeLabel;
+        $changeNote = trim((string) ($row['event_change_note'] ?? ''));
+        if ($changeNote !== '') {
+            $lines[] = 'Változás szövege: ' . $changeNote;
+        }
     }
 
     $costLine = events_log_format_cost_line($row);
