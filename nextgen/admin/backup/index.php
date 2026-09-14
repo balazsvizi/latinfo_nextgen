@@ -241,7 +241,9 @@ $backupSteps = array(
 			<table class="backup-drive-log-table">
 				<thead>
 					<tr>
-						<th>Idő</th>
+						<th>Kezdés</th>
+						<th>Vég</th>
+						<th>Futás</th>
 						<th>Admin</th>
 						<th>Státusz</th>
 						<th>Cél</th>
@@ -274,9 +276,21 @@ $backupSteps = array(
 					if (!empty($logRow['zip_drive_name'])) {
 						$fileParts[] = (string) $logRow['zip_drive_name'];
 					}
+					$startedAt = (string) ($logRow['started_at'] ?? '');
+					$finishedAt = (string) ($logRow['finished_at'] ?? '');
+					$startTs = $startedAt !== '' ? strtotime($startedAt) : false;
+					$endTs = $finishedAt !== '' ? strtotime($finishedAt) : false;
+					$durationLabel = '—';
+					if ($startTs !== false && $endTs !== false && $endTs >= $startTs) {
+						$durationLabel = alatinfo_gdrive_backup_log_format_duration($endTs - $startTs);
+					} elseif ($status === 'running' && $startTs !== false) {
+						$durationLabel = 'folyamatban…';
+					}
 					?>
 					<tr>
-						<td><?= h((string) ($logRow['started_at'] ?? '')) ?></td>
+						<td><?= h($startTs !== false ? date('Y-m-d H:i:s', $startTs) : '—') ?></td>
+						<td><?= h($endTs !== false ? date('Y-m-d H:i:s', $endTs) : '—') ?></td>
+						<td><?= h($durationLabel) ?></td>
 						<td><?= h((string) ($logRow['admin_nev'] ?? '—')) ?></td>
 						<td><span class="backup-drive-status backup-drive-status--<?= h($statusClass) ?>"><?= h($statusLabel) ?></span></td>
 						<td><?= h(alatinfo_gdrive_backup_log_format_targets($logRow)) ?></td>
@@ -392,7 +406,8 @@ $backupSteps = array(
 		jobId: '',
 		pollTimer: null,
 		abortController: null,
-		userCancelled: false
+		userCancelled: false,
+		startedAtMs: 0
 	};
 
 	function stopPoll() {
@@ -558,6 +573,44 @@ $backupSteps = array(
 		}
 	}
 
+	function formatDuration(seconds) {
+		seconds = Math.max(0, Math.floor(seconds));
+		if (seconds < 60) {
+			return seconds + ' mp';
+		}
+		var mins = Math.floor(seconds / 60);
+		var secs = seconds % 60;
+		if (mins < 60) {
+			return secs > 0 ? (mins + ' perc ' + secs + ' mp') : (mins + ' perc');
+		}
+		var hours = Math.floor(mins / 60);
+		mins = mins % 60;
+		var parts = [hours + ' óra'];
+		if (mins > 0) {
+			parts.push(mins + ' perc');
+		}
+		return parts.join(' ');
+	}
+
+	function formatLocalDateTime(d) {
+		function pad(n) { return n < 10 ? '0' + n : String(n); }
+		return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+			+ ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+	}
+
+	function withTimingMessages(messages) {
+		var list = (messages || []).slice();
+		if (!activeRun.startedAtMs) {
+			return list;
+		}
+		var start = new Date(activeRun.startedAtMs);
+		var end = new Date();
+		list.push('Kezdés: ' + formatLocalDateTime(start));
+		list.push('Vég: ' + formatLocalDateTime(end));
+		list.push('Futási idő: ' + formatDuration((end.getTime() - start.getTime()) / 1000));
+		return list;
+	}
+
 	function showResult(ok, messages, cancelled) {
 		if (!resultBox || !resultLog || !resultTitle) {
 			return;
@@ -581,7 +634,7 @@ $backupSteps = array(
 			progressBox.hidden = false;
 		}
 		resultLog.innerHTML = '';
-		(messages || []).forEach(function (msg) {
+		withTimingMessages(messages).forEach(function (msg) {
 			var li = document.createElement('li');
 			li.textContent = msg;
 			resultLog.appendChild(li);
@@ -590,6 +643,7 @@ $backupSteps = array(
 	}
 
 	runBtn.addEventListener('click', function () {
+		activeRun.startedAtMs = 0;
 		if (includeDbInput && includeFilesInput && !includeDbInput.checked && !includeFilesInput.checked) {
 			showResult(false, ['Legalább az adatbázist vagy a fájlokat válaszd ki.']);
 			return;
@@ -603,6 +657,7 @@ $backupSteps = array(
 		activeRun.jobId = '';
 		activeRun.userCancelled = false;
 		activeRun.abortController = new AbortController();
+		activeRun.startedAtMs = Date.now();
 		setBusy(true);
 		resetSteps();
 		updateStepVisibility();

@@ -180,6 +180,53 @@ if (!function_exists('alatinfo_gdrive_backup_log_append')) {
 	}
 }
 
+if (!function_exists('alatinfo_gdrive_backup_log_format_duration')) {
+	function alatinfo_gdrive_backup_log_format_duration(int $seconds): string
+	{
+		$seconds = max(0, $seconds);
+		if ($seconds < 60) {
+			return $seconds . ' mp';
+		}
+		$mins = intdiv($seconds, 60);
+		$secs = $seconds % 60;
+		if ($mins < 60) {
+			return $secs > 0 ? ($mins . ' perc ' . $secs . ' mp') : ($mins . ' perc');
+		}
+		$hours = intdiv($mins, 60);
+		$mins = $mins % 60;
+		$parts = array($hours . ' óra');
+		if ($mins > 0) {
+			$parts[] = $mins . ' perc';
+		}
+		if ($secs > 0 && $hours === 0) {
+			$parts[] = $secs . ' mp';
+		}
+		return implode(' ', $parts);
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_backup_log_format_timing')) {
+	/**
+	 * @return list<string>
+	 */
+	function alatinfo_gdrive_backup_log_format_timing(?string $startedAt, ?string $finishedAt): array
+	{
+		$lines = array();
+		$startTs = ($startedAt !== null && $startedAt !== '') ? strtotime($startedAt) : false;
+		$endTs = ($finishedAt !== null && $finishedAt !== '') ? strtotime($finishedAt) : false;
+		if ($startTs !== false) {
+			$lines[] = 'Kezdés: ' . date('Y-m-d H:i:s', $startTs);
+		}
+		if ($endTs !== false) {
+			$lines[] = 'Vég: ' . date('Y-m-d H:i:s', $endTs);
+		}
+		if ($startTs !== false && $endTs !== false && $endTs >= $startTs) {
+			$lines[] = 'Futási idő: ' . alatinfo_gdrive_backup_log_format_duration($endTs - $startTs);
+		}
+		return $lines;
+	}
+}
+
 if (!function_exists('alatinfo_gdrive_backup_log_finish')) {
 	/**
 	 * @param list<string> $messages
@@ -194,12 +241,25 @@ if (!function_exists('alatinfo_gdrive_backup_log_finish')) {
 		if ($logId === null || $logId <= 0 || !alatinfo_gdrive_backup_log_table_exists()) {
 			return;
 		}
-		$logText = implode("\n", $messages);
 		try {
 			$db = getDb();
+			$startedAt = null;
+			$sel = $db->prepare('SELECT started_at FROM nextgen_gdrive_backup_log WHERE id = ? LIMIT 1');
+			$sel->execute([$logId]);
+			$row = $sel->fetch(PDO::FETCH_ASSOC);
+			if (is_array($row) && !empty($row['started_at'])) {
+				$startedAt = (string) $row['started_at'];
+			}
+			$finishedAt = date('Y-m-d H:i:s');
+			$timing = alatinfo_gdrive_backup_log_format_timing($startedAt, $finishedAt);
+			$logMessages = $messages;
+			foreach ($timing as $line) {
+				$logMessages[] = $line;
+			}
+			$logText = implode("\n", $logMessages);
 			$stmt = $db->prepare(
 				'UPDATE nextgen_gdrive_backup_log SET
-				status = ?, log_text = ?, sql_drive_name = ?, zip_drive_name = ?, finished_at = NOW()
+				status = ?, log_text = ?, sql_drive_name = ?, zip_drive_name = ?, finished_at = ?
 				WHERE id = ?'
 			);
 			$stmt->execute([
@@ -207,6 +267,7 @@ if (!function_exists('alatinfo_gdrive_backup_log_finish')) {
 				$logText !== '' ? $logText : null,
 				$sqlDriveName,
 				$zipDriveName,
+				$finishedAt,
 				$logId,
 			]);
 		} catch (Throwable $e) {
