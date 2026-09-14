@@ -181,7 +181,7 @@ $backupSteps = array(
 	</div>
 
 	<section class="backup-drive-card backup-drive-progress" id="backup-drive-progress" hidden>
-		<h3 class="backup-drive-card__title">Mentés folyamatban…</h3>
+		<h3 class="backup-drive-card__title" id="backup-drive-progress-title">Mentés folyamatban…</h3>
 		<div class="backup-drive-progress__bar-wrap" aria-hidden="true">
 			<div class="backup-drive-progress__bar" id="backup-drive-progress-bar" style="width:0%"></div>
 		</div>
@@ -301,6 +301,7 @@ $backupSteps = array(
 	var testBtn = document.getElementById('backup-drive-test-btn');
 	var form = document.getElementById('backup-drive-form');
 	var progressBox = document.getElementById('backup-drive-progress');
+	var progressTitle = document.getElementById('backup-drive-progress-title');
 	var progressBar = document.getElementById('backup-drive-progress-bar');
 	var progressPct = document.getElementById('backup-drive-progress-pct');
 	var progressStatus = document.getElementById('backup-drive-progress-status');
@@ -565,9 +566,18 @@ $backupSteps = array(
 		if (cancelled) {
 			resultBox.classList.add('backup-drive-result--err');
 			resultTitle.textContent = 'Mentés megszakítva';
+			if (progressTitle) {
+				progressTitle.textContent = 'Mentés megszakítva';
+			}
 		} else {
 			resultBox.classList.add(ok ? 'backup-drive-result--ok' : 'backup-drive-result--err');
 			resultTitle.textContent = ok ? 'Mentés sikeres' : 'Mentés sikertelen';
+			if (progressTitle) {
+				progressTitle.textContent = ok ? 'Mentés kész' : 'Mentés sikertelen';
+			}
+		}
+		if (progressBox) {
+			progressBox.hidden = false;
 		}
 		resultLog.innerHTML = '';
 		(messages || []).forEach(function (msg) {
@@ -595,6 +605,9 @@ $backupSteps = array(
 		setBusy(true);
 		resetSteps();
 		updateStepVisibility();
+		if (progressTitle) {
+			progressTitle.textContent = 'Mentés folyamatban…';
+		}
 		if (resultBox) {
 			resultBox.hidden = true;
 		}
@@ -689,9 +702,8 @@ $backupSteps = array(
 					return runStepUntilDone(stepName);
 				}
 				if (j.done) {
-					updateProgress({ percent: 100, message: 'Kész.', step: 'cleanup' });
+					updateProgress({ percent: 100, message: 'Mentés kész.', step: 'cleanup' });
 					showResult(true, allMessages);
-					setTimeout(function () { window.location.reload(); }, 1500);
 				}
 			});
 		}

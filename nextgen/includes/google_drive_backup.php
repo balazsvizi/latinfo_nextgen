@@ -2763,11 +2763,16 @@ if (!function_exists('alatinfo_backup_zip_pack_batch')) {
 			$count = (int) ($state['count'] ?? 0);
 			$total = (int) ($state['total'] ?? 0);
 			$skipped = $total === 0;
-			$msg = $skipped
-				? 'Nincs a szűrőnek megfelelő fájl.'
-				: ('ZIP kész (' . $count . ' fájl).');
+			if ($skipped) {
+				$msg = 'Nincs a szűrőnek megfelelő fájl.';
+			} else {
+				$msg = 'ZIP kész: összesen ' . $total . ' fájl, ebből ' . $count . ' került a ZIP-be.';
+				if ($total > $count) {
+					$msg .= ' Kihagyva (hiba/olvashatatlan): ' . ($total - $count) . '.';
+				}
+			}
 			if ((int) ($state['skipped_by_date'] ?? 0) > 0) {
-				$msg .= ' Kihagyva dátum miatt: ' . (int) $state['skipped_by_date'] . '.';
+				$msg .= ' Dátumszűrő miatt kihagyva: ' . (int) $state['skipped_by_date'] . '.';
 			}
 			return array(
 				'ok' => true,
@@ -2927,10 +2932,13 @@ if (!function_exists('alatinfo_backup_zip_pack_batch')) {
 		), JSON_UNESCAPED_UNICODE));
 
 		$msg = $done
-			? ('ZIP kész (' . $count . ' fájl).')
+			? ('ZIP kész: összesen ' . $total . ' fájl, ebből ' . $count . ' került a ZIP-be.')
 			: ('ZIP csomagolás: ' . $count . ' / ' . $total . ' fájl.');
+		if ($done && $total > $count) {
+			$msg .= ' Kihagyva (hiba/olvashatatlan): ' . ($total - $count) . '.';
+		}
 		if ($done && (int) ($state['skipped_by_date'] ?? 0) > 0) {
-			$msg .= ' Kihagyva dátum miatt: ' . (int) $state['skipped_by_date'] . '.';
+			$msg .= ' Dátumszűrő miatt kihagyva: ' . (int) $state['skipped_by_date'] . '.';
 		}
 
 		return array(
