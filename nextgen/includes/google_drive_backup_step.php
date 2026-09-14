@@ -361,7 +361,7 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				alatinfo_gdrive_backup_log_append($logId, $stepMessages[0]);
 				$job['messages'] = array_merge($job['messages'], $stepMessages);
 				alatinfo_backup_drive_job_set($job);
-				$progress = alatinfo_backup_google_drive_step_progress($jobId, 'sql', 'SQL kihagyva.', 24);
+				$progress = alatinfo_backup_google_drive_step_progress($jobId, 'sql', 'SQL kihagyva.', 72);
 				alatinfo_backup_drive_json_response(array(
 					'ok' => true,
 					'job_id' => $jobId,
@@ -371,41 +371,80 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				));
 				return;
 			}
-			$progress = alatinfo_backup_google_drive_step_progress(
-				$jobId,
-				'sql',
-				'Adatbázis export (SQL)…',
-				12
-			);
-			alatinfo_backup_drive_session_release();
-			$dump = alatinfo_backup_export_sql($db, (string)$job['sql_path']);
-			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
-				return;
-			}
-			if (!$dump['ok']) {
-				alatinfo_gdrive_backup_log_append($logId, 'HIBA: ' . $dump['message']);
-				alatinfo_gdrive_backup_log_finish($logId, false, array_merge($job['messages'], array('Adatbázis export sikertelen: ' . $dump['message'])));
-				alatinfo_backup_rrmdir((string)$job['tmp']);
+			$cfg = alatinfo_backup_drive_load_config();
+			if ($cfg === null) {
 				alatinfo_backup_drive_job_clear();
 				alatinfo_backup_drive_json_response(array(
 					'ok' => false,
 					'job_id' => $jobId,
-					'messages' => array('Adatbázis export sikertelen: ' . $dump['message']),
+					'messages' => array('Konfiguráció hiányzik.'),
+					'progress' => null,
+				));
+				return;
+			}
+			$tokenRes = alatinfo_gdrive_access_token_for_backup($cfg);
+			if (!$tokenRes['ok'] || $tokenRes['token'] === null) {
+				alatinfo_backup_rrmdir((string) $job['tmp']);
+				alatinfo_backup_drive_job_clear();
+				alatinfo_backup_drive_json_response(array(
+					'ok' => false,
+					'job_id' => $jobId,
+					'messages' => array('Google hitelesítés sikertelen: ' . $tokenRes['error']),
+					'progress' => null,
+				));
+				return;
+			}
+			$sqlDriveName = 'alatinfo_db_' . (string) $job['stamp'] . '.sql';
+			$progress = alatinfo_backup_google_drive_step_progress(
+				$jobId,
+				'sql',
+				'Adatbázis export és feltöltés (SQL)…',
+				12
+			);
+			alatinfo_backup_drive_session_release();
+			$sqlUpload = alatinfo_backup_sql_stream_upload_to_drive(
+				$db,
+				$tokenRes['token'],
+				(string) $job['folder_id'],
+				$sqlDriveName,
+				alatinfo_backup_drive_upload_progress_callback($jobId, 'sql', 'SQL', 12, 72)
+			);
+			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
+				return;
+			}
+			if (!$sqlUpload['ok']) {
+				$stepMessages[] = $sqlUpload['message'];
+				if (!empty($sqlUpload['storage_quota'])) {
+					$stepMessages = array_merge($stepMessages, alatinfo_gdrive_storage_quota_hints());
+				}
+				alatinfo_gdrive_backup_log_append($logId, 'HIBA: ' . $sqlUpload['message']);
+				alatinfo_gdrive_backup_log_finish($logId, false, array_merge($job['messages'], $stepMessages));
+				alatinfo_backup_rrmdir((string) $job['tmp']);
+				alatinfo_backup_drive_job_clear();
+				alatinfo_backup_drive_json_response(array(
+					'ok' => false,
+					'job_id' => $jobId,
+					'messages' => $stepMessages,
 					'progress' => $progress,
 				));
 				return;
 			}
-			$sqlSize = is_file((string)$job['sql_path']) ? (int)filesize((string)$job['sql_path']) : 0;
-			$stepMessages[] = $dump['message'];
-			alatinfo_gdrive_backup_log_append($logId, $dump['message']);
+			$exportMsg = (string) ($sqlUpload['export_message'] ?? 'SQL export kész.');
+			$stepMessages[] = $exportMsg;
+			$stepMessages[] = $sqlUpload['message'];
+			alatinfo_gdrive_backup_log_append($logId, $exportMsg);
+			alatinfo_gdrive_backup_log_append($logId, $sqlUpload['message']);
+			$sqlBytes = (int) ($sqlUpload['bytes'] ?? 0);
+			$job['sql_uploaded'] = true;
+			$job['sql_drive_name'] = $sqlDriveName;
 			$job['messages'] = array_merge($job['messages'], $stepMessages);
 			alatinfo_backup_drive_job_set($job);
 			$progress = alatinfo_backup_google_drive_step_progress(
 				$jobId,
 				'sql',
-				'SQL export kész.',
-				24,
-				$sqlSize > 0 ? ('Fájlméret: ' . alatinfo_backup_format_bytes($sqlSize)) : ''
+				'SQL feltöltve.',
+				72,
+				($sqlBytes > 0 ? alatinfo_backup_format_bytes($sqlBytes) . ', ' : '') . $sqlDriveName
 			);
 			alatinfo_backup_drive_json_response(array(
 				'ok' => true,
@@ -424,7 +463,7 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				alatinfo_gdrive_backup_log_append($logId, $stepMessages[0]);
 				$job['messages'] = array_merge($job['messages'], $stepMessages);
 				alatinfo_backup_drive_job_set($job);
-				$progress = alatinfo_backup_google_drive_step_progress($jobId, 'zip', 'ZIP kihagyva.', 46);
+				$progress = alatinfo_backup_google_drive_step_progress($jobId, 'zip', 'ZIP kihagyva.', 97);
 				alatinfo_backup_drive_json_response(array(
 					'ok' => true,
 					'job_id' => $jobId,
@@ -434,16 +473,33 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				));
 				return;
 			}
-			$progress = alatinfo_backup_google_drive_step_progress(
-				$jobId,
-				'zip',
-				'Projekt fájlok csomagolása (ZIP)…',
-				28
-			);
+			$cfg = alatinfo_backup_drive_load_config();
+			if ($cfg === null) {
+				alatinfo_backup_drive_job_clear();
+				alatinfo_backup_drive_json_response(array(
+					'ok' => false,
+					'job_id' => $jobId,
+					'messages' => array('Konfiguráció hiányzik.'),
+					'progress' => null,
+				));
+				return;
+			}
+			$tokenRes = alatinfo_gdrive_access_token_for_backup($cfg);
+			if (!$tokenRes['ok'] || $tokenRes['token'] === null) {
+				alatinfo_backup_rrmdir((string) $job['tmp']);
+				alatinfo_backup_drive_job_clear();
+				alatinfo_backup_drive_json_response(array(
+					'ok' => false,
+					'job_id' => $jobId,
+					'messages' => array('Google hitelesítés sikertelen: ' . $tokenRes['error']),
+					'progress' => null,
+				));
+				return;
+			}
 			$root = alatinfo_backup_project_root();
 			if (!is_dir($root)) {
 				alatinfo_gdrive_backup_log_finish($logId, false, array_merge($job['messages'], array('Projekt gyökér nem található.')));
-				alatinfo_backup_rrmdir((string)$job['tmp']);
+				alatinfo_backup_rrmdir((string) $job['tmp']);
 				alatinfo_backup_drive_job_clear();
 				alatinfo_backup_drive_json_response(array(
 					'ok' => false,
@@ -454,61 +510,88 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 				return;
 			}
 			$minMtime = isset($job['date_from']) && $job['date_from'] !== null ? (int) $job['date_from'] : null;
-			$zipPath = (string) $job['zip_path'];
-			$zipDir = dirname($zipPath);
-			if ($zipDir !== '' && !is_dir($zipDir)) {
-				@mkdir($zipDir, 0700, true);
-			}
+			$zipDriveName = 'alatinfo_site_' . (string) $job['stamp'] . '.zip';
+			$cdPath = (string) $job['tmp'] . DIRECTORY_SEPARATOR . 'site.zip.cd';
+			$zipPctStart = !empty($job['include_db']) ? 74 : 28;
+			$zipPctEnd = 97;
+			$progress = alatinfo_backup_google_drive_step_progress(
+				$jobId,
+				'zip',
+				'Projekt fájlok csomagolása és feltöltés (ZIP)…',
+				$zipPctStart
+			);
 			alatinfo_backup_drive_session_release();
-			$zip = alatinfo_backup_zip_dir(
+			$zipUpload = alatinfo_backup_zip_dir_stream_upload_to_drive(
 				$root,
-				$zipPath,
+				$tokenRes['token'],
+				(string) $job['folder_id'],
+				$zipDriveName,
 				alatinfo_backup_default_exclude_paths(),
-				static function (int $count) use ($jobId): void {
+				$minMtime,
+				alatinfo_backup_drive_upload_progress_callback($jobId, 'zip', 'ZIP', $zipPctStart, $zipPctEnd),
+				static function (int $count) use ($jobId, $zipPctStart, $zipPctEnd): void {
 					if ($count % 10 !== 0 && $count !== 1) {
 						return;
 					}
-					$zipPct = min(44, 28 + (int)floor(min(1.0, $count / 800) * 16));
+					$zipPct = min($zipPctEnd - 3, $zipPctStart + (int) floor(min(1.0, $count / 800) * ($zipPctEnd - $zipPctStart - 3)));
 					alatinfo_backup_drive_job_progress_write($jobId, array(
 						'step' => 'zip',
-						'message' => 'ZIP készítése…',
+						'message' => 'ZIP készítése és feltöltése…',
 						'percent' => $zipPct,
 						'detail' => $count . ' fájl hozzáadva',
 					));
 				},
-				$minMtime
+				$cdPath
 			);
 			if (alatinfo_backup_google_drive_step_maybe_cancelled($job, $jobId)) {
 				return;
 			}
-			if (!$zip['ok']) {
-				alatinfo_gdrive_backup_log_append($logId, 'HIBA: ' . $zip['message']);
-				alatinfo_gdrive_backup_log_finish($logId, false, array_merge($job['messages'], array($zip['message'])));
-				alatinfo_backup_rrmdir((string)$job['tmp']);
+			if (!empty($zipUpload['skipped'])) {
+				$stepMessages[] = (string) ($zipUpload['zip_message'] ?? $zipUpload['message']);
+				alatinfo_gdrive_backup_log_append($logId, $stepMessages[0]);
+				$job['zip_skipped'] = true;
+				$job['messages'] = array_merge($job['messages'], $stepMessages);
+				alatinfo_backup_drive_job_set($job);
+				$progress = alatinfo_backup_google_drive_step_progress($jobId, 'zip', 'ZIP kihagyva.', 97);
+				alatinfo_backup_drive_json_response(array(
+					'ok' => true,
+					'job_id' => $jobId,
+					'messages' => $stepMessages,
+					'progress' => $progress,
+					'done' => false,
+				));
+				return;
+			}
+			if (!$zipUpload['ok']) {
+				alatinfo_gdrive_backup_log_append($logId, 'HIBA: ' . $zipUpload['message']);
+				alatinfo_gdrive_backup_log_finish($logId, false, array_merge($job['messages'], array($zipUpload['message'])));
+				alatinfo_backup_rrmdir((string) $job['tmp']);
 				alatinfo_backup_drive_job_clear();
 				alatinfo_backup_drive_json_response(array(
 					'ok' => false,
 					'job_id' => $jobId,
-					'messages' => array($zip['message']),
+					'messages' => array($zipUpload['message']),
 					'progress' => $progress,
 				));
 				return;
 			}
-			$zipSize = is_file((string)$job['zip_path']) ? (int)filesize((string)$job['zip_path']) : 0;
-			$fileCount = (int)($zip['file_count'] ?? 0);
-			$stepMessages[] = $zip['message'];
-			alatinfo_gdrive_backup_log_append($logId, $zip['message']);
-			if (!empty($zip['skipped'])) {
-				$job['zip_skipped'] = true;
-			}
+			$fileCount = (int) ($zipUpload['file_count'] ?? 0);
+			$zipBytes = (int) ($zipUpload['bytes'] ?? 0);
+			$zipMsg = (string) ($zipUpload['zip_message'] ?? 'ZIP kész.');
+			$stepMessages[] = $zipMsg;
+			$stepMessages[] = $zipUpload['message'];
+			alatinfo_gdrive_backup_log_append($logId, $zipMsg);
+			alatinfo_gdrive_backup_log_append($logId, $zipUpload['message']);
+			$job['zip_uploaded'] = true;
+			$job['zip_drive_name'] = $zipDriveName;
 			$job['messages'] = array_merge($job['messages'], $stepMessages);
 			alatinfo_backup_drive_job_set($job);
 			$progress = alatinfo_backup_google_drive_step_progress(
 				$jobId,
 				'zip',
-				'ZIP kész.',
-				46,
-				($fileCount > 0 ? ($fileCount . ' fájl, ') : '') . ($zipSize > 0 ? alatinfo_backup_format_bytes($zipSize) : '')
+				'ZIP feltöltve.',
+				97,
+				($fileCount > 0 ? ($fileCount . ' fájl, ') : '') . ($zipBytes > 0 ? alatinfo_backup_format_bytes($zipBytes) : $zipDriveName)
 			);
 			alatinfo_backup_drive_json_response(array(
 				'ok' => true,
@@ -546,9 +629,13 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 
 		if ($step === 'upload_sql') {
 			$logId = isset($job['log_id']) ? (int) $job['log_id'] : null;
-			if (empty($job['include_db'])) {
-				$stepMessages[] = 'SQL feltöltés kihagyva.';
-				alatinfo_gdrive_backup_log_append($logId, $stepMessages[0]);
+			if (empty($job['include_db']) || !empty($job['sql_uploaded'])) {
+				$stepMessages[] = empty($job['include_db'])
+					? 'SQL feltöltés kihagyva.'
+					: 'SQL már feltöltve (stream).';
+				if ($logId !== null) {
+					alatinfo_gdrive_backup_log_append($logId, $stepMessages[0]);
+				}
 				$job['messages'] = array_merge($job['messages'], $stepMessages);
 				alatinfo_backup_drive_job_set($job);
 				$progress = alatinfo_backup_google_drive_step_progress($jobId, 'upload_sql', 'SQL feltöltés kihagyva.', 72);
@@ -622,10 +709,12 @@ if (!function_exists('alatinfo_backup_google_drive_run_step')) {
 
 		if ($step === 'upload_zip') {
 			$logId = isset($job['log_id']) ? (int) $job['log_id'] : null;
-			if (empty($job['include_files']) || !empty($job['zip_skipped'])) {
+			if (empty($job['include_files']) || !empty($job['zip_skipped']) || !empty($job['zip_uploaded'])) {
 				$msg = empty($job['include_files'])
 					? 'ZIP feltöltés kihagyva (nincs kiválasztva).'
-					: 'ZIP feltöltés kihagyva (nincs fájl a szűrőnek megfelelően).';
+					: (!empty($job['zip_skipped'])
+						? 'ZIP feltöltés kihagyva (nincs fájl a szűrőnek megfelelően).'
+						: 'ZIP már feltöltve (stream).');
 				$stepMessages[] = $msg;
 				alatinfo_gdrive_backup_log_append($logId, $msg);
 				$job['messages'] = array_merge($job['messages'], $stepMessages);

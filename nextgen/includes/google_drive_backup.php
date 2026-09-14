@@ -563,6 +563,271 @@ if (!function_exists('alatinfo_gdrive_upload_resumable')) {
 	}
 }
 
+if (!function_exists('alatinfo_gdrive_upload_resumable_chunk_size')) {
+	function alatinfo_gdrive_upload_resumable_chunk_size(): int
+	{
+		return 256 * 1024;
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_upload_resumable_start_session')) {
+	/**
+	 * @return array{ok:bool,session:string,message:string,storage_quota:bool}
+	 */
+	function alatinfo_gdrive_upload_resumable_start_session(
+		string $accessToken,
+		string $folderId,
+		string $driveName,
+		string $mime,
+		?int $contentLength = null
+	): array {
+		if (!function_exists('curl_init')) {
+			return array('ok' => false, 'session' => '', 'message' => 'Nincs cURL.', 'storage_quota' => false);
+		}
+		$meta = json_encode(array(
+			'name' => $driveName,
+			'parents' => array($folderId),
+		));
+		if ($meta === false) {
+			return array('ok' => false, 'session' => '', 'message' => 'Metaadat JSON hiba.', 'storage_quota' => false);
+		}
+		$headers = array(
+			'Authorization: Bearer ' . $accessToken,
+			'Content-Type: application/json; charset=UTF-8',
+			'X-Upload-Content-Type: ' . $mime,
+		);
+		if ($contentLength !== null && $contentLength >= 0) {
+			$headers[] = 'X-Upload-Content-Length: ' . (string) $contentLength;
+		}
+		$ch = curl_init('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true');
+		curl_setopt_array($ch, array(
+			CURLOPT_POST => true,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_HEADER => true,
+			CURLOPT_HTTPHEADER => $headers,
+			CURLOPT_POSTFIELDS => $meta,
+			CURLOPT_TIMEOUT => 60,
+		));
+		$resp = curl_exec($ch);
+		$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+		if (!is_string($resp) || ($code !== 200 && $code !== 201)) {
+			$errBody = is_string($resp) ? $resp : '';
+			if (preg_match('/\{[\s\S]*\}/', $errBody, $m)) {
+				$errBody = $m[0];
+			}
+			$errMsg = alatinfo_gdrive_google_error_message($errBody);
+			return array(
+				'ok' => false,
+				'session' => '',
+				'message' => 'Drive feltöltés indítása sikertelen (HTTP ' . $code . '): ' . $errMsg,
+				'storage_quota' => alatinfo_gdrive_is_storage_quota_error($errMsg),
+			);
+		}
+		if (!preg_match('/^Location:\s*(.+)$/mi', $resp, $m)) {
+			return array(
+				'ok' => false,
+				'session' => '',
+				'message' => 'Nincs Location fejléc a resumable válaszban.',
+				'storage_quota' => false,
+			);
+		}
+		return array(
+			'ok' => true,
+			'session' => trim($m[1]),
+			'message' => '',
+			'storage_quota' => false,
+		);
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_upload_resumable_put_chunk')) {
+	/**
+	 * @return array{ok:bool,http_code:int,message:string,storage_quota:bool,complete:bool}
+	 */
+	function alatinfo_gdrive_upload_resumable_put_chunk(
+		string $accessToken,
+		string $sessionUrl,
+		string $chunk,
+		int $rangeStart,
+		int $totalSize
+	): array {
+		$chunkLen = strlen($chunk);
+		if ($chunkLen === 0) {
+			return array(
+				'ok' => false,
+				'http_code' => 0,
+				'message' => 'Üres chunk.',
+				'storage_quota' => false,
+				'complete' => false,
+			);
+		}
+		$rangeEnd = $rangeStart + $chunkLen - 1;
+		$totalPart = $totalSize >= 0 ? (string) $totalSize : '*';
+		$ch = curl_init($sessionUrl);
+		curl_setopt_array($ch, array(
+			CURLOPT_CUSTOMREQUEST => 'PUT',
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_POSTFIELDS => $chunk,
+			CURLOPT_HTTPHEADER => array(
+				'Authorization: Bearer ' . $accessToken,
+				'Content-Length: ' . (string) $chunkLen,
+				'Content-Range: bytes ' . $rangeStart . '-' . $rangeEnd . '/' . $totalPart,
+			),
+			CURLOPT_TIMEOUT => 0,
+		));
+		$body = curl_exec($ch);
+		$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+		if ($code === 200 || $code === 201) {
+			return array(
+				'ok' => true,
+				'http_code' => $code,
+				'message' => '',
+				'storage_quota' => false,
+				'complete' => true,
+			);
+		}
+		if ($code === 308) {
+			return array(
+				'ok' => true,
+				'http_code' => $code,
+				'message' => '',
+				'storage_quota' => false,
+				'complete' => false,
+			);
+		}
+		$errMsg = alatinfo_gdrive_google_error_message(is_string($body) ? $body : '');
+		return array(
+			'ok' => false,
+			'http_code' => $code,
+			'message' => 'Chunk feltöltés sikertelen (HTTP ' . $code . '): ' . $errMsg,
+			'storage_quota' => alatinfo_gdrive_is_storage_quota_error($errMsg),
+			'complete' => false,
+		);
+	}
+}
+
+if (!function_exists('alatinfo_gdrive_upload_resumable_stream')) {
+	/**
+	 * Ismeretlen méretű stream feltöltés (chunkolt resumable) – nincs szerver temp fájl.
+	 *
+	 * @param callable(callable(string): void $write): void $producer
+	 * @param callable(int $uploadedBytes, int $totalBytes): void|null $onUploadProgress totalBytes=0 amíg nem ismert
+	 * @return array{ok:bool,message:string,storage_quota:bool,bytes:int}
+	 */
+	function alatinfo_gdrive_upload_resumable_stream(
+		string $accessToken,
+		string $folderId,
+		string $driveName,
+		string $mime,
+		callable $producer,
+		?callable $onUploadProgress = null
+	): array {
+		$sessionRes = alatinfo_gdrive_upload_resumable_start_session($accessToken, $folderId, $driveName, $mime, null);
+		if (!$sessionRes['ok']) {
+			return array(
+				'ok' => false,
+				'message' => $sessionRes['message'],
+				'storage_quota' => $sessionRes['storage_quota'],
+				'bytes' => 0,
+			);
+		}
+		$session = $sessionRes['session'];
+		$chunkSize = alatinfo_gdrive_upload_resumable_chunk_size();
+		$buffer = '';
+		$uploaded = 0;
+		$totalBytes = 0;
+
+		$flushChunk = static function (string $chunk, bool $isLast) use (
+			&$uploaded,
+			&$totalBytes,
+			$accessToken,
+			$session,
+			$onUploadProgress
+		): array {
+			if ($chunk === '') {
+				return array('ok' => true, 'message' => '', 'storage_quota' => false);
+			}
+			$totalForRange = $isLast ? ($uploaded + strlen($chunk)) : -1;
+			$put = alatinfo_gdrive_upload_resumable_put_chunk(
+				$accessToken,
+				$session,
+				$chunk,
+				$uploaded,
+				$totalForRange
+			);
+			if (!$put['ok']) {
+				return array(
+					'ok' => false,
+					'message' => $put['message'],
+					'storage_quota' => $put['storage_quota'],
+				);
+			}
+			$uploaded += strlen($chunk);
+			if ($isLast) {
+				$totalBytes = $uploaded;
+			}
+			if ($onUploadProgress !== null) {
+				$onUploadProgress($uploaded, $totalBytes > 0 ? $totalBytes : 0);
+			}
+			return array('ok' => true, 'message' => '', 'storage_quota' => false);
+		};
+
+		$write = static function (string $data) use (&$buffer, $chunkSize, $flushChunk): void {
+			if ($data === '') {
+				return;
+			}
+			$buffer .= $data;
+			while (strlen($buffer) > $chunkSize) {
+				$chunk = substr($buffer, 0, $chunkSize);
+				$buffer = (string) substr($buffer, $chunkSize);
+				$res = $flushChunk($chunk, false);
+				if (!$res['ok']) {
+					throw new RuntimeException($res['message']);
+				}
+			}
+		};
+
+		try {
+			$producer($write);
+		} catch (Throwable $e) {
+			return array(
+				'ok' => false,
+				'message' => $e->getMessage(),
+				'storage_quota' => alatinfo_gdrive_is_storage_quota_error($e->getMessage()),
+				'bytes' => $uploaded,
+			);
+		}
+
+		if ($buffer !== '') {
+			$res = $flushChunk($buffer, true);
+			if (!$res['ok']) {
+				return array(
+					'ok' => false,
+					'message' => $res['message'],
+					'storage_quota' => $res['storage_quota'],
+					'bytes' => $uploaded,
+				);
+			}
+		} elseif ($uploaded === 0) {
+			return array(
+				'ok' => false,
+				'message' => 'Üres export – nincs mit feltölteni.',
+				'storage_quota' => false,
+				'bytes' => 0,
+			);
+		}
+
+		return array(
+			'ok' => true,
+			'message' => 'Feltöltve: ' . $driveName,
+			'storage_quota' => false,
+			'bytes' => $uploaded,
+		);
+	}
+}
+
 if (!function_exists('alatinfo_gdrive_oauth_sanitize_credential')) {
 	function alatinfo_gdrive_oauth_sanitize_credential(string $value): string
 	{
@@ -1624,6 +1889,207 @@ if (!function_exists('alatinfo_backup_export_sql')) {
 	}
 }
 
+if (!function_exists('alatinfo_backup_pdo_dump_stream')) {
+	/**
+	 * @param callable(string): void $write
+	 * @return array{ok:bool,message:string,bytes:int}
+	 */
+	function alatinfo_backup_pdo_dump_stream(PDO $db, callable $write): array
+	{
+		$bytes = 0;
+		$append = static function (string $data) use ($write, &$bytes): void {
+			if ($data === '') {
+				return;
+			}
+			$write($data);
+			$bytes += strlen($data);
+		};
+		$append("-- Alatinfo backup (PDO)\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
+		try {
+			$tables = $db->query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM);
+		} catch (Throwable $e) {
+			return array('ok' => false, 'message' => 'SHOW TABLES hiba.', 'bytes' => $bytes);
+		}
+		foreach ($tables as $tr) {
+			$t = (string) ($tr[0] ?? '');
+			if ($t === '') {
+				continue;
+			}
+			$t_esc = '`' . str_replace('`', '``', $t) . '`';
+			try {
+				$cr = $db->query('SHOW CREATE TABLE ' . $t_esc)->fetch(PDO::FETCH_ASSOC);
+			} catch (Throwable $e) {
+				continue;
+			}
+			$create = (string) ($cr['Create Table'] ?? '');
+			if ($create !== '') {
+				$append("DROP TABLE IF EXISTS $t_esc;\n$create;\n\n");
+			}
+			try {
+				$dq = $db->query('SELECT * FROM ' . $t_esc);
+			} catch (Throwable $e) {
+				continue;
+			}
+			$colCount = $dq->columnCount();
+			$cols = array();
+			for ($i = 0; $i < $colCount; $i++) {
+				$meta = $dq->getColumnMeta($i);
+				$name = (string) ($meta['name'] ?? '');
+				if ($name !== '') {
+					$cols[] = '`' . str_replace('`', '``', $name) . '`';
+				}
+			}
+			$colList = implode(',', $cols);
+			$n = 0;
+			while ($row = $dq->fetch(PDO::FETCH_ASSOC)) {
+				$vals = array();
+				foreach ($row as $v) {
+					if ($v === null) {
+						$vals[] = 'NULL';
+					} else {
+						$vals[] = $db->quote((string) $v);
+					}
+				}
+				$append('INSERT INTO ' . $t_esc . ' (' . $colList . ') VALUES (' . implode(',', $vals) . ");\n");
+				$n++;
+				if ($n % 200 === 0) {
+					$append("\n");
+				}
+			}
+			$append("\n");
+		}
+		$append("SET FOREIGN_KEY_CHECKS=1;\n");
+		if ($bytes < 32) {
+			return array('ok' => false, 'message' => 'Üres vagy túl kicsi export.', 'bytes' => $bytes);
+		}
+		return array('ok' => true, 'message' => 'PDO export kész.', 'bytes' => $bytes);
+	}
+}
+
+if (!function_exists('alatinfo_backup_mysqldump_stream')) {
+	/**
+	 * @param callable(string): void $write
+	 * @return array{ok:bool,message:string,bytes:int}
+	 */
+	function alatinfo_backup_mysqldump_stream(
+		string $host,
+		string $user,
+		string $pass,
+		string $db,
+		callable $write
+	): array {
+		if (!function_exists('proc_open')) {
+			return array('ok' => false, 'message' => 'proc_open nem elérhető.', 'bytes' => 0);
+		}
+		$bin = getenv('MYSQLDUMP_PATH') ?: 'mysqldump';
+		$cmd = $bin
+			. ' --single-transaction --quick --skip-comments'
+			. ' -h' . escapeshellarg($host)
+			. ' -u' . escapeshellarg($user)
+			. ' -p' . escapeshellarg($pass)
+			. ' ' . escapeshellarg($db);
+		$descriptors = array(
+			0 => array('pipe', 'r'),
+			1 => array('pipe', 'w'),
+			2 => array('pipe', 'w'),
+		);
+		$proc = @proc_open($cmd, $descriptors, $pipes);
+		if (!is_resource($proc)) {
+			return array('ok' => false, 'message' => 'mysqldump indítása sikertelen.', 'bytes' => 0);
+		}
+		fclose($pipes[0]);
+		$bytes = 0;
+		while (!feof($pipes[1])) {
+			$chunk = fread($pipes[1], 262144);
+			if ($chunk === false || $chunk === '') {
+				break;
+			}
+			$write($chunk);
+			$bytes += strlen($chunk);
+		}
+		$stderr = stream_get_contents($pipes[2]);
+		fclose($pipes[1]);
+		fclose($pipes[2]);
+		$ret = proc_close($proc);
+		if ($ret !== 0 || $bytes < 32) {
+			$msg = is_string($stderr) && trim($stderr) !== '' ? trim($stderr) : ('exit ' . $ret);
+			return array('ok' => false, 'message' => $msg, 'bytes' => $bytes);
+		}
+		return array('ok' => true, 'message' => 'mysqldump kész.', 'bytes' => $bytes);
+	}
+}
+
+if (!function_exists('alatinfo_backup_export_sql_stream')) {
+	/**
+	 * @param callable(string): void $write
+	 * @return array{ok:bool,message:string,bytes:int}
+	 */
+	function alatinfo_backup_export_sql_stream(PDO $db, callable $write): array
+	{
+		$host = defined('DB_HOST') ? (string) DB_HOST : (getenv('DB_HOST') ?: 'localhost');
+		$user = defined('DB_USER') ? (string) DB_USER : (getenv('DB_USER') ?: '');
+		$pass = defined('DB_PASS') ? (string) DB_PASS : (getenv('DB_PASSWORD') ?: '');
+		$dbName = defined('DB_NAME') ? (string) DB_NAME : (getenv('DB_NAME') ?: '');
+		$dump = null;
+		if ($user !== '' && $dbName !== '') {
+			$dump = alatinfo_backup_mysqldump_stream($host, $user, $pass, $dbName, $write);
+			if ($dump['ok']) {
+				return $dump;
+			}
+		}
+		if ($dump !== null && !$dump['ok']) {
+			$pdoDump = alatinfo_backup_pdo_dump_stream($db, $write);
+			if ($pdoDump['ok']) {
+				return array(
+					'ok' => true,
+					'message' => 'mysqldump nem elérhető, PHP export kész.',
+					'bytes' => $pdoDump['bytes'],
+				);
+			}
+			return array(
+				'ok' => false,
+				'message' => 'mysqldump: ' . $dump['message'] . ' | PHP: ' . $pdoDump['message'],
+				'bytes' => 0,
+			);
+		}
+		return alatinfo_backup_pdo_dump_stream($db, $write);
+	}
+}
+
+if (!function_exists('alatinfo_backup_sql_stream_upload_to_drive')) {
+	/**
+	 * SQL export közvetlenül Drive-ra – nincs database.sql temp fájl a szerveren.
+	 *
+	 * @param callable(int $uploadedBytes, int $totalBytes): void|null $onUploadProgress
+	 * @return array{ok:bool,message:string,storage_quota:bool,bytes:int,export_message:string}
+	 */
+	function alatinfo_backup_sql_stream_upload_to_drive(
+		PDO $db,
+		string $accessToken,
+		string $folderId,
+		string $driveName,
+		?callable $onUploadProgress = null
+	): array {
+		$exportMessage = '';
+		$upload = alatinfo_gdrive_upload_resumable_stream(
+			$accessToken,
+			$folderId,
+			$driveName,
+			'application/sql',
+			static function (callable $write) use ($db, &$exportMessage): void {
+				$dump = alatinfo_backup_export_sql_stream($db, $write);
+				$exportMessage = $dump['message'];
+				if (!$dump['ok']) {
+					throw new RuntimeException($dump['message']);
+				}
+			},
+			$onUploadProgress
+		);
+		$upload['export_message'] = $exportMessage;
+		return $upload;
+	}
+}
+
 if (!function_exists('alatinfo_backup_create_full_zip')) {
 	/**
 	 * Egy ZIP: database.sql + site/ fájlfa.
@@ -1815,12 +2281,13 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 	 * Alacsony memóriájú ZIP bejegyzés: alapból STORE + stream (nincs teljes fájl a RAM-ban).
 	 * Csak <=256KB fájloknál próbál deflate-et.
 	 *
-	 * @param resource $fp
+	 * @param resource|null $fp
 	 * @param resource $cdFp
 	 * @param-out string|null $failReason
+	 * @param callable(string): void|null $streamWrite Ha megadva, ide streamel (Drive feltöltés) a $fp helyett.
 	 * @return array{ok:bool,offset:int}|null
 	 */
-	function alatinfo_backup_zip_append_entry($fp, $cdFp, string $full, string $name, int $offset, ?string &$failReason = null): ?array
+	function alatinfo_backup_zip_append_entry($fp, $cdFp, string $full, string $name, int $offset, ?string &$failReason = null, ?callable $streamWrite = null): ?array
 	{
 		$failReason = null;
 		$name = str_replace('\\', '/', $name);
@@ -1849,6 +2316,20 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 		$compSize = $size;
 		$crc = 0;
 		$payload = null;
+
+		$bodyWrite = static function (string $data) use ($fp, $streamWrite): bool {
+			if ($data === '') {
+				return true;
+			}
+			if ($streamWrite !== null) {
+				$streamWrite($data);
+				return true;
+			}
+			if (!is_resource($fp)) {
+				return false;
+			}
+			return fwrite($fp, $data) !== false;
+		};
 
 		// Kis fájl: opcionális deflate (max ~512KB RAM egyszerre)
 		$deflateMax = 256 * 1024;
@@ -1893,7 +2374,7 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 			$nameLen,
 			0
 		);
-		if (fwrite($fp, $local) === false || fwrite($fp, $name) === false) {
+		if (!$bodyWrite($local) || !$bodyWrite($name)) {
 			$err = error_get_last();
 			$failReason = 'ZIP header írás sikertelen';
 			if (is_array($err) && !empty($err['message'])) {
@@ -1903,7 +2384,7 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 		}
 
 		if ($payload !== null) {
-			if ($compSize > 0 && fwrite($fp, $payload) === false) {
+			if ($compSize > 0 && !$bodyWrite($payload)) {
 				$failReason = 'ZIP adat írás sikertelen';
 				return null;
 			}
@@ -1914,11 +2395,32 @@ if (!function_exists('alatinfo_backup_zip_append_entry')) {
 				$failReason = 'olvasás sikertelen';
 				return null;
 			}
-			$copied = stream_copy_to_stream($in, $fp);
-			fclose($in);
-			if ($copied === false || (int) $copied !== $size) {
-				$failReason = 'stream másolás sikertelen';
-				return null;
+			if ($streamWrite !== null) {
+				$copied = 0;
+				while (!feof($in)) {
+					$chunk = fread($in, 262144);
+					if ($chunk === false || $chunk === '') {
+						break;
+					}
+					if (!$bodyWrite($chunk)) {
+						fclose($in);
+						$failReason = 'stream másolás sikertelen';
+						return null;
+					}
+					$copied += strlen($chunk);
+				}
+				fclose($in);
+				if ($copied !== $size) {
+					$failReason = 'stream másolás sikertelen';
+					return null;
+				}
+			} else {
+				$copied = stream_copy_to_stream($in, $fp);
+				fclose($in);
+				if ($copied === false || (int) $copied !== $size) {
+					$failReason = 'stream másolás sikertelen';
+					return null;
+				}
 			}
 		}
 
@@ -2101,6 +2603,255 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 			$detail .= ' ' . $za['error'];
 		}
 		return array('count' => 0, 'error' => $detail);
+	}
+}
+
+if (!function_exists('alatinfo_backup_zip_write_stream_sink')) {
+	/**
+	 * ZIP streamelése callback-be (pl. Drive feltöltés) – nincs site.zip temp fájl.
+	 *
+	 * @param list<array{0:string,1:string}> $entries
+	 * @param callable(int $fileCount): void|null $onFileProgress
+	 * @return array{count:int,error:string}
+	 */
+	function alatinfo_backup_zip_write_stream_sink(
+		callable $write,
+		array $entries,
+		string $cdPath,
+		?callable $onFileProgress = null
+	): array {
+		$candidates = count($entries);
+		$firstFail = null;
+		$failSample = null;
+		$offset = 0;
+		$count = 0;
+
+		$cdFp = @fopen($cdPath, 'wb+');
+		if ($cdFp === false) {
+			$cdFp = @fopen('php://temp/maxmemory:2097152', 'wb+');
+		}
+		if ($cdFp === false) {
+			return array('count' => 0, 'error' => 'ZIP központi könyvtár megnyitása sikertelen.');
+		}
+
+		foreach ($entries as $entry) {
+			$reason = null;
+			$added = alatinfo_backup_zip_append_entry(null, $cdFp, $entry[0], $entry[1], $offset, $reason, $write);
+			if ($added === null) {
+				if ($firstFail === null) {
+					$firstFail = $reason ?? 'ismeretlen';
+					$failSample = $entry[1];
+				}
+				continue;
+			}
+			$offset = $added['offset'];
+			$count++;
+			if ($onFileProgress !== null) {
+				$onFileProgress($count);
+			}
+			if ($count % 100 === 0) {
+				gc_collect_cycles();
+			}
+		}
+
+		$cdSize = (int) ftell($cdFp);
+		rewind($cdFp);
+		while (!feof($cdFp)) {
+			$chunk = fread($cdFp, 262144);
+			if ($chunk === false || $chunk === '') {
+				break;
+			}
+			$write($chunk);
+		}
+		fclose($cdFp);
+		if (is_file($cdPath)) {
+			@unlink($cdPath);
+		}
+		$write(pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, $cdSize, $offset, 0));
+
+		if ($count <= 0) {
+			$detail = 'Egyetlen fájl sem került a ZIP-be (' . $candidates . ' jelölt).';
+			if ($firstFail !== null) {
+				$detail .= ' Első hiba: ' . $firstFail;
+				if (is_string($failSample) && $failSample !== '') {
+					$detail .= ' [' . $failSample . ']';
+				}
+			}
+			return array('count' => 0, 'error' => $detail);
+		}
+
+		return array('count' => $count, 'error' => '');
+	}
+}
+
+if (!function_exists('alatinfo_backup_zip_collect_entries')) {
+	/**
+	 * @param array<int,string> $excludeRel
+	 * @return array{ok:bool,entries:list<array{0:string,1:string}>,skipped_by_date:int,message:string}
+	 */
+	function alatinfo_backup_zip_collect_entries(
+		string $rootDir,
+		array $excludeRel = array(),
+		?int $minMtime = null
+	): array {
+		$skippedByDate = 0;
+		try {
+			$root = realpath($rootDir);
+			if ($root === false) {
+				return array(
+					'ok' => false,
+					'entries' => array(),
+					'skipped_by_date' => 0,
+					'message' => 'Gyökérkönyvtár nem található.',
+				);
+			}
+			$rootNorm = rtrim(str_replace('\\', '/', $root), '/');
+			$ex = array();
+			foreach ($excludeRel as $r) {
+				$r = str_replace('\\', '/', trim((string) $r, "/\\"));
+				if ($r !== '') {
+					$ex[$r] = true;
+				}
+			}
+			$filter = new RecursiveCallbackFilterIterator(
+				new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+				static function ($current) use ($rootNorm, $ex): bool {
+					/** @var SplFileInfo $current */
+					if (method_exists($current, 'isLink') && $current->isLink()) {
+						return false;
+					}
+					$rel = alatinfo_backup_zip_rel_from_root($rootNorm, (string) $current->getPathname());
+					if ($rel === '') {
+						return true;
+					}
+					return !alatinfo_backup_rel_excluded($rel, $ex);
+				}
+			);
+			$it = new RecursiveIteratorIterator($filter, RecursiveIteratorIterator::LEAVES_ONLY, RecursiveIteratorIterator::CATCH_GET_CHILD);
+			/** @var list<array{0:string,1:string}> $entries */
+			$entries = array();
+			foreach ($it as $file) {
+				/** @var SplFileInfo $file */
+				try {
+					if ((method_exists($file, 'isLink') && $file->isLink()) || !$file->isFile()) {
+						continue;
+					}
+					$pathName = (string) $file->getPathname();
+					$rel = alatinfo_backup_zip_rel_from_root($rootNorm, $pathName);
+					if ($rel === '' || alatinfo_backup_rel_excluded($rel, $ex)) {
+						continue;
+					}
+					if ($minMtime !== null && $file->getMTime() < $minMtime) {
+						$skippedByDate++;
+						continue;
+					}
+					$full = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+					if (!is_file($full)) {
+						$full = $pathName;
+					}
+					if (!is_file($full)) {
+						continue;
+					}
+					$entries[] = array($full, 'site/' . $rel);
+				} catch (Throwable $e) {
+					continue;
+				}
+			}
+			return array(
+				'ok' => true,
+				'entries' => $entries,
+				'skipped_by_date' => $skippedByDate,
+				'message' => '',
+			);
+		} catch (Throwable $e) {
+			return array(
+				'ok' => false,
+				'entries' => array(),
+				'skipped_by_date' => 0,
+				'message' => 'ZIP bejegyzés gyűjtés hiba: ' . $e->getMessage(),
+			);
+		}
+	}
+}
+
+if (!function_exists('alatinfo_backup_zip_dir_stream_upload_to_drive')) {
+	/**
+	 * Projekt ZIP közvetlenül Drive-ra – nincs site.zip temp fájl a szerveren.
+	 *
+	 * @param array<int,string> $excludeRel
+	 * @param callable(int $uploadedBytes, int $totalBytes): void|null $onUploadProgress
+	 * @param callable(int $fileCount): void|null $onFileProgress
+	 * @return array{ok:bool,message:string,storage_quota:bool,bytes:int,file_count:int,skipped:bool,zip_message:string}
+	 */
+	function alatinfo_backup_zip_dir_stream_upload_to_drive(
+		string $rootDir,
+		string $accessToken,
+		string $folderId,
+		string $driveName,
+		array $excludeRel = array(),
+		?int $minMtime = null,
+		?callable $onUploadProgress = null,
+		?callable $onFileProgress = null,
+		string $cdPath = ''
+	): array {
+		@ini_set('memory_limit', '256M');
+		@set_time_limit(0);
+		$collected = alatinfo_backup_zip_collect_entries($rootDir, $excludeRel, $minMtime);
+		if (!$collected['ok']) {
+			return array(
+				'ok' => false,
+				'message' => $collected['message'],
+				'storage_quota' => false,
+				'bytes' => 0,
+				'file_count' => 0,
+				'skipped' => false,
+				'zip_message' => '',
+			);
+		}
+		$entries = $collected['entries'];
+		$skippedByDate = (int) $collected['skipped_by_date'];
+		if ($entries === array()) {
+			$msg = 'Nincs a szűrőnek megfelelő fájl.';
+			if ($skippedByDate > 0) {
+				$msg .= ' (' . $skippedByDate . ' fájl kihagyva dátum miatt.)';
+			}
+			return array(
+				'ok' => true,
+				'message' => $msg,
+				'storage_quota' => false,
+				'bytes' => 0,
+				'file_count' => 0,
+				'skipped' => true,
+				'zip_message' => $msg,
+			);
+		}
+		if ($cdPath === '') {
+			$cdPath = alatinfo_backup_writable_tmp_base() . DIRECTORY_SEPARATOR . 'alatinfo_bk_cd_' . bin2hex(random_bytes(4)) . '.tmp';
+		}
+		$zipMessage = '';
+		$fileCount = 0;
+		$upload = alatinfo_gdrive_upload_resumable_stream(
+			$accessToken,
+			$folderId,
+			$driveName,
+			'application/zip',
+			static function (callable $write) use ($entries, $cdPath, $onFileProgress, &$zipMessage, &$fileCount, $skippedByDate): void {
+				$writeResult = alatinfo_backup_zip_write_stream_sink($write, $entries, $cdPath, $onFileProgress);
+				$fileCount = (int) $writeResult['count'];
+				if ($fileCount <= 0) {
+					throw new RuntimeException((string) ($writeResult['error'] ?? 'ZIP stream sikertelen.'));
+				}
+				$zipMessage = 'ZIP kész (' . $fileCount . ' fájl).';
+				if ($skippedByDate > 0) {
+					$zipMessage .= ' Kihagyva dátum miatt: ' . $skippedByDate . '.';
+				}
+			},
+			$onUploadProgress
+		);
+		$upload['file_count'] = $fileCount;
+		$upload['skipped'] = false;
+		$upload['zip_message'] = $zipMessage !== '' ? $zipMessage : ($upload['ok'] ? 'ZIP feltöltve.' : '');
+		return $upload;
 	}
 }
 
