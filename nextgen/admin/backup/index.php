@@ -71,14 +71,15 @@ $flashError = flash('error');
 $backupSteps = array(
 	array('id' => 'auth', 'label' => 'Hitelesítés'),
 	array('id' => 'sql', 'label' => 'Adatbázis → Drive'),
-	array('id' => 'zip', 'label' => 'Fájlok → Drive'),
+	array('id' => 'zip', 'label' => 'Fájlok csomagolása'),
+	array('id' => 'upload_zip', 'label' => 'ZIP feltöltés'),
 	array('id' => 'cleanup', 'label' => 'Befejezés'),
 );
 ?>
 <div class="backup-drive-wrap card">
 	<header class="backup-drive-header">
 		<h2>Mentés Google Drive-ra</h2>
-		<p class="backup-drive-intro">SQL (adatbázis) + ZIP (projekt fájlok) közvetlenül a VibeBackup Drive mappába – a szerveren nem készül teljes temp fájl. A mentéshez a mappához jogosult Google fiók kell – <a href="<?= h($urlSettings) ?>">állítsd be a felhasználói beállításoknál</a>.</p>
+		<p class="backup-drive-intro">SQL közvetlenül a Drive-ra megy (nincs temp SQL). A ZIP ideiglenesen a szerveren készül, feltöltés után törlődik. A mentéshez a mappához jogosult Google fiók kell – <a href="<?= h($urlSettings) ?>">állítsd be a felhasználói beállításoknál</a>.</p>
 	</header>
 
 	<?php if ($flashSuccess): ?>
@@ -330,6 +331,7 @@ $backupSteps = array(
 		}
 		if (includeFilesInput && includeFilesInput.checked) {
 			steps.push('zip');
+			steps.push('upload_zip');
 		}
 		steps.push('cleanup');
 		return steps;
@@ -347,7 +349,7 @@ $backupSteps = array(
 			if (step === 'sql') {
 				show = incDb;
 			}
-			if (step === 'zip') {
+			if (step === 'zip' || step === 'upload_zip') {
 				show = incFiles;
 			}
 			el.hidden = !show;
@@ -519,7 +521,11 @@ $backupSteps = array(
 			progressPct.textContent = pct + '%';
 		}
 		if (progressStatus && data.message) {
-			progressStatus.textContent = data.message;
+			var statusText = String(data.message).replace(/\s*\(\d+%\)$/, '');
+			if (typeof data.upload_percent === 'number') {
+				statusText += ' (' + data.upload_percent + '%)';
+			}
+			progressStatus.textContent = statusText;
 		}
 		if (progressDetail) {
 			if (data.detail) {
@@ -623,7 +629,7 @@ $backupSteps = array(
 			var fd = new FormData(form);
 			fd.set('backup_step', stepName);
 			fd.delete('backup_test');
-			if (stepName === 'sql' || stepName === 'zip') {
+			if (stepName === 'sql' || stepName === 'zip' || stepName === 'upload_zip') {
 				startPoll();
 			}
 			var fetchOpts = {

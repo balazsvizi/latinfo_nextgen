@@ -810,6 +810,32 @@ if (!function_exists('alatinfo_gdrive_upload_resumable_stream')) {
 					'bytes' => $uploaded,
 				);
 			}
+		} elseif ($uploaded > 0) {
+			// Pontos 256KB többszörös: záró kérés ismert mérettel (üres body).
+			$ch = curl_init($session);
+			curl_setopt_array($ch, array(
+				CURLOPT_CUSTOMREQUEST => 'PUT',
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_POSTFIELDS => '',
+				CURLOPT_HTTPHEADER => array(
+					'Authorization: Bearer ' . $accessToken,
+					'Content-Length: 0',
+					'Content-Range: bytes */' . $uploaded,
+				),
+				CURLOPT_TIMEOUT => 120,
+			));
+			$body = curl_exec($ch);
+			$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+			if ($code !== 200 && $code !== 201) {
+				$errMsg = alatinfo_gdrive_google_error_message(is_string($body) ? $body : '');
+				return array(
+					'ok' => false,
+					'message' => 'Feltöltés lezárása sikertelen (HTTP ' . $code . '): ' . $errMsg,
+					'storage_quota' => alatinfo_gdrive_is_storage_quota_error($errMsg),
+					'bytes' => $uploaded,
+				);
+			}
 		} elseif ($uploaded === 0) {
 			return array(
 				'ok' => false,
@@ -2036,6 +2062,10 @@ if (!function_exists('alatinfo_backup_export_sql_stream')) {
 			if ($dump['ok']) {
 				return $dump;
 			}
+			// Ha már ment adat a streamre, ne indítsunk PDO fallbacket (korrupt SQL).
+			if ((int) ($dump['bytes'] ?? 0) > 0) {
+				return $dump;
+			}
 		}
 		if ($dump !== null && !$dump['ok']) {
 			$pdoDump = alatinfo_backup_pdo_dump_stream($db, $write);
@@ -2486,11 +2516,11 @@ if (!function_exists('alatinfo_backup_zip_write_with_ziparchive')) {
 			}
 			$count++;
 			if ($onFileProgress !== null && ($count % 25 === 0 || $count === 1)) {
-				$onFileProgress($count);
+				$onFileProgress($count, count($entries));
 			}
 		}
 		if ($onFileProgress !== null && $count > 0) {
-			$onFileProgress($count);
+			$onFileProgress($count, count($entries));
 		}
 		$closed = @$zip->close();
 		if (!$closed || $count <= 0 || !is_file($outZip) || (int) filesize($outZip) < 64) {
@@ -2566,7 +2596,7 @@ if (!function_exists('alatinfo_backup_zip_write_stream')) {
 			$offset = $added['offset'];
 			$count++;
 			if ($onFileProgress !== null) {
-				$onFileProgress($count);
+				$onFileProgress($count, $candidates);
 			}
 			// Időnként szabadítsuk a ciklust
 			if ($count % 100 === 0) {
@@ -2611,7 +2641,7 @@ if (!function_exists('alatinfo_backup_zip_write_stream_sink')) {
 	 * ZIP streamelése callback-be (pl. Drive feltöltés) – nincs site.zip temp fájl.
 	 *
 	 * @param list<array{0:string,1:string}> $entries
-	 * @param callable(int $fileCount): void|null $onFileProgress
+	 * @param callable(int $fileCount, int $totalFiles): void|null $onFileProgress
 	 * @return array{count:int,error:string}
 	 */
 	function alatinfo_backup_zip_write_stream_sink(
@@ -2647,7 +2677,7 @@ if (!function_exists('alatinfo_backup_zip_write_stream_sink')) {
 			$offset = $added['offset'];
 			$count++;
 			if ($onFileProgress !== null) {
-				$onFileProgress($count);
+				$onFileProgress($count, $candidates);
 			}
 			if ($count % 100 === 0) {
 				gc_collect_cycles();
@@ -2780,7 +2810,7 @@ if (!function_exists('alatinfo_backup_zip_dir_stream_upload_to_drive')) {
 	 *
 	 * @param array<int,string> $excludeRel
 	 * @param callable(int $uploadedBytes, int $totalBytes): void|null $onUploadProgress
-	 * @param callable(int $fileCount): void|null $onFileProgress
+	 * @param callable(int $fileCount, int $totalFiles): void|null $onFileProgress
 	 * @return array{ok:bool,message:string,storage_quota:bool,bytes:int,file_count:int,skipped:bool,zip_message:string}
 	 */
 	function alatinfo_backup_zip_dir_stream_upload_to_drive(
