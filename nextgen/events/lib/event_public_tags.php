@@ -80,18 +80,3 @@ function events_public_tag_type_rows_for_display(PDO $db, int $tagId): array {
 
     return $out;
 }
-
-/**
- * Nyilvános címke-oldal fejléc felirata a típusok alapján (pl. egyetlen DJ → „DJ”).
- *
- * @param list<string> $typeCodes
- */
-function events_public_tag_eyebrow_label(array $typeCodes, string $lang, ?PDO $db = null): string {
-    $db = $db ?? getDb();
-    $typeCodes = events_tag_type_normalize_codes($typeCodes, $db);
-    if (count($typeCodes) === 1) {
-        return events_tag_type_label($typeCodes[0], $db);
-    }
-
-    return $lang === 'en' ? 'Tag' : 'Címke';
-}

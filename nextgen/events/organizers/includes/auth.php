@@ -108,14 +108,3 @@ function organizers_portal_refresh_session_from_db(PDO $db): void
     $_SESSION['organizers_portal_nev'] = (string) ($account['név'] ?? '');
     $_SESSION['organizers_portal_organizer_name'] = (string) ($account['organizer_name'] ?? '');
 }
-
-/** @deprecated organizers_portal_* használata */
-function szervezo_is_logged_in(): bool { return organizers_portal_is_logged_in(); }
-function szervezo_require_login(): void { organizers_portal_require_login(); }
-function szervezo_current_account_id(): int { return organizers_portal_current_account_id(); }
-function szervezo_current_organizer_id(): int { return organizers_portal_current_organizer_id(); }
-function szervezo_session_display_name(): string { return organizers_portal_session_display_name(); }
-function szervezo_login(string $email, string $password): bool { return organizers_portal_login($email, $password); }
-function szervezo_logout(): void { organizers_portal_logout(); }
-function szervezo_current_account(PDO $db): ?array { return organizers_portal_current_account($db); }
-function szervezo_refresh_session_from_db(PDO $db): void { organizers_portal_refresh_session_from_db($db); }

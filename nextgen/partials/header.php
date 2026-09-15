@@ -124,7 +124,6 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" role="menuitem">Slug átirányítások</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/partnerek_szerkeszt.php')) ?>" role="menuitem">Partnereink</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/mcal_prototypes.php')) ?>" role="menuitem">Mobil naptár minták</a></li>
                         <?php if (isLoggedIn() && isSuperadmin()): ?>
                         <li role="none"><a href="<?= h(nextgen_url('events/kepek_esemenyek.php')) ?>" role="menuitem">Képek–események</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/adatok.php')) ?>" role="menuitem">Adatok</a></li>

@@ -1245,30 +1245,6 @@ function nextgen_partner_djs(PDO $db, int $partnerId): array
     }
 }
 
-/**
- * @return list<array<string, mixed>>
- */
-function nextgen_partner_finance_organizers(PDO $db, int $partnerId): array
-{
-    if ($partnerId <= 0) {
-        return [];
-    }
-    try {
-        $stmt = $db->prepare('
-            SELECT f.`id`, f.`név` AS name
-            FROM `nextgen_partner_finance_organizers` pf
-            INNER JOIN `finance_organizers` f ON f.`id` = pf.`finance_organizer_id`
-            WHERE pf.`partner_id` = ?
-            ORDER BY f.`név` ASC
-        ');
-        $stmt->execute([$partnerId]);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Throwable) {
-        return [];
-    }
-}
-
 function nextgen_partner_can_access_organizer(PDO $db, int $partnerId, int $organizerId): bool
 {
     if ($partnerId <= 0 || $organizerId <= 0) {
@@ -1281,25 +1257,6 @@ function nextgen_partner_can_access_organizer(PDO $db, int $partnerId, int $orga
             LIMIT 1
         ');
         $stmt->execute([$partnerId, $organizerId]);
-
-        return (bool) $stmt->fetchColumn();
-    } catch (Throwable) {
-        return false;
-    }
-}
-
-function nextgen_partner_can_access_dj(PDO $db, int $partnerId, int $tagId): bool
-{
-    if ($partnerId <= 0 || $tagId <= 0) {
-        return false;
-    }
-    try {
-        $stmt = $db->prepare('
-            SELECT 1 FROM `nextgen_partner_djs`
-            WHERE `partner_id` = ? AND `tag_id` = ?
-            LIMIT 1
-        ');
-        $stmt->execute([$partnerId, $tagId]);
 
         return (bool) $stmt->fetchColumn();
     } catch (Throwable) {
@@ -1526,18 +1483,6 @@ function nextgen_partner_selectable_djs(PDO $db): array
         $stmt->execute([$djTypeId]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Throwable) {
-        return [];
-    }
-}
-
-/**
- * @return list<array{id: int, name: string}>
- */
-function nextgen_partner_selectable_finance_organizers(PDO $db): array
-{
-    try {
-        return $db->query('SELECT `id`, `név` AS name FROM `finance_organizers` ORDER BY `név` ASC')->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable) {
         return [];
     }

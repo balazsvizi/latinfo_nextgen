@@ -380,19 +380,6 @@ function events_public_home_notice_truncate(string $text, int $max = 72): string
     return mb_substr($text, 0, max(1, $max - 1)) . '…';
 }
 
-function events_public_home_notice_format_dt(?string $dt): string
-{
-    $raw = trim((string) $dt);
-    if ($raw === '') {
-        return 'mostanáig';
-    }
-    try {
-        return (new DateTimeImmutable($raw))->format('Y.m.d. H:i');
-    } catch (Throwable) {
-        return $raw;
-    }
-}
-
 /**
  * @param array<string, mixed> $query
  * @return array{

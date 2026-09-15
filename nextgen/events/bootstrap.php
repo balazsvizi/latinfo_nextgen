@@ -79,15 +79,6 @@ if (!function_exists('events_public_append_query')) {
     }
 }
 
-if (!function_exists('events_public_home_page_script')) {
-    /**
-     * @deprecated Belső admin útvonal; publikus linkekhez events_public_home_url().
-     */
-    function events_public_home_page_script(): string {
-        return '';
-    }
-}
-
 if (!function_exists('events_public_canonical_url')) {
     /**
      * Publikus esemény canonical URL: /event/{slug}/

@@ -268,15 +268,6 @@ function events_admin_calendar_event_date_range(array $row): ?array {
     ];
 }
 
-function events_admin_calendar_is_multi_day_event(array $row): bool {
-    $range = events_admin_calendar_event_date_range($row);
-    if ($range === null) {
-        return false;
-    }
-
-    return $range['start']->format('Y-m-d') < $range['end']->format('Y-m-d');
-}
-
 /**
  * Naptár rács: befoglaló napok (záró dátum napja is), 06:00-s „éjszakai” szabály nélkül.
  *

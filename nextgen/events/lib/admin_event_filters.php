@@ -40,10 +40,6 @@ function events_admin_list_pool_from_sql(?int $listLimit): string {
     return events_admin_table_pool_from_sql('events_calendar_events', 'e', $listLimit);
 }
 
-function events_admin_list_pool_count(PDO $db, ?int $listLimit): int {
-    return events_admin_table_pool_count($db, 'events_calendar_events', $listLimit);
-}
-
 function events_admin_table_pool_from_sql(string $table, string $alias, ?int $listLimit): string {
     if (!preg_match('/^events_[a-z0-9_]+$/', $table)) {
         throw new InvalidArgumentException('Érvénytelen tábla a lista poolhoz.');
@@ -58,35 +54,6 @@ function events_admin_table_pool_from_sql(string $table, string $alias, ?int $li
         ORDER BY p.`id` DESC
         LIMIT ' . $listLimit . '
     ) ' . $alias;
-}
-
-function events_admin_table_pool_count(PDO $db, string $table, ?int $listLimit): int {
-    if (!preg_match('/^events_[a-z0-9_]+$/', $table)) {
-        throw new InvalidArgumentException('Érvénytelen tábla a lista poolhoz.');
-    }
-    if ($listLimit === null) {
-        return (int) $db->query('SELECT COUNT(*) FROM `' . $table . '`')->fetchColumn();
-    }
-
-    $stmt = $db->prepare('
-        SELECT COUNT(*) FROM (
-            SELECT p.`id`
-            FROM `' . $table . '` p
-            ORDER BY p.`id` DESC
-            LIMIT ?
-        ) pool_ids
-    ');
-    $stmt->execute([$listLimit]);
-
-    return (int) $stmt->fetchColumn();
-}
-
-function events_admin_list_filtered_count(PDO $db, string $fromSql, string $whereSql, array $params): int {
-    $sql = 'SELECT COUNT(*) FROM ' . $fromSql . ' ' . $whereSql;
-    $stmt = $db->prepare($sql);
-    $stmt->execute($params);
-
-    return (int) $stmt->fetchColumn();
 }
 
 function events_admin_table_total_count(PDO $db, string $table): int {

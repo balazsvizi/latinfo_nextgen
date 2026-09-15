@@ -37,14 +37,6 @@ if (!function_exists('organizers_portal_url')) {
     }
 }
 
-/** @deprecated organizers_portal_url() használata */
-if (!function_exists('szervezo_url')) {
-    function szervezo_url(string $path = ''): string
-    {
-        return organizers_portal_url($path);
-    }
-}
-
 if (!function_exists('events_public_home_path')) {
     function events_public_home_path(): string
     {
@@ -94,10 +86,4 @@ function organizers_portal_organizer_summary(PDO $db, int $organizerId): ?array
     } catch (Throwable) {
         return null;
     }
-}
-
-/** @deprecated organizers_portal_organizer_summary() használata */
-function szervezo_organizer_summary(PDO $db, int $organizerId): ?array
-{
-    return organizers_portal_organizer_summary($db, $organizerId);
 }

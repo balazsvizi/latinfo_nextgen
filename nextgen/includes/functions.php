@@ -301,10 +301,6 @@ function old(string $key, string $default = ''): string {
     return h($_SESSION['_old'][$key] ?? $default);
 }
 
-function clearOld(): void {
-    unset($_SESSION['_old']);
-}
-
 function setOld(array $data): void {
     $_SESSION['_old'] = $data;
 }
@@ -641,18 +637,6 @@ function szamla_statusz_label(string $s): string {
         'sztornó'    => 'Sztornó',
     ];
     return $labels[$s] ?? $s;
-}
-
-/**
- * Hónap neve
- */
-function honap_nev(int $honap): string {
-    $nevek = [
-        1 => 'Január', 2 => 'Február', 3 => 'Március', 4 => 'Április',
-        5 => 'Május', 6 => 'Június', 7 => 'Július', 8 => 'Augusztus',
-        9 => 'Szeptember', 10 => 'Október', 11 => 'November', 12 => 'December',
-    ];
-    return $nevek[$honap] ?? (string) $honap;
 }
 
 /**
