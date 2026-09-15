@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/html_security.php';
 
-const EVENTS_PUBLIC_DJS_HUB_ANCHOR_BEFORE = 'djs-elott';
-const EVENTS_PUBLIC_DJS_HUB_ANCHOR_AFTER = 'djs-statisztikak-utan';
+const EVENTS_PUBLIC_DJS_HUB_ANCHOR_BEFORE = 'DJ-first';
+const EVENTS_PUBLIC_DJS_HUB_ANCHOR_AFTER = 'DJ-Infok';
 
 function events_public_djs_hub_table_available(PDO $db): bool
 {
