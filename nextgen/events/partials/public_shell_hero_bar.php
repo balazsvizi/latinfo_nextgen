@@ -54,7 +54,7 @@ $N = events_public_nav_strings($lang);
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </a>
             <?php endif; ?>
-            <a class="event-brand-logo" href="<?= h($eventsHomeUrl) ?>" title="<?= h($C['logo_events_home_title']) ?>" aria-label="<?= h($C['logo_events_home_aria']) ?>">
+            <a class="event-brand-logo" href="<?= h($eventsHomeUrl) ?>" title="<?= h($C['logo_events_home_title']) ?>" aria-label="<?= h($C['logo_events_home_aria']) ?>" data-public-nav-track="logo">
                 <img src="<?= h($latinfoLogoSrc) ?>" alt="<?= h($S['logo_alt']) ?>" width="240" height="80" decoding="async" fetchpriority="high">
             </a>
             <?php if ($heroInlineTitle !== ''): ?>
@@ -66,13 +66,13 @@ $N = events_public_nav_strings($lang);
         <?php endif; ?>
         <div class="event-public__hero-actions">
             <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">
-                <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu" aria-label="<?= h($L['hu_aria']) ?>" title="<?= h($L['hu_aria']) ?>"><?= h($L['hu_short']) ?></a>
+                <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu" aria-label="<?= h($L['hu_aria']) ?>" title="<?= h($L['hu_aria']) ?>" data-public-nav-track="lang-hu"><?= h($L['hu_short']) ?></a>
                 <?php if ($mcalToggleUrl !== ''): ?>
-                    <a class="event-lang-switch__sep event-lang-switch__sep--mcal" href="<?= h($mcalToggleUrl) ?>" title="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>" aria-label="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>">/</a>
+                    <a class="event-lang-switch__sep event-lang-switch__sep--mcal" href="<?= h($mcalToggleUrl) ?>" title="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>" aria-label="<?= h($mcalToggleTitle !== '' ? $mcalToggleTitle : 'Mobil naptár') ?>" data-public-nav-track="lang-mcal">/</a>
                 <?php else: ?>
                     <span class="event-lang-switch__sep" aria-hidden="true">/</span>
                 <?php endif; ?>
-                <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en" aria-label="<?= h($L['en_aria']) ?>" title="<?= h($L['en_aria']) ?>"><?= h($L['en_short']) ?></a>
+                <a class="event-lang-switch__link<?= $lang === 'en' ? ' is-active' : '' ?>" href="<?= h($urlEn) ?>" hreflang="en" lang="en" aria-label="<?= h($L['en_aria']) ?>" title="<?= h($L['en_aria']) ?>" data-public-nav-track="lang-en"><?= h($L['en_short']) ?></a>
             </div>
             <button
                 type="button"

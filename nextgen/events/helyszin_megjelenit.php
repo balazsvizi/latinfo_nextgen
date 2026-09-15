@@ -144,6 +144,13 @@ if (is_array($venueCoords)) {
     ];
 }
 
+require_once __DIR__ . '/lib/public_traffic.php';
+$eventsPublicTrafficPageKey = 'venue';
+events_public_traffic_hit($db, 'venue', $lang, [
+    'entity_id' => $venueId,
+    'entity_label' => $title,
+]);
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>

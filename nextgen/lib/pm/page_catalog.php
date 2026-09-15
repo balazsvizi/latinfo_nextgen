@@ -98,5 +98,13 @@ function pm_tools_page_catalog(): array
             'display_name' => 'LaNueva',
             'purpose' => 'LaNueva táblázat konfiguráció.',
         ],
+        '/nextgen/site/index.php' => [
+            'display_name' => 'Latinfo kezdőoldal',
+            'purpose' => 'Nyilvános latinfo.hu kezdőoldal előnézete – jelenleg csak adminnak.',
+        ],
+        '/nextgen/site/szerkeszt.php' => [
+            'display_name' => 'Kezdőoldal szerkesztése',
+            'purpose' => 'Kiemelt hírek, gyűjtők és hero szövegek szerkesztése a kezdőoldalon.',
+        ],
     ];
 }

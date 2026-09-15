@@ -150,6 +150,14 @@ if ($tagIsDj) {
 $djOgImage = $djPhotoAbs !== '' ? $djPhotoAbs : $djLogoAbs;
 
 events_public_send_noindex_follow_header();
+
+require_once __DIR__ . '/lib/public_traffic.php';
+$eventsPublicTrafficPageKey = 'dj';
+events_public_traffic_hit($db, 'dj', $lang, [
+    'entity_id' => $tagId,
+    'entity_label' => $title,
+]);
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>

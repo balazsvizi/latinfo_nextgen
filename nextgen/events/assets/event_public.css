@@ -2918,13 +2918,14 @@ a.event-hero-chip--category-link:hover {
     color: var(--li-green-dark);
 }
 
-.djs-public__intro {
-    margin: 0.7rem 0 0;
-    max-width: 36rem;
-    font-family: var(--ev-sans);
-    font-size: 1.05rem;
-    line-height: 1.55;
-    color: var(--li-text-soft);
+.event-public__hero--bar-only {
+    padding-bottom: clamp(0.85rem, 2vw, 1.15rem);
+}
+
+.event-public__hero--bar-only .event-public__hero-chrome {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 .djs-public__hero-cta {
@@ -3889,9 +3890,9 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 .djs-public__cms--filled {
-    max-width: 52rem;
-    margin: 0 auto 0.35rem;
-    padding: 0.25rem clamp(1.25rem, 4vw, 2.25rem) 1rem;
+    max-width: none;
+    margin: 0 0 0.35rem;
+    padding: 0.85rem clamp(1.25rem, 4vw, 2.25rem) 1rem;
     font-family: var(--ev-sans);
     color: var(--li-text);
     line-height: 1.65;

@@ -38,6 +38,11 @@ try {
         <div class="num">→</div>
         <p>Config, admin, levélsablonok – <code>nextgen/config/</code>, <code>nextgen/admin/</code></p>
     </a>
+    <a href="<?= h(nextgen_url('site/')) ?>" class="dash-card dash-card-nextgen">
+        <h3>Kezdőoldal</h3>
+        <div class="num">→</div>
+        <p>Latinfo.hu nyilvános kezdőoldal előnézet – egyelőre csak admin</p>
+    </a>
 </div>
 
 <div class="card">
@@ -46,6 +51,7 @@ try {
         <a href="<?= h(nextgen_url('organizers/')) ?>" class="btn btn-secondary">Szervezők</a>
         <a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" class="btn btn-secondary">Számlázandó</a>
         <a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" class="btn btn-secondary">Új esemény</a>
+        <a href="<?= h(nextgen_url('site/')) ?>" class="btn btn-secondary">Kezdőoldal</a>
         <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="btn btn-secondary">NextGen – Címkék</a>
         <a href="<?= h(nextgen_url('admin/log.php')) ?>" class="btn btn-secondary">NextGen – Logok</a>
     </p>

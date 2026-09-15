@@ -61,6 +61,13 @@ $S = $O;
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('organizer_szerkeszt.php?id=') . $organizerId;
 
+require_once __DIR__ . '/lib/public_traffic.php';
+$eventsPublicTrafficPageKey = 'organizer';
+events_public_traffic_hit($db, 'organizer', $lang, [
+    'entity_id' => $organizerId,
+    'entity_label' => $orgName !== '' ? $orgName : ('#' . $organizerId),
+]);
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>

@@ -19,6 +19,10 @@ $listTotalInDb = events_public_organizer_total_count($db);
 $limitParams = events_public_catalog_get_params($listLimitValue);
 $orgRows = events_public_organizer_catalog($db, events_public_post_status(), $list_limit);
 
+require_once __DIR__ . '/lib/public_traffic.php';
+$eventsPublicTrafficPageKey = 'organizers';
+events_public_traffic_hit($db, 'organizers', $lang);
+
 $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];
 $canonical = events_absolute_url(events_public_organizers_catalog_page_url($lang, $limitParams));

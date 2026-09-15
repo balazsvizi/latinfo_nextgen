@@ -29,6 +29,10 @@ $S = $D;
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = $showAdminEdit ? events_url('partnerek_szerkeszt.php') : '';
 
+require_once __DIR__ . '/lib/public_traffic.php';
+$eventsPublicTrafficPageKey = 'partners';
+events_public_traffic_hit($db, 'partners', $lang);
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>

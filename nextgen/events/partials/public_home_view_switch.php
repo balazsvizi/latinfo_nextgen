@@ -23,18 +23,18 @@ $aria = (string) ($D['view_switch_aria'] ?? 'Nézet választó');
     <?php if ($homeActiveView === 'cal'): ?>
         <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h($calLabel) ?></span>
     <?php else: ?>
-        <a class="events-cal-view-switch__item" href="<?= h($homeCalViewUrl) ?>"><?= h($calLabel) ?></a>
+        <a class="events-cal-view-switch__item" href="<?= h($homeCalViewUrl) ?>" data-public-nav-track="view-cal"><?= h($calLabel) ?></a>
     <?php endif; ?>
     <?php if ($homeActiveView === 'list'): ?>
         <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h($listLabel) ?></span>
     <?php else: ?>
-        <a class="events-cal-view-switch__item" href="<?= h($homeListViewUrl) ?>"><?= h($listLabel) ?></a>
+        <a class="events-cal-view-switch__item" href="<?= h($homeListViewUrl) ?>" data-public-nav-track="view-list"><?= h($listLabel) ?></a>
     <?php endif; ?>
     <?php if ($showMapView): ?>
         <?php if ($homeActiveView === 'map'): ?>
             <span class="events-cal-view-switch__item is-active" aria-current="page"><?= h($mapLabel) ?></span>
         <?php else: ?>
-            <a class="events-cal-view-switch__item" href="<?= h($homeMapViewUrl) ?>"><?= h($mapLabel) ?></a>
+            <a class="events-cal-view-switch__item" href="<?= h($homeMapViewUrl) ?>" data-public-nav-track="view-map"><?= h($mapLabel) ?></a>
         <?php endif; ?>
     <?php endif; ?>
 </nav>

@@ -162,7 +162,7 @@ function ng_nav_app_zone(): string {
     if (strpos($s, '/nextgen/events/') !== false) {
         return 'events';
     }
-    if (strpos($s, '/nextgen/config/') !== false || strpos($s, '/nextgen/admin/') !== false) {
+    if (strpos($s, '/nextgen/config/') !== false || strpos($s, '/nextgen/admin/') !== false || strpos($s, '/nextgen/site/') !== false) {
         return 'nextgen';
     }
     if (preg_match('#/nextgen/(apps|jelszo)\.php$#', $s)) {
@@ -185,6 +185,9 @@ function app_backoffice_area(): string {
     }
     if (strpos($s, '/nextgen/apps.php') !== false || str_ends_with($s, '/apps.php')) {
         return 'Alkalmazások';
+    }
+    if (strpos($s, '/nextgen/site/') !== false) {
+        return 'Kezdőoldal';
     }
     if (strpos($s, '/config/') !== false) {
         return 'Config';

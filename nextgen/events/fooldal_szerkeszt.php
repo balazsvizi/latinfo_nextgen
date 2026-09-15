@@ -159,6 +159,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <h2 class="events-list-title">Publikus főoldal szövegei</h2>
         <div class="events-list-actions">
             <a href="#notice-click-stats" class="btn btn-secondary btn-sm">Átkattintások</a>
+            <a href="<?= h(events_url('menu_szerkeszt.php')) ?>" class="btn btn-secondary btn-sm">Főmenü</a>
             <a href="<?= h(events_public_home_url('hu')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Előnézet</a>
         </div>
     </div>

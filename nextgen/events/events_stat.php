@@ -24,6 +24,7 @@ $publishedUrl = events_url('events_admin.php?' . http_build_query([
 ]));
 $chartsUrl = events_url('events_statisztika.php');
 $listaStatUrl = events_url('events_lista_stat.php');
+$publicTrafficUrl = events_url('events_public_stat.php');
 $realtimeUrl = events_url('events_realtime.php');
 $calendarUrl = events_url('events_naptar.php');
 $venuesUrl = events_url('venues.php');
@@ -164,6 +165,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <a href="<?= h($listaStatUrl) ?>" class="events-stat-quick-link">
                 <strong>Lista stat</strong>
                 <span>Eseményenkénti megtekintés, előnézet, átkattintás</span>
+            </a>
+            <a href="<?= h($publicTrafficUrl) ?>" class="events-stat-quick-link">
+                <strong>Publikus oldalak</strong>
+                <span>Naptár, lista, DJ-k és menükattintások</span>
             </a>
             <a href="<?= h($realtimeUrl) ?>" class="events-stat-quick-link">
                 <strong>Valós idejű</strong>

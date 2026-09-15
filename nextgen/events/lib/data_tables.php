@@ -12,6 +12,7 @@ function events_data_tables_registry(): array {
     return [
         'events_calendar_events' => ['label' => 'Események', 'group' => 'Események'],
         'events_calendar_event_views' => ['label' => 'Esemény megtekintések', 'group' => 'Események'],
+        'events_public_traffic' => ['label' => 'Nyilvános oldal- és menüforgalom', 'group' => 'Események'],
         'events_calendar_event_organizers' => ['label' => 'Esemény – szervező kapcsolók', 'group' => 'Kapcsolótáblák'],
         'events_calendar_event_categories' => ['label' => 'Esemény – kategória kapcsolók', 'group' => 'Kapcsolótáblák'],
         'events_calendar_event_tags' => ['label' => 'Esemény – címke kapcsolók', 'group' => 'Kapcsolótáblák'],
@@ -26,6 +27,7 @@ function events_data_tables_registry(): array {
         'events_styles' => ['label' => 'Stílusok', 'group' => 'Törzsadatok'],
         'events_import_settings' => ['label' => 'CSV import beállítások', 'group' => 'Rendszer'],
         'events_app_settings' => ['label' => 'Esemény alkalmazásbeállítások', 'group' => 'Rendszer'],
+        'events_public_nav_items' => ['label' => 'Nyilvános főmenü', 'group' => 'Rendszer'],
         'events_slug_redirects' => ['label' => 'Esemény slug átirányítások', 'group' => 'Rendszer'],
         'events_specialtags' => ['label' => 'Speciális címke csoportok (régi)', 'group' => 'Régi / opcionális'],
         'events_special_tags' => ['label' => 'Címke – speciális csoport kapcsolók (régi)', 'group' => 'Régi / opcionális'],

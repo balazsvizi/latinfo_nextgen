@@ -8,9 +8,10 @@ declare(strict_types=1);
  * @var array<string, string> $N events_public_nav_strings()
  */
 require_once __DIR__ . '/../lib/public_nav_menu.php';
+require_once __DIR__ . '/../lib/public_traffic.php';
 
 $navItems = events_public_nav_menu_items($lang);
-$navActiveKeys = events_public_nav_active_keys();
+$navActiveKeys = events_public_nav_active_keys($navItems);
 ?>
 <nav class="event-nav" id="event-primary-nav" aria-label="<?= h($N['nav_aria']) ?>">
     <?php events_public_nav_render_items($navItems, $navActiveKeys, $N); ?>
@@ -101,3 +102,47 @@ $navActiveKeys = events_public_nav_active_keys();
     });
 })();
 </script>
+<?php
+$publicNavTrackAllowed = function_exists('events_public_visitor_metrics_allowed')
+    && events_public_visitor_metrics_allowed();
+$publicNavPageKey = events_public_traffic_normalize_page_key($eventsPublicTrafficPageKey ?? '');
+if ($publicNavPageKey === '' && isset($view) && is_string($view)) {
+    $publicNavPageKey = match ($view) {
+        'list' => 'list',
+        'map' => 'map',
+        'cal', 'mcal' => 'calendar',
+        default => '',
+    };
+}
+?>
+<?php if ($publicNavTrackAllowed): ?>
+<script>
+(function () {
+    var trackUrl = <?= json_encode(events_url('ajax_public_nav_click.php'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var pageKey = <?= json_encode($publicNavPageKey, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var lang = <?= json_encode($lang === 'en' ? 'en' : 'hu', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    if (!trackUrl) return;
+
+    function trackNav(key) {
+        if (!key) return;
+        var body = new FormData();
+        body.append('nav_key', key);
+        body.append('lang', lang);
+        if (pageKey) body.append('page_key', pageKey);
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(trackUrl, body);
+            return;
+        }
+        fetch(trackUrl, { method: 'POST', body: body, keepalive: true }).catch(function () {});
+    }
+
+    document.addEventListener('click', function (e) {
+        var target = e.target;
+        if (!target || typeof target.closest !== 'function') return;
+        var link = target.closest('[data-public-nav-track]');
+        if (!link) return;
+        trackNav(link.getAttribute('data-public-nav-track') || '');
+    });
+})();
+</script>
+<?php endif; ?>

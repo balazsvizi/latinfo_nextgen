@@ -81,6 +81,10 @@ $djHref = static function (array $row, string $lang): string {
     return events_public_tag_page_url($id, $lang);
 };
 
+require_once __DIR__ . '/lib/public_traffic.php';
+$eventsPublicTrafficPageKey = 'djs';
+events_public_traffic_hit($db, 'djs', $lang);
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
@@ -109,13 +113,9 @@ header('Content-Type: text/html; charset=UTF-8');
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public organizer-public djs-public">
-    <header class="event-public__hero">
+    <header class="event-public__hero event-public__hero--bar-only">
         <?php $S = $D; require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
-        <div class="event-public__hero-inner djs-public__hero-inner">
-            <p class="event-public__eyebrow">🎧 <?= h((string) $D['eyebrow']) ?></p>
-            <h1 class="event-public__title"><?= h($title) ?></h1>
-            <p class="djs-public__intro"><?= h((string) $D['page_intro']) ?></p>
-        </div>
+        <h1 class="visually-hidden"><?= h($title) ?></h1>
     </header>
 
     <section

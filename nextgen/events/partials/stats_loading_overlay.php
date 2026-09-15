@@ -24,7 +24,7 @@ declare(strict_types=1);
     }
     window.EventsStatsLoadingBound = true;
 
-    var STATS_PATH_RE = /\/events\/(?:events_statisztika|events_szervezok_statisztika|events_lista_stat|events_event_statisztika|events_realtime|events_stat)\.php(?:[?#]|$)/i;
+    var STATS_PATH_RE = /\/events\/(?:events_statisztika|events_szervezok_statisztika|events_lista_stat|events_event_statisztika|events_realtime|events_stat|events_public_stat)\.php(?:[?#]|$)/i;
 
     function showLoading() {
         var el = document.getElementById('events-stats-loading');

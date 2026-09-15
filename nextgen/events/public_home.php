@@ -223,6 +223,15 @@ $mcalToggleTitle = $view === 'mcal'
     : (string) ($D['mcal_toggle_open'] ?? ($lang === 'en' ? 'Mobile calendar' : 'Mobil naptár'));
 $needsDeviceViewSync = !$viewExplicit && ($view === 'cal' || $view === 'mcal');
 
+require_once __DIR__ . '/lib/public_traffic.php';
+$homePageKey = match ($view) {
+    'list' => 'list',
+    'map' => 'map',
+    default => 'calendar',
+};
+$eventsPublicTrafficPageKey = $homePageKey;
+events_public_traffic_hit($db, $homePageKey, $lang, ['view_mode' => $view]);
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>

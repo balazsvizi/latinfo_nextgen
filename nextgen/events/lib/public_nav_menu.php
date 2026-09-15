@@ -44,11 +44,11 @@ function events_public_nav_strings(string $lang): array {
 }
 
 /**
- * Menüpontok fája. Új szint: a `children` kulcsba ágyazott, ugyanilyen szerkezetű elemek.
+ * Beégetett menü, ha az adatbázis tábla még nincs (vagy nem olvasható).
  *
  * @return list<array{key: string, label: string, href: string, external?: bool, children?: list<array<string, mixed>>}>
  */
-function events_public_nav_menu_items(string $lang): array {
+function events_public_nav_menu_items_fallback(string $lang): array {
     $N = events_public_nav_strings($lang);
 
     return [
@@ -96,11 +96,30 @@ function events_public_nav_menu_items(string $lang): array {
 }
 
 /**
- * Aktív menüág kulcsai a legfelső szinttől az aktuális oldalig.
+ * Menüpontok fája: adatbázisból, ha van szerkesztett menü, különben a beégetett fa.
  *
+ * @return list<array{key: string, label: string, href: string, external?: bool, new_tab?: bool, children?: list<array<string, mixed>>}>
+ */
+function events_public_nav_menu_items(string $lang): array {
+    if (function_exists('getDb')) {
+        try {
+            require_once __DIR__ . '/public_nav_items.php';
+            $db = getDb();
+            if (events_public_nav_items_table_available($db)) {
+                return events_public_nav_items_tree_for_public($db, $lang);
+            }
+        } catch (Throwable $e) {
+            error_log('events_public_nav_menu_items: ' . $e->getMessage());
+        }
+    }
+
+    return events_public_nav_menu_items_fallback($lang);
+}
+
+/**
  * @return list<string>
  */
-function events_public_nav_active_keys(): array {
+function events_public_nav_active_keys_by_script(): array {
     $script = strtolower(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
     $view = strtolower(trim((string) ($_GET['view'] ?? '')));
 
@@ -119,6 +138,114 @@ function events_public_nav_active_keys(): array {
 }
 
 /**
+ * @param list<array<string, mixed>> $items
+ * @param list<string> $wantedKeys
+ * @return list<string>
+ */
+function events_public_nav_trail_by_keys(array $items, array $wantedKeys): array {
+    $best = [];
+    $walk = static function (array $nodes, array $ancestors) use (&$walk, &$best, $wantedKeys): void {
+        foreach ($nodes as $item) {
+            $key = trim((string) ($item['key'] ?? ''));
+            $next = $key !== '' ? array_merge($ancestors, [$key]) : $ancestors;
+            if ($key !== '' && in_array($key, $wantedKeys, true) && count($next) >= count($best)) {
+                $best = $next;
+            }
+            $children = is_array($item['children'] ?? null) ? $item['children'] : [];
+            if ($children !== []) {
+                $walk($children, $next);
+            }
+        }
+    };
+    $walk($items, []);
+
+    return $best;
+}
+
+function events_public_nav_current_request_path(): string {
+    $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+    $path = parse_url($uri, PHP_URL_PATH);
+    $path = is_string($path) ? $path : $uri;
+    $path = strtolower(rtrim($path, '/'));
+
+    return $path === '' ? '/' : $path;
+}
+
+function events_public_nav_href_path(string $href): string {
+    $path = parse_url($href, PHP_URL_PATH);
+    $path = is_string($path) ? $path : $href;
+    $path = strtolower(rtrim($path, '/'));
+
+    return $path === '' ? '/' : $path;
+}
+
+/**
+ * @param list<array<string, mixed>> $items
+ * @return list<string>
+ */
+function events_public_nav_trail_by_url(array $items): array {
+    $currentPath = events_public_nav_current_request_path();
+    $currentView = strtolower(trim((string) ($_GET['view'] ?? '')));
+    $best = [];
+    $bestScore = 0;
+    $walk = static function (array $nodes, array $ancestors) use (&$walk, &$best, &$bestScore, $currentPath, $currentView): void {
+        foreach ($nodes as $item) {
+            $key = trim((string) ($item['key'] ?? ''));
+            $next = $key !== '' ? array_merge($ancestors, [$key]) : $ancestors;
+            $href = trim((string) ($item['href'] ?? ''));
+            if ($href !== '' && $href !== '#') {
+                $hrefPath = events_public_nav_href_path($href);
+                if ($hrefPath === $currentPath) {
+                    $query = parse_url($href, PHP_URL_QUERY);
+                    $hrefView = '';
+                    if (is_string($query) && $query !== '') {
+                        parse_str($query, $q);
+                        $hrefView = strtolower(trim((string) ($q['view'] ?? '')));
+                    }
+                    $score = 10 + strlen($hrefPath);
+                    if ($hrefView !== '' && $hrefView === $currentView) {
+                        $score += 50;
+                    } elseif ($hrefView !== '' && $hrefView !== $currentView) {
+                        $score -= 20;
+                    }
+                    if ($score > $bestScore) {
+                        $bestScore = $score;
+                        $best = $next;
+                    }
+                }
+            }
+            $children = is_array($item['children'] ?? null) ? $item['children'] : [];
+            if ($children !== []) {
+                $walk($children, $next);
+            }
+        }
+    };
+    $walk($items, []);
+
+    return $best;
+}
+
+/**
+ * Aktív menüág kulcsai a legfelső szinttől az aktuális oldalig.
+ *
+ * @param list<array<string, mixed>>|null $items
+ * @return list<string>
+ */
+function events_public_nav_active_keys(?array $items = null): array {
+    $byScript = events_public_nav_active_keys_by_script();
+    if ($items === null || $items === []) {
+        return $byScript;
+    }
+
+    $byKey = events_public_nav_trail_by_keys($items, $byScript);
+    if ($byKey !== []) {
+        return $byKey;
+    }
+
+    return events_public_nav_trail_by_url($items);
+}
+
+/**
  * Menülista kirajzolása rekurzívan (0. szint a fő sáv, mélyebb szintek almenük).
  *
  * @param list<array<string, mixed>> $items
@@ -133,7 +260,8 @@ function events_public_nav_render_items(array $items, array $activeKeys, array $
         $key = trim((string) ($item['key'] ?? ''));
         $label = trim((string) ($item['label'] ?? ''));
         $href = trim((string) ($item['href'] ?? ''));
-        if ($label === '' || $href === '') {
+        $hrefLower = strtolower($href);
+        if ($label === '' || $href === '' || str_starts_with($hrefLower, 'javascript:') || str_starts_with($hrefLower, 'data:') || str_starts_with($hrefLower, 'vbscript:')) {
             continue;
         }
         $children = is_array($item['children'] ?? null) ? $item['children'] : [];
@@ -149,8 +277,14 @@ function events_public_nav_render_items(array $items, array $activeKeys, array $
         echo '<li class="', h($itemClass), '">';
         echo '<div class="event-nav__row">';
         echo '<a class="event-nav__link', $depth > 0 ? ' event-nav__link--sub' : '', '" href="', h($href), '"';
-        if (!empty($item['external'])) {
+        if (!empty($item['new_tab'])) {
+            echo ' target="_blank"';
+        }
+        if (!empty($item['external']) || !empty($item['new_tab'])) {
             echo ' rel="noopener"';
+        }
+        if ($key !== '') {
+            echo ' data-public-nav-track="', h($key), '"';
         }
         if ($key !== '' && $key === $currentKey) {
             echo ' aria-current="page"';
