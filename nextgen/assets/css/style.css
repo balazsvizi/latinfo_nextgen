@@ -815,6 +815,9 @@ tr:hover td { background: var(--bg); }
 .events-admin-card {
     max-width: none;
 }
+#djs-hub-cms {
+    scroll-margin-top: 5.5rem;
+}
 .events-admin-card .events-list-head {
     display: flex;
     flex-wrap: wrap;

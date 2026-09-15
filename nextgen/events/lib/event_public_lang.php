@@ -698,6 +698,8 @@ function events_public_djs_strings(string $lang): array {
         'empty' => 'Nincs DJ a listában.',
         'empty_filter' => 'Nincs találat a szűrésre.',
         'card_aria' => 'DJ profil megnyitása',
+        'cms_before_aria' => 'Szöveg a DJ lista előtt',
+        'cms_after_aria' => 'Szöveg a statisztikák után',
         'list_display_label' => 'Megjelenítve:',
         'list_display_all' => 'Mind',
     ];
@@ -739,6 +741,8 @@ function events_public_djs_strings(string $lang): array {
         'empty' => 'No DJs in the catalog.',
         'empty_filter' => 'No matches for your search.',
         'card_aria' => 'Open DJ profile',
+        'cms_before_aria' => 'Text before the DJ list',
+        'cms_after_aria' => 'Text after the statistics',
         'list_display_label' => 'Showing:',
         'list_display_all' => 'All',
     ];

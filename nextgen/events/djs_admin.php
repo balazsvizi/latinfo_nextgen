@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/djs_admin.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
+require_once __DIR__ . '/lib/public_djs_content.php';
 requireLogin();
 
 $db = getDb();
@@ -20,6 +21,32 @@ if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db
     echo '</div>';
     require_once dirname(__DIR__) . '/partials/footer.php';
     exit;
+}
+
+$cmsAnchorBefore = EVENTS_PUBLIC_DJS_HUB_ANCHOR_BEFORE;
+$cmsAnchorAfter = EVENTS_PUBLIC_DJS_HUB_ANCHOR_AFTER;
+$cmsPublicBeforeUrl = events_public_djs_hub_anchor_url($cmsAnchorBefore);
+$cmsPublicAfterUrl = events_public_djs_hub_anchor_url($cmsAnchorAfter);
+$cmsContent = events_public_djs_hub_load($db);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['djs_hub_cms_save'])) {
+    $cmsRedirect = events_url('djs_admin.php#djs-hub-cms');
+    csrf_require('events_djs_hub_cms', '_csrf', $cmsRedirect);
+    try {
+        events_public_djs_hub_save(
+            $db,
+            (string) ($_POST['content_before'] ?? ''),
+            (string) ($_POST['content_after'] ?? '')
+        );
+        if (function_exists('rendszer_log')) {
+            rendszer_log('dj_hub', 1, 'Szövegek mentve', '');
+        }
+        flash('success', 'A DJ oldal szövegei mentve.');
+    } catch (Throwable $e) {
+        error_log('djs_admin hub cms save: ' . $e->getMessage());
+        flash('error', 'A szövegek mentése nem sikerült.');
+    }
+    redirect($cmsRedirect);
 }
 
 $listLimitParsed = events_admin_list_limit_from_get();
@@ -71,6 +98,12 @@ $adminFloatTools = [
         'icon' => 'eye',
         'target' => '_blank',
     ],
+    [
+        'submit_form' => 'djs-hub-cms-form',
+        'title' => 'DJ oldal szövegeinek mentése',
+        'aria' => 'DJ oldal szövegeinek mentése',
+        'icon' => 'save',
+    ],
 ];
 $adminFloatToolsRequireLogin = false;
 
@@ -80,6 +113,31 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
+
+<div class="card events-admin-card" id="djs-hub-cms">
+    <h2 class="card-title" style="margin-top:0;">Nyilvános DJ oldal szövegei</h2>
+    <p class="help">HTML blokkok a <a href="<?= h($publicDjHubUrl) ?>" target="_blank" rel="noopener">/DJ/</a> oldalon. Mindkettőhöz named anchor tartozik, így linkelhető. Képet a szerkesztő kép gombjával tölthetsz fel vagy URL-lel szúrhatsz be.</p>
+    <form method="post" action="<?= h(events_url('djs_admin.php')) ?>" class="events-admin-form" id="djs-hub-cms-form">
+        <?= csrf_input('events_djs_hub_cms') ?>
+        <input type="hidden" name="djs_hub_cms_save" value="1">
+
+        <div class="form-group">
+            <label for="content_before">Szöveg az összes DJ előtt</label>
+            <p class="help">Horgony: <a href="<?= h($cmsPublicBeforeUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorBefore) ?></code></a></p>
+            <textarea class="js-tinymce" id="content_before" name="content_before" rows="12"><?= h($cmsContent['content_before']) ?></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="content_after">Szöveg a statisztikák után</label>
+            <p class="help">Horgony: <a href="<?= h($cmsPublicAfterUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorAfter) ?></code></a></p>
+            <textarea class="js-tinymce" id="content_after" name="content_after" rows="12"><?= h($cmsContent['content_after']) ?></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Szövegek mentése</button>
+        </div>
+    </form>
+</div>
 
 <div class="card events-admin-card">
     <form method="get" action="<?= h(events_url('djs_admin.php')) ?>" class="events-admin-form" id="djs-admin-filter-form">
@@ -211,6 +269,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php
 require __DIR__ . '/partials/admin_event_filters_script.php';
+require __DIR__ . '/partials/tinymce_script.php';
 ?>
 <script>
 (function () {

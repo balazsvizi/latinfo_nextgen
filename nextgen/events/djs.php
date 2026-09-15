@@ -6,6 +6,7 @@ require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_djs.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
+require_once __DIR__ . '/lib/public_djs_content.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $D = events_public_djs_strings($lang);
@@ -33,6 +34,11 @@ $publishedStatus = events_public_post_status();
 $djRowsAll = events_public_dj_catalog($db, $publishedStatus, null);
 $hubStats = events_public_dj_hub_stats($db, $publishedStatus, $djRowsAll);
 $djRows = $list_limit === null ? $djRowsAll : array_slice($djRowsAll, 0, $list_limit);
+$hubCms = events_public_djs_hub_load($db);
+$contentBefore = trim((string) ($hubCms['content_before'] ?? ''));
+$contentAfter = trim((string) ($hubCms['content_after'] ?? ''));
+$cmsAnchorBefore = EVENTS_PUBLIC_DJS_HUB_ANCHOR_BEFORE;
+$cmsAnchorAfter = EVENTS_PUBLIC_DJS_HUB_ANCHOR_AFTER;
 
 $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];
@@ -43,6 +49,24 @@ $urlHu = events_public_djs_lang_switch_url('hu', $limitParams);
 $urlEn = events_public_djs_lang_switch_url('en', $limitParams);
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $D;
+
+$adminFloatTools = [];
+if (isLoggedIn()) {
+    $adminFloatTools = [
+        [
+            'href' => events_url('djs_admin.php#djs-hub-cms'),
+            'title' => 'Szövegek szerkesztése',
+            'aria' => 'Nyilvános DJ oldal szövegeinek szerkesztése',
+            'icon' => 'edit',
+        ],
+        [
+            'href' => events_url('dj_letrehoz.php'),
+            'title' => 'Új DJ',
+            'aria' => 'Új DJ létrehozása',
+            'icon' => 'plus',
+        ],
+    ];
+}
 
 /**
  * @param array{id:int,name:string,slug:string} $row
@@ -82,6 +106,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
 <body class="event-public-page event-public-page--catalog">
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public organizer-public djs-public">
     <header class="event-public__hero">
@@ -92,6 +117,16 @@ header('Content-Type: text/html; charset=UTF-8');
             <p class="djs-public__intro"><?= h((string) $D['page_intro']) ?></p>
         </div>
     </header>
+
+    <section
+        id="<?= h($cmsAnchorBefore) ?>"
+        class="djs-public__cms djs-public__cms--before<?= $contentBefore !== '' ? ' djs-public__cms--filled event-rich-text' : '' ?>"
+        aria-label="<?= h((string) $D['cms_before_aria']) ?>"
+    >
+        <?php if ($contentBefore !== ''): ?>
+            <?= $contentBefore ?>
+        <?php endif; ?>
+    </section>
 
     <section class="djs-public__catalog" aria-labelledby="djs-catalog-heading">
         <div class="djs-public__catalog-head">
@@ -276,6 +311,16 @@ header('Content-Type: text/html; charset=UTF-8');
             </section>
         </div>
     <?php endif; ?>
+
+    <section
+        id="<?= h($cmsAnchorAfter) ?>"
+        class="djs-public__cms djs-public__cms--after<?= $contentAfter !== '' ? ' djs-public__cms--filled event-rich-text' : '' ?>"
+        aria-label="<?= h((string) $D['cms_after_aria']) ?>"
+    >
+        <?php if ($contentAfter !== ''): ?>
+            <?= $contentAfter ?>
+        <?php endif; ?>
+    </section>
 
     <footer class="event-public__footer">
         <?php require __DIR__ . '/partials/public_shell_footer.php'; ?>

@@ -3875,6 +3875,49 @@ body.event-public-page--home .event-public__hero-inner {
     color: var(--li-green-hover);
 }
 
+.home-public__cms img,
+.djs-public__cms img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0.85rem 0;
+    border-radius: 10px;
+}
+
+.djs-public__cms {
+    scroll-margin-top: 4.5rem;
+}
+
+.djs-public__cms--filled {
+    max-width: 52rem;
+    margin: 0 auto 0.35rem;
+    padding: 0.25rem clamp(1.25rem, 4vw, 2.25rem) 1rem;
+    font-family: var(--ev-sans);
+    color: var(--li-text);
+    line-height: 1.65;
+}
+
+.djs-public__cms--after.djs-public__cms--filled {
+    margin-top: 0.35rem;
+    margin-bottom: 1.5rem;
+}
+
+.djs-public__cms--filled h1,
+.djs-public__cms--filled h2,
+.djs-public__cms--filled h3 {
+    font-family: var(--ev-font);
+    color: var(--li-green-dark);
+    line-height: 1.25;
+}
+
+.djs-public__cms--filled a {
+    color: var(--li-green);
+}
+
+.djs-public__cms--filled a:hover {
+    color: var(--li-green-hover);
+}
+
 .home-public__main {
     max-width: none;
     margin: 0;
