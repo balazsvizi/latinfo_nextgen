@@ -39,9 +39,12 @@ $contentBefore = trim((string) ($hubCms['content_before'] ?? ''));
 $contentAfter = trim((string) ($hubCms['content_after'] ?? ''));
 $cmsAnchorBefore = EVENTS_PUBLIC_DJS_HUB_ANCHOR_BEFORE;
 $cmsAnchorAfter = EVENTS_PUBLIC_DJS_HUB_ANCHOR_AFTER;
+$cmsAnchorSpotlight = EVENTS_PUBLIC_DJS_HUB_ANCHOR_SPOTLIGHT;
+$cmsAnchorCatalog = EVENTS_PUBLIC_DJS_HUB_ANCHOR_CATALOG;
 
-$spotlightCards = events_public_dj_spotlight_cards(events_public_dj_spotlight_pool($djRowsAll), $lang, $D);
-$spotlightVisible = array_slice($spotlightCards, 0, 3);
+$spotlightCards = events_public_dj_spotlight_cards(events_public_dj_spotlight_pool($djRowsAll, 24), $lang, $D);
+$spotlightMobileCount = 3;
+$spotlightVisible = array_slice($spotlightCards, 0, $spotlightMobileCount);
 $leadModifier = match (true) {
     $contentBefore === '' && $spotlightVisible === [] => ' djs-public__lead--empty',
     $contentBefore === '' || $spotlightVisible === [] => ' djs-public__lead--solo',
@@ -126,6 +129,14 @@ header('Content-Type: text/html; charset=UTF-8');
         <h1 class="visually-hidden"><?= h($title) ?></h1>
     </header>
 
+    <nav class="djs-public__jump" aria-label="<?= h((string) $D['local_nav_aria']) ?>">
+        <a class="djs-public__jump-link" href="#<?= h($cmsAnchorCatalog) ?>"><?= h((string) $D['local_nav_djs']) ?></a>
+        <?php if ($spotlightVisible !== []): ?>
+            <a class="djs-public__jump-link" href="#<?= h($cmsAnchorSpotlight) ?>"><?= h((string) $D['local_nav_spotlight']) ?></a>
+        <?php endif; ?>
+        <a class="djs-public__jump-link" href="#<?= h($cmsAnchorAfter) ?>"><?= h((string) $D['local_nav_info']) ?></a>
+    </nav>
+
     <div class="djs-public__lead<?= $leadModifier ?>">
         <section
             id="<?= h($cmsAnchorBefore) ?>"
@@ -138,11 +149,11 @@ header('Content-Type: text/html; charset=UTF-8');
         </section>
 
         <?php if ($spotlightVisible !== []): ?>
-            <aside class="djs-public__spotlight" aria-label="<?= h((string) $D['spotlight_aria']) ?>">
+            <aside class="djs-public__spotlight" id="<?= h($cmsAnchorSpotlight) ?>" aria-label="<?= h((string) $D['spotlight_aria']) ?>">
                 <h2 class="djs-public__spotlight-title"><?= h((string) $D['spotlight_heading']) ?></h2>
                 <ul class="djs-public__spotlight-list" id="djs-spotlight-list" role="list">
-                    <?php foreach ($spotlightVisible as $card): ?>
-                        <li class="djs-public__spotlight-item">
+                    <?php foreach ($spotlightCards as $slotIndex => $card): ?>
+                        <li class="djs-public__spotlight-item"<?= $slotIndex >= $spotlightMobileCount ? ' hidden' : '' ?>>
                             <a class="djs-public__spotlight-card" href="<?= h((string) $card['href']) ?>" aria-label="<?= h((string) $card['aria']) ?>">
                                 <span class="djs-public__spotlight-avatar<?= $card['isLogo'] ? ' djs-public__spotlight-avatar--logo' : '' ?>" aria-hidden="true">
                                     <?php if ((string) $card['photo'] !== ''): ?>
@@ -160,17 +171,14 @@ header('Content-Type: text/html; charset=UTF-8');
                         </li>
                     <?php endforeach; ?>
                 </ul>
-                <?php if (count($spotlightCards) > count($spotlightVisible)): ?>
-                    <p class="djs-public__spotlight-note"><?= h((string) $D['spotlight_note']) ?></p>
-                    <script type="application/json" id="djs-spotlight-data">
-                        <?= json_encode($spotlightCards, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
-                    </script>
-                <?php endif; ?>
+                <script type="application/json" id="djs-spotlight-data">
+                    <?= json_encode($spotlightCards, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+                </script>
             </aside>
         <?php endif; ?>
     </div>
 
-    <section class="djs-public__catalog" aria-labelledby="djs-catalog-heading">
+    <section class="djs-public__catalog" id="<?= h($cmsAnchorCatalog) ?>" aria-labelledby="djs-catalog-heading">
         <div class="djs-public__catalog-head">
             <h2 class="djs-public__catalog-title" id="djs-catalog-heading"><?= h((string) $D['catalog_heading']) ?></h2>
         </div>
@@ -424,7 +432,7 @@ $listLimitDefault = EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
 require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
-<?php if (count($spotlightCards) > count($spotlightVisible)): ?>
+<?php if ($spotlightVisible !== []): ?>
 <script>
 (function () {
     var list = document.getElementById('djs-spotlight-list');
@@ -437,22 +445,38 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
     } catch (e) {
         return;
     }
-    var items = Array.prototype.slice.call(list.querySelectorAll('.djs-public__spotlight-item'));
-    if (!Array.isArray(pool) || pool.length <= items.length || items.length === 0) return;
+    if (!Array.isArray(pool) || pool.length === 0) return;
 
-    var cursor = items.length;
+    var box = list.closest('.djs-public__spotlight');
+    var lead = list.closest('.djs-public__lead');
+    var cms = lead ? lead.querySelector('.djs-public__cms--before') : null;
+    var items = Array.prototype.slice.call(list.querySelectorAll('.djs-public__spotlight-item'));
+    if (!box || items.length === 0) return;
+
+    var mobileCount = 3;
+    var visibleCount = Math.min(mobileCount, items.length);
+    var cursor = 0;
     var slot = 0;
     var paused = false;
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function shown() {
-        return items.map(function (li) {
+    function isDesktop() {
+        return window.matchMedia('(min-width: 900px)').matches && !!cms && cms.offsetHeight > 0;
+    }
+
+    function visibleItems() {
+        return items.filter(function (li) { return !li.hidden; });
+    }
+
+    function shownNames() {
+        return visibleItems().map(function (li) {
             var name = li.querySelector('.djs-public__spotlight-name');
             return name ? name.textContent : '';
         });
     }
 
     function nextCard() {
-        var visible = shown();
+        var visible = shownNames();
         for (var i = 0; i < pool.length; i++) {
             var card = pool[cursor % pool.length];
             cursor++;
@@ -466,7 +490,7 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
         var avatar = li.querySelector('.djs-public__spotlight-avatar');
         var name = li.querySelector('.djs-public__spotlight-name');
         var meta = li.querySelector('.djs-public__spotlight-meta');
-        if (!link || !avatar || !name || !meta) return;
+        if (!link || !avatar || !name || !meta || !card) return;
 
         link.setAttribute('href', card.href || '#');
         link.setAttribute('aria-label', card.aria || card.name || '');
@@ -491,9 +515,43 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
         meta.hidden = !card.meta;
     }
 
+    function layout() {
+        box.style.height = '';
+        items.forEach(function (li, i) {
+            li.hidden = i >= mobileCount;
+        });
+        visibleCount = Math.min(mobileCount, items.length);
+
+        if (!isDesktop()) {
+            return;
+        }
+
+        var minHeight = box.offsetHeight;
+        var target = Math.max(minHeight, cms.offsetHeight);
+        box.style.height = target + 'px';
+        void box.offsetHeight;
+
+        if (list.clientHeight < 24) {
+            return;
+        }
+
+        var n = visibleCount;
+        for (var i = visibleCount; i < items.length; i++) {
+            items[i].hidden = false;
+            if (list.scrollHeight > list.clientHeight + 1) {
+                items[i].hidden = true;
+                break;
+            }
+            n = i + 1;
+        }
+        visibleCount = n;
+    }
+
     function rotate() {
-        if (paused || document.hidden) return;
-        var li = items[slot % items.length];
+        if (paused || document.hidden || reduceMotion) return;
+        var vis = visibleItems();
+        if (vis.length === 0 || pool.length <= vis.length) return;
+        var li = vis[slot % vis.length];
         slot++;
         var card = nextCard();
         if (!li || !card) return;
@@ -506,14 +564,23 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
     }
 
     ['pointerenter', 'focusin'].forEach(function (evt) {
-        list.addEventListener(evt, function () { paused = true; });
+        box.addEventListener(evt, function () { paused = true; });
     });
     ['pointerleave', 'focusout'].forEach(function (evt) {
-        list.addEventListener(evt, function () { paused = false; });
+        box.addEventListener(evt, function () { paused = false; });
     });
 
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    window.setInterval(rotate, 5200);
+    var resizeTimer = 0;
+    window.addEventListener('resize', function () {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(layout, 120);
+    });
+
+    layout();
+    window.addEventListener('load', layout);
+    if (!reduceMotion && pool.length > mobileCount) {
+        window.setInterval(rotate, 5200);
+    }
 })();
 </script>
 <?php endif; ?>

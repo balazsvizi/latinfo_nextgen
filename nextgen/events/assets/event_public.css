@@ -2893,6 +2893,7 @@ a.event-hero-chip--category-link:hover {
 
 .djs-public__catalog {
     padding: 1rem clamp(1.25rem, 4vw, 2.25rem) 1.75rem;
+    scroll-margin-top: 4.5rem;
 }
 
 .djs-public__catalog-head {
@@ -3948,6 +3949,40 @@ body.event-public-page--home .event-public__hero-inner {
     border-bottom: 0;
 }
 
+.djs-public__jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    padding: 0.85rem clamp(1.25rem, 4vw, 2.25rem) 0.15rem;
+}
+
+.djs-public__jump-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.42rem 0.9rem;
+    border: 1px solid var(--li-border);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--li-green-dark);
+    font-family: var(--ev-sans);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.djs-public__jump-link:hover {
+    border-color: rgba(109, 143, 99, 0.45);
+    background: var(--li-green-soft);
+    color: var(--li-green-dark);
+}
+
+.djs-public__jump-link:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
 /* Bevezető blokk: visszafogott, jól olvasható szövegtörzs */
 .djs-public__cms--before.djs-public__cms--filled {
     margin: 0;
@@ -3997,11 +4032,13 @@ body.event-public-page--home .event-public__hero-inner {
     background: var(--li-green-muted);
 }
 
-/* DJ ajánló: véletlenszerűen váltakozó három kártya */
+/* DJ ajánló: a szöveg magasságához igazított, DJ-kkel kitöltött doboz */
 .djs-public__spotlight {
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
+    min-height: 0;
+    scroll-margin-top: 4.5rem;
     padding: clamp(0.9rem, 2vw, 1.15rem);
     border: 1px solid var(--li-border);
     border-radius: calc(var(--ev-radius) + 2px);
@@ -4025,6 +4062,10 @@ body.event-public-page--home .event-public__hero-inner {
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+.djs-public__spotlight-item[hidden] {
+    display: none !important;
 }
 
 .djs-public__spotlight-item {
@@ -4127,10 +4168,21 @@ body.event-public-page--home .event-public__hero-inner {
     transform: translateX(2px);
 }
 
-.djs-public__spotlight-note {
-    margin: 0;
-    font-size: 0.7rem;
-    color: var(--li-text-soft);
+@media (min-width: 900px) {
+    .djs-public__lead:not(.djs-public__lead--solo):not(.djs-public__lead--empty) {
+        align-items: stretch;
+    }
+
+    .djs-public__spotlight {
+        height: 100%;
+    }
+
+    .djs-public__spotlight-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        align-content: start;
+    }
 }
 
 @media (max-width: 899px) {
@@ -4195,6 +4247,11 @@ body.event-public-page--home .event-public__hero-inner {
 
 @media (max-width: 639px) {
     .djs-public__lead {
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+    }
+
+    .djs-public__jump {
         padding-left: 0.9rem;
         padding-right: 0.9rem;
     }

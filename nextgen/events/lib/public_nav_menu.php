@@ -120,7 +120,12 @@ function events_public_nav_menu_items(string $lang): array {
  * @return list<string>
  */
 function events_public_nav_active_keys_by_script(): array {
-    $script = strtolower(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
+    $scriptName = str_replace('\\', '/', strtolower((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
+    if (str_contains($scriptName, '/nextgen/site/')) {
+        return ['latinfo'];
+    }
+
+    $script = basename($scriptName);
     $view = strtolower(trim((string) ($_GET['view'] ?? '')));
 
     return match ($script) {

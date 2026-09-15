@@ -5,6 +5,8 @@ require_once __DIR__ . '/html_security.php';
 
 const EVENTS_PUBLIC_DJS_HUB_ANCHOR_BEFORE = 'DJ-first';
 const EVENTS_PUBLIC_DJS_HUB_ANCHOR_AFTER = 'DJ-Infok';
+const EVENTS_PUBLIC_DJS_HUB_ANCHOR_SPOTLIGHT = 'DJ-ajanlo';
+const EVENTS_PUBLIC_DJS_HUB_ANCHOR_CATALOG = 'djs-catalog';
 
 function events_public_djs_hub_table_available(PDO $db): bool
 {

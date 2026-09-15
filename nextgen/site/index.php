@@ -9,7 +9,14 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/init.php';
 requireLogin();
 require_once dirname(__DIR__) . '/events/bootstrap.php';
+require_once dirname(__DIR__) . '/events/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/site_home.php';
+
+$lang = events_public_resolve_megjelenit_lang();
+$D = events_public_home_strings($lang);
+$S = $D;
+$S['admin_edit_title'] = 'Szerkesztés';
+$S['admin_edit_aria'] = 'Kezdőoldal szerkesztése';
 
 $db = getDb();
 $schemaOk = latinfo_home_ensure_schema($db);
@@ -25,10 +32,9 @@ $calendarUrl = events_public_home_path();
 $djsUrl = events_public_djs_hub_canonical_url();
 $partnersUrl = events_public_partners_canonical_url();
 $organizersUrl = events_url('szervezok.php');
-$logoSrc = events_public_logo_src();
 $editUrl = latinfo_home_edit_url();
-$cssUrl = latinfo_home_asset_url('css/site-home.css') . '?v=' . rawurlencode(nextgen_app_version());
-$jsUrl = latinfo_home_asset_url('js/site-home.js') . '?v=' . rawurlencode(nextgen_app_version());
+$cssPublicUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
+$cssHomeUrl = latinfo_home_asset_url('css/site-home.css') . '?v=' . rawurlencode(nextgen_app_version());
 
 $heroTitle = $heroNews !== null ? trim((string) $heroNews['title']) : $settings['hero_title'];
 $heroDek = $heroNews !== null ? trim((string) $heroNews['dek']) : $settings['hero_lead'];
@@ -46,7 +52,30 @@ if ($heroNews !== null) {
     $heroUrl = $settings['hero_cta_url'];
 }
 $heroImage = $heroNews !== null ? latinfo_home_media_src((string) $heroNews['image_url']) : '';
-$heroTone = $heroNews !== null ? latinfo_home_tone_from_id((int) $heroNews['id']) : 'ember';
 $heroCta = $settings['hero_cta_label'] !== '' ? $settings['hero_cta_label'] : 'Tovább';
+
+$htmlLang = $lang === 'en' ? 'en' : 'hu';
+$urlHu = latinfo_home_lang_switch_url('hu');
+$urlEn = latinfo_home_lang_switch_url('en');
+$isEventsHome = true;
+$showAdminEdit = true;
+$adminEditUrl = $editUrl;
+$adminFloatTools = [
+    [
+        'href' => $editUrl,
+        'title' => 'Kezdőoldal szerkesztése',
+        'aria' => 'Kezdőoldal szerkesztése',
+        'icon' => 'edit',
+    ],
+    [
+        'href' => nextgen_url('apps.php'),
+        'title' => 'Admin',
+        'aria' => 'Vissza az admin alkalmazásokhoz',
+        'icon' => 'home',
+    ],
+];
+
+events_public_send_noindex_header();
+header('Content-Type: text/html; charset=UTF-8');
 
 require __DIR__ . '/partials/home.php';

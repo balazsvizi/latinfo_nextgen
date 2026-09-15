@@ -26,6 +26,16 @@ function latinfo_home_asset_url(string $path): string
     return nextgen_url('site/assets/' . ltrim($path, '/'));
 }
 
+function latinfo_home_lang_switch_url(string $lang): string
+{
+    $base = latinfo_home_preview_url();
+    if (!function_exists('events_public_append_query')) {
+        return $lang === 'en' ? $base . '?lang=en' : $base;
+    }
+
+    return events_public_append_query($base, ['lang' => $lang === 'en' ? 'en' : 'hu']);
+}
+
 /**
  * @return array<string, string>
  */
@@ -557,7 +567,7 @@ function latinfo_home_collectors_save(PDO $db, int $id, array $input): int
     $subtitle = latinfo_home_clamp((string) ($input['subtitle'] ?? ''), 200);
     $url = latinfo_home_sanitize_url((string) ($input['url'] ?? ''));
     $imageUrl = latinfo_home_sanitize_url((string) ($input['image_url'] ?? ''));
-    $accent = normalize_hex_color((string) ($input['accent_color'] ?? ''), '#9CBF90');
+                $accent = normalize_hex_color((string) ($input['accent_color'] ?? ''), '#6D8F63');
     $isVisible = !empty($input['is_visible']) ? 1 : 0;
     $sort = filter_var($input['sort_order'] ?? 0, FILTER_VALIDATE_INT);
     $sortOrder = ($sort === false) ? 0 : (int) $sort;

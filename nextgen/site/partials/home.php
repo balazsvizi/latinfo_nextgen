@@ -11,134 +11,118 @@ declare(strict_types=1);
  * @var string $djsUrl
  * @var string $partnersUrl
  * @var string $organizersUrl
- * @var string $logoSrc
  * @var string $editUrl
- * @var string $cssUrl
- * @var string $jsUrl
+ * @var string $cssPublicUrl
+ * @var string $cssHomeUrl
  * @var string $heroTitle
  * @var string $heroDek
  * @var string $heroKicker
  * @var string $heroUrl
  * @var string $heroImage
- * @var string $heroTone
  * @var string $heroCta
+ * @var string $lang
+ * @var string $htmlLang
+ * @var array<string, string> $S
+ * @var string $urlHu
+ * @var string $urlEn
+ * @var bool $isEventsHome
+ * @var bool $showAdminEdit
+ * @var string $adminEditUrl
+ * @var list<array<string, mixed>> $adminFloatTools
  */
+$eventsPartial = dirname(__DIR__, 2) . '/events/partials';
 ?>
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="<?= h($htmlLang) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#6d8f63">
+    <?= events_public_robots_noindex_head_markup() ?>
     <title><?= h(SITE_NAME) ?> – kezdőoldal (előnézet)</title>
-    <?php require dirname(__DIR__, 2) . '/includes/favicon_head.php'; ?>
-    <link rel="stylesheet" href="<?= h($cssUrl) ?>">
+    <?= events_public_favicon_head_markup() ?>
+    <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
+    <link rel="stylesheet" href="<?= h($cssHomeUrl) ?>">
 </head>
-<body class="lh-page">
-<div class="lh-wrap">
-    <div class="lh-chrome">
-    <div class="lh-adminbar">
-        <span class="lh-adminbar__note">Előnézet · csak admin</span>
-        <div class="lh-adminbar__actions">
-            <a href="<?= h($editUrl) ?>">Szerkesztés</a>
-            <a href="<?= h(nextgen_url('apps.php')) ?>">Admin</a>
-        </div>
-    </div>
-
-    <header class="lh-header" id="lh-header">
-        <div class="lh-header__inner">
-            <a class="lh-brand" href="<?= h(latinfo_home_preview_url()) ?>">
-                <img src="<?= h($logoSrc) ?>" alt="" width="160" height="40" decoding="async">
-                <span class="lh-brand__mark">Latinfo</span>
-                <span class="lh-brand__tag">hu</span>
-            </a>
-            <button type="button" class="lh-nav-toggle" id="lh-nav-toggle" aria-expanded="false" aria-controls="lh-nav" aria-label="Menü megnyitása">
-                <span></span>
-            </button>
-            <nav class="lh-nav" id="lh-nav" aria-label="Főmenü">
-                <ul>
-                    <li><a href="<?= h($calendarUrl) ?>">Naptár</a></li>
-                    <li><a href="<?= h($djsUrl) ?>">DJ-k</a></li>
-                    <li><a href="#gyujtok">Gyűjtők</a></li>
-                    <li><a href="#hirek">Hírek</a></li>
-                    <li><a href="<?= h($partnersUrl) ?>">Partnereink</a></li>
-                </ul>
-            </nav>
+<body class="event-public-page event-public-page--home event-public-page--latinfo-home">
+<?php require $eventsPartial . '/admin_float_tools.php'; ?>
+<div class="event-shell">
+<article class="event-public home-public latinfo-home">
+    <header class="event-public__hero">
+        <?php require $eventsPartial . '/public_shell_hero_bar.php'; ?>
+        <div class="event-public__hero-inner">
+            <p class="event-public__eyebrow"><?= h($heroKicker !== '' ? $heroKicker : 'Latinfo.hu') ?></p>
+            <h1 class="event-public__title"><?= h($heroTitle) ?></h1>
+            <?php if ($heroDek !== ''): ?>
+                <p class="latinfo-home__lead"><?= h($heroDek) ?></p>
+            <?php endif; ?>
+            <div class="event-cta-wrap">
+                <a class="event-cta" href="<?= h($heroUrl) ?>"><?= h($heroCta) ?></a>
+            </div>
+            <?php if ($heroImage !== ''): ?>
+                <figure class="event-featured">
+                    <img class="event-featured__img event-featured__img.is-landscape" src="<?= h($heroImage) ?>" alt="" decoding="async" fetchpriority="high">
+                </figure>
+            <?php endif; ?>
         </div>
     </header>
-    </div>
 
-    <main class="lh-main">
-        <section class="lh-hero lh-hero--tone-<?= h($heroTone) ?>" aria-labelledby="lh-hero-title">
-            <div class="lh-hero__media">
-                <?php if ($heroImage !== ''): ?>
-                    <img src="<?= h($heroImage) ?>" alt="" decoding="async" fetchpriority="high">
-                <?php endif; ?>
-            </div>
-            <div class="lh-hero__shade" aria-hidden="true"></div>
-            <div class="lh-hero__body">
-                <?php if ($heroKicker !== ''): ?>
-                    <p class="lh-kicker"><?= h($heroKicker) ?></p>
-                <?php endif; ?>
-                <h1 id="lh-hero-title"><?= h($heroTitle) ?></h1>
-                <?php if ($heroDek !== ''): ?>
-                    <p><?= h($heroDek) ?></p>
-                <?php endif; ?>
-                <a class="lh-btn lh-btn--gold" href="<?= h($heroUrl) ?>"><?= h($heroCta) ?></a>
-            </div>
-        </section>
-
-        <section class="lh-section" id="hirek" aria-labelledby="lh-news-title">
-            <div class="lh-section__head">
-                <h2 id="lh-news-title">Kiemelt hírek</h2>
-                <a href="<?= h(latinfo_home_edit_url('tab=news')) ?>">Szerkesztés</a>
+    <div class="home-public__main latinfo-home__main">
+        <section class="latinfo-home__section" id="hirek" aria-labelledby="lh-news-title">
+            <div class="latinfo-home__section-head">
+                <h2 class="latinfo-home__heading" id="lh-news-title">Kiemelt hírek</h2>
+                <a class="latinfo-home__edit" href="<?= h(latinfo_home_edit_url('tab=news')) ?>">Szerkesztés</a>
             </div>
             <?php if ($newsRest === []): ?>
-                <p class="lh-empty">Még nincs további kiemelt hír. Az adminból bármikor felvehetsz egyet.</p>
+                <p class="home-public__empty">Még nincs további kiemelt hír. Az adminból bármikor felvehetsz egyet.</p>
             <?php else: ?>
-                <div class="lh-news">
+                <ul class="home-public__list" role="list">
                     <?php foreach ($newsRest as $item): ?>
                         <?php
-                        $itemId = (int) ($item['id'] ?? 0);
                         $itemUrl = trim((string) ($item['url'] ?? ''));
                         if ($itemUrl === '') {
                             $itemUrl = $calendarUrl;
                         }
                         $itemImage = latinfo_home_media_src((string) ($item['image_url'] ?? ''));
-                        $itemTone = latinfo_home_tone_from_id($itemId);
                         $itemKicker = trim((string) ($item['kicker'] ?? ''));
                         $itemDek = trim((string) ($item['dek'] ?? ''));
                         ?>
-                        <a class="lh-news-card" href="<?= h($itemUrl) ?>">
-                            <div class="lh-news-card__media lh-news-card__media--tone-<?= h($itemTone) ?>">
-                                <?php if ($itemImage !== ''): ?>
-                                    <img src="<?= h($itemImage) ?>" alt="" loading="lazy" decoding="async">
-                                <?php endif; ?>
-                            </div>
-                            <div class="lh-news-card__body">
-                                <?php if ($itemKicker !== ''): ?>
-                                    <span class="lh-kicker"><?= h($itemKicker) ?></span>
-                                <?php endif; ?>
-                                <h3><?= h((string) ($item['title'] ?? '')) ?></h3>
-                                <?php if ($itemDek !== ''): ?>
-                                    <p><?= h($itemDek) ?></p>
-                                <?php endif; ?>
-                            </div>
-                        </a>
+                        <li class="home-public__list-item" role="listitem">
+                            <a class="home-public__list-card" href="<?= h($itemUrl) ?>" style="--home-event-accent: var(--li-green)">
+                                <div class="home-public__list-media">
+                                    <?php if ($itemImage !== ''): ?>
+                                        <img class="home-public__list-img" src="<?= h($itemImage) ?>" alt="" loading="lazy" decoding="async">
+                                    <?php else: ?>
+                                        <div class="home-public__list-placeholder" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 5-6 5 7"/></svg>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="home-public__list-body">
+                                    <?php if ($itemKicker !== ''): ?>
+                                        <span class="home-public__list-date"><?= h($itemKicker) ?></span>
+                                    <?php endif; ?>
+                                    <span class="home-public__list-name"><?= h((string) ($item['title'] ?? '')) ?></span>
+                                    <?php if ($itemDek !== ''): ?>
+                                        <span class="home-public__list-venue"><?= h($itemDek) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </a>
+                        </li>
                     <?php endforeach; ?>
-                </div>
+                </ul>
             <?php endif; ?>
         </section>
 
-        <section class="lh-section" id="gyujtok" aria-labelledby="lh-collectors-title">
-            <div class="lh-section__head">
-                <h2 id="lh-collectors-title">Gyűjtők</h2>
-                <a href="<?= h(latinfo_home_edit_url('tab=collectors')) ?>">Szerkesztés</a>
+        <section class="latinfo-home__section" id="gyujtok" aria-labelledby="lh-collectors-title">
+            <div class="latinfo-home__section-head">
+                <h2 class="latinfo-home__heading" id="lh-collectors-title">Gyűjtők</h2>
+                <a class="latinfo-home__edit" href="<?= h(latinfo_home_edit_url('tab=collectors')) ?>">Szerkesztés</a>
             </div>
             <?php if ($collectors === []): ?>
-                <p class="lh-empty">Még nincs gyűjtő. Vedd fel a naptárt, DJ-ket, iskolákat – amit a szcéna keres.</p>
+                <p class="home-public__empty">Még nincs gyűjtő. Vedd fel a naptárt, DJ-ket, iskolákat – amit a szcéna keres.</p>
             <?php else: ?>
-                <div class="lh-collectors">
+                <ul class="latinfo-home__collectors" role="list">
                     <?php foreach ($collectors as $collector): ?>
                         <?php
                         $cUrl = trim((string) ($collector['url'] ?? ''));
@@ -146,32 +130,42 @@ declare(strict_types=1);
                             $cUrl = $calendarUrl;
                         }
                         $cImage = latinfo_home_media_src((string) ($collector['image_url'] ?? ''));
-                        $cAccent = normalize_hex_color((string) ($collector['accent_color'] ?? ''), '#9CBF90');
+                        $cAccent = normalize_hex_color((string) ($collector['accent_color'] ?? ''), '#6D8F63');
                         $cSub = trim((string) ($collector['subtitle'] ?? ''));
                         ?>
-                        <a class="lh-collector" href="<?= h($cUrl) ?>" style="--lh-accent: <?= h($cAccent) ?>">
-                            <?php if ($cImage !== ''): ?>
-                                <img src="<?= h($cImage) ?>" alt="" loading="lazy" decoding="async">
-                            <?php endif; ?>
-                            <?php if ($cSub !== ''): ?>
-                                <span><?= h($cSub) ?></span>
-                            <?php endif; ?>
-                            <h3><?= h((string) ($collector['title'] ?? '')) ?></h3>
-                        </a>
+                        <li role="listitem">
+                            <a class="latinfo-home__collector" href="<?= h($cUrl) ?>" style="--home-event-accent: <?= h($cAccent) ?>">
+                                <div class="home-public__list-media">
+                                    <?php if ($cImage !== ''): ?>
+                                        <img class="home-public__list-img" src="<?= h($cImage) ?>" alt="" loading="lazy" decoding="async">
+                                    <?php else: ?>
+                                        <div class="home-public__list-placeholder" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M4 7h16M4 12h10M4 17h13"/></svg>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="home-public__list-body">
+                                    <?php if ($cSub !== ''): ?>
+                                        <span class="home-public__list-date"><?= h($cSub) ?></span>
+                                    <?php endif; ?>
+                                    <span class="home-public__list-name"><?= h((string) ($collector['title'] ?? '')) ?></span>
+                                </div>
+                            </a>
+                        </li>
                     <?php endforeach; ?>
-                </div>
+                </ul>
             <?php endif; ?>
         </section>
 
-        <section class="lh-section" id="esemenyek" aria-labelledby="lh-events-title">
-            <div class="lh-section__head">
-                <h2 id="lh-events-title">Mi jön a héten</h2>
-                <a href="<?= h($calendarUrl) ?>">Teljes naptár</a>
+        <section class="latinfo-home__section" id="esemenyek" aria-labelledby="lh-events-title">
+            <div class="latinfo-home__section-head">
+                <h2 class="latinfo-home__heading" id="lh-events-title">Mi jön a héten</h2>
+                <a class="latinfo-home__edit" href="<?= h($calendarUrl) ?>">Teljes naptár</a>
             </div>
             <?php if ($upcoming === []): ?>
-                <p class="lh-empty">Most nincs közelgő, közzétett esemény a naptárban.</p>
+                <p class="home-public__empty">Most nincs közelgő, közzétett esemény a naptárban.</p>
             <?php else: ?>
-                <div class="lh-events">
+                <ul class="home-public__list" role="list">
                     <?php foreach ($upcoming as $ev): ?>
                         <?php
                         $evUrl = latinfo_home_event_url($ev);
@@ -180,60 +174,50 @@ declare(strict_types=1);
                         $when = latinfo_home_format_event_when($ev);
                         $place = latinfo_home_event_place($ev);
                         ?>
-                        <a class="lh-event" href="<?= h($evUrl) ?>">
-                            <div class="lh-event__media">
-                                <?php if ($featSrc !== ''): ?>
-                                    <img src="<?= h($featSrc) ?>" alt="" loading="lazy" decoding="async">
-                                <?php endif; ?>
-                            </div>
-                            <div>
-                                <?php if ($when !== ''): ?>
-                                    <time datetime="<?= h((string) ($ev['event_start'] ?? '')) ?>"><?= h($when) ?></time>
-                                <?php endif; ?>
-                                <h3><?= h((string) ($ev['event_name'] ?? '')) ?></h3>
-                                <?php if ($place !== ''): ?>
-                                    <p><?= h($place) ?></p>
-                                <?php endif; ?>
-                            </div>
-                        </a>
+                        <li class="home-public__list-item" role="listitem">
+                            <a class="home-public__list-card" href="<?= h($evUrl) ?>" style="--home-event-accent: var(--li-green)">
+                                <div class="home-public__list-media">
+                                    <?php if ($featSrc !== ''): ?>
+                                        <img class="home-public__list-img" src="<?= h($featSrc) ?>" alt="" loading="lazy" decoding="async">
+                                    <?php else: ?>
+                                        <div class="home-public__list-placeholder" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 5-6 5 7"/></svg>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="home-public__list-body">
+                                    <?php if ($when !== ''): ?>
+                                        <span class="home-public__list-date"><?= h($when) ?></span>
+                                    <?php endif; ?>
+                                    <span class="home-public__list-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
+                                    <?php if ($place !== ''): ?>
+                                        <span class="home-public__list-venue"><?= h($place) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </a>
+                        </li>
                     <?php endforeach; ?>
-                </div>
+                </ul>
             <?php endif; ?>
         </section>
 
         <?php if ($settings['newsletter_title'] !== '' || $settings['newsletter_lead'] !== ''): ?>
-            <section class="lh-cta" aria-labelledby="lh-cta-title">
+            <section class="latinfo-home__cta" aria-labelledby="lh-cta-title">
                 <div>
-                    <h2 id="lh-cta-title"><?= h($settings['newsletter_title']) ?></h2>
+                    <h2 class="latinfo-home__heading" id="lh-cta-title"><?= h($settings['newsletter_title']) ?></h2>
                     <?php if ($settings['newsletter_lead'] !== ''): ?>
-                        <p><?= h($settings['newsletter_lead']) ?></p>
+                        <p class="latinfo-home__lead"><?= h($settings['newsletter_lead']) ?></p>
                     <?php endif; ?>
                 </div>
                 <?php if ($settings['newsletter_cta_label'] !== '' && $settings['newsletter_cta_url'] !== ''): ?>
-                    <a class="lh-btn lh-btn--gold" href="<?= h($settings['newsletter_cta_url']) ?>"><?= h($settings['newsletter_cta_label']) ?></a>
+                    <a class="event-cta" href="<?= h($settings['newsletter_cta_url']) ?>"><?= h($settings['newsletter_cta_label']) ?></a>
                 <?php endif; ?>
             </section>
         <?php endif; ?>
-    </main>
+    </div>
 
-    <footer class="lh-footer">
-        <div class="lh-footer__inner">
-            <div>
-                <a href="<?= h($calendarUrl) ?>">Naptár</a>
-                ·
-                <a href="<?= h($djsUrl) ?>">DJ-k</a>
-                ·
-                <a href="<?= h($organizersUrl) ?>">Szervezők</a>
-                ·
-                <a href="<?= h($partnersUrl) ?>">Partnereink</a>
-            </div>
-            <div>
-                &copy; <?= h((string) date('Y')) ?> <?= h(SITE_NAME) ?>
-                <?= nextgen_footer_version_markup() ?>
-            </div>
-        </div>
-    </footer>
+    <?php require $eventsPartial . '/public_shell_footer.php'; ?>
+</article>
 </div>
-<script src="<?= h($jsUrl) ?>" defer></script>
 </body>
 </html>
