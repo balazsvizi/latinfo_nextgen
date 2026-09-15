@@ -3891,16 +3891,17 @@ body.event-public-page--home .event-public__hero-inner {
 
 .djs-public__cms--filled {
     max-width: none;
-    margin: 0 0 0.35rem;
-    padding: 0.85rem clamp(1.25rem, 4vw, 2.25rem) 1rem;
     font-family: var(--ev-sans);
     color: var(--li-text);
-    line-height: 1.65;
+    line-height: 1.7;
 }
 
-.djs-public__cms--after.djs-public__cms--filled {
-    margin-top: 0.35rem;
-    margin-bottom: 1.5rem;
+.djs-public__cms--filled > :first-child {
+    margin-top: 0;
+}
+
+.djs-public__cms--filled > :last-child {
+    margin-bottom: 0;
 }
 
 .djs-public__cms--filled h1,
@@ -3908,15 +3909,166 @@ body.event-public-page--home .event-public__hero-inner {
 .djs-public__cms--filled h3 {
     font-family: var(--ev-font);
     color: var(--li-green-dark);
-    line-height: 1.25;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
 }
 
 .djs-public__cms--filled a {
     color: var(--li-green);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    transition: color 0.15s ease;
 }
 
 .djs-public__cms--filled a:hover {
     color: var(--li-green-hover);
+}
+
+.djs-public__cms--filled strong {
+    font-weight: 700;
+    color: var(--li-green-dark);
+}
+
+/* Bevezető blokk: levegős, „editorial” nyitány keret nélkül */
+.djs-public__cms--before.djs-public__cms--filled {
+    position: relative;
+    margin: 0;
+    padding: clamp(1.6rem, 4.5vw, 3rem) clamp(1.25rem, 4vw, 2.25rem) clamp(1.5rem, 4vw, 2.25rem);
+    border-bottom: 1px solid var(--li-border);
+    background:
+        radial-gradient(85% 120% at 8% 0%, rgba(109, 143, 99, 0.16), transparent 62%),
+        radial-gradient(70% 110% at 100% 4%, rgba(109, 143, 99, 0.09), transparent 58%),
+        linear-gradient(180deg, #ffffff 0%, #fafcf8 100%);
+    font-size: clamp(1rem, 0.35vw + 0.94rem, 1.09rem);
+}
+
+.djs-public__cms--before h1,
+.djs-public__cms--before h2 {
+    margin: 0 0 1.15rem;
+    font-size: clamp(1.65rem, 4vw, 2.4rem);
+    font-weight: 700;
+}
+
+.djs-public__cms--before h3 {
+    margin: 2rem 0 0.85rem;
+    font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+}
+
+.djs-public__cms--before p {
+    margin: 0 0 1.05rem;
+    color: var(--li-text-muted);
+}
+
+.djs-public__cms--before > p:first-of-type {
+    font-size: 1.1em;
+    line-height: 1.65;
+    color: var(--li-text);
+}
+
+.djs-public__cms--before > ul {
+    display: grid;
+    gap: 0.6rem;
+    margin: 1.35rem 0;
+    padding: 0;
+    list-style: none;
+}
+
+.djs-public__cms--before > ul > li {
+    position: relative;
+    padding: 0.85rem 1.1rem 0.85rem 2.5rem;
+    border: 1px solid rgba(109, 143, 99, 0.22);
+    border-radius: var(--ev-radius);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
+    color: var(--li-text-muted);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.djs-public__cms--before > ul > li::before {
+    content: "";
+    position: absolute;
+    top: 1.35rem;
+    left: 1.1rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--li-green);
+    box-shadow: 0 0 0 4px rgba(109, 143, 99, 0.14);
+}
+
+.djs-public__cms--before > ul > li:hover {
+    border-color: rgba(109, 143, 99, 0.4);
+    box-shadow: var(--li-shadow);
+    transform: translateY(-1px);
+}
+
+/* Záró blokk: önálló, keretes információs kártya */
+.djs-public__cms--after.djs-public__cms--filled {
+    position: relative;
+    margin: 0.35rem clamp(1.25rem, 4vw, 2.25rem) 1.75rem;
+    padding: clamp(1.35rem, 3vw, 1.9rem) clamp(1.15rem, 3vw, 1.75rem);
+    overflow: hidden;
+    border: 1px solid var(--li-border);
+    border-radius: calc(var(--ev-radius) + 2px);
+    background: linear-gradient(180deg, #ffffff 0%, #f6f9f3 100%);
+    box-shadow: var(--li-shadow);
+    font-size: 0.97rem;
+}
+
+.djs-public__cms--after.djs-public__cms--filled::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--li-green) 0%, var(--li-green-muted) 55%, transparent 100%);
+}
+
+.djs-public__cms--after h1,
+.djs-public__cms--after h2 {
+    margin: 0 0 0.85rem;
+    font-size: clamp(1.2rem, 2.6vw, 1.5rem);
+}
+
+.djs-public__cms--after h3 {
+    margin: 1.4rem 0 0.6rem;
+    font-size: 1.1rem;
+}
+
+.djs-public__cms--after p {
+    margin: 0 0 0.85rem;
+    color: var(--li-text-muted);
+}
+
+.djs-public__cms--after ul,
+.djs-public__cms--after ol {
+    margin: 0.85rem 0;
+    padding-left: 1.25rem;
+    color: var(--li-text-muted);
+}
+
+.djs-public__cms--after li {
+    margin: 0 0 0.4rem;
+}
+
+@media (max-width: 639px) {
+    .djs-public__cms--before.djs-public__cms--filled {
+        padding-top: 1.35rem;
+        padding-bottom: 1.35rem;
+    }
+
+    .djs-public__cms--before > ul > li {
+        padding: 0.75rem 0.9rem 0.75rem 2.2rem;
+    }
+
+    .djs-public__cms--before > ul > li::before {
+        top: 1.2rem;
+        left: 0.9rem;
+    }
+
+    .djs-public__cms--after.djs-public__cms--filled {
+        margin-left: 0.75rem;
+        margin-right: 0.75rem;
+    }
 }
 
 .home-public__main {
