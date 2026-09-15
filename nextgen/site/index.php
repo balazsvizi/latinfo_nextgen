@@ -29,9 +29,6 @@ $collectors = $schemaOk ? latinfo_home_collectors_all($db, true) : [];
 $upcoming = latinfo_home_upcoming_events($db, 6);
 
 $calendarUrl = events_public_home_path();
-$djsUrl = events_public_djs_hub_canonical_url();
-$partnersUrl = events_public_partners_canonical_url();
-$organizersUrl = events_url('szervezok.php');
 $editUrl = latinfo_home_edit_url();
 $cssPublicUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $cssHomeUrl = latinfo_home_asset_url('css/site-home.css') . '?v=' . rawurlencode(nextgen_app_version());

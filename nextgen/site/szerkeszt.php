@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'subtitle' => $_POST['subtitle'] ?? '',
                     'url' => $_POST['url'] ?? '',
                     'image_url' => $_POST['image_url'] ?? '',
-                    'accent_color' => $_POST['accent_color'] ?? '#9CBF90',
+                    'accent_color' => $_POST['accent_color'] ?? '#6D8F63',
                     'is_visible' => ($_POST['is_visible'] ?? '0') === '1',
                     'sort_order' => $_POST['sort_order'] ?? 0,
                 ]);
@@ -360,7 +360,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     'subtitle' => '',
                     'url' => '',
                     'image_url' => '',
-                    'accent_color' => '#9CBF90',
+                    'accent_color' => '#6D8F63',
                     'is_visible' => 1,
                     'sort_order' => count($collectorRows) + 1,
                 ];
@@ -396,7 +396,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         </div>
                         <div class="form-group">
                             <label for="col_accent">Szín</label>
-                            <input type="color" id="col_accent" name="accent_color" value="<?= h(normalize_hex_color((string) $c['accent_color'], '#9CBF90')) ?>">
+                            <input type="color" id="col_accent" name="accent_color" value="<?= h(normalize_hex_color((string) $c['accent_color'], '#6D8F63')) ?>">
                         </div>
                     </div>
                     <div class="form-group">
@@ -432,7 +432,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <tr>
                                     <td><?= (int) $row['sort_order'] ?></td>
                                     <td>
-                                        <span class="lh-swatch" style="background:<?= h(normalize_hex_color((string) $row['accent_color'], '#9CBF90')) ?>"></span>
+                                        <span class="lh-swatch" style="background:<?= h(normalize_hex_color((string) $row['accent_color'], '#6D8F63')) ?>"></span>
                                         <?= h((string) $row['title']) ?>
                                     </td>
                                     <td><?= h((string) $row['subtitle']) ?></td>

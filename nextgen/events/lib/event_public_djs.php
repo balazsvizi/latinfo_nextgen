@@ -142,7 +142,8 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
 }
 
 /**
- * Véletlenszerű ajánló készlet: a fotóval / logóval rendelkező DJ-k előnyben, azon belül kevert sorrend.
+ * Véletlenszerű ajánló készlet: csak azok a DJ-k, akiknek van következő eseményük.
+ * A fotóval / logóval rendelkezők előnyben, azon belül kevert sorrend.
  *
  * @param list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}> $catalog
  * @return list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}>
@@ -154,6 +155,9 @@ function events_public_dj_spotlight_pool(array $catalog, int $poolLimit = 12): a
 
     foreach ($catalog as $row) {
         if ((int) ($row['id'] ?? 0) <= 0 || trim((string) ($row['name'] ?? '')) === '') {
+            continue;
+        }
+        if ((int) ($row['event_upcoming'] ?? 0) <= 0 || trim((string) ($row['next_event_start'] ?? '')) === '') {
             continue;
         }
         $hasMedia = trim((string) ($row['photo_url'] ?? '')) !== ''
@@ -190,16 +194,12 @@ function events_public_dj_spotlight_cards(array $pool, string $lang, array $stri
         $photo = trim((string) ($row['photo_url'] ?? ''));
         $logo = trim((string) ($row['logo_url'] ?? ''));
         $media = $photo !== '' ? $photo : $logo;
-        $total = (int) ($row['event_total'] ?? 0);
-        $upcoming = (int) ($row['event_upcoming'] ?? 0);
         $nextStart = trim((string) ($row['next_event_start'] ?? ''));
         $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
 
         $meta = '';
-        if ($upcoming > 0 && $nextTs !== false) {
+        if ($nextTs !== false) {
             $meta = (string) ($strings['next_event'] ?? '') . ': ' . events_public_format_event_day($nextTs, $lang);
-        } elseif ($total > 0) {
-            $meta = $total . ' ' . (string) ($strings['events_total'] ?? '');
         }
 
         $cards[] = [

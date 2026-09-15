@@ -28,7 +28,6 @@ $pageRows = is_array($statsData['pages'] ?? null) ? $statsData['pages'] : [];
 $navRows = is_array($statsData['nav'] ?? null) ? $statsData['nav'] : [];
 $deviceRows = is_array($statsData['devices'] ?? null) ? $statsData['devices'] : [];
 $referrerRows = is_array($statsData['referrers'] ?? null) ? $statsData['referrers'] : [];
-$entityRows = is_array($statsData['entities'] ?? null) ? $statsData['entities'] : [];
 $granularity = (string) ($statsData['granularity'] ?? 'day');
 $granularityLabel = match ($granularity) {
     'month' => 'havi',
@@ -68,8 +67,7 @@ $pageCatalog = events_public_traffic_page_catalog();
 ?>
 <div class="card events-edit-stats events-public-traffic-stats">
     <p class="events-edit-stats__intro">
-        A beégetett nyilvános oldalak (naptár, eseménylista, DJ lista, szervezők, partnerek)
-        és az egyedi megjelenések (esemény, DJ, szervező, helyszín) megtekintései.
+        A beégetett nyilvános oldalak (naptár, eseménylista, DJ lista, szervezők, partnerek) megtekintései.
         A menükattintások a fejléc főmenüjét, a naptár/lista nézetváltót, a logót és a nyelvváltót mérik.
         Admin és partner munkamenetből nem számolunk.
     </p>
@@ -103,8 +101,6 @@ $pageCatalog = events_public_traffic_page_catalog();
                     <label class="events-filter-label" for="traf_page">Oldal</label>
                     <select class="events-filter-input" name="page" id="traf_page">
                         <option value="all"<?= $statsParams['page'] === 'all' ? ' selected' : '' ?>>Összes oldal</option>
-                        <option value="hub"<?= $statsParams['page'] === 'hub' ? ' selected' : '' ?>>Csak listák (naptár, DJ, szervezők…)</option>
-                        <option value="detail"<?= $statsParams['page'] === 'detail' ? ' selected' : '' ?>>Csak egyedi oldalak</option>
                         <?php foreach ($pageCatalog as $pageKey => $meta): ?>
                             <option value="<?= h($pageKey) ?>"<?= $statsParams['page'] === $pageKey ? ' selected' : '' ?>><?= h((string) $meta['label']) ?></option>
                         <?php endforeach; ?>
@@ -387,45 +383,6 @@ $pageCatalog = events_public_traffic_page_catalog();
                             <tr>
                                 <td><?= h((string) ($row['label'] ?? '')) ?></td>
                                 <td class="text-center events-stats-cell--human"><?= (int) ($row['human_count'] ?? 0) ?></td>
-                                <td class="text-center events-stats-cell--bot"><?= (int) ($row['bot_count'] ?? 0) ?></td>
-                                <td class="text-center"><strong><?= (int) ($row['total'] ?? 0) ?></strong></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-
-        <h3 class="events-edit-stats__events-title">Egyedi megjelenések</h3>
-        <p class="events-edit-stats__events-hint">A legtöbbet megnyitott esemény-, DJ-, szervező- és helyszínoldalak.</p>
-        <?php if ($entityRows === []): ?>
-            <p class="help">Nincs egyedi oldalmegtekintés a szűrőkkel.</p>
-        <?php else: ?>
-            <div class="table-wrap events-admin-table-wrap">
-                <table class="events-admin-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Típus</th>
-                            <th scope="col">Oldal</th>
-                            <th class="th-center" scope="col">Ember</th>
-                            <th class="th-center" scope="col">Egyedi</th>
-                            <th class="th-center" scope="col">Bot</th>
-                            <th class="th-center" scope="col">Össz</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($entityRows as $row): ?>
-                            <?php
-                            $entityLabel = trim((string) ($row['entity_label'] ?? ''));
-                            if ($entityLabel === '') {
-                                $entityLabel = '#' . (int) ($row['entity_id'] ?? 0);
-                            }
-                            ?>
-                            <tr>
-                                <td><?= h(events_public_traffic_page_label((string) ($row['page_key'] ?? ''))) ?></td>
-                                <td><?= h($entityLabel) ?></td>
-                                <td class="text-center events-stats-cell--human"><?= (int) ($row['human_count'] ?? 0) ?></td>
-                                <td class="text-center"><?= (int) ($row['unique_human'] ?? 0) ?></td>
                                 <td class="text-center events-stats-cell--bot"><?= (int) ($row['bot_count'] ?? 0) ?></td>
                                 <td class="text-center"><strong><?= (int) ($row['total'] ?? 0) ?></strong></td>
                             </tr>

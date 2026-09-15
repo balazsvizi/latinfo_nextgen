@@ -8,9 +8,6 @@ declare(strict_types=1);
  * @var list<array<string, mixed>> $collectors
  * @var list<array<string, mixed>> $upcoming
  * @var string $calendarUrl
- * @var string $djsUrl
- * @var string $partnersUrl
- * @var string $organizersUrl
  * @var string $editUrl
  * @var string $cssPublicUrl
  * @var string $cssHomeUrl
@@ -61,7 +58,7 @@ $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
             </div>
             <?php if ($heroImage !== ''): ?>
                 <figure class="event-featured">
-                    <img class="event-featured__img event-featured__img.is-landscape" src="<?= h($heroImage) ?>" alt="" decoding="async" fetchpriority="high">
+                    <img class="event-featured__img is-landscape" src="<?= h($heroImage) ?>" alt="" decoding="async" fetchpriority="high">
                 </figure>
             <?php endif; ?>
         </div>

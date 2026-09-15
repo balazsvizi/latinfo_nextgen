@@ -18,11 +18,7 @@ function events_public_traffic_page_catalog(): array
         'list' => ['label' => 'Eseménylista', 'group' => 'hub', 'color' => '#2f6f8f'],
         'map' => ['label' => 'Térkép', 'group' => 'hub', 'color' => '#5a8a6a'],
         'djs' => ['label' => 'DJ lista', 'group' => 'hub', 'color' => '#8b5a9e'],
-        'dj' => ['label' => 'DJ oldal', 'group' => 'detail', 'color' => '#6d5a8a'],
         'organizers' => ['label' => 'Szervezők lista', 'group' => 'hub', 'color' => '#c45c26'],
-        'organizer' => ['label' => 'Szervező oldal', 'group' => 'detail', 'color' => '#d2691e'],
-        'event' => ['label' => 'Esemény oldal', 'group' => 'detail', 'color' => '#c4a35a'],
-        'venue' => ['label' => 'Helyszín oldal', 'group' => 'detail', 'color' => '#4f6d8a'],
         'partners' => ['label' => 'Partnereink', 'group' => 'hub', 'color' => '#8a6d4f'],
     ];
 }
@@ -365,7 +361,10 @@ function events_public_traffic_params_from_request(array $query): array
 {
     $base = events_edit_stats_params_from_request($query);
     $page = trim((string) ($query['page'] ?? 'all'));
-    $allowedPage = array_merge(['all', 'hub', 'detail'], events_public_traffic_page_keys());
+    if ($page === 'hub' || $page === 'detail') {
+        $page = 'all';
+    }
+    $allowedPage = array_merge(['all'], events_public_traffic_page_keys());
     if (!in_array($page, $allowedPage, true)) {
         $page = 'all';
     }
@@ -433,21 +432,16 @@ function events_public_traffic_where(array $params, bool $includeKind = true): a
     ];
 
     $page = (string) ($params['page'] ?? 'all');
-    if ($page === 'hub' || $page === 'detail') {
-        $keys = [];
-        foreach (events_public_traffic_page_catalog() as $key => $meta) {
-            if (($meta['group'] ?? '') === $page) {
-                $keys[] = $key;
-            }
-        }
-        if ($keys !== []) {
-            $ph = implode(',', array_fill(0, count($keys), '?'));
-            $sql[] = 't.`page_key` IN (' . $ph . ')';
-            foreach ($keys as $key) {
+    $hubKeys = events_public_traffic_page_keys();
+    if ($page === 'all' || $page === 'hub') {
+        if ($hubKeys !== []) {
+            $ph = implode(',', array_fill(0, count($hubKeys), '?'));
+            $sql[] = '(t.`event_type` = \'nav_click\' OR t.`page_key` IN (' . $ph . '))';
+            foreach ($hubKeys as $key) {
                 $bind[] = $key;
             }
         }
-    } elseif ($page !== 'all') {
+    } else {
         $sql[] = 't.`page_key` = ?';
         $bind[] = $page;
     }
@@ -586,7 +580,6 @@ function events_public_traffic_stats(PDO $db, array $params): array
         'devices' => [],
         'hours' => array_fill(0, 24, 0),
         'referrers' => [],
-        'entities' => [],
         'chart' => ['labels' => [], 'datasets' => []],
         'nav_chart' => ['labels' => [], 'datasets' => []],
         'page_share' => ['labels' => [], 'data' => [], 'colors' => []],
@@ -697,24 +690,6 @@ function events_public_traffic_stats(PDO $db, array $params): array
         );
         $refSql->execute($whereAll['bind']);
         $empty['referrers'] = $refSql->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-        $entSql = $db->prepare(
-            'SELECT t.`page_key`, t.`entity_id`,
-                    MAX(t.`entity_label`) AS entity_label,
-                    COUNT(*) AS total,
-                    SUM(CASE WHEN t.`is_bot` = 0 THEN 1 ELSE 0 END) AS human_count,
-                    SUM(CASE WHEN t.`is_bot` = 1 THEN 1 ELSE 0 END) AS bot_count,
-                    COUNT(DISTINCT CASE WHEN t.`is_bot` = 0 AND t.`ip_hash` IS NOT NULL THEN t.`ip_hash` END) AS unique_human
-             FROM `events_public_traffic` t
-             WHERE ' . $whereAll['sql'] . '
-               AND t.`event_type` = \'page_view\'
-               AND t.`entity_id` > 0
-             GROUP BY t.`page_key`, t.`entity_id`
-             ORDER BY total DESC
-             LIMIT 40'
-        );
-        $entSql->execute($whereAll['bind']);
-        $empty['entities'] = $entSql->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         $bucketExpr = events_public_traffic_bucket_expr($granularity);
         $bucketKeys = events_public_traffic_bucket_labels($params['date_from'], $params['date_to'], $granularity);
