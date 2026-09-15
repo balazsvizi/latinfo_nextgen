@@ -40,6 +40,14 @@ $contentAfter = trim((string) ($hubCms['content_after'] ?? ''));
 $cmsAnchorBefore = EVENTS_PUBLIC_DJS_HUB_ANCHOR_BEFORE;
 $cmsAnchorAfter = EVENTS_PUBLIC_DJS_HUB_ANCHOR_AFTER;
 
+$spotlightCards = events_public_dj_spotlight_cards(events_public_dj_spotlight_pool($djRowsAll), $lang, $D);
+$spotlightVisible = array_slice($spotlightCards, 0, 3);
+$leadModifier = match (true) {
+    $contentBefore === '' && $spotlightVisible === [] => ' djs-public__lead--empty',
+    $contentBefore === '' || $spotlightVisible === [] => ' djs-public__lead--solo',
+    default => '',
+};
+
 $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];
 $canonical = events_absolute_url(events_public_djs_page_url('hu'));
@@ -118,15 +126,49 @@ header('Content-Type: text/html; charset=UTF-8');
         <h1 class="visually-hidden"><?= h($title) ?></h1>
     </header>
 
-    <section
-        id="<?= h($cmsAnchorBefore) ?>"
-        class="djs-public__cms djs-public__cms--before<?= $contentBefore !== '' ? ' djs-public__cms--filled event-rich-text' : '' ?>"
-        aria-label="<?= h((string) $D['cms_before_aria']) ?>"
-    >
-        <?php if ($contentBefore !== ''): ?>
-            <?= $contentBefore ?>
+    <div class="djs-public__lead<?= $leadModifier ?>">
+        <section
+            id="<?= h($cmsAnchorBefore) ?>"
+            class="djs-public__cms djs-public__cms--before<?= $contentBefore !== '' ? ' djs-public__cms--filled event-rich-text' : '' ?>"
+            aria-label="<?= h((string) $D['cms_before_aria']) ?>"
+        >
+            <?php if ($contentBefore !== ''): ?>
+                <?= $contentBefore ?>
+            <?php endif; ?>
+        </section>
+
+        <?php if ($spotlightVisible !== []): ?>
+            <aside class="djs-public__spotlight" aria-label="<?= h((string) $D['spotlight_aria']) ?>">
+                <h2 class="djs-public__spotlight-title"><?= h((string) $D['spotlight_heading']) ?></h2>
+                <ul class="djs-public__spotlight-list" id="djs-spotlight-list" role="list">
+                    <?php foreach ($spotlightVisible as $card): ?>
+                        <li class="djs-public__spotlight-item">
+                            <a class="djs-public__spotlight-card" href="<?= h((string) $card['href']) ?>" aria-label="<?= h((string) $card['aria']) ?>">
+                                <span class="djs-public__spotlight-avatar<?= $card['isLogo'] ? ' djs-public__spotlight-avatar--logo' : '' ?>" aria-hidden="true">
+                                    <?php if ((string) $card['photo'] !== ''): ?>
+                                        <img class="djs-public__spotlight-photo" src="<?= h((string) $card['photo']) ?>" alt="" loading="lazy" decoding="async">
+                                    <?php else: ?>
+                                        <span class="djs-public__spotlight-initials"><?= h((string) $card['initials']) ?></span>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="djs-public__spotlight-body">
+                                    <span class="djs-public__spotlight-name"><?= h((string) $card['name']) ?></span>
+                                    <span class="djs-public__spotlight-meta"<?= (string) $card['meta'] === '' ? ' hidden' : '' ?>><?= h((string) $card['meta']) ?></span>
+                                </span>
+                                <span class="djs-public__spotlight-go" aria-hidden="true">→</span>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php if (count($spotlightCards) > count($spotlightVisible)): ?>
+                    <p class="djs-public__spotlight-note"><?= h((string) $D['spotlight_note']) ?></p>
+                    <script type="application/json" id="djs-spotlight-data">
+                        <?= json_encode($spotlightCards, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+                    </script>
+                <?php endif; ?>
+            </aside>
         <?php endif; ?>
-    </section>
+    </div>
 
     <section class="djs-public__catalog" aria-labelledby="djs-catalog-heading">
         <div class="djs-public__catalog-head">
@@ -381,6 +423,99 @@ header('Content-Type: text/html; charset=UTF-8');
 $listLimitDefault = EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
 require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
+<?php endif; ?>
+<?php if (count($spotlightCards) > count($spotlightVisible)): ?>
+<script>
+(function () {
+    var list = document.getElementById('djs-spotlight-list');
+    var dataTag = document.getElementById('djs-spotlight-data');
+    if (!list || !dataTag) return;
+
+    var pool;
+    try {
+        pool = JSON.parse(dataTag.textContent || '[]');
+    } catch (e) {
+        return;
+    }
+    var items = Array.prototype.slice.call(list.querySelectorAll('.djs-public__spotlight-item'));
+    if (!Array.isArray(pool) || pool.length <= items.length || items.length === 0) return;
+
+    var cursor = items.length;
+    var slot = 0;
+    var paused = false;
+
+    function shown() {
+        return items.map(function (li) {
+            var name = li.querySelector('.djs-public__spotlight-name');
+            return name ? name.textContent : '';
+        });
+    }
+
+    function nextCard() {
+        var visible = shown();
+        for (var i = 0; i < pool.length; i++) {
+            var card = pool[cursor % pool.length];
+            cursor++;
+            if (card && visible.indexOf(card.name) === -1) return card;
+        }
+        return null;
+    }
+
+    function paint(li, card) {
+        var link = li.querySelector('.djs-public__spotlight-card');
+        var avatar = li.querySelector('.djs-public__spotlight-avatar');
+        var name = li.querySelector('.djs-public__spotlight-name');
+        var meta = li.querySelector('.djs-public__spotlight-meta');
+        if (!link || !avatar || !name || !meta) return;
+
+        link.setAttribute('href', card.href || '#');
+        link.setAttribute('aria-label', card.aria || card.name || '');
+        avatar.className = 'djs-public__spotlight-avatar' + (card.isLogo ? ' djs-public__spotlight-avatar--logo' : '');
+        avatar.textContent = '';
+        if (card.photo) {
+            var img = document.createElement('img');
+            img.className = 'djs-public__spotlight-photo';
+            img.src = card.photo;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            avatar.appendChild(img);
+        } else {
+            var initials = document.createElement('span');
+            initials.className = 'djs-public__spotlight-initials';
+            initials.textContent = card.initials || 'DJ';
+            avatar.appendChild(initials);
+        }
+        name.textContent = card.name || '';
+        meta.textContent = card.meta || '';
+        meta.hidden = !card.meta;
+    }
+
+    function rotate() {
+        if (paused || document.hidden) return;
+        var li = items[slot % items.length];
+        slot++;
+        var card = nextCard();
+        if (!li || !card) return;
+
+        li.classList.add('is-swapping');
+        window.setTimeout(function () {
+            paint(li, card);
+            li.classList.remove('is-swapping');
+        }, 260);
+    }
+
+    ['pointerenter', 'focusin'].forEach(function (evt) {
+        list.addEventListener(evt, function () { paused = true; });
+    });
+    ['pointerleave', 'focusout'].forEach(function (evt) {
+        list.addEventListener(evt, function () { paused = false; });
+    });
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    window.setInterval(rotate, 5200);
+})();
+</script>
 <?php endif; ?>
 </body>
 </html>

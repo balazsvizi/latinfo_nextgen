@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/tag_type.php';
 require_once __DIR__ . '/tag_profile.php';
 require_once __DIR__ . '/event_public_organizers.php';
+require_once __DIR__ . '/event_public_lang.php';
 
 /**
  * Nyilvános DJ-katalógus (DJ típusú címkék).
@@ -138,6 +139,83 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
     }
 
     return array_values($byId);
+}
+
+/**
+ * Véletlenszerű ajánló készlet: a fotóval / logóval rendelkező DJ-k előnyben, azon belül kevert sorrend.
+ *
+ * @param list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}> $catalog
+ * @return list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}>
+ */
+function events_public_dj_spotlight_pool(array $catalog, int $poolLimit = 12): array {
+    $poolLimit = max(1, min(24, $poolLimit));
+    $withMedia = [];
+    $withoutMedia = [];
+
+    foreach ($catalog as $row) {
+        if ((int) ($row['id'] ?? 0) <= 0 || trim((string) ($row['name'] ?? '')) === '') {
+            continue;
+        }
+        $hasMedia = trim((string) ($row['photo_url'] ?? '')) !== ''
+            || trim((string) ($row['logo_url'] ?? '')) !== '';
+        if ($hasMedia) {
+            $withMedia[] = $row;
+        } else {
+            $withoutMedia[] = $row;
+        }
+    }
+
+    shuffle($withMedia);
+    shuffle($withoutMedia);
+
+    return array_slice(array_merge($withMedia, $withoutMedia), 0, $poolLimit);
+}
+
+/**
+ * Ajánló kártyák adatai: a szerveroldali kirendereléshez és a JS-váltogatáshoz közös formátum.
+ *
+ * @param list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}> $pool
+ * @param array<string, string> $strings
+ * @return list<array{name:string,href:string,photo:string,isLogo:bool,initials:string,meta:string,aria:string}>
+ */
+function events_public_dj_spotlight_cards(array $pool, string $lang, array $strings): array {
+    $cards = [];
+
+    foreach ($pool as $row) {
+        $name = trim((string) ($row['name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+        $slug = trim((string) ($row['slug'] ?? ''));
+        $photo = trim((string) ($row['photo_url'] ?? ''));
+        $logo = trim((string) ($row['logo_url'] ?? ''));
+        $media = $photo !== '' ? $photo : $logo;
+        $total = (int) ($row['event_total'] ?? 0);
+        $upcoming = (int) ($row['event_upcoming'] ?? 0);
+        $nextStart = trim((string) ($row['next_event_start'] ?? ''));
+        $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
+
+        $meta = '';
+        if ($upcoming > 0 && $nextTs !== false) {
+            $meta = (string) ($strings['next_event'] ?? '') . ': ' . events_public_format_event_day($nextTs, $lang);
+        } elseif ($total > 0) {
+            $meta = $total . ' ' . (string) ($strings['events_total'] ?? '');
+        }
+
+        $cards[] = [
+            'name' => $name,
+            'href' => $slug !== ''
+                ? events_public_dj_page_url($slug, $lang)
+                : events_public_tag_page_url((int) $row['id'], $lang),
+            'photo' => $media !== '' ? events_absolute_url($media) : '',
+            'isLogo' => $photo === '' && $logo !== '',
+            'initials' => events_public_dj_initials($name),
+            'meta' => $meta,
+            'aria' => (string) ($strings['card_aria'] ?? '') . ': ' . $name,
+        ];
+    }
+
+    return $cards;
 }
 
 function events_public_dj_total_count(PDO $db): int {

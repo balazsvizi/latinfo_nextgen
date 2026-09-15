@@ -3929,77 +3929,220 @@ body.event-public-page--home .event-public__hero-inner {
     color: var(--li-green-dark);
 }
 
-/* Bevezető blokk: levegős, „editorial” nyitány keret nélkül */
-.djs-public__cms--before.djs-public__cms--filled {
-    position: relative;
-    margin: 0;
-    padding: clamp(1.6rem, 4.5vw, 3rem) clamp(1.25rem, 4vw, 2.25rem) clamp(1.5rem, 4vw, 2.25rem);
+/* Oldal teteje: bal oldalon a bevezető, jobb oldalon a DJ ajánló */
+.djs-public__lead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    padding: clamp(1.35rem, 3.5vw, 2.15rem) clamp(1.25rem, 4vw, 2.25rem);
     border-bottom: 1px solid var(--li-border);
-    background:
-        radial-gradient(85% 120% at 8% 0%, rgba(109, 143, 99, 0.16), transparent 62%),
-        radial-gradient(70% 110% at 100% 4%, rgba(109, 143, 99, 0.09), transparent 58%),
-        linear-gradient(180deg, #ffffff 0%, #fafcf8 100%);
-    font-size: clamp(1rem, 0.35vw + 0.94rem, 1.09rem);
+}
+
+.djs-public__lead--solo {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.djs-public__lead--empty {
+    padding: 0;
+    border-bottom: 0;
+}
+
+/* Bevezető blokk: visszafogott, jól olvasható szövegtörzs */
+.djs-public__cms--before.djs-public__cms--filled {
+    margin: 0;
+    padding: 0;
+    font-size: 1rem;
 }
 
 .djs-public__cms--before h1,
 .djs-public__cms--before h2 {
-    margin: 0 0 1.15rem;
-    font-size: clamp(1.65rem, 4vw, 2.4rem);
+    margin: 0 0 0.9rem;
+    font-size: clamp(1.35rem, 2.6vw, 1.75rem);
     font-weight: 700;
 }
 
 .djs-public__cms--before h3 {
-    margin: 2rem 0 0.85rem;
-    font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+    margin: 1.5rem 0 0.6rem;
+    font-size: clamp(1.05rem, 1.8vw, 1.2rem);
 }
 
 .djs-public__cms--before p {
-    margin: 0 0 1.05rem;
+    margin: 0 0 0.9rem;
     color: var(--li-text-muted);
-}
-
-.djs-public__cms--before > p:first-of-type {
-    font-size: 1.1em;
-    line-height: 1.65;
-    color: var(--li-text);
 }
 
 .djs-public__cms--before > ul {
     display: grid;
-    gap: 0.6rem;
-    margin: 1.35rem 0;
+    gap: 0.5rem;
+    margin: 1rem 0;
     padding: 0;
     list-style: none;
 }
 
 .djs-public__cms--before > ul > li {
     position: relative;
-    padding: 0.85rem 1.1rem 0.85rem 2.5rem;
-    border: 1px solid rgba(109, 143, 99, 0.22);
-    border-radius: var(--ev-radius);
-    background: rgba(255, 255, 255, 0.82);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
+    padding-left: 1.1rem;
     color: var(--li-text-muted);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .djs-public__cms--before > ul > li::before {
     content: "";
     position: absolute;
-    top: 1.35rem;
-    left: 1.1rem;
-    width: 0.5rem;
-    height: 0.5rem;
+    top: 0.65rem;
+    left: 0.1rem;
+    width: 0.35rem;
+    height: 0.35rem;
     border-radius: 50%;
-    background: var(--li-green);
-    box-shadow: 0 0 0 4px rgba(109, 143, 99, 0.14);
+    background: var(--li-green-muted);
 }
 
-.djs-public__cms--before > ul > li:hover {
-    border-color: rgba(109, 143, 99, 0.4);
+/* DJ ajánló: véletlenszerűen váltakozó három kártya */
+.djs-public__spotlight {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: clamp(0.9rem, 2vw, 1.15rem);
+    border: 1px solid var(--li-border);
+    border-radius: calc(var(--ev-radius) + 2px);
+    background: linear-gradient(180deg, #ffffff 0%, #f8faf6 100%);
     box-shadow: var(--li-shadow);
-    transform: translateY(-1px);
+}
+
+.djs-public__spotlight-title {
+    margin: 0;
+    font-family: var(--ev-sans);
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--li-green-muted);
+}
+
+.djs-public__spotlight-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.djs-public__spotlight-item {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.djs-public__spotlight-item.is-swapping {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.djs-public__spotlight-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid transparent;
+    border-radius: var(--ev-radius);
+    background: rgba(255, 255, 255, 0.7);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.djs-public__spotlight-card:hover {
+    border-color: rgba(109, 143, 99, 0.3);
+    background: #ffffff;
+}
+
+.djs-public__spotlight-card:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
+.djs-public__spotlight-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    overflow: hidden;
+    border: 1px solid var(--li-border);
+    border-radius: 50%;
+    background: var(--li-green-soft);
+}
+
+.djs-public__spotlight-avatar--logo {
+    background: #ffffff;
+}
+
+.djs-public__spotlight-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.djs-public__spotlight-avatar--logo .djs-public__spotlight-photo {
+    object-fit: contain;
+    padding: 0.2rem;
+}
+
+.djs-public__spotlight-initials {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--li-green-dark);
+}
+
+.djs-public__spotlight-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.djs-public__spotlight-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--li-green-dark);
+    overflow-wrap: anywhere;
+}
+
+.djs-public__spotlight-meta {
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--li-text-soft);
+}
+
+.djs-public__spotlight-go {
+    font-size: 1rem;
+    color: var(--li-green-muted);
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.djs-public__spotlight-card:hover .djs-public__spotlight-go {
+    color: var(--li-green);
+    transform: translateX(2px);
+}
+
+.djs-public__spotlight-note {
+    margin: 0;
+    font-size: 0.7rem;
+    color: var(--li-text-soft);
+}
+
+@media (max-width: 899px) {
+    .djs-public__lead {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .djs-public__spotlight-item {
+        transition: none;
+    }
 }
 
 /* Záró blokk: önálló, keretes információs kártya */
@@ -4051,18 +4194,9 @@ body.event-public-page--home .event-public__hero-inner {
 }
 
 @media (max-width: 639px) {
-    .djs-public__cms--before.djs-public__cms--filled {
-        padding-top: 1.35rem;
-        padding-bottom: 1.35rem;
-    }
-
-    .djs-public__cms--before > ul > li {
-        padding: 0.75rem 0.9rem 0.75rem 2.2rem;
-    }
-
-    .djs-public__cms--before > ul > li::before {
-        top: 1.2rem;
-        left: 0.9rem;
+    .djs-public__lead {
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
     }
 
     .djs-public__cms--after.djs-public__cms--filled {
