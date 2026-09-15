@@ -114,31 +114,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 
-<div class="card events-admin-card" id="djs-hub-cms">
-    <h2 class="card-title" style="margin-top:0;">Nyilvános DJ oldal szövegei</h2>
-    <p class="help">HTML blokkok a <a href="<?= h($publicDjHubUrl) ?>" target="_blank" rel="noopener">/DJ/</a> oldalon. Mindkettőhöz named anchor tartozik, így linkelhető. Képet a szerkesztő kép gombjával tölthetsz fel vagy URL-lel szúrhatsz be.</p>
-    <form method="post" action="<?= h(events_url('djs_admin.php')) ?>" class="events-admin-form" id="djs-hub-cms-form">
-        <?= csrf_input('events_djs_hub_cms') ?>
-        <input type="hidden" name="djs_hub_cms_save" value="1">
-
-        <div class="form-group">
-            <label for="content_before">Szöveg az összes DJ előtt</label>
-            <p class="help">Horgony: <a href="<?= h($cmsPublicBeforeUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorBefore) ?></code></a></p>
-            <textarea class="js-tinymce" id="content_before" name="content_before" rows="12"><?= h($cmsContent['content_before']) ?></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="content_after">Szöveg a statisztikák után</label>
-            <p class="help">Horgony: <a href="<?= h($cmsPublicAfterUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorAfter) ?></code></a></p>
-            <textarea class="js-tinymce" id="content_after" name="content_after" rows="12"><?= h($cmsContent['content_after']) ?></textarea>
-        </div>
-
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Szövegek mentése</button>
-        </div>
-    </form>
-</div>
-
 <div class="card events-admin-card">
     <form method="get" action="<?= h(events_url('djs_admin.php')) ?>" class="events-admin-form" id="djs-admin-filter-form">
         <input type="hidden" name="order" value="<?= h($order) ?>">
@@ -264,6 +239,31 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+    </form>
+</div>
+
+<div class="card events-admin-card" id="djs-hub-cms">
+    <h2 class="card-title" style="margin-top:0;">Nyilvános DJ oldal szövegei</h2>
+    <p class="help">HTML blokkok a <a href="<?= h($publicDjHubUrl) ?>" target="_blank" rel="noopener">/DJ/</a> oldalon. Mindkettőhöz named anchor tartozik, így linkelhető. Képet a szerkesztő kép gombjával tölthetsz fel vagy URL-lel szúrhatsz be.</p>
+    <form method="post" action="<?= h(events_url('djs_admin.php')) ?>" class="events-admin-form" id="djs-hub-cms-form">
+        <?= csrf_input('events_djs_hub_cms') ?>
+        <input type="hidden" name="djs_hub_cms_save" value="1">
+
+        <div class="form-group">
+            <label for="content_before">Szöveg az összes DJ előtt</label>
+            <p class="help">Horgony: <a href="<?= h($cmsPublicBeforeUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorBefore) ?></code></a></p>
+            <textarea class="js-tinymce" id="content_before" name="content_before" rows="12"><?= h($cmsContent['content_before']) ?></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="content_after">Szöveg a statisztikák után</label>
+            <p class="help">Horgony: <a href="<?= h($cmsPublicAfterUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorAfter) ?></code></a></p>
+            <textarea class="js-tinymce" id="content_after" name="content_after" rows="12"><?= h($cmsContent['content_after']) ?></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Szövegek mentése</button>
         </div>
     </form>
 </div>
