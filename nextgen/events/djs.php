@@ -157,7 +157,7 @@ header('Content-Type: text/html; charset=UTF-8');
                             <a class="djs-public__spotlight-card" href="<?= h((string) $card['href']) ?>" aria-label="<?= h((string) $card['aria']) ?>">
                                 <span class="djs-public__spotlight-avatar<?= $card['isLogo'] ? ' djs-public__spotlight-avatar--logo' : '' ?>" aria-hidden="true">
                                     <?php if ((string) $card['photo'] !== ''): ?>
-                                        <img class="djs-public__spotlight-photo" src="<?= h((string) $card['photo']) ?>" alt="" loading="lazy" decoding="async">
+                                        <img class="djs-public__spotlight-photo" src="<?= h((string) $card['photo']) ?>" alt="" loading="lazy" decoding="async"<?= (string) ($card['photoStyle'] ?? '') !== '' ? ' style="' . h((string) $card['photoStyle']) . '"' : '' ?>>
                                     <?php else: ?>
                                         <span class="djs-public__spotlight-initials"><?= h((string) $card['initials']) ?></span>
                                     <?php endif; ?>
@@ -216,7 +216,8 @@ header('Content-Type: text/html; charset=UTF-8');
                     $djLogo = trim((string) ($dj['logo_url'] ?? ''));
                     $djMedia = $djPhoto !== '' ? $djPhoto : $djLogo;
                     $djPhotoAbs = $djMedia !== '' ? events_absolute_url($djMedia) : '';
-                    $djMediaIsLogo = $djPhoto === '' && $djLogo !== '';
+                    $djMediaIsLogo = events_public_dj_media_is_logo($dj);
+                    $djMediaStyle = $djPhotoAbs !== '' ? events_public_dj_media_img_style($dj) : '';
                     $total = (int) ($dj['event_total'] ?? 0);
                     $upcoming = (int) ($dj['event_upcoming'] ?? 0);
                     $nextStart = (string) ($dj['next_event_start'] ?? '');
@@ -238,7 +239,7 @@ header('Content-Type: text/html; charset=UTF-8');
                         <a class="djs-public__card djs-public__card--person<?= h($cardMod) ?>" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
                             <span class="djs-public__card-media<?= $djMediaIsLogo ? ' djs-public__card-media--logo' : '' ?>" aria-hidden="true">
                                 <?php if ($djPhotoAbs !== ''): ?>
-                                    <img class="djs-public__card-photo<?= $djMediaIsLogo ? ' djs-public__card-photo--logo' : '' ?>" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async">
+                                    <img class="djs-public__card-photo<?= $djMediaIsLogo ? ' djs-public__card-photo--logo' : '' ?>" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async"<?= $djMediaStyle !== '' ? ' style="' . h($djMediaStyle) . '"' : '' ?>>
                                 <?php else: ?>
                                     <span class="djs-public__card-initials"><?= h($initials) ?></span>
                                 <?php endif; ?>
@@ -503,6 +504,9 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
             img.alt = '';
             img.loading = 'lazy';
             img.decoding = 'async';
+            if (card.photoStyle) {
+                img.setAttribute('style', card.photoStyle);
+            }
             avatar.appendChild(img);
         } else {
             var initials = document.createElement('span');

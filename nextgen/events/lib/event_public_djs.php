@@ -48,12 +48,86 @@ function events_public_dj_initials(string $name): string {
 }
 
 /**
+ * @return list<string>
+ */
+function events_public_dj_media_crop_columns(): array {
+    return [
+        'photo_url',
+        'photo_fit',
+        'photo_focus_x',
+        'photo_focus_y',
+        'photo_zoom',
+        'logo_url',
+        'logo_fit',
+        'logo_focus_x',
+        'logo_focus_y',
+        'logo_zoom',
+    ];
+}
+
+function events_public_dj_media_select_sql(PDO $db, string $alias = 't'): string {
+    $present = array_fill_keys(events_tag_profile_present_columns($db), true);
+    $parts = [];
+    foreach (events_public_dj_media_crop_columns() as $col) {
+        if (isset($present[$col])) {
+            $parts[] = $alias . '.`' . $col . '`';
+        } else {
+            $parts[] = 'NULL AS `' . $col . '`';
+        }
+    }
+
+    return implode(', ', $parts);
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @return array<string, string>
+ */
+function events_public_dj_media_fields_from_row(array $row): array {
+    $fields = [];
+    foreach (events_public_dj_media_crop_columns() as $col) {
+        $fields[$col] = trim((string) ($row[$col] ?? ''));
+    }
+
+    return $fields;
+}
+
+/**
+ * @param array<string, mixed> $row
+ */
+function events_public_dj_media_is_logo(array $row): bool {
+    return trim((string) ($row['photo_url'] ?? '')) === ''
+        && trim((string) ($row['logo_url'] ?? '')) !== '';
+}
+
+/**
+ * @param array<string, mixed> $row
+ */
+function events_public_dj_media_img_style(array $row): string {
+    $photo = trim((string) ($row['photo_url'] ?? ''));
+    $logo = trim((string) ($row['logo_url'] ?? ''));
+    if ($photo === '' && $logo === '') {
+        return '';
+    }
+
+    return events_dj_media_img_style($row, events_public_dj_media_is_logo($row) ? 'logo' : 'photo');
+}
+
+/**
  * @return list<array{
  *   id: int,
  *   name: string,
  *   slug: string,
  *   photo_url: string,
+ *   photo_fit: string,
+ *   photo_focus_x: string,
+ *   photo_focus_y: string,
+ *   photo_zoom: string,
  *   logo_url: string,
+ *   logo_fit: string,
+ *   logo_focus_x: string,
+ *   logo_focus_y: string,
+ *   logo_zoom: string,
  *   event_total: int,
  *   event_upcoming: int,
  *   next_event_start: ?string
@@ -73,7 +147,7 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
     require_once __DIR__ . '/admin_event_filters.php';
     $poolFrom = events_admin_table_pool_from_sql('events_tags', 't', $listLimit);
     $slugSelect = events_tags_slug_column_available($db) ? 't.`slug`' : 'NULL AS `slug`';
-    $photoSelect = events_tags_profile_columns_available($db) ? 't.`photo_url`, t.`logo_url`' : 'NULL AS `photo_url`, NULL AS `logo_url`';
+    $photoSelect = events_public_dj_media_select_sql($db);
 
     $st = $db->prepare('
         SELECT t.`id`, t.`name`, ' . $slugSelect . ', ' . $photoSelect . '
@@ -93,16 +167,14 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
         if ($id <= 0) {
             continue;
         }
-        $byId[$id] = [
+        $byId[$id] = array_merge(events_public_dj_media_fields_from_row($row), [
             'id' => $id,
             'name' => (string) ($row['name'] ?? ''),
             'slug' => trim((string) ($row['slug'] ?? '')),
-            'photo_url' => trim((string) ($row['photo_url'] ?? '')),
-            'logo_url' => trim((string) ($row['logo_url'] ?? '')),
             'event_total' => 0,
             'event_upcoming' => 0,
             'next_event_start' => null,
-        ];
+        ]);
     }
     if ($byId === []) {
         return [];
@@ -145,8 +217,8 @@ function events_public_dj_catalog(PDO $db, string $publishedStatus, ?int $listLi
  * Véletlenszerű ajánló készlet: csak azok a DJ-k, akiknek van következő eseményük.
  * A fotóval / logóval rendelkezők előnyben, azon belül kevert sorrend.
  *
- * @param list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}> $catalog
- * @return list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}>
+ * @param list<array<string, mixed>> $catalog
+ * @return list<array<string, mixed>>
  */
 function events_public_dj_spotlight_pool(array $catalog, int $poolLimit = 12): array {
     $poolLimit = max(1, min(24, $poolLimit));
@@ -178,9 +250,9 @@ function events_public_dj_spotlight_pool(array $catalog, int $poolLimit = 12): a
 /**
  * Ajánló kártyák adatai: a szerveroldali kirendereléshez és a JS-váltogatáshoz közös formátum.
  *
- * @param list<array{id:int,name:string,slug:string,photo_url:string,logo_url:string,event_total:int,event_upcoming:int,next_event_start:?string}> $pool
+ * @param list<array<string, mixed>> $pool
  * @param array<string, string> $strings
- * @return list<array{name:string,href:string,photo:string,isLogo:bool,initials:string,meta:string,aria:string}>
+ * @return list<array{name:string,href:string,photo:string,photoStyle:string,isLogo:bool,initials:string,meta:string,aria:string}>
  */
 function events_public_dj_spotlight_cards(array $pool, string $lang, array $strings): array {
     $cards = [];
@@ -208,7 +280,8 @@ function events_public_dj_spotlight_cards(array $pool, string $lang, array $stri
                 ? events_public_dj_page_url($slug, $lang)
                 : events_public_tag_page_url((int) $row['id'], $lang),
             'photo' => $media !== '' ? events_absolute_url($media) : '',
-            'isLogo' => $photo === '' && $logo !== '',
+            'photoStyle' => $media !== '' ? events_public_dj_media_img_style($row) : '',
+            'isLogo' => events_public_dj_media_is_logo($row),
             'initials' => events_public_dj_initials($name),
             'meta' => $meta,
             'aria' => (string) ($strings['card_aria'] ?? '') . ': ' . $name,
