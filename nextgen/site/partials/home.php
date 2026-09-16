@@ -47,6 +47,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
 <body class="event-public-page event-public-page--home event-public-page--latinfo-home latinfo-home--skin-<?= (int) $homeSkin ?>">
 <?php require $eventsPartial . '/admin_float_tools.php'; ?>
 <?php require __DIR__ . '/home_skin_switcher.php'; ?>
+<?php if ((int) $homeSkin === 4) { require __DIR__ . '/home_calendar_cta.php'; } ?>
 <div class="event-shell">
 <article class="event-public home-public latinfo-home">
     <header class="event-public__hero event-public__hero--bar-only">
@@ -58,7 +59,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
         <div class="latinfo-home__board">
             <div class="latinfo-home__rail">
                 <section class="latinfo-home__flashes-wrap" id="hirek" aria-labelledby="lh-news-title">
-                    <header class="latinfo-home__day-head">
+                    <header class="latinfo-home__day-head latinfo-home__day-head--news">
                         <h2 class="latinfo-home__day-title" id="lh-news-title">
                             <span class="latinfo-home__day-word"><?= h($H['quick_news']) ?></span>
                         </h2>

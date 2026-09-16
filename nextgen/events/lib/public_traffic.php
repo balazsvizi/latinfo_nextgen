@@ -45,6 +45,7 @@ function events_public_traffic_nav_catalog(): array
         'lang-hu' => 'Nyelv: HU',
         'lang-en' => 'Nyelv: EN',
         'lang-mcal' => 'Mobil / klasszikus naptár',
+        'home-calendar-cta' => 'Naptár gomb (kezdőoldal)',
     ];
 }
 
