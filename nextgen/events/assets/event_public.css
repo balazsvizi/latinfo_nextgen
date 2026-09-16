@@ -2741,17 +2741,16 @@ a.event-hero-chip--category-link:hover {
 }
 
 .dj-public__brand {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: min(100%, 13.5rem);
-    height: 3.6rem;
-    margin: 0.55rem 0 0;
-    padding: 0.4rem 0.65rem;
-    border-radius: 14px;
+    width: 5.25rem;
+    height: 5.25rem;
+    padding: 0.4rem;
+    border-radius: 16px;
     border: 1px solid rgba(109, 143, 99, 0.22);
     background: #fff;
-    box-shadow: 0 6px 16px rgba(45, 58, 40, 0.08);
+    box-shadow: 0 8px 20px rgba(45, 58, 40, 0.1);
     overflow: hidden;
 }
 
@@ -2764,6 +2763,24 @@ a.event-hero-chip--category-link:hover {
 
 .dj-public__identity-text {
     min-width: 0;
+}
+
+.dj-public__identity-text--branded {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 0.85rem;
+    align-items: start;
+}
+
+.dj-public__identity-text--branded .dj-public__brand {
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    justify-self: end;
+    align-self: start;
+}
+
+.dj-public__identity-text--branded > :not(.dj-public__brand) {
+    grid-column: 1;
 }
 
 .dj-public__identity-text .event-public__title {
@@ -2898,6 +2915,12 @@ a.event-hero-chip--category-link:hover {
     .dj-public__media,
     .dj-public__avatar {
         width: min(9.5rem, 42vw);
+    }
+
+    .dj-public__brand {
+        width: 4.35rem;
+        height: 4.35rem;
+        border-radius: 14px;
     }
 }
 

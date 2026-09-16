@@ -210,7 +210,12 @@ header('Content-Type: text/html; charset=UTF-8');
                             <?php endif; ?>
                         </div>
                     </div>
-                    <div class="dj-public__identity-text">
+                    <div class="dj-public__identity-text<?= ($djPhotoAbs !== '' && $djLogoAbs !== '') ? ' dj-public__identity-text--branded' : '' ?>">
+                        <?php if ($djPhotoAbs !== '' && $djLogoAbs !== ''): ?>
+                            <div class="dj-public__brand" aria-hidden="true">
+                                <img class="dj-public__brand-img" src="<?= h($djLogoAbs) ?>" alt="" loading="lazy" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'logo')) ?>">
+                            </div>
+                        <?php endif; ?>
                         <?php if ($tagTypeRows !== []): ?>
                             <div class="tag-public__types" aria-label="<?= h($lang === 'en' ? 'Tag types' : 'Címke típusok') ?>">
                                 <?php foreach ($tagTypeRows as $typeRow): ?>
@@ -226,11 +231,6 @@ header('Content-Type: text/html; charset=UTF-8');
                             </div>
                         <?php endif; ?>
                         <h1 class="event-public__title"><?= h($title) ?></h1>
-                        <?php if ($djPhotoAbs !== '' && $djLogoAbs !== ''): ?>
-                            <div class="dj-public__brand" aria-hidden="true">
-                                <img class="dj-public__brand-img" src="<?= h($djLogoAbs) ?>" alt="" loading="lazy" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'logo')) ?>">
-                            </div>
-                        <?php endif; ?>
                         <p class="dj-public__meta">
                             <span class="dj-public__meta-item">
                                 <strong><?= (int) $eventsUpcomingCount ?></strong>
