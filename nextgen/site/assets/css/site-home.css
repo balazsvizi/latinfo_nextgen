@@ -17,6 +17,7 @@ body.event-public-page--latinfo-home {
 
     --lh-shell-max: 78rem;
     --lh-board-gap: clamp(1.1rem, 2.4vw, 1.9rem);
+    --lh-stage-pad: clamp(0.35rem, 2vw, 1.25rem);
 
     --lh-card-pad: clamp(1rem, 2vw, 1.35rem);
     --lh-card-radius: 1.4rem;
@@ -74,7 +75,7 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
 .latinfo-home__stage {
     max-width: var(--lh-shell-max);
     margin: 0 auto;
-    padding: 0.25rem clamp(0.35rem, 2vw, 1.25rem) 1.75rem;
+    padding: 0.25rem var(--lh-stage-pad) 1.75rem;
 }
 
 .latinfo-home__board {
@@ -847,13 +848,14 @@ body.latinfo-home--skin-2 .latinfo-home__day-more:hover {
 }
 
 /* --------------------------------------------------------------------------
-   11b. Lebegő naptár gomb (jobb felül, mobilon és desktopon is – Lista változat)
+   11b. Naptár gomb: a fejléc aljához kötve, a nyelvváltóval egy vonalban
+        (Lista változat). Szándékosan a tartalom tetejére lóg.
    -------------------------------------------------------------------------- */
 .latinfo-home__cal-cta {
-    position: fixed;
-    z-index: 99990;
-    top: max(0.55rem, env(safe-area-inset-top, 0px));
-    right: max(0.55rem, env(safe-area-inset-right, 0px));
+    position: absolute;
+    z-index: 5;
+    top: calc(100% - 0.35rem);
+    right: var(--ev-home-hero-pad-x, clamp(1rem, 2.5vw, 2.5rem));
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
@@ -897,17 +899,6 @@ body.latinfo-home--skin-2 .latinfo-home__day-more:hover {
     display: flex;
     align-items: center;
     opacity: 0.92;
-}
-
-/* A lebegő gomb ne csússzon a nyelvváltó / menü ikon alá */
-body.latinfo-home--skin-4 .event-public__hero-actions {
-    padding-right: 7.5rem;
-}
-
-@media (max-width: 560px) {
-    body.latinfo-home--skin-4 .event-public__hero-actions {
-        padding-right: 6.75rem;
-    }
 }
 
 /* ============================================================================

@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Lebegő naptár gomb a kezdőoldal jobb felső sarkában (Lista változat).
+ * Naptár gomb a fejléc alatt, a tartalom tetején jobbra (Lista változat).
  * A kattintást a hero sávban futó data-public-nav-track figyelő méri.
  *
  * @var string $calendarUrl

@@ -47,12 +47,12 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
 <body class="event-public-page event-public-page--home event-public-page--latinfo-home latinfo-home--skin-<?= (int) $homeSkin ?>">
 <?php require $eventsPartial . '/admin_float_tools.php'; ?>
 <?php require __DIR__ . '/home_skin_switcher.php'; ?>
-<?php if ((int) $homeSkin === 4) { require __DIR__ . '/home_calendar_cta.php'; } ?>
 <div class="event-shell">
 <article class="event-public home-public latinfo-home">
     <header class="event-public__hero event-public__hero--bar-only">
         <?php require $eventsPartial . '/public_shell_hero_bar.php'; ?>
         <h1 class="visually-hidden"><?= h(SITE_NAME) ?></h1>
+        <?php if ((int) $homeSkin === 4) { require __DIR__ . '/home_calendar_cta.php'; } ?>
     </header>
 
     <div class="latinfo-home__stage">

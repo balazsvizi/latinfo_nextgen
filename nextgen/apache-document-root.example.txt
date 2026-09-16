@@ -3,7 +3,9 @@
 # Production (WordPress): illeszd be az apache-wordpress-public-routes.example.txt tartalmát
 # a public_html/.htaccess „BEGIN WordPress” blokkja ELÉ.
 
-DirectoryIndex nextgen/index.php
+DirectoryIndex index.php
 
 RewriteEngine On
+# Gyökér → backoffice (ne DirectoryIndex nextgen/index.php — almappákban 403)
+RewriteRule ^$ nextgen/index.php [L]
 RewriteRule ^lanueva$ lanueva/ [R=301,L]

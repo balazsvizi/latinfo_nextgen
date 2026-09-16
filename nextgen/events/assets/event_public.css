@@ -3734,7 +3734,10 @@ body.event-public-page--catalog .event-public.djs-public {
 }
 
 body.event-public-page--home .event-public__hero {
-    padding: clamp(1rem, 2.5vw, 1.65rem) clamp(1rem, 2.5vw, 2.5rem) clamp(1rem, 2.5vw, 1.35rem);
+    /* A vízszintes padding változóból jön, hogy a fejléc alá lógó elemek
+       (pl. kezdőoldali naptár gomb) a nyelvváltóval egy vonalba kerülhessenek. */
+    --ev-home-hero-pad-x: clamp(1rem, 2.5vw, 2.5rem);
+    padding: clamp(1rem, 2.5vw, 1.65rem) var(--ev-home-hero-pad-x) clamp(1rem, 2.5vw, 1.35rem);
 }
 
 /* Alap: kétsoros fejléc (mobil + mcal). A 3 oszlopos csak széles, nem-mcal nézetben. */
