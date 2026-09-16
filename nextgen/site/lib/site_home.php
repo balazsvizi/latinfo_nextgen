@@ -29,7 +29,7 @@ function latinfo_home_asset_url(string $path): string
 function latinfo_home_resolve_skin(): int
 {
     $skin = filter_var($_GET['skin'] ?? 1, FILTER_VALIDATE_INT);
-    if ($skin === false || $skin < 1 || $skin > 3) {
+    if ($skin === false || $skin < 1 || $skin > 4) {
         return 1;
     }
 
@@ -73,7 +73,7 @@ function latinfo_home_lang_switch_url(string $lang, ?int $skin = null): string
 
 function latinfo_home_skin_url(int $skin, string $lang): string
 {
-    $skin = $skin >= 1 && $skin <= 3 ? $skin : 1;
+    $skin = $skin >= 1 && $skin <= 4 ? $skin : 1;
     $params = ['skin' => $skin];
     if ($lang === 'en') {
         $params['lang'] = 'en';
@@ -809,9 +809,11 @@ function latinfo_home_strings(string $lang): array
         'skin_1' => 'Üveg',
         'skin_2' => 'Ritmus',
         'skin_3' => 'Magazin',
+        'skin_4' => 'Lista',
         'skin_1_aria' => 'Üveg változat, fagyott kártyák',
         'skin_2_aria' => 'Ritmus változat, idővonalas naptár',
         'skin_3_aria' => 'Magazin változat, szerkesztői tipográfia',
+        'skin_4_aria' => 'Lista változat, Ritmus dobozok, Üveg eseménysorok idő nélkül',
     ];
     $en = [
         'page_title' => 'home (preview)',
@@ -834,9 +836,11 @@ function latinfo_home_strings(string $lang): array
         'skin_1' => 'Glass',
         'skin_2' => 'Rhythm',
         'skin_3' => 'Magazine',
+        'skin_4' => 'List',
         'skin_1_aria' => 'Glass version, frosted cards',
         'skin_2_aria' => 'Rhythm version, timeline calendar',
         'skin_3_aria' => 'Magazine version, editorial type',
+        'skin_4_aria' => 'List version, Rhythm cards, Glass event rows without times',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -1018,8 +1022,12 @@ function latinfo_home_format_event_time(array $ev, string $allDayLabel = 'Egész
     return $start->format('H:i');
 }
 
-function latinfo_home_day_date(DateTimeImmutable $day, string $lang): string
+function latinfo_home_day_date(DateTimeImmutable $day, string $lang, int $skin = 1): string
 {
+    if ($skin === 4) {
+        return latinfo_home_day_date_long($day, $lang);
+    }
+
     $monthsHu = [1 => 'jan.', 2 => 'febr.', 3 => 'márc.', 4 => 'ápr.', 5 => 'máj.', 6 => 'jún.', 7 => 'júl.', 8 => 'aug.', 9 => 'szept.', 10 => 'okt.', 11 => 'nov.', 12 => 'dec.'];
     $monthsEn = [1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'];
     $months = $lang === 'en' ? $monthsEn : $monthsHu;
@@ -1028,6 +1036,39 @@ function latinfo_home_day_date(DateTimeImmutable $day, string $lang): string
     return $lang === 'en'
         ? $month . ' ' . $day->format('j')
         : $day->format('j') . '. ' . $month;
+}
+
+/**
+ * Hosszú dátum a Lista változathoz: „szeptember 16. · szerda” / „September 16 · Wednesday”.
+ */
+function latinfo_home_day_date_long(DateTimeImmutable $day, string $lang): string
+{
+    $monthsHu = [
+        1 => 'január', 2 => 'február', 3 => 'március', 4 => 'április',
+        5 => 'május', 6 => 'június', 7 => 'július', 8 => 'augusztus',
+        9 => 'szeptember', 10 => 'október', 11 => 'november', 12 => 'december',
+    ];
+    $monthsEn = [
+        1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+        5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+        9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
+    ];
+    $daysHu = ['vasárnap', 'hétfő', 'kedd', 'szerda', 'csütörtök', 'péntek', 'szombat'];
+    $daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    $monthNum = (int) $day->format('n');
+    $weekday = (int) $day->format('w');
+
+    if ($lang === 'en') {
+        $month = $monthsEn[$monthNum] ?? '';
+        $dayName = $daysEn[$weekday] ?? '';
+
+        return trim($month . ' ' . $day->format('j') . ' · ' . $dayName);
+    }
+
+    $month = $monthsHu[$monthNum] ?? '';
+    $dayName = $daysHu[$weekday] ?? '';
+
+    return trim($month . ' ' . $day->format('j') . '. · ' . $dayName);
 }
 
 function latinfo_home_day_label(DateTimeImmutable $day, string $lang, string $word): string

@@ -106,7 +106,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
             <div class="latinfo-home__calendar" id="naptar">
                 <?php
                 $dayWord = $H['today'];
-                $dayDate = latinfo_home_day_date($dayEvents['today_date'], $lang);
+                $dayDate = latinfo_home_day_date($dayEvents['today_date'], $lang, $homeSkin);
                 $sectionId = 'lh-today';
                 $events = $dayEvents['today'];
                 $hasMore = $dayEvents['today_more'];
@@ -115,7 +115,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                 require __DIR__ . '/home_day_column.php';
 
                 $dayWord = $H['tomorrow'];
-                $dayDate = latinfo_home_day_date($dayEvents['tomorrow_date'], $lang);
+                $dayDate = latinfo_home_day_date($dayEvents['tomorrow_date'], $lang, $homeSkin);
                 $sectionId = 'lh-tomorrow';
                 $events = $dayEvents['tomorrow'];
                 $hasMore = $dayEvents['tomorrow_more'];

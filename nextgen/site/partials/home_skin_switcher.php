@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Kezdőoldal-változat váltó (Üveg / Ritmus / Magazin) az admin előnézethez.
+ * Kezdőoldal-változat váltó (Üveg / Ritmus / Magazin / Lista) az admin előnézethez.
  *
  * @var array<string, string> $H
  * @var int $homeSkin
@@ -13,7 +13,7 @@ $skinUrls = is_array($skinUrls ?? null) ? $skinUrls : [];
 $H = is_array($H ?? null) ? $H : [];
 
 $skinLinks = [];
-foreach ([1, 2, 3] as $skin) {
+foreach ([1, 2, 3, 4] as $skin) {
     $href = trim((string) ($skinUrls[$skin] ?? ''));
     if ($href === '') {
         continue;

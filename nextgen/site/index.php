@@ -53,6 +53,7 @@ $skinUrls = [
     1 => latinfo_home_skin_url(1, $lang),
     2 => latinfo_home_skin_url(2, $lang),
     3 => latinfo_home_skin_url(3, $lang),
+    4 => latinfo_home_skin_url(4, $lang),
 ];
 $isEventsHome = true;
 $showAdminEdit = true;
