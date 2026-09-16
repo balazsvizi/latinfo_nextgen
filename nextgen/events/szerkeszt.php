@@ -182,9 +182,6 @@ if ((string) ($event['event_status'] ?? '') === events_public_post_status()
     && trim((string) ($event['event_slug'] ?? '')) !== '') {
     $eventEditPreviewUrl = events_megjelenit_url((string) $event['event_slug']);
 }
-$eventSlugLockInfo = events_slug_lock_info($db, $event);
-$eventSlugRedirectCount = events_slug_redirect_count_for_event($db, $id);
-
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
 require_once dirname(__DIR__) . '/partials/header.php';

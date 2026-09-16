@@ -5087,9 +5087,6 @@ body.event-edit-cover-lightbox-open {
     align-items: stretch;
     gap: 0.45rem;
 }
-.events-edit-slug-lock-hint {
-    margin: 0.55rem 0 0;
-}
 .events-slug-delay-form .form-group {
     max-width: 22rem;
 }

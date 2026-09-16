@@ -192,12 +192,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php
         $eventFormAutoSlug = true;
         $eventFormCancelUrl = events_url('events_admin.php');
-        $eventSlugLockInfo = [
-            'locked' => false,
-            'published' => false,
-            'delay_minutes' => events_slug_save_delay_minutes($db),
-            'remaining_minutes' => null,
-        ];
         require __DIR__ . '/partials/event_fields.php';
         $eventFormActionsPlacement = 'footer';
         require __DIR__ . '/partials/event_form_actions.php';
