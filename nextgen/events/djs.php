@@ -199,7 +199,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     $href = $djHref(['id' => $djId, 'name' => $djName, 'slug' => $djSlug], $lang);
                     $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
                     $nextDisplay = $nextTs !== false
-                        ? events_public_event_start_date_time_display(false, $nextTs, $lang)
+                        ? events_public_megjelenit_day_line($nextTs, $lang)
                         : '';
                     $nameSort = mb_strtolower($djName, 'UTF-8');
                     $initials = events_public_dj_initials($djName);

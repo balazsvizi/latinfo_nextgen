@@ -884,6 +884,7 @@ function latinfo_home_events_in_range(PDO $db, DateTimeImmutable $from, DateTime
         $st = $db->prepare('
             SELECT e.`id`, e.`event_slug`, e.`event_name`,
                    e.`event_start`, e.`event_end`, e.`event_allday`,
+                   e.`event_change_active`, e.`event_change_type`, e.`event_change_note`,
                    v.`name` AS `venue_name`, v.`city` AS `venue_city`
             FROM `events_calendar_events` e
             LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
