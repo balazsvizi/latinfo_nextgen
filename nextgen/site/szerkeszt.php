@@ -169,7 +169,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <p class="text-muted" style="margin-top:0">
         Ez a leendő nyilvános kezdőoldal. Jelenleg csak belépett adminok látják.
-        Az első képernyőn 3 gyorshír, a mai és holnapi események, valamint a DJ ajánló jelenik meg. A hero szövegek a felső sávba kerülnek; a naptár a közzétett eseményekből jön.
+        Az első képernyőn a mai és holnapi események, 3 gyorshír (cím nélkül) és a DJ ajánló jelenik meg. A naptár a közzétett eseményekből jön.
     </p>
 
     <?php if (!$schemaOk): ?>

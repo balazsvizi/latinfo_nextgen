@@ -651,11 +651,23 @@ function latinfo_home_event_place(array $ev): string
 {
     $name = trim((string) ($ev['venue_name'] ?? ''));
     $city = trim((string) ($ev['venue_city'] ?? ''));
-    if ($name !== '' && $city !== '') {
-        return $name . ', ' . $city;
+    if ($city !== '' && !latinfo_home_city_is_budapest($city)) {
+        return $name !== '' ? $name . ', ' . $city : $city;
     }
 
-    return $name !== '' ? $name : $city;
+    return $name;
+}
+
+function latinfo_home_city_is_budapest(string $city): bool
+{
+    $normalized = mb_strtolower(trim($city), 'UTF-8');
+    $normalized = strtr($normalized, [
+        'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ö' => 'o', 'ő' => 'o',
+        'ú' => 'u', 'ü' => 'u', 'ű' => 'u',
+    ]);
+    $normalized = trim($normalized, " \t\n\r\0\x0B.,");
+
+    return $normalized === 'budapest' || $normalized === 'bp' || str_starts_with($normalized, 'budapest ');
 }
 
 /**
@@ -699,6 +711,23 @@ function latinfo_home_event_url(array $ev): string
     }
 
     return site_url('event/' . rawurlencode($slug) . '/');
+}
+
+/**
+ * @param array<int, list<array{color?: string}>> $categoriesByEventId
+ */
+function latinfo_home_event_accent(array $ev, array $categoriesByEventId): string
+{
+    $eid = (int) ($ev['id'] ?? 0);
+    $color = trim((string) (($categoriesByEventId[$eid][0]['color'] ?? '')));
+    if (function_exists('normalize_hex_color')) {
+        return normalize_hex_color($color !== '' ? $color : null, '#6D8F63');
+    }
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $color) === 1) {
+        return $color;
+    }
+
+    return '#6D8F63';
 }
 
 function latinfo_home_tone_from_id(int $id): string

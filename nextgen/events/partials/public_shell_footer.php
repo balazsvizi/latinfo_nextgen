@@ -22,4 +22,6 @@ $footerClass = 'event-site-line' . ($standalone ? ' event-site-line--standalone'
         <span class="event-site-line__sep" aria-hidden="true">·</span>
     <?php endif; ?>
     <a href="<?= h($latinfoHomeUrl) ?>"><?= h($S['footer_home_link']) ?></a>
+    <span class="event-site-line__sep" aria-hidden="true">·</span>
+    <?= nextgen_footer_version_markup() ?>
 </p>

@@ -2610,6 +2610,16 @@ a.event-hero-chip--category-link:hover {
     text-decoration: underline;
 }
 
+.event-site-line .app-version {
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+    color: var(--li-text-soft);
+    opacity: 0.7;
+    white-space: nowrap;
+}
+
 .visually-hidden {
     position: absolute;
     width: 1px;
