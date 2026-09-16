@@ -229,11 +229,12 @@ header('Content-Type: text/html; charset=UTF-8');
                                     <?php endif; ?>
                                 </span>
                                 <span class="djs-public__card-stats">
-                                    <span class="djs-public__card-stat djs-public__card-stat--muted">
-                                        <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
-                                    </span>
                                     <span class="djs-public__card-stat djs-public__card-stat--upcoming">
                                         <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
+                                    </span>
+                                    <span class="djs-public__card-stat djs-public__card-stat--muted">
+                                        <?= h((string) ($D['events_total_lead'] ?? '')) ?>
+                                        <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
                                     </span>
                                 </span>
                                 <?php if ($nextDisplay !== ''): ?>

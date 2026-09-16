@@ -53,25 +53,6 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
 
     <div class="latinfo-home__stage">
         <div class="latinfo-home__board">
-            <div class="latinfo-home__calendar" id="naptar">
-                <?php
-                $heading = latinfo_home_day_label($dayEvents['today_date'], $lang, $H['today']);
-                $sectionId = 'lh-today';
-                $events = $dayEvents['today'];
-                $hasMore = $dayEvents['today_more'];
-                $empty = $H['empty_today'];
-                $moreLabel = $H['more'];
-                require __DIR__ . '/home_day_column.php';
-
-                $heading = latinfo_home_day_label($dayEvents['tomorrow_date'], $lang, $H['tomorrow']);
-                $sectionId = 'lh-tomorrow';
-                $events = $dayEvents['tomorrow'];
-                $hasMore = $dayEvents['tomorrow_more'];
-                $empty = $H['empty_tomorrow'];
-                require __DIR__ . '/home_day_column.php';
-                ?>
-            </div>
-
             <div class="latinfo-home__rail">
                 <section class="latinfo-home__flashes-wrap" id="hirek" aria-labelledby="lh-news-title">
                     <h2 class="visually-hidden" id="lh-news-title"><?= h($H['quick_news']) ?></h2>
@@ -110,6 +91,25 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                         <a class="latinfo-home__edit" href="<?= h($djsUrl) ?>"><?= h($H['djs_all']) ?></a>
                     </p>
                 <?php endif; ?>
+            </div>
+
+            <div class="latinfo-home__calendar" id="naptar">
+                <?php
+                $heading = latinfo_home_day_label($dayEvents['today_date'], $lang, $H['today']);
+                $sectionId = 'lh-today';
+                $events = $dayEvents['today'];
+                $hasMore = $dayEvents['today_more'];
+                $empty = $H['empty_today'];
+                $moreLabel = $H['more'];
+                require __DIR__ . '/home_day_column.php';
+
+                $heading = latinfo_home_day_label($dayEvents['tomorrow_date'], $lang, $H['tomorrow']);
+                $sectionId = 'lh-tomorrow';
+                $events = $dayEvents['tomorrow'];
+                $hasMore = $dayEvents['tomorrow_more'];
+                $empty = $H['empty_tomorrow'];
+                require __DIR__ . '/home_day_column.php';
+                ?>
             </div>
         </div>
     </div>
