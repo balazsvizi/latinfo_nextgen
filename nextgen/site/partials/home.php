@@ -3,11 +3,17 @@ declare(strict_types=1);
 
 /**
  * @var array<string, string> $settings
- * @var array<string, mixed>|null $heroNews
- * @var list<array<string, mixed>> $newsRest
+ * @var array<string, string> $H
+ * @var list<array<string, mixed>> $quickNews
  * @var list<array<string, mixed>> $collectors
- * @var list<array<string, mixed>> $upcoming
+ * @var array<string, mixed> $dayEvents
+ * @var list<array<string, mixed>> $spotlightCards
+ * @var list<array<string, mixed>> $spotlightVisible
+ * @var int $spotlightMobileCount
+ * @var array<string, string> $Dj
+ * @var string $cmsAnchorSpotlight
  * @var string $calendarUrl
+ * @var string $djsUrl
  * @var string $editUrl
  * @var string $cssPublicUrl
  * @var string $cssHomeUrl
@@ -15,7 +21,6 @@ declare(strict_types=1);
  * @var string $heroDek
  * @var string $heroKicker
  * @var string $heroUrl
- * @var string $heroImage
  * @var string $heroCta
  * @var string $lang
  * @var string $htmlLang
@@ -28,6 +33,7 @@ declare(strict_types=1);
  * @var list<array<string, mixed>> $adminFloatTools
  */
 $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
+$D = $Dj;
 ?>
 <!DOCTYPE html>
 <html lang="<?= h($htmlLang) ?>">
@@ -36,7 +42,7 @@ $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#6d8f63">
     <?= events_public_robots_noindex_head_markup() ?>
-    <title><?= h(SITE_NAME) ?> – kezdőoldal (előnézet)</title>
+    <title><?= h(SITE_NAME) ?> – <?= h($H['page_title']) ?></title>
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
     <link rel="stylesheet" href="<?= h($cssHomeUrl) ?>">
@@ -45,79 +51,101 @@ $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
 <?php require $eventsPartial . '/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public home-public latinfo-home">
-    <header class="event-public__hero">
+    <header class="event-public__hero event-public__hero--bar-only">
         <?php require $eventsPartial . '/public_shell_hero_bar.php'; ?>
-        <div class="event-public__hero-inner">
-            <p class="event-public__eyebrow"><?= h($heroKicker !== '' ? $heroKicker : 'Latinfo.hu') ?></p>
-            <h1 class="event-public__title"><?= h($heroTitle) ?></h1>
-            <?php if ($heroDek !== ''): ?>
-                <p class="latinfo-home__lead"><?= h($heroDek) ?></p>
-            <?php endif; ?>
-            <div class="event-cta-wrap">
-                <a class="event-cta" href="<?= h($heroUrl) ?>"><?= h($heroCta) ?></a>
-            </div>
-            <?php if ($heroImage !== ''): ?>
-                <figure class="event-featured">
-                    <img class="event-featured__img is-landscape" src="<?= h($heroImage) ?>" alt="" decoding="async" fetchpriority="high">
-                </figure>
-            <?php endif; ?>
-        </div>
     </header>
 
-    <div class="home-public__main latinfo-home__main">
-        <section class="latinfo-home__section" id="hirek" aria-labelledby="lh-news-title">
-            <div class="latinfo-home__section-head">
-                <h2 class="latinfo-home__heading" id="lh-news-title">Kiemelt hírek</h2>
-                <a class="latinfo-home__edit" href="<?= h(latinfo_home_edit_url('tab=news')) ?>">Szerkesztés</a>
+    <div class="latinfo-home__stage">
+        <div class="latinfo-home__intro">
+            <div class="latinfo-home__intro-copy">
+                <?php if ($heroKicker !== ''): ?>
+                    <p class="latinfo-home__kicker"><?= h($heroKicker) ?></p>
+                <?php endif; ?>
+                <h1 class="latinfo-home__title"><?= h($heroTitle) ?></h1>
+                <?php if ($heroDek !== ''): ?>
+                    <p class="latinfo-home__intro-lead"><?= h($heroDek) ?></p>
+                <?php endif; ?>
             </div>
-            <?php if ($newsRest === []): ?>
-                <p class="home-public__empty">Még nincs további kiemelt hír. Az adminból bármikor felvehetsz egyet.</p>
-            <?php else: ?>
-                <ul class="home-public__list" role="list">
-                    <?php foreach ($newsRest as $item): ?>
-                        <?php
-                        $itemUrl = trim((string) ($item['url'] ?? ''));
-                        if ($itemUrl === '') {
-                            $itemUrl = $calendarUrl;
-                        }
-                        $itemImage = latinfo_home_media_src((string) ($item['image_url'] ?? ''));
-                        $itemKicker = trim((string) ($item['kicker'] ?? ''));
-                        $itemDek = trim((string) ($item['dek'] ?? ''));
-                        ?>
-                        <li class="home-public__list-item" role="listitem">
-                            <a class="home-public__list-card" href="<?= h($itemUrl) ?>" style="--home-event-accent: var(--li-green)">
-                                <div class="home-public__list-media">
-                                    <?php if ($itemImage !== ''): ?>
-                                        <img class="home-public__list-img" src="<?= h($itemImage) ?>" alt="" loading="lazy" decoding="async">
-                                    <?php else: ?>
-                                        <div class="home-public__list-placeholder" aria-hidden="true">
-                                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 5-6 5 7"/></svg>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="home-public__list-body">
-                                    <?php if ($itemKicker !== ''): ?>
-                                        <span class="home-public__list-date"><?= h($itemKicker) ?></span>
-                                    <?php endif; ?>
-                                    <span class="home-public__list-name"><?= h((string) ($item['title'] ?? '')) ?></span>
-                                    <?php if ($itemDek !== ''): ?>
-                                        <span class="home-public__list-venue"><?= h($itemDek) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </section>
+            <a class="event-cta latinfo-home__intro-cta" href="<?= h($heroUrl) ?>"><?= h($heroCta) ?></a>
+        </div>
 
+        <div class="latinfo-home__board">
+            <div class="latinfo-home__calendar" id="naptar">
+                <?php
+                $heading = latinfo_home_day_label($dayEvents['today_date'], $lang, $H['today']);
+                $sectionId = 'lh-today';
+                $events = $dayEvents['today'];
+                $hasMore = $dayEvents['today_more'];
+                $empty = $H['empty_today'];
+                $moreLabel = $H['more'];
+                $allDayLabel = $H['all_day'];
+                require __DIR__ . '/home_day_column.php';
+
+                $heading = latinfo_home_day_label($dayEvents['tomorrow_date'], $lang, $H['tomorrow']);
+                $sectionId = 'lh-tomorrow';
+                $events = $dayEvents['tomorrow'];
+                $hasMore = $dayEvents['tomorrow_more'];
+                $empty = $H['empty_tomorrow'];
+                require __DIR__ . '/home_day_column.php';
+                ?>
+            </div>
+
+            <div class="latinfo-home__rail">
+                <section class="latinfo-home__flashes-wrap" id="hirek" aria-labelledby="lh-news-title">
+                    <div class="latinfo-home__rail-head">
+                        <h2 class="latinfo-home__rail-title" id="lh-news-title"><?= h($H['quick_news']) ?></h2>
+                        <a class="latinfo-home__edit" href="<?= h(latinfo_home_edit_url('tab=news')) ?>"><?= h($H['edit_news']) ?></a>
+                    </div>
+                    <?php if ($quickNews === []): ?>
+                        <p class="latinfo-home__day-empty"><?= h($H['empty_news']) ?></p>
+                    <?php else: ?>
+                        <ul class="latinfo-home__flashes" role="list" aria-label="<?= h($H['quick_news_aria']) ?>">
+                            <?php foreach ($quickNews as $item): ?>
+                                <?php
+                                $itemUrl = trim((string) ($item['url'] ?? ''));
+                                if ($itemUrl === '') {
+                                    $itemUrl = $calendarUrl;
+                                }
+                                $itemKicker = trim((string) ($item['kicker'] ?? ''));
+                                $itemDek = latinfo_home_clip(trim((string) ($item['dek'] ?? '')), 88);
+                                ?>
+                                <li role="listitem">
+                                    <a class="latinfo-home__flash" href="<?= h($itemUrl) ?>">
+                                        <span class="latinfo-home__flash-body">
+                                            <?php if ($itemKicker !== ''): ?>
+                                                <span class="latinfo-home__flash-kicker"><?= h($itemKicker) ?></span>
+                                            <?php endif; ?>
+                                            <span class="latinfo-home__flash-title"><?= h((string) ($item['title'] ?? '')) ?></span>
+                                            <?php if ($itemDek !== ''): ?>
+                                                <span class="latinfo-home__flash-dek"><?= h($itemDek) ?></span>
+                                            <?php endif; ?>
+                                        </span>
+                                        <span class="latinfo-home__flash-go" aria-hidden="true">→</span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </section>
+
+                <?php if ($spotlightVisible !== []): ?>
+                    <?php require $eventsPartial . '/public_dj_spotlight.php'; ?>
+                    <p class="latinfo-home__rail-foot">
+                        <a class="latinfo-home__edit" href="<?= h($djsUrl) ?>"><?= h($H['djs_all']) ?></a>
+                    </p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="home-public__main latinfo-home__main">
         <section class="latinfo-home__section" id="gyujtok" aria-labelledby="lh-collectors-title">
             <div class="latinfo-home__section-head">
-                <h2 class="latinfo-home__heading" id="lh-collectors-title">Gyűjtők</h2>
-                <a class="latinfo-home__edit" href="<?= h(latinfo_home_edit_url('tab=collectors')) ?>">Szerkesztés</a>
+                <h2 class="latinfo-home__heading" id="lh-collectors-title"><?= h($H['collectors']) ?></h2>
+                <a class="latinfo-home__edit" href="<?= h(latinfo_home_edit_url('tab=collectors')) ?>"><?= h($H['edit_collectors']) ?></a>
             </div>
             <?php if ($collectors === []): ?>
-                <p class="home-public__empty">Még nincs gyűjtő. Vedd fel a naptárt, DJ-ket, iskolákat – amit a szcéna keres.</p>
+                <p class="home-public__empty"><?= h($H['collectors_empty']) ?></p>
             <?php else: ?>
                 <ul class="latinfo-home__collectors" role="list">
                     <?php foreach ($collectors as $collector): ?>
@@ -154,50 +182,6 @@ $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
             <?php endif; ?>
         </section>
 
-        <section class="latinfo-home__section" id="esemenyek" aria-labelledby="lh-events-title">
-            <div class="latinfo-home__section-head">
-                <h2 class="latinfo-home__heading" id="lh-events-title">Mi jön a héten</h2>
-                <a class="latinfo-home__edit" href="<?= h($calendarUrl) ?>">Teljes naptár</a>
-            </div>
-            <?php if ($upcoming === []): ?>
-                <p class="home-public__empty">Most nincs közelgő, közzétett esemény a naptárban.</p>
-            <?php else: ?>
-                <ul class="home-public__list" role="list">
-                    <?php foreach ($upcoming as $ev): ?>
-                        <?php
-                        $evUrl = latinfo_home_event_url($ev);
-                        $featRaw = trim(html_entity_decode(trim((string) ($ev['event_featured_image_url'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-                        $featSrc = $featRaw !== '' ? latinfo_home_media_src($featRaw) : '';
-                        $when = latinfo_home_format_event_when($ev);
-                        $place = latinfo_home_event_place($ev);
-                        ?>
-                        <li class="home-public__list-item" role="listitem">
-                            <a class="home-public__list-card" href="<?= h($evUrl) ?>" style="--home-event-accent: var(--li-green)">
-                                <div class="home-public__list-media">
-                                    <?php if ($featSrc !== ''): ?>
-                                        <img class="home-public__list-img" src="<?= h($featSrc) ?>" alt="" loading="lazy" decoding="async">
-                                    <?php else: ?>
-                                        <div class="home-public__list-placeholder" aria-hidden="true">
-                                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 5-6 5 7"/></svg>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="home-public__list-body">
-                                    <?php if ($when !== ''): ?>
-                                        <span class="home-public__list-date"><?= h($when) ?></span>
-                                    <?php endif; ?>
-                                    <span class="home-public__list-name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
-                                    <?php if ($place !== ''): ?>
-                                        <span class="home-public__list-venue"><?= h($place) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </section>
-
         <?php if ($settings['newsletter_title'] !== '' || $settings['newsletter_lead'] !== ''): ?>
             <section class="latinfo-home__cta" aria-labelledby="lh-cta-title">
                 <div>
@@ -216,5 +200,6 @@ $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
     <?php require $eventsPartial . '/public_shell_footer.php'; ?>
 </article>
 </div>
+<?php require $eventsPartial . '/public_dj_spotlight_script.php'; ?>
 </body>
 </html>

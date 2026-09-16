@@ -169,7 +169,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <p class="text-muted" style="margin-top:0">
         Ez a leendő nyilvános kezdőoldal. Jelenleg csak belépett adminok látják.
-        A kiemelt hírek és a gyűjtők itt szerkeszthetők; a „Mi jön a héten” sáv a közzétett eseményekből jön.
+        Az első képernyőn 3 gyorshír, a mai és holnapi események, valamint a DJ ajánló jelenik meg. A hero szövegek a felső sávba kerülnek; a naptár a közzétett eseményekből jön.
     </p>
 
     <?php if (!$schemaOk): ?>
@@ -186,7 +186,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <?= csrf_input('latinfo_home') ?>
                 <input type="hidden" name="action" value="save_settings">
                 <input type="hidden" name="tab" value="hero">
-                <h3>Hero (ha nincs kiemelt hír, ez jelenik meg)</h3>
+                <h3>Felső sáv (cím, lead, naptár gomb)</h3>
                 <div class="form-row form-row-2">
                     <div class="form-group">
                         <label for="hero_kicker">Kicker</label>
@@ -232,6 +232,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <button type="submit" class="btn btn-primary">Mentés</button>
             </form>
         <?php elseif ($tab === 'news'): ?>
+            <p class="text-muted" style="margin-top:0">A kezdőoldal tetején körgetés nélkül 3 gyorshír jelenik meg. A pipa a sorrend elejére teszi.</p>
             <div class="events-list-actions" style="margin-bottom:1rem">
                 <a href="<?= h(latinfo_home_edit_url('tab=news&new=1')) ?>" class="btn btn-primary btn-sm">+ Új kiemelt hír</a>
             </div>
@@ -281,14 +282,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <div class="form-group">
                         <label for="news_image">Kép URL</label>
                         <input type="text" id="news_image" name="image_url" maxlength="500" value="<?= h((string) $n['image_url']) ?>" placeholder="https://… vagy /útvonal">
-                        <p class="help">Opcionális. Üresen színátmenetes kártya jelenik meg.</p>
+                        <p class="help">Opcionális. A kompakt gyorshíreken jelenleg nem jelenik meg kép.</p>
                     </div>
                     <div class="form-row form-row-2">
                         <div class="form-group">
                             <input type="hidden" name="is_hero" value="0">
                             <label class="lh-admin-check">
                                 <input type="checkbox" name="is_hero" value="1"<?= !empty($n['is_hero']) ? ' checked' : '' ?>>
-                                Fő hero (nagy kiemelés)
+                                Első a 3 gyorshír között
                             </label>
                         </div>
                         <div class="form-group">

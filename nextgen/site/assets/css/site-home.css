@@ -1,13 +1,262 @@
-/* Latinfo.hu kezdőoldal – a nyilvános event_public.css hangjára épít */
+/* Latinfo.hu kezdőoldal – naptár-központú, első képernyős fold */
 
-body.event-public-page--latinfo-home .event-public__hero-inner {
-    padding-top: 0.35rem;
+body.event-public-page--latinfo-home .event-public.latinfo-home {
+    padding-bottom: 0;
 }
 
-.latinfo-home__main {
+.latinfo-home__stage {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.35rem clamp(1.15rem, 4vw, 2.25rem) 1.15rem;
+}
+
+.latinfo-home__intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+}
+
+.latinfo-home__kicker {
+    margin: 0 0 0.2rem;
+    font-family: var(--ev-sans);
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--li-green-muted);
+}
+
+.latinfo-home__title {
+    margin: 0;
+    font-family: var(--ev-font);
+    font-size: clamp(1.45rem, 3vw, 1.9rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--li-green-dark);
+}
+
+.latinfo-home__intro-lead {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin: 0.35rem 0 0;
+    max-width: 40rem;
+    font-family: var(--ev-sans);
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: var(--li-text-muted);
+}
+
+.latinfo-home__intro-cta {
+    width: auto;
+    flex-shrink: 0;
+    padding: 0.55rem 1.05rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.latinfo-home__board {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(17.5rem, 0.95fr);
+    gap: clamp(1rem, 2.4vw, 1.6rem);
+    align-items: start;
+}
+
+.latinfo-home__calendar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.latinfo-home__day,
+.latinfo-home__flashes-wrap,
+.latinfo-home__rail .djs-public__spotlight {
+    min-width: 0;
+    padding: clamp(0.8rem, 1.6vw, 1.05rem);
+    border: 1px solid var(--li-border);
+    border-radius: calc(var(--ev-radius) + 2px);
+    background: linear-gradient(180deg, #ffffff 0%, #f8faf6 100%);
+    box-shadow: var(--li-shadow);
+}
+
+.latinfo-home__day-title,
+.latinfo-home__rail-title,
+.latinfo-home__rail .djs-public__spotlight-title {
+    margin: 0 0 0.7rem;
+    font-family: var(--ev-sans);
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--li-green-muted);
+}
+
+.latinfo-home__events,
+.latinfo-home__flashes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.latinfo-home__event,
+.latinfo-home__flash {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.5rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: var(--ev-radius);
+    background: rgba(255, 255, 255, 0.72);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.latinfo-home__flash {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.latinfo-home__event:hover,
+.latinfo-home__flash:hover {
+    border-color: rgba(109, 143, 99, 0.3);
+    background: #ffffff;
+    text-decoration: none;
+}
+
+.latinfo-home__event:focus-visible,
+.latinfo-home__flash:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
+.latinfo-home__event-time {
+    flex-shrink: 0;
+    min-width: 3.35rem;
+    font-family: var(--ev-sans);
+    font-size: 0.82rem;
+    font-weight: 750;
+    letter-spacing: 0.01em;
+    color: var(--li-green);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.latinfo-home__event-body,
+.latinfo-home__flash-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.latinfo-home__event-name,
+.latinfo-home__flash-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--li-green-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.latinfo-home__event-place,
+.latinfo-home__flash-dek {
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--li-text-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.latinfo-home__flash-kicker {
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--li-green-muted);
+}
+
+.latinfo-home__event-go,
+.latinfo-home__flash-go {
+    font-size: 1rem;
+    color: var(--li-green-muted);
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.latinfo-home__event:hover .latinfo-home__event-go,
+.latinfo-home__flash:hover .latinfo-home__flash-go {
+    color: var(--li-green);
+    transform: translateX(2px);
+}
+
+.latinfo-home__day-empty {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--li-text-muted);
+}
+
+.latinfo-home__day-more {
+    display: inline-block;
+    margin-top: 0.55rem;
+    font-size: 0.82rem;
+    font-weight: 650;
+    color: var(--li-green);
+    text-decoration: none;
+}
+
+.latinfo-home__day-more:hover {
+    color: var(--li-green-dark);
+    text-decoration: underline;
+}
+
+.latinfo-home__rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.latinfo-home__rail-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0 0.55rem;
+}
+
+.latinfo-home__rail-head .latinfo-home__rail-title {
+    margin: 0;
+}
+
+.latinfo-home__rail-foot {
+    margin: -0.35rem 0 0;
+    text-align: right;
+}
+
+.latinfo-home__rail .djs-public__spotlight {
+    height: auto;
+}
+
+body.event-public-page--latinfo-home .home-public__main.latinfo-home__main {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    padding-top: 1.35rem;
+    padding-left: clamp(1.15rem, 4vw, 2.25rem);
+    padding-right: clamp(1.15rem, 4vw, 2.25rem);
+    border-top: 1px solid var(--li-border);
 }
 
 .latinfo-home__lead {
@@ -38,8 +287,8 @@ body.event-public-page--latinfo-home .event-public__hero-inner {
 }
 
 .latinfo-home__edit {
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.82rem;
+    font-weight: 650;
     color: var(--li-green);
     text-decoration: none;
 }
@@ -120,8 +369,70 @@ body.event-public-page--latinfo-home .event-public__hero-inner {
     width: auto;
 }
 
+@media (max-width: 1100px) {
+    .latinfo-home__board {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .latinfo-home__rail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .latinfo-home__rail-foot {
+        grid-column: 2;
+    }
+}
+
+@media (max-width: 760px) {
+    .latinfo-home__calendar,
+    .latinfo-home__rail {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .latinfo-home__intro-cta {
+        width: 100%;
+    }
+
+    .latinfo-home__rail-foot {
+        grid-column: 1;
+    }
+}
+
 @media (max-width: 520px) {
     .latinfo-home__cta .event-cta {
         width: 100%;
+    }
+
+    .latinfo-home__event-name,
+    .latinfo-home__flash-title,
+    .latinfo-home__event-place,
+    .latinfo-home__flash-dek {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+}
+
+@media (min-height: 820px) and (min-width: 1101px) {
+    .latinfo-home__intro-lead {
+        -webkit-line-clamp: 2;
+    }
+}
+
+@media (max-height: 820px) and (min-width: 1101px) {
+    .latinfo-home__intro-lead {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .latinfo-home__event,
+    .latinfo-home__flash,
+    .latinfo-home__collector {
+        transition: none;
     }
 }

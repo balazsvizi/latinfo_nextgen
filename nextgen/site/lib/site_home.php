@@ -707,3 +707,265 @@ function latinfo_home_tone_from_id(int $id): string
 
     return $tones[$id % count($tones)] ?? 'green';
 }
+
+/**
+ * @return array<string, string>
+ */
+function latinfo_home_strings(string $lang): array
+{
+    $hu = [
+        'page_title' => 'kezdőoldal (előnézet)',
+        'quick_news' => 'Gyorshírek',
+        'quick_news_aria' => 'Három kiemelt gyorshír',
+        'today' => 'Ma',
+        'tomorrow' => 'Holnap',
+        'calendar' => 'Teljes naptár',
+        'empty_today' => 'Ma nincs közzétett esemény.',
+        'empty_tomorrow' => 'Holnapra még nincs esemény a naptárban.',
+        'empty_news' => 'Most nincs gyorshír.',
+        'more' => 'Továbbiak a naptárban',
+        'collectors' => 'Gyűjtők',
+        'collectors_empty' => 'Még nincs gyűjtő. Vedd fel a naptárt, DJ-ket, iskolákat – amit a szcéna keres.',
+        'all_day' => 'Egész nap',
+        'edit_news' => 'Szerkesztés',
+        'edit_collectors' => 'Szerkesztés',
+        'djs_all' => 'Összes DJ',
+    ];
+    $en = [
+        'page_title' => 'home (preview)',
+        'quick_news' => 'Headlines',
+        'quick_news_aria' => 'Three featured headlines',
+        'today' => 'Today',
+        'tomorrow' => 'Tomorrow',
+        'calendar' => 'Full calendar',
+        'empty_today' => 'No published events today.',
+        'empty_tomorrow' => 'Nothing on the calendar for tomorrow yet.',
+        'empty_news' => 'No headlines right now.',
+        'more' => 'More in the calendar',
+        'collectors' => 'Collections',
+        'collectors_empty' => 'No collections yet.',
+        'all_day' => 'All day',
+        'edit_news' => 'Edit',
+        'edit_collectors' => 'Edit',
+        'djs_all' => 'All DJs',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+/**
+ * @param list<array<string, mixed>> $news
+ * @return list<array<string, mixed>>
+ */
+function latinfo_home_quick_news(array $news, int $limit = 3): array
+{
+    $limit = max(1, min(6, $limit));
+    $hero = [];
+    $rest = [];
+    foreach ($news as $row) {
+        if ($hero === [] && !empty($row['is_hero'])) {
+            $hero[] = $row;
+        } else {
+            $rest[] = $row;
+        }
+    }
+
+    return array_slice(array_merge($hero, $rest), 0, $limit);
+}
+
+function latinfo_home_clip(string $text, int $max = 110): string
+{
+    $text = trim(preg_replace('/\s+/u', ' ', $text) ?? '');
+    if ($text === '' || mb_strlen($text, 'UTF-8') <= $max) {
+        return $text;
+    }
+
+    return rtrim(mb_substr($text, 0, max(1, $max - 1), 'UTF-8')) . '…';
+}
+
+function latinfo_home_calendar_anchor(): DateTimeImmutable
+{
+    if (!function_exists('events_admin_calendar_effective_today')) {
+        require_once dirname(__DIR__, 2) . '/events/lib/admin_event_calendar.php';
+    }
+
+    return events_admin_calendar_effective_today();
+}
+
+/**
+ * Éjszakai ablak: 04:00-tól másnap 04:00-ig, mint a naptár „ma” napja.
+ *
+ * @return array{
+ *     today: DateTimeImmutable,
+ *     tomorrow: DateTimeImmutable,
+ *     today_from: DateTimeImmutable,
+ *     tomorrow_from: DateTimeImmutable,
+ *     after_from: DateTimeImmutable
+ * }
+ */
+function latinfo_home_day_windows(): array
+{
+    $today = latinfo_home_calendar_anchor();
+    $todayFrom = $today->setTime(4, 0, 0);
+
+    return [
+        'today' => $today,
+        'tomorrow' => $today->modify('+1 day'),
+        'today_from' => $todayFrom,
+        'tomorrow_from' => $todayFrom->modify('+1 day'),
+        'after_from' => $todayFrom->modify('+2 days'),
+    ];
+}
+
+function latinfo_home_parse_event_dt(string $raw): ?DateTimeImmutable
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return null;
+    }
+    try {
+        return new DateTimeImmutable($raw, new DateTimeZone('Europe/Budapest'));
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+function latinfo_home_event_overlaps_window(array $ev, DateTimeImmutable $from, DateTimeImmutable $until): bool
+{
+    $start = latinfo_home_parse_event_dt((string) ($ev['event_start'] ?? ''));
+    if ($start === null) {
+        return false;
+    }
+    $end = latinfo_home_parse_event_dt((string) ($ev['event_end'] ?? ''));
+    if ($end === null || $end < $start) {
+        $end = $start;
+    }
+
+    return $start < $until && $end >= $from;
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function latinfo_home_events_in_range(PDO $db, DateTimeImmutable $from, DateTimeImmutable $until, int $limit = 40): array
+{
+    $limit = max(1, min(60, $limit));
+    try {
+        $status = function_exists('events_public_post_status') ? events_public_post_status() : 'publish';
+        $st = $db->prepare('
+            SELECT e.`id`, e.`event_slug`, e.`event_name`,
+                   e.`event_start`, e.`event_end`, e.`event_allday`,
+                   v.`name` AS `venue_name`, v.`city` AS `venue_city`
+            FROM `events_calendar_events` e
+            LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
+            WHERE e.`event_status` = ?
+              AND e.`event_start` IS NOT NULL
+              AND e.`event_start` < ?
+              AND COALESCE(e.`event_end`, e.`event_start`) >= ?
+            ORDER BY e.`event_start` ASC
+            LIMIT ' . $limit . '
+        ');
+        $st->execute([
+            $status,
+            $until->format('Y-m-d H:i:s'),
+            $from->format('Y-m-d H:i:s'),
+        ]);
+
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        error_log('latinfo_home_events_in_range: ' . $e->getMessage());
+
+        return [];
+    }
+}
+
+/**
+ * @return array{
+ *     today: list<array<string, mixed>>,
+ *     tomorrow: list<array<string, mixed>>,
+ *     today_more: bool,
+ *     tomorrow_more: bool,
+ *     today_date: DateTimeImmutable,
+ *     tomorrow_date: DateTimeImmutable
+ * }
+ */
+function latinfo_home_today_tomorrow_events(PDO $db, int $perDay = 5): array
+{
+    $perDay = max(1, min(12, $perDay));
+    $windows = latinfo_home_day_windows();
+    $rows = latinfo_home_events_in_range($db, $windows['today_from'], $windows['after_from'], $perDay * 8);
+    $today = [];
+    $tomorrow = [];
+    foreach ($rows as $ev) {
+        if (latinfo_home_event_overlaps_window($ev, $windows['today_from'], $windows['tomorrow_from'])) {
+            $today[] = $ev;
+        }
+        if (latinfo_home_event_overlaps_window($ev, $windows['tomorrow_from'], $windows['after_from'])) {
+            $tomorrow[] = $ev;
+        }
+    }
+
+    return [
+        'today' => array_slice($today, 0, $perDay),
+        'tomorrow' => array_slice($tomorrow, 0, $perDay),
+        'today_more' => count($today) > $perDay,
+        'tomorrow_more' => count($tomorrow) > $perDay,
+        'today_date' => $windows['today'],
+        'tomorrow_date' => $windows['tomorrow'],
+    ];
+}
+
+function latinfo_home_format_event_time(array $ev, string $allDayLabel = 'Egész nap'): string
+{
+    if (!empty($ev['event_allday'])) {
+        return $allDayLabel;
+    }
+    $start = latinfo_home_parse_event_dt((string) ($ev['event_start'] ?? ''));
+    if ($start === null) {
+        return '';
+    }
+
+    return $start->format('H:i');
+}
+
+function latinfo_home_day_label(DateTimeImmutable $day, string $lang, string $word): string
+{
+    $monthsHu = [1 => 'jan.', 2 => 'febr.', 3 => 'márc.', 4 => 'ápr.', 5 => 'máj.', 6 => 'jún.', 7 => 'júl.', 8 => 'aug.', 9 => 'szept.', 10 => 'okt.', 11 => 'nov.', 12 => 'dec.'];
+    $monthsEn = [1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'];
+    $months = $lang === 'en' ? $monthsEn : $monthsHu;
+    $month = $months[(int) $day->format('n')] ?? '';
+    $date = $lang === 'en'
+        ? $month . ' ' . $day->format('j')
+        : $day->format('j') . '. ' . $month;
+
+    return $word . ' · ' . $date;
+}
+
+/**
+ * @return array{cards: list<array<string, mixed>>, strings: array<string, string>, visible_count: int}
+ */
+function latinfo_home_dj_spotlight(PDO $db, string $lang): array
+{
+    if (!function_exists('events_public_dj_catalog')) {
+        require_once dirname(__DIR__, 2) . '/events/lib/event_public_djs.php';
+    }
+    $status = function_exists('events_public_post_status') ? events_public_post_status() : 'publish';
+    $strings = function_exists('events_public_djs_strings') ? events_public_djs_strings($lang) : [];
+    try {
+        $catalog = events_public_dj_catalog($db, $status, null);
+        $cards = events_public_dj_spotlight_cards(
+            events_public_dj_spotlight_pool($catalog, 24),
+            $lang,
+            $strings
+        );
+    } catch (Throwable $e) {
+        error_log('latinfo_home_dj_spotlight: ' . $e->getMessage());
+        $cards = [];
+    }
+
+    return [
+        'cards' => $cards,
+        'strings' => $strings,
+        'visible_count' => 3,
+    ];
+}
