@@ -1,10 +1,61 @@
-/* Latinfo.hu kezdőoldal – naptár-központú, szerkesztői fold */
+/* ============================================================================
+   Latinfo.hu kezdőoldal – modern felület, 3 változatban.
+   Az elrendezés változatlan: hero → [gyorshírek + DJ ajánló] | [Ma / Holnap] → lábléc
+   A változatot a body osztály dönti el: .latinfo-home--skin-1 / -2 / -3
+     1 – Üveg:    fagyott, lebegő kártyák, lágy fények
+     2 – Ritmus:  idővonalas naptár, energikus akcentek
+     3 – Magazin: szerkesztői tipográfia, vonalas ritmus
+   ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   1. Tervezői tokenek (a változatok ezeket írják át)
+   -------------------------------------------------------------------------- */
 body.event-public-page--latinfo-home {
+    --lh-warm: #d4a054;
+    --lh-warm-soft: #f6ecdb;
+
+    --lh-shell-max: 78rem;
+    --lh-board-gap: clamp(1.1rem, 2.4vw, 1.9rem);
+
+    --lh-card-pad: clamp(1rem, 2vw, 1.35rem);
+    --lh-card-radius: 1.4rem;
+    --lh-card-border: rgba(198, 216, 191, 0.72);
+    --lh-card-bg: rgba(255, 255, 255, 0.82);
+    --lh-card-shadow:
+        0 24px 48px -30px rgba(45, 58, 40, 0.42),
+        0 2px 6px -3px rgba(45, 58, 40, 0.1);
+    --lh-card-blur: none;
+
+    --lh-head-gap: 0.9rem;
+    --lh-head-tick: linear-gradient(180deg, var(--li-green), var(--lh-warm));
+    --lh-title-size: 0.72rem;
+    --lh-title-weight: 800;
+    --lh-title-track: 0.14em;
+    --lh-title-case: uppercase;
+    --lh-title-family: var(--ev-sans);
+    --lh-title-color: var(--li-green-muted);
+
+    --lh-row-radius: 0.95rem;
+    --lh-row-gap: 0.4rem;
+    --lh-row-bg: rgba(247, 250, 245, 0.82);
+    --lh-row-bg-hover: #ffffff;
+    --lh-row-border: transparent;
+    --lh-row-border-hover: rgba(109, 143, 99, 0.28);
+    --lh-row-shadow-hover: 0 14px 26px -18px rgba(45, 58, 40, 0.5);
+    --lh-row-lift: -2px;
+
+    --lh-name-family: var(--ev-sans);
+    --lh-name-size: 0.99rem;
+    --lh-name-weight: 700;
+
+    --lh-ease: cubic-bezier(0.22, 0.68, 0.36, 1);
+
     background:
-        radial-gradient(1200px 520px at 8% -10%, rgba(109, 143, 99, 0.16), transparent 58%),
-        radial-gradient(900px 420px at 92% 8%, rgba(212, 160, 84, 0.1), transparent 52%),
+        radial-gradient(1100px 520px at 6% -12%, rgba(109, 143, 99, 0.2), transparent 58%),
+        radial-gradient(880px 460px at 94% 4%, rgba(212, 160, 84, 0.14), transparent 55%),
+        radial-gradient(700px 520px at 50% 108%, rgba(126, 184, 201, 0.12), transparent 60%),
         var(--li-bg);
+    background-attachment: fixed;
 }
 
 body.event-public-page--latinfo-home .event-public.latinfo-home {
@@ -16,22 +67,27 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     padding-bottom: 0.35rem;
 }
 
+/* --------------------------------------------------------------------------
+   2. Elrendezés: színpad és tábla
+   -------------------------------------------------------------------------- */
 .latinfo-home__stage {
-    padding: 0.15rem clamp(1.15rem, 4vw, 2.4rem) 1.5rem;
+    max-width: var(--lh-shell-max);
+    margin: 0 auto;
+    padding: 0.25rem clamp(0.35rem, 2vw, 1.25rem) 1.75rem;
 }
 
 .latinfo-home__board {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: clamp(1.1rem, 2.6vw, 1.85rem);
+    gap: var(--lh-board-gap);
 }
 
 .latinfo-home__rail,
 .latinfo-home__calendar {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--lh-board-gap);
     min-width: min(100%, 18rem);
 }
 
@@ -40,68 +96,135 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
 }
 
 .latinfo-home__calendar {
-    flex: 1.25 1 26rem;
+    flex: 1.3 1 27rem;
 }
 
+/* --------------------------------------------------------------------------
+   3. Kártyahéj (nap, gyorshírek, DJ ajánló)
+   -------------------------------------------------------------------------- */
 .latinfo-home__day,
 .latinfo-home__flashes-wrap,
 .latinfo-home__rail .djs-public__spotlight {
+    position: relative;
     min-width: 0;
-    padding: 1.05rem 1rem 1.1rem;
-    border: 1px solid rgba(212, 224, 207, 0.7);
-    border-radius: 1.35rem;
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 18px 40px rgba(45, 58, 40, 0.06);
-    backdrop-filter: blur(10px);
+    padding: var(--lh-card-pad);
+    border: 1px solid var(--lh-card-border);
+    border-radius: var(--lh-card-radius);
+    background: var(--lh-card-bg);
+    box-shadow: var(--lh-card-shadow);
+    backdrop-filter: var(--lh-card-blur);
+    -webkit-backdrop-filter: var(--lh-card-blur);
+}
+
+.latinfo-home__rail .djs-public__spotlight {
+    height: auto;
+    gap: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. Kártyafejléc
+   -------------------------------------------------------------------------- */
+.latinfo-home__day-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: var(--lh-head-gap);
+}
+
+/* Kétszínű jelölő a blokkok címe előtt */
+.latinfo-home__day-head::before,
+.latinfo-home__rail .djs-public__spotlight-title::before {
+    content: '';
+    flex: 0 0 auto;
+    align-self: stretch;
+    width: 3px;
+    min-height: 1.05em;
+    border-radius: 999px;
+    background: var(--lh-head-tick);
 }
 
 .latinfo-home__day-title,
 .latinfo-home__rail .djs-public__spotlight-title {
-    margin: 0 0 0.85rem;
-    font-family: var(--ev-sans);
-    font-size: 0.68rem;
-    font-weight: 780;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--li-green-muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.45rem;
+    min-width: 0;
+    margin: 0;
+    font-family: var(--lh-title-family);
+    font-size: var(--lh-title-size);
+    font-weight: var(--lh-title-weight);
+    letter-spacing: var(--lh-title-track);
+    text-transform: var(--lh-title-case);
+    color: var(--lh-title-color);
 }
 
+/* A DJ ajánló saját címe a kártyafejléc ritmusát követi */
+.latinfo-home__rail .djs-public__spotlight-title {
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: var(--lh-head-gap);
+}
+
+.latinfo-home__day-date {
+    font-size: 0.94em;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: none;
+    color: var(--li-text-soft);
+}
+
+.latinfo-home__day-count {
+    flex: 0 0 auto;
+    margin-left: auto;
+    min-width: 1.5rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    background: var(--li-green-soft);
+    color: var(--li-green-dark);
+    font-size: 0.7rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   5. Eseménysorok
+   -------------------------------------------------------------------------- */
 .latinfo-home__events,
 .latinfo-home__flashes {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.45rem;
+    gap: var(--lh-row-gap);
 }
 
 .latinfo-home__event {
     position: relative;
-    display: block;
-    padding: 0.72rem 0.85rem 0.72rem 1rem;
-    overflow: hidden;
-    border: 1px solid transparent;
-    border-radius: 0.9rem;
-    background: rgba(248, 250, 246, 0.9);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.2rem 0.75rem;
+    padding: 0.7rem 0.75rem 0.72rem 1.05rem;
+    border: 1px solid var(--lh-row-border);
+    border-radius: var(--lh-row-radius);
+    background: var(--lh-row-bg);
     color: inherit;
     text-decoration: none;
-    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
-}
-
-.latinfo-home__event-stripe {
-    position: absolute;
-    top: 0.55rem;
-    bottom: 0.55rem;
-    left: 0;
-    width: 3px;
-    border-radius: 999px;
-    background: var(--home-event-accent, var(--li-green));
+    transition:
+        background 0.2s var(--lh-ease),
+        border-color 0.2s var(--lh-ease),
+        box-shadow 0.2s var(--lh-ease),
+        transform 0.2s var(--lh-ease);
 }
 
 .latinfo-home__event:hover {
-    background: #ffffff;
-    border-color: rgba(109, 143, 99, 0.18);
-    transform: translateY(-1px);
+    background: var(--lh-row-bg-hover);
+    border-color: var(--lh-row-border-hover);
+    box-shadow: var(--lh-row-shadow-hover);
+    transform: translateY(var(--lh-row-lift));
     text-decoration: none;
 }
 
@@ -111,18 +234,56 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     outline-offset: 2px;
 }
 
+.latinfo-home__event-stripe {
+    position: absolute;
+    top: 0.6rem;
+    bottom: 0.6rem;
+    left: 0.42rem;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--home-event-accent, var(--li-green));
+    transition: box-shadow 0.2s var(--lh-ease), transform 0.2s var(--lh-ease);
+}
+
+.latinfo-home__event:hover .latinfo-home__event-stripe {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--home-event-accent, #6d8f63) 22%, transparent);
+}
+
+.latinfo-home__event-time {
+    grid-column: 1;
+    min-width: 2.9rem;
+    padding-top: 0.06rem;
+    font-size: 0.82rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    color: var(--li-green-dark);
+    white-space: nowrap;
+}
+
+.latinfo-home__event-time--allday {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: normal;
+    color: var(--li-green-muted);
+}
+
 .latinfo-home__event-body {
+    grid-column: 2;
     display: flex;
     flex-direction: column;
-    gap: 0.18rem;
+    gap: 0.2rem;
     min-width: 0;
 }
 
 .latinfo-home__event-name {
-    font-family: var(--ev-sans);
-    font-size: 0.98rem;
-    font-weight: 700;
-    line-height: 1.28;
+    font-family: var(--lh-name-family);
+    font-size: var(--lh-name-size);
+    font-weight: var(--lh-name-weight);
+    line-height: 1.3;
     color: var(--li-green-dark);
 }
 
@@ -132,6 +293,32 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     color: var(--li-text-soft);
 }
 
+.latinfo-home__event-go {
+    grid-column: 3;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    flex: 0 0 auto;
+    color: var(--li-green-muted);
+    opacity: 0;
+    transform: translateX(-5px);
+    transition: opacity 0.2s var(--lh-ease), transform 0.2s var(--lh-ease), color 0.2s var(--lh-ease);
+}
+
+.latinfo-home__event-go svg {
+    display: block;
+}
+
+.latinfo-home__event:hover .latinfo-home__event-go,
+.latinfo-home__event:focus-visible .latinfo-home__event-go {
+    color: var(--li-green);
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* --------------------------------------------------------------------------
+   6. Eseményváltozás jelzések
+   -------------------------------------------------------------------------- */
 .latinfo-home__event--change-cancelled {
     background: #fff5f5;
 }
@@ -154,12 +341,13 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
 
 .latinfo-home__event-change {
     align-self: flex-start;
-    padding: 0.1rem 0.4rem;
-    border-radius: 0.25rem;
+    padding: 0.1rem 0.42rem;
+    border-radius: 999px;
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.08em;
-    line-height: 1.2;
+    line-height: 1.35;
+    text-transform: uppercase;
     color: inherit;
     background: rgba(0, 0, 0, 0.08);
 }
@@ -189,114 +377,178 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     color: #92400e;
 }
 
+/* --------------------------------------------------------------------------
+   7. Üres állapot és „továbbiak” linkek
+   -------------------------------------------------------------------------- */
 .latinfo-home__day-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
     margin: 0;
-    font-size: 0.92rem;
+    padding: 0.85rem 0.9rem;
+    border: 1px dashed rgba(160, 186, 152, 0.6);
+    border-radius: var(--lh-row-radius);
+    font-size: 0.9rem;
     line-height: 1.5;
     color: var(--li-text-muted);
+    background: rgba(255, 255, 255, 0.35);
 }
 
-.latinfo-home__day-more {
-    display: inline-block;
-    margin-top: 0.7rem;
+.latinfo-home__day-more,
+.latinfo-home__edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     font-size: 0.8rem;
-    font-weight: 650;
+    font-weight: 700;
     letter-spacing: 0.02em;
     color: var(--li-green);
     text-decoration: none;
 }
 
-.latinfo-home__day-more:hover {
-    color: var(--li-green-dark);
-    text-decoration: underline;
+.latinfo-home__day-more {
+    margin-top: 0.8rem;
+    padding: 0.34rem 0.7rem 0.34rem 0.75rem;
+    border-radius: 999px;
+    background: var(--li-green-soft);
+    transition: background 0.2s var(--lh-ease), color 0.2s var(--lh-ease);
 }
 
+.latinfo-home__day-more:hover {
+    color: #ffffff;
+    background: var(--li-green);
+    text-decoration: none;
+}
+
+.latinfo-home__day-more-arrow {
+    transition: transform 0.2s var(--lh-ease);
+}
+
+.latinfo-home__day-more:hover .latinfo-home__day-more-arrow,
+.latinfo-home__edit:hover .latinfo-home__day-more-arrow {
+    transform: translateX(3px);
+}
+
+.latinfo-home__edit:hover {
+    color: var(--li-green-dark);
+    text-decoration: none;
+}
+
+.latinfo-home__day-more:focus-visible,
+.latinfo-home__edit:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+    border-radius: 999px;
+}
+
+.latinfo-home__rail-foot {
+    margin: 0;
+    text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   8. Gyorshírek
+   -------------------------------------------------------------------------- */
 .latinfo-home__flashes {
-    gap: 0.85rem;
+    gap: 0.3rem;
 }
 
 .latinfo-home__flash {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.28rem;
-    padding: 0.15rem 0.1rem 0.85rem;
-    border-bottom: 1px solid rgba(212, 224, 207, 0.85);
+    gap: 0.3rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid transparent;
+    border-radius: var(--lh-row-radius);
     color: inherit;
     text-decoration: none;
-}
-
-.latinfo-home__flashes li:last-child .latinfo-home__flash {
-    padding-bottom: 0.15rem;
-    border-bottom: 0;
+    transition:
+        background 0.2s var(--lh-ease),
+        border-color 0.2s var(--lh-ease),
+        transform 0.2s var(--lh-ease);
 }
 
 .latinfo-home__flash:hover {
+    background: var(--lh-row-bg-hover);
+    border-color: var(--lh-row-border-hover);
     text-decoration: none;
+}
+
+.latinfo-home__flash-kicker {
+    align-self: flex-start;
+    padding: 0.14rem 0.5rem;
+    border-radius: 999px;
+    background: var(--lh-warm-soft);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: #8a6224;
+}
+
+.latinfo-home__flash-title {
+    font-family: var(--ev-sans);
+    font-size: 1.02rem;
+    font-weight: 750;
+    line-height: 1.3;
+    color: var(--li-green-dark);
+    transition: color 0.2s var(--lh-ease);
 }
 
 .latinfo-home__flash:hover .latinfo-home__flash-title {
     color: var(--li-green);
 }
 
-.latinfo-home__flash-kicker {
-    font-size: 0.66rem;
-    font-weight: 780;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--li-green-muted);
-}
-
-.latinfo-home__flash-title {
-    font-family: var(--ev-font);
-    font-size: 1.08rem;
-    font-weight: 700;
-    line-height: 1.28;
-    color: var(--li-green-dark);
-}
-
 .latinfo-home__flash-dek {
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     line-height: 1.45;
     color: var(--li-text-muted);
 }
 
-.latinfo-home__rail-foot {
-    margin: -0.35rem 0 0;
-    text-align: right;
+/* --------------------------------------------------------------------------
+   9. DJ ajánló kártyák a bal sávban
+   -------------------------------------------------------------------------- */
+.latinfo-home__rail .djs-public__spotlight-list {
+    gap: var(--lh-row-gap);
 }
 
-.latinfo-home__rail .djs-public__spotlight {
-    height: auto;
-    padding: 1.05rem 1rem 1.1rem;
+.latinfo-home__rail .djs-public__spotlight-card {
+    padding: 0.6rem 0.7rem;
+    border-radius: var(--lh-row-radius);
+    background: var(--lh-row-bg);
+    transition:
+        background 0.2s var(--lh-ease),
+        border-color 0.2s var(--lh-ease),
+        box-shadow 0.2s var(--lh-ease),
+        transform 0.2s var(--lh-ease);
 }
 
-.latinfo-home__edit {
-    font-size: 0.78rem;
-    font-weight: 650;
-    letter-spacing: 0.04em;
-    color: var(--li-green);
-    text-decoration: none;
+.latinfo-home__rail .djs-public__spotlight-card:hover {
+    background: var(--lh-row-bg-hover);
+    border-color: var(--lh-row-border-hover);
+    box-shadow: var(--lh-row-shadow-hover);
+    transform: translateY(var(--lh-row-lift));
 }
 
-.latinfo-home__edit:hover {
-    color: var(--li-green-dark);
-    text-decoration: underline;
+.latinfo-home__rail .djs-public__spotlight-avatar {
+    width: 2.85rem;
+    height: 2.85rem;
 }
 
-.latinfo-home__edit:focus-visible {
-    outline: 2px solid var(--li-green);
-    outline-offset: 2px;
-    border-radius: 4px;
-}
-
+/* --------------------------------------------------------------------------
+   10. Lábléc
+   -------------------------------------------------------------------------- */
 body.event-public-page--latinfo-home .event-site-line {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 0.45rem 0.7rem;
-    margin: 0 clamp(1.15rem, 4vw, 2.4rem) 1.25rem;
-    padding-top: 1.1rem;
+    max-width: var(--lh-shell-max);
+    margin: 0 auto;
+    /* Alsó térköz: a lebegő változatváltó ne takarja a láblécet */
+    padding: 1.1rem clamp(0.35rem, 2vw, 1.25rem) 4rem;
 }
 
 body.event-public-page--latinfo-home .event-site-line .app-version {
@@ -309,16 +561,567 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
     opacity: 0.8;
 }
 
-@media (max-width: 760px) {
+/* --------------------------------------------------------------------------
+   11. Változatváltó (lebegő, alul középen – az admin eszköztár bal fent van)
+   -------------------------------------------------------------------------- */
+.latinfo-skins {
+    position: fixed;
+    z-index: 99988;
+    bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid rgba(198, 216, 191, 0.9);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 14px 34px -14px rgba(45, 58, 40, 0.45);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+.latinfo-skins__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.36rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--li-text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.18s ease, color 0.18s ease;
+}
+
+.latinfo-skins__btn:hover {
+    color: var(--li-green-dark);
+    background: var(--li-green-soft);
+    text-decoration: none;
+}
+
+.latinfo-skins__btn.is-active {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--li-green), #56734d);
+    box-shadow: 0 6px 14px -8px rgba(61, 79, 56, 0.9);
+}
+
+.latinfo-skins__btn:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 2px;
+}
+
+.latinfo-skins__num {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.55;
+}
+
+.latinfo-skins__btn.is-active .latinfo-skins__num {
+    opacity: 0.85;
+}
+
+/* ============================================================================
+   12. VÁLTOZAT 1 – „Üveg”: fagyott, lebegő felületek
+   ========================================================================== */
+body.latinfo-home--skin-1 {
+    --lh-card-radius: 1.65rem;
+    --lh-card-border: rgba(255, 255, 255, 0.78);
+    --lh-card-bg:
+        linear-gradient(158deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.34) 44%, rgba(255, 255, 255, 0.16)),
+        rgba(255, 255, 255, 0.3);
+    --lh-card-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 30px 60px -34px rgba(45, 58, 40, 0.5),
+        0 3px 10px -6px rgba(45, 58, 40, 0.14);
+    --lh-card-blur: blur(20px) saturate(155%);
+
+    --lh-row-radius: 1.1rem;
+    --lh-row-bg: rgba(255, 255, 255, 0.42);
+    --lh-row-bg-hover: rgba(255, 255, 255, 0.86);
+    --lh-row-border: rgba(255, 255, 255, 0.6);
+    --lh-row-border-hover: rgba(255, 255, 255, 0.95);
+    --lh-row-shadow-hover:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 18px 30px -20px rgba(45, 58, 40, 0.45);
+}
+
+body.latinfo-home--skin-1 .latinfo-home__event,
+body.latinfo-home--skin-1 .latinfo-home__flash,
+body.latinfo-home--skin-1 .latinfo-home__rail .djs-public__spotlight-card {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+body.latinfo-home--skin-1 .latinfo-home__event-stripe {
+    box-shadow: 0 0 10px -1px var(--home-event-accent, var(--li-green));
+}
+
+body.latinfo-home--skin-1 .latinfo-home__event:hover .latinfo-home__event-stripe {
+    transform: scaleX(1.6);
+}
+
+body.latinfo-home--skin-1 .latinfo-home__day-count {
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+body.latinfo-home--skin-1 .latinfo-home__flash-kicker {
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 0 0 1px rgba(212, 160, 84, 0.35);
+}
+
+body.latinfo-home--skin-1 .latinfo-home__day-empty {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.32);
+}
+
+/* ============================================================================
+   13. VÁLTOZAT 2 – „Ritmus”: idővonalas naptár, lendületes akcentek
+   ========================================================================== */
+body.latinfo-home--skin-2 {
+    --lh-card-radius: 1.1rem;
+    --lh-card-border: var(--li-border);
+    --lh-card-bg: #ffffff;
+    --lh-card-shadow: 0 18px 36px -28px rgba(45, 58, 40, 0.55);
+    --lh-card-pad: clamp(1.05rem, 2vw, 1.4rem);
+
+    --lh-title-size: 1.18rem;
+    --lh-title-track: -0.01em;
+    --lh-title-case: none;
+    --lh-title-color: var(--li-green-dark);
+    --lh-head-gap: 1.1rem;
+
+    --lh-row-radius: 0.8rem;
+    --lh-row-gap: 0.12rem;
+    --lh-row-bg: transparent;
+    --lh-row-bg-hover: var(--li-green-soft);
+    --lh-row-border-hover: transparent;
+    --lh-row-shadow-hover: none;
+    --lh-row-lift: 0;
+}
+
+/* Színes felső él minden kártyán */
+body.latinfo-home--skin-2 .latinfo-home__day::after,
+body.latinfo-home--skin-2 .latinfo-home__flashes-wrap::after,
+body.latinfo-home--skin-2 .latinfo-home__rail .djs-public__spotlight::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 1.2rem;
+    right: 1.2rem;
+    height: 3px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(90deg, var(--li-green), var(--lh-warm));
+}
+
+body.latinfo-home--skin-2 .latinfo-home__day-head::before,
+body.latinfo-home--skin-2 .latinfo-home__rail .djs-public__spotlight-title::before {
+    display: none;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__day-word {
+    position: relative;
+    padding-bottom: 0.18rem;
+    background: linear-gradient(90deg, var(--li-green), var(--lh-warm)) bottom left / 100% 3px no-repeat;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__day-date {
+    padding: 0.16rem 0.55rem;
+    border-radius: 999px;
+    background: var(--li-green-soft);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--li-green-dark);
+}
+
+body.latinfo-home--skin-2 .latinfo-home__day-count {
+    background: linear-gradient(135deg, var(--li-green), #56734d);
+    color: #ffffff;
+}
+
+/* Idővonal: függőleges sín az időbélyeg és a cím között */
+body.latinfo-home--skin-2 .latinfo-home__events {
+    position: relative;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__events::before {
+    content: '';
+    position: absolute;
+    top: 1.05rem;
+    bottom: 1.05rem;
+    left: 3.6rem;
+    width: 2px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(109, 143, 99, 0.4), rgba(212, 160, 84, 0.35));
+}
+
+body.latinfo-home--skin-2 .latinfo-home__event {
+    grid-template-columns: 3.1rem minmax(0, 1fr) auto;
+    gap: 0.2rem 1.5rem;
+    padding: 0.6rem 0.7rem 0.6rem 0;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__event-time {
+    min-width: 0;
+    text-align: right;
+    padding-top: 0.1rem;
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+/* A csík pöttyé alakul a sínen */
+body.latinfo-home--skin-2 .latinfo-home__event-stripe {
+    top: 0.85rem;
+    bottom: auto;
+    left: calc(3.6rem - 4px);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px #ffffff;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__event:hover .latinfo-home__event-stripe {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 3px var(--li-green-soft);
+}
+
+body.latinfo-home--skin-2 .latinfo-home__event-time--allday {
+    font-size: 0.62rem;
+    line-height: 1.25;
+}
+
+/* Számozott gyorshírek */
+body.latinfo-home--skin-2 .latinfo-home__flashes {
+    counter-reset: lh-flash;
+    gap: 0.2rem;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__flash {
+    padding-left: 2.7rem;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__flash::before {
+    counter-increment: lh-flash;
+    content: counter(lh-flash, decimal-leading-zero);
+    position: absolute;
+    top: 0.72rem;
+    left: 0.8rem;
+    font-size: 0.92rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--lh-warm);
+}
+
+body.latinfo-home--skin-2 .latinfo-home__flash-kicker {
+    padding: 0;
+    background: none;
+    letter-spacing: 0.13em;
+    color: var(--li-green-muted);
+}
+
+body.latinfo-home--skin-2 .latinfo-home__day-more {
+    background: linear-gradient(135deg, var(--li-green), #56734d);
+    color: #ffffff;
+}
+
+body.latinfo-home--skin-2 .latinfo-home__day-more:hover {
+    background: linear-gradient(135deg, #56734d, var(--li-green-dark));
+}
+
+/* ============================================================================
+   14. VÁLTOZAT 3 – „Magazin”: szerkesztői tipográfia, vonalas ritmus
+   ========================================================================== */
+body.latinfo-home--skin-3 {
+    --lh-shell-max: 72rem;
+    --lh-card-radius: 0;
+    --lh-card-pad: 0.95rem 0 0;
+    --lh-card-bg: transparent;
+    --lh-card-shadow: none;
+    --lh-card-border: transparent;
+
+    --lh-title-family: var(--ev-font);
+    --lh-title-size: 1.22rem;
+    --lh-title-weight: 700;
+    --lh-title-track: -0.01em;
+    --lh-title-case: none;
+    --lh-title-color: var(--li-green-dark);
+    --lh-head-gap: 0.85rem;
+
+    --lh-row-radius: 0;
+    --lh-row-gap: 0;
+    --lh-row-bg: transparent;
+    --lh-row-bg-hover: rgba(255, 255, 255, 0.6);
+    --lh-row-border-hover: transparent;
+    --lh-row-shadow-hover: none;
+    --lh-row-lift: 0;
+
+    --lh-name-family: var(--ev-font);
+    --lh-name-size: 1.06rem;
+
+    background:
+        radial-gradient(900px 460px at 12% -10%, rgba(109, 143, 99, 0.13), transparent 60%),
+        radial-gradient(760px 420px at 90% 6%, rgba(212, 160, 84, 0.1), transparent 58%),
+        #f6f6f1;
+}
+
+/* Kártya helyett szerkesztői vonal a blokkok tetején */
+body.latinfo-home--skin-3 .latinfo-home__day,
+body.latinfo-home--skin-3 .latinfo-home__flashes-wrap,
+body.latinfo-home--skin-3 .latinfo-home__rail .djs-public__spotlight {
+    border-top: 2px solid var(--li-green-dark);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__day-head {
+    align-items: baseline;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid rgba(61, 79, 56, 0.18);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__day-head::before,
+body.latinfo-home--skin-3 .latinfo-home__rail .djs-public__spotlight-title::before {
+    display: none;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__rail .djs-public__spotlight-title {
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid rgba(61, 79, 56, 0.18);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__day-date {
+    font-family: var(--ev-sans);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--li-green-muted);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__day-count {
+    background: none;
+    color: var(--li-green-muted);
+    font-family: var(--ev-font);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+/* Vonalakkal tagolt, táblázatos sorok */
+body.latinfo-home--skin-3 .latinfo-home__event {
+    padding: 0.75rem 0.2rem 0.78rem 0.85rem;
+    border-bottom: 1px solid rgba(61, 79, 56, 0.13);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__events li:last-child .latinfo-home__event {
+    border-bottom: 0;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__event-stripe {
+    top: 0.85rem;
+    bottom: 0.85rem;
+    left: 0;
+    width: 2px;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__event-time {
+    font-family: var(--ev-font);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--li-green);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__event-time--allday {
+    font-family: var(--ev-sans);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--li-green-muted);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__event-name {
+    letter-spacing: -0.01em;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__event:hover .latinfo-home__event-name {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__event-place {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--li-text-soft);
+}
+
+/* Vezető hír kiemelt szedéssel */
+body.latinfo-home--skin-3 .latinfo-home__flash {
+    padding: 0.85rem 0.2rem 0.9rem;
+    border-bottom: 1px solid rgba(61, 79, 56, 0.13);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__flashes li:last-child .latinfo-home__flash {
+    border-bottom: 0;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__flash-title {
+    font-family: var(--ev-font);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__flashes li:first-child .latinfo-home__flash-title {
+    font-size: 1.42rem;
+    line-height: 1.22;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__flashes li:first-child .latinfo-home__flash-dek {
+    font-size: 0.92rem;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__flash:hover .latinfo-home__flash-title {
+    color: var(--li-green-dark);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__flash-kicker {
+    padding: 0;
+    background: none;
+    letter-spacing: 0.16em;
+    color: #a5703a;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__rail .djs-public__spotlight-card {
+    border-radius: 0;
+    border-bottom: 1px solid rgba(61, 79, 56, 0.13);
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__rail .djs-public__spotlight-item:last-child .djs-public__spotlight-card {
+    border-bottom: 0;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__rail .djs-public__spotlight-name {
+    font-family: var(--ev-font);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__day-empty {
+    border: 0;
+    border-left: 2px solid rgba(160, 186, 152, 0.7);
+    border-radius: 0;
+    background: none;
+    font-family: var(--ev-font);
+    font-style: italic;
+}
+
+body.latinfo-home--skin-3 .latinfo-home__day-more,
+body.latinfo-home--skin-3 .latinfo-home__edit {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--li-green-dark);
+    border-bottom: 1px solid rgba(61, 79, 56, 0.35);
+}
+
+body.latinfo-home--skin-3 .latinfo-home__day-more:hover,
+body.latinfo-home--skin-3 .latinfo-home__edit:hover {
+    color: var(--li-green);
+    background: none;
+    border-bottom-color: var(--li-green);
+}
+
+/* --------------------------------------------------------------------------
+   15. Reszponzív
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
     .latinfo-home__rail,
     .latinfo-home__calendar {
         flex-basis: 100%;
     }
 }
 
+@media (max-width: 560px) {
+    body.event-public-page--latinfo-home {
+        --lh-card-pad: 0.9rem;
+    }
+
+    body.latinfo-home--skin-3 {
+        --lh-card-pad: 0.9rem 0 0;
+    }
+
+    .latinfo-home__stage {
+        padding-bottom: 4.5rem;
+    }
+
+    .latinfo-home__event {
+        padding-left: 0.9rem;
+    }
+
+    .latinfo-skins__text {
+        display: none;
+    }
+
+    .latinfo-skins__btn {
+        padding: 0.36rem 0.62rem;
+    }
+
+    .latinfo-skins__num {
+        opacity: 1;
+        font-size: 0.85rem;
+    }
+
+    body.latinfo-home--skin-2 .latinfo-home__event {
+        grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+        gap: 0.2rem 1.15rem;
+    }
+
+    body.latinfo-home--skin-2 .latinfo-home__events::before {
+        left: 3.15rem;
+    }
+
+    body.latinfo-home--skin-2 .latinfo-home__event-stripe {
+        left: calc(3.15rem - 4px);
+    }
+
+    body.latinfo-home--skin-3 .latinfo-home__flashes li:first-child .latinfo-home__flash-title {
+        font-size: 1.24rem;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   16. Mozgáscsökkentés
+   -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
     .latinfo-home__event,
-    .latinfo-home__flash-title {
+    .latinfo-home__flash,
+    .latinfo-home__flash-title,
+    .latinfo-home__event-stripe,
+    .latinfo-home__event-go,
+    .latinfo-home__day-more,
+    .latinfo-home__day-more-arrow,
+    .latinfo-home__rail .djs-public__spotlight-card {
         transition: none;
+    }
+
+    .latinfo-home__event:hover,
+    .latinfo-home__rail .djs-public__spotlight-card:hover {
+        transform: none;
+    }
+
+    .latinfo-home__event-go {
+        opacity: 1;
+        transform: none;
     }
 }

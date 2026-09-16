@@ -4,16 +4,20 @@ declare(strict_types=1);
 /**
  * Egy nap eseménylistája a Latinfo kezdőoldal naptár oszlopában.
  *
- * @var string $heading
+ * @var string $dayWord Nap megnevezése (Ma / Holnap)
+ * @var string $dayDate Rövid dátum (pl. 16. szept.)
  * @var string $sectionId
  * @var list<array<string, mixed>> $events
  * @var bool $hasMore
  * @var string $empty
  * @var string $calendarUrl
  * @var string $moreLabel
+ * @var array<string, string> $H
+ * @var string $lang
  * @var array<int, list<array{color?: string}>> $categoriesByEventId
  */
-$heading = (string) ($heading ?? '');
+$dayWord = trim((string) ($dayWord ?? ''));
+$dayDate = trim((string) ($dayDate ?? ''));
 $sectionId = (string) ($sectionId ?? 'lh-day');
 $events = is_array($events ?? null) ? $events : [];
 $hasMore = !empty($hasMore);
@@ -21,9 +25,20 @@ $empty = (string) ($empty ?? '');
 $calendarUrl = (string) ($calendarUrl ?? '#');
 $moreLabel = (string) ($moreLabel ?? '');
 $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEventId : [];
+$allDayLabel = (string) (($H['all_day'] ?? null) ?: 'Egész nap');
 ?>
 <section class="latinfo-home__day" aria-labelledby="<?= h($sectionId) ?>-title">
-    <h2 class="latinfo-home__day-title" id="<?= h($sectionId) ?>-title"><?= h($heading) ?></h2>
+    <header class="latinfo-home__day-head">
+        <h2 class="latinfo-home__day-title" id="<?= h($sectionId) ?>-title">
+            <span class="latinfo-home__day-word"><?= h($dayWord) ?></span>
+            <?php if ($dayDate !== ''): ?>
+                <span class="latinfo-home__day-date"><?= h($dayDate) ?></span>
+            <?php endif; ?>
+        </h2>
+        <?php if ($events !== []): ?>
+            <span class="latinfo-home__day-count"><?= count($events) ?></span>
+        <?php endif; ?>
+    </header>
     <?php if ($events === []): ?>
         <p class="latinfo-home__day-empty"><?= h($empty) ?></p>
     <?php else: ?>
@@ -37,9 +52,12 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                 $place = latinfo_home_event_place($ev);
                 $accent = latinfo_home_event_accent($ev, $categoriesByEventId);
                 $changeLang = $lang ?? 'hu';
+                $isAllDay = !empty($ev['event_allday']);
+                $evTime = latinfo_home_format_event_time($ev, $allDayLabel);
                 $hasChange = events_event_change_active($ev);
                 $eventClass = 'latinfo-home__event';
                 $nameClass = 'latinfo-home__event-name';
+                $timeClass = 'latinfo-home__event-time' . ($isAllDay ? ' latinfo-home__event-time--allday' : '');
                 $changeBadge = '';
                 $changeNote = '';
                 if ($hasChange) {
@@ -61,6 +79,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                 <li role="listitem">
                     <a class="<?= h($eventClass) ?>" href="<?= h($evUrl) ?>" style="--home-event-accent: <?= h($accent) ?>">
                         <span class="latinfo-home__event-stripe" aria-hidden="true"></span>
+                        <span class="<?= h($timeClass) ?>"><?= h($evTime) ?></span>
                         <span class="latinfo-home__event-body">
                             <?php if ($changeBadge !== ''): ?>
                                 <span class="latinfo-home__event-change"><?= h($changeBadge) ?></span>
@@ -73,12 +92,18 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                                 <span class="latinfo-home__event-change-note"><?= h($changeNote) ?></span>
                             <?php endif; ?>
                         </span>
+                        <span class="latinfo-home__event-go" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12 5l7 7-7 7"/></svg>
+                        </span>
                     </a>
                 </li>
             <?php endforeach; ?>
         </ul>
         <?php if ($hasMore): ?>
-            <a class="latinfo-home__day-more" href="<?= h($calendarUrl) ?>"><?= h($moreLabel) ?></a>
+            <a class="latinfo-home__day-more" href="<?= h($calendarUrl) ?>">
+                <span><?= h($moreLabel) ?></span>
+                <span class="latinfo-home__day-more-arrow" aria-hidden="true">→</span>
+            </a>
         <?php endif; ?>
     <?php endif; ?>
 </section>

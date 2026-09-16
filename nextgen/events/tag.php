@@ -234,12 +234,12 @@ header('Content-Type: text/html; charset=UTF-8');
                         <p class="dj-public__meta">
                             <span class="dj-public__meta-item">
                                 <strong><?= (int) $eventsUpcomingCount ?></strong>
-                                <?= h((string) ($G['section_upcoming'] ?? ($lang === 'en' ? 'Upcoming' : 'Aktuális'))) ?>
+                                <?= h((string) ($G['meta_upcoming'] ?? ($lang === 'en' ? 'upcoming event' : 'Aktuális esemény'))) ?>
                             </span>
                             <span class="dj-public__meta-sep" aria-hidden="true">·</span>
                             <span class="dj-public__meta-item">
                                 <strong><?= (int) $eventsTotalCount ?></strong>
-                                <?= h((string) ($G['events_heading'] ?? ($lang === 'en' ? 'Events' : 'Események'))) ?>
+                                <?= h((string) ($G['meta_events'] ?? ($lang === 'en' ? 'event' : 'esemény'))) ?>
                             </span>
                         </p>
                         <?php require __DIR__ . '/partials/public_dj_contacts.php'; ?>
