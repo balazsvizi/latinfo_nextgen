@@ -132,7 +132,7 @@ if ($tagIsDj && $tagSlug !== '') {
     $urlHu = events_public_tag_lang_switch_url($tagId, 'hu', $limitParams);
     $urlEn = events_public_tag_lang_switch_url($tagId, 'en', $limitParams);
 }
-$cssUrl = events_url('assets/event_public.css');
+$cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $G;
 $showAdminEdit = isLoggedIn();
@@ -199,7 +199,7 @@ header('Content-Type: text/html; charset=UTF-8');
         <div class="event-public__hero-inner<?= $tagIsDj ? ' dj-public__hero-inner' : '' ?>">
             <?php if ($tagIsDj): ?>
                 <div class="dj-public__identity">
-                    <div class="dj-public__media<?= ($djPhotoAbs !== '' && $djLogoAbs !== '') ? ' dj-public__media--both' : '' ?>">
+                    <div class="dj-public__media">
                         <div class="dj-public__avatar<?= ($djPhotoAbs === '' && $djLogoAbs !== '') ? ' dj-public__avatar--logo' : '' ?>" aria-hidden="true">
                             <?php if ($djPhotoAbs !== ''): ?>
                                 <img class="dj-public__avatar-img" src="<?= h($djPhotoAbs) ?>" alt="" loading="eager" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'photo')) ?>">
@@ -209,11 +209,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                 <span class="dj-public__avatar-initials"><?= h(events_public_dj_initials($tagName)) ?></span>
                             <?php endif; ?>
                         </div>
-                        <?php if ($djPhotoAbs !== '' && $djLogoAbs !== ''): ?>
-                            <div class="dj-public__logo-badge" aria-hidden="true">
-                                <img class="dj-public__logo-badge-img" src="<?= h($djLogoAbs) ?>" alt="" loading="lazy" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'logo')) ?>">
-                            </div>
-                        <?php endif; ?>
                     </div>
                     <div class="dj-public__identity-text">
                         <?php if ($tagTypeRows !== []): ?>
@@ -231,6 +226,11 @@ header('Content-Type: text/html; charset=UTF-8');
                             </div>
                         <?php endif; ?>
                         <h1 class="event-public__title"><?= h($title) ?></h1>
+                        <?php if ($djPhotoAbs !== '' && $djLogoAbs !== ''): ?>
+                            <div class="dj-public__brand" aria-hidden="true">
+                                <img class="dj-public__brand-img" src="<?= h($djLogoAbs) ?>" alt="" loading="lazy" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'logo')) ?>">
+                            </div>
+                        <?php endif; ?>
                         <p class="dj-public__meta">
                             <span class="dj-public__meta-item">
                                 <strong><?= (int) $eventsUpcomingCount ?></strong>

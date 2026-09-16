@@ -67,6 +67,7 @@ if ($spotlightCards === []) {
         var link = li.querySelector('.djs-public__spotlight-card');
         var avatar = li.querySelector('.djs-public__spotlight-avatar');
         var name = li.querySelector('.djs-public__spotlight-name');
+        var logoBox = li.querySelector('.djs-public__spotlight-logo');
         var meta = li.querySelector('.djs-public__spotlight-meta');
         if (!link || !avatar || !name || !meta || !card) return;
 
@@ -92,6 +93,24 @@ if ($spotlightCards === []) {
             avatar.appendChild(initials);
         }
         name.textContent = card.name || '';
+        if (logoBox) {
+            logoBox.textContent = '';
+            if (card.logo) {
+                var logoImg = document.createElement('img');
+                logoImg.className = 'djs-public__spotlight-logo-img';
+                logoImg.src = card.logo;
+                logoImg.alt = '';
+                logoImg.loading = 'lazy';
+                logoImg.decoding = 'async';
+                if (card.logoStyle) {
+                    logoImg.setAttribute('style', card.logoStyle);
+                }
+                logoBox.appendChild(logoImg);
+                logoBox.hidden = false;
+            } else {
+                logoBox.hidden = true;
+            }
+        }
         meta.textContent = card.meta || '';
         meta.hidden = !card.meta;
     }

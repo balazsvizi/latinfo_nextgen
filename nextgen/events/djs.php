@@ -191,6 +191,8 @@ header('Content-Type: text/html; charset=UTF-8');
                     $djPhotoAbs = $djMedia !== '' ? events_absolute_url($djMedia) : '';
                     $djMediaIsLogo = events_public_dj_media_is_logo($dj);
                     $djMediaStyle = $djPhotoAbs !== '' ? events_public_dj_media_img_style($dj) : '';
+                    $djBrandLogo = events_public_dj_brand_logo_url($dj);
+                    $djBrandStyle = $djBrandLogo !== '' ? events_public_dj_brand_logo_style($dj) : '';
                     $total = (int) ($dj['event_total'] ?? 0);
                     $upcoming = (int) ($dj['event_upcoming'] ?? 0);
                     $nextStart = (string) ($dj['next_event_start'] ?? '');
@@ -218,7 +220,14 @@ header('Content-Type: text/html; charset=UTF-8');
                                 <?php endif; ?>
                             </span>
                             <span class="djs-public__card-body">
-                                <span class="djs-public__card-name"><?= h($djName) ?></span>
+                                <span class="djs-public__card-heading">
+                                    <span class="djs-public__card-name"><?= h($djName) ?></span>
+                                    <?php if ($djBrandLogo !== ''): ?>
+                                        <span class="djs-public__card-logo" aria-hidden="true">
+                                            <img class="djs-public__card-logo-img" src="<?= h($djBrandLogo) ?>" alt="" loading="lazy" decoding="async"<?= $djBrandStyle !== '' ? ' style="' . h($djBrandStyle) . '"' : '' ?>>
+                                        </span>
+                                    <?php endif; ?>
+                                </span>
                                 <span class="djs-public__card-stats">
                                     <span class="djs-public__card-stat djs-public__card-stat--muted">
                                         <strong><?= $total ?></strong> <?= h($D['events_total']) ?>

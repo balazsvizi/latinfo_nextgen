@@ -114,6 +114,30 @@ function events_public_dj_media_img_style(array $row): string {
 }
 
 /**
+ * Logó külön brand-ként, ha van fotó is. Üres, ha a logó már az avatár.
+ *
+ * @param array<string, mixed> $row
+ */
+function events_public_dj_brand_logo_url(array $row): string {
+    $photo = trim((string) ($row['photo_url'] ?? ''));
+    $logo = trim((string) ($row['logo_url'] ?? ''));
+    if ($photo === '' || $logo === '') {
+        return '';
+    }
+
+    return events_absolute_url($logo);
+}
+
+/**
+ * @param array<string, mixed> $row
+ */
+function events_public_dj_brand_logo_style(array $row): string {
+    return events_public_dj_brand_logo_url($row) !== ''
+        ? events_dj_media_img_style($row, 'logo')
+        : '';
+}
+
+/**
  * @return list<array{
  *   id: int,
  *   name: string,
@@ -252,7 +276,7 @@ function events_public_dj_spotlight_pool(array $catalog, int $poolLimit = 12): a
  *
  * @param list<array<string, mixed>> $pool
  * @param array<string, string> $strings
- * @return list<array{name:string,href:string,photo:string,photoStyle:string,isLogo:bool,initials:string,meta:string,aria:string}>
+ * @return list<array{name:string,href:string,photo:string,photoStyle:string,isLogo:bool,logo:string,logoStyle:string,initials:string,meta:string,aria:string}>
  */
 function events_public_dj_spotlight_cards(array $pool, string $lang, array $strings): array {
     $cards = [];
@@ -266,6 +290,7 @@ function events_public_dj_spotlight_cards(array $pool, string $lang, array $stri
         $photo = trim((string) ($row['photo_url'] ?? ''));
         $logo = trim((string) ($row['logo_url'] ?? ''));
         $media = $photo !== '' ? $photo : $logo;
+        $brandLogo = events_public_dj_brand_logo_url($row);
         $nextStart = trim((string) ($row['next_event_start'] ?? ''));
         $nextTs = $nextStart !== '' ? strtotime($nextStart) : false;
 
@@ -282,6 +307,8 @@ function events_public_dj_spotlight_cards(array $pool, string $lang, array $stri
             'photo' => $media !== '' ? events_absolute_url($media) : '',
             'photoStyle' => $media !== '' ? events_public_dj_media_img_style($row) : '',
             'isLogo' => events_public_dj_media_is_logo($row),
+            'logo' => $brandLogo,
+            'logoStyle' => $brandLogo !== '' ? events_public_dj_brand_logo_style($row) : '',
             'initials' => events_public_dj_initials($name),
             'meta' => $meta,
             'aria' => (string) ($strings['card_aria'] ?? '') . ': ' . $name,

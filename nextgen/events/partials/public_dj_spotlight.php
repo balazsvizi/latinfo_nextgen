@@ -31,7 +31,14 @@ if ($spotlightCards === []) {
                         <?php endif; ?>
                     </span>
                     <span class="djs-public__spotlight-body">
-                        <span class="djs-public__spotlight-name"><?= h((string) ($card['name'] ?? '')) ?></span>
+                        <span class="djs-public__spotlight-heading">
+                            <span class="djs-public__spotlight-name"><?= h((string) ($card['name'] ?? '')) ?></span>
+                            <span class="djs-public__spotlight-logo"<?= (string) ($card['logo'] ?? '') === '' ? ' hidden' : '' ?> aria-hidden="true">
+                                <?php if ((string) ($card['logo'] ?? '') !== ''): ?>
+                                    <img class="djs-public__spotlight-logo-img" src="<?= h((string) $card['logo']) ?>" alt="" loading="lazy" decoding="async"<?= (string) ($card['logoStyle'] ?? '') !== '' ? ' style="' . h((string) $card['logoStyle']) . '"' : '' ?>>
+                                <?php endif; ?>
+                            </span>
+                        </span>
                         <span class="djs-public__spotlight-meta"<?= (string) ($card['meta'] ?? '') === '' ? ' hidden' : '' ?>><?= h((string) ($card['meta'] ?? '')) ?></span>
                     </span>
                     <span class="djs-public__spotlight-go" aria-hidden="true">→</span>
