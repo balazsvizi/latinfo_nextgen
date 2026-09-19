@@ -41,6 +41,9 @@ body.event-public-page--latinfo-home {
     --lh-name-size: 0.99rem;
     --lh-name-weight: 700;
 
+    --lh-body-size: 0.95rem;
+    --lh-body-line: 1.45;
+
     --lh-ease: cubic-bezier(0.22, 0.68, 0.36, 1);
 
     background:
@@ -514,8 +517,8 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
 }
 
 .latinfo-home__flash-dek {
-    font-size: 0.86rem;
-    line-height: 1.45;
+    font-size: var(--lh-body-size);
+    line-height: var(--lh-body-line);
     color: var(--li-text-muted);
 }
 
@@ -647,8 +650,8 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
 .latinfo-home__rating-prompt {
     margin: 0 0 0.85rem;
     color: var(--li-muted, #5a6b58);
-    font-size: 0.95rem;
-    line-height: 1.45;
+    font-size: var(--lh-body-size);
+    line-height: var(--lh-body-line);
 }
 
 .latinfo-home__rating-stars {
@@ -770,8 +773,8 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
 .latinfo-home__donably-lead {
     margin: 0 0 1rem;
     color: var(--li-muted, #5a6b58);
-    font-size: 0.95rem;
-    line-height: 1.5;
+    font-size: var(--lh-body-size);
+    line-height: var(--lh-body-line);
 }
 
 .latinfo-home__donably-actions {
