@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Naptár gomb a fejléc alatt, a tartalom tetején jobbra (Lista változat).
+ * Naptár gomb a fejléc alatt, a tartalom tetején jobbra.
  * A kattintást a hero sávban futó data-public-nav-track figyelő méri.
  *
  * @var string $calendarUrl

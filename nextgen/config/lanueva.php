@@ -28,7 +28,7 @@ $count_stmt->execute($params);
 $total = (int) $count_stmt->fetchColumn();
 
 $stmt = $db->prepare("
-    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, ip, user_agent, létrehozva
+    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, forras, ip, user_agent, létrehozva
     FROM nextgen_landing_feedback
     $where_sql
     ORDER BY $order $dir
@@ -77,13 +77,13 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
 ?>
 <div class="card card-landing-visszajelzesek">
     <h2>LaNueva</h2>
-    <p class="card-lead">A nyilvános landingről érkezett szöveges visszajelzések és induláskori e-mail feliratkozások. Az időbélyeg a szerver szerinti mentés ideje (<?= h(date_default_timezone_get()) ?>).</p>
+    <p class="card-lead">A nyilvános feedback oldalról és a LaNueva landingről érkezett szöveges visszajelzések, valamint induláskori e-mail feliratkozások. Az időbélyeg a szerver szerinti mentés ideje (<?= h(date_default_timezone_get()) ?>).</p>
 
     <form method="get" class="toolbar toolbar-inline" action="<?= h(nextgen_url('config/lanueva.php')) ?>">
         <label for="landing-tipus-szuro">Típus</label>
         <select name="tipus" id="landing-tipus-szuro">
             <option value="" <?= $tipus === '' ? 'selected' : '' ?>>Mind</option>
-            <option value="visszajelzes" <?= $tipus === 'visszajelzes' ? 'selected' : '' ?>>Visszajelzés (La nueva)</option>
+            <option value="visszajelzes" <?= $tipus === 'visszajelzes' ? 'selected' : '' ?>>Visszajelzés</option>
             <option value="ertesites" <?= $tipus === 'ertesites' ? 'selected' : '' ?>>Értesítés (e-mail)</option>
         </select>
         <button type="submit" class="btn btn-primary">Szűrés</button>
@@ -96,6 +96,7 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
                 <tr>
                     <th><?= sort_th('Időbélyeg', 'létrehozva', $order, $dir_param, $get_params) ?></th>
                     <th>Típus</th>
+                    <th>Honnan</th>
                     <th>Tartalom</th>
                     <th>IP</th>
                     <th>Böngésző (rövid)</th>
@@ -104,13 +105,14 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
             <tbody>
                 <?php if (empty($sorok)): ?>
                 <tr>
-                    <td colspan="5" class="text-muted">Még nincs bejegyzés.</td>
+                    <td colspan="6" class="text-muted">Még nincs bejegyzés.</td>
                 </tr>
                 <?php else: ?>
                 <?php foreach ($sorok as $r): ?>
                 <tr>
                     <td class="landing-ts"><?= h($r['létrehozva']) ?></td>
                     <td><?= h(landing_lista_tipus($r)) ?></td>
+                    <td class="landing-forras" title="<?= h((string) ($r['forras'] ?? '')) ?>"><?= h(landing_feedback_forras_cimke($r)) ?></td>
                     <td class="landing-tartalom">
                         <?php if (landing_feedback_is_ertesites($r)): ?>
                             <strong>E-mail:</strong> <?= h($r['email']) ?>

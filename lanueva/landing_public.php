@@ -12,18 +12,6 @@ require_once __DIR__ . '/../nextgen/includes/landingpage_table.php';
 
 $db = getDb();
 
-function landing_client_meta(): array {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-    if (is_string($ip) && strlen($ip) > 45) {
-        $ip = substr($ip, 0, 45);
-    }
-    $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
-    if (is_string($ua) && strlen($ua) > 512) {
-        $ua = substr($ua, 0, 512);
-    }
-    return [$ip, $ua];
-}
-
 $hiba_feedback = '';
 
 ensure_landingpage_table($db);
@@ -41,47 +29,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
         $hiba_feedback = 'Érvénytelen e-mail cím.';
     } else {
         [$ip, $ua] = landing_client_meta();
-        $stmt = $db->prepare('INSERT INTO nextgen_landing_feedback (ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([
-            $ilyen !== '' ? $ilyen : null,
-            $ne !== '' ? $ne : null,
-            $email !== '' ? $email : null,
-            $nev !== '' ? $nev : null,
-            $telefon !== '' ? $telefon : null,
-            $ip,
-            $ua,
-        ]);
+        $payload = [
+            'ilyen_legyen' => $ilyen,
+            'ilyen_ne_legyen' => $ne,
+            'email' => $email,
+            'nev' => $nev,
+            'telefon' => $telefon,
+            'forras' => 'lanueva',
+            'ip' => $ip,
+            'user_agent' => $ua,
+            'context' => 'LaNueva landing',
+        ];
+        landing_feedback_insert($db, $payload);
 
         try {
-            if (!function_exists('email_kuld')) {
-                require_once __DIR__ . '/../nextgen/includes/email.php';
-            }
-            if (!function_exists('h')) {
-                require_once __DIR__ . '/../nextgen/includes/functions.php';
-            }
-            $targy = SITE_NAME . ' – LaNueva új visszajelzés';
-            $sor = static function (string $cimke, string $ertek): string {
-                if ($ertek === '') {
-                    return '';
-                }
-                return '<p><strong>' . h($cimke) . ':</strong><br>' . nl2br(h($ertek)) . '</p>';
-            };
-            $szoveg = '<p>Új visszajelzés érkezett a LaNueva landingről.</p>'
-                . $sor('Ilyen legyen', $ilyen)
-                . $sor('Ilyen ne legyen', $ne)
-                . $sor('Név', $nev)
-                . $sor('E-mail', $email)
-                . $sor('Telefon', $telefon)
-                . $sor('IP', (string) ($ip ?? ''))
-                . '<p><a href="' . h(site_url('nextgen/config/lanueva.php')) . '">Megnyitás az adminban</a></p>';
-            $mailOpciok = ['html' => true];
-            if ($email !== '') {
-                $mailOpciok['reply_to'] = $email;
-            }
-            $mailResult = email_kuld('balazsv@gmail.com', $targy, $szoveg, $mailOpciok);
-            if (!$mailResult['ok']) {
-                error_log('lanueva feedback mail: ' . ($mailResult['hiba'] ?? ''));
-            }
+            landing_feedback_send_mail($payload);
         } catch (Throwable $ex) {
             error_log('lanueva feedback mail: ' . $ex->getMessage());
         }

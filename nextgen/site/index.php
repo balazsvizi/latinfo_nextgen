@@ -36,7 +36,6 @@ $djSpotlight = latinfo_home_dj_spotlight($db, $lang);
 $calendarUrl = events_public_home_path();
 $djsUrl = events_public_djs_hub_canonical_url();
 $editUrl = latinfo_home_edit_url();
-$homeSkin = latinfo_home_resolve_skin();
 $cssPublicUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $cssHomeUrl = latinfo_home_asset_url('css/site-home.css') . '?v=' . rawurlencode(nextgen_app_version());
 
@@ -47,14 +46,8 @@ $cmsAnchorSpotlight = 'latinfo-dj-ajanlo';
 $Dj = $djSpotlight['strings'];
 
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
-$urlHu = latinfo_home_lang_switch_url('hu', $homeSkin);
-$urlEn = latinfo_home_lang_switch_url('en', $homeSkin);
-$skinUrls = [
-    1 => latinfo_home_skin_url(1, $lang),
-    2 => latinfo_home_skin_url(2, $lang),
-    3 => latinfo_home_skin_url(3, $lang),
-    4 => latinfo_home_skin_url(4, $lang),
-];
+$urlHu = latinfo_home_lang_switch_url('hu');
+$urlEn = latinfo_home_lang_switch_url('en');
 $isEventsHome = true;
 $showAdminEdit = true;
 $adminEditUrl = $editUrl;

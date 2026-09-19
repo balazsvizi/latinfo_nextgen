@@ -26,16 +26,6 @@ function latinfo_home_asset_url(string $path): string
     return nextgen_url('site/assets/' . ltrim($path, '/'));
 }
 
-function latinfo_home_resolve_skin(): int
-{
-    $skin = filter_var($_GET['skin'] ?? 1, FILTER_VALIDATE_INT);
-    if ($skin === false || $skin < 1 || $skin > 4) {
-        return 1;
-    }
-
-    return $skin;
-}
-
 /**
  * @param array<string, scalar|null> $extra
  */
@@ -60,21 +50,9 @@ function latinfo_home_preview_query_url(array $extra = []): string
     return $base . $sep . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 }
 
-function latinfo_home_lang_switch_url(string $lang, ?int $skin = null): string
+function latinfo_home_lang_switch_url(string $lang): string
 {
-    $skin = $skin ?? latinfo_home_resolve_skin();
-    $params = ['skin' => $skin];
-    if ($lang === 'en') {
-        $params['lang'] = 'en';
-    }
-
-    return latinfo_home_preview_query_url($params);
-}
-
-function latinfo_home_skin_url(int $skin, string $lang): string
-{
-    $skin = $skin >= 1 && $skin <= 4 ? $skin : 1;
-    $params = ['skin' => $skin];
+    $params = [];
     if ($lang === 'en') {
         $params['lang'] = 'en';
     }
@@ -803,19 +781,9 @@ function latinfo_home_strings(string $lang): array
         'more' => 'Továbbiak a naptárban',
         'collectors' => 'Gyűjtők',
         'collectors_empty' => 'Még nincs gyűjtő. Vedd fel a naptárt, DJ-ket, iskolákat – amit a szcéna keres.',
-        'all_day' => 'Egész nap',
         'edit_news' => 'Szerkesztés',
         'edit_collectors' => 'Szerkesztés',
         'djs_all' => 'Összes DJ',
-        'skin_nav' => 'Kezdőoldal-változatok',
-        'skin_1' => 'Üveg',
-        'skin_2' => 'Ritmus',
-        'skin_3' => 'Magazin',
-        'skin_4' => 'Lista',
-        'skin_1_aria' => 'Üveg változat, fagyott kártyák',
-        'skin_2_aria' => 'Ritmus változat, idővonalas naptár',
-        'skin_3_aria' => 'Magazin változat, szerkesztői tipográfia',
-        'skin_4_aria' => 'Lista változat, Ritmus dobozok, Üveg eseménysorok idő nélkül',
     ];
     $en = [
         'page_title' => 'home (preview)',
@@ -832,19 +800,9 @@ function latinfo_home_strings(string $lang): array
         'more' => 'More in the calendar',
         'collectors' => 'Collections',
         'collectors_empty' => 'No collections yet.',
-        'all_day' => 'All day',
         'edit_news' => 'Edit',
         'edit_collectors' => 'Edit',
         'djs_all' => 'All DJs',
-        'skin_nav' => 'Homepage versions',
-        'skin_1' => 'Glass',
-        'skin_2' => 'Rhythm',
-        'skin_3' => 'Magazine',
-        'skin_4' => 'List',
-        'skin_1_aria' => 'Glass version, frosted cards',
-        'skin_2_aria' => 'Rhythm version, timeline calendar',
-        'skin_3_aria' => 'Magazine version, editorial type',
-        'skin_4_aria' => 'List version, Rhythm cards, Glass event rows without times',
     ];
 
     return $lang === 'en' ? $en : $hu;
@@ -1013,39 +971,10 @@ function latinfo_home_today_tomorrow_events(PDO $db, int $perDay = 5): array
     ];
 }
 
-function latinfo_home_format_event_time(array $ev, string $allDayLabel = 'Egész nap'): string
-{
-    if (!empty($ev['event_allday'])) {
-        return $allDayLabel;
-    }
-    $start = latinfo_home_parse_event_dt((string) ($ev['event_start'] ?? ''));
-    if ($start === null) {
-        return '';
-    }
-
-    return $start->format('H:i');
-}
-
-function latinfo_home_day_date(DateTimeImmutable $day, string $lang, int $skin = 1): string
-{
-    if ($skin === 4) {
-        return latinfo_home_day_date_long($day, $lang);
-    }
-
-    $monthsHu = [1 => 'jan.', 2 => 'febr.', 3 => 'márc.', 4 => 'ápr.', 5 => 'máj.', 6 => 'jún.', 7 => 'júl.', 8 => 'aug.', 9 => 'szept.', 10 => 'okt.', 11 => 'nov.', 12 => 'dec.'];
-    $monthsEn = [1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'];
-    $months = $lang === 'en' ? $monthsEn : $monthsHu;
-    $month = $months[(int) $day->format('n')] ?? '';
-
-    return $lang === 'en'
-        ? $month . ' ' . $day->format('j')
-        : $day->format('j') . '. ' . $month;
-}
-
 /**
- * Hosszú dátum a Lista változathoz: „szeptember 16. · szerda” / „September 16 · Wednesday”.
+ * Dátum a nap fejlécében: „szeptember 16. · szerda” / „September 16 · Wednesday”.
  */
-function latinfo_home_day_date_long(DateTimeImmutable $day, string $lang): string
+function latinfo_home_day_date(DateTimeImmutable $day, string $lang): string
 {
     $monthsHu = [
         1 => 'január', 2 => 'február', 3 => 'március', 4 => 'április',
@@ -1073,11 +1002,6 @@ function latinfo_home_day_date_long(DateTimeImmutable $day, string $lang): strin
     $dayName = $daysHu[$weekday] ?? '';
 
     return trim($month . ' ' . $day->format('j') . '. · ' . $dayName);
-}
-
-function latinfo_home_day_label(DateTimeImmutable $day, string $lang, string $word): string
-{
-    return $word . ' · ' . latinfo_home_day_date($day, $lang);
 }
 
 /**

@@ -20,7 +20,7 @@ $where_sql = landing_feedback_where_tipus($tipus);
 $params = [];
 
 $stmt = $db->prepare("
-    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, ip, user_agent, létrehozva
+    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, forras, ip, user_agent, létrehozva
     FROM nextgen_landing_feedback
     $where_sql
     ORDER BY létrehozva DESC
@@ -57,7 +57,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
 <Table>
 <Row>
 <?php
-$headers = ['ID', 'Időbélyeg', 'Típus', 'Ilyen legyen', 'Ilyen ne legyen', 'Név', 'E-mail', 'Telefon', 'IP', 'User-Agent'];
+$headers = ['ID', 'Időbélyeg', 'Típus', 'Honnan', 'Ilyen legyen', 'Ilyen ne legyen', 'Név', 'E-mail', 'Telefon', 'IP', 'User-Agent'];
 foreach ($headers as $h) {
     echo landing_export_xml_cell($h);
 }
@@ -68,6 +68,7 @@ foreach ($sorok as $r) {
     echo landing_export_xml_cell((string) ((int) ($r['id'] ?? 0)));
     echo landing_export_xml_cell((string) ($r['létrehozva'] ?? ''));
     echo landing_export_xml_cell(landing_export_tipus_cimke($r));
+    echo landing_export_xml_cell(landing_feedback_forras_cimke($r));
     echo landing_export_xml_cell((string) ($r['ilyen_legyen'] ?? ''));
     echo landing_export_xml_cell((string) ($r['ilyen_ne_legyen'] ?? ''));
     echo landing_export_xml_cell((string) ($r['nev'] ?? ''));

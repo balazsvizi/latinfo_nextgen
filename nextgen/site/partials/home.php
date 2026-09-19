@@ -16,8 +16,6 @@ declare(strict_types=1);
  * @var string $editUrl
  * @var string $cssPublicUrl
  * @var string $cssHomeUrl
- * @var int $homeSkin
- * @var array<int, string> $skinUrls
  * @var string $lang
  * @var string $htmlLang
  * @var array<string, string> $S
@@ -44,26 +42,20 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
     <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
     <link rel="stylesheet" href="<?= h($cssHomeUrl) ?>">
 </head>
-<body class="event-public-page event-public-page--home event-public-page--latinfo-home latinfo-home--skin-<?= (int) $homeSkin ?>">
+<body class="event-public-page event-public-page--home event-public-page--latinfo-home">
 <?php require $eventsPartial . '/admin_float_tools.php'; ?>
-<?php require __DIR__ . '/home_skin_switcher.php'; ?>
 <div class="event-shell">
 <article class="event-public home-public latinfo-home">
     <header class="event-public__hero event-public__hero--bar-only">
         <?php require $eventsPartial . '/public_shell_hero_bar.php'; ?>
         <h1 class="visually-hidden"><?= h(SITE_NAME) ?></h1>
-        <?php if ((int) $homeSkin === 4) { require __DIR__ . '/home_calendar_cta.php'; } ?>
+        <?php require __DIR__ . '/home_calendar_cta.php'; ?>
     </header>
 
     <div class="latinfo-home__stage">
         <div class="latinfo-home__board">
             <div class="latinfo-home__rail">
-                <section class="latinfo-home__flashes-wrap" id="hirek" aria-labelledby="lh-news-title">
-                    <header class="latinfo-home__day-head latinfo-home__day-head--news">
-                        <h2 class="latinfo-home__day-title" id="lh-news-title">
-                            <span class="latinfo-home__day-word"><?= h($H['quick_news']) ?></span>
-                        </h2>
-                    </header>
+                <section class="latinfo-home__flashes-wrap" id="hirek" aria-label="<?= h($H['quick_news']) ?>">
                     <?php if ($quickNews === []): ?>
                         <p class="latinfo-home__day-empty"><?= h($H['empty_news']) ?></p>
                     <?php else: ?>
@@ -107,7 +99,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
             <div class="latinfo-home__calendar" id="naptar">
                 <?php
                 $dayWord = $H['today'];
-                $dayDate = latinfo_home_day_date($dayEvents['today_date'], $lang, $homeSkin);
+                $dayDate = latinfo_home_day_date($dayEvents['today_date'], $lang);
                 $sectionId = 'lh-today';
                 $events = $dayEvents['today'];
                 $hasMore = $dayEvents['today_more'];
@@ -116,7 +108,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                 require __DIR__ . '/home_day_column.php';
 
                 $dayWord = $H['tomorrow'];
-                $dayDate = latinfo_home_day_date($dayEvents['tomorrow_date'], $lang, $homeSkin);
+                $dayDate = latinfo_home_day_date($dayEvents['tomorrow_date'], $lang);
                 $sectionId = 'lh-tomorrow';
                 $events = $dayEvents['tomorrow'];
                 $hasMore = $dayEvents['tomorrow_more'];

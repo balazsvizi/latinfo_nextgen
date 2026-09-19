@@ -10,6 +10,12 @@
 
 RewriteEngine On
 
+# Feedback: /feedback/
+RewriteRule ^feedback/?$ feedback/index.php [L,QSA,NC]
+# Régi visszajelzés URL-ek
+RewriteRule ^visszajelzes/?$ /feedback/ [R=301,L,QSA,NC]
+RewriteRule ^visszajelzés/?$ /feedback/ [R=301,L,QSA,NC,NE]
+
 # Egy esemény: /event/{slug}/  →  nextgen/events/megjelenit.php
 RewriteRule ^event/([^/]+)/?$ nextgen/events/megjelenit.php?slug=$1 [L,QSA,NC]
 
