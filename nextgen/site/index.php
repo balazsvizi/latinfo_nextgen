@@ -13,6 +13,8 @@ require_once dirname(__DIR__) . '/events/lib/event_public_lang.php';
 require_once dirname(__DIR__) . '/events/lib/event_public_djs.php';
 require_once dirname(__DIR__) . '/events/lib/public_djs_content.php';
 require_once dirname(__DIR__) . '/events/lib/public_event_filters.php';
+require_once dirname(__DIR__) . '/events/lib/calendar_event_preview.php';
+require_once dirname(__DIR__) . '/events/lib/event_public_styles.php';
 require_once __DIR__ . '/lib/site_home.php';
 
 $lang = events_public_resolve_megjelenit_lang();
@@ -27,9 +29,17 @@ $schemaOk = latinfo_home_ensure_schema($db);
 $news = $schemaOk ? latinfo_home_news_all($db, true) : [];
 $quickNews = latinfo_home_quick_news($news, 3);
 $dayEvents = latinfo_home_today_tomorrow_events($db);
-$categoriesByEventId = events_public_load_categories_by_event_id(
-    $db,
-    array_merge($dayEvents['today'], $dayEvents['tomorrow'])
+$homeEventRows = array_merge($dayEvents['today'], $dayEvents['tomorrow']);
+$categoriesByEventId = events_public_load_categories_by_event_id($db, $homeEventRows);
+$organizersByEventId = events_calendar_load_organizers_by_event_id($db, $homeEventRows);
+$stylesByEventId = events_public_load_styles_by_event_id($db, $homeEventRows);
+$calendarPreviewById = events_calendar_preview_build_map(
+    $homeEventRows,
+    $categoriesByEventId,
+    $organizersByEventId,
+    $lang,
+    $stylesByEventId['main'],
+    $stylesByEventId['supplementary']
 );
 $djSpotlight = latinfo_home_dj_spotlight($db, $lang);
 

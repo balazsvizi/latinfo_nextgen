@@ -47,11 +47,15 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                     require_once dirname(__DIR__, 2) . '/events/lib/event_change.php';
                 }
                 $evUrl = latinfo_home_event_url($ev);
+                $evId = (int) ($ev['id'] ?? 0);
                 $place = latinfo_home_event_place_parts($ev);
                 $accent = latinfo_home_event_accent($ev, $categoriesByEventId);
                 $changeLang = $lang ?? 'hu';
                 $hasChange = events_event_change_active($ev);
                 $eventClass = 'latinfo-home__event';
+                if ($evId > 0) {
+                    $eventClass .= ' js-cal-event-preview';
+                }
                 $nameClass = 'latinfo-home__event-name';
                 $changeBadge = '';
                 $changeNote = '';
@@ -72,7 +76,15 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                 }
                 ?>
                 <li role="listitem">
-                    <a class="<?= h($eventClass) ?>" href="<?= h($evUrl) ?>" style="--home-event-accent: <?= h($accent) ?>">
+                    <a
+                        class="<?= h($eventClass) ?>"
+                        href="<?= h($evUrl) ?>"
+                        style="--home-event-accent: <?= h($accent) ?>"
+                        <?php if ($evId > 0): ?>
+                            data-preview-id="<?= $evId ?>"
+                            aria-haspopup="dialog"
+                        <?php endif; ?>
+                    >
                         <span class="latinfo-home__event-stripe" aria-hidden="true"></span>
                         <span class="latinfo-home__event-body">
                             <?php if ($changeBadge !== ''): ?>

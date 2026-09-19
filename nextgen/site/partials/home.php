@@ -25,10 +25,12 @@ declare(strict_types=1);
  * @var bool $showAdminEdit
  * @var string $adminEditUrl
  * @var list<array<string, mixed>> $adminFloatTools
+ * @var array<int, array<string, mixed>> $calendarPreviewById
  */
 $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
 $D = $Dj;
 $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEventId : [];
+$calendarPreviewById = is_array($calendarPreviewById ?? null) ? $calendarPreviewById : [];
 ?>
 <!DOCTYPE html>
 <html lang="<?= h($htmlLang) ?>">
@@ -121,5 +123,12 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
 </article>
 </div>
 <?php require $eventsPartial . '/public_dj_spotlight_script.php'; ?>
+<?php require $eventsPartial . '/event_image_orientation_script.php'; ?>
+<?php if ($calendarPreviewById !== []): ?>
+<?php
+$D = $S;
+require $eventsPartial . '/public_calendar_event_preview.php';
+?>
+<?php endif; ?>
 </body>
 </html>

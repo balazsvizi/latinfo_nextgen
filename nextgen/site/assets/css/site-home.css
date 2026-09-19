@@ -290,16 +290,13 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
 }
 
 .latinfo-home__event-city {
-    flex: 0 1 auto;
-    max-width: 48%;
+    flex: 0 0 auto;
     margin-left: auto;
     font-size: 0.8rem;
     font-weight: 650;
     line-height: 1.35;
     text-align: right;
     color: var(--lh-warm);
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 

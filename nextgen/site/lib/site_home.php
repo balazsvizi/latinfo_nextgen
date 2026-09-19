@@ -925,7 +925,7 @@ function latinfo_home_events_in_range(PDO $db, DateTimeImmutable $from, DateTime
     try {
         $status = function_exists('events_public_post_status') ? events_public_post_status() : 'publish';
         $st = $db->prepare('
-            SELECT e.`id`, e.`event_slug`, e.`event_name`,
+            SELECT e.`id`, e.`event_slug`, e.`event_name`, e.`event_featured_image_url`,
                    e.`event_start`, e.`event_end`, e.`event_allday`,
                    e.`event_change_active`, e.`event_change_type`, e.`event_change_note`,
                    v.`name` AS `venue_name`, v.`city` AS `venue_city`
