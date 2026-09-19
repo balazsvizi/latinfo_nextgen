@@ -109,19 +109,6 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     -webkit-backdrop-filter: var(--lh-card-blur);
 }
 
-.latinfo-home__day::after,
-.latinfo-home__flashes-wrap::after,
-.latinfo-home__rail .djs-public__spotlight::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 1.2rem;
-    right: 1.2rem;
-    height: 3px;
-    border-radius: 0 0 999px 999px;
-    background: linear-gradient(90deg, var(--li-green), var(--lh-warm));
-}
-
 .latinfo-home__rail .djs-public__spotlight {
     height: auto;
     gap: 0;
