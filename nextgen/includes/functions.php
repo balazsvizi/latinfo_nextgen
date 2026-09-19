@@ -155,14 +155,44 @@ function ng_absolute_url(string $pathOrUrl): string
 }
 
 /**
- * Backoffice navigációs zóna: nextgen (hub, config, admin, jelszó), finance (CRM), events.
+ * Event Admin alatti scriptnevek, amelyek a Latinfo.hu alkalmazáshoz tartoznak.
+ *
+ * @return list<string>
+ */
+function ng_nav_latinfo_event_scripts(): array
+{
+    return [
+        'adatok.php',
+        'ajax_event_stats_day.php',
+        'events_event_statisztika.php',
+        'events_lista_stat.php',
+        'events_public_stat.php',
+        'events_realtime.php',
+        'events_stat.php',
+        'events_statisztika.php',
+        'events_szervezok_statisztika.php',
+        'import_csv.php',
+        'partnerek_szerkeszt.php',
+        'slug_atiranyitasok.php',
+    ];
+}
+
+/**
+ * Backoffice navigációs zóna: nextgen (hub, config, admin, jelszó), finance (CRM), events, latinfo.
  */
 function ng_nav_app_zone(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (strpos($s, '/nextgen/latinfo/') !== false || strpos($s, '/nextgen/site/') !== false) {
+        return 'latinfo';
+    }
     if (strpos($s, '/nextgen/events/') !== false) {
+        $script = basename($s);
+        if (in_array($script, ng_nav_latinfo_event_scripts(), true)) {
+            return 'latinfo';
+        }
         return 'events';
     }
-    if (strpos($s, '/nextgen/config/') !== false || strpos($s, '/nextgen/admin/') !== false || strpos($s, '/nextgen/site/') !== false) {
+    if (strpos($s, '/nextgen/config/') !== false || strpos($s, '/nextgen/admin/') !== false) {
         return 'nextgen';
     }
     if (preg_match('#/nextgen/(apps|jelszo)\.php$#', $s)) {
@@ -180,14 +210,15 @@ function ng_nav_app_zone(): string {
  */
 function app_backoffice_area(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if (strpos($s, '/nextgen/events/') !== false) {
+    $zone = ng_nav_app_zone();
+    if ($zone === 'latinfo') {
+        return 'Latinfo.hu';
+    }
+    if ($zone === 'events') {
         return 'Event Admin';
     }
     if (strpos($s, '/nextgen/apps.php') !== false || str_ends_with($s, '/apps.php')) {
         return 'Alkalmazások';
-    }
-    if (strpos($s, '/nextgen/site/') !== false) {
-        return 'Kezdőoldal';
     }
     if (strpos($s, '/config/') !== false) {
         return 'Config';
@@ -205,7 +236,7 @@ function app_backoffice_area(): string {
 }
 
 /**
- * Logó / böngésző cím előtagja: SITE_NAME + szóköz + terület (Finance|Admin|Config|Event Admin|Alkalmazások).
+ * Logó / böngésző cím előtagja: SITE_NAME + szóköz + terület (Finance|Admin|Config|Event Admin|Latinfo.hu|Alkalmazások).
  */
 function app_backoffice_brand_line(): string {
     return trim(SITE_NAME . ' ' . app_backoffice_area());

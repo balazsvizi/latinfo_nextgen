@@ -5,6 +5,8 @@ requireLogin();
 $navZone = ng_nav_app_zone();
 if ($navZone === 'events') {
     $logoHomeUrl = nextgen_url('events/events_admin.php');
+} elseif ($navZone === 'latinfo') {
+    $logoHomeUrl = nextgen_url('latinfo/');
 } elseif ($navZone === 'nextgen') {
     $logoHomeUrl = nextgen_url('apps.php');
 } else {
@@ -37,6 +39,7 @@ if ($navZone === 'events') {
                 <ul class="nav-submenu" id="submenu-apps-switcher" role="menu">
                     <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance</a></li>
                     <li role="none"><a href="<?= h(nextgen_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
+                    <li role="none"><a href="<?= h(nextgen_url('latinfo/')) ?>" role="menuitem">Latinfo.hu</a></li>
                     <li role="none"><a href="<?= h(nextgen_url('config/cimkek.php')) ?>" role="menuitem">NextGen</a></li>
                 </ul>
             </div>
@@ -78,20 +81,6 @@ if ($navZone === 'events') {
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
-                        <a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" class="nav-parent-link">Stat</a>
-                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-stat" aria-label="Stat almenü">▾</button>
-                    </span>
-                    <ul class="nav-submenu" id="submenu-events-stat" role="menu">
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" role="menuitem">Statisztikák</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_szervezok_statisztika.php')) ?>" role="menuitem">Szervezők stat</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_public_stat.php')) ?>" role="menuitem">Publikus oldalak</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item has-submenu">
-                    <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('events/finance.php')) ?>" class="nav-parent-link">Finance</a>
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-finance" aria-label="Finance almenü">▾</button>
                     </span>
@@ -121,19 +110,52 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/tag_types.php')) ?>" role="menuitem">Címke típusok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/import_csv.php')) ?>" role="menuitem">CSV import</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('site/')) ?>" role="menuitem">Latinfo kezdőoldal</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" role="menuitem">Kezdőoldal szerkesztése</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/menu_szerkeszt.php')) ?>" role="menuitem">Főmenü</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" role="menuitem">Slug átirányítások</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/partnerek_szerkeszt.php')) ?>" role="menuitem">Partnereink</a></li>
                         <?php if (isLoggedIn() && isSuperadmin()): ?>
                         <li role="none"><a href="<?= h(nextgen_url('events/kepek_esemenyek.php')) ?>" role="menuitem">Képek–események</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/adatok.php')) ?>" role="menuitem">Adatok</a></li>
                         <?php endif; ?>
                     </ul>
                 </li>
+                <?php elseif ($navZone === 'latinfo'): ?>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" class="nav-parent-link">Kezdőoldal</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-home" aria-label="Kezdőoldal almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-latinfo-home" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('site/')) ?>" role="menuitem">Előnézet</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" role="menuitem">Szerkesztés</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" class="nav-parent-link">Stat</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-stat" aria-label="Stat almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-latinfo-stat" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" role="menuitem">Statisztikák</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_szervezok_statisztika.php')) ?>" role="menuitem">Szervezők stat</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_public_stat.php')) ?>" role="menuitem">Publikus oldalak</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" class="nav-parent-link">Slug</a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('events/partnerek_szerkeszt.php')) ?>" class="nav-parent-link">Partnereink</a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('events/import_csv.php')) ?>" class="nav-parent-link">CSV import</a>
+                </li>
+                <?php if (isLoggedIn() && isSuperadmin()): ?>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('events/adatok.php')) ?>" class="nav-parent-link">Adatok</a>
+                </li>
+                <?php endif; ?>
                 <?php endif; ?>
                 <?php if ($navZone === 'nextgen'): ?>
                 <li class="nav-item has-submenu">
@@ -143,8 +165,6 @@ if ($navZone === 'events') {
                     </span>
                     <ul class="nav-submenu" id="submenu-config" role="menu">
                         <li class="nav-submenu-heading" role="presentation"><span>Új táblázatok</span></li>
-                        <li role="none"><a href="<?= h(nextgen_url('site/')) ?>" role="menuitem">Kezdőoldal előnézet</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" role="menuitem">Kezdőoldal szerkesztése</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('config/lanueva.php')) ?>" role="menuitem">LaNueva</a></li>
                         <li class="nav-submenu-heading" role="presentation"><span>Általános</span></li>
                         <li role="none"><a href="<?= h(nextgen_url('config/cimkek.php')) ?>" role="menuitem">Címkék</a></li>

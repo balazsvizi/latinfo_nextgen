@@ -86,13 +86,11 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                 </section>
 
                 <?php if ($spotlightVisible !== []): ?>
-                    <?php require $eventsPartial . '/public_dj_spotlight.php'; ?>
-                    <p class="latinfo-home__rail-foot">
-                        <a class="latinfo-home__edit" href="<?= h($djsUrl) ?>">
-                            <span><?= h($H['djs_all']) ?></span>
-                            <span class="latinfo-home__day-more-arrow" aria-hidden="true">→</span>
-                        </a>
-                    </p>
+                    <?php
+                    $spotlightMoreHref = $djsUrl;
+                    $spotlightMoreLabel = $H['djs_all'];
+                    require $eventsPartial . '/public_dj_spotlight.php';
+                    ?>
                 <?php endif; ?>
             </div>
 

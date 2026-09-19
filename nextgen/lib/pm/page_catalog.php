@@ -16,7 +16,7 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/apps.php' => [
             'display_name' => 'Alkalmazások',
-            'purpose' => 'Alkalmazásválasztó: Finance, Event Admin, NextGen.',
+            'purpose' => 'Alkalmazásválasztó: Finance, Event Admin, Latinfo.hu, NextGen.',
         ],
         '/nextgen/login.php' => [
             'display_name' => 'Admin bejelentkezés',
@@ -97,6 +97,10 @@ function pm_tools_page_catalog(): array
         '/nextgen/config/lanueva.php' => [
             'display_name' => 'LaNueva',
             'purpose' => 'LaNueva táblázat konfiguráció.',
+        ],
+        '/nextgen/latinfo/index.php' => [
+            'display_name' => 'Latinfo.hu',
+            'purpose' => 'Latinfo.hu alkalmazás: kezdőoldal, statok, slug, Partnereink, adatok, CSV import.',
         ],
         '/nextgen/site/index.php' => [
             'display_name' => 'Latinfo kezdőoldal',

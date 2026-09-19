@@ -8,11 +8,15 @@ declare(strict_types=1);
  * @var int $spotlightMobileCount
  * @var string $cmsAnchorSpotlight
  * @var array<string, string> $D
+ * @var string|null $spotlightMoreHref Opcionális „Összes DJ” link (kezdőoldal)
+ * @var string|null $spotlightMoreLabel
  */
 $spotlightCards = is_array($spotlightCards ?? null) ? $spotlightCards : [];
 $spotlightMobileCount = (int) ($spotlightMobileCount ?? 3);
 $cmsAnchorSpotlight = trim((string) ($cmsAnchorSpotlight ?? 'DJ-ajanlo'));
 $D = is_array($D ?? null) ? $D : [];
+$spotlightMoreHref = trim((string) ($spotlightMoreHref ?? ''));
+$spotlightMoreLabel = trim((string) ($spotlightMoreLabel ?? ''));
 if ($spotlightCards === []) {
     return;
 }
@@ -46,6 +50,12 @@ if ($spotlightCards === []) {
             </li>
         <?php endforeach; ?>
     </ul>
+    <?php if ($spotlightMoreHref !== '' && $spotlightMoreLabel !== ''): ?>
+        <a class="latinfo-home__day-more djs-public__spotlight-more" href="<?= h($spotlightMoreHref) ?>">
+            <span><?= h($spotlightMoreLabel) ?></span>
+            <span class="latinfo-home__day-more-arrow" aria-hidden="true">→</span>
+        </a>
+    <?php endif; ?>
     <script type="application/json" id="djs-spotlight-data">
         <?= json_encode($spotlightCards, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     </script>

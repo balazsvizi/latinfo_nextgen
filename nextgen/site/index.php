@@ -26,7 +26,7 @@ $db = getDb();
 $schemaOk = latinfo_home_ensure_schema($db);
 $news = $schemaOk ? latinfo_home_news_all($db, true) : [];
 $quickNews = latinfo_home_quick_news($news, 3);
-$dayEvents = latinfo_home_today_tomorrow_events($db, 8);
+$dayEvents = latinfo_home_today_tomorrow_events($db);
 $categoriesByEventId = events_public_load_categories_by_event_id(
     $db,
     array_merge($dayEvents['today'], $dayEvents['tomorrow'])
@@ -59,9 +59,9 @@ $adminFloatTools = [
         'icon' => 'edit',
     ],
     [
-        'href' => nextgen_url('apps.php'),
-        'title' => 'Admin',
-        'aria' => 'Vissza az admin alkalmazásokhoz',
+        'href' => nextgen_url('latinfo/'),
+        'title' => 'Latinfo.hu',
+        'aria' => 'Vissza a Latinfo.hu alkalmazáshoz',
         'icon' => 'home',
     ],
 ];

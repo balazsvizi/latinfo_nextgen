@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 /**
- * Központi belépő – Finance és Event Admin választása (közös nextgen login után).
+ * Központi belépő – Finance, Event Admin, Latinfo.hu és NextGen (közös nextgen login után).
  * URL: /nextgen/apps.php
  */
 
@@ -33,15 +33,15 @@ try {
         <div class="num"><?= $eventCount ?></div>
         <p>Események naptár – <code>events/</code></p>
     </a>
+    <a href="<?= h(nextgen_url('latinfo/')) ?>" class="dash-card dash-card-latinfo">
+        <h3>Latinfo.hu</h3>
+        <div class="num">→</div>
+        <p>Kezdőoldal, statok, slug, Partnereink, adatok, CSV import</p>
+    </a>
     <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="dash-card dash-card-nextgen">
         <h3>NextGen</h3>
         <div class="num">→</div>
         <p>Config, admin, levélsablonok – <code>nextgen/config/</code>, <code>nextgen/admin/</code></p>
-    </a>
-    <a href="<?= h(nextgen_url('site/')) ?>" class="dash-card dash-card-nextgen">
-        <h3>Kezdőoldal</h3>
-        <div class="num">→</div>
-        <p>Latinfo.hu nyilvános kezdőoldal előnézet – egyelőre csak admin</p>
     </a>
 </div>
 
@@ -51,7 +51,7 @@ try {
         <a href="<?= h(nextgen_url('organizers/')) ?>" class="btn btn-secondary">Szervezők</a>
         <a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" class="btn btn-secondary">Számlázandó</a>
         <a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" class="btn btn-secondary">Új esemény</a>
-        <a href="<?= h(nextgen_url('site/')) ?>" class="btn btn-secondary">Kezdőoldal</a>
+        <a href="<?= h(nextgen_url('latinfo/')) ?>" class="btn btn-secondary">Latinfo.hu</a>
         <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="btn btn-secondary">NextGen – Címkék</a>
         <a href="<?= h(nextgen_url('admin/log.php')) ?>" class="btn btn-secondary">NextGen – Logok</a>
     </p>

@@ -519,6 +519,10 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     height: 2.85rem;
 }
 
+.latinfo-home__rail .djs-public__spotlight-more {
+    align-self: flex-end;
+}
+
 /* --------------------------------------------------------------------------
    10. Lábléc
    -------------------------------------------------------------------------- */

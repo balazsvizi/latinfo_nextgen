@@ -51,7 +51,7 @@ $loginBrand = trim(SITE_NAME . ' NextGen');
 <body class="login-page">
     <div class="login-box">
         <h1 class="login-brand"><span class="logo-site"><?= h(SITE_NAME) ?></span> <span class="logo-area">NextGen</span></h1>
-        <p class="login-sub">Bejelentkezés – Finance és Event Admin egy jelszóval</p>
+        <p class="login-sub">Bejelentkezés – Finance, Event Admin, Latinfo.hu és NextGen egy jelszóval</p>
         <?php if ($hiba): ?>
             <p class="error"><?= h($hiba) ?></p>
         <?php endif; ?>

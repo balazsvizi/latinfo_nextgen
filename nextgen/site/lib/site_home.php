@@ -904,7 +904,7 @@ function latinfo_home_event_overlaps_window(array $ev, DateTimeImmutable $from, 
  */
 function latinfo_home_events_in_range(PDO $db, DateTimeImmutable $from, DateTimeImmutable $until, int $limit = 40): array
 {
-    $limit = max(1, min(60, $limit));
+    $limit = max(1, min(200, $limit));
     try {
         $status = function_exists('events_public_post_status') ? events_public_post_status() : 'publish';
         $st = $db->prepare('
@@ -936,6 +936,8 @@ function latinfo_home_events_in_range(PDO $db, DateTimeImmutable $from, DateTime
 }
 
 /**
+ * Ma / Holnap események. $perDay <= 0 esetén minden esemény (nincs „Továbbiak” link).
+ *
  * @return array{
  *     today: list<array<string, mixed>>,
  *     tomorrow: list<array<string, mixed>>,
@@ -945,11 +947,13 @@ function latinfo_home_events_in_range(PDO $db, DateTimeImmutable $from, DateTime
  *     tomorrow_date: DateTimeImmutable
  * }
  */
-function latinfo_home_today_tomorrow_events(PDO $db, int $perDay = 5): array
+function latinfo_home_today_tomorrow_events(PDO $db, int $perDay = 0): array
 {
-    $perDay = max(1, min(12, $perDay));
+    $showAll = $perDay <= 0;
+    $perDay = $showAll ? 0 : max(1, min(12, $perDay));
     $windows = latinfo_home_day_windows();
-    $rows = latinfo_home_events_in_range($db, $windows['today_from'], $windows['after_from'], $perDay * 8);
+    $fetchLimit = $showAll ? 200 : $perDay * 8;
+    $rows = latinfo_home_events_in_range($db, $windows['today_from'], $windows['after_from'], $fetchLimit);
     $today = [];
     $tomorrow = [];
     foreach ($rows as $ev) {
@@ -962,10 +966,10 @@ function latinfo_home_today_tomorrow_events(PDO $db, int $perDay = 5): array
     }
 
     return [
-        'today' => array_slice($today, 0, $perDay),
-        'tomorrow' => array_slice($tomorrow, 0, $perDay),
-        'today_more' => count($today) > $perDay,
-        'tomorrow_more' => count($tomorrow) > $perDay,
+        'today' => $showAll ? $today : array_slice($today, 0, $perDay),
+        'tomorrow' => $showAll ? $tomorrow : array_slice($tomorrow, 0, $perDay),
+        'today_more' => !$showAll && count($today) > $perDay,
+        'tomorrow_more' => !$showAll && count($tomorrow) > $perDay,
         'today_date' => $windows['today'],
         'tomorrow_date' => $windows['tomorrow'],
     ];
