@@ -79,11 +79,15 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                                 <span class="latinfo-home__event-change"><?= h($changeBadge) ?></span>
                             <?php endif; ?>
                             <span class="<?= h($nameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
-                            <?php if ($place['outside_budapest'] && $place['city'] !== ''): ?>
-                                <span class="latinfo-home__event-city"><?= h($place['city']) ?></span>
-                            <?php endif; ?>
-                            <?php if ($place['venue'] !== ''): ?>
-                                <span class="latinfo-home__event-place"><?= h($place['venue']) ?></span>
+                            <?php if ($place['venue'] !== '' || ($place['outside_budapest'] && $place['city'] !== '')): ?>
+                                <span class="latinfo-home__event-meta">
+                                    <?php if ($place['venue'] !== ''): ?>
+                                        <span class="latinfo-home__event-place"><?= h($place['venue']) ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($place['outside_budapest'] && $place['city'] !== ''): ?>
+                                        <span class="latinfo-home__event-city"><?= h($place['city']) ?></span>
+                                    <?php endif; ?>
+                                </span>
                             <?php endif; ?>
                             <?php if ($changeNote !== ''): ?>
                                 <span class="latinfo-home__event-change-note"><?= h($changeNote) ?></span>

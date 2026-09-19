@@ -270,29 +270,37 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     color: var(--li-green-dark);
 }
 
-.latinfo-home__event-city {
-    display: inline-flex;
-    align-self: flex-start;
-    max-width: 100%;
-    margin-top: 0.12rem;
-    padding: 0.14rem 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--lh-warm) 48%, transparent);
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 750;
-    letter-spacing: 0.02em;
-    line-height: 1.25;
-    color: #6a4518;
-    background: color-mix(in srgb, var(--lh-warm) 26%, #fff8ee);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.latinfo-home__event-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.55rem;
+    min-width: 0;
 }
 
 .latinfo-home__event-place {
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: 0.8rem;
     line-height: 1.35;
     color: var(--li-text-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.latinfo-home__event-city {
+    flex: 0 1 auto;
+    max-width: 48%;
+    margin-left: auto;
+    font-size: 0.8rem;
+    font-weight: 650;
+    line-height: 1.35;
+    text-align: right;
+    color: var(--lh-warm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .latinfo-home__event-go {
