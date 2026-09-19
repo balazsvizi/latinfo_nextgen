@@ -671,15 +671,32 @@ function latinfo_home_format_event_when(array $ev): string
     return $label;
 }
 
+/**
+ * Helyszín a kezdőoldali eseménysorhoz.
+ *
+ * @return array{venue: string, city: string, outside_budapest: bool}
+ */
+function latinfo_home_event_place_parts(array $ev): array
+{
+    $venue = trim((string) ($ev['venue_name'] ?? ''));
+    $city = trim((string) ($ev['venue_city'] ?? ''));
+    $outside = $city !== '' && !latinfo_home_city_is_budapest($city);
+
+    return [
+        'venue' => $venue,
+        'city' => $outside ? $city : '',
+        'outside_budapest' => $outside,
+    ];
+}
+
 function latinfo_home_event_place(array $ev): string
 {
-    $name = trim((string) ($ev['venue_name'] ?? ''));
-    $city = trim((string) ($ev['venue_city'] ?? ''));
-    if ($city !== '' && !latinfo_home_city_is_budapest($city)) {
-        return $name !== '' ? $name . ', ' . $city : $city;
+    $parts = latinfo_home_event_place_parts($ev);
+    if ($parts['outside_budapest'] && $parts['city'] !== '') {
+        return $parts['venue'] !== '' ? $parts['venue'] . ', ' . $parts['city'] : $parts['city'];
     }
 
-    return $name;
+    return $parts['venue'];
 }
 
 function latinfo_home_city_is_budapest(string $city): bool

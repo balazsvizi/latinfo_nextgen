@@ -270,6 +270,25 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     color: var(--li-green-dark);
 }
 
+.latinfo-home__event-city {
+    display: inline-flex;
+    align-self: flex-start;
+    max-width: 100%;
+    margin-top: 0.12rem;
+    padding: 0.14rem 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--lh-warm) 48%, transparent);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
+    color: #6a4518;
+    background: color-mix(in srgb, var(--lh-warm) 26%, #fff8ee);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .latinfo-home__event-place {
     font-size: 0.8rem;
     line-height: 1.35;

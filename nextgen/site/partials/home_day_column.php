@@ -47,7 +47,7 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                     require_once dirname(__DIR__, 2) . '/events/lib/event_change.php';
                 }
                 $evUrl = latinfo_home_event_url($ev);
-                $place = latinfo_home_event_place($ev);
+                $place = latinfo_home_event_place_parts($ev);
                 $accent = latinfo_home_event_accent($ev, $categoriesByEventId);
                 $changeLang = $lang ?? 'hu';
                 $hasChange = events_event_change_active($ev);
@@ -79,8 +79,11 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                                 <span class="latinfo-home__event-change"><?= h($changeBadge) ?></span>
                             <?php endif; ?>
                             <span class="<?= h($nameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
-                            <?php if ($place !== ''): ?>
-                                <span class="latinfo-home__event-place"><?= h($place) ?></span>
+                            <?php if ($place['outside_budapest'] && $place['city'] !== ''): ?>
+                                <span class="latinfo-home__event-city"><?= h($place['city']) ?></span>
+                            <?php endif; ?>
+                            <?php if ($place['venue'] !== ''): ?>
+                                <span class="latinfo-home__event-place"><?= h($place['venue']) ?></span>
                             <?php endif; ?>
                             <?php if ($changeNote !== ''): ?>
                                 <span class="latinfo-home__event-change-note"><?= h($changeNote) ?></span>
