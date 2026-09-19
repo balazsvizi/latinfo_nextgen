@@ -785,8 +785,8 @@ function latinfo_home_strings(string $lang): array
 {
     $hu = [
         'page_title' => 'kezdőoldal (előnézet)',
-        'quick_news' => 'Gyorshírek',
-        'quick_news_aria' => 'Három kiemelt gyorshír',
+        'quick_news' => 'Bejelentések',
+        'quick_news_aria' => 'Kiemelt bejelentések',
         'today' => 'Ma',
         'tomorrow' => 'Holnap',
         'calendar' => 'Teljes naptár',
@@ -794,7 +794,7 @@ function latinfo_home_strings(string $lang): array
         'calendar_cta_aria' => 'Naptár megnyitása',
         'empty_today' => 'Ma nincs közzétett esemény.',
         'empty_tomorrow' => 'Holnapra még nincs esemény a naptárban.',
-        'empty_news' => 'Most nincs gyorshír.',
+        'empty_news' => 'Most nincs bejelentés.',
         'more' => 'Továbbiak a naptárban',
         'collectors' => 'Gyűjtők',
         'collectors_empty' => 'Még nincs gyűjtő. Vedd fel a naptárt, DJ-ket, iskolákat – amit a szcéna keres.',
@@ -804,8 +804,8 @@ function latinfo_home_strings(string $lang): array
     ];
     $en = [
         'page_title' => 'home (preview)',
-        'quick_news' => 'Headlines',
-        'quick_news_aria' => 'Three featured headlines',
+        'quick_news' => 'Announcements',
+        'quick_news_aria' => 'Featured announcements',
         'today' => 'Today',
         'tomorrow' => 'Tomorrow',
         'calendar' => 'Full calendar',
@@ -813,7 +813,7 @@ function latinfo_home_strings(string $lang): array
         'calendar_cta_aria' => 'Open the calendar',
         'empty_today' => 'No published events today.',
         'empty_tomorrow' => 'Nothing on the calendar for tomorrow yet.',
-        'empty_news' => 'No headlines right now.',
+        'empty_news' => 'No announcements right now.',
         'more' => 'More in the calendar',
         'collectors' => 'Collections',
         'collectors_empty' => 'No collections yet.',

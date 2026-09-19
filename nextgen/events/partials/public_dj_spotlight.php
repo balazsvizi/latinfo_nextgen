@@ -10,6 +10,7 @@ declare(strict_types=1);
  * @var array<string, string> $D
  * @var string|null $spotlightMoreHref Opcionális „Összes DJ” link (kezdőoldal)
  * @var string|null $spotlightMoreLabel
+ * @var string|null $spotlightTrackModule Opcionális kezdőoldal modul kulcs (kattintás-követés)
  */
 $spotlightCards = is_array($spotlightCards ?? null) ? $spotlightCards : [];
 $spotlightMobileCount = (int) ($spotlightMobileCount ?? 3);
@@ -17,6 +18,7 @@ $cmsAnchorSpotlight = trim((string) ($cmsAnchorSpotlight ?? 'DJ-ajanlo'));
 $D = is_array($D ?? null) ? $D : [];
 $spotlightMoreHref = trim((string) ($spotlightMoreHref ?? ''));
 $spotlightMoreLabel = trim((string) ($spotlightMoreLabel ?? ''));
+$spotlightTrackModule = trim((string) ($spotlightTrackModule ?? ''));
 if ($spotlightCards === []) {
     return;
 }
@@ -25,8 +27,21 @@ if ($spotlightCards === []) {
     <h2 class="djs-public__spotlight-title"><?= h((string) ($D['spotlight_heading'] ?? '')) ?></h2>
     <ul class="djs-public__spotlight-list" id="djs-spotlight-list" role="list">
         <?php foreach ($spotlightCards as $slotIndex => $card): ?>
+            <?php
+            $cardId = (int) ($card['id'] ?? 0);
+            $cardName = (string) ($card['name'] ?? '');
+            ?>
             <li class="djs-public__spotlight-item"<?= $slotIndex >= $spotlightMobileCount ? ' hidden' : '' ?>>
-                <a class="djs-public__spotlight-card" href="<?= h((string) $card['href']) ?>" aria-label="<?= h((string) $card['aria']) ?>">
+                <a
+                    class="djs-public__spotlight-card"
+                    href="<?= h((string) $card['href']) ?>"
+                    aria-label="<?= h((string) $card['aria']) ?>"
+                    <?php if ($spotlightTrackModule !== ''): ?>
+                        data-lh-module-track="<?= h($spotlightTrackModule) ?>"
+                        data-lh-item-key="<?= h($cardId > 0 ? 'dj:' . $cardId : '') ?>"
+                        data-lh-item-label="<?= h($cardName) ?>"
+                    <?php endif; ?>
+                >
                     <span class="djs-public__spotlight-avatar<?= !empty($card['isLogo']) ? ' djs-public__spotlight-avatar--logo' : '' ?>" aria-hidden="true">
                         <?php if ((string) ($card['photo'] ?? '') !== ''): ?>
                             <img class="djs-public__spotlight-photo" src="<?= h((string) $card['photo']) ?>" alt="" loading="lazy" decoding="async"<?= (string) ($card['photoStyle'] ?? '') !== '' ? ' style="' . h((string) $card['photoStyle']) . '"' : '' ?>>
@@ -51,7 +66,15 @@ if ($spotlightCards === []) {
         <?php endforeach; ?>
     </ul>
     <?php if ($spotlightMoreHref !== '' && $spotlightMoreLabel !== ''): ?>
-        <a class="latinfo-home__day-more djs-public__spotlight-more" href="<?= h($spotlightMoreHref) ?>">
+        <a
+            class="latinfo-home__day-more djs-public__spotlight-more"
+            href="<?= h($spotlightMoreHref) ?>"
+            <?php if ($spotlightTrackModule !== ''): ?>
+                data-lh-module-track="<?= h($spotlightTrackModule) ?>"
+                data-lh-item-key="dj:more"
+                data-lh-item-label="<?= h($spotlightMoreLabel) ?>"
+            <?php endif; ?>
+        >
             <span><?= h($spotlightMoreLabel) ?></span>
             <span class="latinfo-home__day-more-arrow" aria-hidden="true">→</span>
         </a>

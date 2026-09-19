@@ -300,6 +300,7 @@ function events_public_dj_spotlight_cards(array $pool, string $lang, array $stri
         }
 
         $cards[] = [
+            'id' => (int) ($row['id'] ?? 0),
             'name' => $name,
             'href' => $slug !== ''
                 ? events_public_dj_page_url($slug, $lang)

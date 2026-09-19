@@ -73,6 +73,11 @@ if ($spotlightCards === []) {
 
         link.setAttribute('href', card.href || '#');
         link.setAttribute('aria-label', card.aria || card.name || '');
+        if (link.hasAttribute('data-lh-module-track')) {
+            var cardId = parseInt(card.id, 10) || 0;
+            link.setAttribute('data-lh-item-key', cardId > 0 ? ('dj:' + cardId) : '');
+            link.setAttribute('data-lh-item-label', card.name || '');
+        }
         avatar.className = 'djs-public__spotlight-avatar' + (card.isLogo ? ' djs-public__spotlight-avatar--logo' : '');
         avatar.textContent = '';
         if (card.photo) {

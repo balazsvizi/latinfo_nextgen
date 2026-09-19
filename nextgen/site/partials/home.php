@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 /**
  * @var array<string, string> $H
+ * @var list<array<string, mixed>> $enabledModules
  * @var list<array<string, mixed>> $quickNews
  * @var array<string, mixed> $dayEvents
  * @var array<int, list<array{color?: string}>> $categoriesByEventId
@@ -11,6 +12,8 @@ declare(strict_types=1);
  * @var int $spotlightMobileCount
  * @var array<string, string> $Dj
  * @var string $cmsAnchorSpotlight
+ * @var array<string, string> $ratingStrings
+ * @var string $ratingAjaxUrl
  * @var string $calendarUrl
  * @var string $djsUrl
  * @var string $editUrl
@@ -26,11 +29,14 @@ declare(strict_types=1);
  * @var string $adminEditUrl
  * @var list<array<string, mixed>> $adminFloatTools
  * @var array<int, array<string, mixed>> $calendarPreviewById
+ * @var bool $lhModuleTrackAllowed
  */
 $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
 $D = $Dj;
 $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEventId : [];
 $calendarPreviewById = is_array($calendarPreviewById ?? null) ? $calendarPreviewById : [];
+$enabledModules = is_array($enabledModules ?? null) ? $enabledModules : [];
+$lhModuleTrackAllowed = !empty($lhModuleTrackAllowed);
 ?>
 <!DOCTYPE html>
 <html lang="<?= h($htmlLang) ?>">
@@ -56,66 +62,57 @@ $calendarPreviewById = is_array($calendarPreviewById ?? null) ? $calendarPreview
 
     <div class="latinfo-home__stage">
         <div class="latinfo-home__board">
-            <div class="latinfo-home__rail">
-                <section class="latinfo-home__flashes-wrap" id="hirek" aria-label="<?= h($H['quick_news']) ?>">
-                    <?php if ($quickNews === []): ?>
-                        <p class="latinfo-home__day-empty"><?= h($H['empty_news']) ?></p>
-                    <?php else: ?>
-                        <ul class="latinfo-home__flashes" role="list" aria-label="<?= h($H['quick_news_aria']) ?>">
-                            <?php foreach ($quickNews as $item): ?>
-                                <?php
-                                $itemUrl = trim((string) ($item['url'] ?? ''));
-                                if ($itemUrl === '') {
-                                    $itemUrl = $calendarUrl;
-                                }
-                                $itemKicker = trim((string) ($item['kicker'] ?? ''));
-                                $itemDek = trim((string) ($item['dek'] ?? ''));
-                                ?>
-                                <li role="listitem">
-                                    <a class="latinfo-home__flash" href="<?= h($itemUrl) ?>">
-                                        <?php if ($itemKicker !== ''): ?>
-                                            <span class="latinfo-home__flash-kicker"><?= h($itemKicker) ?></span>
-                                        <?php endif; ?>
-                                        <span class="latinfo-home__flash-title"><?= h((string) ($item['title'] ?? '')) ?></span>
-                                        <?php if ($itemDek !== ''): ?>
-                                            <span class="latinfo-home__flash-dek"><?= h($itemDek) ?></span>
-                                        <?php endif; ?>
-                                    </a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php endif; ?>
-                </section>
-
-                <?php if ($spotlightVisible !== []): ?>
-                    <?php
-                    $spotlightMoreHref = $djsUrl;
-                    $spotlightMoreLabel = $H['djs_all'];
-                    require $eventsPartial . '/public_dj_spotlight.php';
-                    ?>
-                <?php endif; ?>
-            </div>
-
-            <div class="latinfo-home__calendar" id="naptar">
+            <?php foreach ($enabledModules as $modIndex => $mod): ?>
                 <?php
-                $dayWord = $H['today'];
-                $dayDate = latinfo_home_day_date($dayEvents['today_date'], $lang);
-                $sectionId = 'lh-today';
-                $events = $dayEvents['today'];
-                $hasMore = $dayEvents['today_more'];
-                $empty = $H['empty_today'];
-                $moreLabel = $H['more'];
-                require __DIR__ . '/home_day_column.php';
-
-                $dayWord = $H['tomorrow'];
-                $dayDate = latinfo_home_day_date($dayEvents['tomorrow_date'], $lang);
-                $sectionId = 'lh-tomorrow';
-                $events = $dayEvents['tomorrow'];
-                $hasMore = $dayEvents['tomorrow_more'];
-                $empty = $H['empty_tomorrow'];
-                require __DIR__ . '/home_day_column.php';
+                $modKey = (string) ($mod['module_key'] ?? '');
+                $column = (string) ($mod['column'] ?? 'rail');
+                $orderStyle = 'order:' . (int) $modIndex;
                 ?>
-            </div>
+                <div
+                    class="latinfo-home__module latinfo-home__module--<?= h($modKey) ?> latinfo-home__module--col-<?= h($column) ?>"
+                    style="<?= h($orderStyle) ?>"
+                    data-module="<?= h($modKey) ?>"
+                >
+                    <?php if ($modKey === 'announcements'): ?>
+                        <?php require __DIR__ . '/home_module_announcements.php'; ?>
+                    <?php elseif ($modKey === 'today'): ?>
+                        <?php
+                        $dayWord = $H['today'];
+                        $dayDate = latinfo_home_day_date($dayEvents['today_date'], $lang);
+                        $sectionId = 'lh-today';
+                        $events = $dayEvents['today'];
+                        $hasMore = $dayEvents['today_more'];
+                        $empty = $H['empty_today'];
+                        $moreLabel = $H['more'];
+                        $homeDayModuleKey = 'today';
+                        require __DIR__ . '/home_day_column.php';
+                        ?>
+                    <?php elseif ($modKey === 'tomorrow'): ?>
+                        <?php
+                        $dayWord = $H['tomorrow'];
+                        $dayDate = latinfo_home_day_date($dayEvents['tomorrow_date'], $lang);
+                        $sectionId = 'lh-tomorrow';
+                        $events = $dayEvents['tomorrow'];
+                        $hasMore = $dayEvents['tomorrow_more'];
+                        $empty = $H['empty_tomorrow'];
+                        $moreLabel = $H['more'];
+                        $homeDayModuleKey = 'tomorrow';
+                        require __DIR__ . '/home_day_column.php';
+                        ?>
+                    <?php elseif ($modKey === 'dj_spotlight'): ?>
+                        <?php if ($spotlightVisible !== []): ?>
+                            <?php
+                            $spotlightMoreHref = $djsUrl;
+                            $spotlightMoreLabel = $H['djs_all'];
+                            $spotlightTrackModule = 'dj_spotlight';
+                            require $eventsPartial . '/public_dj_spotlight.php';
+                            ?>
+                        <?php endif; ?>
+                    <?php elseif ($modKey === 'rating'): ?>
+                        <?php require __DIR__ . '/home_module_rating.php'; ?>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
 
@@ -124,6 +121,7 @@ $calendarPreviewById = is_array($calendarPreviewById ?? null) ? $calendarPreview
 </div>
 <?php require $eventsPartial . '/public_dj_spotlight_script.php'; ?>
 <?php require $eventsPartial . '/event_image_orientation_script.php'; ?>
+<?php require __DIR__ . '/home_module_track_script.php'; ?>
 <?php if ($calendarPreviewById !== []): ?>
 <?php
 $D = $S;

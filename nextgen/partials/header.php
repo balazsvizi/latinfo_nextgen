@@ -125,7 +125,11 @@ if ($navZone === 'events') {
                     </span>
                     <ul class="nav-submenu" id="submenu-latinfo-home" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('site/')) ?>" role="menuitem">Előnézet</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" role="menuitem">Szerkesztés</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" role="menuitem">Modulok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/modul_bejelentesek.php')) ?>" role="menuitem">Bejelentések</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/modul_dj.php')) ?>" role="menuitem">DJ ajánló</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/modul_ertekeles.php')) ?>" role="menuitem">Értékelés</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/stat.php')) ?>" role="menuitem">Stat</a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu">
@@ -138,6 +142,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/events_szervezok_statisztika.php')) ?>" role="menuitem">Szervezők stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_public_stat.php')) ?>" role="menuitem">Publikus oldalak</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/stat.php')) ?>" role="menuitem">Kezdőoldal modulok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>
                     </ul>

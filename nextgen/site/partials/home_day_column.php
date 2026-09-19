@@ -14,6 +14,7 @@ declare(strict_types=1);
  * @var string $moreLabel
  * @var string $lang
  * @var array<int, list<array{color?: string}>> $categoriesByEventId
+ * @var string|null $homeDayModuleKey Opcionális kezdőoldal modul kulcs (kattintás-követés)
  */
 $dayWord = trim((string) ($dayWord ?? ''));
 $dayDate = trim((string) ($dayDate ?? ''));
@@ -24,6 +25,7 @@ $empty = (string) ($empty ?? '');
 $calendarUrl = (string) ($calendarUrl ?? '#');
 $moreLabel = (string) ($moreLabel ?? '');
 $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEventId : [];
+$homeDayModuleKey = trim((string) ($homeDayModuleKey ?? ''));
 ?>
 <section class="latinfo-home__day" aria-labelledby="<?= h($sectionId) ?>-title">
     <header class="latinfo-home__day-head">
@@ -83,6 +85,11 @@ $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEve
                         <?php if ($evId > 0): ?>
                             data-preview-id="<?= $evId ?>"
                             aria-haspopup="dialog"
+                        <?php endif; ?>
+                        <?php if ($homeDayModuleKey !== ''): ?>
+                            data-lh-module-track="<?= h($homeDayModuleKey) ?>"
+                            data-lh-item-key="<?= h($evId > 0 ? 'event:' . $evId : '') ?>"
+                            data-lh-item-label="<?= h((string) ($ev['event_name'] ?? '')) ?>"
                         <?php endif; ?>
                     >
                         <span class="latinfo-home__event-stripe" aria-hidden="true"></span>

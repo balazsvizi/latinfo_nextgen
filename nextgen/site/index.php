@@ -15,7 +15,7 @@ require_once dirname(__DIR__) . '/events/lib/public_djs_content.php';
 require_once dirname(__DIR__) . '/events/lib/public_event_filters.php';
 require_once dirname(__DIR__) . '/events/lib/calendar_event_preview.php';
 require_once dirname(__DIR__) . '/events/lib/event_public_styles.php';
-require_once __DIR__ . '/lib/site_home.php';
+require_once __DIR__ . '/lib/site_modules.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $D = events_public_home_strings($lang);
@@ -25,7 +25,8 @@ $S['admin_edit_aria'] = 'Kezdőoldal szerkesztése';
 $H = latinfo_home_strings($lang);
 
 $db = getDb();
-$schemaOk = latinfo_home_ensure_schema($db);
+$schemaOk = latinfo_home_modules_ensure_schema($db);
+$enabledModules = $schemaOk ? latinfo_home_modules_enabled($db) : [];
 $news = $schemaOk ? latinfo_home_news_all($db, true) : [];
 $quickNews = latinfo_home_quick_news($news, 3);
 $dayEvents = latinfo_home_today_tomorrow_events($db);
@@ -54,6 +55,9 @@ $spotlightMobileCount = $djSpotlight['visible_count'];
 $spotlightVisible = array_slice($spotlightCards, 0, $spotlightMobileCount);
 $cmsAnchorSpotlight = 'latinfo-dj-ajanlo';
 $Dj = $djSpotlight['strings'];
+$ratingStrings = latinfo_home_rating_strings($lang);
+$ratingAjaxUrl = nextgen_url('site/ajax_rating.php');
+$lhModuleTrackAllowed = true;
 
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $urlHu = latinfo_home_lang_switch_url('hu');
