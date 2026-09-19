@@ -76,18 +76,27 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     gap: var(--lh-board-gap);
 }
 
-.latinfo-home__module {
+.latinfo-home__rail,
+.latinfo-home__calendar {
     display: flex;
     flex-direction: column;
+    gap: var(--lh-board-gap);
     min-width: min(100%, 18rem);
 }
 
-.latinfo-home__module--col-rail {
+.latinfo-home__rail {
     flex: 1 1 22rem;
 }
 
-.latinfo-home__module--col-calendar {
+.latinfo-home__calendar {
     flex: 1.3 1 27rem;
+}
+
+.latinfo-home__module {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
 }
 
 .latinfo-home__module:empty {
@@ -693,7 +702,8 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
    12. Reszponzív
    -------------------------------------------------------------------------- */
 @media (max-width: 900px) {
-    .latinfo-home__module {
+    .latinfo-home__rail,
+    .latinfo-home__calendar {
         flex-basis: 100%;
     }
 }

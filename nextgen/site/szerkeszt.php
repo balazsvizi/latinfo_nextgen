@@ -85,6 +85,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <p class="text-muted" style="margin-top:0">
         Húzd a sorokat a fogantyúnál a kívánt sorrendbe, majd mentsd.
+        A bal oszlop (bejelentések, DJ, értékelés) és a naptár oszlop (ma / holnap) külön sávban jelenik meg; a sorrend oszlopon belül érvényesül.
         A tartalom szerkesztése a menüben, a Kezdőoldal alatt érhető el.
     </p>
 
