@@ -38,6 +38,7 @@ function latinfo_home_module_catalog(): array
             'has_item_stats' => true,
             'column' => 'rail',
             'default_order' => 10,
+            'default_order_mobile' => 30,
             'default_enabled' => true,
         ],
         'today' => [
@@ -47,6 +48,7 @@ function latinfo_home_module_catalog(): array
             'has_item_stats' => false,
             'column' => 'calendar',
             'default_order' => 20,
+            'default_order_mobile' => 10,
             'default_enabled' => true,
         ],
         'tomorrow' => [
@@ -56,6 +58,7 @@ function latinfo_home_module_catalog(): array
             'has_item_stats' => false,
             'column' => 'calendar',
             'default_order' => 30,
+            'default_order_mobile' => 20,
             'default_enabled' => true,
         ],
         'dj_spotlight' => [
@@ -65,6 +68,7 @@ function latinfo_home_module_catalog(): array
             'has_item_stats' => true,
             'column' => 'rail',
             'default_order' => 40,
+            'default_order_mobile' => 40,
             'default_enabled' => true,
         ],
         'rating' => [
@@ -74,6 +78,7 @@ function latinfo_home_module_catalog(): array
             'has_item_stats' => true,
             'column' => 'rail',
             'default_order' => 50,
+            'default_order_mobile' => 50,
             'default_enabled' => true,
         ],
     ];
@@ -135,6 +140,7 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
                 `module_key` VARCHAR(32) NOT NULL PRIMARY KEY,
                 `is_enabled` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
                 `sort_order` INT NOT NULL DEFAULT 0,
+                `sort_order_mobile` INT NOT NULL DEFAULT 0,
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
@@ -168,6 +174,7 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
                 KEY `idx_lh_rating_ip_day` (`ip_hash`, `occurred_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+        latinfo_home_modules_ensure_mobile_order_column($db);
         latinfo_home_modules_seed_defaults($db);
         $done = true;
 
@@ -179,8 +186,54 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
     }
 }
 
+function latinfo_home_modules_ensure_mobile_order_column(PDO $db): void
+{
+    try {
+        $cols = $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'sort_order_mobile'")->fetch(PDO::FETCH_ASSOC);
+        if (is_array($cols)) {
+            return;
+        }
+        $db->exec('
+            ALTER TABLE `latinfo_home_modules`
+            ADD COLUMN `sort_order_mobile` INT NOT NULL DEFAULT 0 AFTER `sort_order`
+        ');
+        // Meglévő sorok: ha 0, másold a desktop sorrendet, majd alkalmazd a katalógus mobil defaultot ahol még 0.
+        $db->exec('UPDATE `latinfo_home_modules` SET `sort_order_mobile` = `sort_order` WHERE `sort_order_mobile` = 0');
+        $st = $db->prepare('UPDATE `latinfo_home_modules` SET `sort_order_mobile` = ? WHERE `module_key` = ?');
+        foreach (latinfo_home_module_catalog() as $key => $meta) {
+            $st->execute([(int) $meta['default_order_mobile'], $key]);
+        }
+    } catch (Throwable $e) {
+        error_log('latinfo_home_modules_ensure_mobile_order_column: ' . $e->getMessage());
+    }
+}
+
 function latinfo_home_modules_seed_defaults(PDO $db): void
 {
+    $hasMobile = false;
+    try {
+        $hasMobile = (bool) $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'sort_order_mobile'")->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        $hasMobile = false;
+    }
+
+    if ($hasMobile) {
+        $st = $db->prepare('
+            INSERT IGNORE INTO `latinfo_home_modules` (`module_key`, `is_enabled`, `sort_order`, `sort_order_mobile`)
+            VALUES (?, ?, ?, ?)
+        ');
+        foreach (latinfo_home_module_catalog() as $key => $meta) {
+            $st->execute([
+                $key,
+                !empty($meta['default_enabled']) ? 1 : 0,
+                (int) $meta['default_order'],
+                (int) $meta['default_order_mobile'],
+            ]);
+        }
+
+        return;
+    }
+
     $st = $db->prepare('
         INSERT IGNORE INTO `latinfo_home_modules` (`module_key`, `is_enabled`, `sort_order`)
         VALUES (?, ?, ?)
@@ -195,14 +248,23 @@ function latinfo_home_modules_seed_defaults(PDO $db): void
 }
 
 /**
- * @return list<array{module_key: string, is_enabled: bool, sort_order: int, label: string, editable: bool, has_item_stats: bool, column: string}>
+ * @return list<array{
+ *   module_key: string,
+ *   is_enabled: bool,
+ *   sort_order: int,
+ *   sort_order_mobile: int,
+ *   label: string,
+ *   editable: bool,
+ *   has_item_stats: bool,
+ *   column: string
+ * }>
  */
-function latinfo_home_modules_all(PDO $db): array
+function latinfo_home_modules_all(PDO $db, string $sortBy = 'desktop'): array
 {
     $catalog = latinfo_home_module_catalog();
     $rowsByKey = [];
     try {
-        $rows = $db->query('SELECT `module_key`, `is_enabled`, `sort_order` FROM `latinfo_home_modules`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $rows = $db->query('SELECT `module_key`, `is_enabled`, `sort_order`, `sort_order_mobile` FROM `latinfo_home_modules`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
         foreach ($rows as $row) {
             $key = (string) ($row['module_key'] ?? '');
             if (!isset($catalog[$key])) {
@@ -211,24 +273,47 @@ function latinfo_home_modules_all(PDO $db): array
             $rowsByKey[$key] = $row;
         }
     } catch (Throwable $e) {
-        error_log('latinfo_home_modules_all: ' . $e->getMessage());
+        // Régi séma: sort_order_mobile nélkül.
+        try {
+            $rows = $db->query('SELECT `module_key`, `is_enabled`, `sort_order` FROM `latinfo_home_modules`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            foreach ($rows as $row) {
+                $key = (string) ($row['module_key'] ?? '');
+                if (!isset($catalog[$key])) {
+                    continue;
+                }
+                $row['sort_order_mobile'] = $catalog[$key]['default_order_mobile'] ?? $row['sort_order'];
+                $rowsByKey[$key] = $row;
+            }
+        } catch (Throwable $e2) {
+            error_log('latinfo_home_modules_all: ' . $e2->getMessage());
+        }
     }
 
     $out = [];
     foreach ($catalog as $key => $meta) {
         $row = $rowsByKey[$key] ?? null;
+        $desktop = $row !== null ? (int) ($row['sort_order'] ?? $meta['default_order']) : (int) $meta['default_order'];
+        $mobile = $row !== null
+            ? (int) ($row['sort_order_mobile'] ?? $meta['default_order_mobile'])
+            : (int) $meta['default_order_mobile'];
+        if ($mobile === 0) {
+            $mobile = (int) $meta['default_order_mobile'];
+        }
         $out[] = [
             'module_key' => $key,
             'is_enabled' => $row !== null ? ((int) ($row['is_enabled'] ?? 1) === 1) : !empty($meta['default_enabled']),
-            'sort_order' => $row !== null ? (int) ($row['sort_order'] ?? $meta['default_order']) : (int) $meta['default_order'],
+            'sort_order' => $desktop,
+            'sort_order_mobile' => $mobile,
             'label' => (string) $meta['label'],
             'editable' => !empty($meta['editable']),
             'has_item_stats' => !empty($meta['has_item_stats']),
             'column' => (string) $meta['column'],
         ];
     }
-    usort($out, static function (array $a, array $b): int {
-        $cmp = $a['sort_order'] <=> $b['sort_order'];
+
+    $field = $sortBy === 'mobile' ? 'sort_order_mobile' : 'sort_order';
+    usort($out, static function (array $a, array $b) use ($field): int {
+        $cmp = $a[$field] <=> $b[$field];
 
         return $cmp !== 0 ? $cmp : strcmp($a['module_key'], $b['module_key']);
     });
@@ -237,28 +322,38 @@ function latinfo_home_modules_all(PDO $db): array
 }
 
 /**
- * @return list<array{module_key: string, is_enabled: bool, sort_order: int, label: string, editable: bool, has_item_stats: bool, column: string}>
+ * @return list<array{
+ *   module_key: string,
+ *   is_enabled: bool,
+ *   sort_order: int,
+ *   sort_order_mobile: int,
+ *   label: string,
+ *   editable: bool,
+ *   has_item_stats: bool,
+ *   column: string
+ * }>
  */
-function latinfo_home_modules_enabled(PDO $db): array
+function latinfo_home_modules_enabled(PDO $db, string $sortBy = 'desktop'): array
 {
     return array_values(array_filter(
-        latinfo_home_modules_all($db),
+        latinfo_home_modules_all($db, $sortBy),
         static fn (array $m): bool => !empty($m['is_enabled'])
     ));
 }
 
 /**
- * @param list<array{module_key?: string, is_enabled?: mixed, sort_order?: mixed}> $rows
+ * @param list<array{module_key?: string, is_enabled?: mixed, sort_order?: mixed, sort_order_mobile?: mixed}> $rows
  */
 function latinfo_home_modules_save_order(PDO $db, array $rows): void
 {
     $catalog = latinfo_home_module_catalog();
     $st = $db->prepare('
-        INSERT INTO `latinfo_home_modules` (`module_key`, `is_enabled`, `sort_order`)
-        VALUES (?, ?, ?)
+        INSERT INTO `latinfo_home_modules` (`module_key`, `is_enabled`, `sort_order`, `sort_order_mobile`)
+        VALUES (?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             `is_enabled` = VALUES(`is_enabled`),
-            `sort_order` = VALUES(`sort_order`)
+            `sort_order` = VALUES(`sort_order`),
+            `sort_order_mobile` = VALUES(`sort_order_mobile`)
     ');
     $seen = [];
     foreach ($rows as $i => $row) {
@@ -269,14 +364,21 @@ function latinfo_home_modules_save_order(PDO $db, array $rows): void
         $seen[$key] = true;
         $sort = filter_var($row['sort_order'] ?? (($i + 1) * 10), FILTER_VALIDATE_INT);
         $sortOrder = ($sort === false) ? (($i + 1) * 10) : (int) $sort;
+        $sortM = filter_var($row['sort_order_mobile'] ?? (($i + 1) * 10), FILTER_VALIDATE_INT);
+        $sortMobile = ($sortM === false) ? (($i + 1) * 10) : (int) $sortM;
         $enabled = !empty($row['is_enabled']) ? 1 : 0;
-        $st->execute([$key, $enabled, $sortOrder]);
+        $st->execute([$key, $enabled, $sortOrder, $sortMobile]);
     }
     foreach ($catalog as $key => $meta) {
         if (isset($seen[$key])) {
             continue;
         }
-        $st->execute([$key, !empty($meta['default_enabled']) ? 1 : 0, (int) $meta['default_order']]);
+        $st->execute([
+            $key,
+            !empty($meta['default_enabled']) ? 1 : 0,
+            (int) $meta['default_order'],
+            (int) $meta['default_order_mobile'],
+        ]);
     }
 }
 

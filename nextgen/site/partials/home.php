@@ -36,6 +36,7 @@ $D = $Dj;
 $categoriesByEventId = is_array($categoriesByEventId ?? null) ? $categoriesByEventId : [];
 $calendarPreviewById = is_array($calendarPreviewById ?? null) ? $calendarPreviewById : [];
 $enabledModules = is_array($enabledModules ?? null) ? $enabledModules : [];
+$mobileOrderIndex = is_array($mobileOrderIndex ?? null) ? $mobileOrderIndex : [];
 $lhModuleTrackAllowed = !empty($lhModuleTrackAllowed);
 
 $railModules = [];

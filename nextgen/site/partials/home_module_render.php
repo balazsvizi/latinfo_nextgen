@@ -25,8 +25,13 @@ $modKey = (string) ($mod['module_key'] ?? '');
 if ($modKey === '') {
     return;
 }
+$mobileOrder = (int) ($mobileOrderIndex[$modKey] ?? ($mod['sort_order_mobile'] ?? 99));
 ?>
-<div class="latinfo-home__module latinfo-home__module--<?= h($modKey) ?>" data-module="<?= h($modKey) ?>">
+<div
+    class="latinfo-home__module latinfo-home__module--<?= h($modKey) ?>"
+    data-module="<?= h($modKey) ?>"
+    style="--lh-mobile-order: <?= $mobileOrder ?>"
+>
     <?php if ($modKey === 'announcements'): ?>
         <?php require __DIR__ . '/home_module_announcements.php'; ?>
     <?php elseif ($modKey === 'today'): ?>

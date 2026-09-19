@@ -26,7 +26,15 @@ $H = latinfo_home_strings($lang);
 
 $db = getDb();
 $schemaOk = latinfo_home_modules_ensure_schema($db);
-$enabledModules = $schemaOk ? latinfo_home_modules_enabled($db) : [];
+$enabledModules = $schemaOk ? latinfo_home_modules_enabled($db, 'desktop') : [];
+$mobileOrderIndex = [];
+if ($schemaOk) {
+    $rank = 1;
+    foreach (latinfo_home_modules_enabled($db, 'mobile') as $mod) {
+        $mobileOrderIndex[(string) $mod['module_key']] = $rank;
+        $rank++;
+    }
+}
 $news = $schemaOk ? latinfo_home_news_all($db, true) : [];
 $quickNews = latinfo_home_quick_news($news, 3);
 $dayEvents = latinfo_home_today_tomorrow_events($db);

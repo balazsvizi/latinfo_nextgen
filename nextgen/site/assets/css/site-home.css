@@ -702,9 +702,20 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
    12. Reszponzív
    -------------------------------------------------------------------------- */
 @media (max-width: 900px) {
+    .latinfo-home__board {
+        display: flex;
+        flex-direction: column;
+    }
+
     .latinfo-home__rail,
     .latinfo-home__calendar {
-        flex-basis: 100%;
+        display: contents;
+    }
+
+    .latinfo-home__module {
+        order: var(--lh-mobile-order, 99);
+        width: 100%;
+        flex-basis: auto;
     }
 }
 
