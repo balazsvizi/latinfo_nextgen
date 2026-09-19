@@ -6,6 +6,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/site_home.php';
+require_once __DIR__ . '/site_donably.php';
 
 if (!function_exists('events_view_tracking_detect_bot')) {
     require_once dirname(__DIR__, 2) . '/events/lib/event_view_tracking.php';
@@ -81,6 +82,16 @@ function latinfo_home_module_catalog(): array
             'default_order_mobile' => 50,
             'default_enabled' => true,
         ],
+        'donably' => [
+            'label' => 'Támogatás (Donably)',
+            'menu_label' => 'Támogatás',
+            'editable' => true,
+            'has_item_stats' => true,
+            'column' => 'rail',
+            'default_order' => 60,
+            'default_order_mobile' => 60,
+            'default_enabled' => true,
+        ],
     ];
 }
 
@@ -110,6 +121,7 @@ function latinfo_home_module_edit_url(string $key, string $query = ''): string
         'announcements' => 'modul_bejelentesek.php',
         'dj_spotlight' => 'modul_dj.php',
         'rating' => 'modul_ertekeles.php',
+        'donably' => 'modul_donably.php',
     ];
     $file = $map[$key] ?? 'szerkeszt.php';
     $base = nextgen_url('site/' . $file);
@@ -175,6 +187,7 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
                 KEY `idx_lh_rating_ip_day` (`ip_hash`, `occurred_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+        latinfo_home_donably_ensure_schema($db);
         latinfo_home_modules_ensure_mobile_order_column($db);
         latinfo_home_modules_ensure_layout_column($db);
         latinfo_home_modules_seed_defaults($db);
@@ -815,6 +828,7 @@ function latinfo_home_module_overview_stats(PDO $db, array $params): array
             'tomorrow' => '#5a8a6a',
             'dj_spotlight' => '#8b5a9e',
             'rating' => '#c45c26',
+            'donably' => '#b04a6e',
         ];
         foreach ($chartRows as $row) {
             $bucket = (string) ($row['bucket'] ?? '');
@@ -1104,6 +1118,7 @@ function latinfo_home_rating_strings(string $lang): array
             'aria' => 'Rate Latinfo.hu with 1 to 5 stars',
             'star_aria' => 'Rate %d out of 5',
             'thanks' => 'Thanks for your rating!',
+            'thanks_five' => 'We are glad you like what we do — thank you! Please support us so we can keep going.',
             'average' => 'Average: %s based on %d ratings',
             'prompt' => 'How do you like Latinfo.hu?',
         ];
@@ -1114,6 +1129,7 @@ function latinfo_home_rating_strings(string $lang): array
         'aria' => 'Értékeld a Latinfo.hu oldalt 1–5 csillaggal',
         'star_aria' => '%d csillag az 5-ből',
         'thanks' => 'Köszönjük az értékelést!',
+        'thanks_five' => 'Örülünk, hogy tetszik, amit csinálunk – köszönjük! Kérjük, támogass minket, hogy folytathassuk.',
         'average' => 'Átlag: %s · %d értékelés alapján',
         'prompt' => 'Mennyire tetszik a Latinfo.hu?',
     ];

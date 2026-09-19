@@ -108,7 +108,11 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/site/szerkeszt.php' => [
             'display_name' => 'Kezdőoldal szerkesztése',
-            'purpose' => 'Kiemelt hírek, gyűjtők és hero szövegek szerkesztése a kezdőoldalon.',
+            'purpose' => 'Kezdőoldal-modulok sorrendje, oszlopa és be/ki kapcsolása.',
+        ],
+        '/nextgen/site/modul_donably.php' => [
+            'display_name' => 'Támogatás (Donably)',
+            'purpose' => 'Kezdőoldali Donably támogatás szövegének és linkjének szerkesztése.',
         ],
     ];
 }

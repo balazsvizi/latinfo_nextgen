@@ -16,6 +16,7 @@ declare(strict_types=1);
  * @var string $cmsAnchorSpotlight
  * @var array<string, string> $ratingStrings
  * @var string $ratingAjaxUrl
+ * @var array{title: string, lead: string, cta_label: string, cta_url: string, note: string, show_icon: bool, is_external: bool, configured: bool} $donablyView
  * @var string $calendarUrl
  * @var string $djsUrl
  * @var string $lang
@@ -70,5 +71,7 @@ $mobileOrder = (int) ($mobileOrderIndex[$modKey] ?? ($mod['sort_order_mobile'] ?
         <?php endif; ?>
     <?php elseif ($modKey === 'rating'): ?>
         <?php require __DIR__ . '/home_module_rating.php'; ?>
+    <?php elseif ($modKey === 'donably'): ?>
+        <?php require __DIR__ . '/home_module_donably.php'; ?>
     <?php endif; ?>
 </div>

@@ -129,6 +129,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('site/modul_bejelentesek.php')) ?>" role="menuitem">Bejelentések</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('site/modul_dj.php')) ?>" role="menuitem">DJ ajánló</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('site/modul_ertekeles.php')) ?>" role="menuitem">Értékelés</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/modul_donably.php')) ?>" role="menuitem">Támogatás</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('site/stat.php')) ?>" role="menuitem">Stat</a></li>
                     </ul>
                 </li>

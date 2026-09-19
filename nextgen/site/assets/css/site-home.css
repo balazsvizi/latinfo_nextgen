@@ -109,6 +109,7 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
 .latinfo-home__day,
 .latinfo-home__flashes-wrap,
 .latinfo-home__rating,
+.latinfo-home__donably,
 .latinfo-home__module .djs-public__spotlight {
     position: relative;
     min-width: 0;
@@ -689,6 +690,29 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
     line-height: 1.4;
 }
 
+.latinfo-home__rating-donably {
+    margin-top: 1.05rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(176, 74, 110, 0.16);
+    width: 100%;
+}
+
+.latinfo-home__rating-thanks-five {
+    margin: 0 0 0.85rem;
+    color: var(--li-green-dark, #3d5a36);
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.latinfo-home__rating .latinfo-home__donably--embed {
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .latinfo-home__rating-star {
         transition: none;
@@ -696,6 +720,126 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
     .latinfo-home__rating-star:hover {
         transform: none;
     }
+}
+
+/* --------------------------------------------------------------------------
+   11c. Donably támogatás
+   -------------------------------------------------------------------------- */
+.latinfo-home__donably {
+    --lh-donably: #b04a6e;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background:
+        radial-gradient(420px 180px at 100% 0%, rgba(176, 74, 110, 0.1), transparent 62%),
+        var(--lh-card-bg);
+}
+
+.latinfo-home__donably-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    width: 100%;
+    margin-bottom: 0.45rem;
+}
+
+.latinfo-home__donably-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 999px;
+    background: rgba(176, 74, 110, 0.12);
+    color: var(--lh-donably);
+}
+
+.latinfo-home__donably-title {
+    margin: 0;
+    min-width: 0;
+    font-family: var(--lh-title-family);
+    font-size: var(--lh-title-size);
+    font-weight: var(--lh-title-weight);
+    letter-spacing: var(--lh-title-track);
+    text-transform: var(--lh-title-case);
+    color: var(--lh-title-color);
+}
+
+.latinfo-home__donably-lead {
+    margin: 0 0 1rem;
+    color: var(--li-muted, #5a6b58);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.latinfo-home__donably-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem 0.85rem;
+    width: 100%;
+}
+
+.latinfo-home__donably-cta {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 0.4rem;
+    padding: 0.52rem 0.95rem 0.52rem 0.9rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #c45c7a, var(--lh-donably));
+    color: #ffffff;
+    font-family: var(--ev-sans);
+    font-size: 0.88rem;
+    font-weight: 750;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    text-decoration: none;
+    box-shadow: 0 12px 22px -14px rgba(176, 74, 110, 0.8);
+    transition:
+        background 0.2s var(--lh-ease),
+        box-shadow 0.2s var(--lh-ease),
+        transform 0.2s var(--lh-ease);
+}
+
+.latinfo-home__donably-cta:hover {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--lh-donably), #8d3a57);
+    box-shadow: 0 16px 26px -14px rgba(176, 74, 110, 0.9);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.latinfo-home__donably-cta:focus-visible {
+    outline: 2px solid var(--lh-donably);
+    outline-offset: 3px;
+}
+
+.latinfo-home__donably-cta-arrow {
+    display: block;
+    transition: transform 0.2s var(--lh-ease);
+}
+
+.latinfo-home__donably-cta:hover .latinfo-home__donably-cta-arrow {
+    transform: translateX(2px);
+}
+
+.latinfo-home__donably-cta--pending {
+    opacity: 0.55;
+    box-shadow: none;
+    cursor: default;
+    pointer-events: none;
+}
+
+.latinfo-home__donably-note {
+    margin: 0;
+    flex: 1 1 9rem;
+    min-width: 0;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--li-text-soft, #7a8876);
 }
 
 /* --------------------------------------------------------------------------
@@ -741,12 +885,15 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
     .latinfo-home__day-more,
     .latinfo-home__day-more-arrow,
     .latinfo-home__cal-cta,
+    .latinfo-home__donably-cta,
+    .latinfo-home__donably-cta-arrow,
      .latinfo-home__module .djs-public__spotlight-card {
         transition: none;
     }
 
     .latinfo-home__event:hover,
     .latinfo-home__cal-cta:hover,
+    .latinfo-home__donably-cta:hover,
      .latinfo-home__module .djs-public__spotlight-card:hover {
         transform: none;
     }

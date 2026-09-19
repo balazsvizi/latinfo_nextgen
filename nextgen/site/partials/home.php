@@ -14,6 +14,7 @@ declare(strict_types=1);
  * @var string $cmsAnchorSpotlight
  * @var array<string, string> $ratingStrings
  * @var string $ratingAjaxUrl
+ * @var array{title: string, lead: string, cta_label: string, cta_url: string, note: string, show_icon: bool, is_external: bool, configured: bool} $donablyView
  * @var string $calendarUrl
  * @var string $djsUrl
  * @var string $editUrl
@@ -38,6 +39,16 @@ $calendarPreviewById = is_array($calendarPreviewById ?? null) ? $calendarPreview
 $enabledModules = is_array($enabledModules ?? null) ? $enabledModules : [];
 $mobileOrderIndex = is_array($mobileOrderIndex ?? null) ? $mobileOrderIndex : [];
 $lhModuleTrackAllowed = !empty($lhModuleTrackAllowed);
+$donablyView = is_array($donablyView ?? null) ? $donablyView : [
+    'title' => '',
+    'lead' => '',
+    'cta_label' => '',
+    'cta_url' => '',
+    'note' => '',
+    'show_icon' => true,
+    'is_external' => false,
+    'configured' => false,
+];
 
 $railModules = [];
 $calendarModules = [];
