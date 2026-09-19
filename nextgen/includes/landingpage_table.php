@@ -12,6 +12,7 @@ if (!function_exists('ensure_landingpage_table')) {
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 ilyen_legyen TEXT NULL,
                 ilyen_ne_legyen TEXT NULL,
+                egyeb_uzenet TEXT NULL,
                 email VARCHAR(255) NULL,
                 ip VARCHAR(45) NULL,
                 user_agent VARCHAR(512) NULL,
@@ -24,11 +25,12 @@ if (!function_exists('ensure_landingpage_table')) {
             // tábla már jó, vagy nincs ALTER jog
         }
         foreach ([
-            'nev' => 'VARCHAR(255) NULL',
-            'telefon' => 'VARCHAR(50) NULL',
+            'nev' => 'VARCHAR(255) NULL AFTER email',
+            'telefon' => 'VARCHAR(50) NULL AFTER email',
+            'egyeb_uzenet' => 'TEXT NULL AFTER ilyen_ne_legyen',
         ] as $column => $definition) {
             try {
-                $db->exec("ALTER TABLE nextgen_landing_feedback ADD COLUMN $column $definition AFTER email");
+                $db->exec("ALTER TABLE nextgen_landing_feedback ADD COLUMN $column $definition");
             } catch (Throwable $e) {
                 // oszlop már létezik
             }
@@ -129,11 +131,68 @@ if (!function_exists('landing_feedback_resolve_forras')) {
     }
 }
 
+if (!function_exists('landing_feedback_safe_return_url')) {
+    /**
+     * Visszalépés célja: forrás URL / rövid kulcs, különben a megadott fallback (általában főoldal).
+     * Open redirect ellen: csak http(s), saját host vagy relatív útvonal.
+     */
+    function landing_feedback_safe_return_url(?string $forras, string $fallback): string
+    {
+        $forras = trim((string) $forras);
+        if ($forras === '' || $forras === 'feedback' || $forras === 'visszajelzes' || $forras === 'visszajelzés') {
+            return $fallback;
+        }
+        if ($forras === 'lanueva') {
+            return site_url('lanueva/');
+        }
+
+        if (str_starts_with($forras, '/') && !str_starts_with($forras, '//')) {
+            if (landing_feedback_is_self_url($forras)) {
+                return $fallback;
+            }
+
+            return $forras;
+        }
+
+        if (!preg_match('#^https?://#i', $forras)) {
+            return $fallback;
+        }
+
+        $parts = parse_url($forras);
+        if (!is_array($parts)) {
+            return $fallback;
+        }
+
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $currentHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if ($host === '' || $currentHost === '' || $host !== $currentHost) {
+            return $fallback;
+        }
+
+        $path = (string) ($parts['path'] ?? '/');
+        if (landing_feedback_is_self_url($path)) {
+            return $fallback;
+        }
+
+        $safe = ($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '');
+        if (isset($parts['port'])) {
+            $safe .= ':' . $parts['port'];
+        }
+        $safe .= $path;
+        if (isset($parts['query']) && $parts['query'] !== '') {
+            $safe .= '?' . $parts['query'];
+        }
+
+        return $safe;
+    }
+}
+
 if (!function_exists('landing_feedback_insert')) {
     /**
      * @param array{
      *     ilyen_legyen?: string,
      *     ilyen_ne_legyen?: string,
+     *     egyeb_uzenet?: string,
      *     email?: string,
      *     nev?: string,
      *     telefon?: string,
@@ -146,6 +205,7 @@ if (!function_exists('landing_feedback_insert')) {
     {
         $ilyen = trim((string) ($data['ilyen_legyen'] ?? ''));
         $ne = trim((string) ($data['ilyen_ne_legyen'] ?? ''));
+        $egyeb = trim((string) ($data['egyeb_uzenet'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
         $nev = trim((string) ($data['nev'] ?? ''));
         $telefon = trim((string) ($data['telefon'] ?? ''));
@@ -157,12 +217,13 @@ if (!function_exists('landing_feedback_insert')) {
 
         $stmt = $db->prepare(
             'INSERT INTO nextgen_landing_feedback
-                (ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, forras, ip, user_agent)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                (ilyen_legyen, ilyen_ne_legyen, egyeb_uzenet, email, nev, telefon, forras, ip, user_agent)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $ilyen !== '' ? $ilyen : null,
             $ne !== '' ? $ne : null,
+            $egyeb !== '' ? $egyeb : null,
             $email !== '' ? $email : null,
             $nev !== '' ? $nev : null,
             $telefon !== '' ? $telefon : null,
@@ -178,6 +239,7 @@ if (!function_exists('landing_feedback_send_mail')) {
      * @param array{
      *     ilyen_legyen?: string,
      *     ilyen_ne_legyen?: string,
+     *     egyeb_uzenet?: string,
      *     email?: string,
      *     nev?: string,
      *     telefon?: string,
@@ -197,6 +259,7 @@ if (!function_exists('landing_feedback_send_mail')) {
 
         $ilyen = trim((string) ($data['ilyen_legyen'] ?? ''));
         $ne = trim((string) ($data['ilyen_ne_legyen'] ?? ''));
+        $egyeb = trim((string) ($data['egyeb_uzenet'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
         $nev = trim((string) ($data['nev'] ?? ''));
         $telefon = trim((string) ($data['telefon'] ?? ''));
@@ -215,6 +278,7 @@ if (!function_exists('landing_feedback_send_mail')) {
         $szoveg = '<p>Új visszajelzés érkezett (' . h($context) . ').</p>'
             . $sor('Ilyen legyen', $ilyen)
             . $sor('Ilyen ne legyen', $ne)
+            . $sor('Egyéb üzenet', $egyeb)
             . $sor('Név', $nev)
             . $sor('E-mail', $email)
             . $sor('Telefon', $telefon)
@@ -237,7 +301,8 @@ if (!function_exists('landing_feedback_has_text')) {
     function landing_feedback_has_text(array $r): bool
     {
         return trim((string) ($r['ilyen_legyen'] ?? '')) !== ''
-            || trim((string) ($r['ilyen_ne_legyen'] ?? '')) !== '';
+            || trim((string) ($r['ilyen_ne_legyen'] ?? '')) !== ''
+            || trim((string) ($r['egyeb_uzenet'] ?? '')) !== '';
     }
 
     function landing_feedback_is_ertesites(array $r): bool
@@ -247,11 +312,17 @@ if (!function_exists('landing_feedback_has_text')) {
 
     function landing_feedback_where_tipus(string $tipus): string
     {
+        $vanSzoveg = '((ilyen_legyen IS NOT NULL AND ilyen_legyen != \'\')'
+            . ' OR (ilyen_ne_legyen IS NOT NULL AND ilyen_ne_legyen != \'\')'
+            . ' OR (egyeb_uzenet IS NOT NULL AND egyeb_uzenet != \'\'))';
+        $nincsSzoveg = '(ilyen_legyen IS NULL OR ilyen_legyen = \'\')'
+            . ' AND (ilyen_ne_legyen IS NULL OR ilyen_ne_legyen = \'\')'
+            . ' AND (egyeb_uzenet IS NULL OR egyeb_uzenet = \'\')';
         if ($tipus === 'visszajelzes') {
-            return 'WHERE ((ilyen_legyen IS NOT NULL AND ilyen_legyen != \'\') OR (ilyen_ne_legyen IS NOT NULL AND ilyen_ne_legyen != \'\'))';
+            return 'WHERE ' . $vanSzoveg;
         }
         if ($tipus === 'ertesites') {
-            return 'WHERE email IS NOT NULL AND email != \'\' AND (ilyen_legyen IS NULL OR ilyen_legyen = \'\') AND (ilyen_ne_legyen IS NULL OR ilyen_ne_legyen = \'\')';
+            return 'WHERE email IS NOT NULL AND email != \'\' AND ' . $nincsSzoveg;
         }
 
         return '';

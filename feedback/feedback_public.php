@@ -26,13 +26,14 @@ $forras = landing_feedback_resolve_forras(
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) {
     $ilyen = trim((string) ($_POST['ilyen_legyen'] ?? ''));
     $ne = trim((string) ($_POST['ilyen_ne_legyen'] ?? ''));
+    $egyeb = trim((string) ($_POST['egyeb_uzenet'] ?? ''));
     $nev = trim((string) ($_POST['nev'] ?? ''));
     $email = trim((string) ($_POST['email'] ?? ''));
     $telefon = trim((string) ($_POST['telefon'] ?? ''));
     $forras = landing_feedback_resolve_forras((string) ($_POST['forras'] ?? ''));
 
-    if ($ilyen === '' && $ne === '') {
-        $hiba_feedback = 'Írd meg legalább röviden, mi tetszik, vagy mit javítanál.';
+    if ($ilyen === '' && $ne === '' && $egyeb === '') {
+        $hiba_feedback = 'Írd meg legalább röviden, mi tetszik, mit javítanál, vagy az egyéb üzenetet.';
     } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $hiba_feedback = 'Érvénytelen e-mail cím.';
     } else {
@@ -40,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
         $payload = [
             'ilyen_legyen' => $ilyen,
             'ilyen_ne_legyen' => $ne,
+            'egyeb_uzenet' => $egyeb,
             'email' => $email,
             'nev' => $nev,
             'telefon' => $telefon,
@@ -56,13 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
             error_log('feedback page mail: ' . $ex->getMessage());
         }
 
+        $homeUrlForFlash = (defined('LATINFO_PUBLIC_HOME_URL') && is_string(LATINFO_PUBLIC_HOME_URL) && LATINFO_PUBLIC_HOME_URL !== '')
+            ? LATINFO_PUBLIC_HOME_URL
+            : site_url('/');
+        $visszaUrlFlash = landing_feedback_safe_return_url($forras, $homeUrlForFlash);
         unset($_SESSION['landing_feedback_forras']);
         flash('landing_ok_feedback', 'Köszönjük! Megkaptuk a visszajelzésed.');
+        flash('landing_feedback_vissza', $visszaUrlFlash);
         redirect(site_url('feedback/'));
     }
 }
 
 $siker_feedback = (string) (flash('landing_ok_feedback') ?? '');
+$visszaFlashed = flash('landing_feedback_vissza');
 
 $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 if (!$https) {
@@ -82,6 +90,10 @@ $ogCanonical = $publicOrigin !== '' ? ($publicOrigin . $publicPath) : '';
 $homeUrl = (defined('LATINFO_PUBLIC_HOME_URL') && is_string(LATINFO_PUBLIC_HOME_URL) && LATINFO_PUBLIC_HOME_URL !== '')
     ? LATINFO_PUBLIC_HOME_URL
     : site_url('/');
+$visszaUrl = landing_feedback_safe_return_url(
+    is_string($visszaFlashed) ? $visszaFlashed : ($forras ?? null),
+    $homeUrl
+);
 $eventsHome = defined('EVENTS_HOME_PATH') ? EVENTS_HOME_PATH : 'events';
 $naptarUrl = rtrim(site_url($eventsHome . '/'), '/') . '/';
 
@@ -122,38 +134,47 @@ $cssUrl = site_url('feedback/assets/css/feedback.css') . '?v=' . rawurlencode(
     <main class="fb-main">
         <section class="fb-intro">
             <h1 class="fb-title">Feedback</h1>
-            <p class="fb-lead">Mondd el, hogyan tetszik a Latinfo – mi működik jól, és min javítanál. Minden megjegyzés számít.</p>
+            <?php if ($siker_feedback === ''): ?>
+                <p class="fb-lead">Mondd el, hogyan tetszik a Latinfo – mi működik jól, és min javítanál. Minden megjegyzés számít.</p>
+            <?php endif; ?>
         </section>
 
         <article class="fb-card">
             <?php if ($siker_feedback !== ''): ?>
-                <div class="fb-toast fb-toast--ok" role="status"><?= h($siker_feedback) ?></div>
-            <?php endif; ?>
-            <?php if ($hiba_feedback !== ''): ?>
-                <div class="fb-toast fb-toast--err" role="alert"><?= h($hiba_feedback) ?></div>
-            <?php endif; ?>
-
-            <form method="post" action="" novalidate class="fb-form">
-                <input type="hidden" name="landing_feedback" value="1">
-                <input type="hidden" name="forras" value="<?= h((string) ($forras ?? '')) ?>">
-
-                <label class="fb-label" for="fb-ilyen">Mi tetszik?</label>
-                <textarea id="fb-ilyen" name="ilyen_legyen" rows="4" placeholder="Pl. kinézet, keresés, mobilnézet…"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
-
-                <label class="fb-label" for="fb-ne">Mit javítanál?</label>
-                <textarea id="fb-ne" name="ilyen_ne_legyen" rows="4" placeholder="Pl. hiányzó funkció, zavaró részlet…"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
-
-                <div class="fb-contact">
-                    <p class="fb-contact-lead">Opcionális: ha szeretnéd, megadhatod az elérhetőségedet – így vissza tudunk írni.</p>
-                    <div class="fb-contact-fields">
-                        <input type="text" name="nev" maxlength="255" placeholder="Név" value="<?= h($_POST['nev'] ?? '') ?>" autocomplete="name">
-                        <input type="email" name="email" maxlength="255" placeholder="E-mail" value="<?= h($_POST['email'] ?? '') ?>" autocomplete="email">
-                        <input type="tel" name="telefon" maxlength="50" placeholder="Telefon" value="<?= h($_POST['telefon'] ?? '') ?>" autocomplete="tel">
-                    </div>
+                <div class="fb-success">
+                    <div class="fb-toast fb-toast--ok fb-toast--alone" role="status"><?= h($siker_feedback) ?></div>
+                    <a class="fb-btn" href="<?= h($visszaUrl) ?>">Vissza</a>
                 </div>
+            <?php else: ?>
+                <?php if ($hiba_feedback !== ''): ?>
+                    <div class="fb-toast fb-toast--err" role="alert"><?= h($hiba_feedback) ?></div>
+                <?php endif; ?>
 
-                <button type="submit" class="fb-btn">Elküldöm a visszajelzést</button>
-            </form>
+                <form method="post" action="" novalidate class="fb-form">
+                    <input type="hidden" name="landing_feedback" value="1">
+                    <input type="hidden" name="forras" value="<?= h((string) ($forras ?? '')) ?>">
+
+                    <label class="fb-label" for="fb-ilyen">Mi tetszik?</label>
+                    <textarea id="fb-ilyen" name="ilyen_legyen" rows="4" placeholder="Pl. kinézet, keresés, mobilnézet…"><?= h($_POST['ilyen_legyen'] ?? '') ?></textarea>
+
+                    <label class="fb-label" for="fb-ne">Mit javítanál?</label>
+                    <textarea id="fb-ne" name="ilyen_ne_legyen" rows="4" placeholder="Pl. hiányzó funkció, zavaró részlet…"><?= h($_POST['ilyen_ne_legyen'] ?? '') ?></textarea>
+
+                    <label class="fb-label" for="fb-egyeb">Egyéb üzenet</label>
+                    <textarea id="fb-egyeb" name="egyeb_uzenet" rows="4" placeholder="Bármi, ami a fentiekbe nem fér bele…"><?= h($_POST['egyeb_uzenet'] ?? '') ?></textarea>
+
+                    <div class="fb-contact">
+                        <p class="fb-contact-lead">Opcionális: ha szeretnéd, megadhatod az elérhetőségedet – így vissza tudunk írni.</p>
+                        <div class="fb-contact-fields">
+                            <input type="text" name="nev" maxlength="255" placeholder="Név" value="<?= h($_POST['nev'] ?? '') ?>" autocomplete="name">
+                            <input type="email" name="email" maxlength="255" placeholder="E-mail" value="<?= h($_POST['email'] ?? '') ?>" autocomplete="email">
+                            <input type="tel" name="telefon" maxlength="50" placeholder="Telefon" value="<?= h($_POST['telefon'] ?? '') ?>" autocomplete="tel">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="fb-btn">Elküldöm a visszajelzést</button>
+                </form>
+            <?php endif; ?>
         </article>
     </main>
 

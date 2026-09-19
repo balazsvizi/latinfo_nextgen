@@ -28,7 +28,7 @@ $count_stmt->execute($params);
 $total = (int) $count_stmt->fetchColumn();
 
 $stmt = $db->prepare("
-    SELECT id, ilyen_legyen, ilyen_ne_legyen, email, nev, telefon, forras, ip, user_agent, létrehozva
+    SELECT id, ilyen_legyen, ilyen_ne_legyen, egyeb_uzenet, email, nev, telefon, forras, ip, user_agent, létrehozva
     FROM nextgen_landing_feedback
     $where_sql
     ORDER BY $order $dir
@@ -122,6 +122,9 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
                             <?php endif; ?>
                             <?php if (trim((string) ($r['ilyen_ne_legyen'] ?? '')) !== ''): ?>
                                 <div class="landing-blob"><strong>Ilyen ne legyen:</strong> <?= nl2br(h($r['ilyen_ne_legyen'])) ?></div>
+                            <?php endif; ?>
+                            <?php if (trim((string) ($r['egyeb_uzenet'] ?? '')) !== ''): ?>
+                                <div class="landing-blob"><strong>Egyéb üzenet:</strong> <?= nl2br(h($r['egyeb_uzenet'])) ?></div>
                             <?php endif; ?>
                             <?php if (landing_lista_has_contact($r)): ?>
                                 <div class="landing-blob">

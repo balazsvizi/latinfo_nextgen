@@ -125,6 +125,22 @@ body.fb-page {
     border: 1px solid #fecaca;
 }
 
+.fb-toast--alone {
+    margin-bottom: 0;
+}
+
+.fb-success {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+}
+
+.fb-success .fb-btn {
+    margin-top: 0;
+    text-decoration: none;
+}
+
 .fb-form {
     display: flex;
     flex-direction: column;
@@ -198,6 +214,7 @@ body.fb-page {
     font: inherit;
     font-size: 0.98rem;
     font-weight: 750;
+    text-decoration: none;
     cursor: pointer;
     box-shadow: 0 12px 24px -14px rgba(45, 58, 40, 0.7);
     transition: transform 0.18s var(--fb-ease), box-shadow 0.18s var(--fb-ease), background 0.18s var(--fb-ease);
@@ -206,6 +223,8 @@ body.fb-page {
 .fb-btn:hover {
     background: linear-gradient(135deg, #5d7d53, var(--fb-green-dark));
     box-shadow: 0 16px 28px -14px rgba(45, 58, 40, 0.8);
+    color: #ffffff;
+    text-decoration: none;
     transform: translateY(-1px);
 }
 
