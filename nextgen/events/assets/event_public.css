@@ -2716,11 +2716,37 @@ a.event-hero-chip--category-link:hover {
     padding: 0.85rem;
 }
 
+.dj-public__avatar-trigger {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    font: inherit;
+    color: inherit;
+}
+
+.dj-public__avatar--logo .dj-public__avatar-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dj-public__avatar-trigger:focus-visible {
+    outline: 2px solid var(--li-green);
+    outline-offset: 3px;
+    border-radius: 22px;
+}
+
 .dj-public__avatar-img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    pointer-events: none;
 }
 
 .dj-public__avatar-img--logo {

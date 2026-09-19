@@ -200,11 +200,24 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php if ($tagIsDj): ?>
                 <div class="dj-public__identity">
                     <div class="dj-public__media">
-                        <div class="dj-public__avatar<?= ($djPhotoAbs === '' && $djLogoAbs !== '') ? ' dj-public__avatar--logo' : '' ?>" aria-hidden="true">
-                            <?php if ($djPhotoAbs !== ''): ?>
-                                <img class="dj-public__avatar-img" src="<?= h($djPhotoAbs) ?>" alt="" loading="eager" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'photo')) ?>">
-                            <?php elseif ($djLogoAbs !== ''): ?>
-                                <img class="dj-public__avatar-img dj-public__avatar-img--logo" src="<?= h($djLogoAbs) ?>" alt="" loading="eager" decoding="async" style="<?= h(events_dj_media_img_style($djProfile, 'logo')) ?>">
+                        <?php
+                        $djAvatarIsLogo = $djPhotoAbs === '' && $djLogoAbs !== '';
+                        $djAvatarSrc = $djPhotoAbs !== '' ? $djPhotoAbs : ($djLogoAbs !== '' ? $djLogoAbs : '');
+                        $djAvatarKind = $djPhotoAbs !== '' ? 'photo' : 'logo';
+                        $djAvatarZoomLabel = (string) ($G['dj_photo_zoom'] ?? '');
+                        ?>
+                        <div class="dj-public__avatar<?= $djAvatarIsLogo ? ' dj-public__avatar--logo' : '' ?>"<?= $djAvatarSrc === '' ? ' aria-hidden="true"' : '' ?>>
+                            <?php if ($djAvatarSrc !== ''): ?>
+                                <button type="button" class="dj-public__avatar-trigger" aria-label="<?= h($djAvatarZoomLabel) ?>">
+                                    <img
+                                        class="dj-public__avatar-img<?= $djAvatarIsLogo ? ' dj-public__avatar-img--logo' : '' ?>"
+                                        src="<?= h($djAvatarSrc) ?>"
+                                        alt="<?= h((string) ($G['dj_photo_alt'] ?? 'DJ fotó')) ?>"
+                                        loading="eager"
+                                        decoding="async"
+                                        style="<?= h(events_dj_media_img_style($djProfile, $djAvatarKind)) ?>"
+                                    >
+                                </button>
                             <?php else: ?>
                                 <span class="dj-public__avatar-initials"><?= h(events_public_dj_initials($tagName)) ?></span>
                             <?php endif; ?>
@@ -373,6 +386,15 @@ $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
 require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
+<?php
+if ($tagIsDj) {
+    $djLightboxSrc = $djPhotoAbs !== '' ? $djPhotoAbs : $djLogoAbs;
+    if ($djLightboxSrc !== '') {
+        $djLightboxAlt = trim($tagName . ' – ' . (string) ($G['dj_photo_alt'] ?? 'DJ fotó'));
+        require __DIR__ . '/partials/public_dj_photo_lightbox.php';
+    }
+}
+?>
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 </body>
 </html>
