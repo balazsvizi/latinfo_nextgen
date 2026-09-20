@@ -96,7 +96,6 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-events-partnerek" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Lista</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Üzenetek</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu">
@@ -146,6 +145,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('site/stat.php')) ?>" role="menuitem">Kezdőoldal modulok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -194,7 +194,6 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-admin" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Partnerek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Partner üzenetek</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/adminok/')) ?>" role="menuitem">Adminok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/rate_limit.php')) ?>" role="menuitem">Belépési korlát</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/log.php')) ?>" role="menuitem">Logok</a></li>

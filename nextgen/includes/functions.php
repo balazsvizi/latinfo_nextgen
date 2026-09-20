@@ -185,6 +185,9 @@ function ng_nav_app_zone(): string {
     if (strpos($s, '/nextgen/latinfo/') !== false || strpos($s, '/nextgen/site/') !== false) {
         return 'latinfo';
     }
+    if (preg_match('#/nextgen/admin/partnerek/mediaertek(_probak)?\.php$#', $s)) {
+        return 'latinfo';
+    }
     if (strpos($s, '/nextgen/events/') !== false) {
         $script = basename($s);
         if (in_array($script, ng_nav_latinfo_event_scripts(), true)) {

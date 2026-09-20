@@ -13,7 +13,16 @@ requireLogin();
 $db = getDb();
 events_view_tracking_ensure_bot_column($db);
 
-$statsParams = events_edit_stats_params_from_request($_GET);
+$statsQuery = $_GET;
+if (
+    trim((string) ($statsQuery['stat_date_from'] ?? '')) === ''
+    && trim((string) ($statsQuery['stat_date_to'] ?? '')) === ''
+) {
+    $defaultRange = events_edit_stats_range_for_preset('7');
+    $statsQuery['stat_date_from'] = $defaultRange['date_from'];
+    $statsQuery['stat_date_to'] = $defaultRange['date_to'];
+}
+$statsParams = events_edit_stats_params_from_request($statsQuery);
 $organizerOptions = events_admin_stats_organizer_options($db);
 $validIds = [];
 foreach ($organizerOptions as $opt) {

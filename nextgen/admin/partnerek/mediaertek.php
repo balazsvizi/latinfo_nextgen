@@ -53,7 +53,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             </p>
         </div>
         <div class="toolbar">
-            <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary btn-sm">← Partnerek</a>
+            <a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">← Statisztikák</a>
         </div>
     </div>
 
