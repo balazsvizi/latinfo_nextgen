@@ -96,6 +96,8 @@ function events_public_common_nav_strings(string $lang): array {
         'events_home_aria' => 'Vissza a naptár főoldalára',
         'logo_events_home_title' => 'Naptár főoldal',
         'logo_events_home_aria' => 'Ugrás a naptár főoldalára',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
     ];
     $en = [
         'events_home_link' => 'Calendar',
@@ -103,6 +105,8 @@ function events_public_common_nav_strings(string $lang): array {
         'events_home_aria' => 'Back to the calendar home',
         'logo_events_home_title' => 'Calendar home',
         'logo_events_home_aria' => 'Go to the calendar home',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
     ];
 
     return $lang === 'en' ? $en : $hu;
