@@ -104,7 +104,7 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/site/index.php' => [
             'display_name' => 'Latinfo kezdőoldal',
-            'purpose' => 'Nyilvános latinfo.hu kezdőoldal előnézete – jelenleg csak adminnak.',
+            'purpose' => 'Nyilvános latinfo.hu kezdőoldal (domain gyökér: /).',
         ],
         '/nextgen/site/szerkeszt.php' => [
             'display_name' => 'Kezdőoldal szerkesztése',

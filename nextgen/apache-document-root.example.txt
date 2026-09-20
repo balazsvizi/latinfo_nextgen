@@ -6,10 +6,14 @@
 DirectoryIndex index.php
 
 RewriteEngine On
-# Gyökér → backoffice (ne DirectoryIndex nextgen/index.php — almappákban 403)
-RewriteRule ^$ nextgen/index.php [L]
+# Gyökér → nyilvános kezdőoldal (ne DirectoryIndex nextgen/index.php — almappákban 403)
+RewriteRule ^$ nextgen/site/index.php [L]
+# Admin belépés
+RewriteRule ^belepes/?$ nextgen/login.php [L,QSA]
 RewriteRule ^lanueva$ /lanueva/ [R=301,L]
 RewriteRule ^feedback$ /feedback/ [R=301,L]
 # Régi URL-ek
 RewriteRule ^visszajelzes/?$ /feedback/ [R=301,L,QSA]
 RewriteRule ^visszajelzés/?$ /feedback/ [R=301,L,NE,QSA]
+RewriteCond %{THE_REQUEST} \s/+nextgen/login\.php[\s?] [NC]
+RewriteRule ^nextgen/login\.php$ /belepes/ [R=301,L,QSD]

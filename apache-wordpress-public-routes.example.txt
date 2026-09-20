@@ -10,6 +10,12 @@
 
 RewriteEngine On
 
+# Kezdőoldal: /  →  nextgen/site/index.php
+RewriteRule ^$ nextgen/site/index.php [L]
+
+# Admin belépés: /belepes/  →  nextgen/login.php
+RewriteRule ^belepes/?$ nextgen/login.php [L,QSA,NC]
+
 # Feedback: /feedback/
 RewriteRule ^feedback/?$ feedback/index.php [L,QSA,NC]
 # Régi visszajelzés URL-ek
@@ -50,6 +56,11 @@ RewriteRule ^nextgen/partner/login\.php$ /partnerportal/ [R=301,L,QSA,NC]
 RewriteRule ^nextgen/events/?$ /events/ [R=301,L,QSA,NC]
 RewriteRule ^esemenyek/([^/]+)/?$ /event/$1/ [R=301,L,NC]
 RewriteRule ^esemenyek/?$ /events/ [R=301,L,QSA,NC]
+
+# Régi admin belépés → /belepes/
+RewriteCond %{THE_REQUEST} \s/+nextgen/login\.php[\s?] [NC]
+RewriteRule ^nextgen/login\.php$ /belepes/ [R=301,L,QSD]
+RewriteRule ^nextgen/belepes/?$ /belepes/ [R=301,L,QSA,NC]
 
 # Régi közvetlen megjelenit.php hívás → szép URL
 # THE_REQUEST = a böngésző eredeti kérése (belső rewrite után NEM illeszkedik)

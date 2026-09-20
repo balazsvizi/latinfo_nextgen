@@ -21,6 +21,7 @@ require_once __DIR__ . '/functions.php';
 
 $scriptName = strtolower(str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '')));
 $skipPmBootstrap = str_ends_with($scriptName, '/login.php')
+    || str_ends_with($scriptName, '/belepes/index.php')
     || str_ends_with($scriptName, '/logout.php')
     || str_ends_with($scriptName, '/admin/backup/step.php')
     || str_ends_with($scriptName, '/admin/backup/poll.php')
@@ -64,6 +65,9 @@ function alatinfo_is_safe_post_login_redirect(string $url): bool
     }
     $blocked = [
         '/login.php',
+        '/belepes',
+        '/belepes/',
+        '/belepes/index.php',
         '/logout.php',
         '/admin/backup/step.php',
         '/admin/backup/poll.php',

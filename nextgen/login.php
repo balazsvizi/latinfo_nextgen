@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin belépés – URL: /nextgen/login.php
+ * Admin belépés – URL: /belepes/ (rewrite / fizikai belépési pont → ez a fájl).
  */
 require_once __DIR__ . '/core/database.php';
 require_once __DIR__ . '/includes/auth.php';
@@ -68,7 +68,7 @@ $loginBrand = trim(SITE_NAME . ' NextGen');
             </div>
             <button type="submit">Bejelentkezés</button>
         </form>
-        <p class="login-back-home"><a href="<?= h(site_url('lanueva/')) ?>">← La nueva</a></p>
+        <p class="login-back-home"><a href="<?= h(LATINFO_PUBLIC_HOME_URL) ?>">← <?= h(SITE_NAME) ?></a></p>
     </div>
     <script src="<?= h(nextgen_url('assets/js/password-toggle.js')) ?>"></script>
 </body>

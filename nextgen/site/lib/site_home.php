@@ -11,7 +11,7 @@ if (!function_exists('events_http_https_url_is_acceptable')) {
 
 function latinfo_home_preview_url(): string
 {
-    return nextgen_url('site/');
+    return defined('LATINFO_PUBLIC_HOME_URL') ? (string) LATINFO_PUBLIC_HOME_URL : site_url('/');
 }
 
 function latinfo_home_edit_url(string $query = ''): string

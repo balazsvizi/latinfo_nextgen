@@ -2,12 +2,11 @@
 declare(strict_types=1);
 
 /**
- * Latinfo.hu kezdőoldal előnézet – egyelőre csak belépett adminnak.
- * URL: /nextgen/site/
+ * Latinfo.hu nyilvános kezdőoldal.
+ * URL: / (production) és /nextgen/site/ (közvetlen / előnézet).
  */
 
 require_once dirname(__DIR__) . '/init.php';
-requireLogin();
 require_once dirname(__DIR__) . '/events/bootstrap.php';
 require_once dirname(__DIR__) . '/events/lib/event_public_lang.php';
 require_once dirname(__DIR__) . '/events/lib/event_public_djs.php';
@@ -72,24 +71,27 @@ $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $urlHu = latinfo_home_lang_switch_url('hu');
 $urlEn = latinfo_home_lang_switch_url('en');
 $isEventsHome = true;
-$showAdminEdit = true;
-$adminEditUrl = $editUrl;
-$adminFloatTools = [
-    [
-        'href' => $editUrl,
-        'title' => 'Kezdőoldal szerkesztése',
-        'aria' => 'Kezdőoldal szerkesztése',
-        'icon' => 'edit',
-    ],
-    [
-        'href' => nextgen_url('latinfo/'),
-        'title' => 'Latinfo.hu',
-        'aria' => 'Vissza a Latinfo.hu alkalmazáshoz',
-        'icon' => 'home',
-    ],
-];
+$loggedIn = isLoggedIn();
+$showAdminEdit = $loggedIn;
+$adminEditUrl = $loggedIn ? $editUrl : '';
+$adminFloatTools = [];
+if ($loggedIn) {
+    $adminFloatTools = [
+        [
+            'href' => $editUrl,
+            'title' => 'Kezdőoldal szerkesztése',
+            'aria' => 'Kezdőoldal szerkesztése',
+            'icon' => 'edit',
+        ],
+        [
+            'href' => nextgen_url('latinfo/'),
+            'title' => 'Latinfo.hu',
+            'aria' => 'Vissza a Latinfo.hu alkalmazáshoz',
+            'icon' => 'home',
+        ],
+    ];
+}
 
-events_public_send_noindex_header();
 header('Content-Type: text/html; charset=UTF-8');
 
 require __DIR__ . '/partials/home.php';

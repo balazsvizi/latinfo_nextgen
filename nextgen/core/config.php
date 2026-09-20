@@ -102,6 +102,10 @@ if (!function_exists('nextgen_url')) {
      */
     function nextgen_url(string $path = ''): string {
         $path = ltrim($path, '/');
+        // Kanónikus admin belépés: /belepes/
+        if ($path === 'login.php' || $path === 'belepes' || $path === 'belepes/') {
+            return rtrim(site_url('belepes/'), '/') . '/';
+        }
         $base = (BASE_URL !== '' ? rtrim(BASE_URL, '/') : '');
         $ng = NEXTGEN_WEB;
         $mid = ($ng !== '' ? $ng : '');

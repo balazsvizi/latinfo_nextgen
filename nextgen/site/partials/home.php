@@ -66,7 +66,7 @@ foreach ($enabledModules as $mod) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#6d8f63">
-    <?= events_public_robots_noindex_head_markup() ?>
+    <?= events_public_robots_index_head_markup() ?>
     <title><?= h(SITE_NAME) ?> – <?= h($H['page_title']) ?></title>
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
