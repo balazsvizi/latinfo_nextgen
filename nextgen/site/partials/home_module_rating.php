@@ -7,10 +7,14 @@ declare(strict_types=1);
  * @var array<string, string> $ratingStrings
  * @var string $lang
  * @var string $ratingAjaxUrl
+ * @var array{average?: float, count?: int} $ratingSummary
  */
 $ratingStrings = is_array($ratingStrings ?? null) ? $ratingStrings : [];
 $lang = (($lang ?? 'hu') === 'en') ? 'en' : 'hu';
 $ratingAjaxUrl = (string) ($ratingAjaxUrl ?? nextgen_url('site/ajax_rating.php'));
+$ratingSummary = is_array($ratingSummary ?? null) ? $ratingSummary : [];
+$liveAverage = (float) ($ratingSummary['average'] ?? 0);
+$liveCount = (int) ($ratingSummary['count'] ?? 0);
 $avgTpl = (string) ($ratingStrings['average'] ?? 'Átlag: %s · %d értékelés alapján');
 $thanksFive = trim((string) ($ratingStrings['thanks_five'] ?? ''));
 ?>
@@ -56,6 +60,8 @@ $thanksFive = trim((string) ($ratingStrings['thanks_five'] ?? ''));
     var lang = <?= json_encode($lang, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var avgTpl = <?= json_encode($avgTpl, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var thanks = <?= json_encode((string) ($ratingStrings['thanks'] ?? ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var liveAvg = <?= json_encode($liveAverage, JSON_UNESCAPED_UNICODE) ?>;
+    var liveCount = <?= json_encode($liveCount, JSON_UNESCAPED_UNICODE) ?>;
     var starsWrap = root.querySelector('[data-lh-rating-stars]');
     var resultEl = root.querySelector('[data-lh-rating-result]');
     var promptEl = root.querySelector('[data-lh-rating-prompt]');
@@ -82,9 +88,8 @@ $thanksFive = trim((string) ($ratingStrings['thanks_five'] ?? ''));
         var given = parseInt(stars, 10) || 0;
         revealDonably(given);
         try {
+            // Csak a saját csillagot cache-eljük; az átlag/szám mindig a szerverről jön.
             localStorage.setItem(storageKey, JSON.stringify({
-                avg: avg,
-                count: count,
                 stars: given,
                 at: Date.now()
             }));
@@ -102,10 +107,10 @@ $thanksFive = trim((string) ($ratingStrings['thanks_five'] ?? ''));
 
     try {
         var cached = JSON.parse(localStorage.getItem(storageKey) || 'null');
-        if (cached && cached.count > 0) {
-            var cachedStars = parseInt(cached.stars, 10) || 0;
-            showResult(cached.avg, cached.count, cachedStars);
-            if (cachedStars > 0) paintSelected(cachedStars);
+        var cachedStars = cached ? (parseInt(cached.stars, 10) || 0) : 0;
+        if (cachedStars >= 1 && cachedStars <= 5) {
+            showResult(liveAvg, liveCount, cachedStars);
+            paintSelected(cachedStars);
         }
     } catch (e) {}
 

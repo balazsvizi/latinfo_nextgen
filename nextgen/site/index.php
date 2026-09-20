@@ -64,6 +64,9 @@ $cmsAnchorSpotlight = 'latinfo-dj-ajanlo';
 $Dj = $djSpotlight['strings'];
 $ratingStrings = latinfo_home_rating_strings($lang);
 $ratingAjaxUrl = nextgen_url('site/ajax_rating.php');
+$ratingSummary = $schemaOk
+    ? latinfo_home_rating_summary($db, true)
+    : ['average' => 0.0, 'count' => 0];
 $donablyView = latinfo_home_donably_view($db, $lang);
 $lhModuleTrackAllowed = true;
 
