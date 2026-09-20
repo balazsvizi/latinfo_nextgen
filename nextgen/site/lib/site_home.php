@@ -27,11 +27,33 @@ function latinfo_home_asset_url(string $path): string
 }
 
 /**
+ * Aktuális kezdőoldal-bázis: /nextgen/site/ előnézet vagy publikus /.
+ */
+function latinfo_home_current_page_base_url(): string
+{
+    $path = str_replace('\\', '/', (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?'));
+    $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (str_contains($path, '/nextgen/site') || str_contains($script, '/nextgen/site/')) {
+        return nextgen_url('site/');
+    }
+
+    return latinfo_home_preview_url();
+}
+
+function latinfo_home_lang_switch_url(string $lang): string
+{
+    // Mindig explicit lang — különben az EN süti megmarad HU kattintáskor.
+    return latinfo_home_preview_query_url_on(
+        latinfo_home_current_page_base_url(),
+        ['lang' => $lang === 'en' ? 'en' : 'hu']
+    );
+}
+
+/**
  * @param array<string, scalar|null> $extra
  */
-function latinfo_home_preview_query_url(array $extra = []): string
+function latinfo_home_preview_query_url_on(string $base, array $extra = []): string
 {
-    $base = latinfo_home_preview_url();
     $params = [];
     foreach ($extra as $key => $value) {
         if ($value === null || $value === '') {
@@ -50,14 +72,12 @@ function latinfo_home_preview_query_url(array $extra = []): string
     return $base . $sep . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 }
 
-function latinfo_home_lang_switch_url(string $lang): string
+/**
+ * @param array<string, scalar|null> $extra
+ */
+function latinfo_home_preview_query_url(array $extra = []): string
 {
-    $params = [];
-    if ($lang === 'en') {
-        $params['lang'] = 'en';
-    }
-
-    return latinfo_home_preview_query_url($params);
+    return latinfo_home_preview_query_url_on(latinfo_home_preview_url(), $extra);
 }
 
 /**
