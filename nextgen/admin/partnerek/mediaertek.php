@@ -53,7 +53,6 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             </p>
         </div>
         <div class="toolbar">
-            <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Módszertan v2 (PDF)</a>
             <a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">← Statisztikák</a>
         </div>
     </div>
@@ -69,8 +68,6 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         Ezekkel az egységárakkal számol a rendszer a statisztikákban és a partnerportálon
         (amíg a partner nem ad meg saját értékeket).
         Ajánlott tartomány: előnézet 8–15 Ft, oldalmegnyitás 100–120 Ft, további info 130–180 Ft.
-        Részletes indoklás:
-        <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">médiaérték módszertan v2 (PDF)</a>.
     </p>
     <form method="post" class="events-edit-stats__rates-row events-edit-stats__rates-row--admin" style="margin:0.75rem 0 1.5rem;align-items:flex-end;">
         <?= csrf_input('partner_admin_media_value') ?>

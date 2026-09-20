@@ -138,7 +138,6 @@ $venueBits = array_filter([
                     (<?= h(events_edit_stats_format_media_ft((int) $mediaValue['preview_value_ft'])) ?> előnézet
                     · <?= h(events_edit_stats_format_media_ft((int) $mediaValue['page_value_ft'])) ?> oldal
                     · <?= h(events_edit_stats_format_media_ft((int) $mediaValue['click_value_ft'])) ?> átkatt)
-                    · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan v2 (PDF)</a>
                 </p>
                 <form method="get" class="partner-mini-stats-form">
                     <input type="hidden" name="id" value="<?= $eventId ?>">

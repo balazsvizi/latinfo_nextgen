@@ -146,7 +146,6 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
-                        <li role="none"><a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" role="menuitem" target="_blank" rel="noopener">Módszertan v2 (PDF)</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">

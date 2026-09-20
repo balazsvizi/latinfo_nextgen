@@ -178,14 +178,6 @@ function ng_nav_latinfo_event_scripts(): array
 }
 
 /**
- * Médiaérték módszertani PDF (v2) URL.
- */
-function nextgen_media_value_methodology_pdf_url(): string
-{
-    return nextgen_url('mediaertek-modszertan.php');
-}
-
-/**
  * Backoffice navigációs zóna: nextgen (hub, config, admin, jelszó), finance (CRM), events, latinfo.
  */
 function ng_nav_app_zone(): string {

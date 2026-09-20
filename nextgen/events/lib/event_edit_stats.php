@@ -291,13 +291,6 @@ function events_edit_stats_media_value(
     ];
 }
 
-if (!function_exists('nextgen_media_value_methodology_pdf_url')) {
-    function nextgen_media_value_methodology_pdf_url(): string
-    {
-        return nextgen_url('mediaertek-modszertan.php');
-    }
-}
-
 function events_edit_stats_format_media_ft(int $amount): string
 {
     return number_format($amount, 0, ',', ' ') . ' Ft';
