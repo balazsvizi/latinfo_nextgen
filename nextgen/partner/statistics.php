@@ -69,6 +69,7 @@ require_once __DIR__ . '/partials/header.php';
         <p class="partner-page-lead">
             Megtekintések és generált médiaérték a(z) <strong><?= h($context['label']) ?></strong> profil eseményein —
             ugyanaz a nézet, mint az esemény-statisztikáknál, partnerre szűrve.
+            <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan v2 (PDF)</a>
         </p>
     </div>
 </div>

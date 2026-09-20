@@ -139,7 +139,7 @@ $statsCardHelp = [
         . ' További info (Click-out): átkattintás a szervező Facebook-eseményére — '
         . events_edit_stats_media_value_intent_click_ft() . ' Ft (elfogadható tartomány: 130–180 Ft).'
         . ' Képlet: (előnézet × egységár) + (oldalmegnyitások × egységár) + (további info kattintások × egységár).'
-        . ' A benchmark magyar Facebook CPC / landing page view és display AV piaci árakon alapul.'
+        . ' A benchmark magyar Facebook CPC / landing page view és display AV piaci árakon alapul (módszertan v2 PDF).'
         . ($statsCustomRates
             ? ' Most saját egységárakkal számol: '
                 . $statsPreviewUnitFt . ' Ft / előnézet, '
@@ -366,6 +366,7 @@ $renderSplit = static function (
                         / <?= (int) events_edit_stats_media_value_page_view_ft() ?>
                         / <?= (int) events_edit_stats_media_value_intent_click_ft() ?> Ft
                         (előnézet / oldal / átkattintás)
+                        · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan v2 (PDF)</a>
                     </p>
                 </div>
             </div>
@@ -469,7 +470,7 @@ $renderSplit = static function (
                 <?php if (!empty($mediaValue['is_custom'])): ?>
                     · <strong>saját egységár</strong>
                 <?php endif; ?>
-                · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan (PDF)</a>
+                · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan v2 (PDF)</a>
             </p>
         </div>
     </div>

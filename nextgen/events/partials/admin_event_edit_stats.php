@@ -173,7 +173,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                     Ember: <?= (int) $mediaValue['preview_human'] ?> × <?= (int) $mediaValue['preview_unit_ft'] ?> Ft
                     + <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
                     + <?= (int) $mediaValue['external_clicks_human'] ?> × <?= (int) $mediaValue['click_unit_ft'] ?> Ft
-                    · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan (PDF)</a>
+                    · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan v2 (PDF)</a>
                 </p>
             </div>
     </div>

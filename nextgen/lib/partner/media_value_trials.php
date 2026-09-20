@@ -448,7 +448,9 @@ function nextgen_media_value_rates_save(PDO $db, int $pageUnitFt, int $clickUnit
     }
 }
 
-function nextgen_media_value_methodology_pdf_url(): string
-{
-    return nextgen_url('mediaertek-modszertan.php');
+if (!function_exists('nextgen_media_value_methodology_pdf_url')) {
+    function nextgen_media_value_methodology_pdf_url(): string
+    {
+        return nextgen_url('mediaertek-modszertan.php');
+    }
 }

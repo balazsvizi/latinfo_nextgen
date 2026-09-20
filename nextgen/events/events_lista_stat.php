@@ -217,7 +217,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         · <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_page_ft'])) ?> megtekintés
                         · <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_click_ft'])) ?> átkatt
                         (<?= (int) $mediaPreviewUnitFt ?> / <?= (int) $mediaPageUnitFt ?> / <?= (int) $mediaClickUnitFt ?> Ft)
-                        · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan (PDF)</a>
+                        · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan v2 (PDF)</a>
                     </p>
                 </div>
             </div>
