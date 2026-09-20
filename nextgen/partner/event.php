@@ -115,7 +115,15 @@ $venueBits = array_filter([
                 $pageTotal = (int) ($totals['page_views'] ?? ($pageHuman + $pageBot));
                 $previewHuman = (int) ($totals['calendar_previews_human'] ?? $totals['calendar_previews'] ?? 0);
                 $previewTotal = (int) ($totals['calendar_previews'] ?? $previewHuman);
-                $externalTotal = (int) ($totals['external_info_clicks'] ?? $totals['external_info_clicks_human'] ?? 0);
+                $externalHuman = (int) ($totals['external_info_clicks_human'] ?? 0);
+                $externalTotal = (int) ($totals['external_info_clicks'] ?? $externalHuman);
+                $mediaValue = events_edit_stats_media_value(
+                    $pageHuman,
+                    $externalHuman,
+                    null,
+                    null,
+                    $previewHuman
+                );
                 ?>
                 <p class="partner-aside-card__big"><?= $pageHuman ?></p>
                 <p class="help">Oldal — emberi (választott időszak)</p>
@@ -124,6 +132,13 @@ $venueBits = array_filter([
                 <p class="help">Naptár előnézet</p>
                 <p class="partner-aside-card__big partner-aside-card__big--sm"><?= $externalTotal ?></p>
                 <p class="help">További információ kattintás</p>
+                <p class="partner-aside-card__big partner-aside-card__big--sm"><?= h(events_edit_stats_format_media_ft((int) $mediaValue['total_ft'])) ?></p>
+                <p class="help">
+                    Generált médiaérték
+                    (<?= h(events_edit_stats_format_media_ft((int) $mediaValue['preview_value_ft'])) ?> előnézet
+                    · <?= h(events_edit_stats_format_media_ft((int) $mediaValue['page_value_ft'])) ?> oldal
+                    · <?= h(events_edit_stats_format_media_ft((int) $mediaValue['click_value_ft'])) ?> átkatt)
+                </p>
                 <form method="get" class="partner-mini-stats-form">
                     <input type="hidden" name="id" value="<?= $eventId ?>">
                     <label class="events-filter-label" for="stat_date_from">Tól</label>

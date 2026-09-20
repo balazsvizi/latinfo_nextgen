@@ -16,7 +16,8 @@ if (is_file($nextgenMediaValueLib)) {
  *   mode: string,
  *   custom_rates: bool,
  *   page_unit_ft: int|null,
- *   click_unit_ft: int|null
+ *   click_unit_ft: int|null,
+ *   preview_unit_ft: int|null
  * }
  */
 function events_edit_stats_params_from_request(array $query): array
@@ -28,9 +29,10 @@ function events_edit_stats_params_from_request(array $query): array
     $dateTo = trim((string) ($query['stat_date_to'] ?? ''));
     $mode = events_edit_stats_normalize_mode($query['stat_mode'] ?? 'smart');
     $customRates = events_edit_stats_parse_custom_rates_flag($query['stat_custom_rates'] ?? null);
-    [$pageUnitFt, $clickUnitFt] = events_edit_stats_parse_custom_rate_units(
+    [$pageUnitFt, $clickUnitFt, $previewUnitFt] = events_edit_stats_parse_custom_rate_units(
         $query['stat_page_ft'] ?? null,
         $query['stat_click_ft'] ?? null,
+        $query['stat_preview_ft'] ?? null,
         $customRates
     );
 
@@ -52,6 +54,7 @@ function events_edit_stats_params_from_request(array $query): array
             'custom_rates' => $customRates,
             'page_unit_ft' => $pageUnitFt,
             'click_unit_ft' => $clickUnitFt,
+            'preview_unit_ft' => $previewUnitFt,
         ];
     }
 
@@ -66,6 +69,7 @@ function events_edit_stats_params_from_request(array $query): array
         'custom_rates' => $customRates,
         'page_unit_ft' => $pageUnitFt,
         'click_unit_ft' => $clickUnitFt,
+        'preview_unit_ft' => $previewUnitFt,
     ];
 }
 
@@ -80,47 +84,59 @@ function events_edit_stats_parse_custom_rates_flag(mixed $raw): bool
 }
 
 /**
- * @return array{0: int|null, 1: int|null}
+ * @return array{0: int|null, 1: int|null, 2: int|null}
  */
-function events_edit_stats_parse_custom_rate_units(mixed $pageRaw, mixed $clickRaw, bool $customRates): array
-{
+function events_edit_stats_parse_custom_rate_units(
+    mixed $pageRaw,
+    mixed $clickRaw,
+    mixed $previewRaw,
+    bool $customRates
+): array {
     if (!$customRates) {
-        return [null, null];
+        return [null, null, null];
     }
 
     $page = filter_var($pageRaw, FILTER_VALIDATE_INT);
     $click = filter_var($clickRaw, FILTER_VALIDATE_INT);
+    $preview = filter_var($previewRaw, FILTER_VALIDATE_INT);
     if ($page === false || $page < 0) {
         $page = events_edit_stats_media_value_page_view_ft();
     }
     if ($click === false || $click < 0) {
         $click = events_edit_stats_media_value_intent_click_ft();
     }
+    if ($preview === false || $preview < 0) {
+        $preview = events_edit_stats_media_value_preview_ft();
+    }
 
     return [
         min(1_000_000, (int) $page),
         min(1_000_000, (int) $click),
+        min(1_000_000, (int) $preview),
     ];
 }
 
 /**
- * @param array{custom_rates?: bool, page_unit_ft?: int|null, click_unit_ft?: int|null} $params
- * @return array{0: int, 1: int}
+ * @param array{custom_rates?: bool, page_unit_ft?: int|null, click_unit_ft?: int|null, preview_unit_ft?: int|null} $params
+ * @return array{0: int, 1: int, 2: int}
  */
 function events_edit_stats_resolve_media_units(array $params): array
 {
     $defaultPage = events_edit_stats_media_value_page_view_ft();
     $defaultClick = events_edit_stats_media_value_intent_click_ft();
+    $defaultPreview = events_edit_stats_media_value_preview_ft();
     if (empty($params['custom_rates'])) {
-        return [$defaultPage, $defaultClick];
+        return [$defaultPage, $defaultClick, $defaultPreview];
     }
 
     $page = $params['page_unit_ft'] ?? null;
     $click = $params['click_unit_ft'] ?? null;
+    $preview = $params['preview_unit_ft'] ?? null;
 
     return [
         is_int($page) ? max(0, min(1_000_000, $page)) : $defaultPage,
         is_int($click) ? max(0, min(1_000_000, $click)) : $defaultClick,
+        is_int($preview) ? max(0, min(1_000_000, $preview)) : $defaultPreview,
     ];
 }
 
@@ -193,7 +209,7 @@ function events_edit_stats_media_value_page_view_ft(): int
 
     return function_exists('nextgen_media_value_rates_builtin_page_ft')
         ? nextgen_media_value_rates_builtin_page_ft()
-        : 80;
+        : 110;
 }
 
 /** További info / Click-out (emberi) — adminban beállított reklámérték egységár. */
@@ -205,20 +221,35 @@ function events_edit_stats_media_value_intent_click_ft(): int
 
     return function_exists('nextgen_media_value_rates_builtin_click_ft')
         ? nextgen_media_value_rates_builtin_click_ft()
-        : 70;
+        : 150;
+}
+
+/** Naptár előnézet (emberi) — adminban beállított reklámérték egységár. */
+function events_edit_stats_media_value_preview_ft(): int
+{
+    if (function_exists('nextgen_media_value_rates_get')) {
+        return (int) nextgen_media_value_rates_get()['preview_unit_ft'];
+    }
+
+    return function_exists('nextgen_media_value_rates_builtin_preview_ft')
+        ? nextgen_media_value_rates_builtin_preview_ft()
+        : 12;
 }
 
 /**
- * Generált médiaérték emberi oldalmegnyitások és további-info kattintások alapján.
+ * Generált médiaérték emberi előnézet, oldalmegnyitás és további-info alapján.
  *
  * @return array{
  *   page_views_human: int,
  *   external_clicks_human: int,
+ *   preview_human: int,
  *   page_value_ft: int,
  *   click_value_ft: int,
+ *   preview_value_ft: int,
  *   total_ft: int,
  *   page_unit_ft: int,
  *   click_unit_ft: int,
+ *   preview_unit_ft: int,
  *   is_custom: bool
  * }
  */
@@ -226,27 +257,45 @@ function events_edit_stats_media_value(
     int $pageViewsHuman,
     int $externalClicksHuman,
     ?int $pageUnitFt = null,
-    ?int $clickUnitFt = null
+    ?int $clickUnitFt = null,
+    int $previewHuman = 0,
+    ?int $previewUnitFt = null
 ): array {
     $pageViewsHuman = max(0, $pageViewsHuman);
     $externalClicksHuman = max(0, $externalClicksHuman);
+    $previewHuman = max(0, $previewHuman);
     $defaultPage = events_edit_stats_media_value_page_view_ft();
     $defaultClick = events_edit_stats_media_value_intent_click_ft();
+    $defaultPreview = events_edit_stats_media_value_preview_ft();
     $pageUnit = $pageUnitFt !== null ? max(0, min(1_000_000, $pageUnitFt)) : $defaultPage;
     $clickUnit = $clickUnitFt !== null ? max(0, min(1_000_000, $clickUnitFt)) : $defaultClick;
+    $previewUnit = $previewUnitFt !== null ? max(0, min(1_000_000, $previewUnitFt)) : $defaultPreview;
     $pageValue = $pageViewsHuman * $pageUnit;
     $clickValue = $externalClicksHuman * $clickUnit;
+    $previewValue = $previewHuman * $previewUnit;
 
     return [
         'page_views_human' => $pageViewsHuman,
         'external_clicks_human' => $externalClicksHuman,
+        'preview_human' => $previewHuman,
         'page_value_ft' => $pageValue,
         'click_value_ft' => $clickValue,
-        'total_ft' => $pageValue + $clickValue,
+        'preview_value_ft' => $previewValue,
+        'total_ft' => $pageValue + $clickValue + $previewValue,
         'page_unit_ft' => $pageUnit,
         'click_unit_ft' => $clickUnit,
-        'is_custom' => $pageUnit !== $defaultPage || $clickUnit !== $defaultClick,
+        'preview_unit_ft' => $previewUnit,
+        'is_custom' => $pageUnit !== $defaultPage
+            || $clickUnit !== $defaultClick
+            || $previewUnit !== $defaultPreview,
     ];
+}
+
+if (!function_exists('nextgen_media_value_methodology_pdf_url')) {
+    function nextgen_media_value_methodology_pdf_url(): string
+    {
+        return nextgen_url('mediaertek-modszertan.php');
+    }
 }
 
 function events_edit_stats_format_media_ft(int $amount): string

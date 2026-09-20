@@ -44,8 +44,9 @@ $eventsTotal = (int) ($statsData['totals']['events_total'] ?? count($statsEventR
 $eventsWithViews = (int) ($statsData['totals']['events_with_views'] ?? 0);
 $pageHumanMedia = (int) ($statsData['totals']['page_views_human'] ?? $statsData['totals']['page_views'] ?? 0);
 $externalHumanMedia = (int) ($statsData['totals']['external_info_clicks_human'] ?? $statsData['totals']['external_info_clicks'] ?? 0);
-$mediaValue = events_edit_stats_media_value($pageHumanMedia, $externalHumanMedia);
-[$statsPageUnitFt, $statsClickUnitFt] = events_edit_stats_resolve_media_units($statsParams);
+$previewHumanMedia = (int) ($statsData['totals']['calendar_previews_human'] ?? $statsData['totals']['calendar_previews'] ?? 0);
+$mediaValue = events_edit_stats_media_value($pageHumanMedia, $externalHumanMedia, null, null, $previewHumanMedia);
+[$statsPageUnitFt, $statsClickUnitFt, $statsPreviewUnitFt] = events_edit_stats_resolve_media_units($statsParams);
 
 $statusOptions = [];
 foreach ($statsEventRows as $row) {
@@ -167,9 +168,19 @@ $eventDateYmd = static function (array $row, string $key): string {
         <div class="events-edit-stats__card events-edit-stats__card--media-value">
             <p class="events-edit-stats__card-label">Generált médiaérték</p>
             <p class="events-edit-stats__card-value"><?= h(events_edit_stats_format_media_ft((int) $mediaValue['total_ft'])) ?></p>
+            <dl class="events-edit-stats__card-split events-edit-stats__card-split--triple">
+                <dt>Előnézet</dt>
+                <dt>Megtekintés</dt>
+                <dt>Átkattintás</dt>
+                <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['preview_value_ft'])) ?></dd>
+                <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['page_value_ft'])) ?></dd>
+                <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['click_value_ft'])) ?></dd>
+            </dl>
             <p class="events-edit-stats__card-hint">
-                Ember: <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
+                Ember: <?= (int) $mediaValue['preview_human'] ?> × <?= (int) $mediaValue['preview_unit_ft'] ?> Ft
+                + <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
                 + <?= (int) $mediaValue['external_clicks_human'] ?> × <?= (int) $mediaValue['click_unit_ft'] ?> Ft
+                · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan (PDF)</a>
             </p>
         </div>
     </div>
@@ -328,6 +339,7 @@ $eventDateYmd = static function (array $row, string $key): string {
                         <th class="th-center" title="Oldal — emberi">Oldal ember</th>
                         <th class="th-center" title="Oldal — bot">Oldal bot</th>
                         <th class="th-center" title="Oldal — összesen">Oldal össz</th>
+                        <th class="th-center" title="Előnézet (ember) × <?= (int) $statsPreviewUnitFt ?> Ft">Előnézet Ft</th>
                         <th class="th-center" title="Oldalmegnyitás (ember) × <?= (int) $statsPageUnitFt ?> Ft">Oldal Ft</th>
                         <th class="th-center" title="További info (ember) × <?= (int) $statsClickUnitFt ?> Ft">Átkatt Ft</th>
                     </tr>
@@ -340,12 +352,12 @@ $eventDateYmd = static function (array $row, string $key): string {
                         $st = (string) ($row['event_status'] ?? '');
                         $badgeClass = events_post_status_badge_class($st);
                         $pageCounts = events_view_metric_counts_from_row($row, 'megtekintesek');
-                        $previewViews = (int) ($row['naptar_elonezetek'] ?? 0);
+                        $previewCounts = events_view_metric_counts_from_row($row, 'naptar_elonezetek');
+                        $previewViews = (int) $previewCounts['total'];
                         $externalCounts = events_view_metric_counts_from_row($row, 'tovabbi_info_kattintasok');
                         $externalClicks = (int) $externalCounts['total'];
                         $uniqueVisitors = (int) ($row['egyedi_latogatok'] ?? 0);
                         $pageViews = (int) $pageCounts['total'];
-                        $previewViews = (int) $previewViews;
                         $hasViews = ($pageViews + $previewViews + $externalClicks) > 0 ? '1' : '0';
                         $eventStart = $eventDateYmd($row, 'event_start');
                         $eventEnd = $eventDateYmd($row, 'event_end');
@@ -355,7 +367,10 @@ $eventDateYmd = static function (array $row, string $key): string {
                         $searchName = mb_strtolower((string) ($row['event_name'] ?? ''), 'UTF-8');
                         $rowMediaValue = events_edit_stats_media_value(
                             (int) $pageCounts['human'],
-                            (int) $externalCounts['human']
+                            (int) $externalCounts['human'],
+                            null,
+                            null,
+                            (int) $previewCounts['human']
                         );
                         ?>
                         <tr
@@ -387,6 +402,9 @@ $eventDateYmd = static function (array $row, string $key): string {
                             <td class="text-center"><?= (int) $pageCounts['human'] ?></td>
                             <td class="text-center"><?= (int) $pageCounts['bot'] ?></td>
                             <td class="text-center"><?= (int) $pageCounts['total'] ?></td>
+                            <td class="text-center events-stats-cell--media" title="Előnézet × <?= (int) $rowMediaValue['preview_unit_ft'] ?> Ft">
+                                <?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['preview_value_ft'])) ?>
+                            </td>
                             <td class="text-center events-stats-cell--media" title="<?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['total_ft'])) ?>">
                                 <?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['page_value_ft'])) ?>
                             </td>
@@ -396,7 +414,7 @@ $eventDateYmd = static function (array $row, string $key): string {
                         </tr>
                     <?php endforeach; ?>
                     <tr id="organizer-stats-events-empty" hidden>
-                        <td colspan="12" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
+                        <td colspan="13" class="events-org-stats-list-empty">Nincs találat a szűrőkre.</td>
                     </tr>
                 </tbody>
             </table>

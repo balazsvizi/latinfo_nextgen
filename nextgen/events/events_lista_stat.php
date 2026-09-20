@@ -21,7 +21,7 @@ $allowedOrder = [
     'id', 'organizer', 'name', 'start', 'status',
     'cal_previews', 'external_clicks',
     'views', 'views_human', 'views_bot',
-    'media_page', 'media_click', 'media_total',
+    'media_page', 'media_click', 'media_preview', 'media_total',
 ];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
@@ -37,6 +37,7 @@ $poolFromSql = events_admin_list_pool_from_sql($filters['list_limit']);
 
 $mediaPageUnitFt = events_edit_stats_media_value_page_view_ft();
 $mediaClickUnitFt = events_edit_stats_media_value_intent_click_ft();
+$mediaPreviewUnitFt = events_edit_stats_media_value_preview_ft();
 
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
@@ -52,7 +53,8 @@ $orderSql = match ($order) {
     'views_bot' => "megtekintesek_bot {$dirSql}",
     'media_page' => "(megtekintesek_human * {$mediaPageUnitFt}) {$dirSql}",
     'media_click' => "(tovabbi_info_kattintasok_human * {$mediaClickUnitFt}) {$dirSql}",
-    'media_total' => "((megtekintesek_human * {$mediaPageUnitFt}) + (tovabbi_info_kattintasok_human * {$mediaClickUnitFt})) {$dirSql}",
+    'media_preview' => "(naptar_elonezetek_human * {$mediaPreviewUnitFt}) {$dirSql}",
+    'media_total' => "((naptar_elonezetek_human * {$mediaPreviewUnitFt}) + (megtekintesek_human * {$mediaPageUnitFt}) + (tovabbi_info_kattintasok_human * {$mediaClickUnitFt})) {$dirSql}",
     default => 'megtekintesek DESC',
 };
 
@@ -77,6 +79,8 @@ $sql = "
         {$pageCounts['human']} AS megtekintesek_human,
         {$pageCounts['bot']} AS megtekintesek_bot,
         {$pageCounts['total']} AS megtekintesek,
+        {$previewCounts['human']} AS naptar_elonezetek_human,
+        {$previewCounts['bot']} AS naptar_elonezetek_bot,
         {$previewCounts['total']} AS naptar_elonezetek,
         {$externalCounts['human']} AS tovabbi_info_kattintasok_human,
         {$externalCounts['bot']} AS tovabbi_info_kattintasok_bot,
@@ -100,12 +104,19 @@ $statsSummary = [
     'media_total_ft' => 0,
     'media_page_ft' => 0,
     'media_click_ft' => 0,
+    'media_preview_ft' => 0,
 ];
 foreach ($rows as $summaryRow) {
     $preview = events_view_metric_counts_from_row($summaryRow, 'naptar_elonezetek');
     $external = events_view_metric_counts_from_row($summaryRow, 'tovabbi_info_kattintasok');
     $page = events_view_metric_counts_from_row($summaryRow, 'megtekintesek');
-    $rowMedia = events_edit_stats_media_value((int) $page['human'], (int) $external['human']);
+    $rowMedia = events_edit_stats_media_value(
+        (int) $page['human'],
+        (int) $external['human'],
+        null,
+        null,
+        (int) $preview['human']
+    );
     $statsSummary['preview_total'] += $preview['total'];
     $statsSummary['external_total'] += $external['total'];
     $statsSummary['external_human'] += $external['human'];
@@ -115,6 +126,7 @@ foreach ($rows as $summaryRow) {
     $statsSummary['media_total_ft'] += (int) $rowMedia['total_ft'];
     $statsSummary['media_page_ft'] += (int) $rowMedia['page_value_ft'];
     $statsSummary['media_click_ft'] += (int) $rowMedia['click_value_ft'];
+    $statsSummary['media_preview_ft'] += (int) $rowMedia['preview_value_ft'];
 }
 
 $editBase = events_url('szerkeszt.php?id=');
@@ -201,9 +213,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <p class="events-stats-summary__label">Médiaérték</p>
                     <p class="events-stats-summary__value"><?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_total_ft'])) ?></p>
                     <p class="events-stats-summary__hint">
-                        <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_page_ft'])) ?> megtekintés
+                        <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_preview_ft'])) ?> előnézet
+                        · <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_page_ft'])) ?> megtekintés
                         · <?= h(events_edit_stats_format_media_ft((int) $statsSummary['media_click_ft'])) ?> átkatt
-                        (<?= (int) $mediaPageUnitFt ?> / <?= (int) $mediaClickUnitFt ?> Ft)
+                        (<?= (int) $mediaPreviewUnitFt ?> / <?= (int) $mediaPageUnitFt ?> / <?= (int) $mediaClickUnitFt ?> Ft)
+                        · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan (PDF)</a>
                     </p>
                 </div>
             </div>

@@ -119,7 +119,8 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         $totals = $statsData['totals'] ?? [];
         $pageHumanMedia = (int) ($totals['page_views_human'] ?? $totals['page_views'] ?? 0);
         $externalHumanMedia = (int) ($totals['external_info_clicks_human'] ?? $totals['external_info_clicks'] ?? 0);
-        $mediaValue = events_edit_stats_media_value($pageHumanMedia, $externalHumanMedia);
+        $previewHumanMedia = (int) ($totals['calendar_previews_human'] ?? $totals['calendar_previews'] ?? 0);
+        $mediaValue = events_edit_stats_media_value($pageHumanMedia, $externalHumanMedia, null, null, $previewHumanMedia);
         $statCards = [
             [
                 'label' => 'Oldal — emberi',
@@ -160,9 +161,19 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
             <div class="events-edit-stats__card events-edit-stats__card--media-value">
                 <p class="events-edit-stats__card-label">Generált médiaérték</p>
                 <p class="events-edit-stats__card-value"><?= h(events_edit_stats_format_media_ft((int) $mediaValue['total_ft'])) ?></p>
+                <dl class="events-edit-stats__card-split events-edit-stats__card-split--triple">
+                    <dt>Előnézet</dt>
+                    <dt>Megtekintés</dt>
+                    <dt>Átkattintás</dt>
+                    <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['preview_value_ft'])) ?></dd>
+                    <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['page_value_ft'])) ?></dd>
+                    <dd><?= h(events_edit_stats_format_media_ft((int) $mediaValue['click_value_ft'])) ?></dd>
+                </dl>
                 <p class="events-edit-stats__card-hint">
-                    Ember: <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
+                    Ember: <?= (int) $mediaValue['preview_human'] ?> × <?= (int) $mediaValue['preview_unit_ft'] ?> Ft
+                    + <?= (int) $mediaValue['page_views_human'] ?> × <?= (int) $mediaValue['page_unit_ft'] ?> Ft
                     + <?= (int) $mediaValue['external_clicks_human'] ?> × <?= (int) $mediaValue['click_unit_ft'] ?> Ft
+                    · <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">Módszertan (PDF)</a>
                 </p>
             </div>
     </div>

@@ -27,7 +27,7 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>">
+    <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>?v=<?= h(rawurlencode(nextgen_app_version())) ?>">
     <link rel="stylesheet" href="<?= h(partner_asset_url('assets/css/portal.css')) ?>">
     <?php if (!empty($extraHead)) {
         echo $extraHead;

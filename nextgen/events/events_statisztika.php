@@ -68,6 +68,7 @@ $szervezokStatUrl = events_url('events_szervezok_statisztika.php?' . http_build_
     'stat_custom_rates' => !empty($statsParams['custom_rates']) ? '1' : null,
     'stat_page_ft' => !empty($statsParams['custom_rates']) ? ($statsParams['page_unit_ft'] ?? null) : null,
     'stat_click_ft' => !empty($statsParams['custom_rates']) ? ($statsParams['click_unit_ft'] ?? null) : null,
+    'stat_preview_ft' => !empty($statsParams['custom_rates']) ? ($statsParams['preview_unit_ft'] ?? null) : null,
 ], static fn ($v): bool => $v !== null && $v !== '')));
 
 $mainContentClass = 'main-content main-content--fullwidth';

@@ -5417,7 +5417,7 @@ body.event-edit-cover-lightbox-open {
 }
 .events-edit-stats__rates-fields {
     margin-top: 0.7rem;
-    max-width: 22rem;
+    max-width: 36rem;
 }
 .events-edit-stats__rates-row {
     display: flex;
@@ -6113,6 +6113,24 @@ html.events-stats-loading-active body {
     row-gap: 0.2rem;
     margin: 0.55rem 0 0;
     align-items: end;
+}
+.events-edit-stats__card-split--triple {
+    grid-template-columns: 1fr 1fr 1fr;
+    column-gap: 0.55rem;
+}
+.events-edit-stats__card-split--triple dt {
+    font-size: 0.65rem;
+}
+.events-edit-stats__card--media-value .events-edit-stats__card-split--triple dd {
+    font-size: 0.98rem;
+}
+@media (max-width: 520px) {
+    .events-edit-stats__card-split--triple dt {
+        font-size: 0.6rem;
+    }
+    .events-edit-stats__card--media-value .events-edit-stats__card-split--triple dd {
+        font-size: 0.88rem;
+    }
 }
 .events-edit-stats__card-split dt {
     margin: 0;

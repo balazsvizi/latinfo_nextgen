@@ -51,8 +51,12 @@ $organizerName = trim((string) ($r['organizer_name'] ?? ''));
     require __DIR__ . '/admin_metric_count_cells.php';
     $pageHuman = (int) $metricCounts['human'];
     $externalHuman = (int) events_view_metric_counts_from_row($r, 'tovabbi_info_kattintasok')['human'];
-    $rowMediaValue = events_edit_stats_media_value($pageHuman, $externalHuman);
+    $previewHuman = (int) events_view_metric_counts_from_row($r, 'naptar_elonezetek')['human'];
+    $rowMediaValue = events_edit_stats_media_value($pageHuman, $externalHuman, null, null, $previewHuman);
     ?>
+    <td class="text-center events-stats-cell--media" title="Előnézet × <?= (int) $rowMediaValue['preview_unit_ft'] ?> Ft">
+        <a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['preview_value_ft'])) ?></a>
+    </td>
     <td class="text-center events-stats-cell--media" title="<?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['total_ft'])) ?>">
         <a class="events-cell-edit" href="<?= h($edit) ?>"><?= h(events_edit_stats_format_media_ft((int) $rowMediaValue['page_value_ft'])) ?></a>
     </td>

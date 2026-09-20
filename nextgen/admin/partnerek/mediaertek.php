@@ -18,9 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     } else {
         $pageFt = filter_var($_POST['page_unit_ft'] ?? null, FILTER_VALIDATE_INT);
         $clickFt = filter_var($_POST['click_unit_ft'] ?? null, FILTER_VALIDATE_INT);
-        if ($pageFt === false || $pageFt < 0 || $clickFt === false || $clickFt < 0) {
+        $previewFt = filter_var($_POST['preview_unit_ft'] ?? null, FILTER_VALIDATE_INT);
+        if (
+            $pageFt === false || $pageFt < 0
+            || $clickFt === false || $clickFt < 0
+            || $previewFt === false || $previewFt < 0
+        ) {
             $flash = ['type' => 'error', 'text' => 'Érvénytelen egységárak. Csak nemnegatív egész szám adható meg.'];
-        } elseif (!nextgen_media_value_rates_save($db, (int) $pageFt, (int) $clickFt)) {
+        } elseif (!nextgen_media_value_rates_save($db, (int) $pageFt, (int) $clickFt, (int) $previewFt)) {
             $flash = ['type' => 'error', 'text' => 'A számolási értékek mentése nem sikerült.'];
         } else {
             $flash = ['type' => 'success', 'text' => 'Számolási értékek mentve. A médiaérték ezekkel számol.'];
@@ -43,7 +48,8 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <div>
             <h2 style="margin:0;">Médiaérték</h2>
             <p class="help" style="margin:0.35rem 0 0;">
-                Itt állítható a reklámérték számolási egységára (DPV / Click-out), alatta a partnerek rögzített saját-ár naplója.
+                Itt állítható a reklámérték számolási egységára (előnézet / DPV / click-out).
+                Ezekkel számol minden statisztika, amíg a partner nem ad meg saját Ft-ot.
             </p>
         </div>
         <div class="toolbar">
@@ -61,11 +67,31 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
     <p class="help">
         Ezekkel az egységárakkal számol a rendszer a statisztikákban és a partnerportálon
         (amíg a partner nem ad meg saját értékeket).
-        Ajánlott tartomány: oldalmegnyitás 60–120 Ft, további info 50–100 Ft.
+        Ajánlott tartomány: előnézet 8–15 Ft, oldalmegnyitás 100–120 Ft, további info 130–180 Ft.
+        Részletes indoklás:
+        <a href="<?= h(nextgen_media_value_methodology_pdf_url()) ?>" target="_blank" rel="noopener">médiaérték módszertan (PDF)</a>.
     </p>
-    <form method="post" class="events-edit-stats__rates-row" style="max-width:28rem;margin:0.75rem 0 1.5rem;align-items:flex-end;">
+    <form method="post" class="events-edit-stats__rates-row events-edit-stats__rates-row--admin" style="margin:0.75rem 0 1.5rem;align-items:flex-end;">
         <?= csrf_input('partner_admin_media_value') ?>
         <input type="hidden" name="action" value="save_rates">
+        <div class="events-edit-stats__rates-field">
+            <label class="events-filter-label" for="preview_unit_ft">Előnézet</label>
+            <div class="events-edit-stats__rates-input-wrap">
+                <input
+                    class="events-filter-input events-edit-stats__rates-input"
+                    type="number"
+                    name="preview_unit_ft"
+                    id="preview_unit_ft"
+                    min="0"
+                    max="1000000"
+                    step="1"
+                    required
+                    autocomplete="off"
+                    value="<?= (int) $rates['preview_unit_ft'] ?>"
+                >
+                <span class="events-edit-stats__rates-unit">Ft</span>
+            </div>
+        </div>
         <div class="events-edit-stats__rates-field">
             <label class="events-filter-label" for="page_unit_ft">Oldalmegnyitás (DPV)</label>
             <div class="events-edit-stats__rates-input-wrap">
@@ -78,6 +104,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                     max="1000000"
                     step="1"
                     required
+                    autocomplete="off"
                     value="<?= (int) $rates['page_unit_ft'] ?>"
                 >
                 <span class="events-edit-stats__rates-unit">Ft</span>
@@ -95,6 +122,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                     max="1000000"
                     step="1"
                     required
+                    autocomplete="off"
                     value="<?= (int) $rates['click_unit_ft'] ?>"
                 >
                 <span class="events-edit-stats__rates-unit">Ft</span>
@@ -140,8 +168,10 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                             <th>Kontextus</th>
                             <th>Időszak</th>
                             <th>Mód</th>
+                            <th class="th-num">Előnézet Ft</th>
                             <th class="th-num">Megtek. Ft</th>
                             <th class="th-num">Átkatt Ft</th>
+                            <th class="th-num">Ember előnézet</th>
                             <th class="th-num">Ember megtek.</th>
                             <th class="th-num">Ember átkatt.</th>
                             <th class="th-num">Médiaérték</th>
@@ -182,8 +212,10 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                                     <?= h((string) ($row['date_to'] ?? '')) ?>
                                 </td>
                                 <td><?= h($modeLabel) ?></td>
+                                <td class="th-num"><?= h(events_edit_stats_format_media_ft((int) ($row['preview_unit_ft'] ?? 0))) ?></td>
                                 <td class="th-num"><?= h(events_edit_stats_format_media_ft((int) ($row['page_unit_ft'] ?? 0))) ?></td>
                                 <td class="th-num"><?= h(events_edit_stats_format_media_ft((int) ($row['click_unit_ft'] ?? 0))) ?></td>
+                                <td class="th-num"><?= (int) ($row['preview_human'] ?? 0) ?></td>
                                 <td class="th-num"><?= (int) ($row['page_views_human'] ?? 0) ?></td>
                                 <td class="th-num"><?= (int) ($row['external_clicks_human'] ?? 0) ?></td>
                                 <td class="th-num"><strong><?= h(events_edit_stats_format_media_ft((int) ($row['total_ft'] ?? 0))) ?></strong></td>

@@ -28,16 +28,27 @@ if (
     $totals = is_array($statsData['totals'] ?? null) ? $statsData['totals'] : [];
     $pageHuman = (int) ($totals['page_views_human'] ?? 0);
     $externalHuman = (int) ($totals['external_info_clicks_human'] ?? 0);
-    [$pageUnit, $clickUnit] = events_edit_stats_resolve_media_units($statsParams);
-    $mediaValue = events_edit_stats_media_value($pageHuman, $externalHuman, $pageUnit, $clickUnit);
+    $previewHuman = (int) ($totals['calendar_previews_human'] ?? 0);
+    [$pageUnit, $clickUnit, $previewUnit] = events_edit_stats_resolve_media_units($statsParams);
+    $mediaValue = events_edit_stats_media_value(
+        $pageHuman,
+        $externalHuman,
+        $pageUnit,
+        $clickUnit,
+        $previewHuman,
+        $previewUnit
+    );
     nextgen_partner_media_value_trial_save($db, [
         'partner_id' => $partnerId,
         'page_unit_ft' => (int) $mediaValue['page_unit_ft'],
         'click_unit_ft' => (int) $mediaValue['click_unit_ft'],
+        'preview_unit_ft' => (int) $mediaValue['preview_unit_ft'],
         'page_views_human' => (int) $mediaValue['page_views_human'],
         'external_clicks_human' => (int) $mediaValue['external_clicks_human'],
+        'preview_human' => (int) $mediaValue['preview_human'],
         'page_value_ft' => (int) $mediaValue['page_value_ft'],
         'click_value_ft' => (int) $mediaValue['click_value_ft'],
+        'preview_value_ft' => (int) $mediaValue['preview_value_ft'],
         'total_ft' => (int) $mediaValue['total_ft'],
         'date_from' => (string) $statsParams['date_from'],
         'date_to' => (string) $statsParams['date_to'],
