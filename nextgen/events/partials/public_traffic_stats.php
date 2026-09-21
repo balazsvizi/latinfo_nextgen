@@ -67,7 +67,7 @@ $pageCatalog = events_public_traffic_page_catalog();
 ?>
 <div class="card events-edit-stats events-public-traffic-stats">
     <p class="events-edit-stats__intro">
-        A beégetett nyilvános oldalak (naptár, eseménylista, DJ lista, szervezők, partnerek) megtekintései.
+        A beégetett nyilvános oldalak (főoldal, naptár, eseménylista, DJ lista, szervezők, partnerek) megtekintései.
         A menükattintások a fejléc főmenüjét, a naptár/lista nézetváltót, a logót és a nyelvváltót mérik.
         Admin és partner munkamenetből nem számolunk.
     </p>
@@ -195,7 +195,7 @@ $pageCatalog = events_public_traffic_page_catalog();
 
         <?php if ($pageHuman + $pageBot + $navHuman + $navBot === 0): ?>
             <p class="help events-edit-stats__empty">
-                Még nincs mért forgalom a választott szűrőkkel. A mérés a funkció élesítésétől gyűlik (naptár, lista, DJ-k és a többi nyilvános oldal).
+                Még nincs mért forgalom a választott szűrőkkel. A mérés a funkció élesítésétől gyűlik (főoldal, naptár, lista, DJ-k és a többi nyilvános oldal).
             </p>
         <?php endif; ?>
 

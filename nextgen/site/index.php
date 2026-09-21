@@ -70,6 +70,10 @@ $ratingSummary = $schemaOk
 $donablyView = latinfo_home_donably_view($db, $lang);
 $lhModuleTrackAllowed = true;
 
+require_once dirname(__DIR__) . '/events/lib/public_traffic.php';
+$eventsPublicTrafficPageKey = 'home';
+events_public_traffic_hit($db, 'home', $lang);
+
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $urlHu = latinfo_home_lang_switch_url('hu');
 $urlEn = latinfo_home_lang_switch_url('en');

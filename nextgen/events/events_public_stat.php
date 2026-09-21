@@ -50,7 +50,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div>
         <h1 class="events-stat-page-title">Publikus oldalak</h1>
         <p class="events-stat-page-lead">
-            Naptár, eseménylista, DJ lista és a többi beégetett nyilvános oldal, plusz a főmenü kattintásai.
+            Főoldal, naptár, eseménylista, DJ lista és a többi beégetett nyilvános oldal, plusz a főmenü kattintásai.
             <?= h((string) $statsParams['date_from']) ?> – <?= h((string) $statsParams['date_to']) ?>.
         </p>
     </div>

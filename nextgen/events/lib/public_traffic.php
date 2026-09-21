@@ -14,6 +14,7 @@ const EVENTS_PUBLIC_TRAFFIC_NAV_CLICK = 'nav_click';
 function events_public_traffic_page_catalog(): array
 {
     return [
+        'home' => ['label' => 'Főoldal', 'group' => 'hub', 'color' => '#6d8f63'],
         'calendar' => ['label' => 'Naptár', 'group' => 'hub', 'color' => '#3d6b4f'],
         'list' => ['label' => 'Eseménylista', 'group' => 'hub', 'color' => '#2f6f8f'],
         'map' => ['label' => 'Térkép', 'group' => 'hub', 'color' => '#5a8a6a'],
