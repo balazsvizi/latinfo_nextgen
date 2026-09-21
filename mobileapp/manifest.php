@@ -10,7 +10,7 @@ if (!defined('BASE_URL')) {
 
 $startUrl = site_url('/') . '?source=mobileapp';
 $scope = site_url('/');
-$iconJpg = site_url('mobileapp/assets/icons/latinfo-icon-04-ornament-l.jpg');
+$iconJpg = site_url('mobileapp/assets/icons/latinfo-app-logo.jpg');
 
 $manifest = [
     'name' => SITE_NAME . ' – Mobilapp',

@@ -105,7 +105,7 @@ $eventsHome = defined('EVENTS_HOME_PATH') ? EVENTS_HOME_PATH : 'events';
 $naptarUrl = rtrim(site_url($eventsHome . '/'), '/') . '/';
 $manifestUrl = site_url('mobileapp/manifest.php');
 $swUrl = site_url('mobileapp/sw.js');
-$iconUrl = site_url('mobileapp/assets/icons/latinfo-icon-04-ornament-l.jpg');
+$iconUrl = site_url('mobileapp/assets/icons/latinfo-app-logo.jpg');
 $iconVersion = defined('APP_VERSION') ? (string) APP_VERSION : '1';
 $iconUrlVer = $iconUrl . '?v=' . rawurlencode($iconVersion);
 
