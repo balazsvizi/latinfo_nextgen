@@ -900,7 +900,7 @@ function latinfo_home_share_data(string $lang): array
     $urlHu = latinfo_home_public_canonical_url('hu');
     $urlEn = latinfo_home_public_canonical_url('en');
     $canonical = $lang === 'en' ? $urlEn : $urlHu;
-    $imageRel = 'images/og/latinfo-home-og.jpg';
+    $imageRel = 'images/og/latinfo-home-share.jpg';
     $imageFs = dirname(__DIR__) . '/assets/' . $imageRel;
     $imageUrl = '';
     $imageW = 0;
@@ -908,6 +908,10 @@ function latinfo_home_share_data(string $lang): array
     $imageType = '';
     if (is_file($imageFs) && is_readable($imageFs)) {
         $imageUrl = events_absolute_url(latinfo_home_asset_url($imageRel));
+        $ver = (string) filemtime($imageFs);
+        if ($ver !== '') {
+            $imageUrl .= (str_contains($imageUrl, '?') ? '&' : '?') . 'v=' . rawurlencode($ver);
+        }
         $dims = @getimagesize($imageFs);
         if (is_array($dims)) {
             $imageW = (int) ($dims[0] ?? 0);
