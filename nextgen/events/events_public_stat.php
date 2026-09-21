@@ -20,7 +20,7 @@ $statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDate
 $statsFilterExtraQuery = array_filter([
     'page' => $statsParams['page'] !== 'all' ? $statsParams['page'] : null,
     'traf_lang' => $statsParams['lang'] !== 'all' ? $statsParams['lang'] : null,
-    'visitor' => $statsParams['visitor'] !== 'all' ? $statsParams['visitor'] : null,
+    'visitor' => $statsParams['visitor'] !== 'human' ? $statsParams['visitor'] : null,
     'device' => $statsParams['device'] !== 'all' ? $statsParams['device'] : null,
     'kind' => $statsParams['kind'] !== 'all' ? $statsParams['kind'] : null,
 ], static fn ($v): bool => $v !== null && $v !== '');

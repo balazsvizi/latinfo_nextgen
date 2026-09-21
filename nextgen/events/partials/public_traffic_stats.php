@@ -15,7 +15,7 @@ $statsParams = $statsParams ?? [
     'date_to' => '',
     'page' => 'all',
     'lang' => 'all',
-    'visitor' => 'all',
+    'visitor' => 'human',
     'device' => 'all',
     'kind' => 'all',
 ];
@@ -36,6 +36,9 @@ $granularityLabel = match ($granularity) {
     default => 'napi',
 };
 
+$visitorFilter = (string) ($statsParams['visitor'] ?? 'human');
+$useBotCounts = $visitorFilter === 'bot';
+
 $pageHuman = (int) ($totals['page_views_human'] ?? 0);
 $pageBot = (int) ($totals['page_views_bot'] ?? 0);
 $navHuman = (int) ($totals['nav_clicks_human'] ?? 0);
@@ -44,7 +47,13 @@ $uniqueHuman = (int) ($totals['unique_human'] ?? 0);
 $uniqueBot = (int) ($totals['unique_bot'] ?? 0);
 $langHu = (int) ($totals['lang_hu'] ?? 0);
 $langEn = (int) ($totals['lang_en'] ?? 0);
-$pagePerUnique = ($uniqueHuman > 0 && $pageHuman > 0) ? round($pageHuman / $uniqueHuman, 1) : null;
+
+$pageViews = $useBotCounts ? $pageBot : $pageHuman;
+$navClicks = $useBotCounts ? $navBot : $navHuman;
+$uniqueVisitors = $useBotCounts ? $uniqueBot : $uniqueHuman;
+$pagePerUnique = ($uniqueVisitors > 0 && $pageViews > 0) ? round($pageViews / $uniqueVisitors, 1) : null;
+
+$rowCountKey = $useBotCounts ? 'bot_count' : 'human_count';
 
 $chartPayload = is_array($statsData['chart'] ?? null) ? $statsData['chart'] : ['labels' => [], 'datasets' => []];
 $navChartPayload = is_array($statsData['nav_chart'] ?? null) ? $statsData['nav_chart'] : ['labels' => [], 'datasets' => []];
@@ -65,11 +74,20 @@ $hasAnyChart = $hasTrend || $hasNavTrend || $hasVisitorTrend || $hasPageShare ||
 
 $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 $pageCatalog = events_public_traffic_page_catalog();
+
+$formatPerPerson = static function (int $opens, int $unique): string {
+    if ($unique <= 0 || $opens <= 0) {
+        return '–';
+    }
+
+    return (string) round($opens / $unique, 1);
+};
 ?>
 <div class="card events-edit-stats events-public-traffic-stats">
     <p class="events-edit-stats__intro">
         A beégetett nyilvános oldalak (főoldal, naptár, eseménylista, DJ lista, szervezők, partnerek) megtekintései.
         A menükattintások a fejléc főmenüjét, a naptár/lista nézetváltót, a logót és a nyelvváltót mérik.
+        Alapból emberi forgalom; a botok csak az „Ember és bot” grafikonon jelennek meg külön.
         Admin és partner munkamenetből nem számolunk.
     </p>
 
@@ -118,9 +136,9 @@ $pageCatalog = events_public_traffic_page_catalog();
                 <div class="form-group">
                     <label class="events-filter-label" for="traf_visitor">Látogató</label>
                     <select class="events-filter-input" name="visitor" id="traf_visitor">
-                        <option value="all"<?= $statsParams['visitor'] === 'all' ? ' selected' : '' ?>>Ember + bot</option>
-                        <option value="human"<?= $statsParams['visitor'] === 'human' ? ' selected' : '' ?>>Csak ember</option>
-                        <option value="bot"<?= $statsParams['visitor'] === 'bot' ? ' selected' : '' ?>>Csak bot</option>
+                        <option value="human"<?= $visitorFilter === 'human' ? ' selected' : '' ?>>Csak ember</option>
+                        <option value="all"<?= $visitorFilter === 'all' ? ' selected' : '' ?>>Ember + bot (összes)</option>
+                        <option value="bot"<?= $visitorFilter === 'bot' ? ' selected' : '' ?>>Csak bot</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -151,36 +169,18 @@ $pageCatalog = events_public_traffic_page_catalog();
         <div class="events-edit-stats__cards">
             <div class="events-edit-stats__card">
                 <p class="events-edit-stats__card-label">Oldalmegnyitás</p>
-                <p class="events-edit-stats__card-value"><?= $pageHuman + $pageBot ?></p>
-                <dl class="events-edit-stats__card-split">
-                    <dt>Ember</dt>
-                    <dt>Bot</dt>
-                    <dd><?= $pageHuman ?></dd>
-                    <dd><?= $pageBot ?></dd>
-                </dl>
-            </div>
-            <div class="events-edit-stats__card">
-                <p class="events-edit-stats__card-label">Egyedi látogató</p>
-                <p class="events-edit-stats__card-value"><?= $uniqueHuman ?></p>
-                <dl class="events-edit-stats__card-split">
-                    <dt>Ember</dt>
-                    <dt>Bot</dt>
-                    <dd><?= $uniqueHuman ?></dd>
-                    <dd><?= $uniqueBot ?></dd>
-                </dl>
+                <p class="events-edit-stats__card-value"><?= $pageViews ?></p>
                 <?php if ($pagePerUnique !== null): ?>
-                    <p class="events-edit-stats__card-hint">≈ <?= h((string) $pagePerUnique) ?> megnyitás / egyedi ember</p>
+                    <p class="events-edit-stats__card-hint">≈ <?= h((string) $pagePerUnique) ?> megnyitás / fő</p>
                 <?php endif; ?>
             </div>
             <div class="events-edit-stats__card">
+                <p class="events-edit-stats__card-label">Egyedi látogató</p>
+                <p class="events-edit-stats__card-value"><?= $uniqueVisitors ?></p>
+            </div>
+            <div class="events-edit-stats__card">
                 <p class="events-edit-stats__card-label">Menükattintás</p>
-                <p class="events-edit-stats__card-value"><?= $navHuman + $navBot ?></p>
-                <dl class="events-edit-stats__card-split">
-                    <dt>Ember</dt>
-                    <dt>Bot</dt>
-                    <dd><?= $navHuman ?></dd>
-                    <dd><?= $navBot ?></dd>
-                </dl>
+                <p class="events-edit-stats__card-value"><?= $navClicks ?></p>
             </div>
             <div class="events-edit-stats__card">
                 <p class="events-edit-stats__card-label">Nyelv</p>
@@ -194,7 +194,7 @@ $pageCatalog = events_public_traffic_page_catalog();
             </div>
         </div>
 
-        <?php if ($pageHuman + $pageBot + $navHuman + $navBot === 0): ?>
+        <?php if ($pageViews + $navClicks === 0): ?>
             <p class="help events-edit-stats__empty">
                 Még nincs mért forgalom a választott szűrőkkel. A mérés a funkció élesítésétől gyűlik (főoldal, naptár, lista, DJ-k és a többi nyilvános oldal).
             </p>
@@ -220,7 +220,7 @@ $pageCatalog = events_public_traffic_page_catalog();
                 <div class="events-edit-stats__chart-head">
                     <div>
                         <h3 class="events-edit-stats__chart-title">Menükattintások alakulása</h3>
-                        <p class="events-edit-stats__chart-hint"><?= h(ucfirst($granularityLabel)) ?> bontás menüpontonként.</p>
+                        <p class="events-edit-stats__chart-hint"><?= h(ucfirst($granularityLabel)) ?> bontás — emberi kattintások menüpontonként.</p>
                     </div>
                 </div>
                 <div class="events-edit-stats__chart-canvas">
@@ -235,7 +235,7 @@ $pageCatalog = events_public_traffic_page_catalog();
                 <div class="events-edit-stats__chart-head">
                     <div>
                         <h3 class="events-edit-stats__chart-title">Ember és bot</h3>
-                        <p class="events-edit-stats__chart-hint">Oldalmegnyitások <?= h($granularityLabel) ?> bontásban.</p>
+                        <p class="events-edit-stats__chart-hint">Oldalmegnyitások <?= h($granularityLabel) ?> bontásban — itt jelenik meg külön a bot forgalom.</p>
                     </div>
                 </div>
                 <div class="events-edit-stats__chart-canvas">
@@ -265,7 +265,7 @@ $pageCatalog = events_public_traffic_page_catalog();
                     <div class="events-edit-stats__chart-head">
                         <div>
                             <h3 class="events-edit-stats__chart-title">Eszközök</h3>
-                            <p class="events-edit-stats__chart-hint">Oldalmegnyitás eszköz szerint.</p>
+                            <p class="events-edit-stats__chart-hint">Emberi oldalmegnyitás eszköz szerint.</p>
                         </div>
                     </div>
                     <div class="events-edit-stats__chart-canvas events-public-traffic-stats__doughnut">
@@ -279,7 +279,7 @@ $pageCatalog = events_public_traffic_page_catalog();
                     <div class="events-edit-stats__chart-head">
                         <div>
                             <h3 class="events-edit-stats__chart-title">Nyelv</h3>
-                            <p class="events-edit-stats__chart-hint">HU / EN oldalmegnyitás.</p>
+                            <p class="events-edit-stats__chart-hint">HU / EN emberi oldalmegnyitás.</p>
                         </div>
                     </div>
                     <div class="events-edit-stats__chart-canvas events-public-traffic-stats__doughnut">
@@ -295,7 +295,7 @@ $pageCatalog = events_public_traffic_page_catalog();
                 <div class="events-edit-stats__chart-head">
                     <div>
                         <h3 class="events-edit-stats__chart-title">Óránkénti forgalom</h3>
-                        <p class="events-edit-stats__chart-hint">Oldalmegnyitások a nap 24 órájában (szerveridő).</p>
+                        <p class="events-edit-stats__chart-hint">Emberi oldalmegnyitások a nap 24 órájában (szerveridő).</p>
                     </div>
                 </div>
                 <div class="events-edit-stats__chart-canvas">
@@ -314,20 +314,25 @@ $pageCatalog = events_public_traffic_page_catalog();
                     <thead>
                         <tr>
                             <th scope="col">Oldal</th>
-                            <th class="th-center" scope="col">Ember</th>
+                            <th class="th-center" scope="col">Megnyitás</th>
                             <th class="th-center" scope="col">Egyedi</th>
-                            <th class="th-center" scope="col">Bot</th>
-                            <th class="th-center" scope="col">Össz</th>
+                            <th class="th-center" scope="col">Egy főre</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($pageRows as $row): ?>
+                            <?php
+                            $opens = (int) ($row[$rowCountKey] ?? 0);
+                            $unique = $useBotCounts ? 0 : (int) ($row['unique_human'] ?? 0);
+                            if ($opens <= 0 && !$useBotCounts) {
+                                continue;
+                            }
+                            ?>
                             <tr>
                                 <td><?= h((string) ($row['label'] ?? '')) ?></td>
-                                <td class="text-center events-stats-cell--human"><?= (int) ($row['human_count'] ?? 0) ?></td>
-                                <td class="text-center"><?= (int) ($row['unique_human'] ?? 0) ?></td>
-                                <td class="text-center events-stats-cell--bot"><?= (int) ($row['bot_count'] ?? 0) ?></td>
-                                <td class="text-center"><strong><?= (int) ($row['total'] ?? 0) ?></strong></td>
+                                <td class="text-center events-stats-cell--human"><?= $opens ?></td>
+                                <td class="text-center"><?= $useBotCounts ? '–' : $unique ?></td>
+                                <td class="text-center"><?= h($formatPerPerson($opens, $unique)) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -344,20 +349,23 @@ $pageCatalog = events_public_traffic_page_catalog();
                     <thead>
                         <tr>
                             <th scope="col">Menüpont</th>
-                            <th class="th-center" scope="col">Ember</th>
+                            <th class="th-center" scope="col">Kattintás</th>
                             <th class="th-center" scope="col">Egyedi</th>
-                            <th class="th-center" scope="col">Bot</th>
-                            <th class="th-center" scope="col">Össz</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($navRows as $row): ?>
+                            <?php
+                            $clicks = (int) ($row[$rowCountKey] ?? 0);
+                            $unique = $useBotCounts ? 0 : (int) ($row['unique_human'] ?? 0);
+                            if ($clicks <= 0 && !$useBotCounts) {
+                                continue;
+                            }
+                            ?>
                             <tr>
                                 <td><?= h((string) ($row['label'] ?? '')) ?></td>
-                                <td class="text-center events-stats-cell--human"><?= (int) ($row['human_count'] ?? 0) ?></td>
-                                <td class="text-center"><?= (int) ($row['unique_human'] ?? 0) ?></td>
-                                <td class="text-center events-stats-cell--bot"><?= (int) ($row['bot_count'] ?? 0) ?></td>
-                                <td class="text-center"><strong><?= (int) ($row['total'] ?? 0) ?></strong></td>
+                                <td class="text-center events-stats-cell--human"><?= $clicks ?></td>
+                                <td class="text-center"><?= $useBotCounts ? '–' : $unique ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -374,18 +382,20 @@ $pageCatalog = events_public_traffic_page_catalog();
                     <thead>
                         <tr>
                             <th scope="col">Eszköz</th>
-                            <th class="th-center" scope="col">Ember</th>
-                            <th class="th-center" scope="col">Bot</th>
-                            <th class="th-center" scope="col">Össz</th>
+                            <th class="th-center" scope="col">Megnyitás</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($deviceRows as $row): ?>
+                            <?php
+                            $opens = (int) ($row[$rowCountKey] ?? 0);
+                            if ($opens <= 0) {
+                                continue;
+                            }
+                            ?>
                             <tr>
                                 <td><?= h((string) ($row['label'] ?? '')) ?></td>
-                                <td class="text-center events-stats-cell--human"><?= (int) ($row['human_count'] ?? 0) ?></td>
-                                <td class="text-center events-stats-cell--bot"><?= (int) ($row['bot_count'] ?? 0) ?></td>
-                                <td class="text-center"><strong><?= (int) ($row['total'] ?? 0) ?></strong></td>
+                                <td class="text-center events-stats-cell--human"><?= $opens ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -403,18 +413,20 @@ $pageCatalog = events_public_traffic_page_catalog();
                     <thead>
                         <tr>
                             <th scope="col">Forrás</th>
-                            <th class="th-center" scope="col">Ember</th>
-                            <th class="th-center" scope="col">Bot</th>
-                            <th class="th-center" scope="col">Össz</th>
+                            <th class="th-center" scope="col">Megnyitás</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($referrerRows as $row): ?>
+                            <?php
+                            $opens = (int) ($row[$rowCountKey] ?? 0);
+                            if ($opens <= 0) {
+                                continue;
+                            }
+                            ?>
                             <tr>
                                 <td><?= h((string) ($row['host'] ?? '')) ?></td>
-                                <td class="text-center events-stats-cell--human"><?= (int) ($row['human_count'] ?? 0) ?></td>
-                                <td class="text-center events-stats-cell--bot"><?= (int) ($row['bot_count'] ?? 0) ?></td>
-                                <td class="text-center"><strong><?= (int) ($row['total'] ?? 0) ?></strong></td>
+                                <td class="text-center events-stats-cell--human"><?= $opens ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

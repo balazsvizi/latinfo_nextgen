@@ -376,9 +376,9 @@ function events_public_traffic_params_from_request(array $query): array
         $lang = 'all';
     }
 
-    $visitor = strtolower(trim((string) ($query['visitor'] ?? 'all')));
+    $visitor = strtolower(trim((string) ($query['visitor'] ?? 'human')));
     if (!in_array($visitor, ['all', 'human', 'bot'], true)) {
-        $visitor = 'all';
+        $visitor = 'human';
     }
 
     $device = strtolower(trim((string) ($query['device'] ?? 'all')));
@@ -630,8 +630,8 @@ function events_public_traffic_stats(PDO $db, array $params): array
                 SUM(CASE WHEN t.`event_type` = \'nav_click\' AND t.`is_bot` = 1 THEN 1 ELSE 0 END) AS nav_clicks_bot,
                 COUNT(DISTINCT CASE WHEN t.`event_type` = \'page_view\' AND t.`is_bot` = 0 AND t.`ip_hash` IS NOT NULL THEN t.`ip_hash` END) AS unique_human,
                 COUNT(DISTINCT CASE WHEN t.`event_type` = \'page_view\' AND t.`is_bot` = 1 AND t.`ip_hash` IS NOT NULL THEN t.`ip_hash` END) AS unique_bot,
-                SUM(CASE WHEN t.`event_type` = \'page_view\' AND t.`lang` = \'hu\' THEN 1 ELSE 0 END) AS lang_hu,
-                SUM(CASE WHEN t.`event_type` = \'page_view\' AND t.`lang` = \'en\' THEN 1 ELSE 0 END) AS lang_en
+                SUM(CASE WHEN t.`event_type` = \'page_view\' AND t.`is_bot` = 0 AND t.`lang` = \'hu\' THEN 1 ELSE 0 END) AS lang_hu,
+                SUM(CASE WHEN t.`event_type` = \'page_view\' AND t.`is_bot` = 0 AND t.`lang` = \'en\' THEN 1 ELSE 0 END) AS lang_en
              FROM `events_public_traffic` t
              WHERE ' . $whereAll['sql']
         );
@@ -677,10 +677,12 @@ function events_public_traffic_stats(PDO $db, array $params): array
             }
         );
 
+        // Óránkénti / források: emberi forgalom (bot csak az Ember+bot grafikonon).
+        $humanOnlySql = (($params['visitor'] ?? 'human') === 'bot') ? '' : ' AND t.`is_bot` = 0';
         $hourSql = $db->prepare(
             'SELECT HOUR(t.`occurred_at`) AS h, COUNT(*) AS c
              FROM `events_public_traffic` t
-             WHERE ' . $whereAll['sql'] . ' AND t.`event_type` = \'page_view\'
+             WHERE ' . $whereAll['sql'] . ' AND t.`event_type` = \'page_view\'' . $humanOnlySql . '
              GROUP BY h'
         );
         $hourSql->execute($whereAll['bind']);
@@ -699,13 +701,13 @@ function events_public_traffic_stats(PDO $db, array $params): array
         $refSql = $db->prepare(
             'SELECT
                 CASE WHEN t.`referrer_host` = \'\' THEN \'(közvetlen)\' ELSE t.`referrer_host` END AS host,
-                COUNT(*) AS total,
                 SUM(CASE WHEN t.`is_bot` = 0 THEN 1 ELSE 0 END) AS human_count,
-                SUM(CASE WHEN t.`is_bot` = 1 THEN 1 ELSE 0 END) AS bot_count
+                SUM(CASE WHEN t.`is_bot` = 1 THEN 1 ELSE 0 END) AS bot_count,
+                COUNT(*) AS total
              FROM `events_public_traffic` t
              WHERE ' . $whereAll['sql'] . ' AND t.`event_type` = \'page_view\'
              GROUP BY host
-             ORDER BY total DESC
+             ORDER BY human_count DESC, total DESC
              LIMIT 20'
         );
         $refSql->execute($whereAll['bind']);
@@ -721,6 +723,7 @@ function events_public_traffic_stats(PDO $db, array $params): array
         $pageSeriesSql = $db->prepare(
             'SELECT ' . $bucketExpr . ' AS bucket, t.`page_key`,
                     SUM(CASE WHEN t.`is_bot` = 0 THEN 1 ELSE 0 END) AS human_count,
+                    SUM(CASE WHEN t.`is_bot` = 1 THEN 1 ELSE 0 END) AS bot_count,
                     COUNT(*) AS total
              FROM `events_public_traffic` t
              WHERE ' . $whereAll['sql'] . ' AND t.`event_type` = \'page_view\'
@@ -730,6 +733,7 @@ function events_public_traffic_stats(PDO $db, array $params): array
         $byPage = [];
         $visitorHuman = array_fill_keys($bucketKeys, 0);
         $visitorBot = array_fill_keys($bucketKeys, 0);
+        $pageSeriesCountKey = (($params['visitor'] ?? 'human') === 'bot') ? 'bot_count' : 'human_count';
         while ($pRow = $pageSeriesSql->fetch(PDO::FETCH_ASSOC)) {
             $bucket = (string) ($pRow['bucket'] ?? '');
             $pKey = (string) ($pRow['page_key'] ?? '');
@@ -740,19 +744,23 @@ function events_public_traffic_stats(PDO $db, array $params): array
                 $byPage[$pKey] = array_fill_keys($bucketKeys, 0);
             }
             if (array_key_exists($bucket, $byPage[$pKey])) {
-                $byPage[$pKey][$bucket] = (int) ($pRow['human_count'] ?? 0);
+                $byPage[$pKey][$bucket] = (int) ($pRow[$pageSeriesCountKey] ?? 0);
             }
         }
 
+        // Ember + bot összevetés: mindig mindkét csoport, a látogató-szűrőtől függetlenül.
+        $visitorChartParams = $params;
+        $visitorChartParams['visitor'] = 'all';
+        $whereVisitorChart = events_public_traffic_where($visitorChartParams, true);
         $visitorSql = $db->prepare(
             'SELECT ' . $bucketExpr . ' AS bucket,
                     SUM(CASE WHEN t.`is_bot` = 0 THEN 1 ELSE 0 END) AS human_count,
                     SUM(CASE WHEN t.`is_bot` = 1 THEN 1 ELSE 0 END) AS bot_count
              FROM `events_public_traffic` t
-             WHERE ' . $whereAll['sql'] . ' AND t.`event_type` = \'page_view\'
+             WHERE ' . $whereVisitorChart['sql'] . ' AND t.`event_type` = \'page_view\'
              GROUP BY bucket'
         );
-        $visitorSql->execute($whereAll['bind']);
+        $visitorSql->execute($whereVisitorChart['bind']);
         while ($vRow = $visitorSql->fetch(PDO::FETCH_ASSOC)) {
             $bucket = (string) ($vRow['bucket'] ?? '');
             if (!array_key_exists($bucket, $visitorHuman)) {
@@ -794,13 +802,16 @@ function events_public_traffic_stats(PDO $db, array $params): array
         ];
 
         $navSeriesSql = $db->prepare(
-            'SELECT ' . $bucketExpr . ' AS bucket, t.`nav_key`, COUNT(*) AS total
+            'SELECT ' . $bucketExpr . ' AS bucket, t.`nav_key`,
+                    SUM(CASE WHEN t.`is_bot` = 0 THEN 1 ELSE 0 END) AS human_count,
+                    SUM(CASE WHEN t.`is_bot` = 1 THEN 1 ELSE 0 END) AS bot_count
              FROM `events_public_traffic` t
              WHERE ' . $whereAll['sql'] . ' AND t.`event_type` = \'nav_click\'
              GROUP BY bucket, t.`nav_key`'
         );
         $navSeriesSql->execute($whereAll['bind']);
         $byNav = [];
+        $navSeriesCountKey = (($params['visitor'] ?? 'human') === 'bot') ? 'bot_count' : 'human_count';
         while ($nRow = $navSeriesSql->fetch(PDO::FETCH_ASSOC)) {
             $bucket = (string) ($nRow['bucket'] ?? '');
             $nKey = (string) ($nRow['nav_key'] ?? '');
@@ -811,7 +822,7 @@ function events_public_traffic_stats(PDO $db, array $params): array
                 $byNav[$nKey] = array_fill_keys($bucketKeys, 0);
             }
             if (array_key_exists($bucket, $byNav[$nKey])) {
-                $byNav[$nKey][$bucket] = (int) ($nRow['total'] ?? 0);
+                $byNav[$nKey][$bucket] = (int) ($nRow[$navSeriesCountKey] ?? 0);
             }
         }
         $navPalette = ['#c45c26', '#2f6f8f', '#8b5a9e', '#3d6b4f', '#c4a35a', '#4f6d8a', '#d2691e', '#6d5a8a', '#5a8a6a'];
@@ -866,7 +877,7 @@ function events_public_traffic_stats(PDO $db, array $params): array
         $deviceShareData = [];
         $deviceShareColors = [];
         foreach ($empty['devices'] as $dRow) {
-            $cnt = (int) ($dRow['total'] ?? 0);
+            $cnt = (int) ($dRow['human_count'] ?? 0);
             if ($cnt <= 0) {
                 continue;
             }
