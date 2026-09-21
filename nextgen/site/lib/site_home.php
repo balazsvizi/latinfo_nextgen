@@ -820,9 +820,9 @@ function latinfo_home_strings(string $lang): array
 {
     $hu = [
         'page_title' => 'kezdőoldal (előnézet)',
-        'share_title' => 'A magyarországi latin életérzés',
+        'share_title' => 'Ahol a táncos közösség informálódik',
         'share_desc' => 'Naptár, DJ-k, iskolák, fesztiválok és a szcéna hírei egy helyen.',
-        'share_image_alt' => 'Latinfo.hu – salsa és latin tánc Magyarországon',
+        'share_image_alt' => 'Latinfo.hu – ahol a táncos közösség informálódik',
         'quick_news' => 'Bejelentések',
         'quick_news_aria' => 'Kiemelt bejelentések',
         'today' => 'Ma',
@@ -842,9 +842,9 @@ function latinfo_home_strings(string $lang): array
     ];
     $en = [
         'page_title' => 'home (preview)',
-        'share_title' => 'Latin dance life in Hungary',
+        'share_title' => 'Where the dance community gets informed',
         'share_desc' => 'Calendar, DJs, schools, festivals and scene news – all in one place.',
-        'share_image_alt' => 'Latinfo.hu – salsa and Latin dance in Hungary',
+        'share_image_alt' => 'Latinfo.hu – where the dance community gets informed',
         'quick_news' => 'Announcements',
         'quick_news_aria' => 'Featured announcements',
         'today' => 'Today',
