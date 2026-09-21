@@ -1,0 +1,344 @@
+/* Latinfo – nyilvános mobilapp oldal */
+:root {
+    --ma-green: #6d8f63;
+    --ma-green-dark: #3d4f38;
+    --ma-green-soft: #e8f1e5;
+    --ma-accent: #d4a054;
+    --ma-bg: #f4f6f2;
+    --ma-card: #ffffff;
+    --ma-border: #c6d8bf;
+    --ma-text: #2d3a28;
+    --ma-muted: #6b7a66;
+    --ma-err: #991b1b;
+    --ma-err-bg: #fef2f2;
+    --ma-ok: #166534;
+    --ma-ok-bg: #f0fdf4;
+    --ma-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ma-ease: cubic-bezier(0.22, 0.68, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body.ma-page {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--ma-sans);
+    color: var(--ma-text);
+    background:
+        radial-gradient(900px 420px at 8% -8%, rgba(109, 143, 99, 0.18), transparent 55%),
+        radial-gradient(720px 380px at 96% 4%, rgba(212, 160, 84, 0.14), transparent 50%),
+        var(--ma-bg);
+    line-height: 1.5;
+}
+
+.ma-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1.1rem clamp(1rem, 3vw, 1.5rem) 0.5rem;
+}
+
+.ma-brand {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ma-green-dark);
+    text-decoration: none;
+}
+
+.ma-brand:hover {
+    color: var(--ma-green);
+    text-decoration: none;
+}
+
+.ma-header-link {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--ma-green);
+    text-decoration: none;
+}
+
+.ma-header-link:hover {
+    color: var(--ma-green-dark);
+}
+
+.ma-main {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 0.75rem clamp(1rem, 3vw, 1.5rem) 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ma-hero {
+    margin-bottom: 0.35rem;
+    text-align: center;
+}
+
+.ma-hero-icon {
+    display: block;
+    width: 4.5rem;
+    height: 4.5rem;
+    margin: 0 auto 0.85rem;
+    border-radius: 1.15rem;
+    box-shadow: 0 16px 32px -20px rgba(45, 58, 40, 0.55);
+}
+
+.ma-title {
+    margin: 0 0 0.45rem;
+    font-size: clamp(1.75rem, 4vw, 2.15rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--ma-green-dark);
+}
+
+.ma-lead {
+    margin: 0 auto;
+    max-width: 28rem;
+    font-size: 1.02rem;
+    color: var(--ma-muted);
+}
+
+.ma-card {
+    padding: clamp(1.15rem, 3vw, 1.55rem);
+    border: 1px solid var(--ma-border);
+    border-radius: 1.15rem;
+    background: var(--ma-card);
+    box-shadow: 0 20px 40px -28px rgba(45, 58, 40, 0.45);
+}
+
+.ma-card-title {
+    margin: 0 0 0.45rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--ma-green-dark);
+}
+
+.ma-card-desc {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    color: var(--ma-muted);
+}
+
+.ma-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.ma-install-status {
+    margin: 0.75rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ma-green-dark);
+}
+
+.ma-howto {
+    margin: 1.1rem 0 0;
+    padding-left: 1.2rem;
+    font-size: 0.9rem;
+    color: var(--ma-muted);
+}
+
+.ma-howto li + li {
+    margin-top: 0.55rem;
+}
+
+.ma-features {
+    margin: 0;
+    padding-left: 1.15rem;
+    font-size: 0.95rem;
+    color: var(--ma-text);
+}
+
+.ma-features li + li {
+    margin-top: 0.4rem;
+}
+
+.ma-toast {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.75rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.ma-toast--ok {
+    color: var(--ma-ok);
+    background: var(--ma-ok-bg);
+    border: 1px solid #bbf7d0;
+}
+
+.ma-toast--err {
+    color: var(--ma-err);
+    background: var(--ma-err-bg);
+    border: 1px solid #fecaca;
+}
+
+.ma-toast--alone {
+    margin-bottom: 0;
+}
+
+.ma-success {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+}
+
+.ma-success .ma-btn {
+    margin-top: 0;
+    text-decoration: none;
+}
+
+.ma-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.ma-label {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 750;
+    letter-spacing: 0.02em;
+    color: var(--ma-green-dark);
+}
+
+.ma-form textarea,
+.ma-form input[type="text"],
+.ma-form input[type="email"],
+.ma-form input[type="tel"] {
+    width: 100%;
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--ma-border);
+    border-radius: 0.75rem;
+    font: inherit;
+    color: inherit;
+    background: #fbfcf9;
+    transition: border-color 0.18s var(--ma-ease), box-shadow 0.18s var(--ma-ease);
+}
+
+.ma-form textarea {
+    resize: vertical;
+    min-height: 5rem;
+}
+
+.ma-form textarea:focus,
+.ma-form input:focus {
+    outline: none;
+    border-color: var(--ma-green);
+    box-shadow: 0 0 0 3px rgba(109, 143, 99, 0.22);
+    background: #ffffff;
+}
+
+.ma-contact {
+    margin-top: 0.65rem;
+    padding: 0.95rem;
+    border-radius: 0.9rem;
+    background: var(--ma-green-soft);
+}
+
+.ma-contact-lead {
+    margin: 0 0 0.75rem;
+    font-size: 0.88rem;
+    color: var(--ma-green-dark);
+}
+
+.ma-contact-fields {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.ma-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.85rem;
+    padding: 0.85rem 1.2rem;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--ma-green), #56734d);
+    color: #ffffff;
+    font: inherit;
+    font-size: 0.98rem;
+    font-weight: 750;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 12px 24px -14px rgba(45, 58, 40, 0.7);
+    transition: transform 0.18s var(--ma-ease), box-shadow 0.18s var(--ma-ease), background 0.18s var(--ma-ease);
+}
+
+.ma-actions .ma-btn {
+    margin-top: 0;
+    flex: 1 1 12rem;
+}
+
+.ma-btn-secondary {
+    background: #ffffff;
+    color: var(--ma-green-dark);
+    border: 1px solid var(--ma-border);
+    box-shadow: none;
+}
+
+.ma-btn-secondary:hover {
+    background: var(--ma-green-soft);
+    color: var(--ma-green-dark);
+    border-color: var(--ma-green);
+}
+
+.ma-btn:hover {
+    background: linear-gradient(135deg, #5d7d53, var(--ma-green-dark));
+    box-shadow: 0 16px 28px -14px rgba(45, 58, 40, 0.8);
+    color: #ffffff;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.ma-btn:focus-visible {
+    outline: 2px solid var(--ma-green);
+    outline-offset: 3px;
+}
+
+.ma-footer {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 0 1rem 2rem;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--ma-muted);
+}
+
+.ma-footer p {
+    margin: 0;
+}
+
+.ma-footer .app-version {
+    opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ma-btn,
+    .ma-form textarea,
+    .ma-form input {
+        transition: none;
+    }
+
+    .ma-btn:hover {
+        transform: none;
+    }
+}

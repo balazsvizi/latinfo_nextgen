@@ -22,6 +22,9 @@ RewriteRule ^feedback/?$ feedback/index.php [L,QSA,NC]
 RewriteRule ^visszajelzes/?$ /feedback/ [R=301,L,QSA,NC]
 RewriteRule ^visszajelzés/?$ /feedback/ [R=301,L,QSA,NC,NE]
 
+# Mobilapp: /mobileapp/
+RewriteRule ^mobileapp/?$ mobileapp/index.php [L,QSA,NC]
+
 # Egy esemény: /event/{slug}/  →  nextgen/events/megjelenit.php
 RewriteRule ^event/([^/]+)/?$ nextgen/events/megjelenit.php?slug=$1 [L,QSA,NC]
 

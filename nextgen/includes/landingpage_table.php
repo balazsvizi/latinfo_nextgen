@@ -40,6 +40,11 @@ if (!function_exists('ensure_landingpage_table')) {
         } catch (Throwable $e) {
             // oszlop már létezik
         }
+        try {
+            $db->exec('ALTER TABLE nextgen_landing_feedback ADD COLUMN eszkoz VARCHAR(120) NULL AFTER telefon');
+        } catch (Throwable $e) {
+            // oszlop már létezik
+        }
     }
 }
 
@@ -92,7 +97,8 @@ if (!function_exists('landing_feedback_is_self_url')) {
 
         return str_contains($pathLower, '/feedback')
             || str_contains($pathLower, '/visszajelzes')
-            || str_contains($pathLower, '/visszajelzés');
+            || str_contains($pathLower, '/visszajelzés')
+            || str_contains($pathLower, '/mobileapp');
     }
 }
 
@@ -145,6 +151,9 @@ if (!function_exists('landing_feedback_safe_return_url')) {
         if ($forras === 'lanueva') {
             return site_url('lanueva/');
         }
+        if ($forras === 'mobileapp') {
+            return site_url('mobileapp/');
+        }
 
         if (str_starts_with($forras, '/') && !str_starts_with($forras, '//')) {
             if (landing_feedback_is_self_url($forras)) {
@@ -196,6 +205,7 @@ if (!function_exists('landing_feedback_insert')) {
      *     email?: string,
      *     nev?: string,
      *     telefon?: string,
+     *     eszkoz?: string,
      *     forras?: ?string,
      *     ip?: ?string,
      *     user_agent?: ?string
@@ -209,6 +219,12 @@ if (!function_exists('landing_feedback_insert')) {
         $email = trim((string) ($data['email'] ?? ''));
         $nev = trim((string) ($data['nev'] ?? ''));
         $telefon = trim((string) ($data['telefon'] ?? ''));
+        $eszkoz = trim((string) ($data['eszkoz'] ?? ''));
+        if (function_exists('mb_substr') && function_exists('mb_strlen') && mb_strlen($eszkoz, 'UTF-8') > 120) {
+            $eszkoz = mb_substr($eszkoz, 0, 120, 'UTF-8');
+        } elseif (strlen($eszkoz) > 120) {
+            $eszkoz = substr($eszkoz, 0, 120);
+        }
         $forras = landing_feedback_normalize_forras(
             isset($data['forras']) ? (string) $data['forras'] : null
         );
@@ -217,8 +233,8 @@ if (!function_exists('landing_feedback_insert')) {
 
         $stmt = $db->prepare(
             'INSERT INTO nextgen_landing_feedback
-                (ilyen_legyen, ilyen_ne_legyen, egyeb_uzenet, email, nev, telefon, forras, ip, user_agent)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                (ilyen_legyen, ilyen_ne_legyen, egyeb_uzenet, email, nev, telefon, eszkoz, forras, ip, user_agent)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $ilyen !== '' ? $ilyen : null,
@@ -227,6 +243,7 @@ if (!function_exists('landing_feedback_insert')) {
             $email !== '' ? $email : null,
             $nev !== '' ? $nev : null,
             $telefon !== '' ? $telefon : null,
+            $eszkoz !== '' ? $eszkoz : null,
             $forras,
             is_string($ip) ? $ip : null,
             is_string($ua) ? $ua : null,
@@ -243,6 +260,7 @@ if (!function_exists('landing_feedback_send_mail')) {
      *     email?: string,
      *     nev?: string,
      *     telefon?: string,
+     *     eszkoz?: string,
      *     forras?: ?string,
      *     ip?: ?string,
      *     context?: string
@@ -263,6 +281,7 @@ if (!function_exists('landing_feedback_send_mail')) {
         $email = trim((string) ($data['email'] ?? ''));
         $nev = trim((string) ($data['nev'] ?? ''));
         $telefon = trim((string) ($data['telefon'] ?? ''));
+        $eszkoz = trim((string) ($data['eszkoz'] ?? ''));
         $forras = trim((string) ($data['forras'] ?? ''));
         $ip = trim((string) ($data['ip'] ?? ''));
         $context = trim((string) ($data['context'] ?? 'visszajelzés'));
@@ -282,6 +301,7 @@ if (!function_exists('landing_feedback_send_mail')) {
             . $sor('Név', $nev)
             . $sor('E-mail', $email)
             . $sor('Telefon', $telefon)
+            . $sor('Eszköz / telefon típusa', $eszkoz)
             . $sor('Honnan', $forras)
             . $sor('IP', $ip)
             . '<p><a href="' . h(site_url('nextgen/config/lanueva.php')) . '">Megnyitás az adminban</a></p>';
@@ -348,6 +368,9 @@ if (!function_exists('landing_feedback_has_text')) {
         }
         if ($forras === 'feedback' || $forras === 'visszajelzes' || $forras === 'visszajelzés') {
             return 'Feedback';
+        }
+        if ($forras === 'mobileapp') {
+            return 'Mobilapp';
         }
 
         return $forras;

@@ -52,7 +52,7 @@ if ($baseUrlResolved === '' && PHP_SAPI !== 'cli') {
         if ($src === '') {
             continue;
         }
-        foreach (['/nextgen/', '/lanueva/', '/feedback/'] as $needle) {
+        foreach (['/nextgen/', '/lanueva/', '/feedback/', '/mobileapp/'] as $needle) {
             $p = strpos($src, $needle);
             if ($p > 0) {
                 $baseUrlResolved = substr($src, 0, $p);

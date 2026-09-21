@@ -28,7 +28,7 @@ $count_stmt->execute($params);
 $total = (int) $count_stmt->fetchColumn();
 
 $stmt = $db->prepare("
-    SELECT id, ilyen_legyen, ilyen_ne_legyen, egyeb_uzenet, email, nev, telefon, forras, ip, user_agent, létrehozva
+    SELECT id, ilyen_legyen, ilyen_ne_legyen, egyeb_uzenet, email, nev, telefon, eszkoz, forras, ip, user_agent, létrehozva
     FROM nextgen_landing_feedback
     $where_sql
     ORDER BY $order $dir
@@ -56,7 +56,8 @@ function landing_lista_tipus(array $r): string {
 function landing_lista_has_contact(array $r): bool {
     return trim((string) ($r['nev'] ?? '')) !== ''
         || trim((string) ($r['email'] ?? '')) !== ''
-        || trim((string) ($r['telefon'] ?? '')) !== '';
+        || trim((string) ($r['telefon'] ?? '')) !== ''
+        || trim((string) ($r['eszkoz'] ?? '')) !== '';
 }
 
 function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
@@ -77,7 +78,7 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
 ?>
 <div class="card card-landing-visszajelzesek">
     <h2>LaNueva</h2>
-    <p class="card-lead">A nyilvános feedback oldalról és a LaNueva landingről érkezett szöveges visszajelzések, valamint induláskori e-mail feliratkozások. Az időbélyeg a szerver szerinti mentés ideje (<?= h(date_default_timezone_get()) ?>).</p>
+    <p class="card-lead">A nyilvános feedback, mobilapp és LaNueva oldalakról érkezett szöveges visszajelzések, valamint induláskori e-mail feliratkozások. Az időbélyeg a szerver szerinti mentés ideje (<?= h(date_default_timezone_get()) ?>).</p>
 
     <form method="get" class="toolbar toolbar-inline" action="<?= h(nextgen_url('config/lanueva.php')) ?>">
         <label for="landing-tipus-szuro">Típus</label>
@@ -137,6 +138,9 @@ function landing_lista_ua_rovid(?string $ua, int $max = 100): string {
                                     <?php endif; ?>
                                     <?php if (trim((string) ($r['telefon'] ?? '')) !== ''): ?>
                                         <div>Telefon: <?= h($r['telefon']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if (trim((string) ($r['eszkoz'] ?? '')) !== ''): ?>
+                                        <div>Eszköz: <?= h($r['eszkoz']) ?></div>
                                     <?php endif; ?>
                                 </div>
                             <?php endif; ?>
