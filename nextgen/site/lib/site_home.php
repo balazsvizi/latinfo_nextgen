@@ -1037,55 +1037,43 @@ function latinfo_home_calendar_anchor(): DateTimeImmutable
 }
 
 /**
- * Éjszakai ablak: 04:00-tól másnap 04:00-ig, mint a naptár „ma” napja.
+ * Effektív ma / holnap, plusz SQL előszűrő a naptári napokhoz (éjszakai 06:00-s zárás).
  *
  * @return array{
  *     today: DateTimeImmutable,
  *     tomorrow: DateTimeImmutable,
- *     today_from: DateTimeImmutable,
- *     tomorrow_from: DateTimeImmutable,
- *     after_from: DateTimeImmutable
+ *     fetch_from: DateTimeImmutable,
+ *     fetch_until: DateTimeImmutable
  * }
  */
 function latinfo_home_day_windows(): array
 {
     $today = latinfo_home_calendar_anchor();
-    $todayFrom = $today->setTime(4, 0, 0);
 
     return [
         'today' => $today,
         'tomorrow' => $today->modify('+1 day'),
-        'today_from' => $todayFrom,
-        'tomorrow_from' => $todayFrom->modify('+1 day'),
-        'after_from' => $todayFrom->modify('+2 days'),
+        'fetch_from' => $today->modify('-1 day')->setTime(0, 0, 0),
+        'fetch_until' => $today->modify('+2 days')->setTime(6, 0, 0),
     ];
 }
 
-function latinfo_home_parse_event_dt(string $raw): ?DateTimeImmutable
+/**
+ * Az esemény a naptár szerinti napon van-e (éjszakai buli 06:00 előtt az előző naphoz tartozik).
+ */
+function latinfo_home_event_on_calendar_day(array $ev, DateTimeImmutable $day): bool
 {
-    $raw = trim($raw);
-    if ($raw === '') {
-        return null;
+    if (!function_exists('events_admin_calendar_event_date_range')) {
+        require_once dirname(__DIR__, 2) . '/events/lib/admin_event_calendar.php';
     }
-    try {
-        return new DateTimeImmutable($raw, new DateTimeZone('Europe/Budapest'));
-    } catch (Throwable) {
-        return null;
-    }
-}
-
-function latinfo_home_event_overlaps_window(array $ev, DateTimeImmutable $from, DateTimeImmutable $until): bool
-{
-    $start = latinfo_home_parse_event_dt((string) ($ev['event_start'] ?? ''));
-    if ($start === null) {
+    $range = events_admin_calendar_event_date_range($ev);
+    if ($range === null) {
         return false;
     }
-    $end = latinfo_home_parse_event_dt((string) ($ev['event_end'] ?? ''));
-    if ($end === null || $end < $start) {
-        $end = $start;
-    }
+    $dayKey = $day->format('Y-m-d');
 
-    return $start < $until && $end >= $from;
+    return $dayKey >= $range['start']->format('Y-m-d')
+        && $dayKey <= $range['end']->format('Y-m-d');
 }
 
 /**
@@ -1142,14 +1130,14 @@ function latinfo_home_today_tomorrow_events(PDO $db, int $perDay = 0): array
     $perDay = $showAll ? 0 : max(1, min(12, $perDay));
     $windows = latinfo_home_day_windows();
     $fetchLimit = $showAll ? 200 : $perDay * 8;
-    $rows = latinfo_home_events_in_range($db, $windows['today_from'], $windows['after_from'], $fetchLimit);
+    $rows = latinfo_home_events_in_range($db, $windows['fetch_from'], $windows['fetch_until'], $fetchLimit);
     $today = [];
     $tomorrow = [];
     foreach ($rows as $ev) {
-        if (latinfo_home_event_overlaps_window($ev, $windows['today_from'], $windows['tomorrow_from'])) {
+        if (latinfo_home_event_on_calendar_day($ev, $windows['today'])) {
             $today[] = $ev;
         }
-        if (latinfo_home_event_overlaps_window($ev, $windows['tomorrow_from'], $windows['after_from'])) {
+        if (latinfo_home_event_on_calendar_day($ev, $windows['tomorrow'])) {
             $tomorrow[] = $ev;
         }
     }

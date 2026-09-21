@@ -188,6 +188,7 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
         latinfo_home_donably_ensure_schema($db);
+        latinfo_home_rating_priors_ensure_schema($db);
         latinfo_home_modules_ensure_mobile_order_column($db);
         latinfo_home_modules_ensure_layout_column($db);
         latinfo_home_modules_seed_defaults($db);
@@ -524,12 +525,171 @@ function latinfo_home_module_track_click(
 }
 
 /**
- * @return array{average: float, count: int, stars_dist: array<int, int>}
+ * Előző időszaki (migrált) értékelés-darabszámok alapértékei.
+ *
+ * @return array{stars_1: int, stars_2: int, stars_3: int, stars_4: int, stars_5: int}
+ */
+function latinfo_home_rating_priors_defaults(): array
+{
+    return [
+        'stars_1' => 0,
+        'stars_2' => 0,
+        'stars_3' => 0,
+        'stars_4' => 0,
+        'stars_5' => 0,
+    ];
+}
+
+function latinfo_home_rating_priors_ensure_schema(PDO $db): bool
+{
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+
+    try {
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `latinfo_home_rating_priors` (
+                `id` TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+                `stars_1` INT UNSIGNED NOT NULL DEFAULT 0,
+                `stars_2` INT UNSIGNED NOT NULL DEFAULT 0,
+                `stars_3` INT UNSIGNED NOT NULL DEFAULT 0,
+                `stars_4` INT UNSIGNED NOT NULL DEFAULT 0,
+                `stars_5` INT UNSIGNED NOT NULL DEFAULT 0,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+        $count = (int) $db->query('SELECT COUNT(*) FROM `latinfo_home_rating_priors`')->fetchColumn();
+        if ($count === 0) {
+            $db->exec('INSERT INTO `latinfo_home_rating_priors` (`id`) VALUES (1)');
+        }
+        $done = true;
+
+        return true;
+    } catch (Throwable $e) {
+        error_log('latinfo_home_rating_priors_ensure_schema: ' . $e->getMessage());
+
+        return false;
+    }
+}
+
+/**
+ * @return array{stars_1: int, stars_2: int, stars_3: int, stars_4: int, stars_5: int}
+ */
+function latinfo_home_rating_priors_load(PDO $db): array
+{
+    $defaults = latinfo_home_rating_priors_defaults();
+    try {
+        latinfo_home_rating_priors_ensure_schema($db);
+        $row = $db->query('SELECT * FROM `latinfo_home_rating_priors` WHERE `id` = 1 LIMIT 1')
+            ->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        error_log('latinfo_home_rating_priors_load: ' . $e->getMessage());
+
+        return $defaults;
+    }
+    if (!is_array($row)) {
+        return $defaults;
+    }
+    foreach ($defaults as $key => $fallback) {
+        $defaults[$key] = max(0, (int) ($row[$key] ?? $fallback));
+    }
+
+    return $defaults;
+}
+
+/**
+ * @param array<string, mixed> $input
+ * @return array{stars_1: int, stars_2: int, stars_3: int, stars_4: int, stars_5: int}
+ */
+function latinfo_home_rating_priors_normalize(array $input): array
+{
+    $out = latinfo_home_rating_priors_defaults();
+    foreach ($out as $key => $fallback) {
+        $raw = $input[$key] ?? $fallback;
+        if (is_string($raw)) {
+            $raw = trim(str_replace([' ', ','], '', $raw));
+        }
+        $n = filter_var($raw, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 0, 'max_range' => 9999999],
+        ]);
+        $out[$key] = $n === false ? 0 : (int) $n;
+    }
+
+    return $out;
+}
+
+/**
+ * @param array<string, mixed> $input
+ */
+function latinfo_home_rating_priors_save(PDO $db, array $input): void
+{
+    $priors = latinfo_home_rating_priors_normalize($input);
+    latinfo_home_rating_priors_ensure_schema($db);
+    $st = $db->prepare('
+        INSERT INTO `latinfo_home_rating_priors`
+            (`id`, `stars_1`, `stars_2`, `stars_3`, `stars_4`, `stars_5`)
+        VALUES (1, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            `stars_1` = VALUES(`stars_1`),
+            `stars_2` = VALUES(`stars_2`),
+            `stars_3` = VALUES(`stars_3`),
+            `stars_4` = VALUES(`stars_4`),
+            `stars_5` = VALUES(`stars_5`)
+    ');
+    $st->execute([
+        $priors['stars_1'],
+        $priors['stars_2'],
+        $priors['stars_3'],
+        $priors['stars_4'],
+        $priors['stars_5'],
+    ]);
+}
+
+/**
+ * @param array{stars_1: int, stars_2: int, stars_3: int, stars_4: int, stars_5: int} $priors
+ * @return array{sum: int, count: int, dist: array<int, int>}
+ */
+function latinfo_home_rating_priors_aggregate(array $priors): array
+{
+    $dist = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+    $sum = 0;
+    $count = 0;
+    for ($stars = 1; $stars <= 5; $stars++) {
+        $cnt = max(0, (int) ($priors['stars_' . $stars] ?? 0));
+        $dist[$stars] = $cnt;
+        $sum += $stars * $cnt;
+        $count += $cnt;
+    }
+
+    return ['sum' => $sum, 'count' => $count, 'dist' => $dist];
+}
+
+/**
+ * @return array{
+ *   average: float,
+ *   count: int,
+ *   stars_dist: array<int, int>,
+ *   live_average: float,
+ *   live_count: int,
+ *   prior_average: float,
+ *   prior_count: int,
+ *   prior_dist: array<int, int>
+ * }
  */
 function latinfo_home_rating_summary(PDO $db, bool $humansOnly = true): array
 {
     $dist = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
-    $empty = ['average' => 0.0, 'count' => 0, 'stars_dist' => $dist];
+    $empty = [
+        'average' => 0.0,
+        'count' => 0,
+        'stars_dist' => $dist,
+        'live_average' => 0.0,
+        'live_count' => 0,
+        'prior_average' => 0.0,
+        'prior_count' => 0,
+        'prior_dist' => $dist,
+    ];
     try {
         $sql = '
             SELECT `stars`, COUNT(*) AS cnt
@@ -540,8 +700,8 @@ function latinfo_home_rating_summary(PDO $db, bool $humansOnly = true): array
         }
         $sql .= ' GROUP BY `stars`';
         $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        $sum = 0;
-        $count = 0;
+        $liveSum = 0;
+        $liveCount = 0;
         foreach ($rows as $row) {
             $stars = (int) ($row['stars'] ?? 0);
             $cnt = (int) ($row['cnt'] ?? 0);
@@ -549,17 +709,36 @@ function latinfo_home_rating_summary(PDO $db, bool $humansOnly = true): array
                 continue;
             }
             $dist[$stars] = $cnt;
-            $sum += $stars * $cnt;
-            $count += $cnt;
+            $liveSum += $stars * $cnt;
+            $liveCount += $cnt;
         }
-        if ($count <= 0) {
-            return $empty;
+
+        $priorAgg = latinfo_home_rating_priors_aggregate(latinfo_home_rating_priors_load($db));
+        $priorSum = (int) $priorAgg['sum'];
+        $priorCount = (int) $priorAgg['count'];
+        /** @var array<int, int> $priorDist */
+        $priorDist = $priorAgg['dist'];
+
+        $combinedDist = $dist;
+        foreach ($priorDist as $stars => $cnt) {
+            $combinedDist[(int) $stars] = (int) ($combinedDist[(int) $stars] ?? 0) + (int) $cnt;
+        }
+
+        $totalSum = $liveSum + $priorSum;
+        $totalCount = $liveCount + $priorCount;
+        if ($totalCount <= 0) {
+            return array_merge($empty, ['prior_dist' => $priorDist]);
         }
 
         return [
-            'average' => round($sum / $count, 1),
-            'count' => $count,
-            'stars_dist' => $dist,
+            'average' => round($totalSum / $totalCount, 1),
+            'count' => $totalCount,
+            'stars_dist' => $combinedDist,
+            'live_average' => $liveCount > 0 ? round($liveSum / $liveCount, 1) : 0.0,
+            'live_count' => $liveCount,
+            'prior_average' => $priorCount > 0 ? round($priorSum / $priorCount, 1) : 0.0,
+            'prior_count' => $priorCount,
+            'prior_dist' => $priorDist,
         ];
     } catch (Throwable $e) {
         error_log('latinfo_home_rating_summary: ' . $e->getMessage());

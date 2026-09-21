@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Értékelés modul – áttekintő + csillag-stat.
+ * Értékelés modul – áttekintő + csillag-stat + előző időszak.
  */
 
 require_once dirname(__DIR__) . '/init.php';
@@ -14,12 +14,56 @@ require_once __DIR__ . '/lib/site_modules.php';
 $db = getDb();
 $schemaOk = latinfo_home_modules_ensure_schema($db);
 $formAction = latinfo_home_module_edit_url('rating');
+$hiba = '';
+$postedPriors = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_require('latinfo_home_rating', '_csrf', $formAction);
+    $action = (string) ($_POST['action'] ?? '');
+
+    if (!$schemaOk) {
+        $hiba = 'A kezdőoldal táblái nem hozhatók létre.';
+    } else {
+        try {
+            if ($action === 'save_priors') {
+                latinfo_home_rating_priors_save($db, $_POST);
+                if (function_exists('rendszer_log')) {
+                    $saved = latinfo_home_rating_priors_normalize($_POST);
+                    $priorTotal = array_sum($saved);
+                    rendszer_log('kezdőoldal_értékelés', 1, 'Előző időszak', 'összesen=' . $priorTotal);
+                }
+                flash('success', 'Az előző időszak értékelései mentve.');
+                redirect($formAction);
+            }
+            $hiba = 'Ismeretlen művelet.';
+        } catch (Throwable $e) {
+            error_log('latinfo rating priors: ' . $e->getMessage());
+            $hiba = 'A mentés nem sikerült.';
+            $postedPriors = $_POST;
+        }
+    }
+}
 
 $ratingStatsParams = latinfo_home_rating_stats_params_from_request($_GET);
 $ratingStats = $schemaOk
     ? latinfo_home_rating_admin_stats($db, $ratingStatsParams)
     : ['table_ready' => false, 'totals' => [], 'stars' => [], 'chart' => ['labels' => [], 'data' => []]];
-$liveSummary = $schemaOk ? latinfo_home_rating_summary($db, true) : ['average' => 0.0, 'count' => 0];
+$liveSummary = $schemaOk
+    ? latinfo_home_rating_summary($db, true)
+    : [
+        'average' => 0.0,
+        'count' => 0,
+        'live_average' => 0.0,
+        'live_count' => 0,
+        'prior_average' => 0.0,
+        'prior_count' => 0,
+    ];
+$ratingPriors = $schemaOk
+    ? latinfo_home_rating_priors_load($db)
+    : latinfo_home_rating_priors_defaults();
+if (is_array($postedPriors)) {
+    $ratingPriors = latinfo_home_rating_priors_normalize($postedPriors);
+}
 
 $moduleItemStatsParams = latinfo_home_module_stats_params_from_request($_GET);
 $moduleItemStatsParams['module'] = 'rating';
@@ -66,9 +110,17 @@ $chartJson = json_encode([
 
 $pageTitle = 'Értékelés modul';
 $mainContentClass = 'main-content main-content--fullwidth';
+$extraHead = '<style>
+.lh-rating-priors-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr));gap:.75rem;max-width:42rem;margin:0 0 1rem}
+.lh-rating-priors-grid .form-group{margin:0}
+.lh-rating-priors-grid input{max-width:100%}
+</style>';
 
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
+<?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
+<?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
+
 <div class="card lh-admin">
     <div class="events-list-head">
         <h2 class="events-list-title">Értékelés</h2>
@@ -80,18 +132,68 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <p class="text-muted" style="margin-top:0">
         Egyszerű 5 csillagos értékelés a Latinfo.hu oldalra. A botok User-Agent alapján kiszűrődnek az átlagból.
         Ugyanarról az IP-ről naponta egy emberi értékelés számít (felülírható).
+        Az előző időszak darabszámai is beleszámítanak a megjelenő átlagba.
     </p>
     <div class="events-edit-stats__cards">
         <div class="events-edit-stats__card">
-            <div class="events-edit-stats__card-label">Élő átlag (ember)</div>
+            <div class="events-edit-stats__card-label">Megjelenő átlag</div>
             <div class="events-edit-stats__card-value"><?= h(number_format((float) $liveSummary['average'], 1, ',', ' ')) ?></div>
         </div>
         <div class="events-edit-stats__card">
-            <div class="events-edit-stats__card-label">Élő darabszám</div>
+            <div class="events-edit-stats__card-label">Összes darab</div>
             <div class="events-edit-stats__card-value"><?= number_format((int) $liveSummary['count'], 0, ',', ' ') ?></div>
+        </div>
+        <div class="events-edit-stats__card">
+            <div class="events-edit-stats__card-label">Új (élő) átlag</div>
+            <div class="events-edit-stats__card-value"><?= h(number_format((float) ($liveSummary['live_average'] ?? 0), 1, ',', ' ')) ?></div>
+        </div>
+        <div class="events-edit-stats__card">
+            <div class="events-edit-stats__card-label">Új darab</div>
+            <div class="events-edit-stats__card-value"><?= number_format((int) ($liveSummary['live_count'] ?? 0), 0, ',', ' ') ?></div>
+        </div>
+        <div class="events-edit-stats__card">
+            <div class="events-edit-stats__card-label">Előző időszak átlag</div>
+            <div class="events-edit-stats__card-value"><?= h(number_format((float) ($liveSummary['prior_average'] ?? 0), 1, ',', ' ')) ?></div>
+        </div>
+        <div class="events-edit-stats__card">
+            <div class="events-edit-stats__card-label">Előző időszak darab</div>
+            <div class="events-edit-stats__card-value"><?= number_format((int) ($liveSummary['prior_count'] ?? 0), 0, ',', ' ') ?></div>
         </div>
     </div>
 </div>
+
+<?php if ($schemaOk): ?>
+<div class="card lh-admin" id="rating-priors">
+    <div class="events-list-head">
+        <h2 class="events-list-title">Előző időszak értékelései</h2>
+    </div>
+    <p class="text-muted" style="margin-top:0">
+        A régi rendszer / más forrás értékeléseinek darabszámai csillagonként.
+        Ezek nem jelennek meg a napi statisztikában, de beleszámítanak a kezdőoldalon látható átlagba és darabszámba.
+    </p>
+    <form method="post" action="<?= h($formAction) ?>#rating-priors">
+        <?= csrf_input('latinfo_home_rating') ?>
+        <input type="hidden" name="action" value="save_priors">
+        <div class="lh-rating-priors-grid">
+            <?php for ($i = 5; $i >= 1; $i--): ?>
+                <div class="form-group">
+                    <label for="prior_stars_<?= $i ?>"><?= $i ?> ★</label>
+                    <input
+                        type="number"
+                        id="prior_stars_<?= $i ?>"
+                        name="stars_<?= $i ?>"
+                        min="0"
+                        max="9999999"
+                        step="1"
+                        value="<?= (int) ($ratingPriors['stars_' . $i] ?? 0) ?>"
+                    >
+                </div>
+            <?php endfor; ?>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Mentés</button>
+    </form>
+</div>
+<?php endif; ?>
 
 <div class="card events-edit-stats" id="rating-stats">
     <div class="events-list-head">
