@@ -182,6 +182,11 @@ if (!defined('GA4_MEASUREMENT_ID')) {
     define('GA4_MEASUREMENT_ID', (string) cfg_get('GA4_MEASUREMENT_ID', 'G-RCTY9NEJRJ', $localConfig));
 }
 
+/** Facebook App ID a Sharing Debugger fb:app_id figyelmeztetéséhez. Üresen nem megy ki a meta. */
+if (!defined('FACEBOOK_APP_ID')) {
+    define('FACEBOOK_APP_ID', (string) cfg_get('FACEBOOK_APP_ID', '966242223397117', $localConfig));
+}
+
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra
 

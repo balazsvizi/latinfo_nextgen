@@ -949,6 +949,10 @@ function latinfo_home_share_head_markup(string $lang): string
         '<meta property="og:locale" content="' . h($share['locale']) . '">',
         '<meta property="og:locale:alternate" content="' . h($share['locale_alt']) . '">',
     ];
+    $fbAppId = preg_replace('/\D+/', '', (string) (defined('FACEBOOK_APP_ID') ? FACEBOOK_APP_ID : '')) ?? '';
+    if ($fbAppId !== '') {
+        $lines[] = '<meta property="fb:app_id" content="' . h($fbAppId) . '">';
+    }
     if ($share['image_url'] !== '') {
         $lines[] = '<meta property="og:image" content="' . h($share['image_url']) . '">';
         if (str_starts_with($share['image_url'], 'https://')) {

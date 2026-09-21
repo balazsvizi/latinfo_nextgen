@@ -57,6 +57,10 @@ return [
     // GA4 mérőazonosító — nyilvános esemény oldalak (üres string = kikapcsolva)
     // 'GA4_MEASUREMENT_ID' => 'G-RCTY9NEJRJ',
 
+    // Facebook App ID (og fb:app_id). Alap: Facebook nyilvános default, ami elnémítja a Debugger figyelmeztetést.
+    // Saját app: https://developers.facebook.com/apps/
+    // 'FACEBOOK_APP_ID' => '966242223397117',
+
     // Cron – központi ütemező (nextgen/cron/run.php)
     // 'CRON_TOKEN' => 'állíts-be-erős-véletlen-token-min-32-karakter',
     // 'CRON_ENABLED' => true,
