@@ -1,8 +1,8 @@
 /* Latinfo mobilapp – service worker (shell cache). */
-const CACHE = 'latinfo-mobileapp-v3';
+const CACHE = 'latinfo-mobilapp-v3';
 const PRECACHE = [
   './',
-  './assets/css/mobileapp.css',
+  './assets/css/mobilapp.css',
   './assets/js/install.js',
   './assets/icons/latinfo-app-logo.jpg',
 ];
@@ -30,8 +30,8 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) {
     return;
   }
-  // Csak a mobileapp shell: network-first, cache fallback
-  if (!url.pathname.includes('/mobileapp')) {
+  // Csak a mobilapp shell: network-first, cache fallback
+  if (!url.pathname.includes('/mobilapp')) {
     return;
   }
   event.respondWith(

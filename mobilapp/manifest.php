@@ -8,9 +8,9 @@ if (!defined('BASE_URL')) {
     require_once __DIR__ . '/../nextgen/core/config.php';
 }
 
-$startUrl = site_url('/') . '?source=mobileapp';
+$startUrl = site_url('/') . '?source=mobilapp';
 $scope = site_url('/');
-$iconJpg = site_url('mobileapp/assets/icons/latinfo-app-logo.jpg');
+$iconJpg = site_url('mobilapp/assets/icons/latinfo-app-logo.jpg');
 
 $manifest = [
     'name' => SITE_NAME . ' – Mobilapp',

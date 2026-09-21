@@ -98,6 +98,7 @@ if (!function_exists('landing_feedback_is_self_url')) {
         return str_contains($pathLower, '/feedback')
             || str_contains($pathLower, '/visszajelzes')
             || str_contains($pathLower, '/visszajelzés')
+            || str_contains($pathLower, '/mobilapp')
             || str_contains($pathLower, '/mobileapp');
     }
 }
@@ -151,8 +152,8 @@ if (!function_exists('landing_feedback_safe_return_url')) {
         if ($forras === 'lanueva') {
             return site_url('lanueva/');
         }
-        if ($forras === 'mobileapp') {
-            return site_url('mobileapp/');
+        if ($forras === 'mobilapp' || $forras === 'mobileapp') {
+            return site_url('mobilapp/');
         }
 
         if (str_starts_with($forras, '/') && !str_starts_with($forras, '//')) {
@@ -369,7 +370,7 @@ if (!function_exists('landing_feedback_has_text')) {
         if ($forras === 'feedback' || $forras === 'visszajelzes' || $forras === 'visszajelzés') {
             return 'Feedback';
         }
-        if ($forras === 'mobileapp') {
+        if ($forras === 'mobilapp' || $forras === 'mobileapp') {
             return 'Mobilapp';
         }
 

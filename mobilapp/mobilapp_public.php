@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * Nyilvános mobilapp oldal – telepítés + info + visszajelzés.
- * Meghívás: mobileapp/index.php  →  /mobileapp/
+ * Meghívás: mobilapp/index.php  →  /mobilapp/
  */
 if (!defined('BASE_URL')) {
     require_once __DIR__ . '/../nextgen/core/config.php';
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
             'nev' => $nev,
             'telefon' => $telefon,
             'eszkoz' => $eszkoz,
-            'forras' => 'mobileapp',
+            'forras' => 'mobilapp',
             'ip' => $ip,
             'user_agent' => $ua,
             'context' => 'mobilapp oldal',
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
         try {
             landing_feedback_send_mail($payload);
         } catch (Throwable $ex) {
-            error_log('mobileapp feedback mail: ' . $ex->getMessage());
+            error_log('mobilapp feedback mail: ' . $ex->getMessage());
         }
 
         $homeUrlForFlash = (defined('LATINFO_PUBLIC_HOME_URL') && is_string(LATINFO_PUBLIC_HOME_URL) && LATINFO_PUBLIC_HOME_URL !== '')
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['landing_feedback'])) 
         unset($_SESSION['landing_feedback_forras']);
         flash('landing_ok_feedback', 'Köszönjük! Megkaptuk a mobilapp visszajelzésed.');
         flash('landing_feedback_vissza', $visszaUrlFlash);
-        redirect(site_url('mobileapp/'));
+        redirect(site_url('mobilapp/'));
     }
 }
 
@@ -91,7 +91,7 @@ if (!$https) {
 $scheme = $https ? 'https' : 'http';
 $httpHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
 $publicOrigin = ($httpHost !== '') ? $scheme . '://' . $httpHost : '';
-$publicPath = site_url('mobileapp/');
+$publicPath = site_url('mobilapp/');
 $ogCanonical = $publicOrigin !== '' ? ($publicOrigin . $publicPath) : '';
 
 $homeUrl = (defined('LATINFO_PUBLIC_HOME_URL') && is_string(LATINFO_PUBLIC_HOME_URL) && LATINFO_PUBLIC_HOME_URL !== '')
@@ -103,18 +103,18 @@ $visszaUrl = landing_feedback_safe_return_url(
 );
 $eventsHome = defined('EVENTS_HOME_PATH') ? EVENTS_HOME_PATH : 'events';
 $naptarUrl = rtrim(site_url($eventsHome . '/'), '/') . '/';
-$manifestUrl = site_url('mobileapp/manifest.php');
-$swUrl = site_url('mobileapp/sw.js');
-$iconUrl = site_url('mobileapp/assets/icons/latinfo-app-logo.jpg');
+$manifestUrl = site_url('mobilapp/manifest.php');
+$swUrl = site_url('mobilapp/sw.js');
+$iconUrl = site_url('mobilapp/assets/icons/latinfo-app-logo.jpg');
 $iconVersion = defined('APP_VERSION') ? (string) APP_VERSION : '1';
 $iconUrlVer = $iconUrl . '?v=' . rawurlencode($iconVersion);
 
 $pageTitle = SITE_NAME . ' – Mobilapp';
 $pageDescription = 'Telepítsd a Latinfo mobilalkalmazást a telefonodra: eseménynaptár egy koppintással, visszajelzéssel.';
-$cssUrl = site_url('mobileapp/assets/css/mobileapp.css') . '?v=' . rawurlencode(
+$cssUrl = site_url('mobilapp/assets/css/mobilapp.css') . '?v=' . rawurlencode(
     defined('APP_VERSION') ? (string) APP_VERSION : '1'
 );
-$jsUrl = site_url('mobileapp/assets/js/install.js') . '?v=' . rawurlencode(
+$jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
     defined('APP_VERSION') ? (string) APP_VERSION : '1'
 );
 ?>
@@ -167,7 +167,7 @@ $jsUrl = site_url('mobileapp/assets/js/install.js') . '?v=' . rawurlencode(
 
             <div class="ma-actions">
                 <button type="button" class="ma-btn" id="ma-install-btn" hidden>Telepítés a telefonra</button>
-                <a class="ma-btn ma-btn-secondary" href="<?= h($homeUrl) ?>?source=mobileapp">Megnyitom a főoldalt</a>
+                <a class="ma-btn ma-btn-secondary" href="<?= h($homeUrl) ?>?source=mobilapp">Megnyitom a főoldalt</a>
             </div>
 
             <p class="ma-install-status" id="ma-install-status" role="status" hidden></p>
@@ -182,7 +182,7 @@ $jsUrl = site_url('mobileapp/assets/js/install.js') . '?v=' . rawurlencode(
         <article class="ma-card">
             <h2 class="ma-card-title">Mit tud az app?</h2>
             <ul class="ma-features">
-                <li>A Latinfo főoldal egy koppintással a kezdőképernyőről</li>
+                <li>A Latinfo egy koppintással a kezdőképernyőről</li>
                 <li>Teljes képernyős nézet, böngészősáv nélkül</li>
                 <li>Ugyanaz a friss tartalom, mint a latinfo.hu-n</li>
                 <li>Nincs App Store / Play Store várakozás – azonnal telepíthető</li>
@@ -241,7 +241,7 @@ $jsUrl = site_url('mobileapp/assets/js/install.js') . '?v=' . rawurlencode(
     <script>
         window.LATINFO_MOBILEAPP = {
             swUrl: <?= json_encode($swUrl, JSON_UNESCAPED_SLASHES) ?>,
-            homeUrl: <?= json_encode(rtrim($homeUrl, '/') . '/?source=mobileapp', JSON_UNESCAPED_SLASHES) ?>
+            homeUrl: <?= json_encode(rtrim($homeUrl, '/') . '/?source=mobilapp', JSON_UNESCAPED_SLASHES) ?>
         };
     </script>
     <script src="<?= h($jsUrl) ?>" defer></script>

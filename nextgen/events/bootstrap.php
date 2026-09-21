@@ -284,12 +284,17 @@ if (!function_exists('events_public_render_hero_bar')) {
 
 if (!function_exists('events_public_favicon_head_markup')) {
     /**
-     * Nyilvános esemény oldal favicon (zöld Latinfo-hang, SVG).
+     * Nyilvános oldal favicon (gradient L + logó-hullám).
      */
     function events_public_favicon_head_markup(): string {
-        $href = events_url('assets/favicon-latinfo-event.svg');
+        $v = rawurlencode(function_exists('nextgen_app_version') ? nextgen_app_version() : (defined('APP_VERSION') ? APP_VERSION : '1'));
+        $icon32 = nextgen_url('site/assets/images/icons/favicon-32.png') . '?v=' . $v;
+        $icon192 = nextgen_url('site/assets/images/icons/icon-192.png') . '?v=' . $v;
+        $apple = nextgen_url('site/assets/images/icons/apple-touch-icon.png') . '?v=' . $v;
 
-        return '<link rel="icon" href="' . h($href) . '" type="image/svg+xml" sizes="any">' . "\n";
+        return '<link rel="icon" type="image/png" sizes="32x32" href="' . h($icon32) . '">' . "\n"
+            . '    <link rel="icon" type="image/png" sizes="192x192" href="' . h($icon192) . '">' . "\n"
+            . '    <link rel="apple-touch-icon" sizes="180x180" href="' . h($apple) . '">' . "\n";
     }
 }
 
