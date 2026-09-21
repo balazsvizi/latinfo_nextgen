@@ -26,18 +26,33 @@ function latinfo_home_asset_url(string $path): string
     return nextgen_url('site/assets/' . ltrim($path, '/'));
 }
 
+function latinfo_home_is_preview_request(): bool
+{
+    $path = str_replace('\\', '/', (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?'));
+    $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+
+    return str_contains($path, '/nextgen/site') || str_contains($script, '/nextgen/site/');
+}
+
 /**
  * Aktuális kezdőoldal-bázis: /nextgen/site/ előnézet vagy publikus /.
  */
 function latinfo_home_current_page_base_url(): string
 {
-    $path = str_replace('\\', '/', (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?'));
-    $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if (str_contains($path, '/nextgen/site') || str_contains($script, '/nextgen/site/')) {
+    if (latinfo_home_is_preview_request()) {
         return nextgen_url('site/');
     }
 
     return latinfo_home_preview_url();
+}
+
+function latinfo_home_public_canonical_url(string $lang): string
+{
+    if ($lang === 'en') {
+        return latinfo_home_preview_query_url(['lang' => 'en']);
+    }
+
+    return rtrim(latinfo_home_preview_url(), '/') . '/';
 }
 
 function latinfo_home_lang_switch_url(string $lang): string
@@ -805,6 +820,9 @@ function latinfo_home_strings(string $lang): array
 {
     $hu = [
         'page_title' => 'kezdőoldal (előnézet)',
+        'share_title' => 'A magyarországi latin életérzés',
+        'share_desc' => 'Naptár, DJ-k, iskolák, fesztiválok és a szcéna hírei egy helyen.',
+        'share_image_alt' => 'Latinfo.hu – salsa és latin tánc Magyarországon',
         'quick_news' => 'Bejelentések',
         'quick_news_aria' => 'Kiemelt bejelentések',
         'today' => 'Ma',
@@ -824,6 +842,9 @@ function latinfo_home_strings(string $lang): array
     ];
     $en = [
         'page_title' => 'home (preview)',
+        'share_title' => 'Latin dance life in Hungary',
+        'share_desc' => 'Calendar, DJs, schools, festivals and scene news – all in one place.',
+        'share_image_alt' => 'Latinfo.hu – salsa and Latin dance in Hungary',
         'quick_news' => 'Announcements',
         'quick_news_aria' => 'Featured announcements',
         'today' => 'Today',
@@ -843,6 +864,129 @@ function latinfo_home_strings(string $lang): array
     ];
 
     return $lang === 'en' ? $en : $hu;
+}
+
+function latinfo_home_document_title(string $lang): string
+{
+    $strings = latinfo_home_strings($lang);
+    $suffix = latinfo_home_is_preview_request()
+        ? (string) $strings['page_title']
+        : (string) $strings['share_title'];
+
+    return SITE_NAME . ' – ' . $suffix;
+}
+
+/**
+ * Facebook / Open Graph megosztási adatok a kezdőoldalhoz.
+ *
+ * @return array{
+ *   title: string,
+ *   description: string,
+ *   image_alt: string,
+ *   canonical: string,
+ *   url_hu: string,
+ *   url_en: string,
+ *   locale: string,
+ *   locale_alt: string,
+ *   image_url: string,
+ *   image_w: int,
+ *   image_h: int,
+ *   image_type: string
+ * }
+ */
+function latinfo_home_share_data(string $lang): array
+{
+    $strings = latinfo_home_strings($lang);
+    $urlHu = latinfo_home_public_canonical_url('hu');
+    $urlEn = latinfo_home_public_canonical_url('en');
+    $canonical = $lang === 'en' ? $urlEn : $urlHu;
+    $imageRel = 'images/og/latinfo-home-og.jpg';
+    $imageFs = dirname(__DIR__) . '/assets/' . $imageRel;
+    $imageUrl = '';
+    $imageW = 0;
+    $imageH = 0;
+    $imageType = '';
+    if (is_file($imageFs) && is_readable($imageFs)) {
+        $imageUrl = events_absolute_url(latinfo_home_asset_url($imageRel));
+        $dims = @getimagesize($imageFs);
+        if (is_array($dims)) {
+            $imageW = (int) ($dims[0] ?? 0);
+            $imageH = (int) ($dims[1] ?? 0);
+            $imageType = (string) ($dims['mime'] ?? '');
+        }
+    }
+
+    return [
+        'title' => SITE_NAME . ' – ' . (string) $strings['share_title'],
+        'description' => (string) $strings['share_desc'],
+        'image_alt' => (string) $strings['share_image_alt'],
+        'canonical' => $canonical,
+        'url_hu' => $urlHu,
+        'url_en' => $urlEn,
+        'locale' => $lang === 'en' ? 'en_US' : 'hu_HU',
+        'locale_alt' => $lang === 'en' ? 'hu_HU' : 'en_US',
+        'image_url' => $imageUrl,
+        'image_w' => $imageW,
+        'image_h' => $imageH,
+        'image_type' => $imageType,
+    ];
+}
+
+function latinfo_home_share_head_markup(string $lang): string
+{
+    $share = latinfo_home_share_data($lang);
+    $lines = [
+        '<meta name="description" content="' . h($share['description']) . '">',
+        '<link rel="canonical" href="' . h($share['canonical']) . '">',
+        '<link rel="alternate" hreflang="hu" href="' . h($share['url_hu']) . '">',
+        '<link rel="alternate" hreflang="en" href="' . h($share['url_en']) . '">',
+        '<link rel="alternate" hreflang="x-default" href="' . h($share['url_hu']) . '">',
+        '<meta property="og:type" content="website">',
+        '<meta property="og:site_name" content="' . h(SITE_NAME) . '">',
+        '<meta property="og:title" content="' . h($share['title']) . '">',
+        '<meta property="og:description" content="' . h($share['description']) . '">',
+        '<meta property="og:url" content="' . h($share['canonical']) . '">',
+        '<meta property="og:locale" content="' . h($share['locale']) . '">',
+        '<meta property="og:locale:alternate" content="' . h($share['locale_alt']) . '">',
+    ];
+    if ($share['image_url'] !== '') {
+        $lines[] = '<meta property="og:image" content="' . h($share['image_url']) . '">';
+        if (str_starts_with($share['image_url'], 'https://')) {
+            $lines[] = '<meta property="og:image:secure_url" content="' . h($share['image_url']) . '">';
+        }
+        if ($share['image_type'] !== '') {
+            $lines[] = '<meta property="og:image:type" content="' . h($share['image_type']) . '">';
+        }
+        if ($share['image_w'] > 0 && $share['image_h'] > 0) {
+            $lines[] = '<meta property="og:image:width" content="' . (int) $share['image_w'] . '">';
+            $lines[] = '<meta property="og:image:height" content="' . (int) $share['image_h'] . '">';
+        }
+        $lines[] = '<meta property="og:image:alt" content="' . h($share['image_alt']) . '">';
+    }
+    $lines[] = '<meta name="twitter:card" content="' . ($share['image_url'] !== '' ? 'summary_large_image' : 'summary') . '">';
+    $lines[] = '<meta name="twitter:title" content="' . h($share['title']) . '">';
+    $lines[] = '<meta name="twitter:description" content="' . h($share['description']) . '">';
+    if ($share['image_url'] !== '') {
+        $lines[] = '<meta name="twitter:image" content="' . h($share['image_url']) . '">';
+        $lines[] = '<meta name="twitter:image:alt" content="' . h($share['image_alt']) . '">';
+    }
+
+    $jsonLd = [
+        '@context' => 'https://schema.org',
+        '@type' => 'WebSite',
+        'name' => SITE_NAME,
+        'url' => $share['canonical'],
+        'description' => $share['description'],
+        'inLanguage' => $lang === 'en' ? 'en' : 'hu',
+    ];
+    if ($share['image_url'] !== '') {
+        $jsonLd['image'] = [$share['image_url']];
+    }
+    $lines[] = '<script type="application/ld+json">'
+        . json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
+        . '</script>';
+
+    return implode("\n    ", $lines) . "\n";
 }
 
 /**

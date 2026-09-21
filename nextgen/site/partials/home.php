@@ -68,7 +68,8 @@ foreach ($enabledModules as $mod) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#6d8f63">
     <?= events_public_robots_index_head_markup() ?>
-    <title><?= h(SITE_NAME) ?> – <?= h($H['page_title']) ?></title>
+    <title><?= h(latinfo_home_document_title($lang)) ?></title>
+    <?= latinfo_home_share_head_markup($lang) ?>
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
     <link rel="stylesheet" href="<?= h($cssHomeUrl) ?>">
