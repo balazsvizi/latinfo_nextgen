@@ -479,6 +479,10 @@ function events_public_traffic_granularity(string $dateFrom, string $dateTo): st
     } catch (Throwable) {
         return 'day';
     }
+    // Egy nap (pl. „Ma”) → óránkénti trend.
+    if ($days === 0) {
+        return 'hour';
+    }
     if ($days > 366) {
         return 'month';
     }
@@ -492,6 +496,7 @@ function events_public_traffic_granularity(string $dateFrom, string $dateTo): st
 function events_public_traffic_bucket_expr(string $granularity): string
 {
     return match ($granularity) {
+        'hour' => "DATE_FORMAT(t.`occurred_at`, '%H')",
         'month' => "DATE_FORMAT(t.`occurred_at`, '%Y-%m-01')",
         'week' => 'DATE(DATE_SUB(t.`occurred_at`, INTERVAL WEEKDAY(t.`occurred_at`) DAY))',
         default => 'DATE(t.`occurred_at`)',
@@ -503,6 +508,15 @@ function events_public_traffic_bucket_expr(string $granularity): string
  */
 function events_public_traffic_bucket_labels(string $dateFrom, string $dateTo, string $granularity): array
 {
+    if ($granularity === 'hour') {
+        $out = [];
+        for ($h = 0; $h < 24; $h++) {
+            $out[] = sprintf('%02d', $h);
+        }
+
+        return $out;
+    }
+
     try {
         $from = new DateTimeImmutable($dateFrom);
         $to = new DateTimeImmutable($dateTo);
@@ -543,6 +557,10 @@ function events_public_traffic_bucket_labels(string $dateFrom, string $dateTo, s
 
 function events_public_traffic_format_bucket_label(string $ymd, string $granularity): string
 {
+    if ($granularity === 'hour') {
+        return sprintf('%02d:00', max(0, min(23, (int) $ymd)));
+    }
+
     try {
         $dt = new DateTimeImmutable($ymd);
     } catch (Throwable) {

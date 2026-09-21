@@ -30,6 +30,7 @@ $deviceRows = is_array($statsData['devices'] ?? null) ? $statsData['devices'] : 
 $referrerRows = is_array($statsData['referrers'] ?? null) ? $statsData['referrers'] : [];
 $granularity = (string) ($statsData['granularity'] ?? 'day');
 $granularityLabel = match ($granularity) {
+    'hour' => 'óránkénti',
     'month' => 'havi',
     'week' => 'heti',
     default => 'napi',
