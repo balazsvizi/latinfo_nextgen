@@ -10,8 +10,7 @@ if (!defined('BASE_URL')) {
 
 $startUrl = site_url('/') . '?source=mobileapp';
 $scope = site_url('/');
-$iconSvg = site_url('mobileapp/assets/icons/icon.svg');
-$iconPng = site_url('lanueva/assets/icons/apple-touch-icon.png');
+$iconJpg = site_url('mobileapp/assets/icons/latinfo-icon-04-ornament-l.jpg');
 
 $manifest = [
     'name' => SITE_NAME . ' – Mobilapp',
@@ -23,26 +22,20 @@ $manifest = [
     'scope' => $scope,
     'display' => 'standalone',
     'orientation' => 'portrait-primary',
-    'background_color' => '#f4f6f2',
+    'background_color' => '#f4f1ea',
     'theme_color' => '#6d8f63',
     'categories' => ['entertainment', 'lifestyle'],
     'icons' => [
         [
-            'src' => $iconSvg,
-            'sizes' => 'any',
-            'type' => 'image/svg+xml',
+            'src' => $iconJpg,
+            'sizes' => '1024x1024',
+            'type' => 'image/jpeg',
             'purpose' => 'any',
         ],
         [
-            'src' => $iconPng,
-            'sizes' => '180x180',
-            'type' => 'image/png',
-            'purpose' => 'any',
-        ],
-        [
-            'src' => $iconPng,
-            'sizes' => '180x180',
-            'type' => 'image/png',
+            'src' => $iconJpg,
+            'sizes' => '1024x1024',
+            'type' => 'image/jpeg',
             'purpose' => 'maskable',
         ],
     ],

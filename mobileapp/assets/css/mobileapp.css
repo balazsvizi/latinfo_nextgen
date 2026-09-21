@@ -50,11 +50,22 @@ body.ma-page {
 }
 
 .ma-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     font-size: 1.15rem;
     font-weight: 800;
     letter-spacing: -0.02em;
     color: var(--ma-green-dark);
     text-decoration: none;
+}
+
+.ma-brand-logo {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.55rem;
+    object-fit: cover;
+    box-shadow: 0 8px 16px -12px rgba(45, 58, 40, 0.55);
 }
 
 .ma-brand:hover {
@@ -89,10 +100,11 @@ body.ma-page {
 
 .ma-hero-icon {
     display: block;
-    width: 4.5rem;
-    height: 4.5rem;
+    width: 6rem;
+    height: 6rem;
     margin: 0 auto 0.85rem;
-    border-radius: 1.15rem;
+    border-radius: 1.35rem;
+    object-fit: cover;
     box-shadow: 0 16px 32px -20px rgba(45, 58, 40, 0.55);
 }
 

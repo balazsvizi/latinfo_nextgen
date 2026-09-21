@@ -105,7 +105,9 @@ $eventsHome = defined('EVENTS_HOME_PATH') ? EVENTS_HOME_PATH : 'events';
 $naptarUrl = rtrim(site_url($eventsHome . '/'), '/') . '/';
 $manifestUrl = site_url('mobileapp/manifest.php');
 $swUrl = site_url('mobileapp/sw.js');
-$iconUrl = site_url('mobileapp/assets/icons/icon.svg');
+$iconUrl = site_url('mobileapp/assets/icons/latinfo-icon-04-ornament-l.jpg');
+$iconVersion = defined('APP_VERSION') ? (string) APP_VERSION : '1';
+$iconUrlVer = $iconUrl . '?v=' . rawurlencode($iconVersion);
 
 $pageTitle = SITE_NAME . ' – Mobilapp';
 $pageDescription = 'Telepítsd a Latinfo mobilalkalmazást a telefonodra: eseménynaptár egy koppintással, visszajelzéssel.';
@@ -139,18 +141,22 @@ $jsUrl = site_url('mobileapp/assets/js/install.js') . '?v=' . rawurlencode(
     <?php endif; ?>
     <meta property="og:locale" content="hu_HU">
     <link rel="manifest" href="<?= h($manifestUrl) ?>">
-    <?php require __DIR__ . '/../nextgen/includes/favicon_head.php'; ?>
+    <link rel="icon" type="image/jpeg" href="<?= h($iconUrlVer) ?>">
+    <link rel="apple-touch-icon" href="<?= h($iconUrlVer) ?>">
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
 <body class="ma-page">
     <header class="ma-header">
-        <a class="ma-brand" href="<?= h($homeUrl) ?>"><?= h(SITE_NAME) ?></a>
+        <a class="ma-brand" href="<?= h($homeUrl) ?>">
+            <img class="ma-brand-logo" src="<?= h($iconUrlVer) ?>" width="36" height="36" alt="">
+            <span><?= h(SITE_NAME) ?></span>
+        </a>
         <a class="ma-header-link" href="<?= h($naptarUrl) ?>">Naptár</a>
     </header>
 
     <main class="ma-main">
         <section class="ma-hero">
-            <img class="ma-hero-icon" src="<?= h($iconUrl) ?>" width="72" height="72" alt="">
+            <img class="ma-hero-icon" src="<?= h($iconUrlVer) ?>" width="96" height="96" alt="<?= h(SITE_NAME) ?>">
             <h1 class="ma-title">Latinfo mobilapp</h1>
             <p class="ma-lead">A latin táncos eseménynaptár a kezdőképernyődről – gyors, egyszerű, mindig kéznél.</p>
         </section>

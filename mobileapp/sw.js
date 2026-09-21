@@ -1,10 +1,10 @@
 /* Latinfo mobilapp – service worker (shell cache). */
-const CACHE = 'latinfo-mobileapp-v1';
+const CACHE = 'latinfo-mobileapp-v2';
 const PRECACHE = [
   './',
   './assets/css/mobileapp.css',
   './assets/js/install.js',
-  './assets/icons/icon.svg',
+  './assets/icons/latinfo-icon-04-ornament-l.jpg',
 ];
 
 self.addEventListener('install', (event) => {
