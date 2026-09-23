@@ -12,21 +12,24 @@ jobs:
       - name: 🚚 Get latest code
         uses: actions/checkout@v4
 
-      - name: 🚀 LFTP Mirror Sync
+      - name: 🚀 LFTP Direct Sync
         run: |
           sudo apt-get update -qq && sudo apt-get install -qq -y lftp
-          lftp -d -c "
+          lftp -c "
           set ftp:ssl-allow no;
+          set ftp:passive-mode true;
           set net:timeout 15;
           set net:max-retries 2;
           open -u '${{ secrets.FTP_USERNAME }}','${{ secrets.FTP_PASSWORD }}' ${{ secrets.FTP_SERVER }};
           mirror --reverse \
+                 --no-empty-dirs \
+                 --no-perms \
+                 --no-umask \
                  --verbose \
-                 --only-newer \
                  --ignore-time \
                  --exclude-glob .git/ \
                  --exclude-glob .cursor/ \
                  --exclude-glob belepes/ \
                  --exclude-glob lanueva/ \
-                 ./ ./
+                 .
           "
