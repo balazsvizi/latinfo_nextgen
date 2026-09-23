@@ -1,35 +1,33 @@
-name: 🚀 Deploy to Production
+name: Deploy to Production
 
 on:
   push:
     branches:
-      - main
+      - main  # Ha master ágat használsz, írd át 'master'-re
 
 jobs:
   web-deploy:
+    name: Deploying PHP App
     runs-on: ubuntu-latest
+
     steps:
-      - name: 🚚 Get latest code
+      - name: Checkout repository code
         uses: actions/checkout@v4
 
-      - name: 🚀 LFTP Direct Sync
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -qq -y lftp
-          lftp -c "
-          set ftp:ssl-allow no;
-          set ftp:passive-mode true;
-          set net:timeout 15;
-          set net:max-retries 2;
-          open -u '${{ secrets.FTP_USERNAME }}','${{ secrets.FTP_PASSWORD }}' ${{ secrets.FTP_SERVER }};
-          mirror --reverse \
-                 --no-empty-dirs \
-                 --no-perms \
-                 --no-umask \
-                 --verbose \
-                 --ignore-time \
-                 --exclude-glob .git/ \
-                 --exclude-glob .cursor/ \
-                 --exclude-glob belepes/ \
-                 --exclude-glob lanueva/ \
-                 .
-          "
+      - name: Sync files via FTP / SFTP
+        uses: SamKirsh/ftp-deploy-action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: sftp # Használhatsz 'ftp'-t vagy 'ftps'-t is
+          port: 22      # FTP esetén állítsd 21-re
+          server-dir: /public_html/ # A szervereden lévő célkönyvtár
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/tests/**
+            README.md
+            .env.example
