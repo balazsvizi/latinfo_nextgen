@@ -12,14 +12,13 @@ jobs:
       - name: 🚚 Get latest code
         uses: actions/checkout@v4
 
-      - name: 🚀 LFTP Mirror Sync
-        uses: millan33/lftp-action@v1.0.2
+      - name: 🚀 LFTP Sync
+        uses: newsing/lftp-action@v1
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          host: ${{ secrets.FTP_SERVER }}
           user: ${{ secrets.FTP_SERVER_USERNAME || secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
-          settings: "set ftp:ssl-allow no; set net:timeout 10; set net:max-retries 2;"
           options: "--reverse --verbose --only-newer --ignore-time --exclude .git/ --exclude .cursor/ --exclude belepes/ --exclude lanueva/"
-          localdir: "./"
-          remotedir: "./"
+          localDir: "./"
+          remoteDir: "./"
