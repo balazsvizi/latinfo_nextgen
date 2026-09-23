@@ -1,38 +1,30 @@
-name: Deploy to cPanel
+name: 🚀 Deploy to Production
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   web-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 🚚 Get latest code
         uses: actions/checkout@v4
 
-      - name: Composer install (nextgen)
-        run: composer install --no-dev --optimize-autoloader
-        working-directory: nextgen
-
-      - name: FTP Deploy
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ./
-          local-dir: ./
-          port: 21
-          protocol: ftp
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            hostbase/**
-            **/hostbase/**
-            /hostbase
-            /hostbase/**
+      - name: 🚀 LFTP Sync (Mappakréalás nélkül)
+        run: |
+          sudo apt-get update && sudo apt-get install -y lftp
+          lftp -c "
+          open -u ${{ secrets.FTP_SERVER_USERNAME || secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
+          set ftp:ssl-allow no;
+          mirror --reverse \
+                 --verbose \
+                 --only-newer \
+                 --ignore-time \
+                 --exclude .git/ \
+                 --exclude .cursor/ \
+                 --exclude belepes/ \
+                 --exclude lanueva/ \
+                 ./ public_html/
+          "
