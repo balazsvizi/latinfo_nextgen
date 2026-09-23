@@ -12,7 +12,7 @@ jobs:
       - name: 🚚 Get latest code
         uses: actions/checkout@v4
 
-      - name: 🚀 LFTP Sync (Mappakréalás nélkül)
+      - name: 🚀 LFTP Sync
         run: |
           sudo apt-get update && sudo apt-get install -y lftp
           lftp -c "
@@ -26,5 +26,5 @@ jobs:
                  --exclude .cursor/ \
                  --exclude belepes/ \
                  --exclude lanueva/ \
-                 ./ public_html/
+                 ./ ./
           "
