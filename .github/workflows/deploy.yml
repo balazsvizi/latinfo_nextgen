@@ -12,19 +12,14 @@ jobs:
       - name: 🚚 Get latest code
         uses: actions/checkout@v4
 
-      - name: 🚀 LFTP Sync
-        run: |
-          sudo apt-get update && sudo apt-get install -y lftp
-          lftp -c "
-          open -u ${{ secrets.FTP_SERVER_USERNAME || secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
-          set ftp:ssl-allow no;
-          mirror --reverse \
-                 --verbose \
-                 --only-newer \
-                 --ignore-time \
-                 --exclude .git/ \
-                 --exclude .cursor/ \
-                 --exclude belepes/ \
-                 --exclude lanueva/ \
-                 ./ ./
-          "
+      - name: 🚀 LFTP Mirror Sync
+        uses: millan33/lftp-action@v1.0.2
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          user: ${{ secrets.FTP_SERVER_USERNAME || secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
+          settings: "set ftp:ssl-allow no; set net:timeout 10; set net:max-retries 2;"
+          options: "--reverse --verbose --only-newer --ignore-time --exclude .git/ --exclude .cursor/ --exclude belepes/ --exclude lanueva/"
+          localdir: "./"
+          remotedir: "./"
