@@ -1,5 +1,24 @@
-- name: Sync files via FTP / SFTP
-        uses: SamKirkland/ftp-deploy-action@v4.3.5
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  web-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Composer install (nextgen)
+        run: composer install --no-dev --optimize-autoloader
+        working-directory: nextgen
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
