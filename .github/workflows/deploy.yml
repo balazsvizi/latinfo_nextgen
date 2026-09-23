@@ -15,12 +15,11 @@ jobs:
       - name: 🚀 LFTP Mirror Sync
         run: |
           sudo apt-get update -qq && sudo apt-get install -qq -y lftp
-          lftp -c "
+          lftp -d -c "
           set ftp:ssl-allow no;
-          set net:timeout 10;
+          set net:timeout 15;
           set net:max-retries 2;
-          set net:reconnect-interval-base 5;
-          open -u ${{ secrets.FTP_SERVER_USERNAME || secrets.FTP_USERNAME }},'${{ secrets.FTP_PASSWORD }}' ${{ secrets.FTP_SERVER }};
+          open -u '${{ secrets.FTP_USERNAME }}','${{ secrets.FTP_PASSWORD }}' ${{ secrets.FTP_SERVER }};
           mirror --reverse \
                  --verbose \
                  --only-newer \
