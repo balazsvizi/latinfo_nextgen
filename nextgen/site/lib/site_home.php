@@ -900,7 +900,7 @@ function latinfo_home_share_data(string $lang): array
     $urlHu = latinfo_home_public_canonical_url('hu');
     $urlEn = latinfo_home_public_canonical_url('en');
     $canonical = $lang === 'en' ? $urlEn : $urlHu;
-    $imageRel = 'images/og/latinfo-home-share-swirl-sq.jpg';
+    $imageRel = 'images/og/latinfo-home-share-swirl.jpg';
     $imageFs = dirname(__DIR__) . '/assets/' . $imageRel;
     $imageUrl = '';
     $imageW = 0;
