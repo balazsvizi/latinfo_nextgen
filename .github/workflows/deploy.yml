@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: sftp # Használhatsz 'ftp'-t vagy 'ftps'-t is
           port: 22      # FTP esetén állítsd 21-re
-          server-dir: /public_html/ # A szervereden lévő célkönyvtár
+          server-dir: /
           exclude: |
             **/.git*
             **/.git*/**
