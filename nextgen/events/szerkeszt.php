@@ -9,7 +9,6 @@ require_once __DIR__ . '/lib/event_edit_stats.php';
 require_once __DIR__ . '/lib/event_delete.php';
 require_once __DIR__ . '/lib/admin_event_calendar.php';
 require_once __DIR__ . '/lib/organizer_finance.php';
-require_once __DIR__ . '/lib/event_notify_email.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -183,31 +182,16 @@ if ((string) ($event['event_status'] ?? '') === events_public_post_status()
     && trim((string) ($event['event_slug'] ?? '')) !== '') {
     $eventEditPreviewUrl = events_megjelenit_url((string) $event['event_slug']);
 }
-
-events_notify_email_ensure_schema($db);
-$notifyOrganizerIds = array_map('intval', $event['organizer_ids'] ?? []);
-$notifyEmailPlaceholders = events_notify_email_placeholders($db, $event, $notifyOrganizerIds);
-$notifyEmailTemplates = events_notify_email_list_templates($db);
-$notifyEmailTemplatesRendered = events_notify_email_render_templates($notifyEmailTemplates, $notifyEmailPlaceholders);
-$notifyEmailDefaultId = events_notify_email_default_template_id($db);
-$notifyEmailSelected = events_notify_email_find_template($notifyEmailTemplatesRendered, $notifyEmailDefaultId);
-$notifyEmailSmtpAccounts = events_notify_email_list_smtp_accounts($db);
-$notifyEmailSmtpId = events_notify_email_default_smtp_id($db);
-$notifyEmailRecipients = events_notify_email_recipient_emails($db, $notifyOrganizerIds);
-$notifyEmailBcc = events_notify_email_default_bcc($db);
-$notifyEmailSentLogs = events_notify_email_logs_for_event($db, $id, 10);
-
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Esemény szerkesztése: ' . ($event['event_name'] ?? '');
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
-<?php if ($eFlash = flash('error')): ?><p class="alert alert-error"><?= h($eFlash) ?></p><?php endif; ?>
 <?php if ($s = flash('warning')): ?><p class="alert alert-warning"><?= h($s) ?></p><?php endif; ?>
 
 <?php require __DIR__ . '/partials/admin_event_edit_float_tools.php'; ?>
 
-<div class="events-edit-page" id="event-notify-email">
+<div class="events-edit-page">
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
     <form method="post" enctype="multipart/form-data" class="events-edit-form" id="events-edit-form"
@@ -217,16 +201,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php
         $eventFormCopyUrl = events_url('letrehoz.php?copy_from=') . $id;
         $eventFormCancelUrl = events_url('events_admin.php');
-        $eventFormShowNotifyEmail = true;
         require __DIR__ . '/partials/event_fields.php';
         $eventFormActionsPlacement = 'footer';
-        $eventFormShowNotifyEmail = true;
         require __DIR__ . '/partials/event_form_actions.php';
         ?>
     </form>
 </div>
-
-<?php require __DIR__ . '/partials/event_notify_email_modal.php'; ?>
 
 <?php require __DIR__ . '/partials/admin_event_edit_log.php'; ?>
 

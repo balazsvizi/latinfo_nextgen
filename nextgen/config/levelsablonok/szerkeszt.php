@@ -3,7 +3,6 @@ require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
 require_once __DIR__ . '/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/events/lib/event_notify_email.php';
 requireLogin();
 
 $id = (int)($_GET['id'] ?? 0);
@@ -14,7 +13,6 @@ if ($id <= 0) {
 
 $db = getDb();
 ensure_levelsablonok_table($db);
-events_notify_email_ensure_schema($db);
 $stmt = $db->prepare('SELECT * FROM finance_email_templates WHERE id = ?');
 $stmt->execute([$id]);
 $sablon = $stmt->fetch();
@@ -25,13 +23,6 @@ if (!$sablon) {
 
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!empty($_POST['set_event_notify_default'])) {
-        events_notify_email_set_default_template_id($db, $id);
-        rendszer_log('levélsablon', $id, 'Esemény-értesítő default', null);
-        flash('success', 'Ez a sablon az esemény-értesítő alapértelmezettje.');
-        redirect(nextgen_url('config/levelsablonok/szerkeszt.php?id=') . $id);
-    }
-
     $nev = trim($_POST['név'] ?? '');
     $kod = trim($_POST['kód'] ?? '');
     $targy = trim($_POST['tárgy'] ?? '');
@@ -63,8 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sablon['html_tartalom'] = $html;
 }
 
-$isEventNotifyDefault = events_notify_email_default_template_id($db) === $id;
-
 $logStmt = $db->prepare("
     SELECT r.*, a.név AS admin_név
     FROM nextgen_system_log r
@@ -83,13 +72,6 @@ require_once __DIR__ . '/../../partials/header.php';
 <div class="card">
     <h2>Levélsablon szerkesztése</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <?php if ($isEventNotifyDefault): ?>
-        <p class="alert alert-success">Ez a sablon az <strong>esemény-értesítő</strong> alapértelmezettje.</p>
-    <?php else: ?>
-        <form method="post" class="toolbar" style="margin-bottom:1rem;">
-            <button type="submit" name="set_event_notify_default" value="1" class="btn btn-secondary">Beállítás esemény-értesítő defaultnak</button>
-        </form>
-    <?php endif; ?>
     <form method="post">
         <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h($sablon['név']) ?>" required></div>
         <div class="form-group"><label>Kód *</label><input type="text" name="kód" value="<?= h($sablon['kód']) ?>" required></div>
