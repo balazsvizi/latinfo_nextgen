@@ -17,6 +17,13 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
         working-directory: nextgen
 
+      # cPanel FTP 550-et ad, ha MKD-zni akar már létező / tiltott mappát (.cursor, belepes).
+      # A belépés rewrite-ból megy (/belepes/ → nextgen/login.php), fizikai mappa nem kell.
+      - name: Strip paths that break FTP MKD
+        run: |
+          rm -rf .cursor .vscode .idea belepes
+          rm -f .cursorrules
+
       - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -28,6 +35,7 @@ jobs:
           port: 21
           protocol: ftp
           dangerous-clean-slate: false
+          state-name: .ftp-deploy-sync-state.json
           exclude: |
             **/.git*
             **/.git*/**
@@ -36,7 +44,15 @@ jobs:
             **/hostbase/**
             /hostbase
             /hostbase/**
-            **/.git**
-            **/.git*/**
-            **/.cursor/**
             .cursor
+            .cursor/**
+            **/.cursor
+            **/.cursor/**
+            .cursorrules
+            **/.cursorrules
+            belepes
+            belepes/**
+            **/belepes
+            **/belepes/**
+            .ftp-deploy-sync-state.json
+            .ftp-deploy-sync-state-v2.json
