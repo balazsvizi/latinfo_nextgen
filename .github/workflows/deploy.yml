@@ -1,28 +1,12 @@
-name: Deploy to Production
-
-on:
-  push:
-    branches:
-      - main  # Ha master ágat használsz, írd át 'master'-re
-
-jobs:
-  web-deploy:
-    name: Deploying PHP App
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository code
-        uses: actions/checkout@v4
-
-      - name: Sync files via FTP / SFTP
-        uses: SamKirsh/ftp-deploy-action@v4.3.5
+- name: Sync files via FTP / SFTP
+        uses: SamKirkland/ftp-deploy-action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: sftp # Használhatsz 'ftp'-t vagy 'ftps'-t is
-          port: 22      # FTP esetén állítsd 21-re
-          server-dir: /
+          protocol: sftp # vagy 'ftp'
+          port: 22      # FTP esetén 21
+          server-dir: /public_html/
           exclude: |
             **/.git*
             **/.git*/**
