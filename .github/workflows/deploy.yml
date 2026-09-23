@@ -23,14 +23,20 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: sftp # vagy 'ftp'
-          port: 22      # FTP esetén 21
-          server-dir: /public_html/
+          server-dir: ./
+          local-dir: ./
+          port: 21
+          protocol: ftp
+          dangerous-clean-slate: false
           exclude: |
             **/.git*
             **/.git*/**
-            **/.github/**
             **/node_modules/**
-            **/tests/**
-            README.md
-            .env.example
+            hostbase/**
+            **/hostbase/**
+            /hostbase
+            /hostbase/**
+            **/.git**
+            **/.git*/**
+            **/.cursor/**
+            .cursor
