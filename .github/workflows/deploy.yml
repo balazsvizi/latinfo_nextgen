@@ -33,9 +33,11 @@ jobs:
           # Ez megakadályozza, hogy a meglévő mappáknál elhasaljon a létrehozás során
           state-name: .ftp-deploy-sync-state.json
           exclude: |
-            .git
+        git
             .git/**
             .gitignore
+            .github
+            .github/**
             .cursor
             .cursor/**
             **/node_modules/**
