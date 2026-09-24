@@ -22,10 +22,9 @@ jobs:
       - name: Install git-ftp
         run: sudo apt-get update && sudo apt-get install -y git-ftp
 
-      - name: Deploy via Git-FTP
+      - name: Catchup via Git-FTP
         run: |
-          git ftp push --auto-init \
+          git ftp catchup \
             --user "${{ secrets.FTP_USERNAME }}" \
             --passwd "${{ secrets.FTP_PASSWORD }}" \
-            -o "disable-epsv" \
             "ftp://${{ secrets.FTP_SERVER }}"
