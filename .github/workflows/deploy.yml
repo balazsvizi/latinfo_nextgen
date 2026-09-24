@@ -19,26 +19,10 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
         working-directory: nextgen
 
-      - name: Git-FTP Deploy
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Real Git-FTP Deploy
+        uses: Testifi/git-ftp-action@v1.2.0
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ./
-          local-dir: ./
-          port: 21
-          protocol: ftp
-          dangerous-clean-slate: false
-          exclude: |
-            .git*
-            .git*/**
-            .gitignore
-            .github*
-            .github*/**
-            .cursor*
-            .cursor*/**
-            .cursorrules
-            *.code-workspace
-            **/node_modules/**
-            **/hostbase/**
+          url: "ftp://${{ secrets.FTP_SERVER }}"
+          user: "${{ secrets.FTP_USERNAME }}"
+          password: "${{ secrets.FTP_PASSWORD }}"
+          options: "--auto-init --syncroot ./"
