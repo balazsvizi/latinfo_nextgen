@@ -19,7 +19,7 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
         working-directory: nextgen
 
-      - name: FTP Deploy
+      - name: Git-FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -30,14 +30,15 @@ jobs:
           port: 21
           protocol: ftp
           dangerous-clean-slate: false
-          security: loose  # <-- "false" helyett "loose" a cPanel összeférhetetlenség feloldására
           exclude: |
-            .git**
-            .git**/**
+            .git*
+            .git*/**
             .gitignore
-            .github**
-            .github**/**
-            .cursor**
-            .cursor**/**
+            .github*
+            .github*/**
+            .cursor*
+            .cursor*/**
+            .cursorrules
+            *.code-workspace
             **/node_modules/**
             **/hostbase/**
