@@ -19,10 +19,12 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
         working-directory: nextgen
 
+      - name: Install git-ftp
+        run: sudo apt-get update && sudo apt-get install -y git-ftp
+
       - name: Deploy via Git-FTP
-        uses: SamMousa/git-ftp-action@v3.0.0
-        with:
-          url: "ftp://${{ secrets.FTP_SERVER }}"
-          user: "${{ secrets.FTP_USERNAME }}"
-          password: "${{ secrets.FTP_PASSWORD }}"
-          args: "--auto-init --syncroot ./"
+        run: |
+          git ftp push --auto-init \
+            --user "${{ secrets.FTP_USERNAME }}" \
+            --passwd "${{ secrets.FTP_PASSWORD }}" \
+            "ftp://${{ secrets.FTP_SERVER }}"
