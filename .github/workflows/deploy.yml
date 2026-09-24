@@ -17,58 +17,22 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
         working-directory: nextgen
 
-      - name: Strip IDE-only paths
-        run: |
-          rm -rf .cursor .vscode .idea
-          rm -f .cursorrules
-
-      # lftp mirror: ha a mappa már létezik, továbblép; ha nincs, létrehozza.
-      # (A SamKirkland FTP-Deploy MKD-nél 550-et dob már létező mappákon.)
-      - name: FTP Deploy (lftp mirror)
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq lftp
-
-          lftp -c "
-            set cmd:fail-exit yes;
-            set ftp:ssl-allow no;
-            set net:timeout 60;
-            set net:max-retries 3;
-            set net:reconnect-interval-base 5;
-            set mirror:parallel-transfer-count 1;
-            set mirror:set-permissions no;
-            open -u \"${FTP_USERNAME}\",\"${FTP_PASSWORD}\" ${FTP_SERVER};
-            mirror -R \
-              --verbose \
-              --continue \
-              --no-perms \
-              --no-umask \
-              --exclude-glob .git \
-              --exclude-glob .git/** \
-              --exclude-glob .github \
-              --exclude-glob .github/** \
-              --exclude-glob .cursor \
-              --exclude-glob .cursor/** \
-              --exclude-glob .vscode \
-              --exclude-glob .vscode/** \
-              --exclude-glob .idea \
-              --exclude-glob .idea/** \
-              --exclude-glob node_modules \
-              --exclude-glob node_modules/** \
-              --exclude-glob hostbase \
-              --exclude-glob hostbase/** \
-              --exclude-glob belepes \
-              --exclude-glob belepes/** \
-              --exclude-glob .ftp-deploy-sync-state.json \
-              --exclude-glob .ftp-deploy-sync-state-v2.json \
-              --exclude-glob .cursorrules \
-              --exclude-glob Alatinfo.code-workspace \
-              --exclude-glob .gitignore \
-              ./ ./;
-            bye
-          "
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ./
+          local-dir: ./
+          port: 21
+          protocol: ftp
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            hostbase/**
+            **/hostbase/**
+            /hostbase
+            /hostbase/**
