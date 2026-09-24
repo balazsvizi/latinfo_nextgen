@@ -25,11 +25,13 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /
+          server-dir: ./
           local-dir: ./
           port: 21
           protocol: ftp
           dangerous-clean-slate: false
+          # Ez megakadályozza, hogy a meglévő mappáknál elhasaljon a létrehozás során
+          state-name: .ftp-deploy-sync-state.json
           exclude: |
             .git
             .git/**
