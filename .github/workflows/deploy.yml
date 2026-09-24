@@ -27,5 +27,5 @@ jobs:
           git ftp push --auto-init \
             --user "${{ secrets.FTP_USERNAME }}" \
             --passwd "${{ secrets.FTP_PASSWORD }}" \
-            --option "disable-epsv" \
+            -o "disable-epsv" \
             "ftp://${{ secrets.FTP_SERVER }}"
