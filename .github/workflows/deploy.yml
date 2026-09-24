@@ -3,7 +3,7 @@ name: FTP Deploy
 on:
   push:
     branches:
-      - main   # vagy master, attól függően melyik az alapágad
+      - main
 
 jobs:
   ftp-deploy:
@@ -13,7 +13,7 @@ jobs:
       - name: Repository letöltése
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # fontos, hogy legyen git history a diffhez
+          fetch-depth: 0
 
       - name: FTP szinkronizáció
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -21,9 +21,10 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./              # honnan tölt fel
-          server-dir: ./  # hova tölt fel a szerveren
+          local-dir: ./
+          server-dir: ./
           state-name: ftp-deploy-sync-state.json
+          log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**
