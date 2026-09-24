@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Composer install (nextgen)
         run: composer install --no-dev --optimize-autoloader
@@ -29,10 +31,10 @@ jobs:
           protocol: ftp
           dangerous-clean-slate: false
           exclude: |
-            **/.git*
-            **/.git*/**
+            .git
+            .git/**
+            .gitignore
+            .cursor
+            .cursor/**
             **/node_modules/**
-            hostbase/**
             **/hostbase/**
-            /hostbase
-            /hostbase/**
