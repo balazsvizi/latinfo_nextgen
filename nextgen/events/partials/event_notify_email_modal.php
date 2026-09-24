@@ -134,7 +134,7 @@ $templatesJson = json_encode(
 
                 <div class="form-group">
                     <label for="notify_html">Levél szövege (HTML) *</label>
-                    <textarea id="notify_html" name="notify_html" rows="14" required><?= h($initialHtml) ?></textarea>
+                    <textarea id="notify_html" name="notify_html" class="js-html-editor-source" rows="14" required><?= h($initialHtml) ?></textarea>
                     <p class="help">
                         Változók a sablonban: <code>{{organizer_names}}</code>, <code>{{event_name}}</code>,
                         <code>{{event_start}}</code>, <code>{{event_end}}</code>, <code>{{venue_name}}</code>,
@@ -218,7 +218,11 @@ $templatesJson = json_encode(
         }
         if (!found) return;
         if (subjectEl) subjectEl.value = found.targy || '';
-        if (htmlEl) htmlEl.value = found.html_tartalom || '';
+        var html = found.html_tartalom || '';
+        if (htmlEl) htmlEl.value = html;
+        if (window.nextgenHtmlEditors && window.nextgenHtmlEditors.notify_html) {
+            window.nextgenHtmlEditors.notify_html.setData(html);
+        }
     }
 
     openBtns.forEach(function (btn) {

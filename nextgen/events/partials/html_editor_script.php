@@ -139,6 +139,23 @@
         }).then(function (editor) {
             editorInstance = editor;
             textarea.hidden = true;
+            if (textarea.id) {
+                window.nextgenHtmlEditors = window.nextgenHtmlEditors || {};
+                window.nextgenHtmlEditors[textarea.id] = {
+                    setData: function (html) {
+                        editor.setData(html || '');
+                        textarea.value = html || '';
+                        var src = wrapper.querySelector('.html-editor-source');
+                        if (src) {
+                            src.value = html || '';
+                        }
+                    },
+                    getData: function () {
+                        return editor.getData();
+                    },
+                    syncToTextarea: syncEditorToTextarea
+                };
+            }
         }).catch(function () {
             textarea.hidden = false;
         });

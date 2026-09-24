@@ -2718,6 +2718,14 @@ dialog.event-notify-modal::backdrop {
     color: var(--text-muted, #4b5563);
     line-height: 1.45;
 }
+.event-notify-modal .html-editor {
+    max-width: 100%;
+}
+.event-notify-modal .ck-editor__editable {
+    min-height: 12rem;
+    max-height: min(40vh, 22rem);
+    overflow: auto;
+}
 body.event-notify-modal-open {
     overflow: hidden;
 }
