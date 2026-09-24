@@ -22,9 +22,10 @@ jobs:
       - name: Install git-ftp
         run: sudo apt-get update && sudo apt-get install -y git-ftp
 
-      - name: Catchup via Git-FTP
+      - name: Catchup Git-FTP
         run: |
           git ftp catchup \
             --user "${{ secrets.FTP_USERNAME }}" \
             --passwd "${{ secrets.FTP_PASSWORD }}" \
-            "ftp://${{ secrets.FTP_SERVER }}"
+            -o "disable-epsv" \
+            "ftp://${{ secrets.FTP_SERVER }}/"
