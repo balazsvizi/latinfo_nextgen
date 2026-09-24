@@ -10,7 +10,7 @@ jobs:
   web-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -19,7 +19,7 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
         working-directory: nextgen
 
-      - name: FTP Deploy
+      - name: FTP Deploy via Git-FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -30,15 +30,16 @@ jobs:
           port: 21
           protocol: ftp
           dangerous-clean-slate: false
-          # Ez megakadályozza, hogy a meglévő mappáknál elhasaljon a létrehozás során
-          state-name: .ftp-deploy-sync-state.json
+          # Ez a kapcsoló kikapcsolja a szigorú mappa-ellenőrzést,
+          # így elkerüli az 550-es mappalétrehozási hibákat:
+          security: false
           exclude: |
-            .git
-            .git/**
+            .git**
+            .git**/**
             .gitignore
-            .github
-            .github/**
-            .cursor
-            .cursor/**
+            .github**
+            .github**/**
+            .cursor**
+            .cursor**/**
             **/node_modules/**
             **/hostbase/**
