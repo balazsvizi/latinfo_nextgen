@@ -24,6 +24,8 @@ jobs:
           local-dir: ./              # honnan tölt fel
           server-dir: /public_html/  # hova tölt fel a szerveren
           exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+          **/.git*
+          **/.git*/**
+          **/.cursor/**
+          **/.cursor*
+          **/node_modules/**
