@@ -23,6 +23,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./              # honnan tölt fel
           server-dir: ./  # hova tölt fel a szerveren
+          state-name: ftp-deploy-sync-state.json
           exclude: |
             **/.git*
             **/.git*/**
