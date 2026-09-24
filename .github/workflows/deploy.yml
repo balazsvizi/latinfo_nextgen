@@ -1,31 +1,29 @@
-name: Deploy to cPanel
+name: FTP Deploy
 
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main   # vagy master, attól függően melyik az alapágad
 
 jobs:
-  web-deploy:
+  ftp-deploy:
+    name: Feltöltés FTP-re
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Repository letöltése
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # fontos, hogy legyen git history a diffhez
 
-      - name: Composer install (nextgen)
-        run: composer install --no-dev --optimize-autoloader
-        working-directory: nextgen
-
-      - name: Install git-ftp
-        run: sudo apt-get update && sudo apt-get install -y git-ftp
-
-      - name: Catchup Git-FTP
-        run: |
-          git ftp catchup \
-            --user "${{ secrets.FTP_USERNAME }}" \
-            --passwd "${{ secrets.FTP_PASSWORD }}" \
-            --passive \
-            --url "ftp://${{ secrets.FTP_SERVER }}"
+      - name: FTP szinkronizáció
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./              # honnan tölt fel
+          server-dir: /public_html/  # hova tölt fel a szerveren
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
