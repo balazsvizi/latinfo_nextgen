@@ -89,7 +89,7 @@ function events_notify_email_default_template_content(): array
         'targy' => '{{site_name}} – megjelent az eseményed: {{event_name}}',
         'html_tartalom' => '<p>Kedves {{organizer_names}}!</p>'
             . '<p>Örömmel jelezzük, hogy az alábbi eseményed megjelent a ' . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . ' naptárában.</p>'
-            . '<p><strong>{{event_name}}</strong><br>'
+            . '<p><strong>{{event_name}}</strong> (ID: {{event_id}})<br>'
             . 'Időpont: {{event_start}}<br>'
             . 'Helyszín: {{venue_name}}</p>'
             . '<p>Az esemény nyilvános oldala:<br>'
@@ -125,7 +125,7 @@ function events_notify_email_ensure_default_template(PDO $db): void
             'Esemény megjelent – szervezői értesítő',
             EVENTS_NOTIFY_EMAIL_TEMPLATE_CODE,
             $defaults['targy'],
-            'Esemény szerkesztőből küldhető visszajelző. Változók: {{organizer_names}}, {{event_name}}, {{event_start}}, {{event_end}}, {{venue_name}}, {{event_url}}, {{site_name}}',
+            'Esemény szerkesztőből küldhető visszajelző. Változók: {{organizer_names}}, {{event_name}}, {{event_id}}, {{event_start}}, {{event_end}}, {{venue_name}}, {{event_url}}, {{site_name}}',
             $defaults['html_tartalom'],
         ]);
         $newId = (int) $db->lastInsertId();
@@ -369,6 +369,7 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
 function events_notify_email_placeholders(PDO $db, array $event, array $organizerIds): array
 {
     $siteName = defined('SITE_NAME') ? (string) SITE_NAME : 'Latinfo.hu';
+    $eventId = (int) ($event['id'] ?? 0);
     $eventName = trim((string) ($event['event_name'] ?? ''));
     $slug = trim((string) ($event['event_slug'] ?? ''));
     $eventUrl = '';
@@ -412,21 +413,41 @@ function events_notify_email_placeholders(PDO $db, array $event, array $organize
         }
     }
 
-    $fmt = static function (?string $raw): string {
+    $isAllDay = !empty($event['event_allday']) && (string) $event['event_allday'] !== '0';
+
+    $fmt = static function (?string $raw, bool $allDay): string {
         $raw = trim((string) $raw);
         if ($raw === '') {
             return '–';
         }
         $ts = strtotime($raw);
+        if ($ts === false) {
+            return $raw;
+        }
 
-        return $ts !== false ? date('Y. m. d. H:i', $ts) : $raw;
+        return $allDay ? date('Y. m. d.', $ts) : date('Y. m. d. H:i', $ts);
     };
+
+    $startRaw = isset($event['event_start']) ? (string) $event['event_start'] : '';
+    $endRaw = isset($event['event_end']) ? (string) $event['event_end'] : '';
+    $startFormatted = $fmt($startRaw, $isAllDay);
+    $endFormatted = $fmt($endRaw, $isAllDay);
+
+    // Egész napos: ha ugyanarra a napra esik (vagy nincs vége), csak egy dátum.
+    if ($isAllDay) {
+        $startDay = $startRaw !== '' ? date('Y-m-d', (int) strtotime($startRaw)) : '';
+        $endDay = $endRaw !== '' ? date('Y-m-d', (int) strtotime($endRaw)) : '';
+        if ($endDay === '' || $endDay === $startDay) {
+            $endFormatted = '–';
+        }
+    }
 
     return [
         '{{organizer_names}}' => $organizerNames !== [] ? implode(', ', $organizerNames) : 'Szervező',
         '{{event_name}}' => $eventName !== '' ? $eventName : 'Esemény',
-        '{{event_start}}' => $fmt(isset($event['event_start']) ? (string) $event['event_start'] : null),
-        '{{event_end}}' => $fmt(isset($event['event_end']) ? (string) $event['event_end'] : null),
+        '{{event_id}}' => $eventId > 0 ? (string) $eventId : '–',
+        '{{event_start}}' => $startFormatted,
+        '{{event_end}}' => $endFormatted,
         '{{venue_name}}' => $venueName,
         '{{event_url}}' => $eventUrl !== '' ? $eventUrl : '–',
         '{{site_name}}' => $siteName,

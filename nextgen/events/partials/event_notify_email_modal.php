@@ -137,8 +137,8 @@ $templatesJson = json_encode(
                     <textarea id="notify_html" name="notify_html" class="js-notify-html-source" rows="14" required><?= h($initialHtml) ?></textarea>
                     <p class="help">
                         Változók a sablonban: <code>{{organizer_names}}</code>, <code>{{event_name}}</code>,
-                        <code>{{event_start}}</code>, <code>{{event_end}}</code>, <code>{{venue_name}}</code>,
-                        <code>{{event_url}}</code>, <code>{{site_name}}</code>
+                        <code>{{event_id}}</code>, <code>{{event_start}}</code>, <code>{{event_end}}</code>,
+                        <code>{{venue_name}}</code>, <code>{{event_url}}</code>, <code>{{site_name}}</code>
                     </p>
                 </div>
 
@@ -189,74 +189,135 @@ $templatesJson = json_encode(
         templates = [];
     }
 
-    var sourceMode = false;
+    var mode = 'html'; // html | source
     var visualEl = null;
-    var toggleBtn = null;
+    var btnHtml = null;
+    var btnSource = null;
+    var formatBar = null;
 
-    function buildSourceToggleEditor(textarea) {
-        if (!textarea || textarea.dataset.sourceToggleReady === '1') {
+    function buildHtmlSourceEditor(textarea) {
+        if (!textarea || textarea.dataset.htmlSourceEditor === '1') {
             return;
         }
-        textarea.dataset.sourceToggleReady = '1';
+        textarea.dataset.htmlSourceEditor = '1';
 
         var wrapper = document.createElement('div');
         wrapper.className = 'html-editor event-notify-html-editor';
 
         var toolbar = document.createElement('div');
-        toolbar.className = 'html-editor-toolbar';
-        toggleBtn = document.createElement('button');
-        toggleBtn.type = 'button';
-        toggleBtn.className = 'js-notify-toggle-source';
-        toggleBtn.textContent = 'Forráskód';
-        toolbar.appendChild(toggleBtn);
+        toolbar.className = 'html-editor-toolbar event-notify-html-editor__modes';
+
+        btnHtml = document.createElement('button');
+        btnHtml.type = 'button';
+        btnHtml.textContent = 'HTML';
+        btnHtml.className = 'is-active';
+        btnHtml.setAttribute('aria-pressed', 'true');
+
+        btnSource = document.createElement('button');
+        btnSource.type = 'button';
+        btnSource.textContent = 'Forráskód';
+        btnSource.setAttribute('aria-pressed', 'false');
+
+        toolbar.appendChild(btnHtml);
+        toolbar.appendChild(btnSource);
+
+        formatBar = document.createElement('div');
+        formatBar.className = 'html-editor-toolbar event-notify-html-editor__format';
+        formatBar.innerHTML = ''
+            + '<button type="button" data-cmd="bold" title="Félkövér"><strong>B</strong></button>'
+            + '<button type="button" data-cmd="italic" title="Dőlt"><em>I</em></button>'
+            + '<button type="button" data-cmd="underline" title="Aláhúzott"><u>U</u></button>'
+            + '<button type="button" data-cmd="insertUnorderedList" title="Lista">Lista</button>'
+            + '<button type="button" data-cmd="createLink" title="Link">Link</button>'
+            + '<button type="button" data-cmd="formatBlock" data-value="p" title="Bekezdés">P</button>';
 
         visualEl = document.createElement('div');
         visualEl.className = 'html-editor-area';
         visualEl.contentEditable = 'true';
+        visualEl.setAttribute('role', 'textbox');
+        visualEl.setAttribute('aria-multiline', 'true');
         visualEl.innerHTML = textarea.value || '';
 
         textarea.parentNode.insertBefore(wrapper, textarea);
         wrapper.appendChild(toolbar);
+        wrapper.appendChild(formatBar);
         wrapper.appendChild(visualEl);
         wrapper.appendChild(textarea);
         textarea.classList.add('html-editor-source');
         textarea.hidden = true;
 
-        function syncToTextarea() {
-            if (sourceMode) {
-                return;
-            }
+        function syncHtmlToField() {
             textarea.value = visualEl.innerHTML;
         }
 
-        function syncFromTextarea() {
+        function syncFieldToHtml() {
             visualEl.innerHTML = textarea.value || '';
         }
 
-        visualEl.addEventListener('input', syncToTextarea);
-
-        toggleBtn.addEventListener('click', function () {
-            sourceMode = !sourceMode;
-            if (sourceMode) {
-                syncToTextarea();
-                textarea.hidden = false;
+        function setMode(next) {
+            if (next === mode) {
+                return;
+            }
+            if (next === 'source') {
+                syncHtmlToField();
                 visualEl.hidden = true;
-                toggleBtn.classList.add('is-active');
-                toggleBtn.textContent = 'Vizuális';
+                formatBar.hidden = true;
+                textarea.hidden = false;
+                btnHtml.classList.remove('is-active');
+                btnSource.classList.add('is-active');
+                btnHtml.setAttribute('aria-pressed', 'false');
+                btnSource.setAttribute('aria-pressed', 'true');
             } else {
-                syncFromTextarea();
+                syncFieldToHtml();
                 textarea.hidden = true;
                 visualEl.hidden = false;
-                toggleBtn.classList.remove('is-active');
-                toggleBtn.textContent = 'Forráskód';
+                formatBar.hidden = false;
+                btnSource.classList.remove('is-active');
+                btnHtml.classList.add('is-active');
+                btnSource.setAttribute('aria-pressed', 'false');
+                btnHtml.setAttribute('aria-pressed', 'true');
             }
+            mode = next;
+        }
+
+        visualEl.addEventListener('input', syncHtmlToField);
+        textarea.addEventListener('input', function () {
+            // forráskód szerkesztés közben a mező az igazság
+        });
+
+        btnHtml.addEventListener('click', function () {
+            setMode('html');
+        });
+        btnSource.addEventListener('click', function () {
+            setMode('source');
+        });
+
+        formatBar.addEventListener('click', function (e) {
+            var btn = e.target.closest('button[data-cmd]');
+            if (!btn || mode !== 'html') {
+                return;
+            }
+            e.preventDefault();
+            visualEl.focus();
+            var cmd = btn.getAttribute('data-cmd');
+            if (cmd === 'createLink') {
+                var url = window.prompt('Link URL:', 'https://');
+                if (url) {
+                    document.execCommand('createLink', false, url);
+                }
+            } else if (cmd === 'formatBlock') {
+                document.execCommand('formatBlock', false, btn.getAttribute('data-value') || 'p');
+            } else {
+                document.execCommand(cmd, false, null);
+            }
+            syncHtmlToField();
         });
 
         var form = textarea.closest('form');
         if (form) {
             form.addEventListener('submit', function () {
-                if (!sourceMode) {
-                    syncToTextarea();
+                if (mode === 'html') {
+                    syncHtmlToField();
                 }
             });
         }
@@ -264,17 +325,16 @@ $templatesJson = json_encode(
         window.eventNotifyHtmlEditor = {
             setHtml: function (html) {
                 textarea.value = html || '';
-                if (sourceMode) {
-                    // forráskód nézet: a textarea már friss
-                } else {
+                if (mode === 'html') {
                     visualEl.innerHTML = html || '';
                 }
-            }
+            },
+            setMode: setMode
         };
     }
 
     if (htmlEl) {
-        buildSourceToggleEditor(htmlEl);
+        buildHtmlSourceEditor(htmlEl);
     }
 
     function openDialog() {

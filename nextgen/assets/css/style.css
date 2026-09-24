@@ -2721,6 +2721,12 @@ dialog.event-notify-modal::backdrop {
 .event-notify-modal .html-editor {
     max-width: 100%;
 }
+.event-notify-html-editor__modes {
+    gap: 0.25rem;
+}
+.event-notify-html-editor__format {
+    border-top: none;
+}
 .event-notify-modal .html-editor-area {
     min-height: 12rem;
     max-height: min(40vh, 22rem);
@@ -2732,6 +2738,11 @@ dialog.event-notify-modal::backdrop {
     width: 100%;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.85rem;
+    border: none;
+    border-radius: 0;
+    padding: 0.75rem;
+    resize: vertical;
+    box-sizing: border-box;
 }
 body.event-notify-modal-open {
     overflow: hidden;
