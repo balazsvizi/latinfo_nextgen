@@ -134,7 +134,7 @@ $templatesJson = json_encode(
 
                 <div class="form-group">
                     <label for="notify_html">Levél szövege (HTML) *</label>
-                    <textarea id="notify_html" name="notify_html" class="js-html-editor-source" rows="14" required><?= h($initialHtml) ?></textarea>
+                    <textarea id="notify_html" name="notify_html" class="js-notify-html-source" rows="14" required><?= h($initialHtml) ?></textarea>
                     <p class="help">
                         Változók a sablonban: <code>{{organizer_names}}</code>, <code>{{event_name}}</code>,
                         <code>{{event_start}}</code>, <code>{{event_end}}</code>, <code>{{venue_name}}</code>,
@@ -189,6 +189,94 @@ $templatesJson = json_encode(
         templates = [];
     }
 
+    var sourceMode = false;
+    var visualEl = null;
+    var toggleBtn = null;
+
+    function buildSourceToggleEditor(textarea) {
+        if (!textarea || textarea.dataset.sourceToggleReady === '1') {
+            return;
+        }
+        textarea.dataset.sourceToggleReady = '1';
+
+        var wrapper = document.createElement('div');
+        wrapper.className = 'html-editor event-notify-html-editor';
+
+        var toolbar = document.createElement('div');
+        toolbar.className = 'html-editor-toolbar';
+        toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'js-notify-toggle-source';
+        toggleBtn.textContent = 'Forráskód';
+        toolbar.appendChild(toggleBtn);
+
+        visualEl = document.createElement('div');
+        visualEl.className = 'html-editor-area';
+        visualEl.contentEditable = 'true';
+        visualEl.innerHTML = textarea.value || '';
+
+        textarea.parentNode.insertBefore(wrapper, textarea);
+        wrapper.appendChild(toolbar);
+        wrapper.appendChild(visualEl);
+        wrapper.appendChild(textarea);
+        textarea.classList.add('html-editor-source');
+        textarea.hidden = true;
+
+        function syncToTextarea() {
+            if (sourceMode) {
+                return;
+            }
+            textarea.value = visualEl.innerHTML;
+        }
+
+        function syncFromTextarea() {
+            visualEl.innerHTML = textarea.value || '';
+        }
+
+        visualEl.addEventListener('input', syncToTextarea);
+
+        toggleBtn.addEventListener('click', function () {
+            sourceMode = !sourceMode;
+            if (sourceMode) {
+                syncToTextarea();
+                textarea.hidden = false;
+                visualEl.hidden = true;
+                toggleBtn.classList.add('is-active');
+                toggleBtn.textContent = 'Vizuális';
+            } else {
+                syncFromTextarea();
+                textarea.hidden = true;
+                visualEl.hidden = false;
+                toggleBtn.classList.remove('is-active');
+                toggleBtn.textContent = 'Forráskód';
+            }
+        });
+
+        var form = textarea.closest('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                if (!sourceMode) {
+                    syncToTextarea();
+                }
+            });
+        }
+
+        window.eventNotifyHtmlEditor = {
+            setHtml: function (html) {
+                textarea.value = html || '';
+                if (sourceMode) {
+                    // forráskód nézet: a textarea már friss
+                } else {
+                    visualEl.innerHTML = html || '';
+                }
+            }
+        };
+    }
+
+    if (htmlEl) {
+        buildSourceToggleEditor(htmlEl);
+    }
+
     function openDialog() {
         if (typeof dialog.showModal === 'function') {
             dialog.showModal();
@@ -219,9 +307,10 @@ $templatesJson = json_encode(
         if (!found) return;
         if (subjectEl) subjectEl.value = found.targy || '';
         var html = found.html_tartalom || '';
-        if (htmlEl) htmlEl.value = html;
-        if (window.nextgenHtmlEditors && window.nextgenHtmlEditors.notify_html) {
-            window.nextgenHtmlEditors.notify_html.setData(html);
+        if (window.eventNotifyHtmlEditor) {
+            window.eventNotifyHtmlEditor.setHtml(html);
+        } else if (htmlEl) {
+            htmlEl.value = html;
         }
     }
 

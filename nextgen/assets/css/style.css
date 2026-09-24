@@ -2721,10 +2721,17 @@ dialog.event-notify-modal::backdrop {
 .event-notify-modal .html-editor {
     max-width: 100%;
 }
-.event-notify-modal .ck-editor__editable {
+.event-notify-modal .html-editor-area {
     min-height: 12rem;
     max-height: min(40vh, 22rem);
     overflow: auto;
+}
+.event-notify-modal .html-editor-source {
+    min-height: 12rem;
+    max-height: min(40vh, 22rem);
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
 }
 body.event-notify-modal-open {
     overflow: hidden;
