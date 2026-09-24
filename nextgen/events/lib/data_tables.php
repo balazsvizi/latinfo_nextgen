@@ -27,6 +27,7 @@ function events_data_tables_registry(): array {
         'events_styles' => ['label' => 'Stílusok', 'group' => 'Törzsadatok'],
         'events_import_settings' => ['label' => 'CSV import beállítások', 'group' => 'Rendszer'],
         'events_app_settings' => ['label' => 'Esemény alkalmazásbeállítások', 'group' => 'Rendszer'],
+        'events_email_send_log' => ['label' => 'Szervezői értesítő e-mail napló', 'group' => 'Rendszer'],
         'events_public_nav_items' => ['label' => 'Nyilvános főmenü', 'group' => 'Rendszer'],
         'events_slug_redirects' => ['label' => 'Esemény slug átirányítások', 'group' => 'Rendszer'],
         'events_specialtags' => ['label' => 'Speciális címke csoportok (régi)', 'group' => 'Régi / opcionális'],
