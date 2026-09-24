@@ -22,7 +22,7 @@ jobs:
       - name: Install git-ftp
         run: sudo apt-get update && sudo apt-get install -y git-ftp
 
-- name: Deploy via Git-FTP
+      - name: Deploy via Git-FTP
         run: |
           git ftp push --auto-init \
             --user "${{ secrets.FTP_USERNAME }}" \
