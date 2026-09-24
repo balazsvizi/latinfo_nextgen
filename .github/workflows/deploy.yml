@@ -19,7 +19,7 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
         working-directory: nextgen
 
-      - name: FTP Deploy via Git-FTP
+      - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -30,9 +30,7 @@ jobs:
           port: 21
           protocol: ftp
           dangerous-clean-slate: false
-          # Ez a kapcsoló kikapcsolja a szigorú mappa-ellenőrzést,
-          # így elkerüli az 550-es mappalétrehozási hibákat:
-          security: false
+          security: loose  # <-- "false" helyett "loose" a cPanel összeférhetetlenség feloldására
           exclude: |
             .git**
             .git**/**
