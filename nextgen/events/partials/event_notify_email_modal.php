@@ -12,6 +12,7 @@ declare(strict_types=1);
  * @var list<string> $notifyEmailRecipients
  * @var string $notifyEmailBcc
  * @var list<array<string, mixed>> $notifyEmailSentLogs
+ * @var array<string, string> $notifyEmailPlaceholders
  */
 
 $notifyEmailTemplatesRendered = $notifyEmailTemplatesRendered ?? [];
@@ -21,6 +22,7 @@ $notifyEmailSmtpId = (int) ($notifyEmailSmtpId ?? 0);
 $notifyEmailRecipients = $notifyEmailRecipients ?? [];
 $notifyEmailBcc = (string) ($notifyEmailBcc ?? EVENTS_NOTIFY_EMAIL_DEFAULT_BCC);
 $notifyEmailSentLogs = $notifyEmailSentLogs ?? [];
+$notifyEmailPlaceholders = $notifyEmailPlaceholders ?? [];
 $selectedTplId = (int) ($notifyEmailSelected['id'] ?? 0);
 $initialSubject = (string) ($notifyEmailSelected['targy'] ?? '');
 $initialHtml = (string) ($notifyEmailSelected['html_tartalom'] ?? '');
@@ -30,6 +32,20 @@ $templatesJson = json_encode(
     $notifyEmailTemplatesRendered,
     JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP
 );
+
+$notifyRefFields = [];
+foreach (events_notify_email_placeholder_catalog() as $row) {
+    $token = (string) ($row['token'] ?? '');
+    if ($token === '') {
+        continue;
+    }
+    $value = (string) ($notifyEmailPlaceholders[$token] ?? '');
+    $notifyRefFields[] = [
+        'token' => $token,
+        'label' => (string) ($row['label'] ?? $token),
+        'value' => $value,
+    ];
+}
 ?>
 <dialog class="event-notify-modal" id="event-notify-email-dialog" aria-labelledby="event-notify-email-title">
     <div class="event-notify-modal__inner">
@@ -129,17 +145,40 @@ $templatesJson = json_encode(
 
                 <div class="form-group">
                     <label for="notify_subject">Tárgy *</label>
-                    <input type="text" id="notify_subject" name="notify_subject" value="<?= h($initialSubject) ?>" required maxlength="255">
+                    <input type="text" id="notify_subject" name="notify_subject" class="js-notify-insert-target" value="<?= h($initialSubject) ?>" required maxlength="255">
                 </div>
+
+                <?php if ($notifyRefFields !== []): ?>
+                <div class="levelsablon-refs event-notify-refs">
+                    <div class="levelsablon-refs__head">
+                        <strong>Referenciás mezők</strong>
+                        <span class="help">Kattints: a fókuszált tárgyba vagy a levél szövegébe kerül (kitöltött érték).</span>
+                    </div>
+                    <div class="levelsablon-refs__chips">
+                        <?php foreach ($notifyRefFields as $ph): ?>
+                            <?php
+                            $preview = (string) $ph['value'];
+                            if (mb_strlen($preview) > 48) {
+                                $preview = mb_substr($preview, 0, 45) . '…';
+                            }
+                            ?>
+                            <button
+                                type="button"
+                                class="levelsablon-refs__chip js-notify-ref-chip"
+                                data-value="<?= h((string) $ph['value']) ?>"
+                                title="<?= h((string) $ph['token'] . ' → ' . (string) $ph['value']) ?>"
+                            >
+                                <span class="levelsablon-refs__chip-label"><?= h((string) $ph['label']) ?></span>
+                                <code class="levelsablon-refs__chip-token"><?= h($preview !== '' ? $preview : '–') ?></code>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <div class="form-group">
                     <label for="notify_html">Levél szövege (HTML) *</label>
                     <textarea id="notify_html" name="notify_html" class="js-notify-html-source" rows="14" required><?= h($initialHtml) ?></textarea>
-                    <p class="help">
-                        Változók a sablonban: <code>{{organizer_names}}</code>, <code>{{event_name}}</code>,
-                        <code>{{event_id}}</code>, <code>{{event_start}}</code>, <code>{{event_end}}</code>,
-                        <code>{{venue_name}}</code>, <code>{{event_url}}</code>, <code>{{site_name}}</code>
-                    </p>
                 </div>
 
                 <?php if ($notifyEmailSentLogs !== []): ?>
@@ -181,6 +220,7 @@ $templatesJson = json_encode(
     var regenBtn = document.getElementById('event-notify-regen');
     var subjectEl = document.getElementById('notify_subject');
     var htmlEl = document.getElementById('notify_html');
+    var form = document.getElementById('event-notify-email-form');
     var raw = document.getElementById('event-notify-templates-json');
     var templates = [];
     try {
@@ -189,11 +229,24 @@ $templatesJson = json_encode(
         templates = [];
     }
 
-    var mode = 'html'; // html | source
+    var mode = 'html';
     var visualEl = null;
     var btnHtml = null;
     var btnSource = null;
     var formatBar = null;
+    var lastTarget = subjectEl || htmlEl;
+
+    function insertAtCursor(input, text) {
+        var start = input.selectionStart || 0;
+        var end = input.selectionEnd || 0;
+        var value = input.value || '';
+        input.value = value.slice(0, start) + text + value.slice(end);
+        var pos = start + text.length;
+        input.focus();
+        if (typeof input.setSelectionRange === 'function') {
+            input.setSelectionRange(pos, pos);
+        }
+    }
 
     function buildHtmlSourceEditor(textarea) {
         if (!textarea || textarea.dataset.htmlSourceEditor === '1') {
@@ -228,11 +281,13 @@ $templatesJson = json_encode(
             + '<button type="button" data-cmd="italic" title="Dőlt"><em>I</em></button>'
             + '<button type="button" data-cmd="underline" title="Aláhúzott"><u>U</u></button>'
             + '<button type="button" data-cmd="insertUnorderedList" title="Lista">Lista</button>'
+            + '<button type="button" data-cmd="insertOrderedList" title="Számozás">Számozás</button>'
             + '<button type="button" data-cmd="createLink" title="Link">Link</button>'
-            + '<button type="button" data-cmd="formatBlock" data-value="p" title="Bekezdés">P</button>';
+            + '<button type="button" data-cmd="formatBlock" data-value="h2" title="Címsor">Címsor</button>'
+            + '<button type="button" data-cmd="formatBlock" data-value="p" title="Bekezdés">Bekezdés</button>';
 
         visualEl = document.createElement('div');
-        visualEl.className = 'html-editor-area';
+        visualEl.className = 'html-editor-area js-notify-insert-target';
         visualEl.contentEditable = 'true';
         visualEl.setAttribute('role', 'textbox');
         visualEl.setAttribute('aria-multiline', 'true');
@@ -243,7 +298,7 @@ $templatesJson = json_encode(
         wrapper.appendChild(formatBar);
         wrapper.appendChild(visualEl);
         wrapper.appendChild(textarea);
-        textarea.classList.add('html-editor-source');
+        textarea.classList.add('html-editor-source', 'js-notify-insert-target');
         textarea.hidden = true;
 
         function syncHtmlToField() {
@@ -281,9 +336,8 @@ $templatesJson = json_encode(
         }
 
         visualEl.addEventListener('input', syncHtmlToField);
-        textarea.addEventListener('input', function () {
-            // forráskód szerkesztés közben a mező az igazság
-        });
+        visualEl.addEventListener('focus', function () { lastTarget = visualEl; });
+        textarea.addEventListener('focus', function () { lastTarget = textarea; });
 
         btnHtml.addEventListener('click', function () {
             setMode('html');
@@ -299,6 +353,7 @@ $templatesJson = json_encode(
             }
             e.preventDefault();
             visualEl.focus();
+            lastTarget = visualEl;
             var cmd = btn.getAttribute('data-cmd');
             if (cmd === 'createLink') {
                 var url = window.prompt('Link URL:', 'https://');
@@ -313,7 +368,6 @@ $templatesJson = json_encode(
             syncHtmlToField();
         });
 
-        var form = textarea.closest('form');
         if (form) {
             form.addEventListener('submit', function () {
                 if (mode === 'html') {
@@ -329,13 +383,48 @@ $templatesJson = json_encode(
                     visualEl.innerHTML = html || '';
                 }
             },
-            setMode: setMode
+            setMode: setMode,
+            insertText: function (text) {
+                if (mode === 'source') {
+                    insertAtCursor(textarea, text);
+                    lastTarget = textarea;
+                    return;
+                }
+                visualEl.focus();
+                lastTarget = visualEl;
+                try {
+                    document.execCommand('insertText', false, text);
+                } catch (err) {
+                    visualEl.appendChild(document.createTextNode(text));
+                }
+                syncHtmlToField();
+            }
         };
     }
 
     if (htmlEl) {
         buildHtmlSourceEditor(htmlEl);
     }
+
+    if (subjectEl) {
+        subjectEl.addEventListener('focus', function () { lastTarget = subjectEl; });
+    }
+
+    dialog.querySelectorAll('.js-notify-ref-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            var value = chip.getAttribute('data-value') || '';
+            if (value === '') return;
+            if (lastTarget === subjectEl || (lastTarget && lastTarget.id === 'notify_subject')) {
+                insertAtCursor(subjectEl, value);
+                return;
+            }
+            if (window.eventNotifyHtmlEditor) {
+                window.eventNotifyHtmlEditor.insertText(value);
+            } else if (htmlEl) {
+                insertAtCursor(htmlEl, value);
+            }
+        });
+    });
 
     function openDialog() {
         if (typeof dialog.showModal === 'function') {

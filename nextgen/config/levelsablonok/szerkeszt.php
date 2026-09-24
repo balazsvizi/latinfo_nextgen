@@ -64,6 +64,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $isEventNotifyDefault = events_notify_email_default_template_id($db) === $id;
+$placeholderCatalog = events_levelsablon_placeholder_catalog_for_code((string) ($sablon['kód'] ?? ''));
+$placeholderGroups = [];
+foreach ($placeholderCatalog as $row) {
+    $group = (string) ($row['group'] ?? 'Mezők');
+    if (!isset($placeholderGroups[$group])) {
+        $placeholderGroups[$group] = [];
+    }
+    $placeholderGroups[$group][] = $row;
+}
 
 $logStmt = $db->prepare("
     SELECT r.*, a.név AS admin_név
@@ -80,7 +89,7 @@ $pageTitle = 'Levélsablon szerkesztése';
 require_once __DIR__ . '/../../partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
-<div class="card">
+<div class="card levelsablon-edit">
     <h2>Levélsablon szerkesztése</h2>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <?php if ($isEventNotifyDefault): ?>
@@ -90,14 +99,47 @@ require_once __DIR__ . '/../../partials/header.php';
             <button type="submit" name="set_event_notify_default" value="1" class="btn btn-secondary">Beállítás esemény-értesítő defaultnak</button>
         </form>
     <?php endif; ?>
-    <form method="post">
-        <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h($sablon['név']) ?>" required></div>
-        <div class="form-group"><label>Kód *</label><input type="text" name="kód" value="<?= h($sablon['kód']) ?>" required></div>
-        <div class="form-group"><label>Tárgy *</label><input type="text" name="tárgy" value="<?= h($sablon['tárgy'] ?? '') ?>" required></div>
-        <div class="form-group"><label>Megjegyzés</label><input type="text" name="megjegyzés" value="<?= h($sablon['megjegyzés'] ?? '') ?>"></div>
+    <form method="post" id="levelsablon-edit-form" class="levelsablon-edit__form">
+        <div class="form-row form-row-2">
+            <div class="form-group"><label for="sablon_nev">Név *</label><input type="text" id="sablon_nev" name="név" value="<?= h($sablon['név']) ?>" required></div>
+            <div class="form-group"><label for="sablon_kod">Kód *</label><input type="text" id="sablon_kod" name="kód" value="<?= h($sablon['kód']) ?>" required></div>
+        </div>
         <div class="form-group">
-            <label>HTML szerkesztő *</label>
-            <textarea name="html_tartalom" class="js-html-editor-source" rows="16" required><?= h($sablon['html_tartalom']) ?></textarea>
+            <label for="sablon_targy">Tárgy *</label>
+            <input type="text" id="sablon_targy" name="tárgy" class="js-levelsablon-insert-target" value="<?= h($sablon['tárgy'] ?? '') ?>" required>
+        </div>
+        <div class="form-group"><label for="sablon_megjegyzes">Megjegyzés</label><input type="text" id="sablon_megjegyzes" name="megjegyzés" value="<?= h($sablon['megjegyzés'] ?? '') ?>"></div>
+
+        <?php if ($placeholderGroups !== []): ?>
+        <div class="levelsablon-refs">
+            <div class="levelsablon-refs__head">
+                <strong>Referenciás mezők</strong>
+                <span class="help">Kattints a mezőre: a fókuszált tárgyba vagy a HTML tartalomba kerül.</span>
+            </div>
+            <?php foreach ($placeholderGroups as $groupLabel => $rows): ?>
+                <div class="levelsablon-refs__group">
+                    <div class="levelsablon-refs__group-title"><?= h($groupLabel) ?></div>
+                    <div class="levelsablon-refs__chips">
+                        <?php foreach ($rows as $ph): ?>
+                            <button
+                                type="button"
+                                class="levelsablon-refs__chip"
+                                data-token="<?= h((string) $ph['token']) ?>"
+                                title="<?= h((string) $ph['token']) ?>"
+                            >
+                                <span class="levelsablon-refs__chip-label"><?= h((string) $ph['label']) ?></span>
+                                <code class="levelsablon-refs__chip-token"><?= h((string) $ph['token']) ?></code>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <div class="form-group">
+            <label for="sablon_html">HTML tartalom *</label>
+            <textarea id="sablon_html" name="html_tartalom" class="js-levelsablon-html" rows="16" required><?= h($sablon['html_tartalom']) ?></textarea>
         </div>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>
@@ -119,87 +161,100 @@ require_once __DIR__ . '/../../partials/header.php';
 </div>
 <script>
 (function () {
+    var form = document.getElementById('levelsablon-edit-form');
+    var subjectEl = document.getElementById('sablon_targy');
+    var htmlEl = document.getElementById('sablon_html');
+    if (!form || !htmlEl) return;
+
+    var lastTarget = subjectEl || htmlEl;
+    var mode = 'html';
+    var visualEl = null;
+    var formatBar = null;
+    var btnHtml = null;
+    var btnSource = null;
+
     function buildEditor(textarea) {
         var wrapper = document.createElement('div');
-        wrapper.className = 'html-editor';
+        wrapper.className = 'html-editor levelsablon-html-editor';
 
-        var toolbar = document.createElement('div');
-        toolbar.className = 'html-editor-toolbar';
-        toolbar.innerHTML = ''
-            + '<button type="button" data-cmd="bold"><strong>B</strong></button>'
-            + '<button type="button" data-cmd="italic"><em>I</em></button>'
-            + '<button type="button" data-cmd="underline"><u>U</u></button>'
+        var modeBar = document.createElement('div');
+        modeBar.className = 'html-editor-toolbar levelsablon-html-editor__modes';
+        btnHtml = document.createElement('button');
+        btnHtml.type = 'button';
+        btnHtml.textContent = 'HTML';
+        btnHtml.className = 'is-active';
+        btnSource = document.createElement('button');
+        btnSource.type = 'button';
+        btnSource.textContent = 'Forráskód';
+        modeBar.appendChild(btnHtml);
+        modeBar.appendChild(btnSource);
+
+        formatBar = document.createElement('div');
+        formatBar.className = 'html-editor-toolbar levelsablon-html-editor__format';
+        formatBar.innerHTML = ''
+            + '<button type="button" data-cmd="bold" title="Félkövér"><strong>B</strong></button>'
+            + '<button type="button" data-cmd="italic" title="Dőlt"><em>I</em></button>'
+            + '<button type="button" data-cmd="underline" title="Aláhúzott"><u>U</u></button>'
             + '<button type="button" data-cmd="insertUnorderedList">Lista</button>'
             + '<button type="button" data-cmd="insertOrderedList">Számozás</button>'
             + '<button type="button" data-cmd="createLink">Link</button>'
             + '<button type="button" data-cmd="formatBlock" data-value="h2">Címsor</button>'
-            + '<button type="button" data-cmd="formatBlock" data-value="p">Bekezdés</button>'
-            + '<button type="button" class="js-toggle-source">Forráskód</button>'
-            + '<button type="button" class="js-toggle-preview">Előnézet</button>';
+            + '<button type="button" data-cmd="formatBlock" data-value="p">Bekezdés</button>';
 
-        var editor = document.createElement('div');
-        editor.className = 'html-editor-area';
-        editor.contentEditable = 'true';
-        editor.innerHTML = textarea.value || '';
-
-        var preview = document.createElement('div');
-        preview.className = 'html-editor-preview';
-        preview.hidden = true;
+        visualEl = document.createElement('div');
+        visualEl.className = 'html-editor-area js-levelsablon-insert-target';
+        visualEl.contentEditable = 'true';
+        visualEl.setAttribute('role', 'textbox');
+        visualEl.setAttribute('aria-multiline', 'true');
+        visualEl.innerHTML = textarea.value || '';
 
         textarea.parentNode.insertBefore(wrapper, textarea);
-        wrapper.appendChild(toolbar);
-        wrapper.appendChild(editor);
-        wrapper.appendChild(preview);
+        wrapper.appendChild(modeBar);
+        wrapper.appendChild(formatBar);
+        wrapper.appendChild(visualEl);
         wrapper.appendChild(textarea);
-        textarea.classList.add('html-editor-source');
+        textarea.classList.add('html-editor-source', 'js-levelsablon-insert-target');
         textarea.hidden = true;
 
-        var sourceMode = false;
-
-        function syncToSource() {
-            textarea.value = editor.innerHTML;
+        function syncToField() {
+            textarea.value = visualEl.innerHTML;
         }
-        function syncFromSource() {
-            editor.innerHTML = textarea.value;
+        function syncFromField() {
+            visualEl.innerHTML = textarea.value || '';
+        }
+        function setMode(next) {
+            if (next === mode) return;
+            if (next === 'source') {
+                syncToField();
+                visualEl.hidden = true;
+                formatBar.hidden = true;
+                textarea.hidden = false;
+                btnHtml.classList.remove('is-active');
+                btnSource.classList.add('is-active');
+            } else {
+                syncFromField();
+                textarea.hidden = true;
+                visualEl.hidden = false;
+                formatBar.hidden = false;
+                btnSource.classList.remove('is-active');
+                btnHtml.classList.add('is-active');
+            }
+            mode = next;
         }
 
-        editor.addEventListener('input', syncToSource);
+        visualEl.addEventListener('input', syncToField);
+        visualEl.addEventListener('focus', function () { lastTarget = visualEl; });
+        textarea.addEventListener('focus', function () { lastTarget = textarea; });
+        btnHtml.addEventListener('click', function () { setMode('html'); });
+        btnSource.addEventListener('click', function () { setMode('source'); });
 
-        toolbar.addEventListener('click', function (e) {
-            var btn = e.target.closest('button');
-            if (!btn) return;
-
-            if (btn.classList.contains('js-toggle-source')) {
-                sourceMode = !sourceMode;
-                if (sourceMode) {
-                    syncToSource();
-                    textarea.hidden = false;
-                    editor.hidden = true;
-                    preview.hidden = true;
-                    btn.classList.add('is-active');
-                } else {
-                    syncFromSource();
-                    textarea.hidden = true;
-                    editor.hidden = false;
-                    btn.classList.remove('is-active');
-                }
-                return;
-            }
-
-            if (btn.classList.contains('js-toggle-preview')) {
-                if (sourceMode) {
-                    syncFromSource();
-                }
-                syncToSource();
-                preview.innerHTML = textarea.value;
-                preview.hidden = !preview.hidden;
-                btn.classList.toggle('is-active', !preview.hidden);
-                return;
-            }
-
+        formatBar.addEventListener('click', function (e) {
+            var btn = e.target.closest('button[data-cmd]');
+            if (!btn || mode !== 'html') return;
+            e.preventDefault();
+            visualEl.focus();
+            lastTarget = visualEl;
             var cmd = btn.getAttribute('data-cmd');
-            if (!cmd) return;
-            editor.focus();
             if (cmd === 'createLink') {
                 var url = window.prompt('Link URL:', 'https://');
                 if (url) document.execCommand('createLink', false, url);
@@ -208,18 +263,66 @@ require_once __DIR__ . '/../../partials/header.php';
             } else {
                 document.execCommand(cmd, false, null);
             }
-            syncToSource();
+            syncToField();
         });
 
-        var form = textarea.closest('form');
-        if (form) {
-            form.addEventListener('submit', function () {
-                if (!sourceMode) syncToSource();
-            });
+        form.addEventListener('submit', function () {
+            if (mode === 'html') syncToField();
+        });
+
+        window.levelsablonHtmlEditor = {
+            insertToken: function (token) {
+                if (mode === 'source') {
+                    insertAtCursor(textarea, token);
+                    lastTarget = textarea;
+                    return;
+                }
+                visualEl.focus();
+                lastTarget = visualEl;
+                try {
+                    document.execCommand('insertText', false, token);
+                } catch (err) {
+                    visualEl.appendChild(document.createTextNode(token));
+                }
+                syncToField();
+            },
+            getMode: function () { return mode; }
+        };
+    }
+
+    function insertAtCursor(input, text) {
+        var start = input.selectionStart || 0;
+        var end = input.selectionEnd || 0;
+        var value = input.value || '';
+        input.value = value.slice(0, start) + text + value.slice(end);
+        var pos = start + text.length;
+        input.focus();
+        if (typeof input.setSelectionRange === 'function') {
+            input.setSelectionRange(pos, pos);
         }
     }
 
-    document.querySelectorAll('.js-html-editor-source').forEach(buildEditor);
+    buildEditor(htmlEl);
+
+    if (subjectEl) {
+        subjectEl.addEventListener('focus', function () { lastTarget = subjectEl; });
+    }
+
+    document.querySelectorAll('.levelsablon-refs__chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            var token = chip.getAttribute('data-token') || '';
+            if (!token) return;
+            if (lastTarget === subjectEl || (lastTarget && lastTarget.id === 'sablon_targy')) {
+                insertAtCursor(subjectEl, token);
+                return;
+            }
+            if (window.levelsablonHtmlEditor) {
+                window.levelsablonHtmlEditor.insertToken(token);
+            } else {
+                insertAtCursor(htmlEl, token);
+            }
+        });
+    });
 })();
 </script>
 <?php require_once __DIR__ . '/../../partials/footer.php'; ?>

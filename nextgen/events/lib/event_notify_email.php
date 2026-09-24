@@ -460,6 +460,62 @@ function events_notify_email_apply_placeholders(string $text, array $placeholder
 }
 
 /**
+ * Referenciás mezők a levélsablon szerkesztőhöz.
+ *
+ * @return list<array{token: string, label: string, group: string}>
+ */
+function events_notify_email_placeholder_catalog(): array
+{
+    return [
+        ['token' => '{{organizer_names}}', 'label' => 'Szervező neve(i)', 'group' => 'Esemény-értesítő'],
+        ['token' => '{{event_name}}', 'label' => 'Esemény neve', 'group' => 'Esemény-értesítő'],
+        ['token' => '{{event_id}}', 'label' => 'Esemény ID', 'group' => 'Esemény-értesítő'],
+        ['token' => '{{event_start}}', 'label' => 'Kezdés', 'group' => 'Esemény-értesítő'],
+        ['token' => '{{event_end}}', 'label' => 'Befejezés', 'group' => 'Esemény-értesítő'],
+        ['token' => '{{venue_name}}', 'label' => 'Helyszín', 'group' => 'Esemény-értesítő'],
+        ['token' => '{{event_url}}', 'label' => 'Esemény URL', 'group' => 'Esemény-értesítő'],
+        ['token' => '{{site_name}}', 'label' => 'Oldal neve', 'group' => 'Esemény-értesítő'],
+    ];
+}
+
+/**
+ * @return list<array{token: string, label: string, group: string}>
+ */
+function events_levelsablon_placeholder_catalog_for_code(string $kod): array
+{
+    $kod = trim($kod);
+    $event = events_notify_email_placeholder_catalog();
+    $partner = [
+        ['token' => '{{partner_nev}}', 'label' => 'Partner neve', 'group' => 'Partner login'],
+        ['token' => '{{email}}', 'label' => 'Partner e-mail', 'group' => 'Partner login'],
+        ['token' => '{{jelszo}}', 'label' => 'Ideiglenes jelszó', 'group' => 'Partner login'],
+        ['token' => '{{portal_url}}', 'label' => 'Portál URL', 'group' => 'Partner login'],
+        ['token' => '{{site_name}}', 'label' => 'Oldal neve', 'group' => 'Partner login'],
+    ];
+
+    if ($kod === EVENTS_NOTIFY_EMAIL_TEMPLATE_CODE || str_contains($kod, 'event_')) {
+        return $event;
+    }
+    if ($kod === 'partner_login_hozzaferes' || str_contains($kod, 'partner')) {
+        return $partner;
+    }
+
+    // Ismeretlen sablon: mindkét csoport, site_name egyszer.
+    $seen = [];
+    $out = [];
+    foreach (array_merge($event, $partner) as $row) {
+        $token = (string) ($row['token'] ?? '');
+        if ($token === '' || isset($seen[$token])) {
+            continue;
+        }
+        $seen[$token] = true;
+        $out[] = $row;
+    }
+
+    return $out;
+}
+
+/**
  * @param list<array{id: int, nev: string, kod: string, targy: string, html_tartalom: string}> $templates
  * @param array<string, string> $placeholders
  * @return list<array{id: int, nev: string, kod: string, targy: string, html_tartalom: string}>

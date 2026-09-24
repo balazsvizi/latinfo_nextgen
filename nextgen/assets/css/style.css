@@ -2744,6 +2744,18 @@ dialog.event-notify-modal::backdrop {
     resize: vertical;
     box-sizing: border-box;
 }
+.event-notify-refs {
+    margin: 0 0 1rem;
+}
+.event-notify-refs .levelsablon-refs__chip {
+    max-width: 100%;
+}
+.event-notify-refs .levelsablon-refs__chip-token {
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 body.event-notify-modal-open {
     overflow: hidden;
 }
@@ -7742,6 +7754,77 @@ table select:focus {
     border-top: 1px dashed var(--border);
     background: color-mix(in srgb, var(--bg-elevated) 92%, #fff 8%);
 }
+
+.levelsablon-refs {
+    margin: 0 0 1.25rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+}
+.levelsablon-refs__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 0.85rem;
+    margin-bottom: 0.75rem;
+}
+.levelsablon-refs__head .help {
+    margin: 0;
+}
+.levelsablon-refs__group + .levelsablon-refs__group {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--border);
+}
+.levelsablon-refs__group-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted, #6b7280);
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.levelsablon-refs__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+.levelsablon-refs__chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    padding: 0.4rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    background: var(--bg-elevated);
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    line-height: 1.25;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.levelsablon-refs__chip:hover {
+    border-color: var(--primary, #2563eb);
+    background: var(--primary-light, #eff6ff);
+}
+.levelsablon-refs__chip-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.levelsablon-refs__chip-token {
+    font-size: 0.72rem;
+    color: var(--text-muted, #6b7280);
+    background: transparent;
+    padding: 0;
+}
+.levelsablon-html-editor .html-editor-area,
+.levelsablon-html-editor .html-editor-source {
+    min-height: 16rem;
+}
+
 .file-upload-wrap .file-name.has-file { color: var(--text-secondary); }
 
 .file-drop-zone {
