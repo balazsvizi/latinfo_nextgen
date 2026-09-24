@@ -28,4 +28,4 @@ jobs:
             --user "${{ secrets.FTP_USERNAME }}" \
             --passwd "${{ secrets.FTP_PASSWORD }}" \
             --passive \
-            "ftp://${{ secrets.FTP_SERVER }}"
+            --url "ftp://${{ secrets.FTP_SERVER }}"
