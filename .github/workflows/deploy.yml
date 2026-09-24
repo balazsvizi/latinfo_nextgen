@@ -22,7 +22,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./              # honnan tölt fel
-          server-dir: /public_html/  # hova tölt fel a szerveren
+          server-dir: /  # hova tölt fel a szerveren
           exclude: |
             **/.git*
             **/.git*/**
