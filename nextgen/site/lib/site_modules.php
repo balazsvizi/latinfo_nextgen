@@ -40,7 +40,9 @@ function latinfo_home_module_catalog(): array
             'column' => 'rail',
             'default_order' => 10,
             'default_order_mobile' => 30,
+            'default_order_app' => 30,
             'default_enabled' => true,
+            'default_enabled_app' => true,
         ],
         'today' => [
             'label' => 'Mai események',
@@ -50,7 +52,9 @@ function latinfo_home_module_catalog(): array
             'column' => 'calendar',
             'default_order' => 20,
             'default_order_mobile' => 10,
+            'default_order_app' => 10,
             'default_enabled' => true,
+            'default_enabled_app' => true,
         ],
         'tomorrow' => [
             'label' => 'Holnapi események',
@@ -60,7 +64,9 @@ function latinfo_home_module_catalog(): array
             'column' => 'calendar',
             'default_order' => 30,
             'default_order_mobile' => 20,
+            'default_order_app' => 20,
             'default_enabled' => true,
+            'default_enabled_app' => true,
         ],
         'dj_spotlight' => [
             'label' => 'DJ ajánló',
@@ -70,7 +76,9 @@ function latinfo_home_module_catalog(): array
             'column' => 'rail',
             'default_order' => 40,
             'default_order_mobile' => 40,
+            'default_order_app' => 40,
             'default_enabled' => true,
+            'default_enabled_app' => true,
         ],
         'rating' => [
             'label' => 'Értékelés',
@@ -80,7 +88,9 @@ function latinfo_home_module_catalog(): array
             'column' => 'rail',
             'default_order' => 50,
             'default_order_mobile' => 50,
+            'default_order_app' => 50,
             'default_enabled' => true,
+            'default_enabled_app' => true,
         ],
         'donably' => [
             'label' => 'Támogatás (Donably)',
@@ -90,7 +100,9 @@ function latinfo_home_module_catalog(): array
             'column' => 'rail',
             'default_order' => 60,
             'default_order_mobile' => 60,
+            'default_order_app' => 60,
             'default_enabled' => true,
+            'default_enabled_app' => true,
         ],
     ];
 }
@@ -151,8 +163,10 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
             CREATE TABLE IF NOT EXISTS `latinfo_home_modules` (
                 `module_key` VARCHAR(32) NOT NULL PRIMARY KEY,
                 `is_enabled` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `is_enabled_app` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
                 `sort_order` INT NOT NULL DEFAULT 0,
                 `sort_order_mobile` INT NOT NULL DEFAULT 0,
+                `sort_order_app` INT NOT NULL DEFAULT 0,
                 `layout_column` VARCHAR(16) NOT NULL DEFAULT 'rail',
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -191,6 +205,7 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
         latinfo_home_rating_priors_ensure_schema($db);
         latinfo_home_modules_ensure_mobile_order_column($db);
         latinfo_home_modules_ensure_layout_column($db);
+        latinfo_home_modules_ensure_app_columns($db);
         latinfo_home_modules_seed_defaults($db);
         $done = true;
 
@@ -244,6 +259,35 @@ function latinfo_home_modules_ensure_layout_column(PDO $db): void
     }
 }
 
+function latinfo_home_modules_ensure_app_columns(PDO $db): void
+{
+    try {
+        $hasOrder = (bool) $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'sort_order_app'")->fetch(PDO::FETCH_ASSOC);
+        if (!$hasOrder) {
+            $db->exec('
+                ALTER TABLE `latinfo_home_modules`
+                ADD COLUMN `sort_order_app` INT NOT NULL DEFAULT 0 AFTER `sort_order_mobile`
+            ');
+            $db->exec('UPDATE `latinfo_home_modules` SET `sort_order_app` = `sort_order_mobile` WHERE `sort_order_app` = 0');
+            $st = $db->prepare('UPDATE `latinfo_home_modules` SET `sort_order_app` = ? WHERE `module_key` = ? AND (`sort_order_app` = 0 OR `sort_order_app` IS NULL)');
+            foreach (latinfo_home_module_catalog() as $key => $meta) {
+                $st->execute([(int) ($meta['default_order_app'] ?? $meta['default_order_mobile']), $key]);
+            }
+        }
+
+        $hasEnabled = (bool) $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'is_enabled_app'")->fetch(PDO::FETCH_ASSOC);
+        if (!$hasEnabled) {
+            $db->exec('
+                ALTER TABLE `latinfo_home_modules`
+                ADD COLUMN `is_enabled_app` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 AFTER `is_enabled`
+            ');
+            $db->exec('UPDATE `latinfo_home_modules` SET `is_enabled_app` = `is_enabled`');
+        }
+    } catch (Throwable $e) {
+        error_log('latinfo_home_modules_ensure_app_columns: ' . $e->getMessage());
+    }
+}
+
 function latinfo_home_modules_normalize_column(mixed $raw, string $fallback = 'rail'): string
 {
     $col = strtolower(trim((string) $raw));
@@ -261,11 +305,36 @@ function latinfo_home_modules_seed_defaults(PDO $db): void
 {
     $hasMobile = false;
     $hasLayout = false;
+    $hasAppOrder = false;
+    $hasAppEnabled = false;
     try {
         $hasMobile = (bool) $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'sort_order_mobile'")->fetch(PDO::FETCH_ASSOC);
         $hasLayout = (bool) $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'layout_column'")->fetch(PDO::FETCH_ASSOC);
+        $hasAppOrder = (bool) $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'sort_order_app'")->fetch(PDO::FETCH_ASSOC);
+        $hasAppEnabled = (bool) $db->query("SHOW COLUMNS FROM `latinfo_home_modules` LIKE 'is_enabled_app'")->fetch(PDO::FETCH_ASSOC);
     } catch (Throwable) {
         // ignore
+    }
+
+    if ($hasMobile && $hasLayout && $hasAppOrder && $hasAppEnabled) {
+        $st = $db->prepare('
+            INSERT IGNORE INTO `latinfo_home_modules`
+                (`module_key`, `is_enabled`, `is_enabled_app`, `sort_order`, `sort_order_mobile`, `sort_order_app`, `layout_column`)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ');
+        foreach (latinfo_home_module_catalog() as $key => $meta) {
+            $st->execute([
+                $key,
+                !empty($meta['default_enabled']) ? 1 : 0,
+                !empty($meta['default_enabled_app'] ?? $meta['default_enabled']) ? 1 : 0,
+                (int) $meta['default_order'],
+                (int) $meta['default_order_mobile'],
+                (int) ($meta['default_order_app'] ?? $meta['default_order_mobile']),
+                ((string) ($meta['column'] ?? 'rail') === 'calendar') ? 'calendar' : 'rail',
+            ]);
+        }
+
+        return;
     }
 
     if ($hasMobile && $hasLayout) {
@@ -321,8 +390,10 @@ function latinfo_home_modules_seed_defaults(PDO $db): void
  * @return list<array{
  *   module_key: string,
  *   is_enabled: bool,
+ *   is_enabled_app: bool,
  *   sort_order: int,
  *   sort_order_mobile: int,
+ *   sort_order_app: int,
  *   label: string,
  *   editable: bool,
  *   has_item_stats: bool,
@@ -335,7 +406,7 @@ function latinfo_home_modules_all(PDO $db, string $sortBy = 'desktop'): array
     $rowsByKey = [];
     try {
         $rows = $db->query('
-            SELECT `module_key`, `is_enabled`, `sort_order`, `sort_order_mobile`, `layout_column`
+            SELECT `module_key`, `is_enabled`, `is_enabled_app`, `sort_order`, `sort_order_mobile`, `sort_order_app`, `layout_column`
             FROM `latinfo_home_modules`
         ')->fetchAll(PDO::FETCH_ASSOC) ?: [];
         foreach ($rows as $row) {
@@ -347,17 +418,35 @@ function latinfo_home_modules_all(PDO $db, string $sortBy = 'desktop'): array
         }
     } catch (Throwable $e) {
         try {
-            $rows = $db->query('SELECT `module_key`, `is_enabled`, `sort_order`, `sort_order_mobile` FROM `latinfo_home_modules`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $rows = $db->query('
+                SELECT `module_key`, `is_enabled`, `sort_order`, `sort_order_mobile`, `layout_column`
+                FROM `latinfo_home_modules`
+            ')->fetchAll(PDO::FETCH_ASSOC) ?: [];
             foreach ($rows as $row) {
                 $key = (string) ($row['module_key'] ?? '');
                 if (!isset($catalog[$key])) {
                     continue;
                 }
-                $row['layout_column'] = (string) ($catalog[$key]['column'] ?? 'rail');
+                $row['is_enabled_app'] = $row['is_enabled'] ?? 1;
+                $row['sort_order_app'] = $row['sort_order_mobile'] ?? ($catalog[$key]['default_order_app'] ?? 0);
                 $rowsByKey[$key] = $row;
             }
         } catch (Throwable $e2) {
-            error_log('latinfo_home_modules_all: ' . $e2->getMessage());
+            try {
+                $rows = $db->query('SELECT `module_key`, `is_enabled`, `sort_order`, `sort_order_mobile` FROM `latinfo_home_modules`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                foreach ($rows as $row) {
+                    $key = (string) ($row['module_key'] ?? '');
+                    if (!isset($catalog[$key])) {
+                        continue;
+                    }
+                    $row['layout_column'] = (string) ($catalog[$key]['column'] ?? 'rail');
+                    $row['is_enabled_app'] = $row['is_enabled'] ?? 1;
+                    $row['sort_order_app'] = $row['sort_order_mobile'] ?? ($catalog[$key]['default_order_app'] ?? 0);
+                    $rowsByKey[$key] = $row;
+                }
+            } catch (Throwable $e3) {
+                error_log('latinfo_home_modules_all: ' . $e3->getMessage());
+            }
         }
     }
 
@@ -371,15 +460,28 @@ function latinfo_home_modules_all(PDO $db, string $sortBy = 'desktop'): array
         if ($mobile === 0) {
             $mobile = (int) $meta['default_order_mobile'];
         }
+        $appOrderDefault = (int) ($meta['default_order_app'] ?? $meta['default_order_mobile']);
+        $appOrder = $row !== null
+            ? (int) ($row['sort_order_app'] ?? $appOrderDefault)
+            : $appOrderDefault;
+        if ($appOrder === 0) {
+            $appOrder = $appOrderDefault;
+        }
         $fallbackCol = ((string) ($meta['column'] ?? 'rail') === 'calendar') ? 'calendar' : 'rail';
         $column = $row !== null
             ? latinfo_home_modules_normalize_column($row['layout_column'] ?? $fallbackCol, $fallbackCol)
             : $fallbackCol;
+        $enabledWeb = $row !== null ? ((int) ($row['is_enabled'] ?? 1) === 1) : !empty($meta['default_enabled']);
+        $enabledApp = $row !== null
+            ? ((int) ($row['is_enabled_app'] ?? ($enabledWeb ? 1 : 0)) === 1)
+            : !empty($meta['default_enabled_app'] ?? $meta['default_enabled']);
         $out[] = [
             'module_key' => $key,
-            'is_enabled' => $row !== null ? ((int) ($row['is_enabled'] ?? 1) === 1) : !empty($meta['default_enabled']),
+            'is_enabled' => $enabledWeb,
+            'is_enabled_app' => $enabledApp,
             'sort_order' => $desktop,
             'sort_order_mobile' => $mobile,
+            'sort_order_app' => $appOrder,
             'label' => (string) $meta['label'],
             'editable' => !empty($meta['editable']),
             'has_item_stats' => !empty($meta['has_item_stats']),
@@ -387,7 +489,11 @@ function latinfo_home_modules_all(PDO $db, string $sortBy = 'desktop'): array
         ];
     }
 
-    $field = $sortBy === 'mobile' ? 'sort_order_mobile' : 'sort_order';
+    $field = match ($sortBy) {
+        'mobile' => 'sort_order_mobile',
+        'app' => 'sort_order_app',
+        default => 'sort_order',
+    };
     usort($out, static function (array $a, array $b) use ($field): int {
         $cmp = $a[$field] <=> $b[$field];
 
@@ -401,8 +507,10 @@ function latinfo_home_modules_all(PDO $db, string $sortBy = 'desktop'): array
  * @return list<array{
  *   module_key: string,
  *   is_enabled: bool,
+ *   is_enabled_app: bool,
  *   sort_order: int,
  *   sort_order_mobile: int,
+ *   sort_order_app: int,
  *   label: string,
  *   editable: bool,
  *   has_item_stats: bool,
@@ -411,26 +519,31 @@ function latinfo_home_modules_all(PDO $db, string $sortBy = 'desktop'): array
  */
 function latinfo_home_modules_enabled(PDO $db, string $sortBy = 'desktop'): array
 {
+    $enabledField = $sortBy === 'app' ? 'is_enabled_app' : 'is_enabled';
+
     return array_values(array_filter(
         latinfo_home_modules_all($db, $sortBy),
-        static fn (array $m): bool => !empty($m['is_enabled'])
+        static fn (array $m): bool => !empty($m[$enabledField])
     ));
 }
 
 /**
- * @param list<array{module_key?: string, is_enabled?: mixed, sort_order?: mixed, sort_order_mobile?: mixed, column?: mixed}> $rows
+ * @param list<array{module_key?: string, is_enabled?: mixed, is_enabled_app?: mixed, sort_order?: mixed, sort_order_mobile?: mixed, sort_order_app?: mixed, column?: mixed}> $rows
  */
 function latinfo_home_modules_save_order(PDO $db, array $rows): void
 {
     $catalog = latinfo_home_module_catalog();
+    latinfo_home_modules_ensure_app_columns($db);
     $st = $db->prepare('
         INSERT INTO `latinfo_home_modules`
-            (`module_key`, `is_enabled`, `sort_order`, `sort_order_mobile`, `layout_column`)
-        VALUES (?, ?, ?, ?, ?)
+            (`module_key`, `is_enabled`, `is_enabled_app`, `sort_order`, `sort_order_mobile`, `sort_order_app`, `layout_column`)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             `is_enabled` = VALUES(`is_enabled`),
+            `is_enabled_app` = VALUES(`is_enabled_app`),
             `sort_order` = VALUES(`sort_order`),
             `sort_order_mobile` = VALUES(`sort_order_mobile`),
+            `sort_order_app` = VALUES(`sort_order_app`),
             `layout_column` = VALUES(`layout_column`)
     ');
     $seen = [];
@@ -444,10 +557,15 @@ function latinfo_home_modules_save_order(PDO $db, array $rows): void
         $sortOrder = ($sort === false) ? (($i + 1) * 10) : (int) $sort;
         $sortM = filter_var($row['sort_order_mobile'] ?? (($i + 1) * 10), FILTER_VALIDATE_INT);
         $sortMobile = ($sortM === false) ? (($i + 1) * 10) : (int) $sortM;
+        $sortA = filter_var($row['sort_order_app'] ?? (($i + 1) * 10), FILTER_VALIDATE_INT);
+        $sortApp = ($sortA === false) ? (($i + 1) * 10) : (int) $sortA;
         $enabled = !empty($row['is_enabled']) ? 1 : 0;
+        $enabledApp = array_key_exists('is_enabled_app', $row)
+            ? (!empty($row['is_enabled_app']) ? 1 : 0)
+            : $enabled;
         $fallback = ((string) ($catalog[$key]['column'] ?? 'rail') === 'calendar') ? 'calendar' : 'rail';
         $column = latinfo_home_modules_normalize_column($row['column'] ?? $fallback, $fallback);
-        $st->execute([$key, $enabled, $sortOrder, $sortMobile, $column]);
+        $st->execute([$key, $enabled, $enabledApp, $sortOrder, $sortMobile, $sortApp, $column]);
     }
     foreach ($catalog as $key => $meta) {
         if (isset($seen[$key])) {
@@ -456,8 +574,10 @@ function latinfo_home_modules_save_order(PDO $db, array $rows): void
         $st->execute([
             $key,
             !empty($meta['default_enabled']) ? 1 : 0,
+            !empty($meta['default_enabled_app'] ?? $meta['default_enabled']) ? 1 : 0,
             (int) $meta['default_order'],
             (int) $meta['default_order_mobile'],
+            (int) ($meta['default_order_app'] ?? $meta['default_order_mobile']),
             ((string) ($meta['column'] ?? 'rail') === 'calendar') ? 'calendar' : 'rail',
         ]);
     }

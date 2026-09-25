@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Latinfo.hu kezdőoldal – modulok sorrendje (asztali bal/jobb + mobil) és be/ki.
+ * Latinfo.hu kezdőoldal – modulok sorrendje (asztali / mobil web / mobilapp) és be/ki.
  */
 
 require_once dirname(__DIR__) . '/init.php';
@@ -23,9 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'save_modules') {
         try {
             $enabled = $_POST['is_enabled'] ?? [];
+            $enabledApp = $_POST['is_enabled_app'] ?? [];
             $railKeys = $_POST['module_key_rail'] ?? [];
             $calendarKeys = $_POST['module_key_calendar'] ?? [];
             $mobileKeys = $_POST['module_key_mobile'] ?? [];
+            $appKeys = $_POST['module_key_app'] ?? [];
             if (!is_array($railKeys)) {
                 $railKeys = [];
             }
@@ -34,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (!is_array($mobileKeys)) {
                 $mobileKeys = [];
+            }
+            if (!is_array($appKeys)) {
+                $appKeys = [];
             }
 
             $desktopMeta = [];
@@ -64,6 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mobileOrder[$key] = ($i + 1) * 10;
             }
 
+            $appOrder = [];
+            foreach ($appKeys as $i => $key) {
+                $key = trim((string) $key);
+                if ($key === '' || isset($appOrder[$key])) {
+                    continue;
+                }
+                $appOrder[$key] = ($i + 1) * 10;
+            }
+
             $rows = [];
             foreach (latinfo_home_module_catalog() as $key => $meta) {
                 $fallbackCol = ((string) ($meta['column'] ?? 'rail') === 'calendar') ? 'calendar' : 'rail';
@@ -71,8 +85,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $rows[] = [
                     'module_key' => $key,
                     'is_enabled' => isset($enabled[$key]) && (string) $enabled[$key] === '1',
+                    'is_enabled_app' => isset($enabledApp[$key]) && (string) $enabledApp[$key] === '1',
                     'sort_order' => $desk['sort_order'] ?? (int) $meta['default_order'],
                     'sort_order_mobile' => $mobileOrder[$key] ?? (int) $meta['default_order_mobile'],
+                    'sort_order_app' => $appOrder[$key] ?? (int) ($meta['default_order_app'] ?? $meta['default_order_mobile']),
                     'column' => $desk['column'] ?? $fallbackCol,
                 ];
             }
@@ -93,12 +109,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $modulesDesktop = $schemaOk ? latinfo_home_modules_all($db, 'desktop') : [];
 $modulesMobile = $schemaOk ? latinfo_home_modules_all($db, 'mobile') : [];
+$modulesApp = $schemaOk ? latinfo_home_modules_all($db, 'app') : [];
 $railModules = [];
 $calendarModules = [];
 $enabledByKey = [];
+$enabledAppByKey = [];
 foreach ($modulesDesktop as $mod) {
     $key = (string) $mod['module_key'];
     $enabledByKey[$key] = !empty($mod['is_enabled']);
+    $enabledAppByKey[$key] = !empty($mod['is_enabled_app']);
     if ((string) ($mod['column'] ?? 'rail') === 'calendar') {
         $calendarModules[] = $mod;
     } else {
@@ -108,19 +127,25 @@ foreach ($modulesDesktop as $mod) {
 
 /**
  * @param array<string, mixed> $mod
- * @param array<string, bool> $enabledByKey
+ * @param array<string, bool> $enabledMap
  */
-$renderCard = static function (array $mod, array $enabledByKey, string $inputName, bool $showToggle): void {
+$renderCard = static function (
+    array $mod,
+    array $enabledMap,
+    string $inputName,
+    bool $showToggle,
+    string $toggleScope
+): void {
     $key = (string) $mod['module_key'];
-    $isOn = !empty($enabledByKey[$key]);
+    $isOn = !empty($enabledMap[$key]);
     $label = (string) $mod['label'];
     ?>
-    <li class="lh-mod-card<?= $isOn ? ' is-on' : ' is-off' ?>" draggable="true" data-module-key="<?= h($key) ?>">
+    <li class="lh-mod-card<?= $isOn ? ' is-on' : ' is-off' ?>" draggable="true" data-module-key="<?= h($key) ?>" data-enable-scope="<?= h($toggleScope) ?>">
         <span class="lh-mod-handle" title="Húzd átrendezéshez" aria-hidden="true">⋮⋮</span>
         <div class="lh-mod-card__body">
             <div class="lh-mod-card__title">
                 <strong><?= h($label) ?></strong>
-                <span class="lh-mod-state" data-state-for="<?= h($key) ?>"><?= $isOn ? 'Be' : 'Ki' ?></span>
+                <span class="lh-mod-state" data-state-for="<?= h($key) ?>" data-state-scope="<?= h($toggleScope) ?>"><?= $isOn ? 'Be' : 'Ki' ?></span>
             </div>
             <?php if (!empty($mod['editable'])): ?>
                 <a class="lh-mod-edit" href="<?= h(latinfo_home_module_edit_url($key)) ?>">Szerkeszt</a>
@@ -131,6 +156,7 @@ $renderCard = static function (array $mod, array $enabledByKey, string $inputNam
                 type="button"
                 class="lh-mod-toggle<?= $isOn ? ' is-on' : ' is-off' ?>"
                 data-toggle-key="<?= h($key) ?>"
+                data-toggle-scope="<?= h($toggleScope) ?>"
                 aria-pressed="<?= $isOn ? 'true' : 'false' ?>"
                 aria-label="<?= h($label . ($isOn ? ' – bekapcsolva' : ' – kikapcsolva')) ?>"
             ><?= $isOn ? 'Be' : 'Ki' ?></button>
@@ -144,7 +170,8 @@ $pageTitle = 'Kezdőoldal modulok';
 $mainContentClass = 'main-content main-content--fullwidth';
 $extraHead = '<style>
 .lh-mod-grid{display:grid;grid-template-columns:1fr;gap:1.25rem;align-items:start}
-@media (min-width:960px){.lh-mod-grid{grid-template-columns:2fr 1fr;gap:1.35rem}}
+@media (min-width:1100px){.lh-mod-grid{grid-template-columns:2fr 1fr 1fr;gap:1.35rem}}
+@media (min-width:960px) and (max-width:1099px){.lh-mod-grid{grid-template-columns:1fr 1fr;gap:1.25rem}}
 .lh-mod-pane{min-width:0;padding:1rem;border:1px solid var(--border);border-radius:.75rem;background:rgba(255,255,255,.4)}
 .lh-mod-pane h3{margin:0 0 .35rem;font-size:1.05rem}
 .lh-mod-hint{margin:.2rem 0 .9rem;color:var(--muted,#667);font-size:.9rem}
@@ -180,13 +207,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head">
         <h2 class="events-list-title">Kezdőoldal modulok</h2>
         <div class="events-list-actions">
-            <a href="<?= h(latinfo_home_preview_url()) ?>" class="btn btn-secondary btn-sm">Előnézet</a>
+            <a href="<?= h(latinfo_home_preview_url()) ?>" class="btn btn-secondary btn-sm">Előnézet (web)</a>
+            <a href="<?= h(latinfo_home_preview_url() . '?source=mobilapp') ?>" class="btn btn-secondary btn-sm">Előnézet (app)</a>
             <a href="<?= h(latinfo_home_modules_stat_url()) ?>" class="btn btn-secondary btn-sm">Stat</a>
         </div>
     </div>
     <p class="text-muted" style="margin-top:0">
-        Asztalin húzd a modulokat bal/jobb oszlopba. Mobilon állítsd a függőleges sorrendet.
-        A be/ki kapcsolás közös; a Kikapcsolt modulok nem jelennek meg a kezdőoldalon.
+        Asztalin és mobil weben a sorrend és a be/ki közös a böngészős felülethez.
+        A mobilapp panel külön: telepített PWA / <code>?source=mobilapp</code> nézet.
     </p>
 
     <?php if (!$schemaOk): ?>
@@ -198,20 +226,21 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <div class="lh-mod-enabled-store" aria-hidden="true">
                 <?php foreach ($modulesDesktop as $mod): ?>
                     <?php $key = (string) $mod['module_key']; ?>
-                    <input type="hidden" name="is_enabled[<?= h($key) ?>]" value="<?= !empty($enabledByKey[$key]) ? '1' : '0' ?>" data-enabled-input="<?= h($key) ?>">
+                    <input type="hidden" name="is_enabled[<?= h($key) ?>]" value="<?= !empty($enabledByKey[$key]) ? '1' : '0' ?>" data-enabled-input="<?= h($key) ?>" data-enabled-scope="web">
+                    <input type="hidden" name="is_enabled_app[<?= h($key) ?>]" value="<?= !empty($enabledAppByKey[$key]) ? '1' : '0' ?>" data-enabled-input="<?= h($key) ?>" data-enabled-scope="app">
                 <?php endforeach; ?>
             </div>
 
             <div class="lh-mod-grid">
                 <section class="lh-mod-pane" aria-labelledby="lh-mod-desktop-title">
                     <h3 id="lh-mod-desktop-title">Asztali nézet</h3>
-                    <p class="lh-mod-hint">Húzd a kártyákat az oszlopok között (bal ↔ jobb).</p>
+                    <p class="lh-mod-hint">Húzd a kártyákat az oszlopok között (bal ↔ jobb). Be/ki: web.</p>
                     <div class="lh-mod-cols">
                         <div class="lh-mod-col-box" data-drop-column="rail">
                             <h4>Bal oszlop</h4>
                             <ul class="lh-mod-list" data-sortable data-column="rail">
                                 <?php foreach ($railModules as $mod): ?>
-                                    <?php $renderCard($mod, $enabledByKey, 'module_key_rail', true); ?>
+                                    <?php $renderCard($mod, $enabledByKey, 'module_key_rail', true, 'web'); ?>
                                 <?php endforeach; ?>
                             </ul>
                         </div>
@@ -219,7 +248,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <h4>Jobb oszlop</h4>
                             <ul class="lh-mod-list" data-sortable data-column="calendar">
                                 <?php foreach ($calendarModules as $mod): ?>
-                                    <?php $renderCard($mod, $enabledByKey, 'module_key_calendar', true); ?>
+                                    <?php $renderCard($mod, $enabledByKey, 'module_key_calendar', true, 'web'); ?>
                                 <?php endforeach; ?>
                             </ul>
                         </div>
@@ -227,11 +256,21 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </section>
 
                 <section class="lh-mod-pane" aria-labelledby="lh-mod-mobile-title">
-                    <h3 id="lh-mod-mobile-title">Mobil nézet</h3>
-                    <p class="lh-mod-hint">Egy oszlop, fentről lefelé. Be/ki itt is állítható.</p>
+                    <h3 id="lh-mod-mobile-title">Mobil web</h3>
+                    <p class="lh-mod-hint">Keskeny böngésző (≤900px). Be/ki ugyanaz, mint asztalon.</p>
                     <ul class="lh-mod-list" data-sortable data-column="mobile">
                         <?php foreach ($modulesMobile as $mod): ?>
-                            <?php $renderCard($mod, $enabledByKey, 'module_key_mobile', true); ?>
+                            <?php $renderCard($mod, $enabledByKey, 'module_key_mobile', true, 'web'); ?>
+                        <?php endforeach; ?>
+                    </ul>
+                </section>
+
+                <section class="lh-mod-pane" aria-labelledby="lh-mod-app-title">
+                    <h3 id="lh-mod-app-title">Mobilapp</h3>
+                    <p class="lh-mod-hint">Telepített app / PWA. Saját sorrend és be/ki.</p>
+                    <ul class="lh-mod-list" data-sortable data-column="app">
+                        <?php foreach ($modulesApp as $mod): ?>
+                            <?php $renderCard($mod, $enabledAppByKey, 'module_key_app', true, 'app'); ?>
                         <?php endforeach; ?>
                     </ul>
                 </section>
@@ -246,17 +285,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
             var form = document.getElementById('lh-modules-form');
             if (!form) return;
 
-            function setEnabled(key, on) {
-                form.querySelectorAll('[data-enabled-input="' + key + '"]').forEach(function (input) {
+            function setEnabled(key, on, scope) {
+                form.querySelectorAll('[data-enabled-input="' + key + '"][data-enabled-scope="' + scope + '"]').forEach(function (input) {
                     input.value = on ? '1' : '0';
                 });
-                form.querySelectorAll('[data-module-key="' + key + '"]').forEach(function (card) {
+                form.querySelectorAll('[data-module-key="' + key + '"][data-enable-scope="' + scope + '"]').forEach(function (card) {
                     card.classList.toggle('is-on', on);
                     card.classList.toggle('is-off', !on);
-                    var state = card.querySelector('[data-state-for="' + key + '"]');
+                    var state = card.querySelector('[data-state-for="' + key + '"][data-state-scope="' + scope + '"]');
                     if (state) state.textContent = on ? 'Be' : 'Ki';
                 });
-                form.querySelectorAll('[data-toggle-key="' + key + '"]').forEach(function (btn) {
+                form.querySelectorAll('[data-toggle-key="' + key + '"][data-toggle-scope="' + scope + '"]').forEach(function (btn) {
                     btn.classList.toggle('is-on', on);
                     btn.classList.toggle('is-off', !on);
                     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -271,15 +310,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 if (!btn) return;
                 e.preventDefault();
                 var key = btn.getAttribute('data-toggle-key') || '';
+                var scope = btn.getAttribute('data-toggle-scope') || 'web';
                 if (!key) return;
                 var on = !btn.classList.contains('is-on');
-                setEnabled(key, on);
+                setEnabled(key, on, scope);
             });
 
             function refreshNames(list) {
                 var column = list.getAttribute('data-column') || '';
                 var name = column === 'rail' ? 'module_key_rail[]'
-                    : (column === 'calendar' ? 'module_key_calendar[]' : 'module_key_mobile[]');
+                    : (column === 'calendar' ? 'module_key_calendar[]'
+                    : (column === 'app' ? 'module_key_app[]' : 'module_key_mobile[]'));
                 list.querySelectorAll('li[data-module-key]').forEach(function (card) {
                     var input = card.querySelector('input[type="hidden"][name^="module_key_"]');
                     if (input) input.name = name;
@@ -287,7 +328,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
             }
 
             var dragCard = null;
-            var dragFrom = null;
 
             function clearOver() {
                 form.querySelectorAll('.is-drag-over').forEach(function (el) {
@@ -304,7 +344,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         return;
                     }
                     dragCard = card;
-                    dragFrom = list;
                     card.classList.add('is-dragging');
                     try {
                         e.dataTransfer.effectAllowed = 'move';
@@ -315,13 +354,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 list.addEventListener('dragend', function () {
                     if (dragCard) dragCard.classList.remove('is-dragging');
                     dragCard = null;
-                    dragFrom = null;
                     clearOver();
                     form.querySelectorAll('[data-sortable]').forEach(refreshNames);
                 });
 
                 list.addEventListener('dragover', function (e) {
                     if (!dragCard) return;
+                    // Ne engedjük az app listába a webes kártyákat és fordítva (külön enable scope).
+                    var listScope = list.getAttribute('data-column') === 'app' ? 'app' : 'web';
+                    var cardScope = dragCard.getAttribute('data-enable-scope') || 'web';
+                    if (listScope !== cardScope) return;
                     e.preventDefault();
                     try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
                     var box = list.closest('[data-drop-column]') || list;

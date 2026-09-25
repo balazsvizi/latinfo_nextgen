@@ -32,6 +32,8 @@ declare(strict_types=1);
  * @var list<array<string, mixed>> $adminFloatTools
  * @var array<int, array<string, mixed>> $calendarPreviewById
  * @var bool $lhModuleTrackAllowed
+ * @var string $homeSurface
+ * @var bool $isAppSurface
  */
 $eventsPartial = dirname(__DIR__, 2) . '/events/partials';
 $D = $Dj;
@@ -40,6 +42,8 @@ $calendarPreviewById = is_array($calendarPreviewById ?? null) ? $calendarPreview
 $enabledModules = is_array($enabledModules ?? null) ? $enabledModules : [];
 $mobileOrderIndex = is_array($mobileOrderIndex ?? null) ? $mobileOrderIndex : [];
 $lhModuleTrackAllowed = !empty($lhModuleTrackAllowed);
+$homeSurface = latinfo_home_normalize_surface($homeSurface ?? 'web');
+$isAppSurface = !empty($isAppSurface) || $homeSurface === 'app';
 $donablyView = is_array($donablyView ?? null) ? $donablyView : [
     'title' => '',
     'lead' => '',
@@ -53,13 +57,20 @@ $donablyView = is_array($donablyView ?? null) ? $donablyView : [
 
 $railModules = [];
 $calendarModules = [];
-foreach ($enabledModules as $mod) {
-    if ((string) ($mod['column'] ?? 'rail') === 'calendar') {
-        $calendarModules[] = $mod;
-    } else {
-        $railModules[] = $mod;
+if ($isAppSurface) {
+    // App: egy oszlop, a mentett app-sorrend szerint.
+    $railModules = $enabledModules;
+} else {
+    foreach ($enabledModules as $mod) {
+        if ((string) ($mod['column'] ?? 'rail') === 'calendar') {
+            $calendarModules[] = $mod;
+        } else {
+            $railModules[] = $mod;
+        }
     }
 }
+$bodyHomeClass = 'event-public-page event-public-page--home event-public-page--latinfo-home'
+    . ($isAppSurface ? ' event-public-page--latinfo-home-app' : '');
 ?>
 <!DOCTYPE html>
 <html lang="<?= h($htmlLang) ?>">
@@ -73,8 +84,46 @@ foreach ($enabledModules as $mod) {
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
     <link rel="stylesheet" href="<?= h($cssHomeUrl) ?>">
+    <script>
+    (function () {
+        try {
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                || (typeof navigator !== 'undefined' && navigator.standalone === true);
+            var url = new URL(location.href);
+            var source = (url.searchParams.get('source') || '').toLowerCase();
+            var cookieMatch = document.cookie.match(/(?:^|;\s*)latinfo_home_surface=([^;]*)/);
+            var current = cookieMatch ? decodeURIComponent(cookieMatch[1]) : '';
+            var secure = location.protocol === 'https:' ? '; Secure' : '';
+            function setSurface(value) {
+                document.cookie = 'latinfo_home_surface=' + encodeURIComponent(value)
+                    + '; Path=/; Max-Age=34560000; SameSite=Lax' + secure;
+            }
+            if (source === 'mobilapp' || source === 'app' || source === 'pwa') {
+                if (current !== 'app') setSurface('app');
+                return;
+            }
+            if (source === 'web') {
+                if (current !== 'web') setSurface('web');
+                return;
+            }
+            if (isStandalone) {
+                if (current !== 'app') {
+                    setSurface('app');
+                    url.searchParams.set('source', 'mobilapp');
+                    location.replace(url.toString());
+                }
+                return;
+            }
+            // Normál böngésző: ne ragadjon be az app-süti.
+            if (current === 'app') {
+                setSurface('web');
+                location.replace(url.toString());
+            }
+        } catch (e) {}
+    })();
+    </script>
 </head>
-<body class="event-public-page event-public-page--home event-public-page--latinfo-home">
+<body class="<?= h($bodyHomeClass) ?>">
 <?php require $eventsPartial . '/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public home-public latinfo-home">

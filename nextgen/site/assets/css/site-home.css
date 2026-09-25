@@ -866,6 +866,23 @@ body.event-public-page--latinfo-home .event-site-line .app-version {
     }
 }
 
+/* Telepített PWA / mobilapp: mindig egyoszlopos, app-sorrend. */
+body.event-public-page--latinfo-home-app .latinfo-home__board {
+    display: flex;
+    flex-direction: column;
+}
+
+body.event-public-page--latinfo-home-app .latinfo-home__rail,
+body.event-public-page--latinfo-home-app .latinfo-home__calendar {
+    display: contents;
+}
+
+body.event-public-page--latinfo-home-app .latinfo-home__module {
+    order: var(--lh-mobile-order, 99);
+    width: 100%;
+    flex-basis: auto;
+}
+
 @media (max-width: 560px) {
     body.event-public-page--latinfo-home {
         --lh-card-pad: 0.9rem;

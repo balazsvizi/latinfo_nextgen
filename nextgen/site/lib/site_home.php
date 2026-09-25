@@ -9,6 +9,67 @@ if (!function_exists('events_http_https_url_is_acceptable')) {
     require_once dirname(__DIR__, 2) . '/events/lib/html_security.php';
 }
 
+/** Kezdőoldal felület: web (böngésző) vs app (PWA / mobilapp). */
+const LATINFO_HOME_SURFACE_COOKIE = 'latinfo_home_surface';
+
+/**
+ * @return array{expires: int, path: string, secure: bool, httponly: bool, samesite: string}
+ */
+function latinfo_home_surface_cookie_options(): array
+{
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+
+    return [
+        'expires' => time() + 400 * 86400,
+        'path' => '/',
+        'secure' => $secure,
+        'httponly' => false,
+        'samesite' => 'Lax',
+    ];
+}
+
+function latinfo_home_normalize_surface(mixed $raw): string
+{
+    $v = strtolower(trim((string) $raw));
+    if ($v === 'app' || $v === 'mobilapp' || $v === 'pwa') {
+        return 'app';
+    }
+
+    return 'web';
+}
+
+function latinfo_home_set_surface_cookie(string $surface): void
+{
+    $surface = latinfo_home_normalize_surface($surface);
+    setcookie(LATINFO_HOME_SURFACE_COOKIE, $surface, latinfo_home_surface_cookie_options());
+    $_COOKIE[LATINFO_HOME_SURFACE_COOKIE] = $surface;
+}
+
+/**
+ * Publikus kezdőoldal felülete: ?source=mobilapp|web, egyébként süti, alap: web.
+ */
+function latinfo_home_resolve_surface(): string
+{
+    if (isset($_GET['source'])) {
+        $fromQuery = latinfo_home_normalize_surface($_GET['source']);
+        // Csak ismert értékeknél írunk sütit (üres / random source → web, süti nélkül).
+        $raw = strtolower(trim((string) $_GET['source']));
+        if (in_array($raw, ['mobilapp', 'app', 'pwa', 'web'], true)) {
+            latinfo_home_set_surface_cookie($fromQuery);
+        }
+
+        return $fromQuery;
+    }
+
+    return latinfo_home_normalize_surface($_COOKIE[LATINFO_HOME_SURFACE_COOKIE] ?? 'web');
+}
+
+function latinfo_home_is_app_surface(?string $surface = null): bool
+{
+    return latinfo_home_normalize_surface($surface ?? latinfo_home_resolve_surface()) === 'app';
+}
+
 function latinfo_home_preview_url(): string
 {
     return defined('LATINFO_PUBLIC_HOME_URL') ? (string) LATINFO_PUBLIC_HOME_URL : site_url('/');
@@ -146,6 +207,8 @@ function latinfo_home_ensure_schema(PDO $db): bool
                 `url` VARCHAR(500) NOT NULL DEFAULT '',
                 `is_hero` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
                 `is_visible` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `show_on_web` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `show_on_app` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
                 `sort_order` INT NOT NULL DEFAULT 0,
                 `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -167,6 +230,7 @@ function latinfo_home_ensure_schema(PDO $db): bool
                 KEY `idx_visible_sort` (`is_visible`, `sort_order`, `id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+        latinfo_home_news_ensure_surface_columns($db);
         latinfo_home_seed_if_empty($db);
         $done = true;
 
@@ -175,6 +239,22 @@ function latinfo_home_ensure_schema(PDO $db): bool
         error_log('latinfo_home_ensure_schema: ' . $e->getMessage());
 
         return false;
+    }
+}
+
+function latinfo_home_news_ensure_surface_columns(PDO $db): void
+{
+    try {
+        $cols = $db->query("SHOW COLUMNS FROM `latinfo_home_news` LIKE 'show_on_web'")->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($cols)) {
+            $db->exec('
+                ALTER TABLE `latinfo_home_news`
+                ADD COLUMN `show_on_web` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 AFTER `is_visible`,
+                ADD COLUMN `show_on_app` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 AFTER `show_on_web`
+            ');
+        }
+    } catch (Throwable $e) {
+        error_log('latinfo_home_news_ensure_surface_columns: ' . $e->getMessage());
     }
 }
 
@@ -510,15 +590,44 @@ function latinfo_home_save_settings(PDO $db, array $input): void
 /**
  * @return list<array<string, mixed>>
  */
-function latinfo_home_news_all(PDO $db, bool $visibleOnly = false): array
+function latinfo_home_news_all(PDO $db, bool $visibleOnly = false, ?string $surface = null): array
 {
+    latinfo_home_news_ensure_surface_columns($db);
     $sql = 'SELECT * FROM `latinfo_home_news`';
+    $where = [];
     if ($visibleOnly) {
-        $sql .= ' WHERE `is_visible` = 1';
+        $where[] = '`is_visible` = 1';
+    }
+    $surfaceNorm = $surface !== null ? latinfo_home_normalize_surface($surface) : null;
+    if ($surfaceNorm === 'app') {
+        $where[] = '`show_on_app` = 1';
+    } elseif ($surfaceNorm === 'web') {
+        $where[] = '`show_on_web` = 1';
+    }
+    if ($where !== []) {
+        $sql .= ' WHERE ' . implode(' AND ', $where);
     }
     $sql .= ' ORDER BY `sort_order` ASC, `id` ASC';
 
-    return $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    try {
+        $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        error_log('latinfo_home_news_all: ' . $e->getMessage());
+
+        return [];
+    }
+
+    foreach ($rows as &$row) {
+        if (!array_key_exists('show_on_web', $row)) {
+            $row['show_on_web'] = 1;
+        }
+        if (!array_key_exists('show_on_app', $row)) {
+            $row['show_on_app'] = 1;
+        }
+    }
+    unset($row);
+
+    return $rows;
 }
 
 /**
@@ -551,27 +660,37 @@ function latinfo_home_news_save(PDO $db, int $id, array $input): int
     $url = latinfo_home_sanitize_url((string) ($input['url'] ?? ''));
     $isHero = !empty($input['is_hero']) ? 1 : 0;
     $isVisible = !empty($input['is_visible']) ? 1 : 0;
+    $showOnWeb = array_key_exists('show_on_web', $input) ? (!empty($input['show_on_web']) ? 1 : 0) : 1;
+    $showOnApp = array_key_exists('show_on_app', $input) ? (!empty($input['show_on_app']) ? 1 : 0) : 1;
     $sort = filter_var($input['sort_order'] ?? 0, FILTER_VALIDATE_INT);
     $sortOrder = ($sort === false) ? 0 : (int) $sort;
+
+    latinfo_home_news_ensure_surface_columns($db);
 
     if ($id > 0) {
         $st = $db->prepare('
             UPDATE `latinfo_home_news`
             SET `title` = ?, `dek` = ?, `kicker` = ?, `image_url` = ?, `url` = ?,
-                `is_hero` = ?, `is_visible` = ?, `sort_order` = ?
+                `is_hero` = ?, `is_visible` = ?, `show_on_web` = ?, `show_on_app` = ?, `sort_order` = ?
             WHERE `id` = ?
         ');
-        $st->execute([$title, $dek, $kicker, $imageUrl, $url, $isHero, $isVisible, $sortOrder, $id]);
+        $st->execute([
+            $title, $dek, $kicker, $imageUrl, $url,
+            $isHero, $isVisible, $showOnWeb, $showOnApp, $sortOrder, $id,
+        ]);
 
         return $id;
     }
 
     $st = $db->prepare('
         INSERT INTO `latinfo_home_news`
-            (`title`, `dek`, `kicker`, `image_url`, `url`, `is_hero`, `is_visible`, `sort_order`)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (`title`, `dek`, `kicker`, `image_url`, `url`, `is_hero`, `is_visible`, `show_on_web`, `show_on_app`, `sort_order`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ');
-    $st->execute([$title, $dek, $kicker, $imageUrl, $url, $isHero, $isVisible, $sortOrder]);
+    $st->execute([
+        $title, $dek, $kicker, $imageUrl, $url,
+        $isHero, $isVisible, $showOnWeb, $showOnApp, $sortOrder,
+    ]);
 
     return (int) $db->lastInsertId();
 }

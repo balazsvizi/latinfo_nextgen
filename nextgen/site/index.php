@@ -25,16 +25,29 @@ $H = latinfo_home_strings($lang);
 
 $db = getDb();
 $schemaOk = latinfo_home_modules_ensure_schema($db);
-$enabledModules = $schemaOk ? latinfo_home_modules_enabled($db, 'desktop') : [];
-$mobileOrderIndex = [];
-if ($schemaOk) {
+$homeSurface = latinfo_home_resolve_surface();
+$isAppSurface = latinfo_home_is_app_surface($homeSurface);
+
+if ($isAppSurface) {
+    $enabledModules = $schemaOk ? latinfo_home_modules_enabled($db, 'app') : [];
+    $mobileOrderIndex = [];
     $rank = 1;
-    foreach (latinfo_home_modules_enabled($db, 'mobile') as $mod) {
+    foreach ($enabledModules as $mod) {
         $mobileOrderIndex[(string) $mod['module_key']] = $rank;
         $rank++;
     }
+} else {
+    $enabledModules = $schemaOk ? latinfo_home_modules_enabled($db, 'desktop') : [];
+    $mobileOrderIndex = [];
+    if ($schemaOk) {
+        $rank = 1;
+        foreach (latinfo_home_modules_enabled($db, 'mobile') as $mod) {
+            $mobileOrderIndex[(string) $mod['module_key']] = $rank;
+            $rank++;
+        }
+    }
 }
-$news = $schemaOk ? latinfo_home_news_all($db, true) : [];
+$news = $schemaOk ? latinfo_home_news_all($db, true, $homeSurface) : [];
 $quickNews = latinfo_home_quick_news($news, 3);
 $dayEvents = latinfo_home_today_tomorrow_events($db);
 $homeEventRows = array_merge($dayEvents['today'], $dayEvents['tomorrow']);

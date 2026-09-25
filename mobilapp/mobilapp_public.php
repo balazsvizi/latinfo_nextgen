@@ -184,7 +184,7 @@ $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
             <ul class="ma-features">
                 <li>A Latinfo egy koppintással a kezdőképernyőről</li>
                 <li>Teljes képernyős nézet, böngészősáv nélkül</li>
-                <li>Ugyanaz a friss tartalom, mint a latinfo.hu-n</li>
+                <li>Friss naptár és tartalom – az apphoz hangolható kezdőképernyővel</li>
                 <li>Nincs App Store / Play Store várakozás – azonnal telepíthető</li>
             </ul>
         </article>

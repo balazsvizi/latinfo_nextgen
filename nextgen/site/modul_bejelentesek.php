@@ -39,6 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'url' => $_POST['url'] ?? '',
                     'is_hero' => ($_POST['is_hero'] ?? '0') === '1',
                     'is_visible' => ($_POST['is_visible'] ?? '0') === '1',
+                    'show_on_web' => ($_POST['show_on_web'] ?? '0') === '1',
+                    'show_on_app' => ($_POST['show_on_app'] ?? '0') === '1',
                     'sort_order' => $_POST['sort_order'] ?? 0,
                 ]);
                 if (function_exists('rendszer_log')) {
@@ -126,6 +128,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <p class="text-muted" style="margin-top:0">
         A kezdőoldalon legfeljebb 3 bejelentés jelenik meg. A „Első a 3 között” pipa a lista elejére teszi.
+        Web és mobilapp külön állítható: melyik felületen jelenjen meg a hír.
     </p>
 
     <?php if (!$schemaOk): ?>
@@ -146,8 +149,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 'url' => '',
                 'is_hero' => 0,
                 'is_visible' => 1,
+                'show_on_web' => 1,
+                'show_on_app' => 1,
                 'sort_order' => count($newsRows) + 1,
             ];
+            if (!array_key_exists('show_on_web', $n)) {
+                $n['show_on_web'] = 1;
+            }
+            if (!array_key_exists('show_on_app', $n)) {
+                $n['show_on_app'] = 1;
+            }
             ?>
             <form method="post" action="<?= h($formAction) ?>" class="card" style="box-shadow:none;border:1px solid var(--border);margin-bottom:1.5rem">
                 <?= csrf_input('latinfo_home_announcements') ?>
@@ -196,6 +207,22 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         </label>
                     </div>
                 </div>
+                <div class="form-row form-row-2">
+                    <div class="form-group">
+                        <input type="hidden" name="show_on_web" value="0">
+                        <label class="lh-admin-check">
+                            <input type="checkbox" name="show_on_web" value="1"<?= !empty($n['show_on_web']) ? ' checked' : '' ?>>
+                            Weben (asztali + mobil böngésző)
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <input type="hidden" name="show_on_app" value="0">
+                        <label class="lh-admin-check">
+                            <input type="checkbox" name="show_on_app" value="1"<?= !empty($n['show_on_app']) ? ' checked' : '' ?>>
+                            Mobilappban (PWA)
+                        </label>
+                    </div>
+                </div>
                 <div class="lh-admin-actions">
                     <button type="submit" class="btn btn-primary">Mentés</button>
                     <a href="<?= h($formAction) ?>" class="btn btn-secondary">Mégse</a>
@@ -212,12 +239,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th>Rovat</th>
                         <th>Első</th>
                         <th>Látható</th>
+                        <th>Web</th>
+                        <th>App</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if ($newsRows === []): ?>
-                        <tr><td colspan="6" class="text-muted">Még nincs bejelentés.</td></tr>
+                        <tr><td colspan="8" class="text-muted">Még nincs bejelentés.</td></tr>
                     <?php else: ?>
                         <?php foreach ($newsRows as $row): ?>
                             <tr>
@@ -226,6 +255,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td><?= h((string) $row['kicker']) ?></td>
                                 <td><?= !empty($row['is_hero']) ? 'igen' : '–' ?></td>
                                 <td><?= !empty($row['is_visible']) ? 'igen' : 'nem' ?></td>
+                                <td><?= !empty($row['show_on_web'] ?? 1) ? 'igen' : 'nem' ?></td>
+                                <td><?= !empty($row['show_on_app'] ?? 1) ? 'igen' : 'nem' ?></td>
                                 <td>
                                     <div class="lh-admin-actions">
                                         <a class="btn btn-secondary btn-sm" href="<?= h($formAction . '?id=' . (int) $row['id']) ?>">Szerkeszt</a>
