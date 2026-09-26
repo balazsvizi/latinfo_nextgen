@@ -90,6 +90,16 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
             $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `település` VARCHAR(128) NULL DEFAULT NULL AFTER `telefon`');
         }
 
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'email_event_bekerult'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `email_event_bekerult` TINYINT(1) NOT NULL DEFAULT 1 AFTER `email`');
+        }
+
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'email_szervezo_stat'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `email_szervezo_stat` TINYINT(1) NOT NULL DEFAULT 1 AFTER `email_event_bekerult`');
+        }
+
         $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partner_events_organizers` LIKE 'role_type'");
         if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
             $db->exec("
@@ -1052,7 +1062,9 @@ function nextgen_partner_update_profile(
     ?string $egyebKontakt,
     ?string $egyebInfo = null,
     ?string $kiegInfo = null,
-    ?string $telepules = null
+    ?string $telepules = null,
+    ?bool $emailEventBekerult = null,
+    ?bool $emailSzervezoStat = null
 ): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
@@ -1084,12 +1096,17 @@ function nextgen_partner_update_profile(
         if ($dup->fetchColumn() !== false) {
             return ['ok' => false, 'error' => 'Ez az e-mail cím már foglalt.'];
         }
-        $stmt = $db->prepare('
-            UPDATE `nextgen_partners`
-            SET `név` = ?, `kieg_info` = ?, `email` = ?, `telefon` = ?, `település` = ?, `egyéb_kontakt` = ?, `egyéb_info` = ?
-            WHERE `id` = ?
-        ');
-        $stmt->execute([
+
+        $setParts = [
+            '`név` = ?',
+            '`kieg_info` = ?',
+            '`email` = ?',
+            '`telefon` = ?',
+            '`település` = ?',
+            '`egyéb_kontakt` = ?',
+            '`egyéb_info` = ?',
+        ];
+        $params = [
             $nev,
             $kiegInfo !== '' ? $kiegInfo : null,
             $email,
@@ -1097,8 +1114,21 @@ function nextgen_partner_update_profile(
             $telepules !== '' ? $telepules : null,
             $egyebKontakt !== '' ? $egyebKontakt : null,
             $egyebInfo !== '' ? $egyebInfo : null,
-            $partnerId,
-        ]);
+        ];
+        if ($emailEventBekerult !== null) {
+            $setParts[] = '`email_event_bekerult` = ?';
+            $params[] = $emailEventBekerult ? 1 : 0;
+        }
+        if ($emailSzervezoStat !== null) {
+            $setParts[] = '`email_szervezo_stat` = ?';
+            $params[] = $emailSzervezoStat ? 1 : 0;
+        }
+        $params[] = $partnerId;
+
+        $stmt = $db->prepare(
+            'UPDATE `nextgen_partners` SET ' . implode(', ', $setParts) . ' WHERE `id` = ?'
+        );
+        $stmt->execute($params);
 
         nextgen_partner_log($db, $partnerId, 'Profil módosítva', $email);
 

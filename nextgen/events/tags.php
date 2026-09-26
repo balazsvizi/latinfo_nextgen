@@ -92,8 +92,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stUse = $db->prepare('SELECT COUNT(*) FROM `events_calendar_event_tags` WHERE `tag_id` = ?');
         $stUse->execute([$id]);
         $useCnt = (int) $stUse->fetchColumn();
-        if ($useCnt > 0) {
-            flash('error', 'A címke nem törölhető, mert ' . $useCnt . ' esemény használja.');
+        $cmsUseCnt = 0;
+        try {
+            $stCms = $db->prepare('SELECT COUNT(*) FROM `cms_post_tags` WHERE `tag_id` = ?');
+            $stCms->execute([$id]);
+            $cmsUseCnt = (int) $stCms->fetchColumn();
+        } catch (Throwable $e) {
+            $cmsUseCnt = 0;
+        }
+        if ($useCnt > 0 || $cmsUseCnt > 0) {
+            $bits = [];
+            if ($useCnt > 0) {
+                $bits[] = $useCnt . ' esemény';
+            }
+            if ($cmsUseCnt > 0) {
+                $bits[] = $cmsUseCnt . ' CMS cikk';
+            }
+            flash('error', 'A címke nem törölhető, mert használatban van: ' . implode(', ', $bits) . '.');
             redirect(events_url('tags.php?open_tag=') . $id);
         }
         $db->prepare('DELETE FROM `events_tags` WHERE `id` = ?')->execute([$id]);
@@ -299,7 +314,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <div class="card events-admin-card events-tags-admin">
     <div class="events-list-head">
         <div class="events-list-head__start">
-            <h2 class="events-list-title">Esemény címkék</h2>
+            <h2 class="events-list-title">Címkék</h2>
+            <p class="help" style="margin:0.35rem 0 0;">Közös a Event Admin és a CMS között (<code>events_tags</code>).</p>
             <?php
             $listLimitInForm = false;
             $listLimitStandalone = true;
@@ -484,7 +500,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     <input type="hidden" name="id" value="<?= $tid ?>">
                                     <button type="submit" class="btn btn-secondary">Címke törlése</button>
                                 </form>
-                                <p class="help">Törlés csak akkor lehetséges, ha egy esemény sem használja.</p>
+                                <p class="help">Törlés csak akkor lehetséges, ha sem esemény, sem CMS cikk nem használja.</p>
                             </div>
                         </td>
                     </tr>

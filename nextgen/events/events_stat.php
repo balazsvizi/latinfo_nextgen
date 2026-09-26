@@ -174,6 +174,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <strong>Valós idejű</strong>
                 <span>Élő aktivitás az elmúlt 30 percben</span>
             </a>
+            <a href="<?= h(nextgen_url('cms/stat.php')) ?>" class="events-stat-quick-link">
+                <strong>CMS cikkek</strong>
+                <span>CMS cikk megtekintések és top tartalmak</span>
+            </a>
             <a href="<?= h($publishedUrl) ?>" class="events-stat-quick-link">
                 <strong>Közzétett események</strong>
                 <span>Csak a nyilvános naptárban szereplő tételek</span>

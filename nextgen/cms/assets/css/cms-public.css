@@ -1,0 +1,193 @@
+/* CMS nyilvános megjelenés */
+.cms-public {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1a1a1a;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(156, 191, 144, 0.22), transparent 55%),
+    linear-gradient(180deg, #f7f4ef 0%, #efe8dc 100%);
+  min-height: 100vh;
+}
+.cms-public__header {
+  border-bottom: 1px solid rgba(26, 26, 26, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(6px);
+}
+.cms-public__header-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.cms-public__brand {
+  font-weight: 700;
+  text-decoration: none;
+  color: inherit;
+  letter-spacing: 0.02em;
+}
+.cms-public__nav a {
+  color: #2f4a3a;
+  text-decoration: none;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+}
+.cms-public__main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+.cms-public__footer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #5a5a5a;
+}
+.cms-article__theme {
+  font-family: system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: #4d6b57;
+  margin: 0 0 0.5rem;
+}
+.cms-article__title {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.15;
+  margin: 0 0 0.5rem;
+}
+.cms-article__meta {
+  font-family: system-ui, sans-serif;
+  color: #666;
+  font-size: 0.9rem;
+}
+.cms-article__featured {
+  margin: 1.5rem 0;
+}
+.cms-article__featured img,
+.cms-article__body img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+.cms-article__excerpt {
+  font-size: 1.15rem;
+  color: #333;
+  border-left: 3px solid #9cbf90;
+  padding-left: 1rem;
+}
+.cms-article__body {
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+.cms-article__body a { color: #2f4a3a; }
+.cms-article__tags {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-family: system-ui, sans-serif;
+}
+.cms-article__tags li {
+  background: rgba(47, 74, 58, 0.08);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.cms-list__title {
+  margin: 0 0 1rem;
+  font-size: 2rem;
+}
+.cms-list__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-family: system-ui, sans-serif;
+}
+.cms-list__filters input,
+.cms-list__filters select,
+.cms-list__filters button {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 4px;
+  background: #fff;
+}
+.cms-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+.cms-list__link {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  text-decoration: none;
+  color: inherit;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.cms-list__thumb {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.cms-list__theme {
+  font-family: system-ui, sans-serif;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4d6b57;
+}
+.cms-list__item-title {
+  margin: 0.2rem 0;
+  font-size: 1.25rem;
+}
+.cms-list__excerpt {
+  margin: 0.35rem 0;
+  color: #444;
+  font-size: 0.98rem;
+}
+.cms-list__date {
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  color: #777;
+}
+.cms-list__empty { color: #666; }
+
+.cms-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.cms-media-item {
+  margin: 0;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.cms-media-item img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+.cms-media-item figcaption {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+}
+.cms-media-path {
+  display: block;
+  word-break: break-all;
+  margin-bottom: 0.4rem;
+}

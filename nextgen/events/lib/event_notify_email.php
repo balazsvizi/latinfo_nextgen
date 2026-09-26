@@ -322,12 +322,18 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
     $placeholders = implode(',', array_fill(0, count($organizerIds), '?'));
 
     try {
+        if (!function_exists('nextgen_partner_ensure_extended_schema')) {
+            require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
+        }
+        nextgen_partner_ensure_extended_schema($db);
+
         $st = $db->prepare("
             SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
             FROM `nextgen_partner_events_organizers` po
             INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
             WHERE po.`organizer_id` IN ({$placeholders})
               AND TRIM(COALESCE(p.`email`, '')) <> ''
+              AND COALESCE(p.`email_event_bekerult`, 1) = 1
         ");
         $st->execute($organizerIds);
         foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $email) {

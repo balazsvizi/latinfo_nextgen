@@ -7,6 +7,8 @@ if ($navZone === 'events') {
     $logoHomeUrl = nextgen_url('events/events_admin.php');
 } elseif ($navZone === 'latinfo') {
     $logoHomeUrl = nextgen_url('latinfo/');
+} elseif ($navZone === 'cms') {
+    $logoHomeUrl = nextgen_url('cms/');
 } elseif ($navZone === 'nextgen') {
     $logoHomeUrl = nextgen_url('apps.php');
 } else {
@@ -40,6 +42,7 @@ if ($navZone === 'events') {
                     <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance</a></li>
                     <li role="none"><a href="<?= h(nextgen_url('events/events_admin.php')) ?>" role="menuitem">Event Admin</a></li>
                     <li role="none"><a href="<?= h(nextgen_url('latinfo/')) ?>" role="menuitem">Latinfo.hu</a></li>
+                    <li role="none"><a href="<?= h(nextgen_url('cms/')) ?>" role="menuitem">CMS</a></li>
                     <li role="none"><a href="<?= h(nextgen_url('config/cimkek.php')) ?>" role="menuitem">NextGen</a></li>
                 </ul>
             </div>
@@ -142,6 +145,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/events_public_stat.php')) ?>" role="menuitem">Publikus oldalak</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('site/stat.php')) ?>" role="menuitem">Kezdőoldal modulok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('site/mobilapp_stat.php')) ?>" role="menuitem">Mobilapp</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('cms/stat.php')) ?>" role="menuitem">CMS cikkek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
@@ -168,6 +172,29 @@ if ($navZone === 'events') {
                     <a href="<?= h(nextgen_url('events/adatok.php')) ?>" class="nav-parent-link">Adatok</a>
                 </li>
                 <?php endif; ?>
+                <?php elseif ($navZone === 'cms'): ?>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('cms/posts.php')) ?>" class="nav-parent-link">Cikkek</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="cms-posts" aria-label="Cikkek almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-cms-posts" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('cms/posts.php')) ?>" role="menuitem">Lista</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('cms/letrehoz.php')) ?>" role="menuitem">Új cikk</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('cms/temak.php')) ?>" class="nav-parent-link">Témák</a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('cms/kepek.php')) ?>" class="nav-parent-link">Képek</a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('events/tags.php')) ?>" class="nav-parent-link">Címkék</a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= h(nextgen_url('cms/stat.php')) ?>" class="nav-parent-link">Stat</a>
+                </li>
                 <?php endif; ?>
                 <?php if ($navZone === 'nextgen'): ?>
                 <li class="nav-item has-submenu">

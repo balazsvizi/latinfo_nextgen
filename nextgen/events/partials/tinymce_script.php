@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $tinymceImageUploadUrl = $tinymceImageUploadUrl ?? events_url('ajax_cms_image_upload.php');
-$tinymceImageUploadCsrf = csrf_token('events_cms_image');
+$tinymceImageUploadCsrf = $tinymceImageUploadCsrf ?? csrf_token('events_cms_image');
 ?>
 <script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
 <script>

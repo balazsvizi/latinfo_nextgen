@@ -185,6 +185,9 @@ function ng_nav_latinfo_event_scripts(): array
  */
 function ng_nav_app_zone(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (strpos($s, '/nextgen/cms/') !== false) {
+        return 'cms';
+    }
     if (strpos($s, '/nextgen/latinfo/') !== false || strpos($s, '/nextgen/site/') !== false) {
         return 'latinfo';
     }
@@ -220,6 +223,9 @@ function ng_nav_app_zone(): string {
 function app_backoffice_area(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     $zone = ng_nav_app_zone();
+    if ($zone === 'cms') {
+        return 'CMS';
+    }
     if ($zone === 'latinfo') {
         return 'Latinfo.hu';
     }
