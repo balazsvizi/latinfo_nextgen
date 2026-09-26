@@ -723,9 +723,9 @@ function latinfo_home_news_delete(PDO $db, int $id): void
 }
 
 /**
- * Kimenet (web / app) láthatóság beállítása.
+ * Láthatóság / kimenet (látható, web, app) beállítása.
  *
- * @return bool Az új érték (true = látható a kimeneten)
+ * @return bool Az új érték (true = bekapcsolva)
  */
 function latinfo_home_news_set_surface(PDO $db, int $id, string $field, bool $enabled): bool
 {
@@ -733,11 +733,14 @@ function latinfo_home_news_set_surface(PDO $db, int $id, string $field, bool $en
         throw new InvalidArgumentException('Érvénytelen bejelentés.');
     }
     $sql = match ($field) {
+        'is_visible' => 'UPDATE `latinfo_home_news` SET `is_visible` = ? WHERE `id` = ?',
         'show_on_web' => 'UPDATE `latinfo_home_news` SET `show_on_web` = ? WHERE `id` = ?',
         'show_on_app' => 'UPDATE `latinfo_home_news` SET `show_on_app` = ? WHERE `id` = ?',
         default => throw new InvalidArgumentException('Érvénytelen kimenet.'),
     };
-    latinfo_home_news_ensure_surface_columns($db);
+    if ($field !== 'is_visible') {
+        latinfo_home_news_ensure_surface_columns($db);
+    }
     $st = $db->prepare($sql);
     $st->execute([$enabled ? 1 : 0, $id]);
     if ($st->rowCount() === 0 && latinfo_home_news_get($db, $id) === null) {

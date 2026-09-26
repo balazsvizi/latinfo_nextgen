@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $field = (string) ($_POST['field'] ?? '');
                 $enabled = ($_POST['enabled'] ?? '0') === '1';
                 $labels = [
+                    'is_visible' => 'Látható',
                     'show_on_web' => 'Web',
                     'show_on_app' => 'Mobilapp',
                 ];
@@ -69,9 +70,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ''
                     );
                 }
-                flash('success', $enabled
-                    ? ('A bejelentés megjelenik: ' . $labels[$field] . '.')
-                    : ('A bejelentés elrejtve: ' . $labels[$field] . '.'));
+                if ($field === 'is_visible') {
+                    flash('success', $enabled
+                        ? 'A bejelentés látható.'
+                        : 'A bejelentés elrejtve.');
+                } else {
+                    flash('success', $enabled
+                        ? ('A bejelentés megjelenik: ' . $labels[$field] . '.')
+                        : ('A bejelentés elrejtve: ' . $labels[$field] . '.'));
+                }
                 redirect($formAction);
             } elseif ($action === 'delete_news') {
                 $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
@@ -158,7 +165,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <p class="text-muted" style="margin-top:0">
         A kezdőoldalon legfeljebb 3 bejelentés jelenik meg. A „Első a 3 között” pipa a lista elejére teszi.
-        A listában a Web / App kapcsolókkal állítható, melyik kimeneten jelenjen meg a hír.
+        A listában a Látható / Web / App kapcsolókkal állítható a megjelenés.
     </p>
 
     <?php if (!$schemaOk): ?>
@@ -281,6 +288,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <?php foreach ($newsRows as $row): ?>
                             <?php
                             $rowId = (int) $row['id'];
+                            $isVisible = !empty($row['is_visible']);
                             $onWeb = !empty($row['show_on_web'] ?? 1);
                             $onApp = !empty($row['show_on_app'] ?? 1);
                             ?>
@@ -289,7 +297,27 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td><?= h((string) $row['title']) ?></td>
                                 <td><?= h((string) $row['kicker']) ?></td>
                                 <td><?= !empty($row['is_hero']) ? 'igen' : '–' ?></td>
-                                <td><?= !empty($row['is_visible']) ? 'igen' : 'nem' ?></td>
+                                <td>
+                                    <form method="post" action="<?= h($formAction) ?>" class="lh-admin-surface-toggle">
+                                        <?= csrf_input('latinfo_home_announcements') ?>
+                                        <input type="hidden" name="action" value="toggle_surface">
+                                        <input type="hidden" name="id" value="<?= $rowId ?>">
+                                        <input type="hidden" name="field" value="is_visible">
+                                        <input type="hidden" name="enabled" value="0">
+                                        <label class="events-toggle events-toggle--inline" for="surface_visible_<?= $rowId ?>" aria-label="Látható">
+                                            <input
+                                                type="checkbox"
+                                                id="surface_visible_<?= $rowId ?>"
+                                                name="enabled"
+                                                value="1"
+                                                class="events-toggle__input"
+                                                <?= $isVisible ? 'checked' : '' ?>
+                                                onchange="this.form.submit()"
+                                            >
+                                            <span class="events-toggle__ui" aria-hidden="true"></span>
+                                        </label>
+                                    </form>
+                                </td>
                                 <td>
                                     <form method="post" action="<?= h($formAction) ?>" class="lh-admin-surface-toggle">
                                         <?= csrf_input('latinfo_home_announcements') ?>

@@ -12,6 +12,8 @@ require_once __DIR__ . '/../nextgen/core/database.php';
 require_once __DIR__ . '/../nextgen/includes/auth.php';
 require_once __DIR__ . '/../nextgen/includes/landingpage_table.php';
 require_once __DIR__ . '/../nextgen/includes/functions.php';
+require_once __DIR__ . '/../nextgen/events/bootstrap.php';
+require_once __DIR__ . '/../nextgen/events/lib/event_public_lang.php';
 
 $db = getDb();
 $hiba_feedback = '';
@@ -101,16 +103,32 @@ $visszaUrl = landing_feedback_safe_return_url(
     is_string($visszaFlashed) ? $visszaFlashed : ($forrasReturn ?? null),
     $homeUrl
 );
-$eventsHome = defined('EVENTS_HOME_PATH') ? EVENTS_HOME_PATH : 'events';
-$naptarUrl = rtrim(site_url($eventsHome . '/'), '/') . '/';
 $manifestUrl = site_url('mobilapp/manifest.php');
 $swUrl = site_url('mobilapp/sw.js');
 $iconUrl = site_url('mobilapp/assets/icons/latinfo-app-logo.jpg');
 $iconVersion = defined('APP_VERSION') ? (string) APP_VERSION : '1';
 $iconUrlVer = $iconUrl . '?v=' . rawurlencode($iconVersion);
 
+$lang = 'hu';
+$htmlLang = 'hu';
+$S = [
+    'logo_alt' => SITE_NAME,
+    'lang_nav' => 'Nyelv',
+];
+$mobilappUrl = site_url('mobilapp/');
+$urlHu = $mobilappUrl;
+$urlEn = rtrim($homeUrl, '/') . '/?lang=en';
+$isEventsHome = true;
+$showAdminEdit = false;
+$adminEditUrl = '';
+$eventsPublicTrafficPageKey = 'mobilapp';
+$eventsPartial = __DIR__ . '/../nextgen/events/partials';
+
 $pageTitle = SITE_NAME . ' – Mobilapp';
 $pageDescription = 'Telepítsd a Latinfo mobilalkalmazást a telefonodra: eseménynaptár egy koppintással, visszajelzéssel.';
+$cssPublicUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(
+    defined('APP_VERSION') ? (string) APP_VERSION : '1'
+);
 $cssUrl = site_url('mobilapp/assets/css/mobilapp.css') . '?v=' . rawurlencode(
     defined('APP_VERSION') ? (string) APP_VERSION : '1'
 );
@@ -119,7 +137,7 @@ $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
 );
 ?>
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="<?= h($htmlLang) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -141,17 +159,15 @@ $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
     <?php endif; ?>
     <meta property="og:locale" content="hu_HU">
     <link rel="manifest" href="<?= h($manifestUrl) ?>">
-    <link rel="icon" type="image/jpeg" href="<?= h($iconUrlVer) ?>">
+    <?= events_public_favicon_head_markup() ?>
     <link rel="apple-touch-icon" href="<?= h($iconUrlVer) ?>">
+    <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="ma-page">
-    <header class="ma-header">
-        <a class="ma-brand" href="<?= h($homeUrl) ?>">
-            <img class="ma-brand-logo" src="<?= h($iconUrlVer) ?>" width="36" height="36" alt="">
-            <span><?= h(SITE_NAME) ?></span>
-        </a>
-        <a class="ma-header-link" href="<?= h($naptarUrl) ?>">Naptár</a>
+<body class="ma-page event-public-page">
+<div class="event-shell">
+    <header class="event-public__hero event-public__hero--bar-only">
+        <?php require $eventsPartial . '/public_shell_hero_bar.php'; ?>
     </header>
 
     <main class="ma-main">
@@ -236,6 +252,7 @@ $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
     <footer class="ma-footer">
         <p>&copy; <?= (int) date('Y') ?> <?= h(SITE_NAME) ?> · <?= nextgen_footer_version_markup() ?></p>
     </footer>
+</div>
 
     <script>
         window.LATINFO_MOBILEAPP = {
