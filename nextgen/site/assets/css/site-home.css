@@ -238,7 +238,7 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
 }
 
 .latinfo-home__event:focus-visible,
-.latinfo-home__flash:focus-visible {
+.latinfo-home__flash-link:focus-visible::after {
     outline: 2px solid var(--li-green);
     outline-offset: 2px;
 }
@@ -512,14 +512,55 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     transition: color 0.2s var(--lh-ease);
 }
 
+.latinfo-home__flash-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.latinfo-home__flash-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+}
+
+.latinfo-home__flash-link:hover {
+    color: inherit;
+    text-decoration: none;
+}
+
 .latinfo-home__flash:hover .latinfo-home__flash-title {
     color: var(--li-green);
 }
 
 .latinfo-home__flash-dek {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
     font-size: var(--lh-body-size);
     line-height: var(--lh-body-line);
     color: var(--li-text-muted);
+}
+
+.latinfo-home__flash-dek :where(p, ul, ol, blockquote, h2, h3, h4) {
+    margin: 0;
+}
+
+.latinfo-home__flash-dek :where(p, ul, ol, blockquote) + :where(p, ul, ol, blockquote) {
+    margin-top: 0.35em;
+}
+
+.latinfo-home__flash-dek :where(ul, ol) {
+    padding-left: 1.15em;
+}
+
+.latinfo-home__flash-dek a {
+    pointer-events: auto;
+    position: relative;
+    z-index: 3;
+    color: inherit;
+    text-decoration: underline;
 }
 
 /* --------------------------------------------------------------------------

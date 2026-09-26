@@ -29,21 +29,23 @@ $H = is_array($H ?? null) ? $H : [];
                 $itemTitle = trim((string) ($item['title'] ?? ''));
                 ?>
                 <li role="listitem">
-                    <a
-                        class="latinfo-home__flash"
-                        href="<?= h($itemUrl) ?>"
-                        data-lh-module-track="announcements"
-                        data-lh-item-key="<?= h($itemId > 0 ? 'news:' . $itemId : '') ?>"
-                        data-lh-item-label="<?= h($itemTitle) ?>"
-                    >
+                    <div class="latinfo-home__flash">
                         <?php if ($itemKicker !== ''): ?>
                             <span class="latinfo-home__flash-kicker"><?= h($itemKicker) ?></span>
                         <?php endif; ?>
-                        <span class="latinfo-home__flash-title"><?= h($itemTitle) ?></span>
+                        <span class="latinfo-home__flash-title">
+                            <a
+                                class="latinfo-home__flash-link"
+                                href="<?= h($itemUrl) ?>"
+                                data-lh-module-track="announcements"
+                                data-lh-item-key="<?= h($itemId > 0 ? 'news:' . $itemId : '') ?>"
+                                data-lh-item-label="<?= h($itemTitle) ?>"
+                            ><?= h($itemTitle) ?></a>
+                        </span>
                         <?php if ($itemDek !== ''): ?>
-                            <span class="latinfo-home__flash-dek"><?= h($itemDek) ?></span>
+                            <div class="latinfo-home__flash-dek"><?= events_sanitize_html_fragment($itemDek) ?></div>
                         <?php endif; ?>
-                    </a>
+                    </div>
                 </li>
             <?php endforeach; ?>
         </ul>

@@ -48,6 +48,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 flash('success', $id > 0 ? 'A bejelentés mentve.' : 'Új bejelentés létrehozva.');
                 redirect($formAction);
+            } elseif ($action === 'toggle_surface') {
+                $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+                $id = ($id === false || $id < 0) ? 0 : (int) $id;
+                $field = (string) ($_POST['field'] ?? '');
+                $enabled = ($_POST['enabled'] ?? '0') === '1';
+                $labels = [
+                    'show_on_web' => 'Web',
+                    'show_on_app' => 'Mobilapp',
+                ];
+                if (!isset($labels[$field])) {
+                    throw new InvalidArgumentException('Érvénytelen kimenet.');
+                }
+                latinfo_home_news_set_surface($db, $id, $field, $enabled);
+                if (function_exists('rendszer_log')) {
+                    rendszer_log(
+                        'kezdőoldal_bejelentés',
+                        $id,
+                        $enabled ? ($labels[$field] . ' bekapcsolva') : ($labels[$field] . ' kikapcsolva'),
+                        ''
+                    );
+                }
+                flash('success', $enabled
+                    ? ('A bejelentés megjelenik: ' . $labels[$field] . '.')
+                    : ('A bejelentés elrejtve: ' . $labels[$field] . '.'));
+                redirect($formAction);
             } elseif ($action === 'delete_news') {
                 $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
                 $id = ($id === false || $id < 0) ? 0 : (int) $id;
@@ -109,8 +134,13 @@ $extraHead = '<style>
 .lh-admin-check{display:flex;align-items:center;gap:.5rem;font-weight:500}
 .lh-admin-check input{width:auto;max-width:none}
 .lh-admin .form-group input,.lh-admin .form-group textarea{max-width:640px}
+.lh-admin .html-editor{max-width:720px}
+.lh-admin .form-group .html-editor textarea{max-width:100%;width:100%}
+.lh-admin .html-editor-source,.lh-admin .html-editor-preview{min-height:9rem}
 .lh-admin-actions{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
 .lh-admin-actions form{display:inline}
+.lh-admin-surface-toggle{display:inline}
+.lh-admin-surface-toggle .events-toggle{margin:0}
 </style>';
 
 require_once dirname(__DIR__) . '/partials/header.php';
@@ -128,7 +158,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <p class="text-muted" style="margin-top:0">
         A kezdőoldalon legfeljebb 3 bejelentés jelenik meg. A „Első a 3 között” pipa a lista elejére teszi.
-        Web és mobilapp külön állítható: melyik felületen jelenjen meg a hír.
+        A listában a Web / App kapcsolókkal állítható, melyik kimeneten jelenjen meg a hír.
     </p>
 
     <?php if (!$schemaOk): ?>
@@ -181,7 +211,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
                 <div class="form-group">
                     <label for="news_dek">Lead</label>
-                    <textarea id="news_dek" name="dek" rows="3" maxlength="500"><?= h((string) $n['dek']) ?></textarea>
+                    <textarea id="news_dek" name="dek" class="js-html-editor-source" rows="6"><?= h((string) $n['dek']) ?></textarea>
                 </div>
                 <div class="form-group">
                     <label for="news_url">Hivatkozás</label>
@@ -249,21 +279,66 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <tr><td colspan="8" class="text-muted">Még nincs bejelentés.</td></tr>
                     <?php else: ?>
                         <?php foreach ($newsRows as $row): ?>
+                            <?php
+                            $rowId = (int) $row['id'];
+                            $onWeb = !empty($row['show_on_web'] ?? 1);
+                            $onApp = !empty($row['show_on_app'] ?? 1);
+                            ?>
                             <tr>
                                 <td><?= (int) $row['sort_order'] ?></td>
                                 <td><?= h((string) $row['title']) ?></td>
                                 <td><?= h((string) $row['kicker']) ?></td>
                                 <td><?= !empty($row['is_hero']) ? 'igen' : '–' ?></td>
                                 <td><?= !empty($row['is_visible']) ? 'igen' : 'nem' ?></td>
-                                <td><?= !empty($row['show_on_web'] ?? 1) ? 'igen' : 'nem' ?></td>
-                                <td><?= !empty($row['show_on_app'] ?? 1) ? 'igen' : 'nem' ?></td>
+                                <td>
+                                    <form method="post" action="<?= h($formAction) ?>" class="lh-admin-surface-toggle">
+                                        <?= csrf_input('latinfo_home_announcements') ?>
+                                        <input type="hidden" name="action" value="toggle_surface">
+                                        <input type="hidden" name="id" value="<?= $rowId ?>">
+                                        <input type="hidden" name="field" value="show_on_web">
+                                        <input type="hidden" name="enabled" value="0">
+                                        <label class="events-toggle events-toggle--inline" for="surface_web_<?= $rowId ?>" aria-label="Web kimenet">
+                                            <input
+                                                type="checkbox"
+                                                id="surface_web_<?= $rowId ?>"
+                                                name="enabled"
+                                                value="1"
+                                                class="events-toggle__input"
+                                                <?= $onWeb ? 'checked' : '' ?>
+                                                onchange="this.form.submit()"
+                                            >
+                                            <span class="events-toggle__ui" aria-hidden="true"></span>
+                                        </label>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form method="post" action="<?= h($formAction) ?>" class="lh-admin-surface-toggle">
+                                        <?= csrf_input('latinfo_home_announcements') ?>
+                                        <input type="hidden" name="action" value="toggle_surface">
+                                        <input type="hidden" name="id" value="<?= $rowId ?>">
+                                        <input type="hidden" name="field" value="show_on_app">
+                                        <input type="hidden" name="enabled" value="0">
+                                        <label class="events-toggle events-toggle--inline" for="surface_app_<?= $rowId ?>" aria-label="Mobilapp kimenet">
+                                            <input
+                                                type="checkbox"
+                                                id="surface_app_<?= $rowId ?>"
+                                                name="enabled"
+                                                value="1"
+                                                class="events-toggle__input"
+                                                <?= $onApp ? 'checked' : '' ?>
+                                                onchange="this.form.submit()"
+                                            >
+                                            <span class="events-toggle__ui" aria-hidden="true"></span>
+                                        </label>
+                                    </form>
+                                </td>
                                 <td>
                                     <div class="lh-admin-actions">
-                                        <a class="btn btn-secondary btn-sm" href="<?= h($formAction . '?id=' . (int) $row['id']) ?>">Szerkeszt</a>
+                                        <a class="btn btn-secondary btn-sm" href="<?= h($formAction . '?id=' . $rowId) ?>">Szerkeszt</a>
                                         <form method="post" action="<?= h($formAction) ?>" onsubmit="return confirm('Törlöd ezt a bejelentést?');">
                                             <?= csrf_input('latinfo_home_announcements') ?>
                                             <input type="hidden" name="action" value="delete_news">
-                                            <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
+                                            <input type="hidden" name="id" value="<?= $rowId ?>">
                                             <button type="submit" class="btn btn-secondary btn-sm">Töröl</button>
                                         </form>
                                     </div>
@@ -279,6 +354,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <?php if ($schemaOk): ?>
     <?php require __DIR__ . '/partials/module_item_stats.php'; ?>
+<?php endif; ?>
+
+<?php if ($schemaOk && $showNewsForm): ?>
+    <?php require dirname(__DIR__) . '/events/partials/html_editor_script.php'; ?>
 <?php endif; ?>
 
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

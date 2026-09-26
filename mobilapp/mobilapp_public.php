@@ -167,7 +167,6 @@ $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
 
             <div class="ma-actions">
                 <button type="button" class="ma-btn" id="ma-install-btn" hidden>Telepítés a telefonra</button>
-                <a class="ma-btn ma-btn-secondary" href="<?= h($homeUrl) ?>?source=mobilapp">Megnyitom a főoldalt</a>
             </div>
 
             <p class="ma-install-status" id="ma-install-status" role="status" hidden></p>
@@ -240,8 +239,7 @@ $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
 
     <script>
         window.LATINFO_MOBILEAPP = {
-            swUrl: <?= json_encode($swUrl, JSON_UNESCAPED_SLASHES) ?>,
-            homeUrl: <?= json_encode(rtrim($homeUrl, '/') . '/?source=mobilapp', JSON_UNESCAPED_SLASHES) ?>
+            swUrl: <?= json_encode($swUrl, JSON_UNESCAPED_SLASHES) ?>
         };
     </script>
     <script src="<?= h($jsUrl) ?>" defer></script>

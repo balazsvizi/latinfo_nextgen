@@ -201,7 +201,7 @@ function latinfo_home_ensure_schema(PDO $db): bool
             CREATE TABLE IF NOT EXISTS `latinfo_home_news` (
                 `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 `title` VARCHAR(200) NOT NULL,
-                `dek` VARCHAR(500) NOT NULL DEFAULT '',
+                `dek` TEXT NOT NULL,
                 `kicker` VARCHAR(80) NOT NULL DEFAULT '',
                 `image_url` VARCHAR(500) NOT NULL DEFAULT '',
                 `url` VARCHAR(500) NOT NULL DEFAULT '',
@@ -231,6 +231,7 @@ function latinfo_home_ensure_schema(PDO $db): bool
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
         latinfo_home_news_ensure_surface_columns($db);
+        latinfo_home_news_ensure_dek_column($db);
         latinfo_home_seed_if_empty($db);
         $done = true;
 
@@ -255,6 +256,22 @@ function latinfo_home_news_ensure_surface_columns(PDO $db): void
         }
     } catch (Throwable $e) {
         error_log('latinfo_home_news_ensure_surface_columns: ' . $e->getMessage());
+    }
+}
+
+function latinfo_home_news_ensure_dek_column(PDO $db): void
+{
+    try {
+        $col = $db->query("SHOW COLUMNS FROM `latinfo_home_news` LIKE 'dek'")->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($col)) {
+            return;
+        }
+        $type = strtolower((string) ($col['Type'] ?? ''));
+        if (!str_contains($type, 'text')) {
+            $db->exec('ALTER TABLE `latinfo_home_news` MODIFY COLUMN `dek` TEXT NOT NULL');
+        }
+    } catch (Throwable $e) {
+        error_log('latinfo_home_news_ensure_dek_column: ' . $e->getMessage());
     }
 }
 
@@ -654,7 +671,8 @@ function latinfo_home_news_save(PDO $db, int $id, array $input): int
     if ($title === '') {
         throw new InvalidArgumentException('A hír címe kötelező.');
     }
-    $dek = latinfo_home_clamp((string) ($input['dek'] ?? ''), 500);
+    latinfo_home_news_ensure_dek_column($db);
+    $dek = latinfo_home_clamp(events_sanitize_html_fragment((string) ($input['dek'] ?? '')), 20000);
     $kicker = latinfo_home_clamp((string) ($input['kicker'] ?? ''), 80);
     $imageUrl = latinfo_home_sanitize_url((string) ($input['image_url'] ?? ''));
     $url = latinfo_home_sanitize_url((string) ($input['url'] ?? ''));
@@ -702,6 +720,31 @@ function latinfo_home_news_delete(PDO $db, int $id): void
     }
     $st = $db->prepare('DELETE FROM `latinfo_home_news` WHERE `id` = ?');
     $st->execute([$id]);
+}
+
+/**
+ * Kimenet (web / app) láthatóság beállítása.
+ *
+ * @return bool Az új érték (true = látható a kimeneten)
+ */
+function latinfo_home_news_set_surface(PDO $db, int $id, string $field, bool $enabled): bool
+{
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Érvénytelen bejelentés.');
+    }
+    $sql = match ($field) {
+        'show_on_web' => 'UPDATE `latinfo_home_news` SET `show_on_web` = ? WHERE `id` = ?',
+        'show_on_app' => 'UPDATE `latinfo_home_news` SET `show_on_app` = ? WHERE `id` = ?',
+        default => throw new InvalidArgumentException('Érvénytelen kimenet.'),
+    };
+    latinfo_home_news_ensure_surface_columns($db);
+    $st = $db->prepare($sql);
+    $st->execute([$enabled ? 1 : 0, $id]);
+    if ($st->rowCount() === 0 && latinfo_home_news_get($db, $id) === null) {
+        throw new InvalidArgumentException('A bejelentés nem található.');
+    }
+
+    return $enabled;
 }
 
 /**

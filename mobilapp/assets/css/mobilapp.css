@@ -300,19 +300,6 @@ body.ma-page {
     flex: 1 1 12rem;
 }
 
-.ma-btn-secondary {
-    background: #ffffff;
-    color: var(--ma-green-dark);
-    border: 1px solid var(--ma-border);
-    box-shadow: none;
-}
-
-.ma-btn-secondary:hover {
-    background: var(--ma-green-soft);
-    color: var(--ma-green-dark);
-    border-color: var(--ma-green);
-}
-
 .ma-btn:hover {
     background: linear-gradient(135deg, #5d7d53, var(--ma-green-dark));
     box-shadow: 0 16px 28px -14px rgba(45, 58, 40, 0.8);
