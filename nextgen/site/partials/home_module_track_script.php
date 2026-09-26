@@ -6,9 +6,11 @@ declare(strict_types=1);
  *
  * @var string $lang
  * @var bool $lhModuleTrackAllowed
+ * @var string $homeSurface
  */
 $lhModuleTrackAllowed = !empty($lhModuleTrackAllowed);
 $lang = (($lang ?? 'hu') === 'en') ? 'en' : 'hu';
+$homeSurface = latinfo_home_normalize_surface($homeSurface ?? 'web');
 if (!$lhModuleTrackAllowed) {
     return;
 }
@@ -18,6 +20,7 @@ $trackUrl = nextgen_url('site/ajax_module_click.php');
 (function () {
     var trackUrl = <?= json_encode($trackUrl, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var lang = <?= json_encode($lang, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var surface = <?= json_encode($homeSurface, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     if (!trackUrl) return;
 
     function track(moduleKey, itemKey, itemLabel) {
@@ -25,6 +28,7 @@ $trackUrl = nextgen_url('site/ajax_module_click.php');
         var body = new FormData();
         body.append('module_key', moduleKey);
         body.append('lang', lang);
+        body.append('surface', surface || 'web');
         if (itemKey) body.append('item_key', itemKey);
         if (itemLabel) body.append('item_label', itemLabel);
         if (navigator.sendBeacon) {

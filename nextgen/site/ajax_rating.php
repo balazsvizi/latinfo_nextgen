@@ -25,6 +25,7 @@ if (!rate_limit_allow(rate_limit_client_key('lh_rating'), 30, 60)) {
 $stars = filter_var($_POST['stars'] ?? 0, FILTER_VALIDATE_INT);
 $stars = ($stars === false) ? 0 : (int) $stars;
 $lang = strtolower(trim((string) ($_POST['lang'] ?? 'hu'))) === 'en' ? 'en' : 'hu';
+$surface = latinfo_home_normalize_surface($_POST['surface'] ?? latinfo_home_resolve_surface());
 
 try {
     $db = getDb();
@@ -33,7 +34,7 @@ try {
         echo json_encode(['ok' => false, 'error' => 'Schema hiba.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    $result = latinfo_home_rating_submit($db, $stars, $lang);
+    $result = latinfo_home_rating_submit($db, $stars, $lang, $surface);
     $status = $result['ok'] ? 200 : 400;
     http_response_code($status);
     echo json_encode([

@@ -8,9 +8,11 @@ declare(strict_types=1);
  * @var string $lang
  * @var string $ratingAjaxUrl
  * @var array{average?: float, count?: int} $ratingSummary
+ * @var string $homeSurface
  */
 $ratingStrings = is_array($ratingStrings ?? null) ? $ratingStrings : [];
 $lang = (($lang ?? 'hu') === 'en') ? 'en' : 'hu';
+$homeSurface = latinfo_home_normalize_surface($homeSurface ?? 'web');
 $ratingAjaxUrl = (string) ($ratingAjaxUrl ?? nextgen_url('site/ajax_rating.php'));
 $ratingSummary = is_array($ratingSummary ?? null) ? $ratingSummary : [];
 $liveAverage = (float) ($ratingSummary['average'] ?? 0);
@@ -58,6 +60,7 @@ $thanksFive = trim((string) ($ratingStrings['thanks_five'] ?? ''));
     if (!root) return;
     var ajaxUrl = <?= json_encode($ratingAjaxUrl, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var lang = <?= json_encode($lang, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var surface = <?= json_encode($homeSurface, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var avgTpl = <?= json_encode($avgTpl, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var thanks = <?= json_encode((string) ($ratingStrings['thanks'] ?? ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     var liveAvg = <?= json_encode($liveAverage, JSON_UNESCAPED_UNICODE) ?>;
@@ -126,6 +129,7 @@ $thanksFive = trim((string) ($ratingStrings['thanks_five'] ?? ''));
         var body = new FormData();
         body.append('stars', String(stars));
         body.append('lang', lang);
+        body.append('surface', surface || 'web');
         fetch(ajaxUrl, { method: 'POST', body: body, credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {

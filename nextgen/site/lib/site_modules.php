@@ -179,12 +179,14 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
                 `item_label` VARCHAR(200) NOT NULL DEFAULT '',
                 `lang` CHAR(2) NOT NULL DEFAULT 'hu',
                 `device` VARCHAR(16) NOT NULL DEFAULT 'unknown',
+                `surface` VARCHAR(8) NOT NULL DEFAULT 'web',
                 `ip_hash` CHAR(64) NULL DEFAULT NULL,
                 `is_bot` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
                 `occurred_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 KEY `idx_lh_mod_click_mod_time` (`module_key`, `occurred_at`),
                 KEY `idx_lh_mod_click_item` (`module_key`, `item_key`, `occurred_at`),
-                KEY `idx_lh_mod_click_bot` (`is_bot`, `occurred_at`)
+                KEY `idx_lh_mod_click_bot` (`is_bot`, `occurred_at`),
+                KEY `idx_lh_mod_click_surface` (`surface`, `occurred_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
         $db->exec("
@@ -206,6 +208,7 @@ function latinfo_home_modules_ensure_schema(PDO $db): bool
         latinfo_home_modules_ensure_mobile_order_column($db);
         latinfo_home_modules_ensure_layout_column($db);
         latinfo_home_modules_ensure_app_columns($db);
+        latinfo_home_modules_ensure_click_surface_column($db);
         latinfo_home_modules_seed_defaults($db);
         $done = true;
 
@@ -285,6 +288,23 @@ function latinfo_home_modules_ensure_app_columns(PDO $db): void
         }
     } catch (Throwable $e) {
         error_log('latinfo_home_modules_ensure_app_columns: ' . $e->getMessage());
+    }
+}
+
+function latinfo_home_modules_ensure_click_surface_column(PDO $db): void
+{
+    try {
+        $cols = $db->query("SHOW COLUMNS FROM `latinfo_home_module_clicks` LIKE 'surface'")->fetch(PDO::FETCH_ASSOC);
+        if (is_array($cols)) {
+            return;
+        }
+        $db->exec("
+            ALTER TABLE `latinfo_home_module_clicks`
+            ADD COLUMN `surface` VARCHAR(8) NOT NULL DEFAULT 'web' AFTER `device`,
+            ADD KEY `idx_lh_mod_click_surface` (`surface`, `occurred_at`)
+        ");
+    } catch (Throwable $e) {
+        error_log('latinfo_home_modules_ensure_click_surface_column: ' . $e->getMessage());
     }
 }
 
@@ -611,7 +631,8 @@ function latinfo_home_module_track_click(
     string $moduleKey,
     string $itemKey = '',
     string $itemLabel = '',
-    string $lang = 'hu'
+    string $lang = 'hu',
+    ?string $surface = null
 ): array {
     if (!latinfo_home_module_is_valid($moduleKey)) {
         return ['ok' => false, 'recorded' => false];
@@ -619,6 +640,7 @@ function latinfo_home_module_track_click(
     $itemKey = latinfo_home_module_normalize_item_key($itemKey);
     $itemLabel = latinfo_home_clamp($itemLabel, 200);
     $lang = strtolower(trim($lang)) === 'en' ? 'en' : 'hu';
+    $surface = latinfo_home_normalize_surface($surface ?? 'web');
 
     if (!latinfo_home_module_click_should_record()) {
         return ['ok' => true, 'recorded' => false];
@@ -629,12 +651,13 @@ function latinfo_home_module_track_click(
     $ipHash = events_view_tracking_ip_hash();
 
     try {
+        latinfo_home_modules_ensure_click_surface_column($db);
         $st = $db->prepare('
             INSERT INTO `latinfo_home_module_clicks`
-                (`module_key`, `item_key`, `item_label`, `lang`, `device`, `ip_hash`, `is_bot`)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (`module_key`, `item_key`, `item_label`, `lang`, `device`, `surface`, `ip_hash`, `is_bot`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ');
-        $st->execute([$moduleKey, $itemKey, $itemLabel, $lang, $device, $ipHash, $isBot]);
+        $st->execute([$moduleKey, $itemKey, $itemLabel, $lang, $device, $surface, $ipHash, $isBot]);
 
         return ['ok' => true, 'recorded' => true];
     } catch (Throwable $e) {
@@ -870,7 +893,7 @@ function latinfo_home_rating_summary(PDO $db, bool $humansOnly = true): array
 /**
  * @return array{ok: bool, recorded: bool, average: float, count: int, message: string}
  */
-function latinfo_home_rating_submit(PDO $db, int $stars, string $lang = 'hu'): array
+function latinfo_home_rating_submit(PDO $db, int $stars, string $lang = 'hu', ?string $surface = null): array
 {
     $summary = latinfo_home_rating_summary($db, true);
     $base = [
@@ -886,6 +909,7 @@ function latinfo_home_rating_submit(PDO $db, int $stars, string $lang = 'hu'): a
     }
 
     $lang = strtolower(trim($lang)) === 'en' ? 'en' : 'hu';
+    $surface = latinfo_home_normalize_surface($surface ?? 'web');
     $isBot = events_view_tracking_detect_bot() ? 1 : 0;
     $device = events_public_traffic_detect_device();
     $ipHash = events_view_tracking_ip_hash();
@@ -931,7 +955,7 @@ function latinfo_home_rating_submit(PDO $db, int $stars, string $lang = 'hu'): a
             $ins->execute([$stars, $lang, $device, $ipHash, $isBot]);
         }
 
-        latinfo_home_module_track_click($db, 'rating', 'stars:' . $stars, $stars . ' csillag', $lang);
+        latinfo_home_module_track_click($db, 'rating', 'stars:' . $stars, $stars . ' csillag', $lang, $surface);
 
         $summary = latinfo_home_rating_summary($db, true);
 
@@ -950,7 +974,7 @@ function latinfo_home_rating_submit(PDO $db, int $stars, string $lang = 'hu'): a
 }
 
 /**
- * @return array{date_from: string, date_to: string, module: string, visitor: string, lang: string, device: string}
+ * @return array{date_from: string, date_to: string, module: string, visitor: string, lang: string, device: string, surface: string}
  */
 function latinfo_home_module_stats_params_from_request(array $query): array
 {
@@ -971,6 +995,12 @@ function latinfo_home_module_stats_params_from_request(array $query): array
     if (!in_array($device, ['all', 'desktop', 'mobile', 'tablet', 'unknown'], true)) {
         $device = 'all';
     }
+    $surfaceRaw = strtolower(trim((string) ($query['surface'] ?? 'all')));
+    $surface = match ($surfaceRaw) {
+        'web', 'app' => $surfaceRaw,
+        'mobilapp', 'pwa' => 'app',
+        default => 'all',
+    };
 
     return [
         'date_from' => (string) $base['date_from'],
@@ -979,11 +1009,12 @@ function latinfo_home_module_stats_params_from_request(array $query): array
         'visitor' => $visitor,
         'lang' => $lang,
         'device' => $device,
+        'surface' => $surface,
     ];
 }
 
 /**
- * @param array{date_from: string, date_to: string, module?: string, visitor?: string, lang?: string, device?: string} $params
+ * @param array{date_from: string, date_to: string, module?: string, visitor?: string, lang?: string, device?: string, surface?: string} $params
  * @return array{sql: string, bind: list<mixed>}
  */
 function latinfo_home_module_stats_where(array $params, ?string $forceModule = null): array
@@ -1019,6 +1050,12 @@ function latinfo_home_module_stats_where(array $params, ?string $forceModule = n
         $bind[] = $device;
     }
 
+    $surface = (string) ($params['surface'] ?? 'all');
+    if ($surface === 'web' || $surface === 'app') {
+        $sql[] = 'c.`surface` = ?';
+        $bind[] = $surface;
+    }
+
     return ['sql' => implode(' AND ', $sql), 'bind' => $bind];
 }
 
@@ -1040,7 +1077,7 @@ function latinfo_home_module_stats_earliest_date(PDO $db): ?string
 /**
  * Kezdőoldal modul-kattintás áttekintő (mint a publikus forgalom-stat).
  *
- * @param array{date_from: string, date_to: string, module: string, visitor: string, lang: string, device: string} $params
+ * @param array{date_from: string, date_to: string, module: string, visitor: string, lang: string, device: string, surface?: string} $params
  * @return array<string, mixed>
  */
 function latinfo_home_module_overview_stats(PDO $db, array $params): array
@@ -1054,12 +1091,17 @@ function latinfo_home_module_overview_stats(PDO $db, array $params): array
             'unique_human' => 0,
             'modules_hit' => 0,
         ],
+        'by_surface' => [
+            'web' => ['clicks_human' => 0, 'unique_human' => 0],
+            'app' => ['clicks_human' => 0, 'unique_human' => 0],
+        ],
         'modules' => [],
         'chart' => ['labels' => [], 'datasets' => []],
         'granularity' => 'day',
     ];
 
     try {
+        latinfo_home_modules_ensure_click_surface_column($db);
         $where = latinfo_home_module_stats_where($params);
         $st = $db->prepare("
             SELECT
@@ -1073,6 +1115,32 @@ function latinfo_home_module_overview_stats(PDO $db, array $params): array
         ");
         $st->execute($where['bind']);
         $tot = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $bySurface = [
+            'web' => ['clicks_human' => 0, 'unique_human' => 0],
+            'app' => ['clicks_human' => 0, 'unique_human' => 0],
+        ];
+        try {
+            $stSurf = $db->prepare("
+                SELECT
+                    c.`surface`,
+                    SUM(CASE WHEN c.`is_bot` = 0 THEN 1 ELSE 0 END) AS clicks_human,
+                    COUNT(DISTINCT CASE WHEN c.`is_bot` = 0 AND c.`ip_hash` IS NOT NULL THEN c.`ip_hash` END) AS unique_human
+                FROM `latinfo_home_module_clicks` c
+                WHERE {$where['sql']}
+                GROUP BY c.`surface`
+            ");
+            $stSurf->execute($where['bind']);
+            foreach ($stSurf->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $surf = latinfo_home_normalize_surface($row['surface'] ?? 'web');
+                $bySurface[$surf] = [
+                    'clicks_human' => (int) ($row['clicks_human'] ?? 0),
+                    'unique_human' => (int) ($row['unique_human'] ?? 0),
+                ];
+            }
+        } catch (Throwable $eSurf) {
+            error_log('latinfo_home_module_overview_stats surface: ' . $eSurf->getMessage());
+        }
 
         $stMod = $db->prepare("
             SELECT
@@ -1166,6 +1234,7 @@ function latinfo_home_module_overview_stats(PDO $db, array $params): array
                 'unique_human' => (int) ($tot['unique_human'] ?? 0),
                 'modules_hit' => (int) ($tot['modules_hit'] ?? 0),
             ],
+            'by_surface' => $bySurface,
             'modules' => $moduleRows,
             'chart' => ['labels' => $labels, 'datasets' => $datasets],
             'granularity' => $granularity,
@@ -1203,6 +1272,7 @@ function latinfo_home_module_item_stats(PDO $db, string $moduleKey, array $param
     }
 
     try {
+        latinfo_home_modules_ensure_click_surface_column($db);
         $where = latinfo_home_module_stats_where($params, $moduleKey);
         $st = $db->prepare("
             SELECT

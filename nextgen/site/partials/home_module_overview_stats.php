@@ -4,10 +4,11 @@ declare(strict_types=1);
 /**
  * Kezdőoldal modul-kattintás áttekintő.
  *
- * @var array{date_from: string, date_to: string, module: string, visitor: string, lang: string, device: string} $statsParams
+ * @var array{date_from: string, date_to: string, module: string, visitor: string, lang: string, device: string, surface?: string} $statsParams
  * @var array<string, mixed> $statsData
  * @var string $statsFormAction
  * @var list<array{id: string, label: string, url: string, active: bool}> $statsPresetLinks
+ * @var list<array{id: string, label: string, url: string, active: bool}> $surfaceTabs
  */
 
 $statsParams = $statsParams ?? [
@@ -17,11 +18,17 @@ $statsParams = $statsParams ?? [
     'visitor' => 'human',
     'lang' => 'all',
     'device' => 'all',
+    'surface' => 'all',
 ];
+if (!isset($statsParams['surface'])) {
+    $statsParams['surface'] = 'all';
+}
 $statsData = is_array($statsData ?? null) ? $statsData : [];
 $statsFormAction = (string) ($statsFormAction ?? '');
 $statsPresetLinks = is_array($statsPresetLinks ?? null) ? $statsPresetLinks : [];
+$surfaceTabs = is_array($surfaceTabs ?? null) ? $surfaceTabs : [];
 $totals = is_array($statsData['totals'] ?? null) ? $statsData['totals'] : [];
+$bySurface = is_array($statsData['by_surface'] ?? null) ? $statsData['by_surface'] : [];
 $moduleRows = is_array($statsData['modules'] ?? null) ? $statsData['modules'] : [];
 $chartPayload = is_array($statsData['chart'] ?? null) ? $statsData['chart'] : ['labels' => [], 'datasets' => []];
 $hasChart = ($chartPayload['labels'] ?? []) !== [] && ($chartPayload['datasets'] ?? []) !== [];
@@ -33,10 +40,32 @@ $granularityLabel = match ($granularity) {
     'week' => 'heti',
     default => 'napi',
 };
+$activeSurface = (string) ($statsParams['surface'] ?? 'all');
+$surfaceIntro = match ($activeSurface) {
+    'web' => 'Csak a webes (asztali + mobil böngésző) kezdőoldali kattintások.',
+    'app' => 'Csak a telepített mobilapp / PWA kezdőoldali kattintások.',
+    default => 'Web és mobilapp kattintások együtt; alább a felületi bontás is látszik.',
+};
 ?>
+<style>
+.lh-surface-tabs{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1rem}
+.lh-surface-tabs .btn{min-width:6.5rem}
+</style>
 <div class="card events-edit-stats lh-home-module-stats">
+    <?php if ($surfaceTabs !== []): ?>
+        <nav class="lh-surface-tabs" aria-label="Felület">
+            <?php foreach ($surfaceTabs as $tab): ?>
+                <a
+                    class="btn btn-sm <?= !empty($tab['active']) ? 'btn-primary' : 'btn-secondary' ?>"
+                    href="<?= h((string) $tab['url']) ?>"
+                    <?= !empty($tab['active']) ? 'aria-current="page"' : '' ?>
+                ><?= h((string) $tab['label']) ?></a>
+            <?php endforeach; ?>
+        </nav>
+    <?php endif; ?>
+
     <p class="events-edit-stats__intro">
-        A kezdőoldal moduljaiban (bejelentések, DJ ajánló, értékelés, ma/holnap) történt kattintások.
+        <?= h($surfaceIntro) ?>
         Admin és partner munkamenetből nem számolunk. A botok külön szűrhetők.
         Időszak: <?= h((string) $statsParams['date_from']) ?> – <?= h((string) $statsParams['date_to']) ?> (<?= h($granularityLabel) ?> bontás).
     </p>
@@ -45,6 +74,9 @@ $granularityLabel = match ($granularity) {
         <p class="alert alert-warning">A statisztika tábla nem érhető el.</p>
     <?php else: ?>
         <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
+            <?php if ($activeSurface !== 'all'): ?>
+                <input type="hidden" name="surface" value="<?= h($activeSurface) ?>">
+            <?php endif; ?>
             <?php if ($statsPresetLinks !== []): ?>
                 <div class="events-edit-stats__presets-row">
                     <span class="events-filter-label">Időszak</span>
@@ -102,7 +134,14 @@ $granularityLabel = match ($granularity) {
                 </div>
                 <div class="form-group events-edit-stats__filter-actions">
                     <button type="submit" class="btn btn-primary btn-sm">Szűrés</button>
-                    <a class="btn btn-secondary btn-sm" href="<?= h($statsFormAction) ?>">Szűrés törlése</a>
+                    <a class="btn btn-secondary btn-sm" href="<?= h(
+                        $activeSurface === 'all'
+                            ? $statsFormAction
+                            : events_edit_stats_filter_url($statsFormAction, [
+                                'date_from' => $statsParams['date_from'],
+                                'date_to' => $statsParams['date_to'],
+                            ], ['surface' => $activeSurface])
+                    ) ?>">Szűrés törlése</a>
                 </div>
             </div>
         </form>
@@ -124,6 +163,16 @@ $granularityLabel = match ($granularity) {
                 <div class="events-edit-stats__card-label">Érintett modul</div>
                 <div class="events-edit-stats__card-value"><?= number_format((int) ($totals['modules_hit'] ?? 0), 0, ',', ' ') ?></div>
             </div>
+            <?php if ($activeSurface === 'all'): ?>
+                <div class="events-edit-stats__card">
+                    <div class="events-edit-stats__card-label">Web (ember)</div>
+                    <div class="events-edit-stats__card-value"><?= number_format((int) ($bySurface['web']['clicks_human'] ?? 0), 0, ',', ' ') ?></div>
+                </div>
+                <div class="events-edit-stats__card">
+                    <div class="events-edit-stats__card-label">Mobilapp (ember)</div>
+                    <div class="events-edit-stats__card-value"><?= number_format((int) ($bySurface['app']['clicks_human'] ?? 0), 0, ',', ' ') ?></div>
+                </div>
+            <?php endif; ?>
         </div>
 
         <?php if ($hasChart && $chartJson !== false): ?>

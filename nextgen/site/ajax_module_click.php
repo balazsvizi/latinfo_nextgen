@@ -26,6 +26,7 @@ $moduleKey = trim((string) ($_POST['module_key'] ?? ''));
 $itemKey = latinfo_home_module_normalize_item_key($_POST['item_key'] ?? '');
 $itemLabel = latinfo_home_clamp((string) ($_POST['item_label'] ?? ''), 200);
 $lang = strtolower(trim((string) ($_POST['lang'] ?? 'hu'))) === 'en' ? 'en' : 'hu';
+$surface = latinfo_home_normalize_surface($_POST['surface'] ?? latinfo_home_resolve_surface());
 
 if (!latinfo_home_module_is_valid($moduleKey)) {
     http_response_code(400);
@@ -40,7 +41,7 @@ try {
         echo json_encode(['ok' => false, 'error' => 'Schema hiba.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    $result = latinfo_home_module_track_click($db, $moduleKey, $itemKey, $itemLabel, $lang);
+    $result = latinfo_home_module_track_click($db, $moduleKey, $itemKey, $itemLabel, $lang, $surface);
     echo json_encode(['ok' => $result['ok'], 'recorded' => $result['recorded']], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     error_log('ajax_module_click: ' . $e->getMessage());

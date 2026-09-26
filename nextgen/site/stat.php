@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Kezdőoldal modul-kattintás statisztika.
+ * Kezdőoldal modul-kattintás statisztika (összes / web / mobilapp).
  */
 
 require_once dirname(__DIR__) . '/init.php';
@@ -16,7 +16,14 @@ $schemaOk = latinfo_home_modules_ensure_schema($db);
 $statsParams = latinfo_home_module_stats_params_from_request($_GET);
 $statsData = $schemaOk
     ? latinfo_home_module_overview_stats($db, $statsParams)
-    : ['table_ready' => false, 'totals' => [], 'modules' => [], 'chart' => ['labels' => [], 'datasets' => []], 'granularity' => 'day'];
+    : [
+        'table_ready' => false,
+        'totals' => [],
+        'by_surface' => ['web' => [], 'app' => []],
+        'modules' => [],
+        'chart' => ['labels' => [], 'datasets' => []],
+        'granularity' => 'day',
+    ];
 $statsFormAction = latinfo_home_modules_stat_url();
 $statsAllDateFrom = latinfo_home_module_stats_earliest_date($db);
 $statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDateFrom);
@@ -25,6 +32,7 @@ $statsFilterExtraQuery = array_filter([
     'traf_lang' => $statsParams['lang'] !== 'all' ? $statsParams['lang'] : null,
     'visitor' => $statsParams['visitor'] !== 'human' ? $statsParams['visitor'] : null,
     'device' => $statsParams['device'] !== 'all' ? $statsParams['device'] : null,
+    'surface' => $statsParams['surface'] !== 'all' ? $statsParams['surface'] : null,
 ], static fn ($v): bool => $v !== null && $v !== '');
 
 $statsPresetLinks = [];
@@ -42,15 +50,50 @@ foreach (events_edit_stats_presets() as $preset) {
     ];
 }
 
+$surfaceTabs = [];
+foreach (
+    [
+        'all' => 'Összes',
+        'web' => 'Web',
+        'app' => 'Mobilapp',
+    ] as $surfaceKey => $surfaceLabel
+) {
+    $tabExtra = $statsFilterExtraQuery;
+    if ($surfaceKey === 'all') {
+        unset($tabExtra['surface']);
+    } else {
+        $tabExtra['surface'] = $surfaceKey;
+    }
+    $surfaceTabs[] = [
+        'id' => $surfaceKey,
+        'label' => $surfaceLabel,
+        'url' => events_edit_stats_filter_url(
+            $statsFormAction,
+            [
+                'date_from' => $statsParams['date_from'],
+                'date_to' => $statsParams['date_to'],
+            ],
+            $tabExtra
+        ),
+        'active' => $statsParams['surface'] === $surfaceKey,
+    ];
+}
+
+$surfaceTitle = match ($statsParams['surface']) {
+    'web' => 'Webes kattintások',
+    'app' => 'Mobilapp kattintások',
+    default => 'Összes felület',
+};
+
 $mainContentClass = 'main-content main-content--fullwidth';
-$pageTitle = 'Kezdőoldal stat';
+$pageTitle = 'Kezdőoldal stat – ' . $surfaceTitle;
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <div class="events-stat-page-head">
     <div>
         <h1 class="events-stat-page-title">Kezdőoldal modulok</h1>
         <p class="events-stat-page-lead">
-            Modulonkénti kattintások a Latinfo kezdőoldalon.
+            <?= h($surfaceTitle) ?> a Latinfo kezdőoldalon.
             <?= h((string) $statsParams['date_from']) ?> – <?= h((string) $statsParams['date_to']) ?>.
         </p>
     </div>
