@@ -141,6 +141,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_public_stat.php')) ?>" role="menuitem">Publikus oldalak</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('site/stat.php')) ?>" role="menuitem">Kezdőoldal modulok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('site/mobilapp_stat.php')) ?>" role="menuitem">Mobilapp</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_realtime.php')) ?>" role="menuitem">Valós idejű</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_stat.php')) ?>" role="menuitem">Áttekintés</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>

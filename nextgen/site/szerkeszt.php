@@ -210,6 +210,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <a href="<?= h(latinfo_home_preview_url()) ?>" class="btn btn-secondary btn-sm">Előnézet (web)</a>
             <a href="<?= h(latinfo_home_preview_url() . '?source=mobilapp') ?>" class="btn btn-secondary btn-sm">Előnézet (app)</a>
             <a href="<?= h(latinfo_home_modules_stat_url()) ?>" class="btn btn-secondary btn-sm">Stat</a>
+            <a href="<?= h(nextgen_url('site/mobilapp_stat.php')) ?>" class="btn btn-secondary btn-sm">Mobilapp stat</a>
         </div>
     </div>
     <p class="text-muted" style="margin-top:0">

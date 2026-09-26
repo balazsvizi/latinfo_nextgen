@@ -100,6 +100,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-stat-page-actions">
         <a href="<?= h(latinfo_home_edit_url()) ?>" class="btn btn-secondary btn-sm">Modulok</a>
         <a href="<?= h(latinfo_home_preview_url()) ?>" class="btn btn-secondary btn-sm">Előnézet</a>
+        <a href="<?= h(nextgen_url('site/mobilapp_stat.php')) ?>" class="btn btn-secondary btn-sm">Mobilapp</a>
         <a href="<?= h(events_url('events_public_stat.php')) ?>" class="btn btn-secondary btn-sm">Publikus oldalak</a>
     </div>
 </div>

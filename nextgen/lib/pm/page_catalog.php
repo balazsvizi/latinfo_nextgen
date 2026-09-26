@@ -110,6 +110,14 @@ function pm_tools_page_catalog(): array
             'display_name' => 'Kezdőoldal szerkesztése',
             'purpose' => 'Kezdőoldal-modulok sorrendje, oszlopa és be/ki kapcsolása.',
         ],
+        '/nextgen/site/stat.php' => [
+            'display_name' => 'Kezdőoldal modulok stat',
+            'purpose' => 'Kezdőoldali modul-kattintások web / mobilapp felületen.',
+        ],
+        '/nextgen/site/mobilapp_stat.php' => [
+            'display_name' => 'Mobilapp stat',
+            'purpose' => 'PWA telepítések, mobilapp oldal és app kezdőoldali használat.',
+        ],
         '/nextgen/site/modul_donably.php' => [
             'display_name' => 'Támogatás (Donably)',
             'purpose' => 'Kezdőoldali Donably támogatás szövegének és linkjének szerkesztése.',

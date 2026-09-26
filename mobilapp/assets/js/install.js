@@ -5,6 +5,7 @@
   var btn = document.getElementById('ma-install-btn');
   var statusEl = document.getElementById('ma-install-status');
   var deferredPrompt = null;
+  var trackUrl = typeof cfg.trackUrl === 'string' ? cfg.trackUrl : '';
 
   function setStatus(text) {
     if (!statusEl) {
@@ -12,6 +13,24 @@
     }
     statusEl.hidden = !text;
     statusEl.textContent = text || '';
+  }
+
+  function trackEvent(eventName) {
+    if (!trackUrl || !eventName) {
+      return;
+    }
+    try {
+      var body = new FormData();
+      body.append('event', eventName);
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(trackUrl, body);
+        return;
+      }
+      fetch(trackUrl, { method: 'POST', body: body, keepalive: true, credentials: 'same-origin' })
+        .catch(function () {});
+    } catch (e) {
+      /* tracking opcionális */
+    }
   }
 
   function isStandalone() {
@@ -28,6 +47,7 @@
       e.preventDefault();
       deferredPrompt = e;
       btn.hidden = false;
+      trackEvent('install_prompt');
     });
 
     btn.addEventListener('click', function () {
@@ -39,8 +59,10 @@
       deferredPrompt.userChoice.then(function (choice) {
         if (choice && choice.outcome === 'accepted') {
           setStatus('Telepítés elindítva – keresd az ikont a kezdőképernyőn.');
+          trackEvent('install_accepted');
         } else {
           setStatus('A telepítés megszakadt. Bármikor újrapróbálhatod.');
+          trackEvent('install_dismissed');
         }
         deferredPrompt = null;
         btn.hidden = true;
@@ -51,6 +73,7 @@
       setStatus('Kész! Az app telepítve van.');
       btn.hidden = true;
       deferredPrompt = null;
+      trackEvent('app_installed');
     });
   }
 

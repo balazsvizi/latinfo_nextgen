@@ -14,11 +14,15 @@ require_once __DIR__ . '/../nextgen/includes/landingpage_table.php';
 require_once __DIR__ . '/../nextgen/includes/functions.php';
 require_once __DIR__ . '/../nextgen/events/bootstrap.php';
 require_once __DIR__ . '/../nextgen/events/lib/event_public_lang.php';
+require_once __DIR__ . '/../nextgen/site/lib/mobilapp_stats.php';
 
 $db = getDb();
 $hiba_feedback = '';
 
 ensure_landingpage_table($db);
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    latinfo_mobilapp_track_event($db, 'page_view');
+}
 
 $forrasReturn = landing_feedback_resolve_forras(
     $_SERVER['REQUEST_METHOD'] === 'POST'
@@ -135,6 +139,7 @@ $cssUrl = site_url('mobilapp/assets/css/mobilapp.css') . '?v=' . rawurlencode(
 $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
     defined('APP_VERSION') ? (string) APP_VERSION : '1'
 );
+$trackUrl = nextgen_url('site/ajax_mobilapp_event.php');
 ?>
 <!DOCTYPE html>
 <html lang="<?= h($htmlLang) ?>">
@@ -256,7 +261,8 @@ $jsUrl = site_url('mobilapp/assets/js/install.js') . '?v=' . rawurlencode(
 
     <script>
         window.LATINFO_MOBILEAPP = {
-            swUrl: <?= json_encode($swUrl, JSON_UNESCAPED_SLASHES) ?>
+            swUrl: <?= json_encode($swUrl, JSON_UNESCAPED_SLASHES) ?>,
+            trackUrl: <?= json_encode($trackUrl, JSON_UNESCAPED_SLASHES) ?>
         };
     </script>
     <script src="<?= h($jsUrl) ?>" defer></script>

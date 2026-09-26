@@ -1,5 +1,5 @@
 /* Latinfo mobilapp – service worker (shell cache). */
-const CACHE = 'latinfo-mobilapp-v3';
+const CACHE = 'latinfo-mobilapp-v4';
 const PRECACHE = [
   './',
   './assets/css/mobilapp.css',
