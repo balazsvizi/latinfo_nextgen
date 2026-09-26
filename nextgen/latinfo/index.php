@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Latinfo.hu alkalmazás – kezdőoldal, statok, slug, partnereink, adatok, CSV import.
+ * Latinfo.hu alkalmazás – kezdőoldal, statok, slug, partnereink, levélsablonok, adatok, CSV import.
  * URL: /nextgen/latinfo/
  */
 
@@ -14,7 +14,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <div class="card">
     <h2>Latinfo.hu</h2>
-    <p>Nyilvános latinfo.hu felület: kezdőoldal, statisztikák, slug, partnerek, adatok és CSV import.</p>
+    <p>Nyilvános latinfo.hu felület: kezdőoldal, statisztikák, slug, partnerek, levélsablonok, adatok és CSV import.</p>
 </div>
 
 <div class="dash-cards dash-cards-apps">
@@ -37,6 +37,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <h3>Partnereink</h3>
         <div class="num">→</div>
         <p>Nyilvános partnereink oldal blokkjai</p>
+    </a>
+    <a href="<?= h(nextgen_url('config/levelsablonok/')) ?>" class="dash-card">
+        <h3>Levélsablonok</h3>
+        <div class="num">→</div>
+        <p>Esemény-értesítő és egyéb e-mail sablonok</p>
     </a>
     <?php if (isSuperadmin()): ?>
     <a href="<?= h(nextgen_url('events/adatok.php')) ?>" class="dash-card">

@@ -100,7 +100,7 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/latinfo/index.php' => [
             'display_name' => 'Latinfo.hu',
-            'purpose' => 'Latinfo.hu alkalmazás: kezdőoldal, statok, slug, Partnereink, adatok, CSV import.',
+            'purpose' => 'Latinfo.hu alkalmazás: kezdőoldal, statok, slug, Partnereink, levélsablonok, adatok, CSV import.',
         ],
         '/nextgen/site/index.php' => [
             'display_name' => 'Latinfo kezdőoldal',

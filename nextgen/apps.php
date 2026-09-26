@@ -36,12 +36,12 @@ try {
     <a href="<?= h(nextgen_url('latinfo/')) ?>" class="dash-card dash-card-latinfo">
         <h3>Latinfo.hu</h3>
         <div class="num">→</div>
-        <p>Kezdőoldal, statok, slug, Partnereink, adatok, CSV import</p>
+        <p>Kezdőoldal, statok, slug, Partnereink, levélsablonok, adatok, CSV import</p>
     </a>
     <a href="<?= h(nextgen_url('config/cimkek.php')) ?>" class="dash-card dash-card-nextgen">
         <h3>NextGen</h3>
         <div class="num">→</div>
-        <p>Config, admin, levélsablonok – <code>nextgen/config/</code>, <code>nextgen/admin/</code></p>
+        <p>Config és admin – <code>nextgen/config/</code>, <code>nextgen/admin/</code></p>
     </a>
 </div>
 

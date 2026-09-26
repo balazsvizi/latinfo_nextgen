@@ -181,10 +181,14 @@ function ng_nav_latinfo_event_scripts(): array
 
 /**
  * Backoffice navigációs zóna: nextgen (hub, config, admin, jelszó), finance (CRM), events, latinfo.
+ * A levélsablonok a Latinfo.hu Config menühöz tartoznak.
  */
 function ng_nav_app_zone(): string {
     $s = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     if (strpos($s, '/nextgen/latinfo/') !== false || strpos($s, '/nextgen/site/') !== false) {
+        return 'latinfo';
+    }
+    if (strpos($s, '/nextgen/config/levelsablonok/') !== false) {
         return 'latinfo';
     }
     if (preg_match('#/nextgen/admin/partnerek/mediaertek(_probak)?\.php$#', $s)) {

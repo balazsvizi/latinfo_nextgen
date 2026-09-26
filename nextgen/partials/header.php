@@ -157,6 +157,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/menu_szerkeszt.php')) ?>" role="menuitem">Főmenü</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" role="menuitem">Slug</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/partnerek_szerkeszt.php')) ?>" role="menuitem">Partnereink</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('config/levelsablonok/')) ?>" role="menuitem">Levélsablonok</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -180,7 +181,6 @@ if ($navZone === 'events') {
                         <li class="nav-submenu-heading" role="presentation"><span>Általános</span></li>
                         <li role="none"><a href="<?= h(nextgen_url('config/cimkek.php')) ?>" role="menuitem">Címkék</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('config/kontakt_tipusok.php')) ?>" role="menuitem">Kontakt típusok</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('config/levelsablonok/')) ?>" role="menuitem">Levélsablonok</a></li>
                     </ul>
                 </li>
                 <?php if (isLoggedIn() && isSuperadmin()): ?>

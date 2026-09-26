@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Valós idejű áttekintés — GA Realtime-szerű admin dashboard.
+ * Valós idejű áttekintés — mire kattintanak a látogatók (menü, oldalak, bulik).
  */
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
@@ -16,6 +16,7 @@ $ajaxUrl = events_url('ajax_events_realtime.php');
 $editBase = events_url('szerkeszt.php?id=');
 $listaStatUrl = events_url('events_lista_stat.php');
 $listUrl = events_url('events_admin.php');
+$publicStatUrl = events_url('events_public_stat.php');
 
 $payload = array_merge(
     [
@@ -33,15 +34,28 @@ $payloadJson = json_encode(
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Valós idejű áttekintés';
 require_once dirname(__DIR__) . '/partials/header.php';
+
+$kindBadgeClass = static function (string $kind): string {
+    return match ($kind) {
+        'party' => 'events-rt-kind--party',
+        'preview' => 'events-rt-kind--preview',
+        'external' => 'events-rt-kind--external',
+        'hub' => 'events-rt-kind--hub',
+        'nav' => 'events-rt-kind--nav',
+        'notice' => 'events-rt-kind--notice',
+        default => 'events-rt-kind--other',
+    };
+};
 ?>
-<div class="card events-admin-card events-rt-page" id="events-rt-root" data-ajax-url="<?= h($ajaxUrl) ?>" data-poll-ms="20000">
+<div class="card events-admin-card events-rt-page" id="events-rt-root" data-ajax-url="<?= h($ajaxUrl) ?>" data-poll-ms="15000">
     <div class="events-list-head events-cal-page__head">
         <div class="events-cal-page__head-start">
             <h2 class="events-list-title">Valós idejű áttekintés</h2>
-            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · oldal, előnézet és további információ</p>
+            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · menü, statikus oldalak, bulik, előnézet, további info, értesítő</p>
         </div>
         <div class="events-list-actions">
             <a href="<?= h(events_url('events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Statisztikák</a>
+            <a href="<?= h($publicStatUrl) ?>" class="btn btn-secondary btn-sm">Nyilvános forgalom</a>
             <a href="<?= h($listaStatUrl) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
             <a href="<?= h($listUrl) ?>" class="btn btn-secondary btn-sm">Események lista</a>
         </div>
@@ -55,14 +69,24 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
         <p class="events-rt-hero__label">Felhasználók az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben</p>
         <p class="events-rt-hero__value" id="events-rt-users"><?= (int) $snapshot['users_30m'] ?></p>
-        <p class="events-rt-hero__hint">Egyedi emberi oldal-látogató (IP)</p>
+        <p class="events-rt-hero__hint">Egyedi emberi látogató (IP) — buli és nyilvános oldalak együtt</p>
     </div>
 
     <div class="events-rt-kpis" aria-label="Összesítők">
-        <div class="events-rt-kpi events-rt-kpi--page">
-            <p class="events-rt-kpi__label">Oldal</p>
-            <p class="events-rt-kpi__value" id="events-rt-page"><?= (int) $snapshot['page_hits_30m'] ?></p>
-            <p class="events-rt-kpi__hint">emberi megtekintés</p>
+        <div class="events-rt-kpi events-rt-kpi--party">
+            <p class="events-rt-kpi__label">Bulik</p>
+            <p class="events-rt-kpi__value" id="events-rt-party"><?= (int) ($snapshot['party_hits_30m'] ?? $snapshot['page_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">esemény oldal</p>
+        </div>
+        <div class="events-rt-kpi events-rt-kpi--hub">
+            <p class="events-rt-kpi__label">Statikus</p>
+            <p class="events-rt-kpi__value" id="events-rt-hub"><?= (int) ($snapshot['hub_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">főoldal, naptár…</p>
+        </div>
+        <div class="events-rt-kpi events-rt-kpi--nav">
+            <p class="events-rt-kpi__label">Menü</p>
+            <p class="events-rt-kpi__value" id="events-rt-nav"><?= (int) ($snapshot['nav_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">menükattintás</p>
         </div>
         <div class="events-rt-kpi events-rt-kpi--preview">
             <p class="events-rt-kpi__label">Előnézet</p>
@@ -74,6 +98,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <p class="events-rt-kpi__value" id="events-rt-external"><?= (int) ($snapshot['external_hits_30m'] ?? 0) ?></p>
             <p class="events-rt-kpi__hint">CTA kattintás</p>
         </div>
+        <div class="events-rt-kpi events-rt-kpi--notice">
+            <p class="events-rt-kpi__label">Értesítő</p>
+            <p class="events-rt-kpi__value" id="events-rt-notice"><?= (int) ($snapshot['notice_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">tipp kattintás</p>
+        </div>
         <div class="events-rt-kpi events-rt-kpi--bot">
             <p class="events-rt-kpi__label">Bot</p>
             <p class="events-rt-kpi__value" id="events-rt-bot"><?= (int) $snapshot['bot_hits_30m'] ?></p>
@@ -83,15 +112,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
     <section class="events-rt-chart-panel" aria-labelledby="events-rt-chart-title">
         <h3 class="events-rt-section-title" id="events-rt-chart-title">Percenkénti aktivitás</h3>
-        <p class="events-rt-section-hint">Egyedi felhasználók, oldal-, előnézet- és további info kattintások az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</p>
+        <p class="events-rt-section-hint">Egyedi felhasználók, buli-, statikus oldal- és menükattintások az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</p>
         <div class="events-rt-chart-canvas">
             <canvas id="events-rt-chart" aria-label="Valós idejű aktivitás grafikonja"></canvas>
         </div>
     </section>
 
-    <div class="events-rt-split">
+    <div class="events-rt-split events-rt-split--triple">
         <section class="events-rt-panel" aria-labelledby="events-rt-top-title">
-            <h3 class="events-rt-section-title" id="events-rt-top-title">Top események</h3>
+            <h3 class="events-rt-section-title" id="events-rt-top-title">Top bulik</h3>
             <div class="table-wrap events-rt-table-wrap">
                 <table class="events-admin-table events-rt-table">
                     <thead>
@@ -105,7 +134,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     </thead>
                     <tbody id="events-rt-top-body">
                         <?php if ($snapshot['top_events'] === []): ?>
-                            <tr class="events-rt-empty-row"><td colspan="5">Nincs aktivitás az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</td></tr>
+                            <tr class="events-rt-empty-row"><td colspan="5">Nincs buli aktivitás az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</td></tr>
                         <?php else: ?>
                             <?php foreach ($snapshot['top_events'] as $ev): ?>
                                 <tr>
@@ -124,30 +153,62 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </section>
 
-        <section class="events-rt-panel" aria-labelledby="events-rt-source-title">
-            <h3 class="events-rt-section-title" id="events-rt-source-title">Forrás</h3>
-            <p class="events-rt-section-hint">Emberi oldalmegtekintések forrás szerint.</p>
-            <ul class="events-rt-sources" id="events-rt-sources">
+        <section class="events-rt-panel" aria-labelledby="events-rt-pages-title">
+            <h3 class="events-rt-section-title" id="events-rt-pages-title">Top statikus oldalak</h3>
+            <p class="events-rt-section-hint">Emberi oldalmegtekintések.</p>
+            <ul class="events-rt-sources" id="events-rt-pages">
                 <?php
-                $sourceTotal = 0;
-                foreach ($snapshot['by_source'] as $srcRow) {
-                    $sourceTotal += (int) $srcRow['count'];
+                $pageTotal = 0;
+                foreach ($snapshot['top_pages'] as $pageRow) {
+                    $pageTotal += (int) $pageRow['count'];
                 }
-                if ($snapshot['by_source'] === []):
+                if ($snapshot['top_pages'] === []):
                 ?>
                     <li class="events-rt-sources__empty">Nincs adat.</li>
                 <?php else: ?>
-                    <?php foreach ($snapshot['by_source'] as $srcRow): ?>
+                    <?php foreach ($snapshot['top_pages'] as $pageRow): ?>
                         <?php
-                        $cnt = (int) $srcRow['count'];
-                        $pct = $sourceTotal > 0 ? (int) round(($cnt / $sourceTotal) * 100) : 0;
+                        $cnt = (int) $pageRow['count'];
+                        $pct = $pageTotal > 0 ? (int) round(($cnt / $pageTotal) * 100) : 0;
                         ?>
                         <li class="events-rt-source">
                             <div class="events-rt-source__meta">
-                                <span class="events-rt-source__label"><?= h((string) $srcRow['label']) ?></span>
+                                <span class="events-rt-source__label"><?= h((string) $pageRow['label']) ?></span>
                                 <span class="events-rt-source__count"><?= $cnt ?> · <?= $pct ?>%</span>
                             </div>
-                            <div class="events-rt-source__bar" aria-hidden="true">
+                            <div class="events-rt-source__bar events-rt-source__bar--hub" aria-hidden="true">
+                                <span class="events-rt-source__fill" style="width: <?= $pct ?>%"></span>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </ul>
+        </section>
+
+        <section class="events-rt-panel" aria-labelledby="events-rt-nav-title">
+            <h3 class="events-rt-section-title" id="events-rt-nav-title">Top menükattintások</h3>
+            <p class="events-rt-section-hint">Fejléc, nézetváltó, nyelv, logó.</p>
+            <ul class="events-rt-sources" id="events-rt-nav-list">
+                <?php
+                $navTotal = 0;
+                foreach ($snapshot['top_nav'] as $navRow) {
+                    $navTotal += (int) $navRow['count'];
+                }
+                if ($snapshot['top_nav'] === []):
+                ?>
+                    <li class="events-rt-sources__empty">Nincs adat.</li>
+                <?php else: ?>
+                    <?php foreach ($snapshot['top_nav'] as $navRow): ?>
+                        <?php
+                        $cnt = (int) $navRow['count'];
+                        $pct = $navTotal > 0 ? (int) round(($cnt / $navTotal) * 100) : 0;
+                        ?>
+                        <li class="events-rt-source">
+                            <div class="events-rt-source__meta">
+                                <span class="events-rt-source__label"><?= h((string) $navRow['label']) ?></span>
+                                <span class="events-rt-source__count"><?= $cnt ?> · <?= $pct ?>%</span>
+                            </div>
+                            <div class="events-rt-source__bar events-rt-source__bar--nav" aria-hidden="true">
                                 <span class="events-rt-source__fill" style="width: <?= $pct ?>%"></span>
                             </div>
                         </li>
@@ -158,36 +219,42 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
 
     <section class="events-rt-panel events-rt-recent-panel" aria-labelledby="events-rt-recent-title">
-        <h3 class="events-rt-section-title" id="events-rt-recent-title">Friss aktivitás</h3>
+        <h3 class="events-rt-section-title" id="events-rt-recent-title">Mire kattintanak most</h3>
+        <p class="events-rt-section-hint">Élő stream: menü, statikus oldalak, bulik, előnézet, további info, értesítő.</p>
         <div class="table-wrap events-rt-table-wrap">
             <table class="events-admin-table events-rt-table events-rt-table--recent">
                 <thead>
                     <tr>
                         <th scope="col">Idő</th>
-                        <th scope="col">Esemény dátuma</th>
-                        <th scope="col">Esemény</th>
-                        <th scope="col">Metrika</th>
-                        <th scope="col">Forrás</th>
                         <th scope="col">Típus</th>
+                        <th scope="col">Cél</th>
+                        <th scope="col">Részlet</th>
+                        <th scope="col">Látogató</th>
                     </tr>
                 </thead>
                 <tbody id="events-rt-recent-body">
                     <?php if ($snapshot['recent'] === []): ?>
-                        <tr class="events-rt-empty-row"><td colspan="6">Nincs friss aktivitás.</td></tr>
+                        <tr class="events-rt-empty-row"><td colspan="5">Nincs friss aktivitás.</td></tr>
                     <?php else: ?>
                         <?php foreach ($snapshot['recent'] as $row): ?>
+                            <?php
+                            $kind = (string) ($row['kind'] ?? '');
+                            $eventId = (int) ($row['event_id'] ?? 0);
+                            $target = (string) ($row['target'] ?? $row['name'] ?? '');
+                            ?>
                             <tr>
                                 <td class="events-rt-recent-time"><?= h((string) $row['at']) ?></td>
-                                <td class="events-rt-recent-event-date"><?= h((string) ($row['event_date'] ?? '–')) ?></td>
                                 <td>
-                                    <?php if ((int) $row['event_id'] > 0): ?>
-                                        <a href="<?= h($editBase . (int) $row['event_id']) ?>"><?= h((string) $row['name']) ?></a>
+                                    <span class="events-rt-kind <?= h($kindBadgeClass($kind)) ?>"><?= h((string) ($row['kind_label'] ?? $row['metric_label'] ?? '')) ?></span>
+                                </td>
+                                <td>
+                                    <?php if ($eventId > 0): ?>
+                                        <a href="<?= h($editBase . $eventId) ?>"><?= h($target) ?></a>
                                     <?php else: ?>
-                                        <?= h((string) $row['name']) ?>
+                                        <?= h($target) ?>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= h((string) $row['metric_label']) ?></td>
-                                <td><?= h((string) $row['source_label']) ?></td>
+                                <td class="events-rt-recent-detail"><?= h((string) ($row['detail'] ?? $row['source_label'] ?? '')) ?></td>
                                 <td><?= !empty($row['is_bot']) ? 'Bot' : 'Ember' ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -207,7 +274,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     if (!root || !initialEl) return;
 
     var ajaxUrl = root.getAttribute('data-ajax-url') || '';
-    var pollMs = parseInt(root.getAttribute('data-poll-ms') || '20000', 10) || 20000;
+    var pollMs = parseInt(root.getAttribute('data-poll-ms') || '15000', 10) || 15000;
     var editBase = '';
     var chart = null;
     var windowMinutes = <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?>;
@@ -226,24 +293,58 @@ require_once dirname(__DIR__) . '/partials/header.php';
         if (el) el.textContent = String(value);
     }
 
+    function kindClass(kind) {
+        var map = {
+            party: 'events-rt-kind--party',
+            preview: 'events-rt-kind--preview',
+            external: 'events-rt-kind--external',
+            hub: 'events-rt-kind--hub',
+            nav: 'events-rt-kind--nav',
+            notice: 'events-rt-kind--notice'
+        };
+        return map[kind] || 'events-rt-kind--other';
+    }
+
+    function renderBarList(listId, rows, barMod) {
+        var list = document.getElementById(listId);
+        if (!list) return;
+        rows = rows || [];
+        if (!rows.length) {
+            list.innerHTML = '<li class="events-rt-sources__empty">Nincs adat.</li>';
+            return;
+        }
+        var total = rows.reduce(function (sum, r) { return sum + Number(r.count || 0); }, 0);
+        var barClass = 'events-rt-source__bar' + (barMod ? ' ' + barMod : '');
+        list.innerHTML = rows.map(function (r) {
+            var cnt = Number(r.count || 0);
+            var pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
+            return '<li class="events-rt-source">'
+                + '<div class="events-rt-source__meta">'
+                + '<span class="events-rt-source__label">' + esc(r.label || r.key || '') + '</span>'
+                + '<span class="events-rt-source__count">' + cnt + ' · ' + pct + '%</span>'
+                + '</div>'
+                + '<div class="' + barClass + '" aria-hidden="true">'
+                + '<span class="events-rt-source__fill" style="width:' + pct + '%"></span>'
+                + '</div></li>';
+        }).join('');
+    }
+
     function buildChart(payload) {
         var canvas = document.getElementById('events-rt-chart');
         if (!canvas || typeof Chart === 'undefined') return;
         var perMinute = payload.per_minute || [];
         var labels = perMinute.map(function (r) { return r.label || ''; });
         var users = perMinute.map(function (r) { return Number(r.users || 0); });
-        var page = perMinute.map(function (r) { return Number(r.page || 0); });
-        var preview = perMinute.map(function (r) { return Number(r.preview || 0); });
-        var external = perMinute.map(function (r) { return Number(r.external || 0); });
+        var party = perMinute.map(function (r) { return Number(r.party != null ? r.party : r.page || 0); });
+        var hub = perMinute.map(function (r) { return Number(r.hub || 0); });
+        var nav = perMinute.map(function (r) { return Number(r.nav || 0); });
 
         if (chart) {
             chart.data.labels = labels;
             chart.data.datasets[0].data = users;
-            chart.data.datasets[1].data = page;
-            chart.data.datasets[2].data = preview;
-            if (chart.data.datasets[3]) {
-                chart.data.datasets[3].data = external;
-            }
+            chart.data.datasets[1].data = party;
+            chart.data.datasets[2].data = hub;
+            chart.data.datasets[3].data = nav;
             chart.update('none');
             return;
         }
@@ -265,8 +366,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         fill: true
                     },
                     {
-                        label: 'Oldal',
-                        data: page,
+                        label: 'Bulik',
+                        data: party,
                         borderColor: '#6d8f63',
                         backgroundColor: 'transparent',
                         borderWidth: 2,
@@ -276,9 +377,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         fill: false
                     },
                     {
-                        label: 'Előnézet',
-                        data: preview,
-                        borderColor: '#6b7fa8',
+                        label: 'Statikus',
+                        data: hub,
+                        borderColor: '#2f6f8f',
                         backgroundColor: 'transparent',
                         borderWidth: 2,
                         tension: 0.25,
@@ -287,8 +388,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         fill: false
                     },
                     {
-                        label: 'További info',
-                        data: external,
+                        label: 'Menü',
+                        data: nav,
                         borderColor: '#a8784a',
                         backgroundColor: 'transparent',
                         borderWidth: 2,
@@ -326,7 +427,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         if (!body) return;
         var rows = payload.top_events || [];
         if (!rows.length) {
-            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs aktivitás az elmúlt ' + windowMinutes + ' percben.</td></tr>';
+            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs buli aktivitás az elmúlt ' + windowMinutes + ' percben.</td></tr>';
             return;
         }
         body.innerHTML = rows.map(function (ev) {
@@ -341,50 +442,31 @@ require_once dirname(__DIR__) . '/partials/header.php';
         }).join('');
     }
 
-    function renderSources(payload) {
-        var list = document.getElementById('events-rt-sources');
-        if (!list) return;
-        var rows = payload.by_source || [];
-        if (!rows.length) {
-            list.innerHTML = '<li class="events-rt-sources__empty">Nincs adat.</li>';
-            return;
-        }
-        var total = rows.reduce(function (sum, r) { return sum + Number(r.count || 0); }, 0);
-        list.innerHTML = rows.map(function (r) {
-            var cnt = Number(r.count || 0);
-            var pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
-            return '<li class="events-rt-source">'
-                + '<div class="events-rt-source__meta">'
-                + '<span class="events-rt-source__label">' + esc(r.label || r.source || '') + '</span>'
-                + '<span class="events-rt-source__count">' + cnt + ' · ' + pct + '%</span>'
-                + '</div>'
-                + '<div class="events-rt-source__bar" aria-hidden="true">'
-                + '<span class="events-rt-source__fill" style="width:' + pct + '%"></span>'
-                + '</div></li>';
-        }).join('');
-    }
-
     function renderRecent(payload) {
         var body = document.getElementById('events-rt-recent-body');
         if (!body) return;
         var rows = payload.recent || [];
         if (!rows.length) {
-            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="6">Nincs friss aktivitás.</td></tr>';
+            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs friss aktivitás.</td></tr>';
             return;
         }
         body.innerHTML = rows.map(function (r) {
+            var eventId = Number(r.event_id || 0);
+            var target = r.target || r.name || '';
             var nameHtml;
-            if (Number(r.event_id || 0) > 0) {
-                nameHtml = '<a href="' + esc(editBase + String(r.event_id)) + '">' + esc(r.name || '') + '</a>';
+            if (eventId > 0) {
+                nameHtml = '<a href="' + esc(editBase + String(eventId)) + '">' + esc(target) + '</a>';
             } else {
-                nameHtml = esc(r.name || '');
+                nameHtml = esc(target);
             }
+            var kind = r.kind || '';
+            var kindLabel = r.kind_label || r.metric_label || '';
+            var detail = r.detail || r.source_label || '';
             return '<tr>'
                 + '<td class="events-rt-recent-time">' + esc(r.at || '') + '</td>'
-                + '<td class="events-rt-recent-event-date">' + esc(r.event_date || '–') + '</td>'
+                + '<td><span class="events-rt-kind ' + kindClass(kind) + '">' + esc(kindLabel) + '</span></td>'
                 + '<td>' + nameHtml + '</td>'
-                + '<td>' + esc(r.metric_label || '') + '</td>'
-                + '<td>' + esc(r.source_label || '') + '</td>'
+                + '<td class="events-rt-recent-detail">' + esc(detail) + '</td>'
                 + '<td>' + (r.is_bot ? 'Bot' : 'Ember') + '</td>'
                 + '</tr>';
         }).join('');
@@ -394,14 +476,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
         if (!payload || !payload.ok) return;
         editBase = payload.edit_base || editBase;
         setText('events-rt-users', Number(payload.users_30m || 0));
-        setText('events-rt-page', Number(payload.page_hits_30m || 0));
+        setText('events-rt-party', Number(payload.party_hits_30m != null ? payload.party_hits_30m : payload.page_hits_30m || 0));
+        setText('events-rt-hub', Number(payload.hub_hits_30m || 0));
+        setText('events-rt-nav', Number(payload.nav_hits_30m || 0));
         setText('events-rt-preview', Number(payload.preview_hits_30m || 0));
         setText('events-rt-external', Number(payload.external_hits_30m || 0));
+        setText('events-rt-notice', Number(payload.notice_hits_30m || 0));
         setText('events-rt-bot', Number(payload.bot_hits_30m || 0));
         setText('events-rt-updated', 'Frissítve: ' + (payload.generated_at || ''));
         buildChart(payload);
         renderTop(payload);
-        renderSources(payload);
+        renderBarList('events-rt-pages', payload.top_pages || [], 'events-rt-source__bar--hub');
+        renderBarList('events-rt-nav-list', payload.top_nav || [], 'events-rt-source__bar--nav');
         renderRecent(payload);
     }
 
