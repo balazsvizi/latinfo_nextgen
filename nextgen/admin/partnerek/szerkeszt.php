@@ -288,34 +288,34 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             ? !empty($_POST['email_szervezo_stat'])
             : ((int) ($partner['email_szervezo_stat'] ?? 1) === 1);
         ?>
-        <div class="form-group">
+        <div class="form-group partner-email-field">
             <label for="email">E-mail *</label>
-            <input type="email" id="email" name="email" value="<?= h((string) ($partner['email'] ?? '')) ?>" required>
-            <div class="partner-email-notify" role="group" aria-label="E-mail értesítések">
-                <label class="events-toggle" for="email_event_bekerult">
-                    <input
-                        type="checkbox"
-                        name="email_event_bekerult"
-                        value="1"
-                        id="email_event_bekerult"
-                        class="events-toggle__input"
-                        <?= $emailEventBekerultOn ? 'checked' : '' ?>
-                    >
-                    <span class="events-toggle__ui" aria-hidden="true"></span>
-                    <span class="events-toggle__label">Event bekerült</span>
-                </label>
-                <label class="events-toggle" for="email_szervezo_stat">
-                    <input
-                        type="checkbox"
-                        name="email_szervezo_stat"
-                        value="1"
-                        id="email_szervezo_stat"
-                        class="events-toggle__input"
-                        <?= $emailSzervezoStatOn ? 'checked' : '' ?>
-                    >
-                    <span class="events-toggle__ui" aria-hidden="true"></span>
-                    <span class="events-toggle__label">Szervező stat</span>
-                </label>
+            <div class="partner-email-row">
+                <input type="email" id="email" name="email" class="partner-email-row__input" value="<?= h((string) ($partner['email'] ?? '')) ?>" required>
+                <div class="partner-email-notify" role="group" aria-label="E-mail értesítések">
+                    <label class="partner-email-switch" for="email_event_bekerult">
+                        <input
+                            type="checkbox"
+                            name="email_event_bekerult"
+                            value="1"
+                            id="email_event_bekerult"
+                            class="partner-email-switch__input"
+                            <?= $emailEventBekerultOn ? 'checked' : '' ?>
+                        >
+                        <span class="partner-email-switch__text">Event bekerült</span>
+                    </label>
+                    <label class="partner-email-switch" for="email_szervezo_stat">
+                        <input
+                            type="checkbox"
+                            name="email_szervezo_stat"
+                            value="1"
+                            id="email_szervezo_stat"
+                            class="partner-email-switch__input"
+                            <?= $emailSzervezoStatOn ? 'checked' : '' ?>
+                        >
+                        <span class="partner-email-switch__text">Szervező stat</span>
+                    </label>
+                </div>
             </div>
             <p class="help">Milyen automatikus e-maileket kapjon a partner erre a címre.</p>
         </div>
