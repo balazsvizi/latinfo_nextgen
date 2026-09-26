@@ -13,6 +13,32 @@ const EVENTS_REALTIME_TOP_NAV = 8;
 const EVENTS_REALTIME_RECENT_LIMIT = 40;
 
 /**
+ * @return 'human'|'all'|'bot'
+ */
+function events_realtime_normalize_visitor(mixed $raw): string
+{
+    $v = strtolower(trim((string) $raw));
+
+    return in_array($v, ['human', 'all', 'bot'], true) ? $v : 'human';
+}
+
+/**
+ * SQL feltétel is_bot szerint. A $visitor már normalizált érték.
+ */
+function events_realtime_bot_and(string $visitor, bool $botReady, string $columnExpr = '`is_bot`'): string
+{
+    if (!$botReady) {
+        return $visitor === 'bot' ? ' AND 1 = 0' : '';
+    }
+
+    return match ($visitor) {
+        'human' => " AND {$columnExpr} = 0",
+        'bot' => " AND {$columnExpr} = 1",
+        default => '',
+    };
+}
+
+/**
  * Index a 30 perces ablak lekérdezéseihez (idempotens).
  */
 function events_realtime_ensure_indexes(PDO $db): void
@@ -109,6 +135,7 @@ function events_realtime_kind_label(string $kind): string
  *   external_hits_30m: int,
  *   notice_hits_30m: int,
  *   bot_hits_30m: int,
+ *   visitor: 'human'|'all'|'bot',
  *   window_start: string,
  *   window_end: string,
  *   per_minute: list<array{t: string, label: string, users: int, party: int, hub: int, nav: int, preview: int, external: int}>,
@@ -134,8 +161,10 @@ function events_realtime_kind_label(string $kind): string
  *   }>
  * }
  */
-function events_realtime_snapshot(PDO $db): array
+function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
 {
+    $visitor = events_realtime_normalize_visitor($visitor);
+
     events_view_tracking_ensure_bot_column($db);
     events_realtime_ensure_indexes($db);
     events_public_traffic_ensure_schema($db);
@@ -171,6 +200,7 @@ function events_realtime_snapshot(PDO $db): array
         'external_hits_30m' => 0,
         'notice_hits_30m' => 0,
         'bot_hits_30m' => 0,
+        'visitor' => $visitor,
         'window_start' => $start,
         'window_end' => $window['end'],
         'per_minute' => [],
@@ -186,31 +216,31 @@ function events_realtime_snapshot(PDO $db): array
     }
 
     try {
-        $partyHits = events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_PAGE, false, $botReady, $tableReady);
+        $partyHits = events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_PAGE, $visitor, $botReady, $tableReady);
         $previewHits = $tableReady
-            ? events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, false, $botReady, $tableReady)
+            ? events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, $visitor, $botReady, $tableReady)
             : 0;
         $externalHits = $tableReady
-            ? events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_EXTERNAL_INFO, false, $botReady, $tableReady)
+            ? events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_EXTERNAL_INFO, $visitor, $botReady, $tableReady)
             : 0;
         $hubHits = $trafficReady
-            ? events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_PAGE_VIEW, false)
+            ? events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_PAGE_VIEW, $visitor)
             : 0;
         $navHits = $trafficReady
-            ? events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_NAV_CLICK, false)
+            ? events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_NAV_CLICK, $visitor)
             : 0;
         $noticeHits = $noticeReady
-            ? events_realtime_count_notice_clicks($db, $start, false)
+            ? events_realtime_count_notice_clicks($db, $start, $visitor)
             : 0;
 
-        $users30 = events_realtime_count_unique_users_all($db, $start, $botReady, $tableReady, $trafficReady);
+        $users30 = events_realtime_count_unique_users_all($db, $start, $visitor, $botReady, $tableReady, $trafficReady);
         $botHits = events_realtime_count_bot_hits_all($db, $start, $botReady, $tableReady, $trafficReady, $noticeReady);
 
         $perMinuteMap = [];
         foreach ($empty['per_minute'] as $row) {
             $perMinuteMap[$row['t']] = $row;
         }
-        events_realtime_fill_per_minute($db, $start, $botReady, $tableReady, $trafficReady, $perMinuteMap);
+        events_realtime_fill_per_minute($db, $start, $visitor, $botReady, $tableReady, $trafficReady, $perMinuteMap);
 
         $perMinute = [];
         foreach ($window['minutes'] as $minute) {
@@ -228,16 +258,18 @@ function events_realtime_snapshot(PDO $db): array
             'external_hits_30m' => $externalHits,
             'notice_hits_30m' => $noticeHits,
             'bot_hits_30m' => $botHits,
+            'visitor' => $visitor,
             'window_start' => $start,
             'window_end' => $window['end'],
             'per_minute' => $perMinute,
-            'top_events' => events_realtime_top_events($db, $start, $botReady, $tableReady),
-            'top_pages' => $trafficReady ? events_realtime_top_pages($db, $start) : [],
-            'top_nav' => $trafficReady ? events_realtime_top_nav($db, $start) : [],
-            'by_source' => events_realtime_by_source($db, $start, $botReady, $tableReady),
+            'top_events' => events_realtime_top_events($db, $start, $visitor, $botReady, $tableReady),
+            'top_pages' => $trafficReady ? events_realtime_top_pages($db, $start, $visitor) : [],
+            'top_nav' => $trafficReady ? events_realtime_top_nav($db, $start, $visitor) : [],
+            'by_source' => events_realtime_by_source($db, $start, $visitor, $botReady, $tableReady),
             'recent' => events_realtime_recent_all(
                 $db,
                 $start,
+                $visitor,
                 $botReady,
                 $tableReady,
                 $trafficReady,
@@ -253,39 +285,27 @@ function events_realtime_snapshot(PDO $db): array
 
 function events_realtime_count_unique_users(PDO $db, string $start, bool $botReady, bool $tableReady): int
 {
-    $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
-    $botAnd = $botReady ? ' AND `is_bot` = 0' : '';
-    $sql = "SELECT COUNT(DISTINCT `ip_hash`)
-            FROM `events_calendar_event_views`
-            WHERE `létrehozva` >= ?
-              AND `ip_hash` IS NOT NULL AND `ip_hash` <> ''
-              {$botAnd}{$metricAnd}";
-    $params = [$start];
-    if ($tableReady) {
-        $params[] = EVENTS_VIEW_METRIC_PAGE;
-    }
-    $stmt = $db->prepare($sql);
-    $stmt->execute($params);
-
-    return (int) $stmt->fetchColumn();
+    return events_realtime_count_unique_users_all($db, $start, 'human', $botReady, $tableReady, false);
 }
 
 /**
- * Egyedi emberi látogatók a buli- és a hub-/menü-forgalomból együtt.
+ * Egyedi látogatók a buli- és a hub-/menü-forgalomból együtt.
  */
 function events_realtime_count_unique_users_all(
     PDO $db,
     string $start,
+    string $visitor,
     bool $botReady,
     bool $tableReady,
     bool $trafficReady
 ): int
 {
+    $visitor = events_realtime_normalize_visitor($visitor);
     $parts = [];
     $params = [];
 
     $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
-    $botAnd = $botReady ? ' AND `is_bot` = 0' : '';
+    $botAnd = events_realtime_bot_and($visitor, $botReady);
     $parts[] = "SELECT `ip_hash`
                 FROM `events_calendar_event_views`
                 WHERE `létrehozva` >= ?
@@ -297,12 +317,13 @@ function events_realtime_count_unique_users_all(
     }
 
     if ($trafficReady) {
+        $trafficBotAnd = events_realtime_bot_and($visitor, true);
         $parts[] = "SELECT `ip_hash`
                     FROM `events_public_traffic`
                     WHERE `occurred_at` >= ?
-                      AND `is_bot` = 0
                       AND `event_type` = ?
-                      AND `ip_hash` IS NOT NULL AND `ip_hash` <> ''";
+                      AND `ip_hash` IS NOT NULL AND `ip_hash` <> ''
+                      {$trafficBotAnd}";
         $params[] = $start;
         $params[] = EVENTS_PUBLIC_TRAFFIC_PAGE_VIEW;
     }
@@ -322,17 +343,13 @@ function events_realtime_count_hits(
     PDO $db,
     string $start,
     string $metricType,
-    bool $botsOnly,
+    string $visitor,
     bool $botReady,
     bool $tableReady
 ): int {
+    $visitor = events_realtime_normalize_visitor($visitor);
     $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
-    $botAnd = '';
-    if ($botReady) {
-        $botAnd = $botsOnly ? ' AND `is_bot` = 1' : ' AND `is_bot` = 0';
-    } elseif ($botsOnly) {
-        return 0;
-    }
+    $botAnd = events_realtime_bot_and($visitor, $botReady);
 
     $sql = "SELECT COUNT(*) FROM `events_calendar_event_views`
             WHERE `létrehozva` >= ?{$botAnd}{$metricAnd}";
@@ -346,22 +363,26 @@ function events_realtime_count_hits(
     return (int) $stmt->fetchColumn();
 }
 
-function events_realtime_count_traffic(PDO $db, string $start, string $eventType, bool $botsOnly): int
+function events_realtime_count_traffic(PDO $db, string $start, string $eventType, string $visitor): int
 {
-    $sql = 'SELECT COUNT(*) FROM `events_public_traffic`
-            WHERE `occurred_at` >= ? AND `event_type` = ? AND `is_bot` = ?';
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = events_realtime_bot_and($visitor, true);
+    $sql = "SELECT COUNT(*) FROM `events_public_traffic`
+            WHERE `occurred_at` >= ? AND `event_type` = ?{$botAnd}";
     $stmt = $db->prepare($sql);
-    $stmt->execute([$start, $eventType, $botsOnly ? 1 : 0]);
+    $stmt->execute([$start, $eventType]);
 
     return (int) $stmt->fetchColumn();
 }
 
-function events_realtime_count_notice_clicks(PDO $db, string $start, bool $botsOnly): int
+function events_realtime_count_notice_clicks(PDO $db, string $start, string $visitor): int
 {
-    $sql = 'SELECT COUNT(*) FROM `events_public_home_notice_clicks`
-            WHERE `clicked_at` >= ? AND `is_bot` = ?';
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = events_realtime_bot_and($visitor, true);
+    $sql = "SELECT COUNT(*) FROM `events_public_home_notice_clicks`
+            WHERE `clicked_at` >= ?{$botAnd}";
     $stmt = $db->prepare($sql);
-    $stmt->execute([$start, $botsOnly ? 1 : 0]);
+    $stmt->execute([$start]);
 
     return (int) $stmt->fetchColumn();
 }
@@ -396,11 +417,11 @@ function events_realtime_count_bot_hits_all(
         $total += events_realtime_count_bot_hits($db, $start, $tableReady);
     }
     if ($trafficReady) {
-        $total += events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_PAGE_VIEW, true);
-        $total += events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_NAV_CLICK, true);
+        $total += events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_PAGE_VIEW, 'bot');
+        $total += events_realtime_count_traffic($db, $start, EVENTS_PUBLIC_TRAFFIC_NAV_CLICK, 'bot');
     }
     if ($noticeReady) {
-        $total += events_realtime_count_notice_clicks($db, $start, true);
+        $total += events_realtime_count_notice_clicks($db, $start, 'bot');
     }
 
     return $total;
@@ -412,12 +433,14 @@ function events_realtime_count_bot_hits_all(
 function events_realtime_fill_per_minute(
     PDO $db,
     string $start,
+    string $visitor,
     bool $botReady,
     bool $tableReady,
     bool $trafficReady,
     array &$perMinuteMap
 ): void {
-    $botAnd = $botReady ? ' AND `is_bot` = 0' : '';
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = events_realtime_bot_and($visitor, $botReady);
     $metricSelect = $tableReady ? '`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
 
     $sqlHits = "SELECT DATE_FORMAT(`létrehozva`, '%Y-%m-%d %H:%i:00') AS bucket,
@@ -445,11 +468,12 @@ function events_realtime_fill_per_minute(
     }
 
     if ($trafficReady) {
+        $trafficBotAnd = events_realtime_bot_and($visitor, true);
         $sqlTraffic = "SELECT DATE_FORMAT(`occurred_at`, '%Y-%m-%d %H:%i:00') AS bucket,
                               `event_type`,
                               COUNT(*) AS cnt
                        FROM `events_public_traffic`
-                       WHERE `occurred_at` >= ? AND `is_bot` = 0
+                       WHERE `occurred_at` >= ?{$trafficBotAnd}
                        GROUP BY bucket, `event_type`";
         $stmt = $db->prepare($sqlTraffic);
         $stmt->execute([$start]);
@@ -482,12 +506,13 @@ function events_realtime_fill_per_minute(
         $params[] = EVENTS_VIEW_METRIC_PAGE;
     }
     if ($trafficReady) {
+        $trafficBotAnd = events_realtime_bot_and($visitor, true);
         $parts[] = "SELECT DATE_FORMAT(`occurred_at`, '%Y-%m-%d %H:%i:00') AS bucket, `ip_hash`
                     FROM `events_public_traffic`
                     WHERE `occurred_at` >= ?
-                      AND `is_bot` = 0
                       AND `event_type` = ?
-                      AND `ip_hash` IS NOT NULL AND `ip_hash` <> ''";
+                      AND `ip_hash` IS NOT NULL AND `ip_hash` <> ''
+                      {$trafficBotAnd}";
         $params[] = $start;
         $params[] = EVENTS_PUBLIC_TRAFFIC_PAGE_VIEW;
     }
@@ -509,9 +534,10 @@ function events_realtime_fill_per_minute(
 /**
  * @return list<array{id: int, name: string, slug: string, unique: int, page: int, preview: int, external: int}>
  */
-function events_realtime_top_events(PDO $db, string $start, bool $botReady, bool $tableReady): array
+function events_realtime_top_events(PDO $db, string $start, string $visitor, bool $botReady, bool $tableReady): array
 {
-    $botAnd = $botReady ? ' AND v.`is_bot` = 0' : '';
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
     $pageMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : '';
     $previewMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : ' AND 1 = 0';
     $externalMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : ' AND 1 = 0';
@@ -592,14 +618,16 @@ function events_realtime_top_events(PDO $db, string $start, bool $botReady, bool
 /**
  * @return list<array{key: string, label: string, count: int}>
  */
-function events_realtime_top_pages(PDO $db, string $start): array
+function events_realtime_top_pages(PDO $db, string $start, string $visitor = 'human'): array
 {
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = events_realtime_bot_and($visitor, true);
     $sql = "SELECT `page_key`, COUNT(*) AS cnt
             FROM `events_public_traffic`
             WHERE `occurred_at` >= ?
-              AND `is_bot` = 0
               AND `event_type` = ?
               AND `page_key` <> ''
+              {$botAnd}
             GROUP BY `page_key`
             ORDER BY cnt DESC
             LIMIT " . (int) EVENTS_REALTIME_TOP_PAGES;
@@ -622,14 +650,16 @@ function events_realtime_top_pages(PDO $db, string $start): array
 /**
  * @return list<array{key: string, label: string, count: int}>
  */
-function events_realtime_top_nav(PDO $db, string $start): array
+function events_realtime_top_nav(PDO $db, string $start, string $visitor = 'human'): array
 {
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = events_realtime_bot_and($visitor, true);
     $sql = "SELECT `nav_key`, COUNT(*) AS cnt
             FROM `events_public_traffic`
             WHERE `occurred_at` >= ?
-              AND `is_bot` = 0
               AND `event_type` = ?
               AND `nav_key` <> ''
+              {$botAnd}
             GROUP BY `nav_key`
             ORDER BY cnt DESC
             LIMIT " . (int) EVENTS_REALTIME_TOP_NAV;
@@ -652,9 +682,10 @@ function events_realtime_top_nav(PDO $db, string $start): array
 /**
  * @return list<array{source: string, label: string, count: int}>
  */
-function events_realtime_by_source(PDO $db, string $start, bool $botReady, bool $tableReady): array
+function events_realtime_by_source(PDO $db, string $start, string $visitor, bool $botReady, bool $tableReady): array
 {
-    $botAnd = $botReady ? ' AND `is_bot` = 0' : '';
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = events_realtime_bot_and($visitor, $botReady);
     $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
     $sql = "SELECT COALESCE(NULLIF(TRIM(`source`), ''), 'direct') AS src, COUNT(*) AS cnt
             FROM `events_calendar_event_views`
@@ -702,6 +733,7 @@ function events_realtime_by_source(PDO $db, string $start, bool $botReady, bool 
 function events_realtime_recent_all(
     PDO $db,
     string $start,
+    string $visitor,
     bool $botReady,
     bool $tableReady,
     bool $trafficReady,
@@ -711,17 +743,19 @@ function events_realtime_recent_all(
         require_once __DIR__ . '/admin_event_filters.php';
     }
 
+    $visitor = events_realtime_normalize_visitor($visitor);
     $fetchLimit = (int) EVENTS_REALTIME_RECENT_LIMIT;
     $items = [];
 
     $botSelect = $botReady ? 'v.`is_bot`' : '0 AS `is_bot`';
     $metricSelect = $tableReady ? 'v.`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
+    $eventsBotAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
     $sqlEvents = "SELECT v.`létrehozva` AS at_ts, v.`esemény_id` AS event_id,
                          e.`event_name`, e.`event_start`, e.`event_end`, e.`event_allday`,
                          {$metricSelect}, v.`source`, {$botSelect}
                   FROM `events_calendar_event_views` v
                   LEFT JOIN `events_calendar_events` e ON e.`id` = v.`esemény_id`
-                  WHERE v.`létrehozva` >= ?
+                  WHERE v.`létrehozva` >= ?{$eventsBotAnd}
                   ORDER BY v.`létrehozva` DESC
                   LIMIT {$fetchLimit}";
     $stmt = $db->prepare($sqlEvents);
@@ -758,10 +792,11 @@ function events_realtime_recent_all(
     }
 
     if ($trafficReady) {
+        $trafficBotAnd = events_realtime_bot_and($visitor, true);
         $sqlTraffic = "SELECT `occurred_at` AS at_ts, `event_type`, `page_key`, `nav_key`,
                               `entity_label`, `lang`, `is_bot`
                        FROM `events_public_traffic`
-                       WHERE `occurred_at` >= ?
+                       WHERE `occurred_at` >= ?{$trafficBotAnd}
                        ORDER BY `occurred_at` DESC
                        LIMIT {$fetchLimit}";
         $stmt = $db->prepare($sqlTraffic);
@@ -821,9 +856,10 @@ function events_realtime_recent_all(
     }
 
     if ($noticeReady) {
+        $noticeBotAnd = events_realtime_bot_and($visitor, true);
         $sqlNotice = "SELECT `clicked_at` AS at_ts, `notice_text`, `notice_url`, `lang`, `is_bot`
                       FROM `events_public_home_notice_clicks`
-                      WHERE `clicked_at` >= ?
+                      WHERE `clicked_at` >= ?{$noticeBotAnd}
                       ORDER BY `clicked_at` DESC
                       LIMIT {$fetchLimit}";
         $stmt = $db->prepare($sqlNotice);
@@ -873,6 +909,7 @@ function events_realtime_recent(PDO $db, string $start, bool $botReady, bool $ta
     return events_realtime_recent_all(
         $db,
         $start,
+        'human',
         $botReady,
         $tableReady,
         events_public_traffic_tables_ready($db),

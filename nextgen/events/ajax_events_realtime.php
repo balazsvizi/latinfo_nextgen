@@ -14,12 +14,14 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 
 try {
     $db = getDb();
-    $snapshot = events_realtime_snapshot($db);
+    $visitor = events_realtime_normalize_visitor($_GET['visitor'] ?? 'human');
+    $snapshot = events_realtime_snapshot($db, $visitor);
     echo json_encode(
         array_merge(
             [
                 'ok' => true,
                 'generated_at' => (new DateTimeImmutable('now'))->format('Y-m-d H:i:s'),
+                'visitor' => $visitor,
             ],
             $snapshot
         ),

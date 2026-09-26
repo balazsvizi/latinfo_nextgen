@@ -5985,6 +5985,35 @@ html.events-stats-loading-active body {
     text-transform: uppercase;
     color: #2f6b48;
 }
+.events-rt-visitor {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.15rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, #5b7c99 10%, #fff);
+    border: 1px solid color-mix(in srgb, #5b7c99 18%, var(--border, #e5e7eb));
+}
+.events-rt-visitor__btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary, #6b7280);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 650;
+    line-height: 1;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    cursor: pointer;
+}
+.events-rt-visitor__btn:hover {
+    color: var(--text, #1f2937);
+}
+.events-rt-visitor__btn.is-active {
+    background: #2f4a5c;
+    color: #fff;
+}
 .events-rt-updated {
     margin-left: auto;
     font-size: 0.8rem;

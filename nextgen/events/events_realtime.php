@@ -10,7 +10,8 @@ require_once __DIR__ . '/lib/event_realtime_stats.php';
 requireLogin();
 
 $db = getDb();
-$snapshot = events_realtime_snapshot($db);
+$visitor = events_realtime_normalize_visitor($_GET['visitor'] ?? 'human');
+$snapshot = events_realtime_snapshot($db, $visitor);
 $generatedAt = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
 $ajaxUrl = events_url('ajax_events_realtime.php');
 $editBase = events_url('szerkeszt.php?id=');
@@ -23,6 +24,7 @@ $payload = array_merge(
         'ok' => true,
         'generated_at' => $generatedAt,
         'edit_base' => $editBase,
+        'visitor' => $visitor,
     ],
     $snapshot
 );
@@ -47,7 +49,7 @@ $kindBadgeClass = static function (string $kind): string {
     };
 };
 ?>
-<div class="card events-admin-card events-rt-page" id="events-rt-root" data-ajax-url="<?= h($ajaxUrl) ?>" data-poll-ms="15000">
+<div class="card events-admin-card events-rt-page" id="events-rt-root" data-ajax-url="<?= h($ajaxUrl) ?>" data-poll-ms="15000" data-visitor="<?= h($visitor) ?>">
     <div class="events-list-head events-cal-page__head">
         <div class="events-cal-page__head-start">
             <h2 class="events-list-title">Valós idejű áttekintés</h2>
@@ -65,11 +67,45 @@ $kindBadgeClass = static function (string $kind): string {
         <div class="events-rt-hero__live">
             <span class="events-rt-live-dot" aria-hidden="true"></span>
             <span class="events-rt-live-label">Élő</span>
+            <div class="events-rt-visitor" role="group" aria-label="Látogató szűrő">
+                <?php
+                $visitorOptions = [
+                    'human' => 'Ember',
+                    'all' => 'Mind',
+                    'bot' => 'Bot',
+                ];
+                foreach ($visitorOptions as $optKey => $optLabel):
+                    $isActive = $visitor === $optKey;
+                ?>
+                    <button
+                        type="button"
+                        class="events-rt-visitor__btn<?= $isActive ? ' is-active' : '' ?>"
+                        data-visitor="<?= h($optKey) ?>"
+                        aria-pressed="<?= $isActive ? 'true' : 'false' ?>"
+                    ><?= h($optLabel) ?></button>
+                <?php endforeach; ?>
+            </div>
             <span class="events-rt-updated" id="events-rt-updated">Frissítve: <?= h($generatedAt) ?></span>
         </div>
-        <p class="events-rt-hero__label">Felhasználók az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben</p>
+        <p class="events-rt-hero__label" id="events-rt-users-label">
+            <?php
+            echo match ($visitor) {
+                'bot' => 'Botok az elmúlt ' . EVENTS_REALTIME_WINDOW_MINUTES . ' percben',
+                'all' => 'Látogatók az elmúlt ' . EVENTS_REALTIME_WINDOW_MINUTES . ' percben',
+                default => 'Felhasználók az elmúlt ' . EVENTS_REALTIME_WINDOW_MINUTES . ' percben',
+            };
+            ?>
+        </p>
         <p class="events-rt-hero__value" id="events-rt-users"><?= (int) $snapshot['users_30m'] ?></p>
-        <p class="events-rt-hero__hint">Egyedi emberi látogató (IP) — buli és nyilvános oldalak együtt</p>
+        <p class="events-rt-hero__hint" id="events-rt-users-hint">
+            <?php
+            echo match ($visitor) {
+                'bot' => 'Egyedi bot (IP) — buli és nyilvános oldalak együtt',
+                'all' => 'Egyedi látogató (IP) — ember és bot együtt',
+                default => 'Egyedi emberi látogató (IP) — buli és nyilvános oldalak együtt',
+            };
+            ?>
+        </p>
     </div>
 
     <div class="events-rt-kpis" aria-label="Összesítők">
@@ -278,6 +314,7 @@ $kindBadgeClass = static function (string $kind): string {
     var editBase = '';
     var chart = null;
     var windowMinutes = <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?>;
+    var visitor = root.getAttribute('data-visitor') || 'human';
 
     function esc(s) {
         return String(s == null ? '' : s)
@@ -291,6 +328,57 @@ $kindBadgeClass = static function (string $kind): string {
     function setText(id, value) {
         var el = document.getElementById(id);
         if (el) el.textContent = String(value);
+    }
+
+    function visitorLabels(v) {
+        if (v === 'bot') {
+            return {
+                label: 'Botok az elmúlt ' + windowMinutes + ' percben',
+                hint: 'Egyedi bot (IP) — buli és nyilvános oldalak együtt'
+            };
+        }
+        if (v === 'all') {
+            return {
+                label: 'Látogatók az elmúlt ' + windowMinutes + ' percben',
+                hint: 'Egyedi látogató (IP) — ember és bot együtt'
+            };
+        }
+        return {
+            label: 'Felhasználók az elmúlt ' + windowMinutes + ' percben',
+            hint: 'Egyedi emberi látogató (IP) — buli és nyilvános oldalak együtt'
+        };
+    }
+
+    function syncVisitorButtons(v) {
+        var buttons = root.querySelectorAll('.events-rt-visitor__btn');
+        buttons.forEach(function (btn) {
+            var active = btn.getAttribute('data-visitor') === v;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+    }
+
+    function setVisitor(next) {
+        if (next !== 'human' && next !== 'all' && next !== 'bot') {
+            next = 'human';
+        }
+        if (next === visitor) {
+            poll();
+            return;
+        }
+        visitor = next;
+        root.setAttribute('data-visitor', visitor);
+        syncVisitorButtons(visitor);
+        try {
+            var url = new URL(window.location.href);
+            if (visitor === 'human') {
+                url.searchParams.delete('visitor');
+            } else {
+                url.searchParams.set('visitor', visitor);
+            }
+            window.history.replaceState({}, '', url.toString());
+        } catch (e) {}
+        poll();
     }
 
     function kindClass(kind) {
@@ -475,6 +563,14 @@ $kindBadgeClass = static function (string $kind): string {
     function applyPayload(payload) {
         if (!payload || !payload.ok) return;
         editBase = payload.edit_base || editBase;
+        if (payload.visitor) {
+            visitor = payload.visitor;
+            root.setAttribute('data-visitor', visitor);
+            syncVisitorButtons(visitor);
+        }
+        var labels = visitorLabels(visitor);
+        setText('events-rt-users-label', labels.label);
+        setText('events-rt-users-hint', labels.hint);
         setText('events-rt-users', Number(payload.users_30m || 0));
         setText('events-rt-party', Number(payload.party_hits_30m != null ? payload.party_hits_30m : payload.page_hits_30m || 0));
         setText('events-rt-hub', Number(payload.hub_hits_30m || 0));
@@ -493,7 +589,8 @@ $kindBadgeClass = static function (string $kind): string {
 
     function poll() {
         if (!ajaxUrl) return;
-        fetch(ajaxUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        var url = ajaxUrl + (ajaxUrl.indexOf('?') >= 0 ? '&' : '?') + 'visitor=' + encodeURIComponent(visitor);
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
             .then(function (res) { return res.json(); })
             .then(function (data) {
                 if (data && data.ok) {
@@ -507,8 +604,17 @@ $kindBadgeClass = static function (string $kind): string {
     try {
         var initial = JSON.parse(initialEl.textContent || '{}');
         editBase = initial.edit_base || '';
+        if (initial.visitor) {
+            visitor = initial.visitor;
+        }
         applyPayload(initial);
     } catch (e) {}
+
+    root.querySelectorAll('.events-rt-visitor__btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            setVisitor(btn.getAttribute('data-visitor') || 'human');
+        });
+    });
 
     setInterval(poll, pollMs);
     document.addEventListener('visibilitychange', function () {
