@@ -107,7 +107,7 @@ $selectedTplId = (int) ($loginInviteSelected['id'] ?? 0);
         <div class="form-group">
             <label for="login_invite_subject">Levél tárgya *</label>
             <input type="text" id="login_invite_subject" name="login_invite_subject" value="<?= h($loginInviteSubject) ?>" required maxlength="255">
-            <p class="help">Változók: <code>{{partner_nev}}</code>, <code>{{email}}</code>, <code>{{jelszo}}</code>, <code>{{portal_url}}</code>, <code>{{site_name}}</code></p>
+            <p class="help">Változók: <code>{{partner_nev}}</code>, <code>{{email}}</code>, <code>{{jelszo}}</code>, <code>{{portal_url}}</code>, <code>{{site_name}}</code>, <code>{{szerkeszto_becenev}}</code></p>
         </div>
 
         <div class="form-group">

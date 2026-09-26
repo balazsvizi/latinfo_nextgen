@@ -34,7 +34,10 @@ $templatesJson = json_encode(
 );
 
 $notifyRefFields = [];
-foreach (events_notify_email_placeholder_catalog() as $row) {
+foreach (events_levelsablon_placeholder_catalog_merge(
+    events_notify_email_placeholder_catalog(),
+    events_levelsablon_common_placeholder_catalog()
+) as $row) {
     $token = (string) ($row['token'] ?? '');
     if ($token === '') {
         continue;

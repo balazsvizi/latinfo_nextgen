@@ -125,7 +125,7 @@ function events_notify_email_ensure_default_template(PDO $db): void
             'Esemény megjelent – szervezői értesítő',
             EVENTS_NOTIFY_EMAIL_TEMPLATE_CODE,
             $defaults['targy'],
-            'Esemény szerkesztőből küldhető visszajelző. Változók: {{organizer_names}}, {{event_name}}, {{event_id}}, {{event_start}}, {{event_end}}, {{venue_name}}, {{event_url}}, {{site_name}}',
+            'Esemény szerkesztőből küldhető visszajelző. Változók: {{organizer_names}}, {{event_name}}, {{event_id}}, {{event_start}}, {{event_end}}, {{venue_name}}, {{event_url}}, {{site_name}}, {{szerkeszto_becenev}}',
             $defaults['html_tartalom'],
         ]);
         $newId = (int) $db->lastInsertId();
@@ -442,6 +442,8 @@ function events_notify_email_placeholders(PDO $db, array $event, array $organize
         }
     }
 
+    $editorNick = trim((string) ($_SESSION['admin_nev'] ?? ''));
+
     return [
         '{{organizer_names}}' => $organizerNames !== [] ? implode(', ', $organizerNames) : 'Szervező',
         '{{event_name}}' => $eventName !== '' ? $eventName : 'Esemény',
@@ -451,6 +453,7 @@ function events_notify_email_placeholders(PDO $db, array $event, array $organize
         '{{venue_name}}' => $venueName,
         '{{event_url}}' => $eventUrl !== '' ? $eventUrl : '–',
         '{{site_name}}' => $siteName,
+        '{{szerkeszto_becenev}}' => $editorNick !== '' ? $editorNick : '–',
     ];
 }
 
@@ -479,11 +482,46 @@ function events_notify_email_placeholder_catalog(): array
 }
 
 /**
+ * Minden levélsablonnál elérhető közös referenciás mezők.
+ *
+ * @return list<array{token: string, label: string, group: string}>
+ */
+function events_levelsablon_common_placeholder_catalog(): array
+{
+    return [
+        ['token' => '{{szerkeszto_becenev}}', 'label' => 'Szerkesztő beceneve', 'group' => 'Szerkesztő'],
+    ];
+}
+
+/**
+ * @param list<array{token: string, label: string, group: string}> $rows
+ * @return list<array{token: string, label: string, group: string}>
+ */
+function events_levelsablon_placeholder_catalog_merge(array ...$groups): array
+{
+    $seen = [];
+    $out = [];
+    foreach ($groups as $group) {
+        foreach ($group as $row) {
+            $token = (string) ($row['token'] ?? '');
+            if ($token === '' || isset($seen[$token])) {
+                continue;
+            }
+            $seen[$token] = true;
+            $out[] = $row;
+        }
+    }
+
+    return $out;
+}
+
+/**
  * @return list<array{token: string, label: string, group: string}>
  */
 function events_levelsablon_placeholder_catalog_for_code(string $kod): array
 {
     $kod = trim($kod);
+    $common = events_levelsablon_common_placeholder_catalog();
     $event = events_notify_email_placeholder_catalog();
     $partner = [
         ['token' => '{{partner_nev}}', 'label' => 'Partner neve', 'group' => 'Partner login'],
@@ -494,25 +532,14 @@ function events_levelsablon_placeholder_catalog_for_code(string $kod): array
     ];
 
     if ($kod === EVENTS_NOTIFY_EMAIL_TEMPLATE_CODE || str_contains($kod, 'event_')) {
-        return $event;
+        return events_levelsablon_placeholder_catalog_merge($event, $common);
     }
     if ($kod === 'partner_login_hozzaferes' || str_contains($kod, 'partner')) {
-        return $partner;
+        return events_levelsablon_placeholder_catalog_merge($partner, $common);
     }
 
-    // Ismeretlen sablon: mindkét csoport, site_name egyszer.
-    $seen = [];
-    $out = [];
-    foreach (array_merge($event, $partner) as $row) {
-        $token = (string) ($row['token'] ?? '');
-        if ($token === '' || isset($seen[$token])) {
-            continue;
-        }
-        $seen[$token] = true;
-        $out[] = $row;
-    }
-
-    return $out;
+    // Ismeretlen sablon: mindkét csoport + közös mezők, tokenenként egyszer.
+    return events_levelsablon_placeholder_catalog_merge($event, $partner, $common);
 }
 
 /**

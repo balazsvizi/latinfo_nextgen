@@ -143,6 +143,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['szamla_email_action']
         '{{osszeg}}' => number_format((float)$szamla['összeg'], 0, ',', ' ') . ' Ft',
         '{{statusz}}' => szamla_statusz_label((string)$szamla['státusz']),
         '{{belso_megjegyzes}}' => (string)($szamla['belső_megjegyzés'] ?? ''),
+        '{{szerkeszto_becenev}}' => trim((string) ($_SESSION['admin_nev'] ?? '')) !== ''
+            ? trim((string) $_SESSION['admin_nev'])
+            : '–',
     ];
     $subject = strtr($template_subject, $replace);
     $body = strtr($template_html, $replace);
@@ -581,13 +584,13 @@ require_once __DIR__ . '/../../partials/header.php';
         <div class="form-group">
             <label>Levélsablon tárgy (szamla_kuldes)</label>
             <input type="text" name="sablon_targy" value="<?= h($default_sablon_targy) ?>" placeholder="pl. Számla: {{szamla_szam}}">
-            <p class="help">Használható változók: <code>{{szervezo_nev}}</code>, <code>{{szamla_szam}}</code>, <code>{{datum}}</code>, <code>{{osszeg}}</code>, <code>{{statusz}}</code>, <code>{{belso_megjegyzes}}</code></p>
+            <p class="help">Használható változók: <code>{{szervezo_nev}}</code>, <code>{{szamla_szam}}</code>, <code>{{datum}}</code>, <code>{{osszeg}}</code>, <code>{{statusz}}</code>, <code>{{belso_megjegyzes}}</code>, <code>{{szerkeszto_becenev}}</code></p>
         </div>
 
         <div class="form-group">
             <label>Levélsablon HTML (szamla_kuldes)</label>
             <textarea name="sablon_html" class="js-html-editor-source" rows="10"><?= h($default_sablon_html) ?></textarea>
-            <p class="help">Használható változók: <code>{{szervezo_nev}}</code>, <code>{{szamla_szam}}</code>, <code>{{datum}}</code>, <code>{{osszeg}}</code>, <code>{{statusz}}</code>, <code>{{belso_megjegyzes}}</code></p>
+            <p class="help">Használható változók: <code>{{szervezo_nev}}</code>, <code>{{szamla_szam}}</code>, <code>{{datum}}</code>, <code>{{osszeg}}</code>, <code>{{statusz}}</code>, <code>{{belso_megjegyzes}}</code>, <code>{{szerkeszto_becenev}}</code></p>
         </div>
 
         <div class="form-actions">

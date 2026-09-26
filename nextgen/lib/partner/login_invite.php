@@ -81,7 +81,7 @@ function nextgen_partner_login_invite_ensure_default_template(PDO $db): void
             'Partner login hozzáférés',
             NEXTGEN_PARTNER_LOGIN_INVITE_TEMPLATE_CODE,
             $defaults['targy'],
-            'Partner portál hozzáférés létrehozásakor kiküldött kiértesítő. Változók: {{partner_nev}}, {{email}}, {{jelszo}}, {{portal_url}}, {{site_name}}',
+            'Partner portál hozzáférés létrehozásakor kiküldött kiértesítő. Változók: {{partner_nev}}, {{email}}, {{jelszo}}, {{portal_url}}, {{site_name}}, {{szerkeszto_becenev}}',
             $defaults['html_tartalom'],
         ]);
     } catch (Throwable $ex) {
@@ -160,12 +160,15 @@ function nextgen_partner_login_invite_placeholders(array $partner, string $tempo
         $nev = 'Partner';
     }
 
+    $editorNick = trim((string) ($_SESSION['admin_nev'] ?? ''));
+
     return [
         '{{partner_nev}}' => $nev,
         '{{email}}' => trim((string) ($partner['email'] ?? '')),
         '{{jelszo}}' => $temporaryPassword,
         '{{portal_url}}' => $portalUrl,
         '{{site_name}}' => $siteName,
+        '{{szerkeszto_becenev}}' => $editorNick !== '' ? $editorNick : '–',
     ];
 }
 
