@@ -109,8 +109,6 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/tag_types.php')) ?>" role="menuitem">Címke típusok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/boritokepek.php')) ?>" role="menuitem">Borítóképek</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('events/menu_szerkeszt.php')) ?>" role="menuitem">Főmenü</a></li>
                         <?php if (isLoggedIn() && isSuperadmin()): ?>
                         <li role="none"><a href="<?= h(nextgen_url('events/kepek_esemenyek.php')) ?>" role="menuitem">Képek–események</a></li>
                         <?php endif; ?>
@@ -148,11 +146,17 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/mediaertek.php')) ?>" role="menuitem">Médiaérték</a></li>
                     </ul>
                 </li>
-                <li class="nav-item">
-                    <a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" class="nav-parent-link">Slug</a>
-                </li>
-                <li class="nav-item">
-                    <a href="<?= h(nextgen_url('events/partnerek_szerkeszt.php')) ?>" class="nav-parent-link">Partnereink</a>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" class="nav-parent-link">Config</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-config" aria-label="Config almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-latinfo-config" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/menu_szerkeszt.php')) ?>" role="menuitem">Főmenü</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" role="menuitem">Slug</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/partnerek_szerkeszt.php')) ?>" role="menuitem">Partnereink</a></li>
+                    </ul>
                 </li>
                 <li class="nav-item">
                     <a href="<?= h(nextgen_url('events/import_csv.php')) ?>" class="nav-parent-link">CSV import</a>

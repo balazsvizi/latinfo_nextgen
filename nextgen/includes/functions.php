@@ -171,7 +171,9 @@ function ng_nav_latinfo_event_scripts(): array
         'events_stat.php',
         'events_statisztika.php',
         'events_szervezok_statisztika.php',
+        'fooldal_szerkeszt.php',
         'import_csv.php',
+        'menu_szerkeszt.php',
         'partnerek_szerkeszt.php',
         'slug_atiranyitasok.php',
     ];
