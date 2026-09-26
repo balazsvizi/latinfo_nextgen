@@ -601,7 +601,29 @@ function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlu
 
     $row['event_slug'] = events_ensure_unique_slug($db, $row['event_slug'], $excludeIdForSlug);
 
+    $publishUrlErr = events_validate_publish_requires_event_url($row);
+    if ($publishUrlErr !== null) {
+        return [$row, $publishUrlErr, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
+    }
+
     return [$row, null, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds];
+}
+
+/**
+ * Közzétételhez a további információ URL kötelező.
+ *
+ * @param array<string, mixed> $row
+ */
+function events_validate_publish_requires_event_url(array $row): ?string
+{
+    if ((string) ($row['event_status'] ?? '') !== events_public_post_status()) {
+        return null;
+    }
+    if (trim((string) ($row['event_url'] ?? '')) === '') {
+        return 'Közzétételhez a további információ URL megadása kötelező.';
+    }
+
+    return null;
 }
 
 /**

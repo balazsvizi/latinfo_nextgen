@@ -1399,6 +1399,18 @@ tr:hover td { background: var(--bg); }
 .events-cal-filters-toggle.is-open .events-cal-filters-toggle__chevron {
     transform: rotate(-180deg);
 }
+.events-cal-filters-quick-name {
+    flex: 1 1 11rem;
+    min-width: 8rem;
+    max-width: 16rem;
+    width: auto;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+}
+.events-cal-filters-quick-name.is-active {
+    border-color: var(--primary);
+}
 .events-cal-filters-panel__badge {
     display: inline-flex;
     align-items: center;

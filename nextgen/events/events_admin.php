@@ -188,7 +188,8 @@ $calendarViewUrl = events_admin_calendar_view_url(events_admin_calendar_view_mon
 $listViewUrl = events_admin_list_view_url($get_params, ['order' => $order, 'dir' => $dir_param]);
 $mapViewUrl = events_admin_map_view_url($get_params);
 $activeView = 'list';
-$filtersActive = events_admin_filters_are_active($filters);
+$filtersActive = events_admin_filters_are_active_excluding_name($filters);
+$nameQuickValue = trim((string) ($filters['f_name'] ?? ''));
 $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
 $publicPreviewParams = $get_params;
 $publicPreviewParams['month'] = events_admin_calendar_view_month_key($filters);
@@ -243,6 +244,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <?php endif; ?>
                     <span class="events-cal-filters-toggle__chevron" aria-hidden="true">▾</span>
                 </button>
+                <input
+                    type="search"
+                    class="events-filter-input events-cal-filters-quick-name<?= $nameQuickValue !== '' ? ' is-active' : '' ?>"
+                    id="ev-f-name-quick"
+                    value="<?= h($nameQuickValue) ?>"
+                    placeholder="Keresés a címben…"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Esemény neve"
+                    <?= $filtersActive ? 'hidden' : '' ?>
+                >
                 <h2 class="events-list-title">Események</h2>
             </div>
             <div class="events-list-actions">

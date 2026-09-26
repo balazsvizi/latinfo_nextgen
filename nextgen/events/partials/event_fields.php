@@ -154,11 +154,25 @@ if ($organizerFinanceJson === false) {
 <div class="events-edit-panel events-edit-panel--tone-url">
     <h3 class="events-edit-panel__title">További információ</h3>
     <div class="form-group events-url-open-row">
-        <input type="url" id="event_url" name="event_url" value="<?= h($e['event_url']) ?>" maxlength="2000" placeholder="https://" aria-label="További információ URL">
+        <?php
+        $eventUrlRequiredForPublish = ($e['event_status'] ?? '') === events_public_post_status();
+        ?>
+        <input
+            type="url"
+            id="event_url"
+            name="event_url"
+            value="<?= h($e['event_url']) ?>"
+            maxlength="2000"
+            placeholder="https://"
+            aria-label="További információ URL<?= $eventUrlRequiredForPublish ? ' (közzétételhez kötelező)' : '' ?>"
+            data-required-for-publish="1"
+            <?= $eventUrlRequiredForPublish ? 'required' : '' ?>
+        >
         <?php if (!empty($e['event_url'])): ?>
             <a class="btn btn-secondary events-url-open-btn" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a>
         <?php endif; ?>
     </div>
+    <p class="help">Közzétételhez kötelező megadni az esemény külső oldalának URL-jét.</p>
 </div>
 <div class="events-edit-org-venue-grid">
 <div class="events-edit-panel events-edit-panel--tone-venue">

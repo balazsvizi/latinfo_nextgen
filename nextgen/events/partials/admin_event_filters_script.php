@@ -2,6 +2,26 @@
 (function () {
     var btn = document.getElementById('events-cal-filters-toggle');
     var panel = document.getElementById('events-cal-filters-panel');
+    var quickName = document.getElementById('ev-f-name-quick');
+    var panelName = document.getElementById('ev-f-name');
+
+    function syncQuickNameVisibility() {
+        if (!quickName || !panel) return;
+        var open = !panel.hasAttribute('hidden');
+        if (open) {
+            if (panelName) {
+                panelName.value = quickName.value;
+            }
+            quickName.setAttribute('hidden', '');
+        } else {
+            if (panelName) {
+                quickName.value = panelName.value;
+            }
+            quickName.classList.toggle('is-active', (quickName.value || '').trim() !== '');
+            quickName.removeAttribute('hidden');
+        }
+    }
+
     if (btn && panel) {
         btn.addEventListener('click', function () {
             var open = panel.hasAttribute('hidden');
@@ -14,10 +34,12 @@
                 btn.setAttribute('aria-expanded', 'false');
                 btn.classList.remove('is-open');
             }
+            syncQuickNameVisibility();
         });
         if (!panel.hasAttribute('hidden')) {
             btn.classList.add('is-open');
         }
+        syncQuickNameVisibility();
     }
 
     var shell = document.querySelector('.events-filters-shell');
@@ -43,13 +65,26 @@
         debounceTimer = setTimeout(submitForm, delay);
     }
 
+    if (quickName && panelName && form) {
+        quickName.addEventListener('input', function () {
+            panelName.value = quickName.value;
+            quickName.classList.toggle('is-active', (quickName.value || '').trim() !== '');
+            debouncedSubmit(450);
+        });
+    }
+
     if (form) {
         form.querySelectorAll('.events-filter-select').forEach(function (el) {
             el.addEventListener('change', submitForm);
         });
 
         form.querySelectorAll('input.events-filter-input[type="text"], input.events-filter-input[type="search"]').forEach(function (el) {
+            if (el.id === 'ev-f-name-quick') return;
             el.addEventListener('input', function () {
+                if (el.id === 'ev-f-name' && quickName) {
+                    quickName.value = el.value;
+                    quickName.classList.toggle('is-active', (el.value || '').trim() !== '');
+                }
                 debouncedSubmit(450);
             });
         });

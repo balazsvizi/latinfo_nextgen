@@ -510,6 +510,19 @@ function events_admin_filters_are_active(array $filters): bool {
 }
 
 /**
+ * Van-e aktív admin szűrő a név mezőn kívül (gyors névkereső vs. szűrőpanel).
+ *
+ * @param array<string, mixed> $filters
+ */
+function events_admin_filters_are_active_excluding_name(array $filters): bool
+{
+    $saved = $filters;
+    $saved['f_name'] = '';
+
+    return events_admin_filters_are_active($saved);
+}
+
+/**
  * Szűrt események helyszín koordinátákkal (admin térkép nézet).
  *
  * @param array<string, mixed> $filters

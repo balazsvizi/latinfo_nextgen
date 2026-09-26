@@ -77,6 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row['event_status'] = $saveAction === 'publish'
             ? events_public_post_status()
             : events_default_post_status();
+        if ($err === null) {
+            $err = events_validate_publish_requires_event_url($row);
+        }
     }
     $copyWarnings = $eventFormIsCopy ? events_copy_save_warnings($row, $_POST) : [];
     if ($err !== null) {
