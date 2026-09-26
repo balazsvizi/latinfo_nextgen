@@ -2,15 +2,21 @@
 declare(strict_types=1);
 
 /**
- * Nyilvános CMS cikk megjelenítő.
+ * Nyilvános CMS cikk megjelenítő – Latinfo.hu shell + menü.
  */
 require_once __DIR__ . '/bootstrap.php';
+require_once dirname(__DIR__) . '/events/lib/event_public_lang.php';
+require_once dirname(__DIR__) . '/events/lib/public_nav_menu.php';
+
+$lang = events_public_resolve_megjelenit_lang();
+$htmlLang = $lang === 'en' ? 'en' : 'hu';
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
 if ($slug === '') {
     http_response_code(404);
     header('Content-Type: text/html; charset=UTF-8');
-    echo '<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><title>Nem található</title></head><body><p>A cikk nem található.</p></body></html>';
+    $C = events_public_common_nav_strings($lang);
+    echo '<!DOCTYPE html><html lang="' . h($htmlLang) . '"><head><meta charset="UTF-8"><title>Nem található</title></head><body><p>A cikk nem található.</p><p><a href="' . h(LATINFO_PUBLIC_HOME_URL) . '">' . h($C['logo_home_title'] ?? 'Latinfo.hu') . '</a></p></body></html>';
     exit;
 }
 
@@ -24,7 +30,7 @@ $isAdminPreview = function_exists('isLoggedIn') && isLoggedIn()
 if ($post === null || ((string) ($post['status'] ?? '') !== cms_status_publish() && !$isAdminPreview)) {
     http_response_code(404);
     header('Content-Type: text/html; charset=UTF-8');
-    echo '<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><title>Nem található</title></head><body><p>A cikk nem található vagy nem publikus.</p><p><a href="' . h(cms_public_list_url()) . '">Vissza a listához</a></p></body></html>';
+    echo '<!DOCTYPE html><html lang="' . h($htmlLang) . '"><head><meta charset="UTF-8"><title>Nem található</title></head><body class="event-public-page"><p>A cikk nem található vagy nem publikus.</p><p><a href="' . h(LATINFO_PUBLIC_HOME_URL) . '">Latinfo.hu</a></p></body></html>';
     exit;
 }
 
@@ -54,10 +60,10 @@ try {
         $tagNames[] = (string) ($r['name'] ?? '');
     }
 } catch (Throwable $e) {
-    // tags table optional
+    // tags optional
 }
 
-$title = trim((string) ($post['seo_title'] ?? '')) !== ''
+$pageTitle = trim((string) ($post['seo_title'] ?? '')) !== ''
     ? (string) $post['seo_title']
     : (string) ($post['title'] ?? 'CMS');
 $description = trim((string) ($post['seo_description'] ?? ''));
@@ -66,63 +72,142 @@ if ($description === '') {
 }
 $contentHtml = events_sanitize_html_fragment((string) ($post['content_html'] ?? ''));
 $featured = trim((string) ($post['featured_image_url'] ?? ''));
-$siteName = defined('SITE_NAME') ? (string) SITE_NAME : 'Latinfo';
-$listUrl = cms_public_list_url();
-$cssUrl = nextgen_url('cms/assets/css/cms-public.css') . '?v=' . rawurlencode(nextgen_app_version());
+$featuredAbsolute = $featured !== '' ? cms_absolute_url($featured) : '';
+
+$publishedLabel = '';
+if (!empty($post['published_at'])) {
+    $ts = strtotime((string) $post['published_at']);
+    if ($ts !== false) {
+        $publishedLabel = $lang === 'en'
+            ? date('j M Y', $ts)
+            : date('Y. m. d.', $ts);
+    }
+}
+
+$S = events_public_megjelenit_strings($lang);
+$S['logo_home_title'] = events_public_common_nav_strings($lang)['logo_home_title'];
+$S['logo_home_aria'] = events_public_common_nav_strings($lang)['logo_home_aria'];
+$isEventsHome = false;
+$showAdminEdit = isLoggedIn();
+$adminEditUrl = $showAdminEdit ? cms_url('szerkeszt.php?id=' . $postId) : '';
+$S['admin_edit_title'] = $lang === 'en' ? 'Edit' : 'Szerkesztés';
+$S['admin_edit_aria'] = $lang === 'en' ? 'Edit article in CMS' : 'Cikk szerkesztése a CMS-ben';
+
+$selfPath = cms_public_post_url($slug);
+$urlHu = $selfPath;
+$urlEn = $selfPath . (str_contains($selfPath, '?') ? '&' : '?') . 'lang=en';
+
+$cssPublicUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
+$cssCmsUrl = nextgen_url('cms/assets/css/cms-public.css') . '?v=' . rawurlencode(nextgen_app_version());
+
+$adminFloatTools = [];
+if ($showAdminEdit) {
+    $adminFloatTools = [
+        [
+            'href' => $adminEditUrl,
+            'title' => $S['admin_edit_title'],
+            'aria' => $S['admin_edit_aria'],
+            'icon' => 'edit',
+        ],
+        [
+            'href' => cms_url('posts.php'),
+            'title' => 'CMS',
+            'aria' => 'CMS cikklista',
+            'icon' => 'list',
+        ],
+    ];
+}
+
+$pathOnly = (string) (parse_url($selfPath, PHP_URL_PATH) ?? '');
+$ogPageUrl = $pathOnly !== '' ? cms_absolute_url($pathOnly) : cms_absolute_url($selfPath);
+
+header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="<?= h($htmlLang) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= h($title) ?> – <?= h($siteName) ?></title>
+    <?= events_public_ga_head_markup() ?>
+    <meta name="theme-color" content="#6d8f63">
+    <title><?= h($pageTitle) ?> – <?= h(SITE_NAME) ?></title>
     <?php if ($description !== ''): ?>
     <meta name="description" content="<?= h(mb_substr(strip_tags($description), 0, 300)) ?>">
     <?php endif; ?>
-    <?php require dirname(__DIR__) . '/includes/favicon_head.php'; ?>
-    <link rel="stylesheet" href="<?= h($cssUrl) ?>">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="<?= h(SITE_NAME) ?>">
+    <meta property="og:title" content="<?= h($pageTitle) ?>">
+    <?php if ($description !== ''): ?>
+    <meta property="og:description" content="<?= h(mb_substr(strip_tags($description), 0, 300)) ?>">
+    <?php endif; ?>
+    <meta property="og:url" content="<?= h($ogPageUrl) ?>">
+    <?php if ($featuredAbsolute !== ''): ?>
+    <meta property="og:image" content="<?= h($featuredAbsolute) ?>">
+    <?php endif; ?>
+    <link rel="canonical" href="<?= h($ogPageUrl) ?>">
+    <?= events_public_favicon_head_markup() ?>
+    <link rel="stylesheet" href="<?= h($cssPublicUrl) ?>">
+    <link rel="stylesheet" href="<?= h($cssCmsUrl) ?>">
 </head>
-<body class="cms-public">
-    <header class="cms-public__header">
-        <div class="cms-public__header-inner">
-            <a class="cms-public__brand" href="<?= h($listUrl) ?>"><?= h($siteName) ?> CMS</a>
-            <nav class="cms-public__nav">
-                <a href="<?= h($listUrl) ?>">Összes cikk</a>
-            </nav>
-        </div>
-    </header>
-    <main class="cms-public__main">
-        <article class="cms-article">
-            <?php if ($themeName !== ''): ?>
-                <p class="cms-article__theme"><?= h($themeName) ?></p>
-            <?php endif; ?>
-            <h1 class="cms-article__title"><?= h((string) ($post['title'] ?? '')) ?></h1>
-            <?php if (!empty($post['published_at'])): ?>
-                <p class="cms-article__meta"><?= h((string) $post['published_at']) ?></p>
-            <?php endif; ?>
-            <?php if ($featured !== ''): ?>
-                <figure class="cms-article__featured">
-                    <img src="<?= h($featured) ?>" alt="">
-                </figure>
-            <?php endif; ?>
-            <?php if (trim((string) ($post['excerpt'] ?? '')) !== ''): ?>
-                <p class="cms-article__excerpt"><?= h((string) $post['excerpt']) ?></p>
-            <?php endif; ?>
-            <div class="cms-article__body">
-                <?= $contentHtml ?>
+<body class="event-public-page event-public-page--cms">
+<?php require dirname(__DIR__) . '/events/partials/admin_float_tools.php'; ?>
+<div class="event-shell event-shell--cms">
+    <article class="event-public cms-article-page">
+        <header class="event-public__hero event-public__hero--bar-only">
+            <?php require dirname(__DIR__) . '/events/partials/public_shell_hero_bar.php'; ?>
+        </header>
+
+        <div class="cms-article-stage">
+            <div class="cms-article-board">
+                <header class="cms-article-head">
+                    <?php if ($themeName !== ''): ?>
+                        <p class="cms-article-head__kicker"><?= h($themeName) ?></p>
+                    <?php endif; ?>
+                    <h1 class="cms-article-head__title"><?= h((string) ($post['title'] ?? '')) ?></h1>
+                    <?php if ($publishedLabel !== '' || $isAdminPreview): ?>
+                        <p class="cms-article-head__meta">
+                            <?php if ($publishedLabel !== ''): ?>
+                                <time datetime="<?= h((string) ($post['published_at'] ?? '')) ?>"><?= h($publishedLabel) ?></time>
+                            <?php endif; ?>
+                            <?php if ($isAdminPreview): ?>
+                                <span class="cms-article-head__preview">Előnézet</span>
+                            <?php endif; ?>
+                        </p>
+                    <?php endif; ?>
+                    <?php if (trim((string) ($post['excerpt'] ?? '')) !== ''): ?>
+                        <p class="cms-article-head__lead"><?= h((string) $post['excerpt']) ?></p>
+                    <?php endif; ?>
+                </header>
+
+                <?php if ($featuredAbsolute !== ''): ?>
+                    <figure class="cms-article-hero-media">
+                        <img
+                            src="<?= h($featuredAbsolute) ?>"
+                            alt="<?= h((string) ($post['title'] ?? '')) ?>"
+                            decoding="async"
+                            fetchpriority="high"
+                        >
+                    </figure>
+                <?php endif; ?>
+
+                <div class="cms-article-body">
+                    <?= $contentHtml ?>
+                </div>
+
+                <?php if ($tagNames !== []): ?>
+                    <ul class="cms-article-tags" aria-label="<?= $lang === 'en' ? 'Tags' : 'Címkék' ?>">
+                        <?php foreach ($tagNames as $tn): ?>
+                            <li><?= h($tn) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
             </div>
-            <?php if ($tagNames !== []): ?>
-                <ul class="cms-article__tags">
-                    <?php foreach ($tagNames as $tn): ?>
-                        <li><?= h($tn) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </article>
-    </main>
-    <footer class="cms-public__footer">
-        <p><a href="<?= h($listUrl) ?>">← Vissza a cikkekhez</a></p>
-        <?= nextgen_footer_version_markup() ?>
-    </footer>
+        </div>
+
+        <footer class="cms-article-foot">
+            <?php require dirname(__DIR__) . '/events/partials/public_shell_footer.php'; ?>
+        </footer>
+    </article>
+</div>
 </body>
 </html>

@@ -308,6 +308,58 @@ function events_notify_email_list_smtp_accounts(PDO $db): array
  * @param list<int> $organizerIds
  * @return list<string>
  */
+/**
+ * Partner e-mail címek, amikre az „Event bekerült” értesítő ki van kapcsolva
+ * (a megadott szervezőkhöz kötött partnerek közül).
+ *
+ * @param list<int> $organizerIds
+ * @return list<string>
+ */
+function events_notify_email_blocked_partner_emails(PDO $db, array $organizerIds): array
+{
+    $organizerIds = array_values(array_unique(array_filter(
+        array_map(static fn ($v): int => (int) $v, $organizerIds),
+        static fn (int $id): bool => $id > 0
+    )));
+    if ($organizerIds === []) {
+        return [];
+    }
+
+    $blocked = [];
+    $placeholders = implode(',', array_fill(0, count($organizerIds), '?'));
+
+    try {
+        if (!function_exists('nextgen_partner_ensure_extended_schema')) {
+            require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
+        }
+        nextgen_partner_ensure_extended_schema($db);
+
+        $st = $db->prepare("
+            SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
+            FROM `nextgen_partner_events_organizers` po
+            INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
+            WHERE po.`organizer_id` IN ({$placeholders})
+              AND TRIM(COALESCE(p.`email`, '')) <> ''
+              AND CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED) = 0
+        ");
+        $st->execute($organizerIds);
+        foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $email) {
+            $email = trim((string) $email);
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $blocked[$email] = true;
+            }
+        }
+    } catch (Throwable $ex) {
+        error_log('events_notify_email_blocked_partner_emails: ' . $ex->getMessage());
+    }
+
+    return array_keys($blocked);
+}
+
+/**
+ * @param list<int> $organizerIds
+ * @return list<string>
+ */
 function events_notify_email_recipient_emails(PDO $db, array $organizerIds): array
 {
     $organizerIds = array_values(array_unique(array_filter(
@@ -319,7 +371,10 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
     }
 
     $emails = [];
-    $blockedEmails = [];
+    $blockedEmails = array_fill_keys(
+        events_notify_email_blocked_partner_emails($db, $organizerIds),
+        true
+    );
     $placeholders = implode(',', array_fill(0, count($organizerIds), '?'));
 
     try {
@@ -328,29 +383,13 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
         }
         nextgen_partner_ensure_extended_schema($db);
 
-        $stBlocked = $db->prepare("
-            SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
-            FROM `nextgen_partner_events_organizers` po
-            INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
-            WHERE po.`organizer_id` IN ({$placeholders})
-              AND TRIM(COALESCE(p.`email`, '')) <> ''
-              AND COALESCE(p.`email_event_bekerult`, 1) <> 1
-        ");
-        $stBlocked->execute($organizerIds);
-        foreach ($stBlocked->fetchAll(PDO::FETCH_COLUMN) as $email) {
-            $email = trim((string) $email);
-            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $blockedEmails[$email] = true;
-            }
-        }
-
         $st = $db->prepare("
             SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
             FROM `nextgen_partner_events_organizers` po
             INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
             WHERE po.`organizer_id` IN ({$placeholders})
               AND TRIM(COALESCE(p.`email`, '')) <> ''
-              AND COALESCE(p.`email_event_bekerult`, 1) = 1
+              AND CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED) = 1
         ");
         $st->execute($organizerIds);
         foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $email) {
@@ -359,8 +398,8 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
                 $emails[$email] = true;
             }
         }
-    } catch (Throwable) {
-        // partner tábla hiányozhat
+    } catch (Throwable $ex) {
+        error_log('events_notify_email_recipient_emails partners: ' . $ex->getMessage());
     }
 
     try {
@@ -378,11 +417,40 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
                 $emails[$email] = true;
             }
         }
-    } catch (Throwable) {
-        // legacy portál fiók tábla hiányozhat
+    } catch (Throwable $ex) {
+        error_log('events_notify_email_recipient_emails accounts: ' . $ex->getMessage());
     }
 
     return array_keys($emails);
+}
+
+/**
+ * Kiszűri a kikapcsolt „Event bekerült” partner címeket a kézi címzettlistából is.
+ *
+ * @param list<int> $organizerIds
+ * @param list<string> $toEmails
+ * @return list<string>
+ */
+function events_notify_email_apply_partner_opt_out(PDO $db, array $organizerIds, array $toEmails): array
+{
+    $blocked = array_fill_keys(
+        events_notify_email_blocked_partner_emails($db, $organizerIds),
+        true
+    );
+    if ($blocked === []) {
+        return array_values($toEmails);
+    }
+
+    $kept = [];
+    foreach ($toEmails as $email) {
+        $norm = trim(mb_strtolower((string) $email, 'UTF-8'));
+        if ($norm === '' || isset($blocked[$norm])) {
+            continue;
+        }
+        $kept[] = $email;
+    }
+
+    return $kept;
 }
 
 /**

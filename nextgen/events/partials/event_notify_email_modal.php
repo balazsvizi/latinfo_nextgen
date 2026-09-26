@@ -144,10 +144,14 @@ foreach (events_levelsablon_placeholder_catalog_merge(
                             value="<?= h($toDefault) ?>"
                             required
                             autocomplete="off"
+                            data-lpignore="true"
+                            data-1p-ignore="true"
+                            data-form-type="other"
                             data-event-notify-recipients-url="<?= h(events_url('ajax_event_notify_recipients.php?event_id=' . (int) $id)) ?>"
                             placeholder="email@pelda.hu, masik@pelda.hu"
                         >
-                        <p class="help">Több cím vesszővel. Default: szervező(k) partnerei, ha az „Event bekerült” kapcsoló be van kapcsolva.</p>
+                        <p class="help">Több cím vesszővel. Csak azok a partnerek, akiknél az „Event bekerült” kapcsoló be van kapcsolva.</p>
+                        <p class="help event-notify-blocked" id="event-notify-blocked" hidden></p>
                     </div>
                     <div class="form-group">
                         <label for="notify_bcc">BCC</label>
@@ -440,10 +444,20 @@ foreach (events_levelsablon_placeholder_catalog_merge(
 
     function refreshRecipients() {
         var toEl = document.getElementById('notify_to');
-        if (!toEl) return;
+        var blockedEl = document.getElementById('event-notify-blocked');
+        if (!toEl) return Promise.resolve();
         var url = toEl.getAttribute('data-event-notify-recipients-url') || '';
-        if (!url) return;
-        fetch(url, {
+        if (!url) return Promise.resolve();
+
+        // Autofill / elavult érték ne maradjon a friss lista előtt.
+        toEl.value = '';
+        toEl.setAttribute('readonly', 'readonly');
+        if (blockedEl) {
+            blockedEl.hidden = true;
+            blockedEl.textContent = '';
+        }
+
+        return fetch(url, {
             method: 'GET',
             credentials: 'same-origin',
             headers: { 'Accept': 'application/json' },
@@ -451,21 +465,30 @@ foreach (events_levelsablon_placeholder_catalog_merge(
         }).then(function (res) {
             return res.json();
         }).then(function (data) {
-            if (!data || !data.ok) return;
+            if (!data || !data.ok) {
+                return;
+            }
             toEl.value = typeof data.to === 'string' ? data.to : '';
+            if (blockedEl && Array.isArray(data.blocked) && data.blocked.length) {
+                blockedEl.textContent = 'Kihagyva (Event bekerült ki): ' + data.blocked.join(', ');
+                blockedEl.hidden = false;
+            }
         }).catch(function () {
-            // marad a szerveroldali default
+            // marad üres / kézi megadás
+        }).finally(function () {
+            toEl.removeAttribute('readonly');
         });
     }
 
     function openDialog() {
-        refreshRecipients();
-        if (typeof dialog.showModal === 'function') {
-            dialog.showModal();
-        } else {
-            dialog.setAttribute('open', 'open');
-        }
-        document.body.classList.add('event-notify-modal-open');
+        refreshRecipients().finally(function () {
+            if (typeof dialog.showModal === 'function') {
+                dialog.showModal();
+            } else {
+                dialog.setAttribute('open', 'open');
+            }
+            document.body.classList.add('event-notify-modal-open');
+        });
     }
 
     function closeDialog() {

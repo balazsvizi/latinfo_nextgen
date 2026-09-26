@@ -29,9 +29,11 @@ if (!$st->fetchColumn()) {
 
 $organizerIds = events_load_event_organizer_ids($db, $eventId);
 $emails = events_notify_email_recipient_emails($db, $organizerIds);
+$blocked = events_notify_email_blocked_partner_emails($db, $organizerIds);
 
 echo json_encode([
     'ok' => true,
     'emails' => $emails,
+    'blocked' => $blocked,
     'to' => implode(', ', $emails),
 ], JSON_UNESCAPED_UNICODE);

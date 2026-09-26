@@ -124,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string) ($_POST['egyeb_info'] ?? ''),
                 (string) ($_POST['kieg_info'] ?? ''),
                 (string) ($_POST['telepules'] ?? ''),
-                !empty($_POST['email_event_bekerult']),
-                !empty($_POST['email_szervezo_stat'])
+                ((string) ($_POST['email_event_bekerult'] ?? '0') === '1'),
+                ((string) ($_POST['email_szervezo_stat'] ?? '0') === '1')
             );
             if (!$result['ok']) {
                 $hiba = (string) ($result['error'] ?? 'Profil mentése sikertelen.');
@@ -282,10 +282,10 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <?php
         $emailNotifyFromPost = $_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'save') === 'save';
         $emailEventBekerultOn = $emailNotifyFromPost
-            ? !empty($_POST['email_event_bekerult'])
+            ? ((string) ($_POST['email_event_bekerult'] ?? '0') === '1')
             : ((int) ($partner['email_event_bekerult'] ?? 1) === 1);
         $emailSzervezoStatOn = $emailNotifyFromPost
-            ? !empty($_POST['email_szervezo_stat'])
+            ? ((string) ($_POST['email_szervezo_stat'] ?? '0') === '1')
             : ((int) ($partner['email_szervezo_stat'] ?? 1) === 1);
         ?>
         <div class="form-group partner-email-field">
@@ -294,6 +294,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                 <input type="email" id="email" name="email" class="partner-email-row__input" value="<?= h((string) ($partner['email'] ?? '')) ?>" required>
                 <div class="partner-email-notify" role="group" aria-label="E-mail értesítések">
                     <label class="partner-email-switch" for="email_event_bekerult">
+                        <input type="hidden" name="email_event_bekerult" value="0">
                         <input
                             type="checkbox"
                             name="email_event_bekerult"
@@ -305,6 +306,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                         <span class="partner-email-switch__text">Event bekerült</span>
                     </label>
                     <label class="partner-email-switch" for="email_szervezo_stat">
+                        <input type="hidden" name="email_szervezo_stat" value="0">
                         <input
                             type="checkbox"
                             name="email_szervezo_stat"

@@ -50,6 +50,7 @@ foreach (preg_split('/[\s,;]+/', $toRaw) ?: [] as $part) {
         $toEmails[] = $part;
     }
 }
+$toEmails = events_notify_email_apply_partner_opt_out($db, $organizerIds, $toEmails);
 
 $subject = (string) ($_POST['notify_subject'] ?? '');
 $bodyHtml = (string) ($_POST['notify_html'] ?? '');
