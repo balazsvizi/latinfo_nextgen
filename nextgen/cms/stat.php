@@ -33,16 +33,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
 </div>
 
-<form method="get" class="card" style="margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:end;">
-    <div>
+<form method="get" class="card cms-filters-bar cms-filters-bar--stat">
+    <div class="form-group">
         <label for="date_from">Ettől</label>
         <input type="date" id="date_from" name="date_from" value="<?= h($params['date_from']) ?>">
     </div>
-    <div>
+    <div class="form-group">
         <label for="date_to">Eddig</label>
         <input type="date" id="date_to" name="date_to" value="<?= h($params['date_to']) ?>">
     </div>
-    <div>
+    <div class="form-group">
         <label for="visitor">Látogató</label>
         <select id="visitor" name="visitor">
             <option value="human"<?= $params['visitor'] === 'human' ? ' selected' : '' ?>>Ember</option>
@@ -50,7 +50,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <option value="all"<?= $params['visitor'] === 'all' ? ' selected' : '' ?>>Mind</option>
         </select>
     </div>
-    <button type="submit" class="btn btn-primary">Szűrés</button>
+    <div class="form-group cms-filters-bar__actions">
+        <label class="visually-hidden" for="cms-stat-filter-submit">Szűrés</label>
+        <button type="submit" id="cms-stat-filter-submit" class="btn btn-primary">Szűrés</button>
+    </div>
 </form>
 
 <div class="events-stat-grid" aria-label="CMS összesítők">

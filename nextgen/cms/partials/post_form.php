@@ -25,18 +25,28 @@ $themeId = isset($p['theme_id']) && $p['theme_id'] !== null ? (int) $p['theme_id
             <input type="hidden" name="copy_from_id" value="<?= $copyFromId ?>">
         <?php endif; ?>
 
-        <div class="form-row">
+        <div class="form-group">
             <label for="cms-title">Cím *</label>
             <input type="text" id="cms-title" name="title" required maxlength="255" value="<?= h((string) ($p['title'] ?? '')) ?>">
         </div>
 
-        <div class="form-row">
-            <label for="cms-slug">Slug</label>
-            <input type="text" id="cms-slug" name="slug" maxlength="200" value="<?= h((string) ($p['slug'] ?? '')) ?>" placeholder="üresen: címből generálódik">
-            <p class="help">URL-azonosító. Üresen a címből készül.</p>
+        <div class="form-row form-row-2">
+            <div class="form-group">
+                <label for="cms-slug">Slug</label>
+                <input type="text" id="cms-slug" name="slug" maxlength="200" value="<?= h((string) ($p['slug'] ?? '')) ?>" placeholder="üresen: címből generálódik">
+                <p class="help">URL-azonosító. Üresen a címből készül.</p>
+            </div>
+            <div class="form-group">
+                <label for="cms-status">Státusz</label>
+                <select id="cms-status" name="status">
+                    <?php foreach (cms_allowed_statuses() as $st): ?>
+                    <option value="<?= h($st) ?>"<?= (string) ($p['status'] ?? '') === $st ? ' selected' : '' ?>><?= h(cms_status_label($st)) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
 
-        <div class="form-row">
+        <div class="form-group">
             <label for="cms-theme">Téma</label>
             <select id="cms-theme" name="theme_id">
                 <option value="0">— nincs —</option>
@@ -47,32 +57,24 @@ $themeId = isset($p['theme_id']) && $p['theme_id'] !== null ? (int) $p['theme_id
             <p class="help"><a href="<?= h(cms_url('temak.php')) ?>" target="_blank" rel="noopener">Témák kezelése</a></p>
         </div>
 
-        <div class="form-row">
-            <label for="cms-status">Státusz</label>
-            <select id="cms-status" name="status">
-                <?php foreach (cms_allowed_statuses() as $st): ?>
-                <option value="<?= h($st) ?>"<?= (string) ($p['status'] ?? '') === $st ? ' selected' : '' ?>><?= h(cms_status_label($st)) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-
-        <div class="form-row">
+        <div class="form-group">
             <label for="cms-excerpt">Rövid leírás</label>
             <textarea id="cms-excerpt" name="excerpt" rows="3"><?= h((string) ($p['excerpt'] ?? '')) ?></textarea>
         </div>
 
-        <div class="form-row">
+        <div class="form-group cms-post-form__content">
             <label for="cms-content">Szöveg (HTML)</label>
             <textarea class="js-tinymce" id="cms-content" name="content_html" rows="16"><?= h((string) ($p['content_html'] ?? '')) ?></textarea>
             <p class="help">Képek a CMS képtárba kerülnek (nem az eventpics-be).</p>
         </div>
 
-        <div class="form-row">
+        <div class="form-group">
             <label for="cms-featured">Kiemelt kép URL</label>
             <input type="text" id="cms-featured" name="featured_image_url" maxlength="500" value="<?= h((string) ($p['featured_image_url'] ?? '')) ?>" placeholder="/nextgen/cms/uploads/…">
             <p class="help"><a href="<?= h(cms_url('kepek.php')) ?>" target="_blank" rel="noopener">CMS képtár</a></p>
         </div>
 
+        <div class="form-group">
         <?php
         $wpTokenId = 'cms-tags';
         $wpTokenLabel = 'Címkék';
@@ -88,20 +90,21 @@ $themeId = isset($p['theme_id']) && $p['theme_id'] !== null ? (int) $p['theme_id
         $wpTokenShowPopular = true;
         require dirname(__DIR__) . '/../events/partials/wp_token_field.php';
         ?>
+        </div>
 
-        <fieldset class="form-fieldset" style="margin-top:1.25rem;">
+        <fieldset class="form-fieldset">
             <legend>SEO (opcionális)</legend>
-            <div class="form-row">
+            <div class="form-group">
                 <label for="cms-seo-title">SEO cím</label>
                 <input type="text" id="cms-seo-title" name="seo_title" maxlength="255" value="<?= h((string) ($p['seo_title'] ?? '')) ?>">
             </div>
-            <div class="form-row">
+            <div class="form-group">
                 <label for="cms-seo-desc">SEO leírás</label>
                 <textarea id="cms-seo-desc" name="seo_description" rows="2" maxlength="500"><?= h((string) ($p['seo_description'] ?? '')) ?></textarea>
             </div>
         </fieldset>
 
-        <div class="form-actions" style="margin-top:1.25rem;">
+        <div class="form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>
             <a href="<?= h(cms_url('posts.php')) ?>" class="btn btn-secondary">Mégsem</a>
         </div>

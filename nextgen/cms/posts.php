@@ -52,12 +52,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </div>
 
-    <form method="get" class="form-inline filters-bar" style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:end;margin-bottom:1rem;">
-        <div>
+    <form method="get" class="cms-filters-bar">
+        <div class="form-group">
             <label for="cms-q">Keresés</label>
             <input type="search" id="cms-q" name="q" value="<?= h($filters['q']) ?>" placeholder="Cím, slug…">
         </div>
-        <div>
+        <div class="form-group">
             <label for="cms-status">Státusz</label>
             <select id="cms-status" name="status">
                 <option value="all"<?= $filters['status'] === 'all' ? ' selected' : '' ?>>Mind</option>
@@ -66,7 +66,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <?php endforeach; ?>
             </select>
         </div>
-        <div>
+        <div class="form-group">
             <label for="cms-theme">Téma</label>
             <select id="cms-theme" name="theme_id">
                 <option value="0">Mind</option>
@@ -76,7 +76,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </select>
         </div>
         <?php if ($tags !== []): ?>
-        <div>
+        <div class="form-group">
             <label for="cms-tag">Címke</label>
             <select id="cms-tag" name="tag_id">
                 <option value="0">Mind</option>
@@ -86,7 +86,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </select>
         </div>
         <?php endif; ?>
-        <button type="submit" class="btn btn-secondary">Szűrés</button>
+        <div class="form-group cms-filters-bar__actions">
+            <label class="visually-hidden" for="cms-filter-submit">Szűrés</label>
+            <button type="submit" id="cms-filter-submit" class="btn btn-secondary">Szűrés</button>
+        </div>
     </form>
 
     <div class="table-responsive">

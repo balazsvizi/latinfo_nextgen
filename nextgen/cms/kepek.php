@@ -46,11 +46,13 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <form method="post" enctype="multipart/form-data" action="<?= h(cms_url('kepek.php')) ?>">
         <?= csrf_input('cms_kepek') ?>
         <input type="hidden" name="action" value="upload">
-        <div class="form-row">
+        <div class="form-group">
             <label for="cms-file">Fájl (JPG, PNG, WEBP, GIF, max 8 MB)</label>
             <input type="file" id="cms-file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" required>
         </div>
-        <button type="submit" class="btn btn-primary">Feltöltés</button>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Feltöltés</button>
+        </div>
     </form>
 </div>
 

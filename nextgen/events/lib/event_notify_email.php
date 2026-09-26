@@ -319,6 +319,7 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
     }
 
     $emails = [];
+    $blockedEmails = [];
     $placeholders = implode(',', array_fill(0, count($organizerIds), '?'));
 
     try {
@@ -326,6 +327,22 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
             require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
         }
         nextgen_partner_ensure_extended_schema($db);
+
+        $stBlocked = $db->prepare("
+            SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
+            FROM `nextgen_partner_events_organizers` po
+            INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
+            WHERE po.`organizer_id` IN ({$placeholders})
+              AND TRIM(COALESCE(p.`email`, '')) <> ''
+              AND COALESCE(p.`email_event_bekerult`, 1) <> 1
+        ");
+        $stBlocked->execute($organizerIds);
+        foreach ($stBlocked->fetchAll(PDO::FETCH_COLUMN) as $email) {
+            $email = trim((string) $email);
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $blockedEmails[$email] = true;
+            }
+        }
 
         $st = $db->prepare("
             SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
@@ -338,7 +355,7 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
         $st->execute($organizerIds);
         foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $email) {
             $email = trim((string) $email);
-            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) && !isset($blockedEmails[$email])) {
                 $emails[$email] = true;
             }
         }
@@ -357,7 +374,7 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
         $st->execute($organizerIds);
         foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $email) {
             $email = trim((string) $email);
-            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) && !isset($blockedEmails[$email])) {
                 $emails[$email] = true;
             }
         }

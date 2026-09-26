@@ -137,8 +137,17 @@ foreach (events_levelsablon_placeholder_catalog_merge(
                 <div class="form-row form-row-2">
                     <div class="form-group">
                         <label for="notify_to">Címzett *</label>
-                        <input type="text" id="notify_to" name="notify_to" value="<?= h($toDefault) ?>" required placeholder="email@pelda.hu, masik@pelda.hu">
-                        <p class="help">Több cím vesszővel. Default: szervező(k) partner / portál e-mailjei.</p>
+                        <input
+                            type="text"
+                            id="notify_to"
+                            name="notify_to"
+                            value="<?= h($toDefault) ?>"
+                            required
+                            autocomplete="off"
+                            data-event-notify-recipients-url="<?= h(events_url('ajax_event_notify_recipients.php?event_id=' . (int) $id)) ?>"
+                            placeholder="email@pelda.hu, masik@pelda.hu"
+                        >
+                        <p class="help">Több cím vesszővel. Default: szervező(k) partnerei, ha az „Event bekerült” kapcsoló be van kapcsolva.</p>
                     </div>
                     <div class="form-group">
                         <label for="notify_bcc">BCC</label>
@@ -429,7 +438,28 @@ foreach (events_levelsablon_placeholder_catalog_merge(
         });
     });
 
+    function refreshRecipients() {
+        var toEl = document.getElementById('notify_to');
+        if (!toEl) return;
+        var url = toEl.getAttribute('data-event-notify-recipients-url') || '';
+        if (!url) return;
+        fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
+        }).then(function (res) {
+            return res.json();
+        }).then(function (data) {
+            if (!data || !data.ok) return;
+            toEl.value = typeof data.to === 'string' ? data.to : '';
+        }).catch(function () {
+            // marad a szerveroldali default
+        });
+    }
+
     function openDialog() {
+        refreshRecipients();
         if (typeof dialog.showModal === 'function') {
             dialog.showModal();
         } else {

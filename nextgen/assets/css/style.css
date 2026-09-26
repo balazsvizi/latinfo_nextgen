@@ -8303,6 +8303,145 @@ table select:focus {
 }
 .dash-card-szamlak .num { display: none; }
 
+/* CMS témák form */
+.card-cms-temak .card-lead {
+    margin: 0 0 1.25rem;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+.card-cms-temak .config-section {
+    margin: 0;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+.card-cms-temak .config-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.cms-tema-form-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.2fr) minmax(120px, 1fr) minmax(160px, 1.6fr) minmax(88px, 0.6fr) auto auto;
+    gap: 1rem 1.25rem;
+    align-items: end;
+}
+.cms-tema-form-grid .form-group {
+    margin-bottom: 0;
+}
+.cms-tema-form-grid .form-group input[type="text"],
+.cms-tema-form-grid .form-group input[type="number"] {
+    max-width: none;
+    width: 100%;
+}
+.cms-tema-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg, #fff);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.cms-tema-check input {
+    width: auto !important;
+    max-width: none !important;
+    margin: 0;
+    accent-color: var(--primary);
+}
+.cms-tema-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+.cms-tema-form-gomb .btn {
+    min-height: 2.75rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+.card-cms-temak .td-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+}
+@media (max-width: 960px) {
+    .cms-tema-form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 640px) {
+    .cms-tema-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .cms-tema-form-gomb .btn,
+    .cms-tema-check {
+        width: 100%;
+    }
+}
+
+/* CMS cikk form – teljes szélességű HTML mező */
+.cms-post-form__content textarea,
+.cms-post-form .tox-tinymce {
+    max-width: none;
+}
+.cms-post-form .form-group input,
+.cms-post-form .form-group select,
+.cms-post-form .form-group textarea {
+    max-width: min(100%, 42rem);
+}
+.cms-post-form__content textarea {
+    max-width: none;
+    width: 100%;
+}
+.cms-post-form .form-fieldset {
+    margin-top: 1.25rem;
+    padding: 1rem 0 0;
+    border: none;
+    border-top: 1px solid var(--border);
+}
+.cms-post-form .form-fieldset legend {
+    padding: 0;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+}
+.cms-post-form .form-actions {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.cms-filters-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: end;
+    margin-bottom: 1rem;
+}
+.cms-filters-bar .form-group {
+    margin-bottom: 0;
+}
+.cms-filters-bar .form-group input,
+.cms-filters-bar .form-group select {
+    max-width: 16rem;
+}
+.cms-filters-bar__actions .btn {
+    min-height: 2.75rem;
+}
+.cms-filters-bar--stat {
+    margin-bottom: 1rem;
+}
+
 /* CMS admin media grid */
 .cms-media-grid {
     display: grid;
