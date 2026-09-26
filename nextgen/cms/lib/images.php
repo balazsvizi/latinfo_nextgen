@@ -160,3 +160,71 @@ function cms_absolute_url(string $webPath): string
 
     return $scheme . '://' . $host . (str_starts_with($webPath, '/') ? $webPath : '/' . $webPath);
 }
+
+/**
+ * @return array{0:?string,1:?string} [webPath, error]
+ */
+function cms_uploads_normalize_selected(?string $selected): array
+{
+    $file = trim((string) $selected);
+    if ($file === '') {
+        return [null, null];
+    }
+    if (!cms_uploads_is_safe_filename($file)) {
+        return [null, 'A CMS képtár kiválasztott fájlnév érvénytelen.'];
+    }
+    $path = cms_uploads_dir_path() . '/' . $file;
+    if (!is_file($path)) {
+        return [null, 'A kiválasztott CMS kép nem található.'];
+    }
+
+    return [cms_uploads_build_web_path($file), null];
+}
+
+function cms_uploads_extract_selected_from_featured(?string $featured): string
+{
+    $u = trim((string) $featured);
+    if ($u === '') {
+        return '';
+    }
+    $p = parse_url($u, PHP_URL_PATH);
+    $path = is_string($p) && $p !== '' ? $p : $u;
+    $marker = cms_uploads_web_prefix();
+    $pos = strpos($path, $marker);
+    if ($pos === false) {
+        return '';
+    }
+    $f = substr($path, $pos + strlen($marker));
+    if ($f === '' || !cms_uploads_is_safe_filename($f)) {
+        return '';
+    }
+
+    return $f;
+}
+
+/**
+ * @return array{src: string, label: string, source: 'url'|'pick'|'none'}
+ */
+function cms_featured_image_preview_meta(string $featuredUrlField, string $pickFilename): array
+{
+    $url = trim($featuredUrlField);
+    $pick = trim($pickFilename);
+    if ($url !== '') {
+        return [
+            'src' => $url,
+            'label' => mb_strlen($url) > 52 ? (mb_substr($url, 0, 51) . '…') : $url,
+            'source' => 'url',
+        ];
+    }
+    if ($pick !== '' && cms_uploads_is_safe_filename($pick)) {
+        $web = cms_uploads_build_web_path($pick);
+
+        return [
+            'src' => $web,
+            'label' => $pick,
+            'source' => 'pick',
+        ];
+    }
+
+    return ['src' => '', 'label' => '', 'source' => 'none'];
+}

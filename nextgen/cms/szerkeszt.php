@@ -123,19 +123,26 @@ $csrfScope = 'cms_szerkeszt';
 $isCopy = false;
 $copyFromId = 0;
 $pageTitle = 'CMS cikk szerkesztése';
+
+$cmsEditCopyUrl = cms_url('letrehoz.php?copy_from=' . $id);
+$cmsEditPublicUrl = null;
+$slug = trim((string) ($post['slug'] ?? ''));
+if ($slug !== '') {
+    $cmsEditPublicUrl = cms_public_post_url($slug);
+    if ((string) ($post['status'] ?? '') !== cms_status_publish()) {
+        $cmsEditPublicUrl .= (str_contains($cmsEditPublicUrl, '?') ? '&' : '?') . 'preview=1';
+    }
+}
+
+$mainContentClass = 'main-content main-content--fullwidth';
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
 
-<div class="events-stat-page-actions" style="margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.5rem;">
-    <a class="btn btn-secondary btn-sm" href="<?= h(cms_url('posts.php')) ?>">← Lista</a>
-    <a class="btn btn-secondary btn-sm" href="<?= h(cms_url('letrehoz.php?copy_from=' . $id)) ?>">Másolás</a>
-    <?php if ((string) ($post['status'] ?? '') === cms_status_publish() && trim((string) ($post['slug'] ?? '')) !== ''): ?>
-    <a class="btn btn-secondary btn-sm" href="<?= h(cms_public_post_url((string) $post['slug'])) ?>" target="_blank" rel="noopener">Nyilvános oldal</a>
-    <?php endif; ?>
-    <span class="help" style="align-self:center;">Megtekintések (ember): <?= (int) $viewCount ?></span>
-</div>
+<?php require __DIR__ . '/partials/admin_edit_float_tools.php'; ?>
+
+<p class="help" style="margin-bottom:1rem;">Megtekintések (ember): <?= (int) $viewCount ?></p>
 
 <?php require __DIR__ . '/partials/post_form.php'; ?>
 

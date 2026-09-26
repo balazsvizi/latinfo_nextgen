@@ -18,7 +18,7 @@ $themeId = isset($p['theme_id']) && $p['theme_id'] !== null ? (int) $p['theme_id
 ?>
 <div class="card">
     <h2><?= h($pageTitle ?? 'CMS cikk') ?></h2>
-    <form method="post" action="<?= h($formAction) ?>" class="cms-post-form">
+    <form method="post" action="<?= h($formAction) ?>" class="cms-post-form" id="cms-edit-form">
         <?= csrf_input($csrfScope) ?>
         <?php if ($isCopy): ?>
             <input type="hidden" name="is_copy" value="1">
@@ -65,14 +65,10 @@ $themeId = isset($p['theme_id']) && $p['theme_id'] !== null ? (int) $p['theme_id
         <div class="form-group cms-post-form__content">
             <label for="cms-content">Szöveg (HTML)</label>
             <textarea class="js-tinymce" id="cms-content" name="content_html" rows="16"><?= h((string) ($p['content_html'] ?? '')) ?></textarea>
-            <p class="help">Képek a CMS képtárba kerülnek (nem az eventpics-be).</p>
+            <p class="help">A szövegbe ágyazott képek a CMS képtárba kerülnek (TinyMCE feltöltés).</p>
         </div>
 
-        <div class="form-group">
-            <label for="cms-featured">Kiemelt kép URL</label>
-            <input type="text" id="cms-featured" name="featured_image_url" maxlength="500" value="<?= h((string) ($p['featured_image_url'] ?? '')) ?>" placeholder="/nextgen/cms/uploads/…">
-            <p class="help"><a href="<?= h(cms_url('kepek.php')) ?>" target="_blank" rel="noopener">CMS képtár</a></p>
-        </div>
+        <?php require __DIR__ . '/featured_image.php'; ?>
 
         <div class="form-group">
         <?php
@@ -105,7 +101,7 @@ $themeId = isset($p['theme_id']) && $p['theme_id'] !== null ? (int) $p['theme_id
         </fieldset>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Mentés</button>
+            <button type="submit" name="form_action" value="save" class="btn btn-primary">Mentés</button>
             <a href="<?= h(cms_url('posts.php')) ?>" class="btn btn-secondary">Mégsem</a>
         </div>
     </form>

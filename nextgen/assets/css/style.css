@@ -8442,6 +8442,16 @@ table select:focus {
     margin-bottom: 1rem;
 }
 
+.cms-featured-block {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+}
+.cms-featured-cover {
+    max-width: 22rem;
+    margin-bottom: 1rem;
+}
+
 /* CMS admin media grid */
 .cms-media-grid {
     display: grid;

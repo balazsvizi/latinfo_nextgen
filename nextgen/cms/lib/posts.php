@@ -197,10 +197,27 @@ function cms_post_from_request(PDO $db, array $defaults, ?int $excludeId): array
     $row['content_html'] = $content;
     $row['status'] = $status;
     $row['theme_id'] = $themeId;
-    $row['featured_image_url'] = $featured !== '' ? $featured : null;
     $row['seo_title'] = $seoTitle !== '' ? $seoTitle : null;
     $row['seo_description'] = $seoDesc !== '' ? $seoDesc : null;
     $row['tag_ids'] = $tagIds;
+
+    [$featPickPath, $featPickErr] = cms_uploads_normalize_selected((string) ($_POST['featured_image_pick'] ?? ''));
+    if ($featPickErr !== null) {
+        $row['featured_image_url'] = $featured !== '' ? $featured : null;
+
+        return [$row, $featPickErr, $tagIds];
+    }
+    // Külső / kézi URL elsőbbség, ha nem CMS uploads path; különben a galéria pick.
+    $featFromCmsUrl = cms_uploads_extract_selected_from_featured($featured);
+    if ($featured !== '' && $featFromCmsUrl === '') {
+        $row['featured_image_url'] = $featured;
+    } elseif ($featPickPath !== null) {
+        $row['featured_image_url'] = $featPickPath;
+    } elseif ($featured !== '') {
+        $row['featured_image_url'] = $featured;
+    } else {
+        $row['featured_image_url'] = null;
+    }
 
     if ($title === '') {
         return [$row, 'A cím kötelező.', $tagIds];
