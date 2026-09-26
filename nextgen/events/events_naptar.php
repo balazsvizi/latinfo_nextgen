@@ -72,7 +72,8 @@ $listViewUrl = events_admin_list_view_url($navBaseParams);
 $calendarViewUrl = events_admin_calendar_view_url($monthKey, $navBaseParams);
 $mapViewUrl = events_admin_map_view_url($navBaseParams);
 $activeView = 'month';
-$filtersActive = events_admin_filters_are_active($filters);
+$filtersActive = events_admin_filters_are_active_excluding_name($filters);
+$nameQuickValue = trim((string) ($filters['f_name'] ?? ''));
 $calendarColorLegend = events_admin_calendar_category_legend_items($db, 'hu');
 
 $filterFormAction = events_url('events_naptar.php');
@@ -148,6 +149,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <?php endif; ?>
                     <span class="events-cal-filters-toggle__chevron" aria-hidden="true">▾</span>
                 </button>
+                <input
+                    type="search"
+                    class="events-filter-input events-cal-filters-quick-name<?= $nameQuickValue !== '' ? ' is-active' : '' ?>"
+                    id="ev-f-name-quick"
+                    value="<?= h($nameQuickValue) ?>"
+                    placeholder="Keresés a címben…"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Esemény neve"
+                    <?= $filtersActive ? 'hidden' : '' ?>
+                >
                 <h2 class="events-list-title">Események</h2>
             </div>
             <div class="events-list-actions">

@@ -172,7 +172,6 @@ if ($organizerFinanceJson === false) {
             <a class="btn btn-secondary events-url-open-btn" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a>
         <?php endif; ?>
     </div>
-    <p class="help">Közzétételhez kötelező megadni az esemény külső oldalának URL-jét.</p>
 </div>
 <div class="events-edit-org-venue-grid">
 <div class="events-edit-panel events-edit-panel--tone-venue">
