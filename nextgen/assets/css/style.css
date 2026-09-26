@@ -6264,6 +6264,142 @@ html.events-stats-loading-active body {
 .events-rt-table--recent {
     min-width: 720px;
 }
+.events-rt-table--recent tbody tr[data-visitor-key] {
+    box-shadow: inset 4px 0 0 var(--rt-c, transparent);
+}
+.events-rt-people {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin: 0.85rem 0 1rem;
+}
+.events-rt-people[hidden] {
+    display: none;
+}
+.events-rt-who,
+.events-rt-person {
+    --rt-c: #8b9198;
+    border: 1px solid color-mix(in srgb, var(--rt-c) 38%, #e5e7eb);
+    background: color-mix(in srgb, var(--rt-c) 12%, #fff);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.events-rt-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 18rem;
+    padding: 0.12rem 0.45rem 0.12rem 0.12rem;
+    border-radius: 999px;
+    line-height: 1.2;
+    text-align: left;
+}
+.events-rt-who__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    background: var(--rt-c);
+    font-size: 0.95rem;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+.events-rt-who__name,
+.events-rt-person__name {
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+.events-rt-who__name {
+    white-space: nowrap;
+}
+.events-rt-who__code {
+    display: inline-block;
+    margin-left: 0.15rem;
+    padding: 0.02rem 0.28rem;
+    border-radius: 0.3rem;
+    background: color-mix(in srgb, var(--rt-c) 28%, #fff);
+    color: #1f2933;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.events-rt-who__bot {
+    display: inline-block;
+    margin-left: 0.15rem;
+    padding: 0.02rem 0.28rem;
+    border-radius: 999px;
+    background: #1f2933;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    vertical-align: 0.05em;
+}
+.events-rt-person {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    max-width: 18rem;
+    padding: 0.3rem 0.55rem 0.3rem 0.3rem;
+    border-radius: 0.8rem;
+    text-align: left;
+}
+.events-rt-person.is-person-match {
+    box-shadow: 0 0 0 2px var(--rt-c);
+}
+.events-rt-person__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.05rem;
+}
+.events-rt-person__where {
+    max-width: 12rem;
+    overflow: hidden;
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.events-rt-person__hits {
+    flex: 0 0 auto;
+    min-width: 1.35rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 999px;
+    background: var(--rt-c);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+}
+.events-rt-person-clear {
+    align-self: center;
+    padding: 0.35rem 0.7rem;
+    border: 1px dashed var(--border, #d1d5db);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary, #6b7280);
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+.events-rt-person-clear:hover {
+    color: inherit;
+    border-color: #9ca3af;
+}
+.events-rt-page.is-visitor-focus .events-rt-table--recent tbody tr[data-visitor-key]:not(.is-person-match),
+.events-rt-page.is-visitor-focus .events-rt-person[data-visitor-key]:not(.is-person-match) {
+    opacity: 0.32;
+}
+.events-rt-page.is-visitor-focus .events-rt-table--recent tbody tr.is-person-match {
+    background: color-mix(in srgb, var(--rt-c, #8b9198) 10%, transparent);
+}
 
 .events-edit-stats__card {
     padding: 0.9rem 1rem;

@@ -48,6 +48,45 @@ $kindBadgeClass = static function (string $kind): string {
         default => 'events-rt-kind--other',
     };
 };
+
+$rtColor = static function (mixed $color): string {
+    $value = (string) $color;
+
+    return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1 ? $value : '#8b9198';
+};
+
+$whoButton = static function (array $mark) use ($rtColor): string {
+    $label = (string) ($mark['label'] ?? 'Ismeretlen');
+    $emoji = (string) ($mark['emoji'] ?? '•');
+    $code = (string) ($mark['code'] ?? '');
+    $key = (string) ($mark['key'] ?? '');
+    $color = $rtColor($mark['color'] ?? '');
+    $bot = !empty($mark['is_bot']);
+    $title = $label;
+    if ($code !== '') {
+        $title .= ' · ' . $code;
+    }
+    if ($bot) {
+        $title .= ' · bot';
+    }
+
+    $html = '<button type="button" class="events-rt-who' . ($bot ? ' events-rt-who--bot' : '') . '"'
+        . ' style="--rt-c:' . h($color) . '"'
+        . ' title="' . h($title) . '"'
+        . ($key !== '' ? ' data-visitor-key="' . h($key) . '"' : '')
+        . ' aria-pressed="false">'
+        . '<span class="events-rt-who__mark" aria-hidden="true">' . h($emoji) . '</span>'
+        . '<span class="events-rt-who__name">' . h($label) . '</span>';
+    if ($code !== '') {
+        $html .= '<span class="events-rt-who__code">' . h($code) . '</span>';
+    }
+    if ($bot) {
+        $html .= '<span class="events-rt-who__bot">bot</span>';
+    }
+    $html .= '</button>';
+
+    return $html;
+};
 ?>
 <div class="card events-admin-card events-rt-page" id="events-rt-root" data-ajax-url="<?= h($ajaxUrl) ?>" data-poll-ms="15000" data-visitor="<?= h($visitor) ?>">
     <div class="events-list-head events-cal-page__head">
@@ -256,7 +295,55 @@ $kindBadgeClass = static function (string $kind): string {
 
     <section class="events-rt-panel events-rt-recent-panel" aria-labelledby="events-rt-recent-title">
         <h3 class="events-rt-section-title" id="events-rt-recent-title">Mire kattintanak most</h3>
-        <p class="events-rt-section-hint">Élő stream: menü, statikus oldalak, bulik, előnézet, további info, értesítő.</p>
+        <p class="events-rt-section-hint">Ugyanaz a szín és ikon ugyanazt a látogatót jelöli. Kattints egy jelölésre, és csak az ő útvonala marad kiemelve.</p>
+        <?php $presence = is_array($snapshot['presence'] ?? null) ? $snapshot['presence'] : []; ?>
+        <div class="events-rt-people" id="events-rt-people"<?= $presence === [] ? ' hidden' : '' ?>>
+            <button type="button" class="events-rt-person-clear" hidden>Összes</button>
+            <?php foreach ($presence as $person): ?>
+                <?php
+                $mark = is_array($person) ? $person : [];
+                $personKey = (string) ($mark['key'] ?? '');
+                $personColor = $rtColor($mark['color'] ?? '');
+                $where = trim((string) ($mark['last_kind'] ?? '') . ' · ' . (string) ($mark['last_target'] ?? ''), ' ·');
+                $hits = (int) ($mark['hits'] ?? 0);
+                $personTitle = (string) ($mark['label'] ?? 'Ismeretlen');
+                if ((string) ($mark['code'] ?? '') !== '') {
+                    $personTitle .= ' · ' . (string) $mark['code'];
+                }
+                if ($hits > 0) {
+                    $personTitle .= ' · ' . $hits . ' friss esemény';
+                }
+                if ($where !== '') {
+                    $personTitle .= ' · utoljára: ' . $where;
+                }
+                ?>
+                <button
+                    type="button"
+                    class="events-rt-person<?= !empty($mark['is_bot']) ? ' events-rt-person--bot' : '' ?>"
+                    style="--rt-c: <?= h($personColor) ?>"
+                    data-visitor-key="<?= h($personKey) ?>"
+                    aria-pressed="false"
+                    title="<?= h($personTitle) ?>"
+                >
+                    <span class="events-rt-who__mark" aria-hidden="true"><?= h((string) ($mark['emoji'] ?? '•')) ?></span>
+                    <span class="events-rt-person__body">
+                        <span class="events-rt-person__name">
+                            <?= h((string) ($mark['label'] ?? 'Ismeretlen')) ?>
+                            <?php if ((string) ($mark['code'] ?? '') !== ''): ?>
+                                <span class="events-rt-who__code"><?= h((string) $mark['code']) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($mark['is_bot'])): ?>
+                                <span class="events-rt-who__bot">bot</span>
+                            <?php endif; ?>
+                        </span>
+                        <span class="events-rt-person__where"><?= h($where) ?></span>
+                    </span>
+                    <?php if ($hits > 0): ?>
+                        <span class="events-rt-person__hits"><?= $hits ?></span>
+                    <?php endif; ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
         <div class="table-wrap events-rt-table-wrap">
             <table class="events-admin-table events-rt-table events-rt-table--recent">
                 <thead>
@@ -277,8 +364,11 @@ $kindBadgeClass = static function (string $kind): string {
                             $kind = (string) ($row['kind'] ?? '');
                             $eventId = (int) ($row['event_id'] ?? 0);
                             $target = (string) ($row['target'] ?? $row['name'] ?? '');
+                            $mark = is_array($row['visitor'] ?? null) ? $row['visitor'] : [];
+                            $rowKey = (string) ($mark['key'] ?? '');
+                            $rowColor = $rtColor($mark['color'] ?? '');
                             ?>
-                            <tr>
+                            <tr<?= $rowKey !== '' ? ' data-visitor-key="' . h($rowKey) . '"' : '' ?> style="--rt-c: <?= h($rowColor) ?>">
                                 <td class="events-rt-recent-time"><?= h((string) $row['at']) ?></td>
                                 <td>
                                     <span class="events-rt-kind <?= h($kindBadgeClass($kind)) ?>"><?= h((string) ($row['kind_label'] ?? $row['metric_label'] ?? '')) ?></span>
@@ -291,7 +381,7 @@ $kindBadgeClass = static function (string $kind): string {
                                     <?php endif; ?>
                                 </td>
                                 <td class="events-rt-recent-detail"><?= h((string) ($row['detail'] ?? $row['source_label'] ?? '')) ?></td>
-                                <td><?= !empty($row['is_bot']) ? 'Bot' : 'Ember' ?></td>
+                                <td><?= $whoButton($mark) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -315,6 +405,7 @@ $kindBadgeClass = static function (string $kind): string {
     var chart = null;
     var windowMinutes = <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?>;
     var visitor = root.getAttribute('data-visitor') || 'human';
+    var focusKey = '';
 
     function esc(s) {
         return String(s == null ? '' : s)
@@ -379,6 +470,53 @@ $kindBadgeClass = static function (string $kind): string {
             window.history.replaceState({}, '', url.toString());
         } catch (e) {}
         poll();
+    }
+
+    function safeColor(color) {
+        return /^#[0-9a-fA-F]{6}$/.test(String(color || '')) ? String(color) : '#8b9198';
+    }
+
+    function visitorOf(row) {
+        var mark = (row && row.visitor) ? row.visitor : (row || {});
+        return {
+            key: String(mark.key || ''),
+            label: String(mark.label || (row && row.is_bot ? 'Ismeretlen bot' : 'Ismeretlen')),
+            color: safeColor(mark.color),
+            emoji: String(mark.emoji || '•'),
+            code: String(mark.code || ''),
+            is_bot: !!(mark.is_bot || (row && row.is_bot))
+        };
+    }
+
+    function whoButtonHtml(mark) {
+        var title = mark.label;
+        if (mark.code) title += ' · ' + mark.code;
+        if (mark.is_bot) title += ' · bot';
+        var keyAttr = mark.key ? ' data-visitor-key="' + esc(mark.key) + '"' : '';
+        return '<button type="button" class="events-rt-who' + (mark.is_bot ? ' events-rt-who--bot' : '') + '"'
+            + ' style="--rt-c:' + mark.color + '"'
+            + ' title="' + esc(title) + '"'
+            + keyAttr
+            + ' aria-pressed="false">'
+            + '<span class="events-rt-who__mark" aria-hidden="true">' + esc(mark.emoji) + '</span>'
+            + '<span class="events-rt-who__name">' + esc(mark.label) + '</span>'
+            + (mark.code ? '<span class="events-rt-who__code">' + esc(mark.code) + '</span>' : '')
+            + (mark.is_bot ? '<span class="events-rt-who__bot">bot</span>' : '')
+            + '</button>';
+    }
+
+    function applyFocus() {
+        var on = focusKey !== '';
+        root.classList.toggle('is-visitor-focus', on);
+        root.querySelectorAll('tr[data-visitor-key], .events-rt-person[data-visitor-key], .events-rt-who[data-visitor-key]').forEach(function (el) {
+            var match = on && el.getAttribute('data-visitor-key') === focusKey;
+            el.classList.toggle('is-person-match', match);
+            if (el.tagName === 'BUTTON') {
+                el.setAttribute('aria-pressed', match ? 'true' : 'false');
+            }
+        });
+        var clearBtn = root.querySelector('.events-rt-person-clear');
+        if (clearBtn) clearBtn.hidden = !on;
     }
 
     function kindClass(kind) {
@@ -530,6 +668,44 @@ $kindBadgeClass = static function (string $kind): string {
         }).join('');
     }
 
+    function renderPresence(payload) {
+        var box = document.getElementById('events-rt-people');
+        if (!box) return;
+        var rows = payload.presence || [];
+        if (!rows.length) {
+            box.hidden = true;
+            box.innerHTML = '';
+            return;
+        }
+        box.hidden = false;
+        var html = '<button type="button" class="events-rt-person-clear"' + (focusKey ? '' : ' hidden') + '>Összes</button>';
+        html += rows.map(function (person) {
+            var mark = visitorOf(person);
+            var where = [person.last_kind || '', person.last_target || ''].filter(Boolean).join(' · ');
+            var hits = Number(person.hits || 0);
+            var title = mark.label;
+            if (mark.code) title += ' · ' + mark.code;
+            if (hits > 0) title += ' · ' + hits + ' friss esemény';
+            if (where) title += ' · utoljára: ' + where;
+            return '<button type="button" class="events-rt-person' + (mark.is_bot ? ' events-rt-person--bot' : '') + '"'
+                + ' style="--rt-c:' + mark.color + '"'
+                + ' data-visitor-key="' + esc(mark.key) + '"'
+                + ' aria-pressed="false"'
+                + ' title="' + esc(title) + '">'
+                + '<span class="events-rt-who__mark" aria-hidden="true">' + esc(mark.emoji) + '</span>'
+                + '<span class="events-rt-person__body">'
+                + '<span class="events-rt-person__name">' + esc(mark.label)
+                + (mark.code ? ' <span class="events-rt-who__code">' + esc(mark.code) + '</span>' : '')
+                + (mark.is_bot ? ' <span class="events-rt-who__bot">bot</span>' : '')
+                + '</span>'
+                + '<span class="events-rt-person__where">' + esc(where) + '</span>'
+                + '</span>'
+                + (hits > 0 ? '<span class="events-rt-person__hits">' + hits + '</span>' : '')
+                + '</button>';
+        }).join('');
+        box.innerHTML = html;
+    }
+
     function renderRecent(payload) {
         var body = document.getElementById('events-rt-recent-body');
         if (!body) return;
@@ -550,12 +726,14 @@ $kindBadgeClass = static function (string $kind): string {
             var kind = r.kind || '';
             var kindLabel = r.kind_label || r.metric_label || '';
             var detail = r.detail || r.source_label || '';
-            return '<tr>'
+            var mark = visitorOf(r);
+            var rowAttr = mark.key ? ' data-visitor-key="' + esc(mark.key) + '"' : '';
+            return '<tr' + rowAttr + ' style="--rt-c:' + mark.color + '">'
                 + '<td class="events-rt-recent-time">' + esc(r.at || '') + '</td>'
                 + '<td><span class="events-rt-kind ' + kindClass(kind) + '">' + esc(kindLabel) + '</span></td>'
                 + '<td>' + nameHtml + '</td>'
                 + '<td class="events-rt-recent-detail">' + esc(detail) + '</td>'
-                + '<td>' + (r.is_bot ? 'Bot' : 'Ember') + '</td>'
+                + '<td>' + whoButtonHtml(mark) + '</td>'
                 + '</tr>';
         }).join('');
     }
@@ -585,6 +763,8 @@ $kindBadgeClass = static function (string $kind): string {
         renderBarList('events-rt-pages', payload.top_pages || [], 'events-rt-source__bar--hub');
         renderBarList('events-rt-nav-list', payload.top_nav || [], 'events-rt-source__bar--nav');
         renderRecent(payload);
+        renderPresence(payload);
+        applyFocus();
     }
 
     function poll() {
@@ -614,6 +794,21 @@ $kindBadgeClass = static function (string $kind): string {
         btn.addEventListener('click', function () {
             setVisitor(btn.getAttribute('data-visitor') || 'human');
         });
+    });
+
+    root.addEventListener('click', function (ev) {
+        var clearBtn = ev.target.closest('.events-rt-person-clear');
+        if (clearBtn && root.contains(clearBtn)) {
+            focusKey = '';
+            applyFocus();
+            return;
+        }
+        var btn = ev.target.closest('.events-rt-who, .events-rt-person');
+        if (!btn || !root.contains(btn)) return;
+        var key = btn.getAttribute('data-visitor-key') || '';
+        if (!key) return;
+        focusKey = focusKey === key ? '' : key;
+        applyFocus();
     });
 
     setInterval(poll, pollMs);
