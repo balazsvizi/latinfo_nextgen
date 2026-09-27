@@ -36,6 +36,29 @@ if (!function_exists('cms_public_post_url')) {
     }
 }
 
+if (!function_exists('cms_public_lang_switch_url')) {
+    /**
+     * HU/EN váltó URL – mindig explicit lang (különben az EN süti megmarad HU-nál).
+     *
+     * @param array<string, scalar|null> $extra
+     */
+    function cms_public_lang_switch_url(string $slug, string $targetLang, array $extra = []): string
+    {
+        $q = ['slug' => $slug, 'lang' => $targetLang === 'en' ? 'en' : 'hu'];
+        foreach ($extra as $k => $v) {
+            if ($v === null || $v === '') {
+                continue;
+            }
+            $q[(string) $k] = $v;
+        }
+        if (isset($_GET['preview']) && (string) $_GET['preview'] === '1' && !isset($q['preview'])) {
+            $q['preview'] = '1';
+        }
+
+        return cms_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+    }
+}
+
 if (!function_exists('cms_public_list_url')) {
     /**
      * @param array<string, scalar|null> $extra

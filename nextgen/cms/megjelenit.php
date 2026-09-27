@@ -94,8 +94,8 @@ $S['admin_edit_title'] = $lang === 'en' ? 'Edit' : 'Szerkesztés';
 $S['admin_edit_aria'] = $lang === 'en' ? 'Edit article in CMS' : 'Cikk szerkesztése a CMS-ben';
 
 $selfPath = cms_public_post_url($slug);
-$urlHu = $selfPath;
-$urlEn = $selfPath . (str_contains($selfPath, '?') ? '&' : '?') . 'lang=en';
+$urlHu = cms_public_lang_switch_url($slug, 'hu');
+$urlEn = cms_public_lang_switch_url($slug, 'en');
 
 $cssPublicUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $cssCmsUrl = nextgen_url('cms/assets/css/cms-public.css') . '?v=' . rawurlencode(nextgen_app_version());
