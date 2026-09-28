@@ -130,7 +130,7 @@ $featuredRaw = trim(html_entity_decode(trim((string) ($event['event_featured_ima
 $featuredRaw = preg_replace('/^\x{FEFF}|\x{200B}/u', '', $featuredRaw) ?? $featuredRaw;
 $featuredAbsolute = $featuredRaw !== '' ? events_absolute_url($featuredRaw) : '';
 $ogPageUrl = $canonical;
-$cssUrl = events_url('assets/event_public.css');
+$cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $urlHu = events_public_megjelenit_lang_switch_url($slug, 'hu');
 $urlEn = events_public_megjelenit_lang_switch_url($slug, 'en');
 $hreflangHu = events_absolute_url(events_public_event_page_url($slug, 'hu'));

@@ -17,8 +17,8 @@
     --li-shadow-lg: 0 8px 36px rgba(45, 58, 40, 0.1);
     --ev-radius: 14px;
     --ev-radius-sm: 10px;
-    --ev-font: Georgia, "Times New Roman", "Noto Serif", serif;
     --ev-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ev-font: var(--ev-sans);
 }
 
 *,

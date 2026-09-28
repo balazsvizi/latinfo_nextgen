@@ -241,6 +241,7 @@ if ($navZone === 'events') {
                 <?php endif; ?>
             </ul>
         </nav>
+        <?= nextgen_footer_version_markup() ?>
         <?php if (isLoggedIn()): ?>
         <div class="header-account">
             <a href="<?= h(nextgen_url('jelszo.php')) ?>" class="header-user"><?= h($_SESSION['admin_nev']) ?></a>

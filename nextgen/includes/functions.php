@@ -79,7 +79,7 @@ function nextgen_app_version(): string
 }
 
 /**
- * Szolid verziójel a láblécben.
+ * Szolid verziójel (admin fejléc / publikus lábléc).
  */
 function nextgen_footer_version_markup(): string
 {

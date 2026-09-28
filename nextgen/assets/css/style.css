@@ -414,6 +414,11 @@ a.header-user:hover {
     white-space: nowrap;
     user-select: all;
 }
+.main-header .app-version {
+    margin-left: 0;
+    flex-shrink: 0;
+    line-height: 1;
+}
 
 /* ========== Login page ========== */
 .login-page {

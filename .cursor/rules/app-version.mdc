@@ -13,4 +13,4 @@ alwaysApply: true
 v1.0.1 – Rövid leírás a változásról.
 ```
 
-- A lábléc a `nextgen_footer_version_markup()` hívással jeleníti meg a verziót; ne írd máshova feltűnően.
+- A verziót a `nextgen_footer_version_markup()` hívással jelenítsd meg: admin/backoffice oldalakon a fejlécben, publikus felületeken a láblécben; ne írd máshova feltűnően.
