@@ -66,8 +66,7 @@ $mapShowEmpty = $mapMarkerCount === 0 && $mapPending === 0;
             aria-label="<?= h((string) ($D['map_host_aria'] ?? 'Interaktív térkép')) ?>"
         ></div>
         <p class="venue-public-map__attrib home-public__map-attrib">
-            © <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer">OpenStreetMap</a>
-            · © <a href="https://carto.com/attributions" rel="noopener noreferrer">CARTO</a>
+            <?= events_leaflet_basemap_html_attribution() ?>
         </p>
     </div>
 
@@ -138,11 +137,10 @@ $mapShowEmpty = $mapMarkerCount === 0 && $mapPending === 0;
             zoomControl: true,
             attributionControl: true
         });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OSM &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
+        var bm = <?= events_leaflet_basemap_layer_json() ?>;
+        var tileOpts = { attribution: bm.attribution || '', maxZoom: bm.maxZoom || 19 };
+        if (bm.subdomains) tileOpts.subdomains = bm.subdomains;
+        L.tileLayer(bm.url, tileOpts).addTo(map);
 
         var cluster = (typeof L.markerClusterGroup === 'function')
             ? L.markerClusterGroup({

@@ -63,8 +63,7 @@ $mapId = 'ev-venue-map-' . substr(md5($mapTitle . '|' . ($hasCoords ? ($mapLat .
             aria-label="<?= h($mapAriaLabel) ?>"
         ></div>
         <p class="venue-public-map__attrib">
-            © <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer">OpenStreetMap</a>
-            · © <a href="https://carto.com/attributions" rel="noopener noreferrer">CARTO</a>
+            <?= events_leaflet_basemap_html_attribution() ?>
         </p>
         <script type="application/json" id="<?= h($mapId) ?>-json"><?= $mapPayload ?></script>
         <script src="<?= h(events_leaflet_js_url()) ?>" crossorigin="anonymous"></script>
@@ -82,11 +81,10 @@ $mapId = 'ev-venue-map-' . substr(md5($mapTitle . '|' . ($hasCoords ? ($mapLat .
                 return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
             var map = L.map(el, { scrollWheelZoom: false, zoomControl: true, attributionControl: true });
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OSM &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
+            var bm = <?= events_leaflet_basemap_layer_json() ?>;
+            var tileOpts = { attribution: bm.attribution || '', maxZoom: bm.maxZoom || 19 };
+            if (bm.subdomains) tileOpts.subdomains = bm.subdomains;
+            L.tileLayer(bm.url, tileOpts).addTo(map);
             var pinIcon = L.divIcon({
                 className: 'venue-public-map-pin',
                 html: '<div class="venue-public-map-pin__dot"></div>',

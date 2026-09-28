@@ -52,8 +52,7 @@ if ($mapPayload === false) {
             aria-label="<?= h($mapAriaLabel) ?>"
         ></div>
         <p class="venue-public-map-dialog__attrib">
-            © <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer">OpenStreetMap</a>
-            · © <a href="https://carto.com/attributions" rel="noopener noreferrer">CARTO</a>
+            <?= events_leaflet_basemap_html_attribution() ?>
         </p>
     </div>
 </dialog>
@@ -95,11 +94,10 @@ if ($mapPayload === false) {
             popupAnchor: [0, -11]
         });
         mapInstance = L.map(host, { scrollWheelZoom: true, zoomControl: true, attributionControl: true });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OSM &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(mapInstance);
+        var bm = <?= events_leaflet_basemap_layer_json() ?>;
+        var tileOpts = { attribution: bm.attribution || '', maxZoom: bm.maxZoom || 19 };
+        if (bm.subdomains) tileOpts.subdomains = bm.subdomains;
+        L.tileLayer(bm.url, tileOpts).addTo(mapInstance);
         var popup = '<div class="venue-public-map-popup__title">' + esc(data.title) + '</div>';
         if (data.address) {
             popup += '<div class="venue-public-map-popup__addr">' + esc(data.address) + '</div>';

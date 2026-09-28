@@ -187,6 +187,14 @@ if (!defined('FACEBOOK_APP_ID')) {
     define('FACEBOOK_APP_ID', (string) cfg_get('FACEBOOK_APP_ID', '966242223397117', $localConfig));
 }
 
+/**
+ * CARTO Basemaps API kulcs (Leaflet Voyager csempék).
+ * Ingyenes kérés: https://carto.com/basemaps/apikey/ — üresen OSM fallback.
+ */
+if (!defined('CARTO_BASEMAPS_API_KEY')) {
+    define('CARTO_BASEMAPS_API_KEY', (string) cfg_get('CARTO_BASEMAPS_API_KEY', '', $localConfig));
+}
+
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra
 

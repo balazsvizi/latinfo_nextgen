@@ -158,11 +158,10 @@ declare(strict_types=1);
         destroyMap(mapRef, markerRef);
         if (!pinIcon) pinIcon = makePinIcon();
         var map = L.map(hostEl, { scrollWheelZoom: interactive, zoomControl: true });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OSM &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
+        var bm = <?= events_leaflet_basemap_layer_json() ?>;
+        var tileOpts = { attribution: bm.attribution || '', maxZoom: bm.maxZoom || 19 };
+        if (bm.subdomains) tileOpts.subdomains = bm.subdomains;
+        L.tileLayer(bm.url, tileOpts).addTo(map);
         map.on('click', function (e) {
             setMarkerPosition(e.latlng.lat, e.latlng.lng, true);
         });

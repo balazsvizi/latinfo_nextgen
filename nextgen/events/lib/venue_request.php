@@ -13,6 +13,61 @@ function events_leaflet_js_url(): string {
     return 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
 }
 
+/**
+ * CARTO Basemaps API kulcs (ingyenes: https://carto.com/basemaps/apikey/).
+ * Üresen OSM csempék — a CARTO „API KEY REQUIRED” watermark elkerülése.
+ */
+function events_carto_basemaps_api_key(): string {
+    if (!defined('CARTO_BASEMAPS_API_KEY')) {
+        return '';
+    }
+
+    return trim((string) CARTO_BASEMAPS_API_KEY);
+}
+
+/**
+ * Leaflet tileLayer beállítások (admin + nyilvános térképek).
+ *
+ * @return array{url: string, attribution: string, subdomains: string, maxZoom: int}
+ */
+function events_leaflet_basemap_layer(): array {
+    $key = events_carto_basemaps_api_key();
+    if ($key !== '') {
+        return [
+            'url' => 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=' . rawurlencode($key),
+            'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            'subdomains' => '',
+            'maxZoom' => 19,
+        ];
+    }
+
+    return [
+        'url' => 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        'subdomains' => 'abc',
+        'maxZoom' => 19,
+    ];
+}
+
+function events_leaflet_basemap_layer_json(): string {
+    $json = json_encode(
+        events_leaflet_basemap_layer(),
+        JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    );
+
+    return $json !== false ? $json : '{}';
+}
+
+/** Nyilvános térkép lábléc attribution (trusted HTML). */
+function events_leaflet_basemap_html_attribution(): string {
+    if (events_carto_basemaps_api_key() !== '') {
+        return '© <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer">OpenStreetMap</a>'
+            . ' · © <a href="https://carto.com/attributions" rel="noopener noreferrer">CARTO</a>';
+    }
+
+    return '© <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer">OpenStreetMap</a>';
+}
+
 function events_leaflet_marker_cluster_css_url(): string {
     return 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
 }
