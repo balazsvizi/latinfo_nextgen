@@ -29,10 +29,33 @@ if (!function_exists('cms_url')) {
     }
 }
 
+if (!function_exists('cms_public_slug_is_valid')) {
+    function cms_public_slug_is_valid(string $slug): bool
+    {
+        return preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) === 1;
+    }
+}
+
 if (!function_exists('cms_public_post_url')) {
+    /**
+     * Publikus cikk URL: /{slug}
+     */
     function cms_public_post_url(string $slug): string
     {
-        return cms_url('megjelenit.php?slug=' . rawurlencode($slug));
+        return site_url(rawurlencode(trim($slug)));
+    }
+}
+
+if (!function_exists('cms_public_is_legacy_megjelenit_request')) {
+    /**
+     * Közvetlen nextgen/cms/megjelenit.php kérés.
+     * A /{slug} belső rewrite nem legacy (különben redirect loop).
+     */
+    function cms_public_is_legacy_megjelenit_request(): bool
+    {
+        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+
+        return str_contains(strtolower($path), 'megjelenit.php');
     }
 }
 
@@ -44,7 +67,7 @@ if (!function_exists('cms_public_lang_switch_url')) {
      */
     function cms_public_lang_switch_url(string $slug, string $targetLang, array $extra = []): string
     {
-        $q = ['slug' => $slug, 'lang' => $targetLang === 'en' ? 'en' : 'hu'];
+        $q = ['lang' => $targetLang === 'en' ? 'en' : 'hu'];
         foreach ($extra as $k => $v) {
             if ($v === null || $v === '') {
                 continue;
@@ -55,7 +78,7 @@ if (!function_exists('cms_public_lang_switch_url')) {
             $q['preview'] = '1';
         }
 
-        return cms_url('megjelenit.php?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986));
+        return cms_public_post_url($slug) . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
     }
 }
 

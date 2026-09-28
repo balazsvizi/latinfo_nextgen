@@ -12,11 +12,26 @@ $lang = events_public_resolve_megjelenit_lang();
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
-if ($slug === '') {
+if ($slug === '' || !cms_public_slug_is_valid($slug)) {
     http_response_code(404);
     header('Content-Type: text/html; charset=UTF-8');
     $C = events_public_common_nav_strings($lang);
     echo '<!DOCTYPE html><html lang="' . h($htmlLang) . '"><head><meta charset="UTF-8"><title>Nem található</title></head><body><p>A cikk nem található.</p><p><a href="' . h(LATINFO_PUBLIC_HOME_URL) . '">' . h($C['logo_home_title'] ?? 'Latinfo.hu') . '</a></p></body></html>';
+    exit;
+}
+
+if (cms_public_is_legacy_megjelenit_request()) {
+    $legacyParams = [];
+    foreach (['lang', 'preview'] as $param) {
+        if (isset($_GET[$param]) && (string) $_GET[$param] !== '') {
+            $legacyParams[$param] = (string) $_GET[$param];
+        }
+    }
+    $target = cms_public_post_url($slug);
+    if ($legacyParams !== []) {
+        $target .= '?' . http_build_query($legacyParams, '', '&', PHP_QUERY_RFC3986);
+    }
+    header('Location: ' . $target, true, 301);
     exit;
 }
 
@@ -96,6 +111,7 @@ $S['admin_edit_aria'] = $lang === 'en' ? 'Edit article in CMS' : 'Cikk szerkeszt
 $selfPath = cms_public_post_url($slug);
 $urlHu = cms_public_lang_switch_url($slug, 'hu');
 $urlEn = cms_public_lang_switch_url($slug, 'en');
+$canonical = events_absolute_url($selfPath);
 
 $cssPublicUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $cssCmsUrl = nextgen_url('cms/assets/css/cms-public.css') . '?v=' . rawurlencode(nextgen_app_version());
@@ -118,8 +134,7 @@ if ($showAdminEdit) {
     ];
 }
 
-$pathOnly = (string) (parse_url($selfPath, PHP_URL_PATH) ?? '');
-$ogPageUrl = $pathOnly !== '' ? cms_absolute_url($pathOnly) : cms_absolute_url($selfPath);
+$ogPageUrl = $canonical;
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>

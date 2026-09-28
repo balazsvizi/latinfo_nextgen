@@ -73,6 +73,18 @@ RewriteCond %{THE_REQUEST} \s/+nextgen/events/megjelenit\.php[\s?] [NC]
 RewriteCond %{QUERY_STRING} (^|&)slug=([^&]+)
 RewriteRule ^nextgen/events/megjelenit\.php$ /event/%2/? [R=301,L,NE,QSD]
 
+# Régi CMS megjelenítő → /{slug}
+RewriteCond %{THE_REQUEST} \s/+nextgen/cms/megjelenit\.php[\s?] [NC]
+RewriteCond %{QUERY_STRING} (^|&)slug=([a-z0-9]+(?:-[a-z0-9]+)*)(&|$)
+RewriteRule ^nextgen/cms/megjelenit\.php$ /%2? [R=301,L,QSD]
+
+# CMS cikk: /{slug}
+# A konkrét Latinfo útvonalak (events, belepes, …) FELJEBB vannak, azok nyernek.
+# Létező fájl/mappa kimarad. Ismeretlen slugot a front a WordPressnek adja, ha van index.php.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-z0-9]+(?:-[a-z0-9]+)*)/?$ nextgen/cms/public_front.php?slug=$1 [L,QSA]
+
 # --- Latinfo publikus útvonalak (vég) ---
 
 # BEGIN WordPress

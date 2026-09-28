@@ -602,7 +602,45 @@ function events_public_nav_items_resolve_href(array $row, string $lang): string 
         return events_public_nav_preset_href((string) ($row['preset_key'] ?? ''), $lang);
     }
 
-    return trim((string) ($row['href'] ?? ''));
+    return events_public_nav_normalize_cms_href(trim((string) ($row['href'] ?? '')));
+}
+
+/**
+ * Régi CMS megjelenítő link → publikus /{slug}.
+ */
+function events_public_nav_normalize_cms_href(string $href): string
+{
+    $href = trim($href);
+    if ($href === '' || $href === '#' || !function_exists('site_url')) {
+        return $href;
+    }
+
+    $parts = parse_url($href);
+    if (!is_array($parts)) {
+        return $href;
+    }
+    $path = strtolower((string) ($parts['path'] ?? ''));
+    if (!str_ends_with($path, '/cms/megjelenit.php')) {
+        return $href;
+    }
+
+    $query = [];
+    parse_str((string) ($parts['query'] ?? ''), $query);
+    $slug = trim((string) ($query['slug'] ?? ''));
+    if ($slug === '' || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
+        return $href;
+    }
+
+    unset($query['slug']);
+    $pretty = site_url(rawurlencode($slug));
+    if ($query !== []) {
+        $pretty .= '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+    if (isset($parts['fragment']) && (string) $parts['fragment'] !== '') {
+        $pretty .= '#' . rawurlencode((string) $parts['fragment']);
+    }
+
+    return $pretty;
 }
 
 function events_public_nav_items_href_is_safe(string $href): bool {
