@@ -1,0 +1,221 @@
+/* Publikus fiók – Latinfo.hu márka */
+
+:root {
+    --ua-ink: #1f241c;
+    --ua-muted: #7a8574;
+    --ua-paper: #f4f6f2;
+    --ua-line: #d4e0cf;
+    --ua-brand: #3d4f38;
+    --ua-accent: #6d8f63;
+    --ua-accent-soft: rgba(109, 143, 99, 0.14);
+    --ua-font: "DM Sans", "Segoe UI", sans-serif;
+}
+
+.user-login-page {
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -15%, rgba(109, 143, 99, 0.22), transparent 55%),
+        linear-gradient(180deg, #fbfcfa 0%, #e8f1e5 55%, #dfeadf 100%);
+    font-family: var(--ua-font);
+}
+
+.user-login-page .login-box {
+    border: 1px solid var(--ua-line);
+    box-shadow: 0 12px 40px rgba(45, 58, 40, 0.1);
+    border-radius: 18px;
+    padding: 2.25rem 2rem 2rem;
+}
+
+.user-login-logo {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 1rem;
+    text-decoration: none;
+}
+
+.user-login-logo img {
+    display: block;
+    width: auto;
+    max-width: min(240px, 100%);
+    height: auto;
+    max-height: 72px;
+    object-fit: contain;
+}
+
+.user-login-page .login-brand {
+    text-align: center;
+    color: var(--ua-brand);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.user-login-page .login-sub {
+    text-align: center;
+    color: var(--ua-muted);
+    margin-bottom: 1.25rem;
+}
+
+.user-login-page .login-box form > button {
+    background: var(--ua-accent);
+}
+
+.user-login-page .login-box form > button:hover {
+    background: #56734d;
+}
+
+.user-oauth-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0 1rem;
+    color: var(--ua-muted);
+    font-size: 0.85rem;
+}
+
+.user-oauth-divider::before,
+.user-oauth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--ua-line);
+}
+
+.user-oauth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.user-oauth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--ua-line);
+    background: #fff;
+    color: var(--ua-ink);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.user-oauth-btn:hover {
+    background: var(--ua-accent-soft);
+    border-color: var(--ua-accent);
+    color: var(--ua-brand);
+}
+
+.user-oauth-btn--facebook:hover {
+    background: rgba(24, 119, 242, 0.08);
+    border-color: #1877f2;
+    color: #166fe5;
+}
+
+.user-auth-switch {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.92rem;
+    color: var(--ua-muted);
+}
+
+.user-auth-switch a {
+    color: var(--ua-brand);
+    font-weight: 600;
+}
+
+.user-account-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse 90% 55% at 50% -20%, rgba(109, 143, 99, 0.14), transparent 60%),
+        var(--ua-paper);
+    font-family: var(--ua-font);
+    color: var(--ua-ink);
+}
+
+.user-account-shell {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 3rem;
+}
+
+.user-account-card {
+    background: #fff;
+    border: 1px solid var(--ua-line);
+    border-radius: 16px;
+    padding: 1.5rem 1.35rem;
+    box-shadow: 0 2px 14px rgba(45, 58, 40, 0.07);
+}
+
+.user-account-card h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.35rem;
+    color: var(--ua-brand);
+}
+
+.user-account-meta {
+    color: var(--ua-muted);
+    margin: 0 0 1.25rem;
+    font-size: 0.95rem;
+}
+
+.user-account-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 2px solid var(--ua-line);
+}
+
+.user-account-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+}
+
+.user-account-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.user-account-actions .btn-primary {
+    background: var(--ua-accent);
+    color: #fff;
+}
+
+.user-account-actions .btn-secondary {
+    background: #fff;
+    color: var(--ua-brand);
+    border-color: var(--ua-line);
+}
+
+.user-account-providers {
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.user-account-providers li {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--ua-accent-soft);
+    color: var(--ua-brand);
+    font-weight: 600;
+    text-transform: capitalize;
+}

@@ -29,6 +29,9 @@ return [
     // Partner portál: /{PARTNERS_PATH}/ (alap: partnerportal)
     // 'PARTNERS_PATH' => 'partnerportal',
 
+    // Publikus fiók: /{USERS_PATH}/ (alap: account) – regisztráció, Google/Facebook SSO
+    // 'USERS_PATH' => 'account',
+
     // Nyilvános naptár: /{EVENTS_HOME_PATH}/ (alap: events)
     // 'EVENTS_HOME_PATH' => 'events',
 
@@ -64,6 +67,15 @@ return [
     // Facebook App ID (og fb:app_id). Alap: Facebook nyilvános default, ami elnémítja a Debugger figyelmeztetést.
     // Saját app: https://developers.facebook.com/apps/
     // 'FACEBOOK_APP_ID' => '966242223397117',
+
+    // Publikus fiók SSO (/account/) – Facebook Login App Secret
+    // Valid OAuth Redirect URI: https://latinfo.hu/account/oauth.php
+    // 'FACEBOOK_APP_SECRET' => '',
+
+    // Publikus fiók SSO (/account/) – Google OAuth Web kliens (külön a Drive backuptól)
+    // Authorized redirect URI: https://latinfo.hu/account/oauth.php
+    // 'GOOGLE_LOGIN_CLIENT_ID' => '....apps.googleusercontent.com',
+    // 'GOOGLE_LOGIN_CLIENT_SECRET' => 'GOCSPX-...',
 
     // Cron – központi ütemező (nextgen/cron/run.php)
     // 'CRON_TOKEN' => 'állíts-be-erős-véletlen-token-min-32-karakter',

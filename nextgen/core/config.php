@@ -84,6 +84,11 @@ if (!defined('PARTNERS_PATH')) {
     define('PARTNERS_PATH', trim((string) cfg_get('PARTNERS_PATH', 'partnerportal', $localConfig), '/'));
 }
 
+/** Publikus fiók URL szegmens (pl. account → /account/). */
+if (!defined('USERS_PATH')) {
+    define('USERS_PATH', trim((string) cfg_get('USERS_PATH', 'account', $localConfig), '/'));
+}
+
 if (!function_exists('site_url')) {
     /**
      * Webes útvonal a domain gyökérétől, BASE_URL előtaggal (alkönyvtárban futó telepítés).
@@ -148,6 +153,33 @@ if (!function_exists('partner_asset_url')) {
     }
 }
 
+if (!function_exists('user_url')) {
+    /**
+     * Publikus fiók URL (pl. /account/, /account/login.php).
+     */
+    function user_url(string $path = ''): string
+    {
+        $path = ltrim($path, '/');
+        if ($path === 'login.php') {
+            $path = '';
+        }
+        $segment = defined('USERS_PATH') && USERS_PATH !== '' ? USERS_PATH : 'account';
+        $base = site_url($segment . '/');
+
+        return $path === '' ? rtrim($base, '/') . '/' : rtrim($base, '/') . '/' . $path;
+    }
+}
+
+if (!function_exists('user_asset_url')) {
+    /**
+     * Statikus asset a nextgen/user/assets útvonalon.
+     */
+    function user_asset_url(string $path): string
+    {
+        return nextgen_url('user/' . ltrim($path, '/'));
+    }
+}
+
 define('UPLOAD_PATH', (string) cfg_get('UPLOAD_PATH', BASE_PATH . '/nextgen/uploads/szamlak', $localConfig));
 define('UPLOAD_URL', (string) cfg_get('UPLOAD_URL', nextgen_url('uploads/szamlak'), $localConfig));
 
@@ -185,6 +217,22 @@ if (!defined('GA4_MEASUREMENT_ID')) {
 /** Facebook App ID a Sharing Debugger fb:app_id figyelmeztetéséhez. Üresen nem megy ki a meta. */
 if (!defined('FACEBOOK_APP_ID')) {
     define('FACEBOOK_APP_ID', (string) cfg_get('FACEBOOK_APP_ID', '966242223397117', $localConfig));
+}
+
+/** Facebook Login (publikus /account/ SSO) – App Secret. Üresen a Facebook belépés gomb rejtve. */
+if (!defined('FACEBOOK_APP_SECRET')) {
+    define('FACEBOOK_APP_SECRET', (string) cfg_get('FACEBOOK_APP_SECRET', '', $localConfig));
+}
+
+/**
+ * Google Login (publikus /account/ SSO) – külön Web kliens a Drive backup OAuth-tól.
+ * Üresen a Google belépés gomb rejtve.
+ */
+if (!defined('GOOGLE_LOGIN_CLIENT_ID')) {
+    define('GOOGLE_LOGIN_CLIENT_ID', (string) cfg_get('GOOGLE_LOGIN_CLIENT_ID', '', $localConfig));
+}
+if (!defined('GOOGLE_LOGIN_CLIENT_SECRET')) {
+    define('GOOGLE_LOGIN_CLIENT_SECRET', (string) cfg_get('GOOGLE_LOGIN_CLIENT_SECRET', '', $localConfig));
 }
 
 /**

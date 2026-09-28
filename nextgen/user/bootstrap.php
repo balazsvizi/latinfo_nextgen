@@ -1,0 +1,27 @@
+<?php
+declare(strict_types=1);
+
+$nextgenRoot = dirname(__DIR__);
+
+require_once $nextgenRoot . '/core/config.php';
+require_once $nextgenRoot . '/core/database.php';
+require_once $nextgenRoot . '/includes/functions.php';
+require_once $nextgenRoot . '/lib/user/users.php';
+require_once $nextgenRoot . '/lib/user/oauth.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
+
+require_once __DIR__ . '/includes/auth.php';
+
+latinfo_users_ensure_schema(getDb());

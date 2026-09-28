@@ -226,6 +226,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-admin" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Partnerek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Partner üzenetek</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/users/')) ?>" role="menuitem">Felhasználók</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/adminok/')) ?>" role="menuitem">Adminok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/rate_limit.php')) ?>" role="menuitem">Belépési korlát</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/log.php')) ?>" role="menuitem">Logok</a></li>
