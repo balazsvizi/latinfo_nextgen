@@ -123,7 +123,7 @@ $bodyHomeClass = 'event-public-page event-public-page--home event-public-page--l
     })();
     </script>
 </head>
-<body class="<?= h($bodyHomeClass) ?>">
+<body class="<?= h($bodyHomeClass) ?>"<?php if (!empty($publicFavoritesEnabled) && $calendarPreviewById !== []): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <?php require $eventsPartial . '/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public home-public latinfo-home">
@@ -164,6 +164,9 @@ $bodyHomeClass = 'event-public-page event-public-page--home event-public-page--l
 $D = $S;
 require $eventsPartial . '/public_calendar_event_preview.php';
 ?>
+<?php endif; ?>
+<?php if (!empty($publicFavoritesEnabled) && $calendarPreviewById !== []): ?>
+<?php require $eventsPartial . '/public_favorite_footer.php'; ?>
 <?php endif; ?>
 </body>
 </html>

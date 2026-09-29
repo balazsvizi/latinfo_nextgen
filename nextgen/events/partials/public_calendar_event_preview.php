@@ -2,6 +2,19 @@
 declare(strict_types=1);
 /** @var array<int, array<string, mixed>> $calendarPreviewById */
 /** @var array<string, string> $D */
+/** @var bool $publicFavoritesEnabled */
+/** @var string $lang */
+
+$previewFavoritesEnabled = !empty($publicFavoritesEnabled);
+$previewFavoriteLang = (($lang ?? 'hu') === 'en') ? 'en' : 'hu';
+$previewFavoriteLoggedIn = false;
+if ($previewFavoritesEnabled) {
+    if (!function_exists('user_is_logged_in')) {
+        require_once dirname(__DIR__, 2) . '/user/includes/auth.php';
+    }
+    $previewFavoriteLoggedIn = user_is_logged_in();
+}
+$previewFavLabelAdd = $previewFavoriteLang === 'en' ? 'Add to favorites' : 'Kedvencnek jelölés';
 ?>
 <dialog class="events-cal-preview" id="events-cal-preview" aria-labelledby="events-cal-preview-title">
     <div class="events-cal-preview__sheet" role="document">
@@ -27,9 +40,37 @@ declare(strict_types=1);
                     </div>
                 </div>
             </div>
-            <h2 class="events-cal-preview__title" id="events-cal-preview-title">
-                <a class="events-cal-preview__title-link" id="events-cal-preview-title-link" href="#"></a>
-            </h2>
+            <div class="events-cal-preview__title-row">
+                <h2 class="events-cal-preview__title" id="events-cal-preview-title">
+                    <a class="events-cal-preview__title-link" id="events-cal-preview-title-link" href="#"></a>
+                </h2>
+                <?php if ($previewFavoritesEnabled): ?>
+                <div
+                    class="public-favorite events-cal-preview__favorite"
+                    id="events-cal-preview-favorite"
+                    data-public-favorite
+                    data-mode="event"
+                    data-entity-type="event"
+                    data-entity-id="0"
+                    data-lang="<?= h($previewFavoriteLang) ?>"
+                    data-logged-in="<?= $previewFavoriteLoggedIn ? '1' : '0' ?>"
+                    data-active="0"
+                    data-count="0"
+                    hidden
+                >
+                    <button
+                        type="button"
+                        class="public-favorite__btn"
+                        data-public-favorite-btn
+                        aria-pressed="false"
+                        aria-label="<?= h($previewFavLabelAdd) ?>"
+                    >
+                        <span class="public-favorite__icon" aria-hidden="true">♥</span>
+                        <span class="public-favorite__count" data-public-favorite-count>0</span>
+                    </button>
+                </div>
+                <?php endif; ?>
+            </div>
             <dl class="events-cal-preview__facts">
                 <div class="events-cal-preview__fact" id="events-cal-preview-venue-wrap" hidden>
                     <dt><?= h((string) ($D['cal_preview_venue'] ?? 'Helyszín')) ?></dt>
@@ -79,6 +120,8 @@ declare(strict_types=1);
     var catsEl = document.getElementById('events-cal-preview-cats');
     var ctaEl = document.getElementById('events-cal-preview-cta');
     var closeBtn = document.getElementById('events-cal-preview-close');
+    var favRoot = document.getElementById('events-cal-preview-favorite');
+    var currentPreviewId = null;
     if (!titleEl || !mediaLinkEl || !toplineEl || !metaEl || !mediaEl || !imgEl || !venueWrap || !venueEl || !orgWrap || !orgEl || !stylesEl || !catsEl || !ctaEl) return;
 
     function setVisible(wrap, el, text) {
@@ -148,7 +191,63 @@ declare(strict_types=1);
         fetch(trackUrl, { method: 'POST', body: body, keepalive: true }).catch(function () {});
     }
 
+    function snapshotFavoriteToMap(id) {
+        if (!favRoot || favRoot.hidden || id === null || id === undefined) return;
+        var data = previewMap[String(id)] || previewMap[id];
+        if (!data || !data.favorite) return;
+        data.favorite.active = favRoot.getAttribute('data-active') === '1';
+        data.favorite.count = parseInt(favRoot.getAttribute('data-count'), 10) || 0;
+        var pickerRaw = favRoot.getAttribute('data-event-picker');
+        if (pickerRaw) {
+            try {
+                data.favorite.picker = JSON.parse(pickerRaw);
+            } catch (e) { /* keep previous */ }
+        }
+    }
+
+    function applyFavorite(fav) {
+        if (!favRoot) return;
+        if (!fav || !fav.enabled) {
+            favRoot.hidden = true;
+            favRoot.setAttribute('data-entity-id', '0');
+            favRoot.removeAttribute('data-event-picker');
+            return;
+        }
+        var active = !!fav.active;
+        var count = parseInt(String(fav.count), 10) || 0;
+        var lang = favRoot.getAttribute('data-lang') || 'hu';
+        favRoot.hidden = false;
+        favRoot.setAttribute('data-mode', 'event');
+        favRoot.setAttribute('data-entity-type', fav.entityType || 'event');
+        favRoot.setAttribute('data-entity-id', String(fav.entityId || 0));
+        favRoot.setAttribute('data-active', active ? '1' : '0');
+        favRoot.setAttribute('data-count', String(count));
+        if (fav.picker) {
+            favRoot.setAttribute('data-event-picker', JSON.stringify(fav.picker));
+        } else {
+            favRoot.removeAttribute('data-event-picker');
+        }
+        var btn = favRoot.querySelector('[data-public-favorite-btn]');
+        var countEl = favRoot.querySelector('[data-public-favorite-count]');
+        if (btn) {
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            btn.setAttribute(
+                'aria-label',
+                active
+                    ? (lang === 'en' ? 'Remove from favorites' : 'Kedvenc törlése')
+                    : (lang === 'en' ? 'Add to favorites' : 'Kedvencnek jelölés')
+            );
+        }
+        if (countEl) {
+            countEl.textContent = String(count);
+        }
+    }
+
     function openPreview(id) {
+        if (currentPreviewId !== null) {
+            snapshotFavoriteToMap(currentPreviewId);
+        }
         var data = previewMap[String(id)] || previewMap[id];
         if (!data) return;
 
@@ -220,6 +319,7 @@ declare(strict_types=1);
         setVisible(venueWrap, venueEl, data.venue || '');
         setVisible(orgWrap, orgEl, data.organizer || '');
         fillStyles(stylesEl, data.mainStyles, data.supplementaryStyles);
+        applyFavorite(data.favorite || null);
 
         var detailsUrl = data.url || '#';
         ctaEl.href = detailsUrl;
@@ -237,10 +337,14 @@ declare(strict_types=1);
             dialog.setAttribute('open', 'open');
         }
         document.body.classList.add('events-cal-preview-open');
+        currentPreviewId = id;
         trackPreviewOpen(id);
     }
 
     function closePreview() {
+        if (currentPreviewId !== null) {
+            snapshotFavoriteToMap(currentPreviewId);
+        }
         if (typeof dialog.close === 'function') {
             dialog.close();
         } else {

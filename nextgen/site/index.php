@@ -52,15 +52,30 @@ $quickNews = latinfo_home_quick_news($news, 3);
 $dayEvents = latinfo_home_today_tomorrow_events($db);
 $homeEventRows = array_merge($dayEvents['today'], $dayEvents['tomorrow']);
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $homeEventRows);
-$organizersByEventId = events_calendar_load_organizers_by_event_id($db, $homeEventRows);
+$organizersByEventId = events_calendar_load_organizer_rows_by_event_id($db, $homeEventRows);
 $stylesByEventId = events_public_load_styles_by_event_id($db, $homeEventRows);
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+if (!function_exists('user_is_logged_in')) {
+    require_once dirname(__DIR__) . '/user/includes/auth.php';
+}
+$publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteDialogLang = $lang;
+$djsByEventId = [];
+$bandsByEventId = [];
+if ($publicFavoritesEnabled) {
+    $djsByEventId = events_calendar_load_tags_by_types_for_events($db, $homeEventRows, ['dj']);
+    $bandsByEventId = events_calendar_load_tags_by_types_for_events($db, $homeEventRows, ['zenekar']);
+}
 $calendarPreviewById = events_calendar_preview_build_map(
     $homeEventRows,
     $categoriesByEventId,
     $organizersByEventId,
     $lang,
     $stylesByEventId['main'],
-    $stylesByEventId['supplementary']
+    $stylesByEventId['supplementary'],
+    $publicFavoritesEnabled,
+    $djsByEventId,
+    $bandsByEventId
 );
 $djSpotlight = latinfo_home_dj_spotlight($db, $lang);
 

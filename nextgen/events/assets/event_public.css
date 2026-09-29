@@ -6470,12 +6470,35 @@ a.home-public-map-popup__title:hover {
 }
 
 .events-cal-preview__title {
-    margin: 0 0 0.75rem;
+    margin: 0;
     font-family: var(--ev-font);
     font-size: 1.2rem;
     font-weight: 700;
     line-height: 1.25;
     color: var(--li-green-dark);
+}
+
+.events-cal-preview__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    margin: 0 0 0.75rem;
+}
+
+.events-cal-preview__title-row .events-cal-preview__title {
+    flex: 1 1 10rem;
+    min-width: 0;
+}
+
+.events-cal-preview__favorite {
+    flex: 0 0 auto;
+    margin-top: 0.05rem;
+}
+
+.events-cal-preview__favorite[hidden] {
+    display: none !important;
 }
 
 .events-cal-preview__title-link {

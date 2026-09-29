@@ -60,16 +60,31 @@ $mapPayload = $view === 'map'
     : ['markers' => [], 'geocode_jobs' => [], 'skipped' => 0, 'pending' => 0, 'total' => 0];
 $calendarColorLegend = [];
 $calendarPreviewById = [];
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+if (!function_exists('user_is_logged_in')) {
+    require_once dirname(__DIR__) . '/user/includes/auth.php';
+}
+$publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteDialogLang = $lang;
 if ($view === 'cal' || $view === 'mcal') {
-    $organizersByEventId = events_calendar_load_organizers_by_event_id($db, $rows);
+    $organizersByEventId = events_calendar_load_organizer_rows_by_event_id($db, $rows);
     $stylesByEventId = events_public_load_styles_by_event_id($db, $rows);
+    $djsByEventId = [];
+    $bandsByEventId = [];
+    if ($publicFavoritesEnabled) {
+        $djsByEventId = events_calendar_load_tags_by_types_for_events($db, $rows, ['dj']);
+        $bandsByEventId = events_calendar_load_tags_by_types_for_events($db, $rows, ['zenekar']);
+    }
     $calendarPreviewById = events_calendar_preview_build_map(
         $rows,
         $categoriesByEventId,
         $organizersByEventId,
         $lang,
         $stylesByEventId['main'],
-        $stylesByEventId['supplementary']
+        $stylesByEventId['supplementary'],
+        $publicFavoritesEnabled,
+        $djsByEventId,
+        $bandsByEventId
     );
     if ($view === 'cal') {
         $calendarColorLegend = events_admin_calendar_category_legend_items($db, $lang);
@@ -271,7 +286,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page event-public-page--home<?= $view === 'mcal' ? ' event-public-page--mcal' : '' ?>">
+<body class="event-public-page event-public-page--home<?= $view === 'mcal' ? ' event-public-page--mcal' : '' ?>"<?php if ($publicFavoritesEnabled && ($view === 'cal' || $view === 'mcal')): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell<?= $view === 'mcal' ? ' event-shell--mcal' : '' ?>">
 <article class="event-public home-public<?= $view === 'mcal' ? ' home-public--mcal' : '' ?>">
@@ -378,6 +393,9 @@ header('Content-Type: text/html; charset=UTF-8');
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
 <?php if (($view === 'cal' || $view === 'mcal') && $calendarPreviewById !== []): ?>
 <?php require __DIR__ . '/partials/public_calendar_event_preview.php'; ?>
+<?php endif; ?>
+<?php if ($publicFavoritesEnabled && ($view === 'cal' || $view === 'mcal')): ?>
+<?php require __DIR__ . '/partials/public_favorite_footer.php'; ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/admin_event_filters_script.php'; ?>
 <?php require __DIR__ . '/partials/public_event_filters_auto_script.php'; ?>
