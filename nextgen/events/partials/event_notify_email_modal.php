@@ -70,6 +70,7 @@ $templatesJson = json_encode(
                 <div class="form-row form-row-2">
                     <div class="form-group">
                         <div class="event-notify-modal__label-row">
+                            <label for="notify_template_id">Sablon</label>
                             <a
                                 class="event-notify-modal__tpl-link"
                                 href="<?= h($templatesListUrl) ?>"
@@ -87,10 +88,10 @@ $templatesJson = json_encode(
                         </div>
                         <?php if ($notifyEmailTemplatesRendered === []): ?>
                             <p class="help">Nincs sablon. <a href="<?= h(nextgen_url('config/levelsablonok/letrehoz.php')) ?>" target="_blank" rel="noopener">Új sablon</a></p>
-                            <input type="hidden" name="notify_template_id" value="0">
+                            <input type="hidden" name="notify_template_id" id="notify_template_id" value="0">
                         <?php else: ?>
                             <div class="teszt-email-sor">
-                                <select id="notify_template_id" name="notify_template_id" aria-label="Levélsablon">
+                                <select id="notify_template_id" name="notify_template_id">
                                     <?php foreach ($notifyEmailTemplatesRendered as $tpl): ?>
                                         <option value="<?= (int) $tpl['id'] ?>"<?= (int) $tpl['id'] === $selectedTplId ? ' selected' : '' ?>>
                                             <?= h($tpl['nev'] . ' (' . $tpl['kod'] . ')') ?>
