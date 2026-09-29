@@ -30,10 +30,7 @@ if (!function_exists('user_is_logged_in')) {
 
 $state = latinfo_favorites_state($dbFav, $favoriteEntityType, $favoriteEntityId);
 $isLoggedIn = user_is_logged_in();
-// Bejelentkezve az esemény oldalon is közvetlen toggle; picker csak vendégnél.
-$isEventPicker = !$isLoggedIn
-    && $favoriteEntityType === LATINFO_FAVORITE_TYPE_EVENT
-    && $favoriteEventPicker !== null;
+$isEventPicker = $favoriteEntityType === LATINFO_FAVORITE_TYPE_EVENT && $favoriteEventPicker !== null;
 if ($isEventPicker && !empty($favoriteEventPicker['items']) && is_array($favoriteEventPicker['items'])) {
     foreach ($favoriteEventPicker['items'] as $pickRow) {
         if (!empty($pickRow['active'])) {

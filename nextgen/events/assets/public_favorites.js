@@ -249,10 +249,7 @@ function updateWidget(root, active, count) {
         if (!raw) {
             return toggleSimple(root);
         }
-        // Bejelentkezve: újra kattintás = közvetlen ki/be, nem kell picker.
-        if (root.getAttribute('data-logged-in') === '1' && root.getAttribute('data-active') === '1') {
-            return toggleSimple(root);
-        }
+        // Bejelentkezve is a választó jön elő az eseménynél (aktív / inaktív egyaránt).
         var picker;
         try {
             picker = JSON.parse(raw);
@@ -377,10 +374,7 @@ function updateWidget(root, active, count) {
                 if (!ok) {
                     return;
                 }
-                // Bejelentkezve: mindig közvetlen mentés / törlés (újra kattintás).
-                if (root.getAttribute('data-logged-in') === '1') {
-                    return toggleSimple(root);
-                }
+        // Bejelentkezve az esemény szíven is jöjjön a választó; entitásoldalon marad a toggle.
                 if (root.getAttribute('data-mode') === 'event') {
                     return openEventPicker(root);
                 }
