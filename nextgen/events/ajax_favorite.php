@@ -69,6 +69,45 @@ try {
         exit;
     }
 
+    if ($action === 'states') {
+        $rawItems = $_POST['items'] ?? '';
+        $decoded = is_string($rawItems) ? json_decode($rawItems, true) : $rawItems;
+        if (!is_array($decoded)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Érvénytelen lista.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $pairs = [];
+        foreach ($decoded as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $type = latinfo_favorites_normalize_type((string) ($row['type'] ?? ''));
+            $id = (int) ($row['id'] ?? 0);
+            if ($type === null || $id <= 0) {
+                continue;
+            }
+            $pairs[] = ['type' => $type, 'id' => $id];
+        }
+        $activeSet = latinfo_favorites_active_set_for_actor($db, $actorKey, $pairs);
+        $results = [];
+        foreach ($pairs as $pair) {
+            $key = $pair['type'] . ':' . $pair['id'];
+            $results[] = [
+                'type' => $pair['type'],
+                'id' => $pair['id'],
+                'active' => isset($activeSet[$key]),
+                'count' => latinfo_favorites_count($db, $pair['type'], $pair['id']),
+            ];
+        }
+        echo json_encode([
+            'ok' => true,
+            'results' => $results,
+            'logged_in' => $userId > 0,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($action === 'batch') {
         $activeRaw = (string) ($_POST['active'] ?? '1');
         $active = $activeRaw === '1' || $activeRaw === 'true';

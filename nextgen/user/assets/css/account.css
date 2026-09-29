@@ -487,22 +487,13 @@ body.event-public-page .user-account-shell {
 
 .user-fav-card__body {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.65rem;
     min-width: 0;
     padding: 0.7rem 0.35rem 0.7rem 0;
     text-decoration: none;
     color: inherit;
-}
-
-.user-fav-card__type {
-    flex-shrink: 0;
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--ua-muted);
 }
 
 .user-fav-card__title {
@@ -602,25 +593,8 @@ body.event-public-page .user-account-shell {
     }
 
     .user-fav-card__body {
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-areas:
-            "type count"
-            "title title";
-        gap: 0.35rem 0.5rem;
+        gap: 0.45rem;
         padding: 0.15rem 0;
-    }
-
-    .user-fav-card__type {
-        grid-area: type;
-    }
-
-    .user-fav-card__title {
-        grid-area: title;
-    }
-
-    .user-fav-card__public-count {
-        grid-area: count;
-        justify-self: end;
     }
 
     .user-fav-card__heart {

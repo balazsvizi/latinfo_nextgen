@@ -80,13 +80,6 @@ $typeLabels = [
     LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
     LATINFO_FAVORITE_TYPE_ZENEKAR => 'Zenekarok',
 ];
-$typeSingular = [
-    LATINFO_FAVORITE_TYPE_EVENT => 'Esemény',
-    LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervező',
-    LATINFO_FAVORITE_TYPE_VENUE => 'Helyszín',
-    LATINFO_FAVORITE_TYPE_DJ => 'DJ',
-    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Zenekar',
-];
 $favoritesTotal = 0;
 foreach ($favoritesByType as $items) {
     $favoritesTotal += count($items);
@@ -217,7 +210,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                 $itemLabel = (string) ($item['label'] ?? '');
                                 $itemUrl = (string) ($item['url'] ?? '#');
                                 $itemCount = (int) ($item['count'] ?? 0);
-                                $itemTypeLabel = (string) ($typeSingular[$itemType] ?? $itemType);
                                 ?>
                                 <li
                                     class="user-fav-card"
@@ -228,7 +220,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                     data-item-label="<?= h($itemLabel) ?>"
                                 >
                                     <a class="user-fav-card__body" href="<?= h($itemUrl) ?>">
-                                        <span class="user-fav-card__type"><?= h($itemTypeLabel) ?></span>
                                         <span class="user-fav-card__title"><?= h($itemLabel) ?></span>
                                         <span class="user-fav-card__public-count" title="Összes szívecske">
                                             <span aria-hidden="true">♥</span>

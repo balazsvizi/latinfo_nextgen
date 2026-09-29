@@ -249,7 +249,6 @@ function updateWidget(root, active, count) {
         if (!raw) {
             return toggleSimple(root);
         }
-        // Bejelentkezve is a választó jön elő az eseménynél (aktív / inaktív egyaránt).
         var picker;
         try {
             picker = JSON.parse(raw);
@@ -259,15 +258,60 @@ function updateWidget(root, active, count) {
         var dlg = eventDialog();
         var listEl = qs('[data-public-favorite-event-choices]', dlg);
         var lang = root.getAttribute('data-lang') || 'hu';
-        buildEventChoices(listEl, picker, lang);
-        qsa('[data-public-favorite-event-cancel]', dlg).forEach(function (cancelBtn) {
-            cancelBtn.onclick = function () {
-                if (typeof dlg.close === 'function') {
-                    dlg.close('cancel');
-                }
-            };
+        var items = (picker && picker.items) || [];
+        var statePayload = items.map(function (item) {
+            return { type: item.type, id: item.id };
         });
-        return openDialog(dlg).then(function (val) {
+
+        return postForm({
+            action: 'states',
+            items: JSON.stringify(statePayload),
+            lang: lang,
+        }).then(function (st) {
+            if (st.ok && st.json && st.json.ok && Array.isArray(st.json.results)) {
+                if (st.json.logged_in) {
+                    markLoggedIn(root);
+                }
+                var byKey = {};
+                st.json.results.forEach(function (row) {
+                    byKey[row.type + ':' + row.id] = !!row.active;
+                    syncPickerActive(root, row.type, row.id, !!row.active);
+                    if (row.type === root.getAttribute('data-entity-type')
+                        && String(row.id) === String(root.getAttribute('data-entity-id'))) {
+                        // count always from event row if present
+                    }
+                });
+                items.forEach(function (item) {
+                    var key = item.type + ':' + item.id;
+                    if (Object.prototype.hasOwnProperty.call(byKey, key)) {
+                        item.active = byKey[key];
+                    }
+                });
+                picker.items = items;
+                root.setAttribute('data-event-picker', JSON.stringify(picker));
+                var anyActive = items.some(function (item) {
+                    return !!item.active;
+                });
+                var eventState = st.json.results.find(function (row) {
+                    return row.type === 'event'
+                        && String(row.id) === String(root.getAttribute('data-entity-id'));
+                });
+                var count = parseInt(root.getAttribute('data-count'), 10) || 0;
+                if (eventState && typeof eventState.count === 'number') {
+                    count = eventState.count;
+                }
+                updateWidget(root, anyActive, count);
+            }
+            buildEventChoices(listEl, picker, lang);
+            qsa('[data-public-favorite-event-cancel]', dlg).forEach(function (cancelBtn) {
+                cancelBtn.onclick = function () {
+                    if (typeof dlg.close === 'function') {
+                        dlg.close('cancel');
+                    }
+                };
+            });
+            return openDialog(dlg);
+        }).then(function (val) {
             if (val !== 'save') {
                 return;
             }
@@ -282,7 +326,7 @@ function updateWidget(root, active, count) {
                     toOff.push(item);
                 }
             });
-            var chain = Promise.resolve({ ok: true, json: { results: [] } });
+            var chain = Promise.resolve({ ok: true, json: { results: [], logged_in: false } });
             if (toOff.length) {
                 chain = chain.then(function () {
                     return postForm({
@@ -313,6 +357,7 @@ function updateWidget(root, active, count) {
                             json: {
                                 results: merged,
                                 logged_in: next && next.json ? next.json.logged_in : false,
+                                error: next && next.json ? next.json.error : '',
                             },
                         };
                     });
@@ -341,11 +386,11 @@ function updateWidget(root, active, count) {
                     entity_type: 'event',
                     entity_id: eventId,
                     lang: lang,
-                }).then(function (st) {
+                }).then(function (st2) {
                     var count = parseInt(root.getAttribute('data-count'), 10) || 0;
-                    if (st.ok && st.json && st.json.ok) {
-                        count = st.json.count;
-                        if (st.json.logged_in) {
+                    if (st2.ok && st2.json && st2.json.ok) {
+                        count = st2.json.count;
+                        if (st2.json.logged_in) {
                             markLoggedIn(root);
                         }
                     }
