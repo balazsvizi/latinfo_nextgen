@@ -2761,17 +2761,29 @@ dialog.event-notify-modal::backdrop {
     resize: vertical;
     box-sizing: border-box;
 }
-.event-notify-refs {
-    margin: 0 0 1rem;
+.event-notify-modal .form-group input,
+.event-notify-modal .form-group select,
+.event-notify-modal .form-group textarea {
+    max-width: none;
 }
-.event-notify-refs .levelsablon-refs__chip {
-    max-width: 100%;
+.event-notify-modal__label-row {
+    display: flex;
+    align-items: center;
+    min-height: 1.5rem;
+    margin-bottom: 0.5rem;
 }
-.event-notify-refs .levelsablon-refs__chip-token {
-    max-width: 14rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.event-notify-modal__tpl-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted, #6b7280);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    padding: 0.15rem;
+    line-height: 0;
+}
+.event-notify-modal__tpl-link:hover {
+    color: var(--primary, #2563eb);
 }
 body.event-notify-modal-open {
     overflow: hidden;

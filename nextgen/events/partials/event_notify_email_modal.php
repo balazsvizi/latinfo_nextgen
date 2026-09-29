@@ -12,7 +12,6 @@ declare(strict_types=1);
  * @var list<string> $notifyEmailRecipients
  * @var string $notifyEmailBcc
  * @var list<array<string, mixed>> $notifyEmailSentLogs
- * @var array<string, string> $notifyEmailPlaceholders
  */
 
 $notifyEmailTemplatesRendered = $notifyEmailTemplatesRendered ?? [];
@@ -22,33 +21,16 @@ $notifyEmailSmtpId = (int) ($notifyEmailSmtpId ?? 0);
 $notifyEmailRecipients = $notifyEmailRecipients ?? [];
 $notifyEmailBcc = (string) ($notifyEmailBcc ?? EVENTS_NOTIFY_EMAIL_DEFAULT_BCC);
 $notifyEmailSentLogs = $notifyEmailSentLogs ?? [];
-$notifyEmailPlaceholders = $notifyEmailPlaceholders ?? [];
 $selectedTplId = (int) ($notifyEmailSelected['id'] ?? 0);
 $initialSubject = (string) ($notifyEmailSelected['targy'] ?? '');
 $initialHtml = (string) ($notifyEmailSelected['html_tartalom'] ?? '');
 $toDefault = implode(', ', $notifyEmailRecipients);
 $canSend = $notifyEmailSmtpAccounts !== [];
+$templatesListUrl = nextgen_url('config/levelsablonok/');
 $templatesJson = json_encode(
     $notifyEmailTemplatesRendered,
     JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP
 );
-
-$notifyRefFields = [];
-foreach (events_levelsablon_placeholder_catalog_merge(
-    events_notify_email_placeholder_catalog(),
-    events_levelsablon_common_placeholder_catalog()
-) as $row) {
-    $token = (string) ($row['token'] ?? '');
-    if ($token === '') {
-        continue;
-    }
-    $value = (string) ($notifyEmailPlaceholders[$token] ?? '');
-    $notifyRefFields[] = [
-        'token' => $token,
-        'label' => (string) ($row['label'] ?? $token),
-        'value' => $value,
-    ];
-}
 ?>
 <dialog class="event-notify-modal" id="event-notify-email-dialog" aria-labelledby="event-notify-email-title">
     <div class="event-notify-modal__inner">
@@ -87,13 +69,28 @@ foreach (events_levelsablon_placeholder_catalog_merge(
 
                 <div class="form-row form-row-2">
                     <div class="form-group">
-                        <label for="notify_template_id">Levélsablon</label>
+                        <div class="event-notify-modal__label-row">
+                            <a
+                                class="event-notify-modal__tpl-link"
+                                href="<?= h($templatesListUrl) ?>"
+                                target="_blank"
+                                rel="noopener"
+                                title="Levélsablonok"
+                                aria-label="Levélsablonok"
+                            >
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 4h7l3 3v13H8z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 4v3h3"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 11h6M10 15h6"/>
+                                </svg>
+                            </a>
+                        </div>
                         <?php if ($notifyEmailTemplatesRendered === []): ?>
                             <p class="help">Nincs sablon. <a href="<?= h(nextgen_url('config/levelsablonok/letrehoz.php')) ?>" target="_blank" rel="noopener">Új sablon</a></p>
                             <input type="hidden" name="notify_template_id" value="0">
                         <?php else: ?>
                             <div class="teszt-email-sor">
-                                <select id="notify_template_id" name="notify_template_id">
+                                <select id="notify_template_id" name="notify_template_id" aria-label="Levélsablon">
                                     <?php foreach ($notifyEmailTemplatesRendered as $tpl): ?>
                                         <option value="<?= (int) $tpl['id'] ?>"<?= (int) $tpl['id'] === $selectedTplId ? ' selected' : '' ?>>
                                             <?= h($tpl['nev'] . ' (' . $tpl['kod'] . ')') ?>
@@ -102,10 +99,6 @@ foreach (events_levelsablon_placeholder_catalog_merge(
                                 </select>
                                 <button type="button" class="btn btn-secondary" id="event-notify-regen" title="Sablon újragenerálása">Újragenerálás</button>
                             </div>
-                            <p class="help">
-                                Megnyitáskor a default sablonból generálódik a levél.
-                                <a href="<?= h(nextgen_url('config/levelsablonok/')) ?>" target="_blank" rel="noopener">Sablonok / default beállítás</a>
-                            </p>
                         <?php endif; ?>
                     </div>
                     <div class="form-group">
@@ -130,7 +123,6 @@ foreach (events_levelsablon_placeholder_catalog_merge(
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </select>
-                        <p class="help">Preferált: <code><?= h(EVENTS_NOTIFY_EMAIL_PREFERRED_FROM) ?></code></p>
                     </div>
                 </div>
 
@@ -150,7 +142,6 @@ foreach (events_levelsablon_placeholder_catalog_merge(
                             data-event-notify-recipients-url="<?= h(events_url('ajax_event_notify_recipients.php?event_id=' . (int) $id)) ?>"
                             placeholder="email@pelda.hu, masik@pelda.hu"
                         >
-                        <p class="help">Több cím vesszővel. Csak azok a partnerek, akiknél az „Event bekerült” kapcsoló be van kapcsolva.</p>
                         <p class="help event-notify-blocked" id="event-notify-blocked" hidden></p>
                     </div>
                     <div class="form-group">
@@ -161,40 +152,11 @@ foreach (events_levelsablon_placeholder_catalog_merge(
 
                 <div class="form-group">
                     <label for="notify_subject">Tárgy *</label>
-                    <input type="text" id="notify_subject" name="notify_subject" class="js-notify-insert-target" value="<?= h($initialSubject) ?>" required maxlength="255">
+                    <input type="text" id="notify_subject" name="notify_subject" value="<?= h($initialSubject) ?>" required maxlength="255">
                 </div>
-
-                <?php if ($notifyRefFields !== []): ?>
-                <div class="levelsablon-refs event-notify-refs">
-                    <div class="levelsablon-refs__head">
-                        <strong>Referenciás mezők</strong>
-                        <span class="help">Kattints: a fókuszált tárgyba vagy a levél szövegébe kerül (kitöltött érték).</span>
-                    </div>
-                    <div class="levelsablon-refs__chips">
-                        <?php foreach ($notifyRefFields as $ph): ?>
-                            <?php
-                            $preview = (string) $ph['value'];
-                            if (mb_strlen($preview) > 48) {
-                                $preview = mb_substr($preview, 0, 45) . '…';
-                            }
-                            ?>
-                            <button
-                                type="button"
-                                class="levelsablon-refs__chip js-notify-ref-chip"
-                                data-value="<?= h((string) $ph['value']) ?>"
-                                title="<?= h((string) $ph['token'] . ' → ' . (string) $ph['value']) ?>"
-                            >
-                                <span class="levelsablon-refs__chip-label"><?= h((string) $ph['label']) ?></span>
-                                <code class="levelsablon-refs__chip-token"><?= h($preview !== '' ? $preview : '–') ?></code>
-                            </button>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
 
                 <div class="form-group">
-                    <label for="notify_html">Levél szövege (HTML) *</label>
-                    <textarea id="notify_html" name="notify_html" class="js-notify-html-source" rows="14" required><?= h($initialHtml) ?></textarea>
+                    <textarea id="notify_html" name="notify_html" class="js-notify-html-source" rows="14" required aria-label="Levél szövege"><?= h($initialHtml) ?></textarea>
                 </div>
 
                 <?php if ($notifyEmailSentLogs !== []): ?>
@@ -250,19 +212,6 @@ foreach (events_levelsablon_placeholder_catalog_merge(
     var btnHtml = null;
     var btnSource = null;
     var formatBar = null;
-    var lastTarget = subjectEl || htmlEl;
-
-    function insertAtCursor(input, text) {
-        var start = input.selectionStart || 0;
-        var end = input.selectionEnd || 0;
-        var value = input.value || '';
-        input.value = value.slice(0, start) + text + value.slice(end);
-        var pos = start + text.length;
-        input.focus();
-        if (typeof input.setSelectionRange === 'function') {
-            input.setSelectionRange(pos, pos);
-        }
-    }
 
     function buildHtmlSourceEditor(textarea) {
         if (!textarea || textarea.dataset.htmlSourceEditor === '1') {
@@ -303,10 +252,11 @@ foreach (events_levelsablon_placeholder_catalog_merge(
             + '<button type="button" data-cmd="formatBlock" data-value="p" title="Bekezdés">Bekezdés</button>';
 
         visualEl = document.createElement('div');
-        visualEl.className = 'html-editor-area js-notify-insert-target';
+        visualEl.className = 'html-editor-area';
         visualEl.contentEditable = 'true';
         visualEl.setAttribute('role', 'textbox');
         visualEl.setAttribute('aria-multiline', 'true');
+        visualEl.setAttribute('aria-label', 'Levél szövege');
         visualEl.innerHTML = textarea.value || '';
 
         textarea.parentNode.insertBefore(wrapper, textarea);
@@ -314,7 +264,7 @@ foreach (events_levelsablon_placeholder_catalog_merge(
         wrapper.appendChild(formatBar);
         wrapper.appendChild(visualEl);
         wrapper.appendChild(textarea);
-        textarea.classList.add('html-editor-source', 'js-notify-insert-target');
+        textarea.classList.add('html-editor-source');
         textarea.hidden = true;
 
         function syncHtmlToField() {
@@ -352,8 +302,6 @@ foreach (events_levelsablon_placeholder_catalog_merge(
         }
 
         visualEl.addEventListener('input', syncHtmlToField);
-        visualEl.addEventListener('focus', function () { lastTarget = visualEl; });
-        textarea.addEventListener('focus', function () { lastTarget = textarea; });
 
         btnHtml.addEventListener('click', function () {
             setMode('html');
@@ -369,7 +317,6 @@ foreach (events_levelsablon_placeholder_catalog_merge(
             }
             e.preventDefault();
             visualEl.focus();
-            lastTarget = visualEl;
             var cmd = btn.getAttribute('data-cmd');
             if (cmd === 'createLink') {
                 var url = window.prompt('Link URL:', 'https://');
@@ -399,48 +346,13 @@ foreach (events_levelsablon_placeholder_catalog_merge(
                     visualEl.innerHTML = html || '';
                 }
             },
-            setMode: setMode,
-            insertText: function (text) {
-                if (mode === 'source') {
-                    insertAtCursor(textarea, text);
-                    lastTarget = textarea;
-                    return;
-                }
-                visualEl.focus();
-                lastTarget = visualEl;
-                try {
-                    document.execCommand('insertText', false, text);
-                } catch (err) {
-                    visualEl.appendChild(document.createTextNode(text));
-                }
-                syncHtmlToField();
-            }
+            setMode: setMode
         };
     }
 
     if (htmlEl) {
         buildHtmlSourceEditor(htmlEl);
     }
-
-    if (subjectEl) {
-        subjectEl.addEventListener('focus', function () { lastTarget = subjectEl; });
-    }
-
-    dialog.querySelectorAll('.js-notify-ref-chip').forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            var value = chip.getAttribute('data-value') || '';
-            if (value === '') return;
-            if (lastTarget === subjectEl || (lastTarget && lastTarget.id === 'notify_subject')) {
-                insertAtCursor(subjectEl, value);
-                return;
-            }
-            if (window.eventNotifyHtmlEditor) {
-                window.eventNotifyHtmlEditor.insertText(value);
-            } else if (htmlEl) {
-                insertAtCursor(htmlEl, value);
-            }
-        });
-    });
 
     function refreshRecipients() {
         var toEl = document.getElementById('notify_to');
