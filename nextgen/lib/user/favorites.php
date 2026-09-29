@@ -341,6 +341,86 @@ function latinfo_favorites_visitor_actor_key(string $visitorToken): string
     return 'v:' . hash('sha256', $visitorToken);
 }
 
+/**
+ * Actor kulcsok megjelenítendő neve (u:id → felhasználónév, v:… → Vendég).
+ *
+ * @param list<string> $actorKeys
+ * @return array<string, string>
+ */
+function latinfo_favorites_actor_labels(PDO $db, array $actorKeys): array
+{
+    $labels = [];
+    $userIds = [];
+    foreach ($actorKeys as $key) {
+        $key = trim((string) $key);
+        if ($key === '' || isset($labels[$key])) {
+            continue;
+        }
+        if (str_starts_with($key, 'u:')) {
+            $uid = (int) substr($key, 2);
+            if ($uid > 0) {
+                $userIds[$uid] = $key;
+            } else {
+                $labels[$key] = 'Felhasználó';
+            }
+            continue;
+        }
+        if (str_starts_with($key, 'v:')) {
+            $labels[$key] = 'Vendég';
+            continue;
+        }
+        $labels[$key] = 'Ismeretlen';
+    }
+
+    if ($userIds === []) {
+        return $labels;
+    }
+
+    if (!function_exists('latinfo_users_table_ready')) {
+        require_once __DIR__ . '/users.php';
+    }
+    if (!latinfo_users_table_ready($db)) {
+        foreach ($userIds as $uid => $key) {
+            $labels[$key] = 'Felhasználó #' . $uid;
+        }
+
+        return $labels;
+    }
+
+    try {
+        $ids = array_keys($userIds);
+        $ph = implode(',', array_fill(0, count($ids), '?'));
+        $st = $db->prepare("
+            SELECT `id`, `name`, `email`
+            FROM `latinfo_users`
+            WHERE `id` IN ({$ph})
+        ");
+        $st->execute($ids);
+        $found = [];
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $uid = (int) ($row['id'] ?? 0);
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                $email = trim((string) ($row['email'] ?? ''));
+                $name = $email !== '' ? $email : ('Felhasználó #' . $uid);
+            }
+            $found[$uid] = $name;
+        }
+        foreach ($userIds as $uid => $key) {
+            $labels[$key] = $found[$uid] ?? ('Felhasználó #' . $uid);
+        }
+    } catch (Throwable $ex) {
+        error_log('latinfo_favorites_actor_labels: ' . $ex->getMessage());
+        foreach ($userIds as $uid => $key) {
+            if (!isset($labels[$key])) {
+                $labels[$key] = 'Felhasználó #' . $uid;
+            }
+        }
+    }
+
+    return $labels;
+}
+
 function latinfo_favorites_issue_visitor_token(): string
 {
     return bin2hex(random_bytes(32));

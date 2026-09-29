@@ -327,15 +327,21 @@ function latinfo_users_list(PDO $db, ?string $search = null, string $order = 'cr
         return [];
     }
     $allowedOrder = [
-        'id' => '`id`',
-        'name' => '`name`',
-        'email' => '`email`',
-        'is_active' => '`is_active`',
-        'created_at' => '`created_at`',
-        'last_login_at' => '`last_login_at`',
+        'id' => 'u.`id`',
+        'name' => 'u.`name`',
+        'email' => 'u.`email`',
+        'is_active' => 'u.`is_active`',
+        'created_at' => 'u.`created_at`',
+        'last_login_at' => 'u.`last_login_at`',
+        'oauth_providers' => '`oauth_providers`',
+        'favorites_count' => '`favorites_count`',
     ];
-    $orderSql = $allowedOrder[$order] ?? '`created_at`';
+    $orderSql = $allowedOrder[$order] ?? 'u.`created_at`';
     $dirSql = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+    // NULL-ok a végére (utolsó belépés / SSO nélkül)
+    if (in_array($order, ['last_login_at', 'oauth_providers'], true)) {
+        $orderSql = $orderSql . ' IS NULL, ' . $orderSql;
+    }
     $where = '';
     $params = [];
     if ($search !== null && trim($search) !== '') {

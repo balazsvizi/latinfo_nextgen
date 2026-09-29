@@ -13,7 +13,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 
 $kereso = trim((string) ($_GET['kereso'] ?? ''));
 $order = isset($_GET['order']) && in_array((string) $_GET['order'], [
-    'id', 'name', 'email', 'is_active', 'created_at', 'last_login_at',
+    'id', 'name', 'email', 'oauth_providers', 'favorites_count', 'is_active', 'created_at', 'last_login_at',
 ], true) ? (string) $_GET['order'] : 'created_at';
 $dirParam = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
 if (!isset($_GET['dir']) && !isset($_GET['order'])) {
@@ -60,8 +60,8 @@ $facebookOn = defined('FACEBOOK_APP_SECRET') && trim((string) FACEBOOK_APP_SECRE
                     <th><?= sort_th('ID', 'id', $order, $dirParam, $getParams) ?></th>
                     <th><?= sort_th('Név', 'name', $order, $dirParam, $getParams) ?></th>
                     <th><?= sort_th('E-mail', 'email', $order, $dirParam, $getParams) ?></th>
-                    <th>SSO</th>
-                    <th>Kedvencek</th>
+                    <th><?= sort_th('SSO', 'oauth_providers', $order, $dirParam, $getParams) ?></th>
+                    <th><?= sort_th('Kedvencek', 'favorites_count', $order, $dirParam, $getParams) ?></th>
                     <th><?= sort_th('Státusz', 'is_active', $order, $dirParam, $getParams) ?></th>
                     <th><?= sort_th('Utolsó belépés', 'last_login_at', $order, $dirParam, $getParams) ?></th>
                     <th><?= sort_th('Létrehozva', 'created_at', $order, $dirParam, $getParams) ?></th>

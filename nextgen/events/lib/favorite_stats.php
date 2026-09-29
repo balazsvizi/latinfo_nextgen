@@ -419,8 +419,13 @@ function latinfo_favorite_stats(PDO $db, array $params): array
             LIMIT 40
         ");
         $st->execute($bind);
+        $recentRows = $st->fetchAll(PDO::FETCH_ASSOC);
+        $actorLabels = latinfo_favorites_actor_labels(
+            $db,
+            array_map(static fn (array $r): string => (string) ($r['actor_key'] ?? ''), $recentRows)
+        );
         $recent = [];
-        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        foreach ($recentRows as $row) {
             $type = (string) ($row['entity_type'] ?? '');
             $eid = (int) ($row['entity_id'] ?? 0);
             $meta = latinfo_favorites_entity_public_meta($db, $type, $eid, 'hu');
@@ -433,6 +438,7 @@ function latinfo_favorite_stats(PDO $db, array $params): array
                 'label' => $meta['label'] ?? ('#' . $eid),
                 'url' => $meta['url'] ?? '',
                 'actor_kind' => str_starts_with($actorKey, 'u:') ? 'user' : 'visitor',
+                'actor_label' => $actorLabels[$actorKey] ?? (str_starts_with($actorKey, 'u:') ? 'Felhasználó' : 'Vendég'),
                 'created_at' => (string) ($row['created_at'] ?? ''),
             ];
         }

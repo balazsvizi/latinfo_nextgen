@@ -304,7 +304,7 @@ $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APO
                                         <?= h((string) ($row['label'] ?? '')) ?>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= ($row['actor_kind'] ?? '') === 'user' ? 'Fiók' : 'Vendég' ?></td>
+                                <td><?= h((string) ($row['actor_label'] ?? (($row['actor_kind'] ?? '') === 'user' ? 'Felhasználó' : 'Vendég'))) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
