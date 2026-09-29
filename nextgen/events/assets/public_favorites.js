@@ -81,9 +81,16 @@
         return new Promise(function (resolve) {
             function onClose() {
                 dlg.removeEventListener('close', onClose);
+                dlg.removeEventListener('click', onBackdrop);
                 resolve(dlg.returnValue || '');
             }
+            function onBackdrop(ev) {
+                if (ev.target === dlg && typeof dlg.close === 'function') {
+                    dlg.close('cancel');
+                }
+            }
             dlg.addEventListener('close', onClose);
+            dlg.addEventListener('click', onBackdrop);
             dlg.showModal();
         });
     }
@@ -91,47 +98,69 @@
     function buildEventChoices(listEl, picker, lang) {
         listEl.innerHTML = '';
         var items = (picker && picker.items) || [];
+        var kindLabels = {
+            event: lang === 'en' ? 'Event' : 'Esemény',
+            organizer: lang === 'en' ? 'Organizer' : 'Szervező',
+            venue: lang === 'en' ? 'Venue' : 'Helyszín',
+            dj: 'DJ',
+            zenekar: lang === 'en' ? 'Band' : 'Zenekar',
+        };
+        var order = ['event', 'organizer', 'venue', 'dj', 'zenekar'];
+        var groups = {};
         items.forEach(function (item) {
             if (!item || !item.type || !item.id) {
                 return;
             }
-            var li = document.createElement('li');
-            li.className = 'public-favorite-dialog__choice';
-            var label = document.createElement('label');
-            label.className = 'public-favorite-dialog__choice-label';
-            var cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.name = 'fav_pick[]';
-            cb.value = item.type + ':' + item.id;
-            cb.checked = !!item.active;
-            cb.dataset.type = item.type;
-            cb.dataset.id = String(item.id);
-            var textWrap = document.createElement('span');
-            textWrap.className = 'public-favorite-dialog__choice-text';
-            var kindLabels = {
-                event: lang === 'en' ? 'Event' : 'Esemény',
-                organizer: lang === 'en' ? 'Organizer' : 'Szervező',
-                venue: lang === 'en' ? 'Venue' : 'Helyszín',
-                dj: 'DJ',
-                zenekar: lang === 'en' ? 'Band' : 'Zenekar',
-            };
-            var kindText = item.groupLabel || kindLabels[item.type] || item.type;
-            if (kindText) {
-                var kind = document.createElement('span');
-                kind.className = 'public-favorite-dialog__choice-kind';
-                kind.textContent = kindText;
-                textWrap.appendChild(kind);
+            if (!groups[item.type]) {
+                groups[item.type] = [];
             }
-            var name = document.createElement('span');
-            name.className = 'public-favorite-dialog__choice-name';
-            name.textContent = item.label || ('#' + item.id);
-            textWrap.appendChild(name);
-            label.appendChild(cb);
-            label.appendChild(textWrap);
-            li.appendChild(label);
-            listEl.appendChild(li);
+            groups[item.type].push(item);
         });
-        if (!listEl.children.length) {
+        var hasAny = false;
+        order.forEach(function (type) {
+            var groupItems = groups[type];
+            if (!groupItems || !groupItems.length) {
+                return;
+            }
+            hasAny = true;
+            var section = document.createElement('section');
+            section.className = 'public-favorite-dialog__group';
+            var heading = document.createElement('h3');
+            heading.className = 'public-favorite-dialog__group-title';
+            heading.textContent = groupItems[0].groupLabel || kindLabels[type] || type;
+            section.appendChild(heading);
+            var ul = document.createElement('ul');
+            ul.className = 'public-favorite-dialog__choices';
+            groupItems.forEach(function (item) {
+                var li = document.createElement('li');
+                li.className = 'public-favorite-dialog__choice';
+                var label = document.createElement('label');
+                label.className = 'public-favorite-dialog__choice-label';
+                var name = document.createElement('span');
+                name.className = 'public-favorite-dialog__choice-name';
+                name.textContent = item.label || ('#' + item.id);
+                var heart = document.createElement('span');
+                heart.className = 'public-favorite-dialog__choice-heart';
+                heart.setAttribute('aria-hidden', 'true');
+                heart.textContent = '♥';
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.name = 'fav_pick[]';
+                cb.value = item.type + ':' + item.id;
+                cb.checked = !!item.active;
+                cb.dataset.type = item.type;
+                cb.dataset.id = String(item.id);
+                cb.className = 'public-favorite-dialog__choice-input';
+                label.appendChild(name);
+                label.appendChild(heart);
+                label.appendChild(cb);
+                li.appendChild(label);
+                ul.appendChild(li);
+            });
+            section.appendChild(ul);
+            listEl.appendChild(section);
+        });
+        if (!hasAny) {
             var empty = document.createElement('p');
             empty.className = 'public-favorite-dialog__empty';
             empty.textContent = lang === 'en' ? 'Nothing to favorite on this event.' : 'Ehhez az eseményhez nincs választható elem.';

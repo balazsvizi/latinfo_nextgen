@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Bejelentkezés / fiók / kijelentkezés a nyilvános fejlécben.
+ * Bejelentkezés / fiók a nyilvános fejlécben (kijelentkezés az account oldalon).
  *
  * @var string $lang
  * @var array<string, string> $N events_public_nav_strings()
@@ -20,7 +20,6 @@ $returnPath = (string) ($_SERVER['REQUEST_URI'] ?? '/');
 $fallbackHome = defined('LATINFO_PUBLIC_HOME_URL') ? (string) LATINFO_PUBLIC_HOME_URL : site_url('/');
 $safeReturn = user_safe_return_path($returnPath, $fallbackHome);
 $loginHref = events_public_append_query(user_url('login.php'), ['return' => $safeReturn]);
-$logoutHref = events_public_append_query(user_url('logout.php'), ['return' => $safeReturn]);
 $accountHref = user_url('index.php');
 
 $loggedIn = user_is_logged_in();
@@ -45,12 +44,6 @@ $loggedInLabel = $displayName !== ''
             aria-label="<?= h($loggedInLabel) ?>"
             data-public-nav-track="user-account"
         ><?= h($displayName !== '' ? $displayName : (string) ($N['auth_account'] ?? '')) ?></a>
-        <a
-            class="event-user-auth__logout"
-            href="<?= h($logoutHref) ?>"
-            title="<?= h((string) ($N['auth_logout'] ?? '')) ?>"
-            data-public-nav-track="user-logout"
-        ><?= h((string) ($N['auth_logout'] ?? '')) ?></a>
     <?php else: ?>
         <a
             class="event-user-auth__login"

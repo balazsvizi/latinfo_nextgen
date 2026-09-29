@@ -141,9 +141,11 @@ function events_calendar_load_tags_by_types_for_events(PDO $db, array $rows, arr
 /**
  * @param list<array<string, mixed>> $rows
  * @param array<int, list<array{id: int, name: string, color: string}>> $categoriesByEventId
- * @param array<int, list<string>> $organizersByEventId
+ * @param array<int, list<string>>|array<int, list<array{id:int,name:string}>> $organizersByEventId
  * @param array<int, list<array{id: int, name: string}>> $mainStylesByEventId
  * @param array<int, list<array{id: int, name: string}>> $supplementaryStylesByEventId
+ * @param array<int, list<array{id:int,name:string}>> $djsByEventId
+ * @param array<int, list<array{id:int,name:string}>> $bandsByEventId
  * @return array<int, array<string, mixed>>
  */
 function events_calendar_preview_build_map(
@@ -152,10 +154,19 @@ function events_calendar_preview_build_map(
     array $organizersByEventId,
     string $lang = 'hu',
     array $mainStylesByEventId = [],
-    array $supplementaryStylesByEventId = []
+    array $supplementaryStylesByEventId = [],
+    bool $includeFavorites = false,
+    array $djsByEventId = [],
+    array $bandsByEventId = []
 ): array {
     require_once __DIR__ . '/event_public_lang.php';
     $strings = events_public_megjelenit_strings($lang);
+    $favoritesLibReady = false;
+    if ($includeFavorites) {
+        require_once dirname(__DIR__, 2) . '/lib/user/favorites.php';
+        $favoritesLibReady = latinfo_favorites_ensure_schema(getDb()) && latinfo_favorites_public_enabled(getDb());
+    }
+    $db = $favoritesLibReady ? getDb() : null;
     $map = [];
     foreach ($rows as $ev) {
         $eid = (int) ($ev['id'] ?? 0);
@@ -170,7 +181,26 @@ function events_calendar_preview_build_map(
                 $accent = $candidate;
             }
         }
-        $organizers = $organizersByEventId[$eid] ?? [];
+        $organizersRaw = $organizersByEventId[$eid] ?? [];
+        $organizerNames = [];
+        $organizerRows = [];
+        foreach ($organizersRaw as $orgItem) {
+            if (is_array($orgItem)) {
+                $organizerRows[] = [
+                    'id' => (int) ($orgItem['id'] ?? 0),
+                    'name' => (string) ($orgItem['name'] ?? ''),
+                ];
+                $name = trim((string) ($orgItem['name'] ?? ''));
+                if ($name !== '') {
+                    $organizerNames[] = $name;
+                }
+            } else {
+                $name = trim((string) $orgItem);
+                if ($name !== '') {
+                    $organizerNames[] = $name;
+                }
+            }
+        }
         $changePayload = events_event_change_preview_payload($ev, $lang, $strings);
         if ($changePayload !== null) {
             $changeStyle = events_event_change_calendar_block_style($ev);
@@ -178,12 +208,12 @@ function events_calendar_preview_build_map(
                 $accent = trim($m[1]);
             }
         }
-        $map[$eid] = [
+        $entry = [
             'name' => (string) ($ev['event_name'] ?? ''),
             'date' => events_admin_format_datum_cell($ev),
             'time' => events_admin_calendar_event_time_label($ev),
             'venue' => events_calendar_preview_venue_line($ev),
-            'organizer' => $organizers !== [] ? implode(', ', $organizers) : '',
+            'organizer' => $organizerNames !== [] ? implode(', ', $organizerNames) : '',
             'categories' => array_values(array_map(
                 static fn (array $cat): array => [
                     'name' => (string) ($cat['name'] ?? ''),
@@ -198,6 +228,35 @@ function events_calendar_preview_build_map(
             'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
             'change' => $changePayload,
         ];
+        if ($favoritesLibReady && $db instanceof PDO) {
+            $venueId = (int) ($ev['venue_id'] ?? 0);
+            $venueLabel = trim((string) ($ev['venue_name'] ?? ''));
+            if ($venueLabel === '') {
+                $venueLabel = trim((string) ($ev['venue_city'] ?? ''));
+            }
+            $venueForPicker = ($venueId > 0 && $venueLabel !== '')
+                ? ['id' => $venueId, 'label' => $venueLabel]
+                : null;
+            $picker = latinfo_favorites_build_event_picker(
+                $db,
+                $eid,
+                (string) ($ev['event_name'] ?? ''),
+                $lang,
+                $organizerRows,
+                $venueForPicker,
+                $djsByEventId[$eid] ?? [],
+                $bandsByEventId[$eid] ?? []
+            );
+            $entry['favorite'] = [
+                'enabled' => true,
+                'entityType' => LATINFO_FAVORITE_TYPE_EVENT,
+                'entityId' => $eid,
+                'active' => $picker['active'],
+                'count' => $picker['count'],
+                'picker' => ['items' => $picker['items']],
+            ];
+        }
+        $map[$eid] = $entry;
     }
 
     return $map;

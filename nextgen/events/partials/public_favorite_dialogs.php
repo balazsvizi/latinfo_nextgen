@@ -50,19 +50,12 @@ $closeLabel = $isEn ? 'Close' : 'Bezárás';
 </dialog>
 
 <dialog class="public-favorite-dialog public-favorite-dialog--pick" id="public-favorite-event-dialog" data-public-favorite-event-dialog aria-labelledby="public-favorite-event-title">
-    <form method="dialog" class="public-favorite-dialog__panel" data-public-favorite-event-form>
+    <form method="dialog" class="public-favorite-dialog__panel public-favorite-dialog__panel--pick" data-public-favorite-event-form>
         <button type="button" class="public-favorite-dialog__close" data-public-favorite-event-cancel aria-label="<?= h($closeLabel) ?>">
             <span aria-hidden="true">×</span>
         </button>
-        <div class="public-favorite-dialog__badge public-favorite-dialog__badge--pick" aria-hidden="true">
-            <span class="public-favorite-dialog__badge-heart">♥</span>
-        </div>
-        <h2 class="public-favorite-dialog__title" id="public-favorite-event-title"><?= h($isEn ? 'What do you love?' : 'Mit jelölsz kedvencnek?') ?></h2>
-        <p class="public-favorite-dialog__lead"><?= h($isEn ? 'Pick everything you want to follow from this event.' : 'Jelöld ki, mi kerüljön a kedvenceid közé ehhez az eseményhez.') ?></p>
-        <ul class="public-favorite-dialog__choices" data-public-favorite-event-choices></ul>
-        <div class="public-favorite-dialog__stack public-favorite-dialog__stack--actions">
-            <button type="submit" class="public-favorite-dialog__cta public-favorite-dialog__cta--primary" value="save"><?= h($isEn ? 'Save favorites' : 'Kedvencek mentése') ?></button>
-            <button type="button" class="public-favorite-dialog__cta public-favorite-dialog__cta--ghost" data-public-favorite-event-cancel><?= h($isEn ? 'Cancel' : 'Mégse') ?></button>
-        </div>
+        <h2 class="public-favorite-dialog__title public-favorite-dialog__title--compact" id="public-favorite-event-title"><?= h($isEn ? 'Favorites' : 'Kedvencek') ?></h2>
+        <div class="public-favorite-dialog__groups" data-public-favorite-event-choices></div>
+        <button type="submit" class="public-favorite-dialog__cta public-favorite-dialog__cta--primary public-favorite-dialog__cta--save" value="save"><?= h($isEn ? 'Save' : 'Mentés') ?></button>
     </form>
 </dialog>
