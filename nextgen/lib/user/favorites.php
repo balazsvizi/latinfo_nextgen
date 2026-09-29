@@ -43,6 +43,164 @@ function latinfo_favorites_entity_group_label(string $type, string $lang = 'hu')
     };
 }
 
+/**
+ * Eseményhez kapcsolódó kedvenc-választó sorok.
+ *
+ * @param list<array{id?:int,name?:string}> $organizers
+ * @param array{id?:int,label?:string}|null $venue
+ * @param list<array{id?:int,name?:string}> $djs
+ * @param list<array{id?:int,name?:string}> $bands
+ * @return array{items:list<array{type:string,id:int,groupLabel:string,label:string,active:bool}>,active:bool,count:int}
+ */
+function latinfo_favorites_build_event_picker(
+    PDO $db,
+    int $eventId,
+    string $eventName,
+    string $lang,
+    array $organizers = [],
+    ?array $venue = null,
+    array $djs = [],
+    array $bands = []
+): array {
+    $lang = $lang === 'en' ? 'en' : 'hu';
+    $pairs = [['type' => LATINFO_FAVORITE_TYPE_EVENT, 'id' => $eventId]];
+    foreach ($organizers as $org) {
+        $oid = (int) ($org['id'] ?? 0);
+        if ($oid > 0) {
+            $pairs[] = ['type' => LATINFO_FAVORITE_TYPE_ORGANIZER, 'id' => $oid];
+        }
+    }
+    $venueId = (int) ($venue['id'] ?? 0);
+    if ($venueId > 0) {
+        $pairs[] = ['type' => LATINFO_FAVORITE_TYPE_VENUE, 'id' => $venueId];
+    }
+    foreach ($djs as $dj) {
+        $did = (int) ($dj['id'] ?? 0);
+        if ($did > 0) {
+            $pairs[] = ['type' => LATINFO_FAVORITE_TYPE_DJ, 'id' => $did];
+        }
+    }
+    foreach ($bands as $band) {
+        $bid = (int) ($band['id'] ?? 0);
+        if ($bid > 0) {
+            $pairs[] = ['type' => LATINFO_FAVORITE_TYPE_ZENEKAR, 'id' => $bid];
+        }
+    }
+    $activeSet = latinfo_favorites_active_set_for_actor($db, latinfo_favorites_current_actor_key(), $pairs);
+    $eventState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_EVENT, $eventId);
+    $items = [[
+        'type' => LATINFO_FAVORITE_TYPE_EVENT,
+        'id' => $eventId,
+        'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_EVENT, $lang),
+        'label' => $eventName,
+        'active' => isset($activeSet[LATINFO_FAVORITE_TYPE_EVENT . ':' . $eventId]),
+    ]];
+    foreach ($organizers as $org) {
+        $oid = (int) ($org['id'] ?? 0);
+        if ($oid <= 0) {
+            continue;
+        }
+        $items[] = [
+            'type' => LATINFO_FAVORITE_TYPE_ORGANIZER,
+            'id' => $oid,
+            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_ORGANIZER, $lang),
+            'label' => (string) ($org['name'] ?? ''),
+            'active' => isset($activeSet[LATINFO_FAVORITE_TYPE_ORGANIZER . ':' . $oid]),
+        ];
+    }
+    if ($venueId > 0) {
+        $items[] = [
+            'type' => LATINFO_FAVORITE_TYPE_VENUE,
+            'id' => $venueId,
+            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_VENUE, $lang),
+            'label' => (string) ($venue['label'] ?? ''),
+            'active' => isset($activeSet[LATINFO_FAVORITE_TYPE_VENUE . ':' . $venueId]),
+        ];
+    }
+    foreach ($djs as $dj) {
+        $did = (int) ($dj['id'] ?? 0);
+        if ($did <= 0) {
+            continue;
+        }
+        $items[] = [
+            'type' => LATINFO_FAVORITE_TYPE_DJ,
+            'id' => $did,
+            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_DJ, $lang),
+            'label' => (string) ($dj['name'] ?? ''),
+            'active' => isset($activeSet[LATINFO_FAVORITE_TYPE_DJ . ':' . $did]),
+        ];
+    }
+    foreach ($bands as $band) {
+        $bid = (int) ($band['id'] ?? 0);
+        if ($bid <= 0) {
+            continue;
+        }
+        $items[] = [
+            'type' => LATINFO_FAVORITE_TYPE_ZENEKAR,
+            'id' => $bid,
+            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_ZENEKAR, $lang),
+            'label' => (string) ($band['name'] ?? ''),
+            'active' => isset($activeSet[LATINFO_FAVORITE_TYPE_ZENEKAR . ':' . $bid]),
+        ];
+    }
+    $anyActive = false;
+    foreach ($items as $item) {
+        if (!empty($item['active'])) {
+            $anyActive = true;
+            break;
+        }
+    }
+
+    return [
+        'items' => $items,
+        'active' => $anyActive,
+        'count' => $eventState['count'],
+    ];
+}
+
+/**
+ * @param list<array{type:string,id:int}> $pairs
+ * @return array<string, true>
+ */
+function latinfo_favorites_active_set_for_actor(PDO $db, ?string $actorKey, array $pairs): array
+{
+    if ($actorKey === null || $actorKey === '' || !latinfo_favorites_table_ready($db) || $pairs === []) {
+        return [];
+    }
+    $byType = [];
+    foreach ($pairs as $pair) {
+        $type = latinfo_favorites_normalize_type((string) ($pair['type'] ?? ''));
+        $id = (int) ($pair['id'] ?? 0);
+        if ($type === null || $id <= 0) {
+            continue;
+        }
+        $byType[$type][$id] = true;
+    }
+    if ($byType === []) {
+        return [];
+    }
+    $out = [];
+    try {
+        foreach ($byType as $type => $idsMap) {
+            $ids = array_keys($idsMap);
+            $ph = implode(',', array_fill(0, count($ids), '?'));
+            $st = $db->prepare("
+                SELECT `entity_id`
+                FROM `latinfo_favorites`
+                WHERE `actor_key` = ? AND `entity_type` = ? AND `entity_id` IN ({$ph})
+            ");
+            $st->execute(array_merge([$actorKey, $type], $ids));
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $eid) {
+                $out[$type . ':' . (int) $eid] = true;
+            }
+        }
+    } catch (Throwable $ex) {
+        error_log('latinfo_favorites_active_set_for_actor: ' . $ex->getMessage());
+    }
+
+    return $out;
+}
+
 function latinfo_favorites_table_ready(PDO $db, bool $forceRefresh = false): bool
 {
     static $cached = null;

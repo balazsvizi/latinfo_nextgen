@@ -42,13 +42,30 @@ function events_calendar_preview_venue_line(array $ev): string
 function events_calendar_load_organizers_by_event_id(PDO $db, array $rows): array
 {
     $out = [];
+    foreach (events_calendar_load_organizer_rows_by_event_id($db, $rows) as $eid => $orgRows) {
+        $out[$eid] = array_values(array_map(
+            static fn (array $org): string => (string) ($org['name'] ?? ''),
+            $orgRows
+        ));
+    }
+
+    return $out;
+}
+
+/**
+ * @param list<array<string, mixed>> $rows
+ * @return array<int, list<array{id:int,name:string}>>
+ */
+function events_calendar_load_organizer_rows_by_event_id(PDO $db, array $rows): array
+{
+    $out = [];
     if ($rows === []) {
         return $out;
     }
     $eventIds = array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
     $ph = implode(',', array_fill(0, count($eventIds), '?'));
     $stmt = $db->prepare("
-        SELECT eo.`event_id`, o.`name`
+        SELECT eo.`event_id`, o.`id`, o.`name`
         FROM `events_calendar_event_organizers` eo
         INNER JOIN `events_organizers` o ON o.`id` = eo.`organizer_id`
         WHERE eo.`event_id` IN ({$ph})
@@ -60,7 +77,62 @@ function events_calendar_load_organizers_by_event_id(PDO $db, array $rows): arra
         if (!isset($out[$eid])) {
             $out[$eid] = [];
         }
-        $out[$eid][] = (string) $row['name'];
+        $out[$eid][] = [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * @param list<array<string, mixed>> $rows
+ * @param list<string> $typeCodes
+ * @return array<int, list<array{id:int,name:string}>>
+ */
+function events_calendar_load_tags_by_types_for_events(PDO $db, array $rows, array $typeCodes): array
+{
+    $out = [];
+    if ($rows === [] || $typeCodes === []) {
+        return $out;
+    }
+    require_once __DIR__ . '/tag_type.php';
+    if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+        return $out;
+    }
+    $typeCodes = events_tag_type_normalize_codes($typeCodes, $db);
+    if ($typeCodes === []) {
+        return $out;
+    }
+    $eventIds = array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
+    if ($eventIds === []) {
+        return $out;
+    }
+    if (in_array('dj', $typeCodes, true)) {
+        events_tags_ensure_dj_slugs($db);
+    }
+    $phEvents = implode(',', array_fill(0, count($eventIds), '?'));
+    $phTypes = implode(',', array_fill(0, count($typeCodes), '?'));
+    $st = $db->prepare("
+        SELECT DISTINCT et.`event_id`, t.`id`, t.`name`
+        FROM `events_tags` t
+        INNER JOIN `events_calendar_event_tags` et ON et.`tag_id` = t.`id`
+        INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id`
+        INNER JOIN `events_tag_types` ty ON ty.`id` = l.`tag_type_id`
+        WHERE et.`event_id` IN ({$phEvents}) AND ty.`code` IN ({$phTypes})
+        ORDER BY t.`name` ASC, t.`id` ASC
+    ");
+    $st->execute(array_merge($eventIds, $typeCodes));
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $eid = (int) $row['event_id'];
+        if (!isset($out[$eid])) {
+            $out[$eid] = [];
+        }
+        $out[$eid][] = [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+        ];
     }
 
     return $out;

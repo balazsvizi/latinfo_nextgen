@@ -138,3 +138,36 @@ function user_safe_post_login_redirect(?string $url): string
 
     return $url;
 }
+
+/**
+ * Biztonságos relatív URL kijelentkezés / visszalépés után (nem auth oldalak).
+ */
+function user_safe_return_path(?string $url, string $fallback): string
+{
+    $url = trim((string) $url);
+    if ($url === '' || str_contains($url, '://') || str_starts_with($url, '//') || ($url[0] ?? '') !== '/') {
+        return $fallback;
+    }
+    $path = strtolower((string) (parse_url($url, PHP_URL_PATH) ?? ''));
+    $accountSeg = defined('USERS_PATH') && USERS_PATH !== '' ? USERS_PATH : 'account';
+    $accountBase = '/' . trim($accountSeg, '/') . '/';
+    $blocked = [
+        '/login.php',
+        '/signup.php',
+        '/logout.php',
+        '/oauth.php',
+        '/connect.php',
+        $accountBase,
+        rtrim($accountBase, '/') . '/logout.php',
+        rtrim($accountBase, '/') . '/oauth.php',
+        rtrim($accountBase, '/') . '/connect.php',
+        rtrim($accountBase, '/') . '/signup.php',
+    ];
+    foreach ($blocked as $suffix) {
+        if ($path === $suffix || str_ends_with($path, $suffix)) {
+            return $fallback;
+        }
+    }
+
+    return $url;
+}

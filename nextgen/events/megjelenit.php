@@ -150,70 +150,25 @@ $favoriteEntityId = $eventId;
 $favoriteLang = $lang;
 $favoriteDialogLang = $lang;
 if ($publicFavoritesEnabled) {
-    $pickerItems = [];
-    $evState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_EVENT, $eventId);
-    $pickerItems[] = [
-        'type' => LATINFO_FAVORITE_TYPE_EVENT,
-        'id' => $eventId,
-        'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_EVENT, $lang),
-        'label' => (string) $event['event_name'],
-        'active' => $evState['active'],
-    ];
-    foreach ($eventOrganizers as $orgRow) {
-        $orgIdPick = (int) ($orgRow['id'] ?? 0);
-        if ($orgIdPick <= 0) {
-            continue;
-        }
-        $orgState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_ORGANIZER, $orgIdPick);
-        $pickerItems[] = [
-            'type' => LATINFO_FAVORITE_TYPE_ORGANIZER,
-            'id' => $orgIdPick,
-            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_ORGANIZER, $lang),
-            'label' => (string) ($orgRow['name'] ?? ''),
-            'active' => $orgState['active'],
-        ];
-    }
     $venueIdPick = (int) ($event['venue_id'] ?? 0);
+    $venueForPicker = null;
     if ($venueIdPick > 0 && $showVenue) {
-        $venueLabelPick = $venueName !== '' ? $venueName : $venueSlug;
-        $venueState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_VENUE, $venueIdPick);
-        $pickerItems[] = [
-            'type' => LATINFO_FAVORITE_TYPE_VENUE,
+        $venueForPicker = [
             'id' => $venueIdPick,
-            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_VENUE, $lang),
-            'label' => $venueLabelPick,
-            'active' => $venueState['active'],
+            'label' => $venueName !== '' ? $venueName : $venueSlug,
         ];
     }
-    foreach ($eventDjs as $djRow) {
-        $djIdPick = (int) ($djRow['id'] ?? 0);
-        if ($djIdPick <= 0) {
-            continue;
-        }
-        $djState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_DJ, $djIdPick);
-        $pickerItems[] = [
-            'type' => LATINFO_FAVORITE_TYPE_DJ,
-            'id' => $djIdPick,
-            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_DJ, $lang),
-            'label' => (string) ($djRow['name'] ?? ''),
-            'active' => $djState['active'],
-        ];
-    }
-    foreach ($eventZenekarok as $bandRow) {
-        $bandIdPick = (int) ($bandRow['id'] ?? 0);
-        if ($bandIdPick <= 0) {
-            continue;
-        }
-        $bandState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_ZENEKAR, $bandIdPick);
-        $pickerItems[] = [
-            'type' => LATINFO_FAVORITE_TYPE_ZENEKAR,
-            'id' => $bandIdPick,
-            'groupLabel' => latinfo_favorites_entity_group_label(LATINFO_FAVORITE_TYPE_ZENEKAR, $lang),
-            'label' => (string) ($bandRow['name'] ?? ''),
-            'active' => $bandState['active'],
-        ];
-    }
-    $favoriteEventPicker = ['items' => $pickerItems];
+    $pickerPayload = latinfo_favorites_build_event_picker(
+        $db,
+        $eventId,
+        (string) $event['event_name'],
+        $lang,
+        $eventOrganizers,
+        $venueForPicker,
+        $eventDjs,
+        $eventZenekarok
+    );
+    $favoriteEventPicker = ['items' => $pickerPayload['items']];
 }
 
 $eventMonthKey = events_admin_calendar_month_key_from_event($event);

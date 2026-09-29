@@ -25,6 +25,11 @@ function events_public_nav_strings(string $lang): array {
         'organizers' => 'Szervezők',
         'latinfo' => 'Latinfo.hu',
         'partners' => 'Partnereink',
+        'auth_login' => 'Bejelentkezés',
+        'auth_logout' => 'Kijelentkezés',
+        'auth_account' => 'Fiókom',
+        'auth_logged_in_as' => 'Bejelentkezve: %s',
+        'auth_nav_aria' => 'Felhasználói fiók',
     ];
     $en = [
         'nav_aria' => 'Main menu',
@@ -38,6 +43,11 @@ function events_public_nav_strings(string $lang): array {
         'organizers' => 'Organizers',
         'latinfo' => 'Latinfo.hu',
         'partners' => 'Our partners',
+        'auth_login' => 'Log in',
+        'auth_logout' => 'Log out',
+        'auth_account' => 'My account',
+        'auth_logged_in_as' => 'Signed in as %s',
+        'auth_nav_aria' => 'User account',
     ];
 
     return $lang === 'en' ? $en : $hu;

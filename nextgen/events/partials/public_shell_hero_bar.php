@@ -68,6 +68,7 @@ $N = events_public_nav_strings($lang);
             <?php require __DIR__ . '/public_home_renewal_notice.php'; ?>
         <?php endif; ?>
         <div class="event-public__hero-actions">
+            <?php require __DIR__ . '/public_shell_user_auth.php'; ?>
             <div class="event-lang-switch" role="navigation" aria-label="<?= h($S['lang_nav']) ?>">
                 <a class="event-lang-switch__link<?= $lang === 'hu' ? ' is-active' : '' ?>" href="<?= h($urlHu) ?>" hreflang="hu" lang="hu" aria-label="<?= h($L['hu_aria']) ?>" title="<?= h($L['hu_aria']) ?>" data-public-nav-track="lang-hu"><?= h($L['hu_short']) ?></a>
                 <?php if ($mcalToggleUrl !== ''): ?>
