@@ -135,36 +135,43 @@ header('Content-Type: text/html; charset=UTF-8');
     </header>
 
     <div class="user-account-shell user-account-shell--wide">
-        <div class="user-account-card">
+        <section class="user-account-card user-account-profile">
             <?php if ($flashError): ?><p class="error"><?= h($flashError) ?></p><?php endif; ?>
             <?php if ($flashSuccess): ?><p class="alert alert-success"><?= h($flashSuccess) ?></p><?php endif; ?>
-            <?php if (!empty($user['avatar_url'])): ?>
-                <img class="user-account-avatar" src="<?= h((string) $user['avatar_url']) ?>" alt="" width="72" height="72" loading="lazy" referrerpolicy="no-referrer">
-            <?php endif; ?>
-            <h2 class="user-account-card__name"><?= h((string) ($user['name'] ?? '')) ?></h2>
-            <p class="user-account-meta"><?= h($accountEmail) ?></p>
-            <?php if ($providers !== []): ?>
-                <ul class="user-account-providers">
-                    <?php foreach ($providers as $p): ?>
-                        <li><?= h($p) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-            <div class="user-account-actions">
-                <a class="btn btn-primary" href="<?= h(user_url('logout.php')) ?>">Kijelentkezés</a>
-            </div>
-        </div>
 
-        <section class="user-account-section">
-            <h2>Értesítési e-mail</h2>
-            <p class="user-account-help">Ide küldhet a rendszer értesítéseket. Ha üresen hagyod, a fiók e-mail címét használjuk (<?= h($accountEmail) ?>).</p>
-            <form method="post" class="user-account-form">
-                <?= csrf_input('user_account') ?>
-                <input type="hidden" name="action" value="save_notification_email">
-                <label for="notification_email">E-mail cím</label>
-                <input type="email" id="notification_email" name="notification_email" maxlength="255" value="<?= h($notificationEmail) ?>" placeholder="<?= h($accountEmail) ?>" autocomplete="email">
-                <button type="submit" class="btn btn-primary">Mentés</button>
-            </form>
+            <div class="user-account-profile__top">
+                <?php if (!empty($user['avatar_url'])): ?>
+                    <img class="user-account-avatar" src="<?= h((string) $user['avatar_url']) ?>" alt="" width="48" height="48" loading="lazy" referrerpolicy="no-referrer">
+                <?php endif; ?>
+                <div class="user-account-profile__identity">
+                    <h2 class="user-account-card__name"><?= h((string) ($user['name'] ?? '')) ?></h2>
+                    <p class="user-account-meta"><?= h($accountEmail) ?></p>
+                    <?php if ($providers !== []): ?>
+                        <ul class="user-account-providers">
+                            <?php foreach ($providers as $p): ?>
+                                <li><?= h($p) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+                <div class="user-account-actions">
+                    <a class="btn btn-primary" href="<?= h(user_url('logout.php')) ?>">Kijelentkezés</a>
+                </div>
+            </div>
+
+            <div class="user-account-profile__notify">
+                <div class="user-account-profile__notify-copy">
+                    <h3 class="user-account-profile__notify-title">Értesítési e-mail</h3>
+                    <p class="user-account-help">Ha üres, a fiók e-mailjét használjuk.</p>
+                </div>
+                <form method="post" class="user-account-form user-account-form--inline">
+                    <?= csrf_input('user_account') ?>
+                    <input type="hidden" name="action" value="save_notification_email">
+                    <label class="visually-hidden" for="notification_email">Értesítési e-mail</label>
+                    <input type="email" id="notification_email" name="notification_email" maxlength="255" value="<?= h($notificationEmail) ?>" placeholder="<?= h($accountEmail) ?>" autocomplete="email">
+                    <button type="submit" class="btn btn-primary">Mentés</button>
+                </form>
+            </div>
         </section>
 
         <section
