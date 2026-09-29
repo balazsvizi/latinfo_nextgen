@@ -400,6 +400,31 @@ function latinfo_favorites_current_actor_key(): ?string
     return $visitorKey;
 }
 
+/**
+ * DJ / zenekar címke létezik-e a megadott típussal (AJAX-ban is betölti a tag libet).
+ */
+function latinfo_favorites_tag_entity_exists(PDO $db, int $tagId, string $typeCode): bool
+{
+    if ($tagId <= 0 || $typeCode === '') {
+        return false;
+    }
+    if (!function_exists('events_tags_tables_available') || !events_tags_tables_available($db)) {
+        return false;
+    }
+    if (!function_exists('events_load_tag_type_codes')) {
+        $tagTypeLib = dirname(__DIR__, 2) . '/events/lib/tag_type.php';
+        if (!is_file($tagTypeLib)) {
+            return false;
+        }
+        require_once $tagTypeLib;
+    }
+    if (!function_exists('events_load_tag_type_codes')) {
+        return false;
+    }
+
+    return in_array($typeCode, events_load_tag_type_codes($db, $tagId), true);
+}
+
 function latinfo_favorites_entity_exists(PDO $db, string $type, int $entityId): bool
 {
     if ($entityId <= 0) {
@@ -426,20 +451,8 @@ function latinfo_favorites_entity_exists(PDO $db, string $type, int $entityId): 
 
                 return (bool) $st->fetchColumn();
             })(),
-            LATINFO_FAVORITE_TYPE_DJ => (static function () use ($db, $entityId): bool {
-                if (!function_exists('events_public_tag_has_type_code') || !events_tags_tables_available($db)) {
-                    return false;
-                }
-
-                return events_public_tag_has_type_code($db, $entityId, 'dj');
-            })(),
-            LATINFO_FAVORITE_TYPE_ZENEKAR => (static function () use ($db, $entityId): bool {
-                if (!function_exists('events_public_tag_has_type_code') || !events_tags_tables_available($db)) {
-                    return false;
-                }
-
-                return events_public_tag_has_type_code($db, $entityId, 'zenekar');
-            })(),
+            LATINFO_FAVORITE_TYPE_DJ => latinfo_favorites_tag_entity_exists($db, $entityId, 'dj'),
+            LATINFO_FAVORITE_TYPE_ZENEKAR => latinfo_favorites_tag_entity_exists($db, $entityId, 'zenekar'),
             default => false,
         };
     } catch (Throwable $ex) {

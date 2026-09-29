@@ -7,6 +7,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_view_tracking.php';
 require_once __DIR__ . '/lib/tag_type.php';
+require_once __DIR__ . '/lib/event_public_djs.php';
 require_once dirname(__DIR__) . '/lib/user/users.php';
 require_once dirname(__DIR__) . '/lib/user/favorites.php';
 require_once dirname(__DIR__) . '/user/includes/auth.php';
