@@ -52,6 +52,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head">
         <h2 class="events-list-title">Nyilvános szívecskék</h2>
         <div class="events-list-actions">
+            <a href="<?= h(events_url('events_kedvencek_stat.php')) ?>" class="btn btn-secondary">Statisztika</a>
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
         </div>
     </div>

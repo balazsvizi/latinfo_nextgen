@@ -75,21 +75,54 @@ $typeLabels = [
 ];
 $notificationEmail = trim((string) ($user['notification_email'] ?? ''));
 $accountEmail = trim((string) ($user['email'] ?? ''));
+
+require_once dirname(__DIR__) . '/events/lib/event_public_lang.php';
+
+$lang = 'hu';
+$accountUrl = user_url('index.php');
+$urlHu = $accountUrl;
+$urlEn = $accountUrl;
+$isEventsHome = false;
+$showAdminEdit = false;
+$adminEditUrl = '';
+$S = [
+    'lang_nav' => 'Nyelv',
+    'logo_alt' => 'Latinfo.hu',
+    'footer_home_link' => 'Latinfo.hu',
+];
+$cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
+$accountCssUrl = user_asset_url('assets/css/account.css') . '?v=' . rawurlencode(nextgen_app_version());
+$styleCssUrl = nextgen_url('assets/css/style.css') . '?v=' . rawurlencode(nextgen_app_version());
+
+header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?= events_public_robots_noindex_head_markup() ?>
+    <meta name="theme-color" content="#6d8f63">
     <title>Fiókom – <?= h(SITE_NAME) ?></title>
-    <?php require dirname(__DIR__) . '/includes/favicon_head.php'; ?>
+    <?= events_public_favicon_head_markup() ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= h(nextgen_url('assets/css/style.css')) ?>?v=<?= h(rawurlencode(nextgen_app_version())) ?>">
-    <link rel="stylesheet" href="<?= h(user_asset_url('assets/css/account.css')) ?>?v=<?= h(rawurlencode(nextgen_app_version())) ?>">
+    <link rel="stylesheet" href="<?= h($styleCssUrl) ?>">
+    <link rel="stylesheet" href="<?= h($cssUrl) ?>">
+    <link rel="stylesheet" href="<?= h($accountCssUrl) ?>">
 </head>
-<body class="user-account-page">
+<body class="event-public-page user-account-page">
+<div class="event-shell">
+<article class="event-public user-account-public">
+    <header class="event-public__hero">
+        <?php require dirname(__DIR__) . '/events/partials/public_shell_hero_bar.php'; ?>
+        <div class="event-public__hero-inner">
+            <p class="event-public__eyebrow">Fiók</p>
+            <h1 class="event-public__title">Fiókom</h1>
+        </div>
+    </header>
+
     <div class="user-account-shell user-account-shell--wide">
         <div class="user-account-card">
             <?php if ($flashError): ?><p class="error"><?= h($flashError) ?></p><?php endif; ?>
@@ -97,7 +130,7 @@ $accountEmail = trim((string) ($user['email'] ?? ''));
             <?php if (!empty($user['avatar_url'])): ?>
                 <img class="user-account-avatar" src="<?= h((string) $user['avatar_url']) ?>" alt="" width="72" height="72" loading="lazy" referrerpolicy="no-referrer">
             <?php endif; ?>
-            <h1><?= h((string) ($user['name'] ?? '')) ?></h1>
+            <h2 class="user-account-card__name"><?= h((string) ($user['name'] ?? '')) ?></h2>
             <p class="user-account-meta"><?= h($accountEmail) ?></p>
             <?php if ($providers !== []): ?>
                 <ul class="user-account-providers">
@@ -107,7 +140,6 @@ $accountEmail = trim((string) ($user['email'] ?? ''));
                 </ul>
             <?php endif; ?>
             <div class="user-account-actions">
-                <a class="btn btn-secondary" href="<?= h(LATINFO_PUBLIC_HOME_URL) ?>">Kezdőoldal</a>
                 <a class="btn btn-primary" href="<?= h(user_url('logout.php')) ?>">Kijelentkezés</a>
             </div>
         </div>
@@ -151,8 +183,12 @@ $accountEmail = trim((string) ($user['email'] ?? ''));
                 </div>
             <?php endforeach; ?>
         </section>
-
-        <?= nextgen_footer_version_markup() ?>
     </div>
+
+    <footer class="event-public__footer">
+        <?php require dirname(__DIR__) . '/events/partials/public_shell_footer.php'; ?>
+    </footer>
+</article>
+</div>
 </body>
 </html>

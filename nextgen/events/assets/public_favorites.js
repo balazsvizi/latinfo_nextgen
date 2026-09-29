@@ -106,66 +106,58 @@
             zenekar: lang === 'en' ? 'Band' : 'Zenekar',
         };
         var order = ['event', 'organizer', 'venue', 'dj', 'zenekar'];
-        var groups = {};
-        items.forEach(function (item) {
+        var sorted = items.slice().sort(function (a, b) {
+            var ai = order.indexOf(a.type);
+            var bi = order.indexOf(b.type);
+            if (ai < 0) ai = 99;
+            if (bi < 0) bi = 99;
+            if (ai !== bi) return ai - bi;
+            return String(a.label || '').localeCompare(String(b.label || ''), lang === 'en' ? 'en' : 'hu');
+        });
+        var ul = document.createElement('ul');
+        ul.className = 'public-favorite-dialog__choices';
+        sorted.forEach(function (item) {
             if (!item || !item.type || !item.id) {
                 return;
             }
-            if (!groups[item.type]) {
-                groups[item.type] = [];
-            }
-            groups[item.type].push(item);
+            var li = document.createElement('li');
+            li.className = 'public-favorite-dialog__choice';
+            var label = document.createElement('label');
+            label.className = 'public-favorite-dialog__choice-label';
+            var kind = document.createElement('span');
+            kind.className = 'public-favorite-dialog__choice-kind';
+            kind.textContent = item.groupLabel || kindLabels[item.type] || item.type;
+            var name = document.createElement('span');
+            name.className = 'public-favorite-dialog__choice-name';
+            name.textContent = item.label || ('#' + item.id);
+            name.title = item.label || '';
+            var heart = document.createElement('span');
+            heart.className = 'public-favorite-dialog__choice-heart';
+            heart.setAttribute('aria-hidden', 'true');
+            heart.textContent = '♥';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.name = 'fav_pick[]';
+            cb.value = item.type + ':' + item.id;
+            cb.checked = !!item.active;
+            cb.dataset.type = item.type;
+            cb.dataset.id = String(item.id);
+            cb.className = 'public-favorite-dialog__choice-input';
+            label.appendChild(kind);
+            label.appendChild(name);
+            label.appendChild(heart);
+            label.appendChild(cb);
+            li.appendChild(label);
+            ul.appendChild(li);
         });
-        var hasAny = false;
-        order.forEach(function (type) {
-            var groupItems = groups[type];
-            if (!groupItems || !groupItems.length) {
-                return;
-            }
-            hasAny = true;
-            var section = document.createElement('section');
-            section.className = 'public-favorite-dialog__group';
-            var heading = document.createElement('h3');
-            heading.className = 'public-favorite-dialog__group-title';
-            heading.textContent = groupItems[0].groupLabel || kindLabels[type] || type;
-            section.appendChild(heading);
-            var ul = document.createElement('ul');
-            ul.className = 'public-favorite-dialog__choices';
-            groupItems.forEach(function (item) {
-                var li = document.createElement('li');
-                li.className = 'public-favorite-dialog__choice';
-                var label = document.createElement('label');
-                label.className = 'public-favorite-dialog__choice-label';
-                var name = document.createElement('span');
-                name.className = 'public-favorite-dialog__choice-name';
-                name.textContent = item.label || ('#' + item.id);
-                var heart = document.createElement('span');
-                heart.className = 'public-favorite-dialog__choice-heart';
-                heart.setAttribute('aria-hidden', 'true');
-                heart.textContent = '♥';
-                var cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.name = 'fav_pick[]';
-                cb.value = item.type + ':' + item.id;
-                cb.checked = !!item.active;
-                cb.dataset.type = item.type;
-                cb.dataset.id = String(item.id);
-                cb.className = 'public-favorite-dialog__choice-input';
-                label.appendChild(name);
-                label.appendChild(heart);
-                label.appendChild(cb);
-                li.appendChild(label);
-                ul.appendChild(li);
-            });
-            section.appendChild(ul);
-            listEl.appendChild(section);
-        });
-        if (!hasAny) {
+        if (!ul.children.length) {
             var empty = document.createElement('p');
             empty.className = 'public-favorite-dialog__empty';
             empty.textContent = lang === 'en' ? 'Nothing to favorite on this event.' : 'Ehhez az eseményhez nincs választható elem.';
             listEl.appendChild(empty);
+            return;
         }
+        listEl.appendChild(ul);
     }
 
     function ensureAuth(root) {

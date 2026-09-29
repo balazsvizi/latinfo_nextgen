@@ -26,7 +26,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" class="dash-card">
         <h3>Statok</h3>
         <div class="num">→</div>
-        <p>Statisztikák, publikus oldalak, valós idejű áttekintés</p>
+        <p>Statisztikák, publikus oldalak, kedvencek, valós idejű áttekintés</p>
     </a>
     <a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" class="dash-card">
         <h3>Slug</h3>

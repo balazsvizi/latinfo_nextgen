@@ -109,6 +109,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php endif; ?>
         <a href="<?= h(events_url('events_stat.php')) ?>" class="btn btn-secondary btn-sm">Áttekintés</a>
         <a href="<?= h(events_url('events_public_stat.php')) ?>" class="btn btn-secondary btn-sm">Publikus oldalak</a>
+        <a href="<?= h(events_url('events_kedvencek_stat.php')) ?>" class="btn btn-secondary btn-sm">Kedvencek</a>
         <a href="<?= h(events_url('events_lista_stat.php')) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
         <a href="<?= h(events_url('events_realtime.php')) ?>" class="btn btn-secondary btn-sm">Valós idejű</a>
     </div>

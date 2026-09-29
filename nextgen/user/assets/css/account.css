@@ -137,10 +137,18 @@
     color: var(--ua-ink);
 }
 
+body.event-public-page.user-account-page {
+    background: var(--li-bg, var(--ua-paper));
+}
+
 .user-account-shell {
     max-width: 640px;
     margin: 0 auto;
     padding: 2rem 1.25rem 3rem;
+}
+
+body.event-public-page .user-account-shell {
+    padding-top: 1.25rem;
 }
 
 .user-account-card {
@@ -151,10 +159,12 @@
     box-shadow: 0 2px 14px rgba(45, 58, 40, 0.07);
 }
 
-.user-account-card h1 {
+.user-account-card h1,
+.user-account-card__name {
     margin: 0 0 0.35rem;
     font-size: 1.35rem;
     color: var(--ua-brand);
+    font-weight: 700;
 }
 
 .user-account-meta {
