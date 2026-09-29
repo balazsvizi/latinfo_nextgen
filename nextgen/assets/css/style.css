@@ -6332,6 +6332,19 @@ html.events-stats-loading-active body {
     line-height: 1.2;
     text-align: left;
 }
+a.events-rt-who,
+a.events-rt-person {
+    text-decoration: none;
+    color: inherit;
+}
+a.events-rt-who:hover .events-rt-who__name,
+a.events-rt-person:hover .events-rt-person__name {
+    text-decoration: underline;
+}
+.events-rt-who--user,
+.events-rt-person--user {
+    padding-left: 0.55rem;
+}
 .events-rt-who__mark {
     display: inline-flex;
     align-items: center;

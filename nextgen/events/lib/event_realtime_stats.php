@@ -148,7 +148,8 @@ function events_realtime_device_label(string $device): string
  *   code: string,
  *   is_bot: bool,
  *   user_id: int,
- *   is_registered: bool
+ *   is_registered: bool,
+ *   profile_url: string
  * }
  */
 function events_realtime_visitor_mark(?string $ipHash, bool $isBot, int $userId = 0, string $userName = ''): array
@@ -192,7 +193,6 @@ function events_realtime_visitor_mark(?string $ipHash, bool $isBot, int $userId 
 
     if ($userId > 0) {
         $seed = hash('sha256', 'uid:' . $userId);
-        $animal = $animals[hexdec(substr($seed, 0, 2)) % count($animals)];
         $color = $colors[hexdec(substr($seed, 2, 2)) % count($colors)];
         $label = trim($userName);
         if ($label === '') {
@@ -203,11 +203,12 @@ function events_realtime_visitor_mark(?string $ipHash, bool $isBot, int $userId 
             'key' => 'u' . $userId,
             'label' => $label,
             'color' => $color['hex'],
-            'emoji' => $animal['emoji'],
+            'emoji' => '',
             'code' => '',
             'is_bot' => $isBot,
             'user_id' => $userId,
             'is_registered' => true,
+            'profile_url' => events_realtime_user_profile_url($userId),
         ];
     }
 
@@ -221,6 +222,7 @@ function events_realtime_visitor_mark(?string $ipHash, bool $isBot, int $userId 
         'is_bot' => $isBot,
         'user_id' => 0,
         'is_registered' => false,
+        'profile_url' => '',
     ];
     if ($hash === '' || preg_match('/^[0-9a-f]{8,}$/', $hash) !== 1) {
         return $unknown;
@@ -238,7 +240,17 @@ function events_realtime_visitor_mark(?string $ipHash, bool $isBot, int $userId 
         'is_bot' => $isBot,
         'user_id' => 0,
         'is_registered' => false,
+        'profile_url' => '',
     ];
+}
+
+function events_realtime_user_profile_url(int $userId): string
+{
+    if ($userId <= 0 || !function_exists('nextgen_url')) {
+        return '';
+    }
+
+    return nextgen_url('admin/users/profil.php?id=' . $userId);
 }
 
 /**
@@ -385,6 +397,8 @@ function events_realtime_presence_from_items(array $items): array
                 'code' => (string) ($mark['code'] ?? ''),
                 'is_bot' => !empty($mark['is_bot']),
                 'user_id' => (int) ($mark['user_id'] ?? $row['user_id'] ?? 0),
+                'is_registered' => !empty($mark['is_registered']),
+                'profile_url' => (string) ($mark['profile_url'] ?? ''),
                 'hits' => 0,
                 'last_at' => (string) ($row['at'] ?? ''),
                 'last_target' => (string) ($row['target'] ?? ''),
