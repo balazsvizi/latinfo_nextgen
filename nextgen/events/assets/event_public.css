@@ -7668,3 +7668,134 @@ a.partners-public__card:hover .partners-public__name {
         height: 5.5rem;
     }
 }
+
+/* Publikus kedvencek (szívecskék) */
+.event-public__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+}
+
+.event-public__title-row .event-public__title {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.public-favorite {
+    flex: 0 0 auto;
+}
+
+.public-favorite__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(109, 143, 99, 0.35);
+    background: rgba(255, 255, 255, 0.85);
+    color: #8a9a82;
+    font-family: var(--ev-sans, inherit);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.public-favorite__btn:hover {
+    border-color: var(--li-green, #6d8f63);
+    color: var(--li-green-hover, #56734d);
+}
+
+.public-favorite__btn:focus-visible {
+    outline: 2px solid var(--li-green, #6d8f63);
+    outline-offset: 2px;
+}
+
+.public-favorite__btn.is-active {
+    color: #c0395a;
+    border-color: rgba(192, 57, 90, 0.45);
+    background: rgba(192, 57, 90, 0.08);
+}
+
+.public-favorite__btn.is-active .public-favorite__icon {
+    transform: scale(1.05);
+}
+
+.public-favorite__icon {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.public-favorite__count {
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    min-width: 1.25rem;
+    text-align: center;
+}
+
+.public-favorite-dialog {
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    max-width: min(92vw, 26rem);
+    box-shadow: 0 20px 50px rgba(30, 40, 28, 0.22);
+}
+
+.public-favorite-dialog::backdrop {
+    background: rgba(20, 28, 18, 0.45);
+}
+
+.public-favorite-dialog__panel {
+    padding: 1.35rem 1.25rem 1.15rem;
+    margin: 0;
+}
+
+.public-favorite-dialog__title {
+    margin: 0 0 0.5rem;
+    font-family: var(--ev-sans, inherit);
+    font-size: 1.15rem;
+    color: var(--li-green-dark, #3d4f38);
+}
+
+.public-favorite-dialog__lead {
+    margin: 0 0 1rem;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: var(--ev-muted, #5c6658);
+}
+
+.public-favorite-dialog__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.public-favorite-dialog__choices {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-height: min(50vh, 16rem);
+    overflow: auto;
+}
+
+.public-favorite-dialog__choice-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    cursor: pointer;
+}
+
+.public-favorite-dialog__empty {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--ev-muted, #5c6658);
+}

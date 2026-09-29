@@ -124,6 +124,14 @@ $urlEn = events_public_venue_lang_switch_url($slug, 'en', $limitParams);
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('venue_szerkeszt.php?id=') . $venueId;
 
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+$publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteEntityType = LATINFO_FAVORITE_TYPE_VENUE;
+$favoriteEntityId = $venueId;
+$favoriteLang = $lang;
+$favoriteDialogLang = $lang;
+$favoriteEventPicker = null;
+
 $jsonLd = [
     '@context' => 'https://schema.org',
     '@type' => 'Place',
@@ -163,7 +171,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
     <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 </head>
-<body class="event-public-page">
+<body class="event-public-page"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <div class="event-shell">
 <article class="event-public venue-public">
     <header class="event-public__hero">
@@ -172,6 +180,9 @@ header('Content-Type: text/html; charset=UTF-8');
             <p class="event-public__eyebrow">📍 <?= h((string) $V['eyebrow']) ?></p>
             <div class="event-public__title-row">
                 <h1 class="event-public__title"><?= h($title) ?></h1>
+                <?php if ($publicFavoritesEnabled): ?>
+                    <?php require __DIR__ . '/partials/public_favorite_heart.php'; ?>
+                <?php endif; ?>
             </div>
             <?php if ($hasLinked): ?>
                 <p class="venue-linked-line">
@@ -270,5 +281,6 @@ $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
 require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
+<?php require __DIR__ . '/partials/public_favorite_footer.php'; ?>
 </body>
 </html>

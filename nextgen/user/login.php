@@ -7,6 +7,11 @@ if (user_is_logged_in()) {
     redirect(user_url('index.php'));
 }
 
+$returnGet = trim((string) ($_GET['return'] ?? ''));
+if ($returnGet !== '' && ($returnGet[0] ?? '') === '/') {
+    $_SESSION['_user_redirect_after_login'] = user_safe_post_login_redirect($returnGet);
+}
+
 $hiba = '';
 $tableReady = latinfo_users_table_ready(getDb());
 $flashError = flash('error');

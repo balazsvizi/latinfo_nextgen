@@ -160,6 +160,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" role="menuitem">Főoldal szövegei</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/menu_szerkeszt.php')) ?>" role="menuitem">Főmenü</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/slug_atiranyitasok.php')) ?>" role="menuitem">Slug</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/kedvencek_beallitas.php')) ?>" role="menuitem">Kedvencek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/partnerek_szerkeszt.php')) ?>" role="menuitem">Partnereink</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('config/levelsablonok/')) ?>" role="menuitem">Levélsablonok</a></li>
                     </ul>

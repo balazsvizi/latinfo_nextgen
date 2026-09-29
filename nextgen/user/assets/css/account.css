@@ -219,3 +219,106 @@
     font-weight: 600;
     text-transform: capitalize;
 }
+
+.user-account-shell--wide {
+    max-width: 42rem;
+}
+
+.user-account-section {
+    margin-top: 1.75rem;
+    padding: 1.35rem 1.25rem;
+    border-radius: 16px;
+    border: 1px solid var(--ua-line);
+    background: #fff;
+    box-shadow: 0 8px 28px rgba(45, 58, 40, 0.06);
+}
+
+.user-account-section h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.15rem;
+    color: var(--ua-brand);
+}
+
+.user-account-section h3 {
+    margin: 1rem 0 0.35rem;
+    font-size: 0.95rem;
+    color: var(--ua-brand);
+}
+
+.user-account-help {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    color: var(--ua-muted);
+    line-height: 1.45;
+}
+
+.user-account-form label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    color: var(--ua-brand);
+}
+
+.user-account-form input[type="email"] {
+    width: 100%;
+    max-width: 22rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 10px;
+    border: 1px solid var(--ua-line);
+    margin-bottom: 0.75rem;
+    font: inherit;
+}
+
+.user-favorites-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.user-favorites-list__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--ua-line);
+}
+
+.user-favorites-list__item:last-child {
+    border-bottom: none;
+}
+
+.user-favorites-list__link {
+    flex: 1;
+    color: var(--ua-accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.user-favorites-list__link:hover {
+    text-decoration: underline;
+}
+
+.user-favorites-list__remove {
+    margin: 0;
+}
+
+.user-favorites-empty {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--ua-muted);
+}
+
+.btn-ghost {
+    background: transparent;
+    border: none;
+    color: var(--ua-muted);
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0.15rem 0.35rem;
+}
+
+.btn-sm {
+    font-size: 0.85rem;
+}

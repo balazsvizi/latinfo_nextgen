@@ -141,6 +141,62 @@ $eventEditUrl = events_url('szerkeszt.php?id=') . (int) ($event['id'] ?? 0);
 $S = $T;
 $adminEditUrl = $eventEditUrl;
 
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+$publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteEventPicker = null;
+$favoriteEntityType = LATINFO_FAVORITE_TYPE_EVENT;
+$favoriteEntityId = $eventId;
+$favoriteLang = $lang;
+$favoriteDialogLang = $lang;
+if ($publicFavoritesEnabled) {
+    $pickerItems = [];
+    $evState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_EVENT, $eventId);
+    $pickerItems[] = [
+        'type' => LATINFO_FAVORITE_TYPE_EVENT,
+        'id' => $eventId,
+        'label' => (string) $event['event_name'],
+        'active' => $evState['active'],
+    ];
+    foreach ($eventOrganizers as $orgRow) {
+        $orgIdPick = (int) ($orgRow['id'] ?? 0);
+        if ($orgIdPick <= 0) {
+            continue;
+        }
+        $orgState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_ORGANIZER, $orgIdPick);
+        $pickerItems[] = [
+            'type' => LATINFO_FAVORITE_TYPE_ORGANIZER,
+            'id' => $orgIdPick,
+            'label' => (string) ($orgRow['name'] ?? ''),
+            'active' => $orgState['active'],
+        ];
+    }
+    $venueIdPick = (int) ($event['venue_id'] ?? 0);
+    if ($venueIdPick > 0 && $showVenue) {
+        $venueLabelPick = $venueName !== '' ? $venueName : $venueSlug;
+        $venueState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_VENUE, $venueIdPick);
+        $pickerItems[] = [
+            'type' => LATINFO_FAVORITE_TYPE_VENUE,
+            'id' => $venueIdPick,
+            'label' => $venueLabelPick,
+            'active' => $venueState['active'],
+        ];
+    }
+    foreach ($eventDjs as $djRow) {
+        $djIdPick = (int) ($djRow['id'] ?? 0);
+        if ($djIdPick <= 0) {
+            continue;
+        }
+        $djState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_DJ, $djIdPick);
+        $pickerItems[] = [
+            'type' => LATINFO_FAVORITE_TYPE_DJ,
+            'id' => $djIdPick,
+            'label' => (string) ($djRow['name'] ?? ''),
+            'active' => $djState['active'],
+        ];
+    }
+    $favoriteEventPicker = ['items' => $pickerItems];
+}
+
 $eventMonthKey = events_admin_calendar_month_key_from_event($event);
 $adminFloatTools = [];
 if (isLoggedIn()) {
@@ -246,7 +302,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
     <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 </head>
-<body class="event-public-page">
+<body class="event-public-page"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public event-public--detail">
@@ -254,7 +310,12 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <?php require __DIR__ . '/partials/public_event_change_notice.php'; ?>
-            <h1 class="event-public__title<?= events_event_change_type($event) === events_event_change_type_cancelled() ? ' event-public__title--cancelled' : '' ?>"><?= h((string) $event['event_name']) ?></h1>
+            <div class="event-public__title-row">
+                <h1 class="event-public__title<?= events_event_change_type($event) === events_event_change_type_cancelled() ? ' event-public__title--cancelled' : '' ?>"><?= h((string) $event['event_name']) ?></h1>
+                <?php if ($publicFavoritesEnabled): ?>
+                    <?php require __DIR__ . '/partials/public_favorite_heart.php'; ?>
+                <?php endif; ?>
+            </div>
             <?php if (!empty($event['event_latinfohu_partner'])): ?>
                 <div class="event-public__badges">
                     <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>
@@ -433,5 +494,6 @@ header('Content-Type: text/html; charset=UTF-8');
 })();
 </script>
 <?php endif; ?>
+<?php require __DIR__ . '/partials/public_favorite_footer.php'; ?>
 </body>
 </html>

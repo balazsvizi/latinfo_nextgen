@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 
+$returnGet = trim((string) ($_GET['return'] ?? ''));
+if ($returnGet !== '' && ($returnGet[0] ?? '') === '/') {
+    $_SESSION['_user_redirect_after_login'] = user_safe_post_login_redirect($returnGet);
+}
+
 if (user_is_logged_in()) {
     redirect(user_url('index.php'));
 }

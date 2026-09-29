@@ -139,6 +139,15 @@ $showAdminEdit = isLoggedIn();
 $adminEditUrl = $tagIsDj
     ? events_url('dj_szerkeszt.php?id=') . $tagId
     : events_url('tags.php?open_tag=') . $tagId;
+
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+$publicFavoritesEnabled = $tagIsDj && latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteEntityType = LATINFO_FAVORITE_TYPE_DJ;
+$favoriteEntityId = $tagId;
+$favoriteLang = $lang;
+$favoriteDialogLang = $lang;
+$favoriteEventPicker = null;
+
 $djPhotoAbs = '';
 $djLogoAbs = '';
 if ($tagIsDj) {
@@ -180,7 +189,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page">
+<body class="event-public-page"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <div class="event-shell">
 <article class="event-public organizer-public<?= $tagIsDj ? ' dj-public' : '' ?>">
     <header class="event-public__hero">
@@ -243,7 +252,12 @@ header('Content-Type: text/html; charset=UTF-8');
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
-                        <h1 class="event-public__title"><?= h($title) ?></h1>
+                        <div class="event-public__title-row">
+                            <h1 class="event-public__title"><?= h($title) ?></h1>
+                            <?php if ($publicFavoritesEnabled): ?>
+                                <?php require __DIR__ . '/partials/public_favorite_heart.php'; ?>
+                            <?php endif; ?>
+                        </div>
                         <p class="dj-public__meta">
                             <span class="dj-public__meta-item">
                                 <strong><?= (int) $eventsUpcomingCount ?></strong>
@@ -396,5 +410,6 @@ if ($tagIsDj) {
 }
 ?>
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
+<?php require __DIR__ . '/partials/public_favorite_footer.php'; ?>
 </body>
 </html>

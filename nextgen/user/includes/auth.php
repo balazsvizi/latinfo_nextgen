@@ -38,6 +38,15 @@ function user_establish_session(array $user): void
     $_SESSION['user_nev'] = (string) ($user['name'] ?? '');
     $_SESSION['user_email'] = (string) ($user['email'] ?? '');
     session_regenerate_id(true);
+    if (!function_exists('latinfo_favorites_merge_visitor_to_user')) {
+        $favLib = dirname(__DIR__, 2) . '/lib/user/favorites.php';
+        if (is_file($favLib)) {
+            require_once $favLib;
+        }
+    }
+    if (function_exists('latinfo_favorites_merge_visitor_to_user')) {
+        latinfo_favorites_merge_visitor_to_user(getDb(), (int) ($user['id'] ?? 0));
+    }
 }
 
 function user_login_with_password(string $email, string $password): bool

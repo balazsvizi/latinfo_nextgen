@@ -61,6 +61,14 @@ $S = $O;
 $showAdminEdit = isLoggedIn();
 $adminEditUrl = events_url('organizer_szerkeszt.php?id=') . $organizerId;
 
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+$publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteEntityType = LATINFO_FAVORITE_TYPE_ORGANIZER;
+$favoriteEntityId = $organizerId;
+$favoriteLang = $lang;
+$favoriteDialogLang = $lang;
+$favoriteEventPicker = null;
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
@@ -88,14 +96,19 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page">
+<body class="event-public-page"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <div class="event-shell">
 <article class="event-public organizer-public">
     <header class="event-public__hero">
         <?php $S = $O; require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <p class="event-public__eyebrow"><?= h($O['eyebrow']) ?></p>
-            <h1 class="event-public__title"><?= h($title) ?></h1>
+            <div class="event-public__title-row">
+                <h1 class="event-public__title"><?= h($title) ?></h1>
+                <?php if ($publicFavoritesEnabled): ?>
+                    <?php require __DIR__ . '/partials/public_favorite_heart.php'; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </header>
 
@@ -192,5 +205,6 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/event_image_orientation_script.php'; ?>
+<?php require __DIR__ . '/partials/public_favorite_footer.php'; ?>
 </body>
 </html>
