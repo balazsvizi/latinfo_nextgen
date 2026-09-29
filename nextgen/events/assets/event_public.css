@@ -8029,25 +8029,25 @@ a.partners-public__card:hover .partners-public__name {
 }
 
 .public-favorite-dialog--pick {
-    width: min(94vw, 22.5rem);
-    max-width: 22.5rem;
+    width: min(94vw, 26rem);
+    max-width: 26rem;
 }
 
 .public-favorite-dialog__panel--pick {
-    padding: 0.85rem 0.85rem 0.8rem;
+    padding: 1.15rem 1.15rem 1.05rem;
     text-align: left;
     background: var(--li-card);
 }
 
 .public-favorite-dialog__title--compact {
-    margin: 0 0 0.4rem;
-    padding-right: 1.6rem;
-    font-size: 0.98rem;
+    margin: 0 0 0.65rem;
+    padding-right: 2rem;
+    font-size: 1.15rem;
     text-align: left;
 }
 
 .public-favorite-dialog__groups {
-    margin: 0 0 0.55rem;
+    margin: 0 0 0.75rem;
     max-height: none;
     overflow: visible;
 }
@@ -8073,16 +8073,16 @@ a.partners-public__card:hover .partners-public__name {
 .public-favorite-dialog__choice-label {
     position: relative;
     display: grid;
-    grid-template-columns: 4.6rem minmax(0, 1fr) 1.35rem;
+    grid-template-columns: 5.4rem minmax(0, 1fr) 1.65rem;
     align-items: center;
-    column-gap: 0.4rem;
-    min-height: 1.7rem;
-    padding: 0.22rem 0.1rem;
+    column-gap: 0.55rem;
+    min-height: 2.15rem;
+    padding: 0.4rem 0.15rem;
     border-radius: 0;
     border: none;
     background: transparent;
-    font-size: 0.84rem;
-    line-height: 1.2;
+    font-size: 0.95rem;
+    line-height: 1.25;
     color: var(--li-text);
     cursor: pointer;
 }
@@ -8092,7 +8092,7 @@ a.partners-public__card:hover .partners-public__name {
 }
 
 .public-favorite-dialog__choice-kind {
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -8105,23 +8105,23 @@ a.partners-public__card:hover .partners-public__name {
 
 .public-favorite-dialog__choice-name {
     min-width: 0;
-    font-size: 0.84rem;
+    font-size: 0.95rem;
     font-weight: 550;
     color: var(--li-text);
-    line-height: 1.2;
+    line-height: 1.25;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .public-favorite-dialog__choice-heart {
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 1.65rem;
+    height: 1.65rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    font-size: 0.85rem;
+    font-size: 1rem;
     line-height: 1;
     color: #b7c2b2;
     background: transparent;
@@ -8158,17 +8158,17 @@ a.partners-public__card:hover .partners-public__name {
 
 .public-favorite-dialog--pick .public-favorite-dialog__cta--save {
     margin-top: 0;
-    min-height: 2.35rem;
-    padding: 0.45rem 0.9rem;
-    font-size: 0.9rem;
+    min-height: 2.65rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.98rem;
 }
 
 .public-favorite-dialog--pick .public-favorite-dialog__close {
-    top: 0.45rem;
-    right: 0.45rem;
-    width: 1.9rem;
-    height: 1.9rem;
-    font-size: 1.2rem;
+    top: 0.55rem;
+    right: 0.55rem;
+    width: 2.15rem;
+    height: 2.15rem;
+    font-size: 1.3rem;
 }
 
 .public-favorite-dialog__empty {
