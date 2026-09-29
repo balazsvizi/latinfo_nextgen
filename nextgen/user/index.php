@@ -63,9 +63,13 @@ $favoritesByType = [
 ];
 foreach ($favorites as $fav) {
     $t = (string) ($fav['type'] ?? '');
-    if (isset($favoritesByType[$t])) {
-        $favoritesByType[$t][] = $fav;
+    $eid = (int) ($fav['id'] ?? 0);
+    if (!isset($favoritesByType[$t]) || $eid <= 0) {
+        continue;
     }
+    $state = latinfo_favorites_state($db, $t, $eid);
+    $fav['count'] = (int) ($state['count'] ?? 0);
+    $favoritesByType[$t][] = $fav;
 }
 $typeLabels = [
     LATINFO_FAVORITE_TYPE_EVENT => 'Események',
@@ -74,6 +78,17 @@ $typeLabels = [
     LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
     LATINFO_FAVORITE_TYPE_ZENEKAR => 'Zenekarok',
 ];
+$typeSingular = [
+    LATINFO_FAVORITE_TYPE_EVENT => 'Esemény',
+    LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervező',
+    LATINFO_FAVORITE_TYPE_VENUE => 'Helyszín',
+    LATINFO_FAVORITE_TYPE_DJ => 'DJ',
+    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Zenekar',
+];
+$favoritesTotal = 0;
+foreach ($favoritesByType as $items) {
+    $favoritesTotal += count($items);
+}
 $notificationEmail = trim((string) ($user['notification_email'] ?? ''));
 $accountEmail = trim((string) ($user['email'] ?? ''));
 
@@ -94,6 +109,8 @@ $S = [
 $cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $accountCssUrl = user_asset_url('assets/css/account.css') . '?v=' . rawurlencode(nextgen_app_version());
 $styleCssUrl = nextgen_url('assets/css/style.css') . '?v=' . rawurlencode(nextgen_app_version());
+$favoritesAjaxUrl = events_url('ajax_favorite.php');
+$accountFavoritesJsUrl = user_asset_url('assets/js/account-favorites.js') . '?v=' . rawurlencode(nextgen_app_version());
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -113,7 +130,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
     <link rel="stylesheet" href="<?= h($accountCssUrl) ?>">
 </head>
-<body class="event-public-page user-account-page">
+<body class="event-public-page user-account-page" data-favorites-ajax="<?= h($favoritesAjaxUrl) ?>">
 <div class="event-shell">
 <article class="event-public user-account-public">
     <header class="event-public__hero">
@@ -157,32 +174,86 @@ header('Content-Type: text/html; charset=UTF-8');
             </form>
         </section>
 
-        <section class="user-account-section">
-            <h2>Kedvenceim</h2>
-            <p class="user-account-help">Összesen <strong><?= count($favorites) ?></strong> kedvenc. A szívecskék száma az adott oldalon minden látogató összesített szívecskéjét mutatja.</p>
-            <?php foreach ($favoritesByType as $typeKey => $items): ?>
-                <div class="user-favorites-group">
-                    <h3><?= h($typeLabels[$typeKey] ?? $typeKey) ?></h3>
-                    <?php if ($items === []): ?>
-                        <p class="user-favorites-empty">Még nincs ilyen kedvenc.</p>
-                    <?php else: ?>
-                        <ul class="user-favorites-list">
+        <section
+            class="user-account-section user-favorites"
+            aria-labelledby="user-favorites-heading"
+            data-empty-home="<?= h(events_public_home_page_url('hu')) ?>"
+        >
+            <div class="user-favorites__head">
+                <div class="user-favorites__titles">
+                    <h2 id="user-favorites-heading">Kedvenceim</h2>
+                    <p class="user-account-help user-favorites__lead">A szívecskéid egy helyen. A szám minden látogató összesített kedvelését mutatja.</p>
+                </div>
+                <div class="user-favorites__total" title="Kedvenceid száma">
+                    <span class="user-favorites__total-heart" aria-hidden="true">♥</span>
+                    <span class="user-favorites__total-num" data-user-favorites-total><?= (int) $favoritesTotal ?></span>
+                </div>
+            </div>
+
+            <?php if ($favoritesTotal === 0): ?>
+                <div class="user-favorites-empty-state">
+                    <span class="user-favorites-empty-state__heart" aria-hidden="true">♡</span>
+                    <p class="user-favorites-empty-state__title">Még nincs kedvenced</p>
+                    <p class="user-favorites-empty-state__text">Eseményeken, szervezőknél, helyszíneken és DJ-knél a ♥ gombbal mentheted ide a kedvenceidet.</p>
+                    <a class="user-favorites-empty-state__cta" href="<?= h(events_public_home_page_url('hu')) ?>">Naptár böngészése</a>
+                </div>
+            <?php else: ?>
+                <?php foreach ($favoritesByType as $typeKey => $items): ?>
+                    <?php if ($items === []) {
+                        continue;
+                    } ?>
+                    <div class="user-favorites-group" data-fav-group="<?= h((string) $typeKey) ?>">
+                        <div class="user-favorites-group__head">
+                            <h3 class="user-favorites-group__title">
+                                <span class="user-favorites-group__badge user-favorites-group__badge--<?= h((string) $typeKey) ?>"><?= h($typeLabels[$typeKey] ?? $typeKey) ?></span>
+                            </h3>
+                            <span class="user-favorites-group__count" data-fav-group-count><?= count($items) ?></span>
+                        </div>
+                        <ul class="user-favorites-cards">
                             <?php foreach ($items as $item): ?>
-                                <li class="user-favorites-list__item">
-                                    <a class="user-favorites-list__link" href="<?= h((string) ($item['url'] ?? '#')) ?>"><?= h((string) ($item['label'] ?? '')) ?></a>
-                                    <form method="post" class="user-favorites-list__remove">
+                                <?php
+                                $itemType = (string) ($item['type'] ?? '');
+                                $itemId = (int) ($item['id'] ?? 0);
+                                $itemLabel = (string) ($item['label'] ?? '');
+                                $itemUrl = (string) ($item['url'] ?? '#');
+                                $itemCount = (int) ($item['count'] ?? 0);
+                                $itemTypeLabel = (string) ($typeSingular[$itemType] ?? $itemType);
+                                ?>
+                                <li
+                                    class="user-fav-card"
+                                    data-user-fav-card
+                                    data-entity-type="<?= h($itemType) ?>"
+                                    data-entity-id="<?= $itemId ?>"
+                                >
+                                    <a class="user-fav-card__body" href="<?= h($itemUrl) ?>">
+                                        <span class="user-fav-card__type"><?= h($itemTypeLabel) ?></span>
+                                        <span class="user-fav-card__title"><?= h($itemLabel) ?></span>
+                                        <span class="user-fav-card__public-count" title="Összes szívecske">
+                                            <span aria-hidden="true">♥</span>
+                                            <span data-user-fav-count><?= $itemCount ?></span>
+                                        </span>
+                                    </a>
+                                    <form method="post" class="user-fav-card__remove" data-user-fav-remove>
                                         <?= csrf_input('user_account') ?>
                                         <input type="hidden" name="action" value="remove_favorite">
-                                        <input type="hidden" name="entity_type" value="<?= h((string) ($item['type'] ?? '')) ?>">
-                                        <input type="hidden" name="entity_id" value="<?= (int) ($item['id'] ?? 0) ?>">
-                                        <button type="submit" class="btn btn-ghost btn-sm" aria-label="Kedvenc törlése">×</button>
+                                        <input type="hidden" name="entity_type" value="<?= h($itemType) ?>">
+                                        <input type="hidden" name="entity_id" value="<?= $itemId ?>">
+                                        <button
+                                            type="submit"
+                                            class="user-fav-card__unheart"
+                                            aria-label="<?= h('Kedvenc törlése: ' . $itemLabel) ?>"
+                                            title="Levétel a kedvencekből"
+                                        >
+                                            <span class="user-fav-card__unheart-icon" aria-hidden="true">♥</span>
+                                            <span class="user-fav-card__unheart-label">Levétel</span>
+                                        </button>
                                     </form>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </section>
     </div>
 
@@ -191,5 +262,6 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 </article>
 </div>
+<script src="<?= h($accountFavoritesJsUrl) ?>" defer></script>
 </body>
 </html>

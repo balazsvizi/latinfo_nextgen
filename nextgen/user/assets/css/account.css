@@ -231,7 +231,7 @@ body.event-public-page .user-account-shell {
 }
 
 .user-account-shell--wide {
-    max-width: 42rem;
+    max-width: 44rem;
 }
 
 .user-account-section {
@@ -280,43 +280,351 @@ body.event-public-page .user-account-shell {
     font: inherit;
 }
 
-.user-favorites-list {
+/* --- Kedvencek --- */
+.user-favorites__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.user-favorites__titles h2 {
+    margin-bottom: 0.35rem;
+}
+
+.user-favorites__lead {
+    margin-bottom: 0;
+}
+
+.user-favorites__total {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 3.25rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    background: linear-gradient(145deg, rgba(192, 57, 90, 0.12), rgba(192, 57, 90, 0.05));
+    border: 1px solid rgba(192, 57, 90, 0.22);
+    color: #b83252;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.user-favorites__total-heart {
+    font-size: 1.05rem;
+}
+
+.user-favorites__total-num {
+    font-size: 1rem;
+}
+
+.user-favorites-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.75rem 1rem 1.25rem;
+    border-radius: 14px;
+    border: 1px dashed rgba(109, 143, 99, 0.45);
+    background:
+        radial-gradient(ellipse 70% 80% at 50% 0%, rgba(192, 57, 90, 0.07), transparent 55%),
+        rgba(109, 143, 99, 0.04);
+}
+
+.user-favorites-empty-state__heart {
+    font-size: 2.4rem;
+    line-height: 1;
+    color: #c0395a;
+    opacity: 0.55;
+    margin-bottom: 0.65rem;
+}
+
+.user-favorites-empty-state__title {
+    margin: 0 0 0.4rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ua-brand);
+}
+
+.user-favorites-empty-state__text {
+    margin: 0 0 1.1rem;
+    max-width: 26rem;
+    font-size: 0.9rem;
+    color: var(--ua-muted);
+    line-height: 1.45;
+}
+
+.user-favorites-empty-state__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    background: var(--ua-accent);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.user-favorites-empty-state__cta:hover {
+    background: #56734d;
+}
+
+.user-favorites-group {
+    margin-top: 1.35rem;
+}
+
+.user-favorites-group:first-of-type {
+    margin-top: 0.25rem;
+}
+
+.user-favorites-group__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.65rem;
+}
+
+.user-favorites-group__title {
+    margin: 0;
+}
+
+.user-favorites-group__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--ua-brand);
+    background: var(--ua-accent-soft);
+    border: 1px solid transparent;
+}
+
+.user-favorites-group__badge--event {
+    background: rgba(109, 143, 99, 0.16);
+}
+
+.user-favorites-group__badge--organizer {
+    background: rgba(70, 110, 160, 0.12);
+    color: #35557a;
+}
+
+.user-favorites-group__badge--venue {
+    background: rgba(150, 120, 70, 0.14);
+    color: #6a5428;
+}
+
+.user-favorites-group__badge--dj,
+.user-favorites-group__badge--zenekar {
+    background: rgba(140, 90, 150, 0.12);
+    color: #6a4572;
+}
+
+.user-favorites-group__count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ua-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.user-favorites-cards {
     list-style: none;
     margin: 0;
     padding: 0;
-}
-
-.user-favorites-list__item {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.user-fav-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
     gap: 0.5rem;
-    padding: 0.35rem 0;
-    border-bottom: 1px solid var(--ua-line);
+    padding: 0.2rem 0.2rem 0.2rem 0.85rem;
+    border-radius: 14px;
+    border: 1px solid var(--ua-line);
+    background: linear-gradient(180deg, #fff 0%, #fbfcf9 100%);
+    box-shadow: 0 1px 2px rgba(45, 58, 40, 0.04);
+    transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        opacity 0.28s ease,
+        transform 0.28s ease;
 }
 
-.user-favorites-list__item:last-child {
-    border-bottom: none;
+.user-fav-card:hover {
+    border-color: rgba(109, 143, 99, 0.45);
+    box-shadow: 0 6px 18px rgba(45, 58, 40, 0.08);
 }
 
-.user-favorites-list__link {
-    flex: 1;
-    color: var(--ua-accent);
+.user-fav-card.is-busy {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.user-fav-card.is-removing {
+    opacity: 0;
+    transform: translateX(0.75rem) scale(0.98);
+}
+
+.user-fav-card__body {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    padding: 0.7rem 0.35rem 0.7rem 0;
     text-decoration: none;
-    font-weight: 500;
+    color: inherit;
 }
 
-.user-favorites-list__link:hover {
-    text-decoration: underline;
-}
-
-.user-favorites-list__remove {
-    margin: 0;
-}
-
-.user-favorites-empty {
-    margin: 0;
-    font-size: 0.88rem;
+.user-fav-card__type {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: var(--ua-muted);
+}
+
+.user-fav-card__title {
+    min-width: 0;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--ua-brand);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.user-fav-card__body:hover .user-fav-card__title {
+    color: var(--ua-accent);
+}
+
+.user-fav-card__public-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    padding: 0.22rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(192, 57, 90, 0.08);
+    color: #b83252;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.user-fav-card__remove {
+    margin: 0;
+    display: flex;
+    align-items: stretch;
+}
+
+.user-fav-card__unheart {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    min-width: 4.5rem;
+    margin: 0;
+    padding: 0.55rem 0.7rem;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(192, 57, 90, 0.1);
+    color: #c0395a;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.user-fav-card__unheart:hover {
+    background: rgba(192, 57, 90, 0.2);
+    color: #9b2d48;
+}
+
+.user-fav-card__unheart:focus-visible {
+    outline: 2px solid #c0395a;
+    outline-offset: 2px;
+}
+
+.user-fav-card__unheart:active {
+    transform: scale(0.97);
+}
+
+.user-fav-card__unheart:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+.user-fav-card__unheart-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.user-fav-card__unheart:hover .user-fav-card__unheart-icon {
+    transform: scale(1.08);
+}
+
+.user-fav-card__unheart-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+@media (max-width: 560px) {
+    .user-fav-card {
+        grid-template-columns: 1fr;
+        padding: 0.55rem 0.65rem 0.65rem;
+    }
+
+    .user-fav-card__body {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "type count"
+            "title title";
+        gap: 0.35rem 0.5rem;
+        padding: 0.25rem 0 0.55rem;
+    }
+
+    .user-fav-card__type {
+        grid-area: type;
+    }
+
+    .user-fav-card__title {
+        grid-area: title;
+    }
+
+    .user-fav-card__public-count {
+        grid-area: count;
+        justify-self: end;
+    }
+
+    .user-fav-card__unheart {
+        flex-direction: row;
+        width: 100%;
+        min-width: 0;
+        gap: 0.4rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 10px;
+    }
+
+    .user-fav-card__unheart-label {
+        font-size: 0.78rem;
+        text-transform: none;
+        letter-spacing: 0;
+    }
 }
 
 .btn-ghost {
