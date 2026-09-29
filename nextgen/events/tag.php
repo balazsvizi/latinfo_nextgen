@@ -69,6 +69,8 @@ $djProfile = events_tag_profile_for_public(events_tag_profile_load($db, $tagId))
 
 $tagTypeRows = events_public_tag_type_rows_for_display($db, $tagId);
 $tagIsDj = events_public_tag_has_type_code($db, $tagId, 'dj');
+$tagIsZenekar = events_public_tag_has_type_code($db, $tagId, 'zenekar');
+$tagFavoriteEligible = $tagIsDj || $tagIsZenekar;
 
 if ($fromDjPretty && !$tagIsDj) {
     http_response_code(404);
@@ -141,8 +143,8 @@ $adminEditUrl = $tagIsDj
     : events_url('tags.php?open_tag=') . $tagId;
 
 require_once dirname(__DIR__) . '/lib/user/favorites.php';
-$publicFavoritesEnabled = $tagIsDj && latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
-$favoriteEntityType = LATINFO_FAVORITE_TYPE_DJ;
+$publicFavoritesEnabled = $tagFavoriteEligible && latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteEntityType = $tagIsDj ? LATINFO_FAVORITE_TYPE_DJ : LATINFO_FAVORITE_TYPE_ZENEKAR;
 $favoriteEntityId = $tagId;
 $favoriteLang = $lang;
 $favoriteDialogLang = $lang;
@@ -287,7 +289,12 @@ header('Content-Type: text/html; charset=UTF-8');
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
-                <h1 class="event-public__title"><?= h($title) ?></h1>
+                <div class="event-public__title-row">
+                    <h1 class="event-public__title"><?= h($title) ?></h1>
+                    <?php if ($publicFavoritesEnabled && !$tagIsDj): ?>
+                        <?php require __DIR__ . '/partials/public_favorite_heart.php'; ?>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </div>
     </header>

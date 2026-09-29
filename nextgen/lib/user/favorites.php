@@ -9,6 +9,7 @@ const LATINFO_FAVORITE_TYPE_EVENT = 'event';
 const LATINFO_FAVORITE_TYPE_ORGANIZER = 'organizer';
 const LATINFO_FAVORITE_TYPE_VENUE = 'venue';
 const LATINFO_FAVORITE_TYPE_DJ = 'dj';
+const LATINFO_FAVORITE_TYPE_ZENEKAR = 'zenekar';
 
 const LATINFO_FAVORITES_VISITOR_COOKIE = 'latinfo_fav_vid';
 const EVENTS_APP_SETTING_PUBLIC_HEARTS = 'public_hearts_enabled';
@@ -23,7 +24,23 @@ function latinfo_favorite_entity_types(): array
         LATINFO_FAVORITE_TYPE_ORGANIZER,
         LATINFO_FAVORITE_TYPE_VENUE,
         LATINFO_FAVORITE_TYPE_DJ,
+        LATINFO_FAVORITE_TYPE_ZENEKAR,
     ];
+}
+
+function latinfo_favorites_entity_group_label(string $type, string $lang = 'hu'): string
+{
+    $type = latinfo_favorites_normalize_type($type) ?? '';
+    $isEn = $lang === 'en';
+
+    return match ($type) {
+        LATINFO_FAVORITE_TYPE_EVENT => $isEn ? 'Event' : 'Esemény',
+        LATINFO_FAVORITE_TYPE_ORGANIZER => $isEn ? 'Organizer' : 'Szervező',
+        LATINFO_FAVORITE_TYPE_VENUE => $isEn ? 'Venue' : 'Helyszín',
+        LATINFO_FAVORITE_TYPE_DJ => 'DJ',
+        LATINFO_FAVORITE_TYPE_ZENEKAR => $isEn ? 'Band' : 'Zenekar',
+        default => '',
+    };
 }
 
 function latinfo_favorites_table_ready(PDO $db, bool $forceRefresh = false): bool
@@ -257,6 +274,13 @@ function latinfo_favorites_entity_exists(PDO $db, string $type, int $entityId): 
                 }
 
                 return events_public_tag_has_type_code($db, $entityId, 'dj');
+            })(),
+            LATINFO_FAVORITE_TYPE_ZENEKAR => (static function () use ($db, $entityId): bool {
+                if (!function_exists('events_public_tag_has_type_code') || !events_tags_tables_available($db)) {
+                    return false;
+                }
+
+                return events_public_tag_has_type_code($db, $entityId, 'zenekar');
             })(),
             default => false,
         };
@@ -563,6 +587,22 @@ function latinfo_favorites_entity_public_meta(PDO $db, string $type, int $entity
                 }
 
                 return ['label' => $name, 'url' => events_url('tag.php?id=') . $entityId];
+            })(),
+            LATINFO_FAVORITE_TYPE_ZENEKAR => (static function () use ($db, $entityId, $lang): ?array {
+                if (!events_tags_tables_available($db) || !events_public_tag_has_type_code($db, $entityId, 'zenekar')) {
+                    return null;
+                }
+                $st = $db->prepare('SELECT `name` FROM `events_tags` WHERE `id` = ? LIMIT 1');
+                $st->execute([$entityId]);
+                $name = $st->fetchColumn();
+                if ($name === false) {
+                    return null;
+                }
+
+                return [
+                    'label' => (string) $name,
+                    'url' => events_public_tag_page_url($entityId, $lang),
+                ];
             })(),
             default => null,
         };

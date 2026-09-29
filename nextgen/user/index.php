@@ -58,6 +58,7 @@ $favoritesByType = [
     LATINFO_FAVORITE_TYPE_ORGANIZER => [],
     LATINFO_FAVORITE_TYPE_VENUE => [],
     LATINFO_FAVORITE_TYPE_DJ => [],
+    LATINFO_FAVORITE_TYPE_ZENEKAR => [],
 ];
 foreach ($favorites as $fav) {
     $t = (string) ($fav['type'] ?? '');
@@ -70,6 +71,7 @@ $typeLabels = [
     LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervezők',
     LATINFO_FAVORITE_TYPE_VENUE => 'Helyszínek',
     LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
+    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Zenekarok',
 ];
 $notificationEmail = trim((string) ($user['notification_email'] ?? ''));
 $accountEmail = trim((string) ($user['email'] ?? ''));

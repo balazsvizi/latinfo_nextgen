@@ -106,10 +106,28 @@
             cb.checked = !!item.active;
             cb.dataset.type = item.type;
             cb.dataset.id = String(item.id);
-            var span = document.createElement('span');
-            span.textContent = item.label || (item.type + ' #' + item.id);
+            var textWrap = document.createElement('span');
+            textWrap.className = 'public-favorite-dialog__choice-text';
+            var kindLabels = {
+                event: lang === 'en' ? 'Event' : 'Esemény',
+                organizer: lang === 'en' ? 'Organizer' : 'Szervező',
+                venue: lang === 'en' ? 'Venue' : 'Helyszín',
+                dj: 'DJ',
+                zenekar: lang === 'en' ? 'Band' : 'Zenekar',
+            };
+            var kindText = item.groupLabel || kindLabels[item.type] || item.type;
+            if (kindText) {
+                var kind = document.createElement('span');
+                kind.className = 'public-favorite-dialog__choice-kind';
+                kind.textContent = kindText;
+                textWrap.appendChild(kind);
+            }
+            var name = document.createElement('span');
+            name.className = 'public-favorite-dialog__choice-name';
+            name.textContent = item.label || ('#' + item.id);
+            textWrap.appendChild(name);
             label.appendChild(cb);
-            label.appendChild(span);
+            label.appendChild(textWrap);
             li.appendChild(label);
             listEl.appendChild(li);
         });
@@ -177,14 +195,13 @@
         var listEl = qs('[data-public-favorite-event-choices]', dlg);
         var lang = root.getAttribute('data-lang') || 'hu';
         buildEventChoices(listEl, picker, lang);
-        var cancelBtn = qs('[data-public-favorite-event-cancel]', dlg);
-        if (cancelBtn) {
+        qsa('[data-public-favorite-event-cancel]', dlg).forEach(function (cancelBtn) {
             cancelBtn.onclick = function () {
                 if (typeof dlg.close === 'function') {
                     dlg.close('cancel');
                 }
             };
-        }
+        });
         return openDialog(dlg).then(function (val) {
             if (val !== 'save') {
                 return;
