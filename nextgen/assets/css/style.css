@@ -65,15 +65,16 @@ body {
     width: 100%;
     max-width: 1280px;
     margin: 0 auto;
+    height: 100%;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: space-between;
     gap: 1rem;
 }
 
 .header-leading {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0.5rem;
     min-width: 0;
     flex-shrink: 0;
@@ -81,6 +82,8 @@ body {
 
 .header-app-launcher {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 
 .header-app-launcher .nav-parent-link--with-icon {
@@ -108,7 +111,7 @@ body {
 
 .header-trailing {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0.75rem;
     flex: 1;
     justify-content: flex-end;
@@ -116,6 +119,8 @@ body {
 }
 
 .logo {
+    display: inline-flex;
+    align-items: center;
     font-weight: 700;
     font-size: 1.25rem;
     color: var(--primary);
@@ -189,6 +194,7 @@ a.header-user:hover {
     height: 44px;
     align-items: center;
     justify-content: center;
+    align-self: center;
     background: none;
     border: none;
     border-radius: var(--radius-sm);
@@ -200,16 +206,22 @@ a.header-user:hover {
 .nav-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .nav-toggle .icon { font-size: 1.5rem; line-height: 1; }
 
-.main-nav { display: flex; align-items: center; gap: 0; flex-shrink: 1; min-width: 0; }
+/* Stretch: a menüpont kitölti a fejléc magasságát, így a hover nem szakad meg az almenü felé. */
+.main-nav { display: flex; align-items: stretch; gap: 0; flex-shrink: 1; min-width: 0; }
 .nav-list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0.125rem;
+    height: 100%;
 }
-.nav-item { position: relative; }
+.nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
 .nav-parent-wrap {
     display: inline-flex;
     align-items: center;
@@ -275,14 +287,15 @@ a.header-user:hover {
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
     position: absolute;
-    top: 100%;
+    /* Enyhe átfedés a triggerrel: nincs hover-gap a fejléc alsó szélénél. */
+    top: calc(100% - 2px);
     left: 0;
     z-index: 50;
     display: none;
 }
-.nav-item.has-submenu:hover .nav-submenu,
-.nav-item.has-submenu:focus-within .nav-submenu,
-.nav-item.has-submenu.is-open .nav-submenu {
+.nav-item.has-submenu:hover > .nav-submenu,
+.nav-item.has-submenu:focus-within > .nav-submenu,
+.nav-item.has-submenu.is-open > .nav-submenu {
     display: block;
 }
 .nav-submenu li { margin: 0; }
@@ -340,7 +353,10 @@ a.header-user:hover {
         align-items: stretch;
         gap: 0;
     }
-    .nav-item { position: static; }
+    .nav-item {
+        position: static;
+        display: block;
+    }
     .nav-item.has-submenu .nav-submenu {
         position: static;
         box-shadow: none;

@@ -519,7 +519,7 @@ a.event-lang-switch__sep--mcal:focus-visible {
     body:not(.event-public-page--mcal) .event-nav__list {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: stretch;
         gap: 0.15rem;
         border: 0;
         border-radius: 0;
@@ -530,6 +530,9 @@ a.event-lang-switch__sep--mcal:focus-visible {
 
     body:not(.event-public-page--mcal) .event-nav__item {
         position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
     body:not(.event-public-page--mcal) .event-nav__item + .event-nav__item {
@@ -558,10 +561,10 @@ a.event-lang-switch__sep--mcal:focus-visible {
         border-radius: 8px;
     }
 
-    /* A lenyilo a menupont aljahoz simul, hogy a hover ne szakadjon meg. */
+    /* A lenyilo a menupont aljahoz simul (+ enyhe atfedes), hogy a hover ne szakadjon meg. */
     body:not(.event-public-page--mcal) .event-nav__submenu {
         position: absolute;
-        top: 100%;
+        top: calc(100% - 2px);
         left: 0;
         z-index: 40;
         min-width: 12rem;
@@ -574,7 +577,16 @@ a.event-lang-switch__sep--mcal:focus-visible {
 
     body:not(.event-public-page--mcal) .event-nav__submenu .event-nav__submenu {
         top: -0.3rem;
-        left: 100%;
+        left: calc(100% - 2px);
+    }
+
+    body:not(.event-public-page--mcal) .event-nav__submenu .event-nav__submenu::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -0.5rem;
+        width: 0.5rem;
     }
 
     body:not(.event-public-page--mcal) .event-nav__item--parent:hover > .event-nav__submenu,
