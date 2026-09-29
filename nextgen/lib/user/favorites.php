@@ -26,10 +26,10 @@ function latinfo_favorite_entity_types(): array
     ];
 }
 
-function latinfo_favorites_table_ready(PDO $db): bool
+function latinfo_favorites_table_ready(PDO $db, bool $forceRefresh = false): bool
 {
     static $cached = null;
-    if ($cached !== null) {
+    if (!$forceRefresh && $cached !== null) {
         return $cached;
     }
     try {
@@ -52,6 +52,9 @@ function latinfo_favorites_ensure_schema(PDO $db): bool
     try {
         if (!function_exists('events_slug_redirects_ensure_schema')) {
             require_once dirname(__DIR__, 2) . '/events/lib/slug_redirects.php';
+        }
+        if (!function_exists('latinfo_users_ensure_schema')) {
+            require_once __DIR__ . '/users.php';
         }
         events_slug_redirects_ensure_schema($db);
         latinfo_users_ensure_schema($db);
@@ -77,9 +80,12 @@ function latinfo_favorites_ensure_schema(PDO $db): bool
         ');
         $st->execute([EVENTS_APP_SETTING_PUBLIC_HEARTS, '1']);
 
-        $done = true;
+        $ready = latinfo_favorites_table_ready($db, true);
+        if ($ready) {
+            $done = true;
+        }
 
-        return latinfo_favorites_table_ready($db);
+        return $ready;
     } catch (Throwable $ex) {
         error_log('latinfo_favorites_ensure_schema: ' . $ex->getMessage());
 
