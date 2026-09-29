@@ -43,6 +43,27 @@ function events_view_tracking_ip_hash(): ?string
 }
 
 /**
+ * Bejelentkezett regisztrált (latinfo) felhasználó ID — admin/partner nem számít.
+ */
+function events_view_tracking_current_user_id(): int
+{
+    if (!function_exists('user_current_id')) {
+        $auth = dirname(__DIR__, 2) . '/user/includes/auth.php';
+        if (is_file($auth)) {
+            require_once $auth;
+        }
+    }
+    if (!function_exists('user_is_logged_in') || !function_exists('user_current_id')) {
+        return 0;
+    }
+    if (!user_is_logged_in()) {
+        return 0;
+    }
+
+    return max(0, user_current_id());
+}
+
+/**
  * Kereső / AI / scraper User-Agent felismerés (UA alapú, nem 100%).
  */
 function events_view_tracking_detect_bot(?string $userAgent = null): bool
@@ -120,6 +141,57 @@ function events_view_tracking_ensure_bot_column(PDO $db): bool
     }
 
     return events_view_tracking_bot_column_ready($db, true);
+}
+
+function events_view_tracking_user_id_column_ready(PDO $db, bool $refresh = false): bool
+{
+    static $ready = null;
+    if ($refresh) {
+        $ready = null;
+    }
+    if ($ready !== null) {
+        return $ready;
+    }
+
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM `events_calendar_event_views` LIKE 'user_id'");
+        $ready = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        $ready = false;
+    }
+
+    return $ready;
+}
+
+/**
+ * user_id oszlop létrehozása, ha hiányzik (regisztrált látogató).
+ */
+function events_view_tracking_ensure_user_id_column(PDO $db): bool
+{
+    if (events_view_tracking_user_id_column_ready($db)) {
+        return true;
+    }
+
+    try {
+        $db->exec(
+            'ALTER TABLE `events_calendar_event_views`
+             ADD COLUMN `user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `ip_hash`'
+        );
+        try {
+            $db->exec(
+                'ALTER TABLE `events_calendar_event_views`
+                 ADD INDEX `idx_views_user_id` (`user_id`, `létrehozva`)'
+            );
+        } catch (Throwable) {
+            // Index opcionális / már létezhet.
+        }
+    } catch (Throwable $ex) {
+        error_log('events_view_tracking_ensure_user_id_column: ' . $ex->getMessage());
+
+        return false;
+    }
+
+    return events_view_tracking_user_id_column_ready($db, true);
 }
 
 /**
@@ -244,22 +316,40 @@ function events_track_event_view(PDO $db, int $eventId, string $metricType, ?str
 
     $isBot = events_view_tracking_detect_bot() ? 1 : 0;
     $botColumnReady = events_view_tracking_ensure_bot_column($db);
+    $userIdReady = events_view_tracking_ensure_user_id_column($db);
+    $userId = events_view_tracking_current_user_id();
+    $userIdParam = $userId > 0 ? $userId : null;
+    $ipHash = events_view_tracking_ip_hash();
 
     try {
-        if ($botColumnReady) {
+        if ($botColumnReady && $userIdReady) {
+            $stmt = $db->prepare(
+                'INSERT INTO `events_calendar_event_views`
+                    (`esemény_id`, `ip_hash`, `user_id`, `metric_type`, `source`, `is_bot`)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([$eventId, $ipHash, $userIdParam, $metricType, $source, $isBot]);
+        } elseif ($botColumnReady) {
             $stmt = $db->prepare(
                 'INSERT INTO `events_calendar_event_views`
                     (`esemény_id`, `ip_hash`, `metric_type`, `source`, `is_bot`)
                  VALUES (?, ?, ?, ?, ?)'
             );
-            $stmt->execute([$eventId, events_view_tracking_ip_hash(), $metricType, $source, $isBot]);
+            $stmt->execute([$eventId, $ipHash, $metricType, $source, $isBot]);
+        } elseif ($userIdReady) {
+            $stmt = $db->prepare(
+                'INSERT INTO `events_calendar_event_views`
+                    (`esemény_id`, `ip_hash`, `user_id`, `metric_type`, `source`)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([$eventId, $ipHash, $userIdParam, $metricType, $source]);
         } else {
             $stmt = $db->prepare(
                 'INSERT INTO `events_calendar_event_views`
                     (`esemény_id`, `ip_hash`, `metric_type`, `source`)
                  VALUES (?, ?, ?, ?)'
             );
-            $stmt->execute([$eventId, events_view_tracking_ip_hash(), $metricType, $source]);
+            $stmt->execute([$eventId, $ipHash, $metricType, $source]);
         }
     } catch (Throwable) {
         // Opcionális napló – ne törjük a megjelenítést.

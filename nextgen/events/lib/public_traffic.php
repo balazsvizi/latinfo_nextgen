@@ -206,6 +206,7 @@ function events_public_traffic_ensure_schema(PDO $db): bool
 
     if (events_public_traffic_tables_ready($db)) {
         $done = true;
+        events_public_traffic_ensure_user_id_column($db);
 
         return true;
     }
@@ -225,6 +226,7 @@ function events_public_traffic_ensure_schema(PDO $db): bool
                 `device` VARCHAR(16) NOT NULL DEFAULT \'unknown\',
                 `referrer_host` VARCHAR(191) NOT NULL DEFAULT \'\',
                 `ip_hash` CHAR(64) NULL DEFAULT NULL,
+                `user_id` INT UNSIGNED NULL DEFAULT NULL,
                 `is_bot` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
                 PRIMARY KEY (`id`),
                 KEY `idx_traffic_occurred` (`occurred_at`),
@@ -234,7 +236,8 @@ function events_public_traffic_ensure_schema(PDO $db): bool
                 KEY `idx_traffic_lang` (`lang`, `occurred_at`),
                 KEY `idx_traffic_device` (`device`, `occurred_at`),
                 KEY `idx_traffic_entity` (`page_key`, `entity_id`, `occurred_at`),
-                KEY `idx_traffic_ip` (`ip_hash`, `occurred_at`)
+                KEY `idx_traffic_ip` (`ip_hash`, `occurred_at`),
+                KEY `idx_traffic_user` (`user_id`, `occurred_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
     } catch (Throwable $e) {
@@ -246,9 +249,61 @@ function events_public_traffic_ensure_schema(PDO $db): bool
     $ok = events_public_traffic_tables_ready($db, true);
     if ($ok) {
         $done = true;
+        events_public_traffic_ensure_user_id_column($db);
     }
 
     return $ok;
+}
+
+function events_public_traffic_user_id_column_ready(PDO $db, bool $refresh = false): bool
+{
+    static $ready = null;
+    if ($refresh) {
+        $ready = null;
+    }
+    if ($ready !== null) {
+        return $ready;
+    }
+
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM `events_public_traffic` LIKE 'user_id'");
+        $ready = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        $ready = false;
+    }
+
+    return $ready;
+}
+
+function events_public_traffic_ensure_user_id_column(PDO $db): bool
+{
+    if (!events_public_traffic_tables_ready($db)) {
+        return false;
+    }
+    if (events_public_traffic_user_id_column_ready($db)) {
+        return true;
+    }
+
+    try {
+        $db->exec(
+            'ALTER TABLE `events_public_traffic`
+             ADD COLUMN `user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `ip_hash`'
+        );
+        try {
+            $db->exec(
+                'ALTER TABLE `events_public_traffic`
+                 ADD INDEX `idx_traffic_user` (`user_id`, `occurred_at`)'
+            );
+        } catch (Throwable) {
+            // Index opcionális / már létezhet.
+        }
+    } catch (Throwable $ex) {
+        error_log('events_public_traffic_ensure_user_id_column: ' . $ex->getMessage());
+
+        return false;
+    }
+
+    return events_public_traffic_user_id_column_ready($db, true);
 }
 
 /**
@@ -270,6 +325,7 @@ function events_public_traffic_record(PDO $db, array $row): void
     if (!events_public_traffic_ensure_schema($db)) {
         return;
     }
+    events_public_traffic_ensure_user_id_column($db);
 
     $eventType = (string) ($row['event_type'] ?? '');
     if (!in_array($eventType, [EVENTS_PUBLIC_TRAFFIC_PAGE_VIEW, EVENTS_PUBLIC_TRAFFIC_NAV_CLICK], true)) {
@@ -297,26 +353,53 @@ function events_public_traffic_record(PDO $db, array $row): void
         $label = substr($label, 0, 191);
     }
 
+    $userId = events_view_tracking_current_user_id();
+    $userIdParam = $userId > 0 ? $userId : null;
+    $userIdReady = events_public_traffic_user_id_column_ready($db);
+
     try {
-        $stmt = $db->prepare(
-            'INSERT INTO `events_public_traffic`
-                (`occurred_at`, `event_type`, `page_key`, `nav_key`, `entity_id`, `entity_label`,
-                 `lang`, `view_mode`, `device`, `referrer_host`, `ip_hash`, `is_bot`)
-             VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        );
-        $stmt->execute([
-            $eventType,
-            $pageKey,
-            $navKey,
-            max(0, (int) ($row['entity_id'] ?? 0)),
-            $label,
-            events_public_traffic_normalize_lang($row['lang'] ?? 'hu'),
-            $viewMode,
-            events_public_traffic_detect_device(),
-            events_public_traffic_referrer_host(),
-            events_view_tracking_ip_hash(),
-            events_view_tracking_detect_bot() ? 1 : 0,
-        ]);
+        if ($userIdReady) {
+            $stmt = $db->prepare(
+                'INSERT INTO `events_public_traffic`
+                    (`occurred_at`, `event_type`, `page_key`, `nav_key`, `entity_id`, `entity_label`,
+                     `lang`, `view_mode`, `device`, `referrer_host`, `ip_hash`, `user_id`, `is_bot`)
+                 VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                $eventType,
+                $pageKey,
+                $navKey,
+                max(0, (int) ($row['entity_id'] ?? 0)),
+                $label,
+                events_public_traffic_normalize_lang($row['lang'] ?? 'hu'),
+                $viewMode,
+                events_public_traffic_detect_device(),
+                events_public_traffic_referrer_host(),
+                events_view_tracking_ip_hash(),
+                $userIdParam,
+                events_view_tracking_detect_bot() ? 1 : 0,
+            ]);
+        } else {
+            $stmt = $db->prepare(
+                'INSERT INTO `events_public_traffic`
+                    (`occurred_at`, `event_type`, `page_key`, `nav_key`, `entity_id`, `entity_label`,
+                     `lang`, `view_mode`, `device`, `referrer_host`, `ip_hash`, `is_bot`)
+                 VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                $eventType,
+                $pageKey,
+                $navKey,
+                max(0, (int) ($row['entity_id'] ?? 0)),
+                $label,
+                events_public_traffic_normalize_lang($row['lang'] ?? 'hu'),
+                $viewMode,
+                events_public_traffic_detect_device(),
+                events_public_traffic_referrer_host(),
+                events_view_tracking_ip_hash(),
+                events_view_tracking_detect_bot() ? 1 : 0,
+            ]);
+        }
     } catch (Throwable) {
         // Ne törjük a nyilvános oldalt.
     }

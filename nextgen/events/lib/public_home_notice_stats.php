@@ -95,12 +95,14 @@ function events_public_home_notice_stats_ensure_schema(PDO $db): bool
                     `notice_text` VARCHAR(500) NOT NULL DEFAULT \'\',
                     `notice_url` VARCHAR(500) NOT NULL DEFAULT \'\',
                     `ip_hash` CHAR(64) NULL DEFAULT NULL,
+                    `user_id` INT UNSIGNED NULL DEFAULT NULL,
                     `is_bot` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
                     PRIMARY KEY (`id`),
                     KEY `idx_notice_clicks_clicked` (`clicked_at`),
                     KEY `idx_notice_clicks_version` (`version_id`, `clicked_at`),
                     KEY `idx_notice_clicks_notice` (`notice_id`, `clicked_at`),
-                    KEY `idx_notice_clicks_bot` (`is_bot`)
+                    KEY `idx_notice_clicks_bot` (`is_bot`),
+                    KEY `idx_notice_clicks_user` (`user_id`, `clicked_at`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ');
         }
@@ -125,6 +127,18 @@ function events_public_home_notice_stats_ensure_schema(PDO $db): bool
             events_public_home_notice_has_column($db, 'events_public_home_notice_clicks', 'notice_id', true);
             try {
                 $db->exec('ALTER TABLE `events_public_home_notice_clicks` ADD KEY `idx_notice_clicks_notice` (`notice_id`, `clicked_at`)');
+            } catch (Throwable) {
+                // A kulcs már létezhet.
+            }
+        }
+        if (!events_public_home_notice_has_column($db, 'events_public_home_notice_clicks', 'user_id', true)) {
+            $db->exec(
+                'ALTER TABLE `events_public_home_notice_clicks`
+                 ADD COLUMN `user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `ip_hash`'
+            );
+            events_public_home_notice_has_column($db, 'events_public_home_notice_clicks', 'user_id', true);
+            try {
+                $db->exec('ALTER TABLE `events_public_home_notice_clicks` ADD KEY `idx_notice_clicks_user` (`user_id`, `clicked_at`)');
             } catch (Throwable) {
                 // A kulcs már létezhet.
             }
@@ -310,23 +324,45 @@ function events_public_home_notice_track_click(PDO $db, int $versionId, string $
     $isBot = events_view_tracking_detect_bot() ? 1 : 0;
     $now = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
     $noticeId = (int) ($version['notice_id'] ?? 0);
+    $userId = events_view_tracking_current_user_id();
+    $userIdParam = $userId > 0 ? $userId : null;
+    $userIdReady = events_public_home_notice_has_column($db, 'events_public_home_notice_clicks', 'user_id');
 
     try {
-        $ins = $db->prepare(
-            'INSERT INTO `events_public_home_notice_clicks`
-                (`version_id`, `notice_id`, `clicked_at`, `lang`, `notice_text`, `notice_url`, `ip_hash`, `is_bot`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        );
-        $ins->execute([
-            $version['id'],
-            $noticeId > 0 ? $noticeId : null,
-            $now,
-            $lang,
-            $displayed,
-            mb_substr($url, 0, 500),
-            events_view_tracking_ip_hash(),
-            $isBot,
-        ]);
+        if ($userIdReady) {
+            $ins = $db->prepare(
+                'INSERT INTO `events_public_home_notice_clicks`
+                    (`version_id`, `notice_id`, `clicked_at`, `lang`, `notice_text`, `notice_url`, `ip_hash`, `user_id`, `is_bot`)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $ins->execute([
+                $version['id'],
+                $noticeId > 0 ? $noticeId : null,
+                $now,
+                $lang,
+                $displayed,
+                mb_substr($url, 0, 500),
+                events_view_tracking_ip_hash(),
+                $userIdParam,
+                $isBot,
+            ]);
+        } else {
+            $ins = $db->prepare(
+                'INSERT INTO `events_public_home_notice_clicks`
+                    (`version_id`, `notice_id`, `clicked_at`, `lang`, `notice_text`, `notice_url`, `ip_hash`, `is_bot`)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $ins->execute([
+                $version['id'],
+                $noticeId > 0 ? $noticeId : null,
+                $now,
+                $lang,
+                $displayed,
+                mb_substr($url, 0, 500),
+                events_view_tracking_ip_hash(),
+                $isBot,
+            ]);
+        }
 
         return true;
     } catch (Throwable $e) {

@@ -137,25 +137,22 @@ function events_realtime_device_label(string $device): string
 }
 
 /**
- * Stabil látogatójelölés az ip_hash alapján. A teljes hash nem kerül a kliensre.
+ * Stabil látogatójelölés: regisztrált usernél a név, egyébként ip_hash alapú álnév.
+ * A teljes hash nem kerül a kliensre.
  *
- * @return array{key: string, label: string, color: string, emoji: string, code: string, is_bot: bool}
+ * @return array{
+ *   key: string,
+ *   label: string,
+ *   color: string,
+ *   emoji: string,
+ *   code: string,
+ *   is_bot: bool,
+ *   user_id: int,
+ *   is_registered: bool
+ * }
  */
-function events_realtime_visitor_mark(?string $ipHash, bool $isBot): array
+function events_realtime_visitor_mark(?string $ipHash, bool $isBot, int $userId = 0, string $userName = ''): array
 {
-    $hash = strtolower(trim((string) $ipHash));
-    $unknown = [
-        'key' => '',
-        'label' => $isBot ? 'Ismeretlen bot' : 'Ismeretlen',
-        'color' => '#8b9198',
-        'emoji' => '•',
-        'code' => '',
-        'is_bot' => $isBot,
-    ];
-    if ($hash === '' || preg_match('/^[0-9a-f]{8,}$/', $hash) !== 1) {
-        return $unknown;
-    }
-
     $animals = [
         ['emoji' => '🦊', 'name' => 'róka'],
         ['emoji' => '🦉', 'name' => 'bagoly'],
@@ -193,6 +190,42 @@ function events_realtime_visitor_mark(?string $ipHash, bool $isBot): array
         ['name' => 'Barna', 'hex' => '#8a5a3a'],
     ];
 
+    if ($userId > 0) {
+        $seed = hash('sha256', 'uid:' . $userId);
+        $animal = $animals[hexdec(substr($seed, 0, 2)) % count($animals)];
+        $color = $colors[hexdec(substr($seed, 2, 2)) % count($colors)];
+        $label = trim($userName);
+        if ($label === '') {
+            $label = 'Felhasználó #' . $userId;
+        }
+
+        return [
+            'key' => 'u' . $userId,
+            'label' => $label,
+            'color' => $color['hex'],
+            'emoji' => $animal['emoji'],
+            'code' => '',
+            'is_bot' => $isBot,
+            'user_id' => $userId,
+            'is_registered' => true,
+        ];
+    }
+
+    $hash = strtolower(trim((string) $ipHash));
+    $unknown = [
+        'key' => '',
+        'label' => $isBot ? 'Ismeretlen bot' : 'Ismeretlen',
+        'color' => '#8b9198',
+        'emoji' => '•',
+        'code' => '',
+        'is_bot' => $isBot,
+        'user_id' => 0,
+        'is_registered' => false,
+    ];
+    if ($hash === '' || preg_match('/^[0-9a-f]{8,}$/', $hash) !== 1) {
+        return $unknown;
+    }
+
     $animal = $animals[hexdec(substr($hash, 0, 2)) % count($animals)];
     $color = $colors[hexdec(substr($hash, 2, 2)) % count($colors)];
 
@@ -203,20 +236,111 @@ function events_realtime_visitor_mark(?string $ipHash, bool $isBot): array
         'emoji' => $animal['emoji'],
         'code' => strtoupper(substr($hash, 0, 4)),
         'is_bot' => $isBot,
+        'user_id' => 0,
+        'is_registered' => false,
     ];
+}
+
+/**
+ * @param list<int> $userIds
+ * @return array<int, string>
+ */
+function events_realtime_user_names(PDO $db, array $userIds): array
+{
+    $ids = [];
+    foreach ($userIds as $id) {
+        $id = (int) $id;
+        if ($id > 0) {
+            $ids[$id] = true;
+        }
+    }
+    if ($ids === []) {
+        return [];
+    }
+
+    $idList = array_keys($ids);
+    $placeholders = implode(',', array_fill(0, count($idList), '?'));
+
+    try {
+        if (!function_exists('latinfo_users_table_ready')) {
+            $usersLib = dirname(__DIR__, 2) . '/lib/user/users.php';
+            if (is_file($usersLib)) {
+                require_once $usersLib;
+            }
+        }
+        if (function_exists('latinfo_users_table_ready') && !latinfo_users_table_ready($db)) {
+            return [];
+        }
+
+        $stmt = $db->prepare(
+            "SELECT `id`, `name` FROM `latinfo_users` WHERE `id` IN ({$placeholders})"
+        );
+        $stmt->execute($idList);
+        $out = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $out[$id] = trim((string) ($row['name'] ?? ''));
+        }
+
+        return $out;
+    } catch (Throwable $ex) {
+        error_log('events_realtime_user_names: ' . $ex->getMessage());
+
+        return [];
+    }
+}
+
+/**
+ * @param list<array<string, mixed>> $items
+ * @return list<array<string, mixed>>
+ */
+function events_realtime_apply_user_names(PDO $db, array $items): array
+{
+    $ids = [];
+    foreach ($items as $row) {
+        $uid = (int) ($row['user_id'] ?? 0);
+        if ($uid > 0) {
+            $ids[$uid] = true;
+        }
+    }
+    if ($ids === []) {
+        return $items;
+    }
+
+    $names = events_realtime_user_names($db, array_keys($ids));
+    foreach ($items as &$row) {
+        $uid = (int) ($row['user_id'] ?? 0);
+        if ($uid <= 0) {
+            continue;
+        }
+        $row['visitor'] = events_realtime_visitor_mark(
+            null,
+            !empty($row['is_bot']),
+            $uid,
+            $names[$uid] ?? ''
+        );
+    }
+    unset($row);
+
+    return $items;
 }
 
 /**
  * @param array<string, mixed> $item
  * @return array<string, mixed>
  */
-function events_realtime_with_visitor(array $item, mixed $ipHash, bool $isBot, string $device = ''): array
+function events_realtime_with_visitor(array $item, mixed $ipHash, bool $isBot, string $device = '', int $userId = 0): array
 {
     $normalized = events_public_traffic_normalize_device($device);
+    $userId = max(0, $userId);
     $item['is_bot'] = $isBot;
     $item['device'] = $normalized;
     $item['device_label'] = events_realtime_device_label($normalized);
-    $item['visitor'] = events_realtime_visitor_mark(is_string($ipHash) ? $ipHash : null, $isBot);
+    $item['user_id'] = $userId;
+    $item['visitor'] = events_realtime_visitor_mark(is_string($ipHash) ? $ipHash : null, $isBot, $userId);
 
     return $item;
 }
@@ -232,6 +356,7 @@ function events_realtime_with_visitor(array $item, mixed $ipHash, bool $isBot, s
  *   emoji: string,
  *   code: string,
  *   is_bot: bool,
+ *   user_id: int,
  *   hits: int,
  *   last_at: string,
  *   last_target: string,
@@ -259,6 +384,7 @@ function events_realtime_presence_from_items(array $items): array
                 'emoji' => (string) ($mark['emoji'] ?? '•'),
                 'code' => (string) ($mark['code'] ?? ''),
                 'is_bot' => !empty($mark['is_bot']),
+                'user_id' => (int) ($mark['user_id'] ?? $row['user_id'] ?? 0),
                 'hits' => 0,
                 'last_at' => (string) ($row['at'] ?? ''),
                 'last_target' => (string) ($row['target'] ?? ''),
@@ -333,6 +459,7 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
     $visitor = events_realtime_normalize_visitor($visitor);
 
     events_view_tracking_ensure_bot_column($db);
+    events_view_tracking_ensure_user_id_column($db);
     events_realtime_ensure_indexes($db);
     events_public_traffic_ensure_schema($db);
     events_public_home_notice_stats_ensure_schema($db);
@@ -909,10 +1036,12 @@ function events_realtime_recent_all(
 
     $botSelect = $botReady ? 'v.`is_bot`' : '0 AS `is_bot`';
     $metricSelect = $tableReady ? 'v.`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
+    $userIdReady = events_view_tracking_user_id_column_ready($db);
+    $userSelect = $userIdReady ? 'v.`user_id`' : '0 AS `user_id`';
     $eventsBotAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
     $sqlEvents = "SELECT v.`létrehozva` AS at_ts, v.`esemény_id` AS event_id,
                          e.`event_name`, e.`event_start`, e.`event_end`, e.`event_allday`,
-                         {$metricSelect}, v.`source`, {$botSelect}, v.`ip_hash`
+                         {$metricSelect}, v.`source`, {$botSelect}, v.`ip_hash`, {$userSelect}
                   FROM `events_calendar_event_views` v
                   LEFT JOIN `events_calendar_events` e ON e.`id` = v.`esemény_id`
                   WHERE v.`létrehozva` >= ?{$eventsBotAnd}
@@ -948,13 +1077,15 @@ function events_realtime_recent_all(
             'metric_label' => events_realtime_metric_label($metric),
             'source' => $source,
             'source_label' => events_realtime_source_label($source),
-        ], $row['ip_hash'] ?? null, $isBot);
+        ], $row['ip_hash'] ?? null, $isBot, '', (int) ($row['user_id'] ?? 0));
     }
 
     if ($trafficReady) {
         $trafficBotAnd = events_realtime_bot_and($visitor, true);
+        $trafficUserReady = events_public_traffic_user_id_column_ready($db);
+        $trafficUserSelect = $trafficUserReady ? '`user_id`' : '0 AS `user_id`';
         $sqlTraffic = "SELECT `occurred_at` AS at_ts, `event_type`, `page_key`, `nav_key`,
-                              `entity_label`, `lang`, `device`, `is_bot`, `ip_hash`
+                              `entity_label`, `lang`, `device`, `is_bot`, `ip_hash`, {$trafficUserSelect}
                        FROM `events_public_traffic`
                        WHERE `occurred_at` >= ?{$trafficBotAnd}
                        ORDER BY `occurred_at` DESC
@@ -989,7 +1120,7 @@ function events_realtime_recent_all(
                     'metric_label' => events_realtime_metric_label('nav_click'),
                     'source' => $navKey,
                     'source_label' => $target,
-                ], $row['ip_hash'] ?? null, $isBot, (string) ($row['device'] ?? ''));
+                ], $row['ip_hash'] ?? null, $isBot, (string) ($row['device'] ?? ''), (int) ($row['user_id'] ?? 0));
             } else {
                 $target = events_public_traffic_page_label($pageKey);
                 if ($entityLabel !== '') {
@@ -1010,14 +1141,16 @@ function events_realtime_recent_all(
                     'metric_label' => events_realtime_metric_label('hub_page'),
                     'source' => $pageKey,
                     'source_label' => events_public_traffic_page_label($pageKey),
-                ], $row['ip_hash'] ?? null, $isBot, (string) ($row['device'] ?? ''));
+                ], $row['ip_hash'] ?? null, $isBot, (string) ($row['device'] ?? ''), (int) ($row['user_id'] ?? 0));
             }
         }
     }
 
     if ($noticeReady) {
         $noticeBotAnd = events_realtime_bot_and($visitor, true);
-        $sqlNotice = "SELECT `clicked_at` AS at_ts, `notice_text`, `notice_url`, `lang`, `is_bot`, `ip_hash`
+        $noticeUserReady = events_public_home_notice_has_column($db, 'events_public_home_notice_clicks', 'user_id');
+        $noticeUserSelect = $noticeUserReady ? '`user_id`' : '0 AS `user_id`';
+        $sqlNotice = "SELECT `clicked_at` AS at_ts, `notice_text`, `notice_url`, `lang`, `is_bot`, `ip_hash`, {$noticeUserSelect}
                       FROM `events_public_home_notice_clicks`
                       WHERE `clicked_at` >= ?{$noticeBotAnd}
                       ORDER BY `clicked_at` DESC
@@ -1046,7 +1179,7 @@ function events_realtime_recent_all(
                 'metric_label' => events_realtime_metric_label('notice_click'),
                 'source' => 'notice',
                 'source_label' => 'Értesítő',
-            ], $row['ip_hash'] ?? null, $isBot);
+            ], $row['ip_hash'] ?? null, $isBot, '', (int) ($row['user_id'] ?? 0));
         }
     }
 
@@ -1056,6 +1189,8 @@ function events_realtime_recent_all(
             return strcmp((string) ($b['at'] ?? ''), (string) ($a['at'] ?? ''));
         }
     );
+
+    $items = events_realtime_apply_user_names($db, $items);
 
     return [
         'recent' => array_slice($items, 0, $fetchLimit),
