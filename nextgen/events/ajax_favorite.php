@@ -38,6 +38,15 @@ if (!latinfo_favorites_public_enabled($db)) {
     exit;
 }
 
+$loggedIn = user_is_logged_in();
+$userId = $loggedIn ? user_current_id() : 0;
+if ($userId > 0) {
+    latinfo_favorites_merge_visitor_to_user($db, $userId);
+}
+$actorKey = $userId > 0
+    ? latinfo_favorites_user_actor_key($userId)
+    : latinfo_favorites_current_actor_key();
+
 $action = trim((string) ($_POST['action'] ?? 'toggle'));
 $lang = strtolower(trim((string) ($_POST['lang'] ?? 'hu'))) === 'en' ? 'en' : 'hu';
 
@@ -50,12 +59,12 @@ try {
             echo json_encode(['ok' => false, 'error' => 'Hiányzó paraméter.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
-        $state = latinfo_favorites_state($db, $type, $entityId);
+        $state = latinfo_favorites_state($db, $type, $entityId, $actorKey);
         echo json_encode([
             'ok' => true,
             'active' => $state['active'],
             'count' => $state['count'],
-            'logged_in' => user_is_logged_in(),
+            'logged_in' => $userId > 0,
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -85,7 +94,7 @@ try {
             echo json_encode(['ok' => false, 'error' => 'Nincs kiválasztott kedvenc.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
-        $batch = latinfo_favorites_apply_batch($db, $items, $active);
+        $batch = latinfo_favorites_apply_batch($db, $items, $active, $actorKey);
         if (!$batch['ok']) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => $batch['error']], JSON_UNESCAPED_UNICODE);
@@ -94,7 +103,7 @@ try {
         echo json_encode([
             'ok' => true,
             'results' => $batch['results'],
-            'logged_in' => user_is_logged_in(),
+            'logged_in' => $userId > 0,
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -107,7 +116,7 @@ try {
         exit;
     }
 
-    $result = latinfo_favorites_toggle($db, $type, $entityId);
+    $result = latinfo_favorites_toggle($db, $type, $entityId, $actorKey);
     if (!$result['ok']) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => $result['error']], JSON_UNESCAPED_UNICODE);
@@ -118,7 +127,7 @@ try {
         'ok' => true,
         'active' => $result['active'],
         'count' => $result['count'],
-        'logged_in' => user_is_logged_in(),
+        'logged_in' => $userId > 0,
         'lang' => $lang,
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {

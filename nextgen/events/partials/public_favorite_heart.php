@@ -29,7 +29,11 @@ if (!function_exists('user_is_logged_in')) {
 }
 
 $state = latinfo_favorites_state($dbFav, $favoriteEntityType, $favoriteEntityId);
-$isEventPicker = $favoriteEntityType === LATINFO_FAVORITE_TYPE_EVENT && $favoriteEventPicker !== null;
+$isLoggedIn = user_is_logged_in();
+// Bejelentkezve az esemény oldalon is közvetlen toggle; picker csak vendégnél.
+$isEventPicker = !$isLoggedIn
+    && $favoriteEntityType === LATINFO_FAVORITE_TYPE_EVENT
+    && $favoriteEventPicker !== null;
 if ($isEventPicker && !empty($favoriteEventPicker['items']) && is_array($favoriteEventPicker['items'])) {
     foreach ($favoriteEventPicker['items'] as $pickRow) {
         if (!empty($pickRow['active'])) {
@@ -53,7 +57,7 @@ $ariaLabel = $state['active'] ? $labelRemove : $labelAdd;
     data-entity-type="<?= h($favoriteEntityType) ?>"
     data-entity-id="<?= (int) $favoriteEntityId ?>"
     data-lang="<?= h($favoriteLang) ?>"
-    data-logged-in="<?= user_is_logged_in() ? '1' : '0' ?>"
+    data-logged-in="<?= $isLoggedIn ? '1' : '0' ?>"
     data-active="<?= $state['active'] ? '1' : '0' ?>"
     data-count="<?= (int) $state['count'] ?>"
     <?php if ($pickerJson !== '' && $pickerJson !== false): ?>

@@ -44,17 +44,56 @@
         });
     }
 
-    function updateWidget(root, active, count) {
+function updateWidget(root, active, count) {
         root.setAttribute('data-active', active ? '1' : '0');
         root.setAttribute('data-count', String(count));
         var btn = qs('[data-public-favorite-btn]', root);
         var countEl = qs('[data-public-favorite-count]', root);
+        var lang = root.getAttribute('data-lang') || 'hu';
         if (btn) {
             btn.classList.toggle('is-active', !!active);
             btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            btn.setAttribute(
+                'aria-label',
+                active
+                    ? (lang === 'en' ? 'Remove from favorites' : 'Kedvenc törlése')
+                    : (lang === 'en' ? 'Add to favorites' : 'Kedvencnek jelölés')
+            );
         }
         if (countEl) {
             countEl.textContent = String(count);
+        }
+    }
+
+    function markLoggedIn(root) {
+        if (root) {
+            root.setAttribute('data-logged-in', '1');
+        }
+        qsa('[data-public-favorite]').forEach(function (el) {
+            el.setAttribute('data-logged-in', '1');
+        });
+        try {
+            localStorage.removeItem(GUEST_KEY);
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
+    function syncPickerActive(root, type, id, active) {
+        var raw = root.getAttribute('data-event-picker');
+        if (!raw) {
+            return;
+        }
+        try {
+            var picker = JSON.parse(raw);
+            (picker.items || []).forEach(function (item) {
+                if (item && item.type === type && String(item.id) === String(id)) {
+                    item.active = !!active;
+                }
+            });
+            root.setAttribute('data-event-picker', JSON.stringify(picker));
+        } catch (e) {
+            /* ignore */
         }
     }
 
@@ -197,13 +236,21 @@
             if (!res.ok || !res.json || !res.json.ok) {
                 throw new Error((res.json && res.json.error) || 'error');
             }
+            if (res.json.logged_in) {
+                markLoggedIn(root);
+            }
             syncAllOfType(type, id, !!res.json.active, res.json.count);
+            syncPickerActive(root, type, id, !!res.json.active);
         });
     }
 
     function openEventPicker(root) {
         var raw = root.getAttribute('data-event-picker');
         if (!raw) {
+            return toggleSimple(root);
+        }
+        // Bejelentkezve: újra kattintás = közvetlen ki/be, nem kell picker.
+        if (root.getAttribute('data-logged-in') === '1' && root.getAttribute('data-active') === '1') {
             return toggleSimple(root);
         }
         var picker;
@@ -238,7 +285,7 @@
                     toOff.push(item);
                 }
             });
-            var chain = Promise.resolve();
+            var chain = Promise.resolve({ ok: true, json: { results: [] } });
             if (toOff.length) {
                 chain = chain.then(function () {
                     return postForm({
@@ -250,21 +297,44 @@
                 });
             }
             if (toOn.length) {
-                chain = chain.then(function () {
+                chain = chain.then(function (prev) {
                     return postForm({
                         action: 'batch',
                         active: '1',
                         items: JSON.stringify(toOn),
                         lang: lang,
+                    }).then(function (next) {
+                        var merged = [];
+                        if (prev && prev.json && prev.json.results) {
+                            merged = merged.concat(prev.json.results);
+                        }
+                        if (next && next.json && next.json.results) {
+                            merged = merged.concat(next.json.results);
+                        }
+                        return {
+                            ok: !!(next && next.ok && next.json && next.json.ok),
+                            json: {
+                                results: merged,
+                                logged_in: next && next.json ? next.json.logged_in : false,
+                            },
+                        };
                     });
                 });
             }
             return chain.then(function (res) {
-                if (res && res.json && res.json.results) {
-                    res.json.results.forEach(function (row) {
-                        syncAllOfType(row.type, row.id, !!row.active, row.count);
-                    });
+                if (!res || !res.ok) {
+                    throw new Error((res && res.json && res.json.error) || 'error');
                 }
+                if (res.json && res.json.logged_in) {
+                    markLoggedIn(root);
+                }
+                (res.json.results || []).forEach(function (row) {
+                    syncAllOfType(row.type, row.id, !!row.active, row.count);
+                    syncPickerActive(root, row.type, row.id, !!row.active);
+                });
+                checks.forEach(function (cb) {
+                    syncPickerActive(root, cb.dataset.type, cb.dataset.id, !!cb.checked);
+                });
                 var anyActive = checks.some(function (cb) {
                     return cb.checked;
                 });
@@ -278,6 +348,9 @@
                     var count = parseInt(root.getAttribute('data-count'), 10) || 0;
                     if (st.ok && st.json && st.json.ok) {
                         count = st.json.count;
+                        if (st.json.logged_in) {
+                            markLoggedIn(root);
+                        }
                     }
                     updateWidget(root, anyActive, count);
                 });
@@ -295,11 +368,18 @@
             return;
         }
         ev.preventDefault();
+        if (btn.disabled) {
+            return;
+        }
         btn.disabled = true;
         ensureAuth(root)
             .then(function (ok) {
                 if (!ok) {
                     return;
+                }
+                // Bejelentkezve: mindig közvetlen mentés / törlés (újra kattintás).
+                if (root.getAttribute('data-logged-in') === '1') {
+                    return toggleSimple(root);
                 }
                 if (root.getAttribute('data-mode') === 'event') {
                     return openEventPicker(root);

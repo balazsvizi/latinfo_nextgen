@@ -641,15 +641,14 @@ function latinfo_favorites_list_for_user(PDO $db, int $userId, string $lang = 'h
         $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $out = [];
         foreach ($rows as $row) {
-            $meta = latinfo_favorites_entity_public_meta($db, (string) $row['entity_type'], (int) $row['entity_id'], $lang);
-            if ($meta === null) {
-                continue;
-            }
+            $type = (string) ($row['entity_type'] ?? '');
+            $eid = (int) ($row['entity_id'] ?? 0);
+            $meta = latinfo_favorites_entity_public_meta($db, $type, $eid, $lang);
             $out[] = [
-                'type' => (string) $row['entity_type'],
-                'id' => (int) $row['entity_id'],
-                'label' => $meta['label'],
-                'url' => $meta['url'],
+                'type' => $type,
+                'id' => $eid,
+                'label' => $meta['label'] ?? ('#' . $eid),
+                'url' => $meta['url'] ?? '#',
                 'created_at' => (string) ($row['created_at'] ?? ''),
             ];
         }

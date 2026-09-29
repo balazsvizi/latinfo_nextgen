@@ -52,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $user = user_current($db) ?? $user;
+latinfo_favorites_merge_visitor_to_user($db, $userId);
 $favorites = latinfo_favorites_list_for_user($db, $userId, 'hu');
 $favoritesByType = [
     LATINFO_FAVORITE_TYPE_EVENT => [],
