@@ -24,4 +24,8 @@ if (latinfo_user_set_active($db, $id, true)) {
 } else {
     flash('error', 'Az engedélyezés sikertelen.');
 }
+$return = trim((string) ($_POST['return'] ?? ''));
+if ($return === 'profil') {
+    redirect(nextgen_url('admin/users/profil.php?id=' . $id));
+}
 redirect(nextgen_url('admin/users/'));

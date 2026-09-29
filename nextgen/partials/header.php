@@ -154,6 +154,15 @@ if ($navZone === 'events') {
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('admin/users/')) ?>" class="nav-parent-link">Userek</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-users" aria-label="Userek almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-latinfo-users" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('admin/users/')) ?>" role="menuitem">User lista</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('events/fooldal_szerkeszt.php')) ?>" class="nav-parent-link">Config</a>
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-config" aria-label="Config almenü">▾</button>
                     </span>
@@ -228,7 +237,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-admin" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Partnerek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php')) ?>" role="menuitem">Partner üzenetek</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('admin/users/')) ?>" role="menuitem">Felhasználók</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/users/')) ?>" role="menuitem">Userek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/adminok/')) ?>" role="menuitem">Adminok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/rate_limit.php')) ?>" role="menuitem">Belépési korlát</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('admin/log.php')) ?>" role="menuitem">Logok</a></li>

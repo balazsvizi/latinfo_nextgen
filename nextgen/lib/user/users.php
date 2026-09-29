@@ -339,15 +339,33 @@ function latinfo_users_list(PDO $db, ?string $search = null, string $order = 'cr
     $where = '';
     $params = [];
     if ($search !== null && trim($search) !== '') {
-        $where = 'WHERE `name` LIKE ? OR `email` LIKE ?';
-        $p = '%' . trim($search) . '%';
-        $params = [$p, $p];
+        $term = trim($search);
+        $p = '%' . $term . '%';
+        if (ctype_digit($term)) {
+            $where = 'WHERE u.`id` = ? OR u.`name` LIKE ? OR u.`email` LIKE ?';
+            $params = [(int) $term, $p, $p];
+        } else {
+            $where = 'WHERE u.`name` LIKE ? OR u.`email` LIKE ?';
+            $params = [$p, $p];
+        }
     }
     try {
+        $favSelect = '0 AS `favorites_count`';
+        try {
+            $db->query('SELECT 1 FROM `latinfo_favorites` LIMIT 1');
+            $favSelect = '(
+                SELECT COUNT(*)
+                FROM `latinfo_favorites` f
+                WHERE f.`actor_key` = CONCAT(\'u:\', u.`id`)
+            ) AS `favorites_count`';
+        } catch (Throwable) {
+            // Kedvencek tábla még nincs.
+        }
         $stmt = $db->prepare("
             SELECT u.*,
                 (SELECT GROUP_CONCAT(o.`provider` ORDER BY o.`provider` SEPARATOR ',')
-                 FROM `latinfo_user_oauth` o WHERE o.`user_id` = u.`id`) AS `oauth_providers`
+                 FROM `latinfo_user_oauth` o WHERE o.`user_id` = u.`id`) AS `oauth_providers`,
+                {$favSelect}
             FROM `latinfo_users` u
             {$where}
             ORDER BY {$orderSql} {$dirSql}

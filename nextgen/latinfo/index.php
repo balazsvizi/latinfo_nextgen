@@ -23,6 +23,11 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <div class="num">→</div>
         <p>Előnézet és szerkesztés – <code>site/</code></p>
     </a>
+    <a href="<?= h(nextgen_url('admin/users/')) ?>" class="dash-card">
+        <h3>Userek</h3>
+        <div class="num">→</div>
+        <p>Publikus fiókok listája, keresés és kedvencek (szívecskék)</p>
+    </a>
     <a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" class="dash-card">
         <h3>Statok</h3>
         <div class="num">→</div>
