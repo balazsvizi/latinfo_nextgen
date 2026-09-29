@@ -644,11 +644,17 @@ function latinfo_favorites_list_for_user(PDO $db, int $userId, string $lang = 'h
             $type = (string) ($row['entity_type'] ?? '');
             $eid = (int) ($row['entity_id'] ?? 0);
             $meta = latinfo_favorites_entity_public_meta($db, $type, $eid, $lang);
+            $label = is_array($meta) ? trim((string) ($meta['label'] ?? '')) : '';
+            $url = is_array($meta) ? trim((string) ($meta['url'] ?? '')) : '';
+            if ($label === '') {
+                $label = latinfo_favorites_entity_group_label($type, $lang);
+                $label = $label !== '' ? ($label . ' #' . $eid) : ('#' . $eid);
+            }
             $out[] = [
                 'type' => $type,
                 'id' => $eid,
-                'label' => $meta['label'] ?? ('#' . $eid),
-                'url' => $meta['url'] ?? '#',
+                'label' => $label,
+                'url' => $url !== '' ? $url : '#',
                 'created_at' => (string) ($row['created_at'] ?? ''),
             ];
         }
@@ -672,6 +678,16 @@ function latinfo_favorites_entity_public_meta(PDO $db, string $type, int $entity
     }
     $lang = $lang === 'en' ? 'en' : 'hu';
 
+    // URL / név helper-ek: account és AJAX oldalakon is legyenek betöltve.
+    $langLib = dirname(__DIR__, 2) . '/events/lib/event_public_lang.php';
+    if (!function_exists('events_public_event_page_url') && is_file($langLib)) {
+        require_once $langLib;
+    }
+    $djLib = dirname(__DIR__, 2) . '/events/lib/event_public_djs.php';
+    if (!function_exists('events_public_tag_has_type_code') && is_file($djLib)) {
+        require_once $djLib;
+    }
+
     try {
         return match ($type) {
             LATINFO_FAVORITE_TYPE_EVENT => (static function () use ($db, $entityId, $lang): ?array {
@@ -683,18 +699,21 @@ function latinfo_favorites_entity_public_meta(PDO $db, string $type, int $entity
                 ');
                 $st->execute([$entityId]);
                 $row = $st->fetch(PDO::FETCH_ASSOC);
-                if (!$row || (string) ($row['event_status'] ?? '') !== events_public_post_status()) {
+                if (!$row) {
                     return null;
+                }
+                $label = trim((string) ($row['event_name'] ?? ''));
+                if ($label === '') {
+                    $label = 'Esemény #' . $entityId;
                 }
                 $slug = trim((string) ($row['event_slug'] ?? ''));
-                if ($slug === '') {
-                    return null;
-                }
+                $isPublic = function_exists('events_public_post_status')
+                    && (string) ($row['event_status'] ?? '') === events_public_post_status();
+                $url = ($isPublic && $slug !== '' && function_exists('events_public_event_page_url'))
+                    ? events_public_event_page_url($slug, $lang)
+                    : '#';
 
-                return [
-                    'label' => (string) ($row['event_name'] ?? ('#' . $entityId)),
-                    'url' => events_public_event_page_url($slug, $lang),
-                ];
+                return ['label' => $label, 'url' => $url];
             })(),
             LATINFO_FAVORITE_TYPE_ORGANIZER => (static function () use ($db, $entityId, $lang): ?array {
                 $st = $db->prepare('SELECT `name` FROM `events_organizers` WHERE `id` = ? LIMIT 1');
@@ -703,11 +722,15 @@ function latinfo_favorites_entity_public_meta(PDO $db, string $type, int $entity
                 if ($name === false) {
                     return null;
                 }
+                $label = trim((string) $name);
+                if ($label === '') {
+                    $label = 'Szervező #' . $entityId;
+                }
+                $url = function_exists('events_public_organizer_page_url')
+                    ? events_public_organizer_page_url($entityId, $lang)
+                    : '#';
 
-                return [
-                    'label' => (string) $name,
-                    'url' => events_public_organizer_page_url($entityId, $lang),
-                ];
+                return ['label' => $label, 'url' => $url];
             })(),
             LATINFO_FAVORITE_TYPE_VENUE => (static function () use ($db, $entityId, $lang): ?array {
                 $st = $db->prepare('SELECT `name`, `slug` FROM `events_venues` WHERE `id` = ? LIMIT 1');
@@ -716,37 +739,46 @@ function latinfo_favorites_entity_public_meta(PDO $db, string $type, int $entity
                 if (!$row) {
                     return null;
                 }
-                $slug = trim((string) ($row['slug'] ?? ''));
-                if ($slug === '') {
-                    return null;
+                $label = trim((string) ($row['name'] ?? ''));
+                if ($label === '') {
+                    $label = 'Helyszín #' . $entityId;
                 }
+                $slug = trim((string) ($row['slug'] ?? ''));
+                $url = ($slug !== '' && function_exists('events_public_venue_page_url'))
+                    ? events_public_venue_page_url($slug, $lang)
+                    : '#';
 
-                return [
-                    'label' => (string) ($row['name'] ?? ('#' . $entityId)),
-                    'url' => events_public_venue_page_url($slug, $lang),
-                ];
+                return ['label' => $label, 'url' => $url];
             })(),
             LATINFO_FAVORITE_TYPE_DJ => (static function () use ($db, $entityId, $lang): ?array {
-                if (!events_tags_tables_available($db) || !events_public_tag_has_type_code($db, $entityId, 'dj')) {
+                if (function_exists('events_tags_tables_available') && !events_tags_tables_available($db)) {
                     return null;
                 }
-                $slugSelect = events_tags_slug_column_available($db) ? ', `slug`' : '';
+                $slugSelect = (function_exists('events_tags_slug_column_available') && events_tags_slug_column_available($db))
+                    ? ', `slug`'
+                    : '';
                 $st = $db->prepare('SELECT `name`' . $slugSelect . ' FROM `events_tags` WHERE `id` = ? LIMIT 1');
                 $st->execute([$entityId]);
                 $row = $st->fetch(PDO::FETCH_ASSOC);
                 if (!$row) {
                     return null;
                 }
+                $label = trim((string) ($row['name'] ?? ''));
+                if ($label === '') {
+                    $label = 'DJ #' . $entityId;
+                }
                 $slug = trim((string) ($row['slug'] ?? ''));
-                $name = (string) ($row['name'] ?? ('#' . $entityId));
-                if ($slug !== '') {
-                    return ['label' => $name, 'url' => events_public_dj_page_url($slug, $lang)];
+                if ($slug !== '' && function_exists('events_public_dj_page_url')) {
+                    return ['label' => $label, 'url' => events_public_dj_page_url($slug, $lang)];
+                }
+                if (function_exists('events_url')) {
+                    return ['label' => $label, 'url' => events_url('tag.php?id=') . $entityId];
                 }
 
-                return ['label' => $name, 'url' => events_url('tag.php?id=') . $entityId];
+                return ['label' => $label, 'url' => '#'];
             })(),
             LATINFO_FAVORITE_TYPE_ZENEKAR => (static function () use ($db, $entityId, $lang): ?array {
-                if (!events_tags_tables_available($db) || !events_public_tag_has_type_code($db, $entityId, 'zenekar')) {
+                if (function_exists('events_tags_tables_available') && !events_tags_tables_available($db)) {
                     return null;
                 }
                 $st = $db->prepare('SELECT `name` FROM `events_tags` WHERE `id` = ? LIMIT 1');
@@ -755,11 +787,15 @@ function latinfo_favorites_entity_public_meta(PDO $db, string $type, int $entity
                 if ($name === false) {
                     return null;
                 }
+                $label = trim((string) $name);
+                if ($label === '') {
+                    $label = 'Zenekar #' . $entityId;
+                }
+                $url = function_exists('events_public_tag_page_url')
+                    ? events_public_tag_page_url($entityId, $lang)
+                    : '#';
 
-                return [
-                    'label' => (string) $name,
-                    'url' => events_public_tag_page_url($entityId, $lang),
-                ];
+                return ['label' => $label, 'url' => $url];
             })(),
             default => null,
         };

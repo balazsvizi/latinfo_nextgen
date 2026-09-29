@@ -466,13 +466,23 @@ body.event-public-page .user-account-shell {
 }
 
 .user-fav-card.is-busy {
-    opacity: 0.65;
+    opacity: 0.72;
     pointer-events: none;
 }
 
-.user-fav-card.is-removing {
-    opacity: 0;
-    transform: translateX(0.75rem) scale(0.98);
+.user-fav-card.is-inactive {
+    opacity: 0.72;
+    background: #f7f8f5;
+    border-style: dashed;
+}
+
+.user-fav-card.is-inactive .user-fav-card__title {
+    color: var(--ua-muted);
+}
+
+.user-fav-card.is-inactive .user-fav-card__public-count {
+    background: rgba(45, 58, 40, 0.06);
+    color: var(--ua-muted);
 }
 
 .user-fav-card__body {
@@ -522,71 +532,73 @@ body.event-public-page .user-account-shell {
     white-space: nowrap;
 }
 
-.user-fav-card__remove {
-    margin: 0;
-    display: flex;
-    align-items: stretch;
-}
-
-.user-fav-card__unheart {
+.user-fav-card__heart {
     display: inline-flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.15rem;
-    min-width: 4.5rem;
-    margin: 0;
-    padding: 0.55rem 0.7rem;
-    border: 0;
-    border-radius: 12px;
-    background: rgba(192, 57, 90, 0.1);
+    align-self: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    margin: 0 0.35rem 0 0;
+    padding: 0;
+    border: 1px solid rgba(192, 57, 90, 0.28);
+    border-radius: 999px;
+    background: rgba(192, 57, 90, 0.08);
     color: #c0395a;
     cursor: pointer;
     font: inherit;
-    font-weight: 700;
     line-height: 1;
-    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
-.user-fav-card__unheart:hover {
-    background: rgba(192, 57, 90, 0.2);
+.user-fav-card__heart.is-active {
+    background: rgba(192, 57, 90, 0.14);
+    border-color: rgba(192, 57, 90, 0.45);
+    color: #c0395a;
+}
+
+.user-fav-card__heart:not(.is-active) {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: var(--ua-line);
+    color: #9aa593;
+}
+
+.user-fav-card__heart:hover {
+    transform: scale(1.06);
+}
+
+.user-fav-card__heart.is-active:hover {
+    background: rgba(192, 57, 90, 0.22);
     color: #9b2d48;
 }
 
-.user-fav-card__unheart:focus-visible {
+.user-fav-card__heart:not(.is-active):hover {
+    border-color: rgba(192, 57, 90, 0.4);
+    color: #c0395a;
+    background: rgba(192, 57, 90, 0.08);
+}
+
+.user-fav-card__heart:focus-visible {
     outline: 2px solid #c0395a;
     outline-offset: 2px;
 }
 
-.user-fav-card__unheart:active {
-    transform: scale(0.97);
-}
-
-.user-fav-card__unheart:disabled {
+.user-fav-card__heart:disabled {
     opacity: 0.55;
     cursor: wait;
+    transform: none;
 }
 
-.user-fav-card__unheart-icon {
-    font-size: 1.2rem;
+.user-fav-card__heart-icon {
+    font-size: 1.25rem;
     line-height: 1;
-    transition: transform 0.15s ease;
-}
-
-.user-fav-card__unheart:hover .user-fav-card__unheart-icon {
-    transform: scale(1.08);
-}
-
-.user-fav-card__unheart-label {
-    font-size: 0.68rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
 }
 
 @media (max-width: 560px) {
     .user-fav-card {
-        grid-template-columns: 1fr;
-        padding: 0.55rem 0.65rem 0.65rem;
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: 0.55rem 0.45rem 0.55rem 0.65rem;
+        align-items: center;
     }
 
     .user-fav-card__body {
@@ -595,7 +607,7 @@ body.event-public-page .user-account-shell {
             "type count"
             "title title";
         gap: 0.35rem 0.5rem;
-        padding: 0.25rem 0 0.55rem;
+        padding: 0.15rem 0;
     }
 
     .user-fav-card__type {
@@ -611,19 +623,8 @@ body.event-public-page .user-account-shell {
         justify-self: end;
     }
 
-    .user-fav-card__unheart {
-        flex-direction: row;
-        width: 100%;
-        min-width: 0;
-        gap: 0.4rem;
-        padding: 0.55rem 0.75rem;
-        border-radius: 10px;
-    }
-
-    .user-fav-card__unheart-label {
-        font-size: 0.78rem;
-        text-transform: none;
-        letter-spacing: 0;
+    .user-fav-card__heart {
+        margin: 0;
     }
 }
 

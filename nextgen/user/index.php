@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/events/bootstrap.php';
 require_once dirname(__DIR__) . '/events/lib/tag_type.php';
+require_once dirname(__DIR__) . '/events/lib/event_public_lang.php';
+require_once dirname(__DIR__) . '/events/lib/event_public_djs.php';
 require_once dirname(__DIR__) . '/lib/user/favorites.php';
 
 user_require_login();
@@ -91,8 +93,6 @@ foreach ($favoritesByType as $items) {
 }
 $notificationEmail = trim((string) ($user['notification_email'] ?? ''));
 $accountEmail = trim((string) ($user['email'] ?? ''));
-
-require_once dirname(__DIR__) . '/events/lib/event_public_lang.php';
 
 $lang = 'hu';
 $accountUrl = user_url('index.php');
@@ -222,8 +222,10 @@ header('Content-Type: text/html; charset=UTF-8');
                                 <li
                                     class="user-fav-card"
                                     data-user-fav-card
+                                    data-active="1"
                                     data-entity-type="<?= h($itemType) ?>"
                                     data-entity-id="<?= $itemId ?>"
+                                    data-item-label="<?= h($itemLabel) ?>"
                                 >
                                     <a class="user-fav-card__body" href="<?= h($itemUrl) ?>">
                                         <span class="user-fav-card__type"><?= h($itemTypeLabel) ?></span>
@@ -233,21 +235,16 @@ header('Content-Type: text/html; charset=UTF-8');
                                             <span data-user-fav-count><?= $itemCount ?></span>
                                         </span>
                                     </a>
-                                    <form method="post" class="user-fav-card__remove" data-user-fav-remove>
-                                        <?= csrf_input('user_account') ?>
-                                        <input type="hidden" name="action" value="remove_favorite">
-                                        <input type="hidden" name="entity_type" value="<?= h($itemType) ?>">
-                                        <input type="hidden" name="entity_id" value="<?= $itemId ?>">
-                                        <button
-                                            type="submit"
-                                            class="user-fav-card__unheart"
-                                            aria-label="<?= h('Kedvenc törlése: ' . $itemLabel) ?>"
-                                            title="Levétel a kedvencekből"
-                                        >
-                                            <span class="user-fav-card__unheart-icon" aria-hidden="true">♥</span>
-                                            <span class="user-fav-card__unheart-label">Levétel</span>
-                                        </button>
-                                    </form>
+                                    <button
+                                        type="button"
+                                        class="user-fav-card__heart is-active"
+                                        data-user-fav-heart
+                                        aria-pressed="true"
+                                        aria-label="<?= h('Kedvenc törlése: ' . $itemLabel) ?>"
+                                        title="Levétel a kedvencekből"
+                                    >
+                                        <span class="user-fav-card__heart-icon" aria-hidden="true">♥</span>
+                                    </button>
                                 </li>
                             <?php endforeach; ?>
                         </ul>

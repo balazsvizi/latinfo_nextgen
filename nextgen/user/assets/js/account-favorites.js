@@ -1,6 +1,5 @@
 /**
- * Account kedvencek: AJAX levétel, animáció, összesítő frissítés.
- * Form POST fallback JS nélkül.
+ * Account kedvencek: szívecske toggle (levétel / visszarakás) frissítésig a kártya marad.
  */
 (function () {
     'use strict';
@@ -14,66 +13,56 @@
         return (root || document).querySelector(sel);
     }
 
-    function updateTotals() {
-        var cards = document.querySelectorAll('[data-user-fav-card]');
+    function setActive(card, active) {
+        var btn = qs('[data-user-fav-heart]', card);
+        card.setAttribute('data-active', active ? '1' : '0');
+        card.classList.toggle('is-inactive', !active);
+        if (!btn) {
+            return;
+        }
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        var label = card.getAttribute('data-item-label') || '';
+        var icon = btn.querySelector('.user-fav-card__heart-icon');
+        if (active) {
+            btn.setAttribute('aria-label', label ? ('Kedvenc törlése: ' + label) : 'Kedvenc törlése');
+            btn.setAttribute('title', 'Levétel a kedvencekből');
+            if (icon) {
+                icon.textContent = '♥';
+            }
+        } else {
+            btn.setAttribute('aria-label', label ? ('Kedvencnek jelölés: ' + label) : 'Kedvencnek jelölés');
+            btn.setAttribute('title', 'Vissza a kedvencekhez');
+            if (icon) {
+                icon.textContent = '♡';
+            }
+        }
+    }
+
+    function updateActiveTotals() {
+        var activeCards = document.querySelectorAll('[data-user-fav-card][data-active="1"]');
         var totalEl = qs('[data-user-favorites-total]');
         if (totalEl) {
-            totalEl.textContent = String(cards.length);
+            totalEl.textContent = String(activeCards.length);
         }
 
         document.querySelectorAll('[data-fav-group]').forEach(function (group) {
-            var count = group.querySelectorAll('[data-user-fav-card]').length;
+            var count = group.querySelectorAll('[data-user-fav-card][data-active="1"]').length;
             var countEl = qs('[data-fav-group-count]', group);
             if (countEl) {
                 countEl.textContent = String(count);
             }
-            if (count === 0) {
-                group.classList.add('is-empty');
-                group.setAttribute('hidden', 'hidden');
-            }
         });
     }
 
-    function showEmptyStateIfNeeded() {
-        if (document.querySelectorAll('[data-user-fav-card]').length > 0) {
-            return;
-        }
-        var section = qs('.user-favorites');
-        if (!section || qs('.user-favorites-empty-state', section)) {
-            return;
-        }
-        var home = section.getAttribute('data-empty-home') || '/';
-        var wrap = document.createElement('div');
-        wrap.className = 'user-favorites-empty-state';
-        wrap.innerHTML =
-            '<span class="user-favorites-empty-state__heart" aria-hidden="true">♡</span>' +
-            '<p class="user-favorites-empty-state__title">Még nincs kedvenced</p>' +
-            '<p class="user-favorites-empty-state__text">Eseményeken, szervezőknél, helyszíneken és DJ-knél a ♥ gombbal mentheted ide a kedvenceidet.</p>' +
-            '<a class="user-favorites-empty-state__cta" href="' + home.replace(/"/g, '&quot;') + '">Naptár böngészése</a>';
-        section.appendChild(wrap);
-    }
-
-    function removeCard(card) {
-        card.classList.add('is-removing');
-        window.setTimeout(function () {
-            var group = card.closest('[data-fav-group]');
-            card.remove();
-            updateTotals();
-            if (group && group.querySelectorAll('[data-user-fav-card]').length === 0) {
-                group.setAttribute('hidden', 'hidden');
-            }
-            showEmptyStateIfNeeded();
-        }, 280);
-    }
-
-    document.addEventListener('submit', function (ev) {
-        var form = ev.target;
-        if (!form || !form.matches || !form.matches('[data-user-fav-remove]')) {
+    document.addEventListener('click', function (ev) {
+        var btn = ev.target && ev.target.closest ? ev.target.closest('[data-user-fav-heart]') : null;
+        if (!btn) {
             return;
         }
         ev.preventDefault();
 
-        var card = form.closest('[data-user-fav-card]');
+        var card = btn.closest('[data-user-fav-card]');
         if (!card || card.classList.contains('is-busy')) {
             return;
         }
@@ -81,15 +70,12 @@
         var type = card.getAttribute('data-entity-type') || '';
         var id = card.getAttribute('data-entity-id') || '';
         if (!type || !id) {
-            form.submit();
             return;
         }
 
+        var wasActive = card.getAttribute('data-active') !== '0';
         card.classList.add('is-busy');
-        var btn = qs('.user-fav-card__unheart', form);
-        if (btn) {
-            btn.disabled = true;
-        }
+        btn.disabled = true;
 
         var body = new FormData();
         body.append('action', 'toggle');
@@ -112,24 +98,20 @@
                 if (!result.okHttp || !data.ok) {
                     throw new Error((data && data.error) || 'Hiba');
                 }
-                // toggle: ha már nem aktív, sikeresen levéve
-                if (data.active) {
-                    // váratlanul újra aktív lett – maradjon a kártya
-                    card.classList.remove('is-busy');
-                    if (btn) {
-                        btn.disabled = false;
-                    }
-                    return;
-                }
+                setActive(card, !!data.active);
                 var countEl = qs('[data-user-fav-count]', card);
                 if (countEl && typeof data.count === 'number') {
                     countEl.textContent = String(data.count);
                 }
-                removeCard(card);
+                updateActiveTotals();
             })
             .catch(function () {
-                // AJAX hiba → klasszikus POST
-                form.submit();
+                // Hiba esetén visszaállítjuk a korábbi állapotot vizuálisan
+                setActive(card, wasActive);
+            })
+            .finally(function () {
+                card.classList.remove('is-busy');
+                btn.disabled = false;
             });
     });
 })();
