@@ -5,6 +5,10 @@ require_once __DIR__ . '/admin_event_filters.php';
 require_once __DIR__ . '/event_status.php';
 require_once dirname(__DIR__, 2) . '/lib/user/favorites.php';
 
+if (!function_exists('user_is_logged_in')) {
+    require_once dirname(__DIR__, 2) . '/user/includes/auth.php';
+}
+
 /**
  * Térkép nézet csak bejelentkezett adminnak (nyilvános főoldal).
  */
@@ -121,7 +125,20 @@ function events_public_filters_from_request(PDO $db): array {
     }
 
     $favoritesAvailable = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
-    $f_favorites = $favoritesAvailable && (string) ($_GET['f_favorites'] ?? '') === '1';
+    $favoritesLoggedIn = $favoritesAvailable && user_is_logged_in();
+    $favoritesHasAny = false;
+    if ($favoritesAvailable) {
+        $favByType = latinfo_favorites_ids_by_type_for_actor($db);
+        foreach ($favByType as $favIds) {
+            if ($favIds !== []) {
+                $favoritesHasAny = true;
+                break;
+            }
+        }
+    }
+    $f_favorites = $favoritesAvailable
+        && $favoritesHasAny
+        && (string) ($_GET['f_favorites'] ?? '') === '1';
     if ($f_favorites) {
         $favClause = latinfo_favorites_event_contains_any_where($db);
         $filters['where'][] = $favClause['sql'];
@@ -133,6 +150,8 @@ function events_public_filters_from_request(PDO $db): array {
     $filters['f_city'] = $f_city;
     $filters['f_favorites'] = $f_favorites;
     $filters['favoritesAvailable'] = $favoritesAvailable;
+    $filters['favoritesLoggedIn'] = $favoritesLoggedIn;
+    $filters['favoritesHasAny'] = $favoritesHasAny;
     $filters['status'] = '';
     $filters['f_id'] = '';
     $filters['f_views_min'] = '';

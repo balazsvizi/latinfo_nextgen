@@ -39,13 +39,31 @@ $closeLabel = $isEn ? 'Close' : 'Bezárás';
                 : 'Jelentkezz be, hogy minden eszközön lásd a kedvenceidet és a profilodon szerkeszd őket — vagy folytasd vendégként ezen a böngészőn.') ?>
         </p>
         <div class="public-favorite-dialog__stack">
-            <a class="public-favorite-dialog__cta public-favorite-dialog__cta--primary" href="<?= h($favoriteLoginUrl) ?>"><?= h($isEn ? 'Sign in' : 'Bejelentkezés') ?></a>
-            <a class="public-favorite-dialog__cta public-favorite-dialog__cta--secondary" href="<?= h($favoriteSignupUrl) ?>"><?= h($isEn ? 'Create account' : 'Regisztráció') ?></a>
+            <a class="public-favorite-dialog__cta public-favorite-dialog__cta--primary" href="<?= h($favoriteLoginUrl) ?>" data-public-favorite-login-link><?= h($isEn ? 'Sign in' : 'Bejelentkezés') ?></a>
+            <a class="public-favorite-dialog__cta public-favorite-dialog__cta--secondary" href="<?= h($favoriteSignupUrl) ?>" data-public-favorite-signup-link><?= h($isEn ? 'Create account' : 'Regisztráció') ?></a>
         </div>
         <div class="public-favorite-dialog__divider" role="presentation">
             <span><?= h($isEn ? 'or' : 'vagy') ?></span>
         </div>
         <button type="submit" class="public-favorite-dialog__text-action" value="guest"><?= h($isEn ? 'Continue without account' : 'Fiók nélkül folytatom') ?></button>
+    </form>
+</dialog>
+
+<dialog class="public-favorite-dialog public-favorite-dialog--empty" id="public-favorite-empty-dialog" data-public-favorite-empty-dialog aria-labelledby="public-favorite-empty-title">
+    <form method="dialog" class="public-favorite-dialog__panel">
+        <button type="submit" class="public-favorite-dialog__close" value="cancel" aria-label="<?= h($closeLabel) ?>">
+            <span aria-hidden="true">×</span>
+        </button>
+        <div class="public-favorite-dialog__badge public-favorite-dialog__badge--pick" aria-hidden="true">
+            <span class="public-favorite-dialog__badge-heart">♥</span>
+        </div>
+        <h2 class="public-favorite-dialog__title" id="public-favorite-empty-title"><?= h($isEn ? 'No favorites yet' : 'Még nincs kedvenced') ?></h2>
+        <p class="public-favorite-dialog__lead">
+            <?= h($isEn
+                ? 'Heart an event, organizer, venue, DJ or artist first — then this filter shows events that include any of them.'
+                : 'Először jelölj szívecskével egy eseményt, szervezőt, helyszínt, DJ-t vagy előadót — utána ez a szűrő megmutatja az ezeket tartalmazó eseményeket.') ?>
+        </p>
+        <button type="submit" class="public-favorite-dialog__cta public-favorite-dialog__cta--primary" value="ok"><?= h($isEn ? 'Got it' : 'Értem') ?></button>
     </form>
 </dialog>
 

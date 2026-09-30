@@ -145,5 +145,137 @@
             });
         });
     });
+
+    (function favoritesFilter() {
+        var btn = form.querySelector('[data-favorites-filter-btn]');
+        var input = document.getElementById('ev-f-favorites');
+        if (!btn || !input) {
+            return;
+        }
+
+        var GUEST_KEY = 'latinfo_fav_guest';
+
+        function setGuestOk() {
+            try {
+                localStorage.setItem(GUEST_KEY, '1');
+            } catch (e) {
+                /* ignore */
+            }
+        }
+
+        function openDialog(dlg) {
+            if (!dlg || typeof dlg.showModal !== 'function') {
+                return Promise.resolve('');
+            }
+            return new Promise(function (resolve) {
+                function onClose() {
+                    dlg.removeEventListener('close', onClose);
+                    dlg.removeEventListener('click', onBackdrop);
+                    resolve(dlg.returnValue || '');
+                }
+                function onBackdrop(ev) {
+                    if (ev.target === dlg && typeof dlg.close === 'function') {
+                        dlg.close('cancel');
+                    }
+                }
+                dlg.addEventListener('close', onClose);
+                dlg.addEventListener('click', onBackdrop);
+                dlg.showModal();
+            });
+        }
+
+        function withFavoritesReturn(href) {
+            try {
+                var u = new URL(href, window.location.origin);
+                var ret = u.searchParams.get('return');
+                if (!ret) {
+                    return href;
+                }
+                var retUrl = new URL(ret, window.location.origin);
+                retUrl.searchParams.set('f_favorites', '1');
+                u.searchParams.set('return', retUrl.pathname + retUrl.search + retUrl.hash);
+                return u.pathname + u.search + u.hash;
+            } catch (e) {
+                return href;
+            }
+        }
+
+        function ensureAuth() {
+            if (btn.getAttribute('data-logged-in') === '1') {
+                return Promise.resolve(true);
+            }
+            var dlg = document.querySelector('[data-public-favorite-auth-dialog]');
+            if (!dlg) {
+                return Promise.resolve(false);
+            }
+            var loginLink = dlg.querySelector('[data-public-favorite-login-link]');
+            var signupLink = dlg.querySelector('[data-public-favorite-signup-link]');
+            if (loginLink) {
+                loginLink.href = withFavoritesReturn(loginLink.getAttribute('href') || loginLink.href);
+            }
+            if (signupLink) {
+                signupLink.href = withFavoritesReturn(signupLink.getAttribute('href') || signupLink.href);
+            }
+            return openDialog(dlg).then(function (val) {
+                if (val === 'guest') {
+                    setGuestOk();
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        function showEmptyDialog() {
+            var dlg = document.querySelector('[data-public-favorite-empty-dialog]');
+            return openDialog(dlg);
+        }
+
+        function setActive(active) {
+            input.disabled = !active;
+            input.value = '1';
+            btn.classList.toggle('is-active', !!active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            var label = active
+                ? (btn.getAttribute('data-label-clear') || '')
+                : (btn.getAttribute('data-label-apply') || '');
+            if (label) {
+                btn.setAttribute('aria-label', label);
+                btn.setAttribute('title', label);
+            }
+            submitForm();
+        }
+
+        function isActive() {
+            return !input.disabled && input.value === '1';
+        }
+
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (btn.disabled) {
+                return;
+            }
+
+            if (isActive()) {
+                setActive(false);
+                return;
+            }
+
+            btn.disabled = true;
+            ensureAuth()
+                .then(function (ok) {
+                    if (!ok) {
+                        return;
+                    }
+                    if (btn.getAttribute('data-has-favorites') !== '1') {
+                        return showEmptyDialog();
+                    }
+                    setActive(true);
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                });
+        });
+    })();
 })();
 </script>

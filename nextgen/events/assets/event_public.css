@@ -4774,6 +4774,57 @@ body.event-public-page--home .event-public__hero-inner {
     z-index: 2;
 }
 
+.home-public .events-filter-field--favorites {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    min-height: 100%;
+}
+
+.home-public .events-filter-favorites-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.65rem;
+    height: 2.65rem;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(109, 143, 99, 0.35);
+    background: #fff;
+    color: #8a9a82;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.home-public .events-filter-favorites-btn:hover {
+    border-color: rgba(192, 57, 90, 0.45);
+    color: #c0395a;
+    background: rgba(192, 57, 90, 0.06);
+}
+
+.home-public .events-filter-favorites-btn:focus-visible {
+    outline: 2px solid var(--li-green, #6d8f63);
+    outline-offset: 2px;
+}
+
+.home-public .events-filter-favorites-btn.is-active {
+    color: #c0395a;
+    border-color: rgba(192, 57, 90, 0.5);
+    background: rgba(192, 57, 90, 0.1);
+    box-shadow: 0 0 0 3px rgba(192, 57, 90, 0.12);
+}
+
+.home-public .events-filter-favorites-btn.is-active .events-filter-favorites-btn__icon {
+    transform: scale(1.08);
+}
+
+.home-public .events-filter-favorites-btn__icon {
+    display: block;
+    transition: transform 0.12s ease;
+}
+
 .home-public .events-filter-multiselect {
     position: relative;
 }

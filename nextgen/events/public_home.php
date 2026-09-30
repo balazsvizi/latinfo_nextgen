@@ -287,7 +287,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page event-public-page--home<?= $view === 'mcal' ? ' event-public-page--mcal' : '' ?>"<?php if ($publicFavoritesEnabled && ($view === 'cal' || $view === 'mcal')): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
+<body class="event-public-page event-public-page--home<?= $view === 'mcal' ? ' event-public-page--mcal' : '' ?>"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell<?= $view === 'mcal' ? ' event-shell--mcal' : '' ?>">
 <article class="event-public home-public<?= $view === 'mcal' ? ' home-public--mcal' : '' ?>">
