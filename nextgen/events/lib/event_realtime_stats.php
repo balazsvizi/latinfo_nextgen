@@ -7,7 +7,8 @@ require_once __DIR__ . '/public_traffic.php';
 require_once __DIR__ . '/public_home_notice_stats.php';
 
 const EVENTS_REALTIME_WINDOW_MINUTES = 30;
-const EVENTS_REALTIME_TOP_EVENTS = 10;
+/** 0 = nincs limit: minden buli, amin van mért aktivitás az ablakban. */
+const EVENTS_REALTIME_TOP_EVENTS = 0;
 const EVENTS_REALTIME_TOP_PAGES = 8;
 const EVENTS_REALTIME_TOP_NAV = 8;
 const EVENTS_REALTIME_RECENT_LIMIT = 40;
@@ -844,6 +845,8 @@ function events_realtime_fill_per_minute(
 }
 
 /**
+ * Minden buli, amin az ablakban van mért aktivitás (oldal / előnézet / további info).
+ *
  * @return list<array{id: int, name: string, slug: string, unique: int, page: int, preview: int, external: int}>
  */
 function events_realtime_top_events(PDO $db, string $start, string $visitor, bool $botReady, bool $tableReady): array
@@ -853,15 +856,31 @@ function events_realtime_top_events(PDO $db, string $start, string $visitor, boo
     $pageMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : '';
     $previewMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : ' AND 1 = 0';
     $externalMetricAnd = $tableReady ? ' AND v.`metric_type` = ?' : ' AND 1 = 0';
+    $anyMetricAnd = $tableReady
+        ? ' AND v.`metric_type` IN (?, ?, ?)'
+        : '';
+
+    $limitSql = '';
+    $topLimit = (int) EVENTS_REALTIME_TOP_EVENTS;
+    if ($topLimit > 0) {
+        $limitSql = ' LIMIT ' . $topLimit;
+    }
 
     $sql = "
         SELECT e.`id`, e.`event_name`, e.`event_slug`,
             COALESCE(u.unique_cnt, 0) AS unique_cnt,
             COALESCE(p.page_cnt, 0) AS page_cnt,
             COALESCE(pr.preview_cnt, 0) AS preview_cnt,
-            COALESCE(ex.external_cnt, 0) AS external_cnt
+            COALESCE(ex.external_cnt, 0) AS external_cnt,
+            (COALESCE(p.page_cnt, 0) + COALESCE(pr.preview_cnt, 0) + COALESCE(ex.external_cnt, 0)) AS total_cnt
         FROM `events_calendar_events` e
         INNER JOIN (
+            SELECT v.`esemény_id` AS event_id
+            FROM `events_calendar_event_views` v
+            WHERE v.`létrehozva` >= ?{$botAnd}{$anyMetricAnd}
+            GROUP BY v.`esemény_id`
+        ) a ON a.event_id = e.`id`
+        LEFT JOIN (
             SELECT v.`esemény_id` AS event_id, COUNT(*) AS page_cnt
             FROM `events_calendar_event_views` v
             WHERE v.`létrehozva` >= ?{$botAnd}{$pageMetricAnd}
@@ -887,10 +906,16 @@ function events_realtime_top_events(PDO $db, string $start, string $visitor, boo
             WHERE v.`létrehozva` >= ?{$botAnd}{$externalMetricAnd}
             GROUP BY v.`esemény_id`
         ) ex ON ex.event_id = e.`id`
-        ORDER BY page_cnt DESC, unique_cnt DESC, e.`id` DESC
-        LIMIT " . (int) EVENTS_REALTIME_TOP_EVENTS;
+        ORDER BY total_cnt DESC, page_cnt DESC, unique_cnt DESC, e.`id` DESC
+        {$limitSql}";
 
     $params = [$start];
+    if ($tableReady) {
+        $params[] = EVENTS_VIEW_METRIC_PAGE;
+        $params[] = EVENTS_VIEW_METRIC_CALENDAR_PREVIEW;
+        $params[] = EVENTS_VIEW_METRIC_EXTERNAL_INFO;
+    }
+    $params[] = $start;
     if ($tableReady) {
         $params[] = EVENTS_VIEW_METRIC_PAGE;
     }

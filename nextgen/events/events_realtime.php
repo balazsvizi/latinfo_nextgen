@@ -219,7 +219,8 @@ $whoButton = static function (array $mark) use ($rtColor): string {
 
     <div class="events-rt-split events-rt-split--triple">
         <section class="events-rt-panel" aria-labelledby="events-rt-top-title">
-            <h3 class="events-rt-section-title" id="events-rt-top-title">Top bulik</h3>
+            <h3 class="events-rt-section-title" id="events-rt-top-title">Aktív bulik</h3>
+            <p class="events-rt-section-hint">Minden buli, amin van oldal-, előnézet- vagy további info aktivitás.</p>
             <div class="table-wrap events-rt-table-wrap">
                 <table class="events-admin-table events-rt-table">
                     <thead>
