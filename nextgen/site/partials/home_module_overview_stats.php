@@ -68,6 +68,7 @@ $surfaceIntro = match ($activeSurface) {
         <?= h($surfaceIntro) ?>
         Admin és partner munkamenetből nem számolunk. A botok külön szűrhetők.
         Időszak: <?= h((string) $statsParams['date_from']) ?> – <?= h((string) $statsParams['date_to']) ?> (<?= h($granularityLabel) ?> bontás).
+        A táblában a modulnévre kattintva a modul részletes statisztikája nyílik meg.
     </p>
 
     <?php if (empty($statsData['table_ready'])): ?>
@@ -223,8 +224,21 @@ $surfaceIntro = match ($activeSurface) {
                         <tr><td colspan="5" class="text-muted">Nincs kattintás a kiválasztott időszakban.</td></tr>
                     <?php else: ?>
                         <?php foreach ($moduleRows as $row): ?>
+                            <?php
+                            $moduleKey = (string) ($row['module_key'] ?? '');
+                            $moduleLabel = (string) ($row['label'] ?? '');
+                            $detailUrl = $moduleKey !== ''
+                                ? latinfo_home_module_item_stats_url($moduleKey, $statsParams)
+                                : null;
+                            ?>
                             <tr>
-                                <td><?= h((string) ($row['label'] ?? '')) ?></td>
+                                <td>
+                                    <?php if ($detailUrl !== null): ?>
+                                        <a class="events-cell-edit" href="<?= h($detailUrl) ?>" title="Modul statisztikái"><?= h($moduleLabel) ?></a>
+                                    <?php else: ?>
+                                        <?= h($moduleLabel) ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?= number_format((int) ($row['clicks_human'] ?? 0), 0, ',', ' ') ?></td>
                                 <td><?= number_format((int) ($row['clicks_bot'] ?? 0), 0, ',', ' ') ?></td>
                                 <td><?= number_format((int) ($row['unique_human'] ?? 0), 0, ',', ' ') ?></td>

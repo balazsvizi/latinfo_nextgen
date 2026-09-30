@@ -51,6 +51,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <div class="events-list-actions">
             <a href="<?= h(latinfo_home_preview_url()) ?>" class="btn btn-secondary btn-sm">Előnézet</a>
             <a href="<?= h(latinfo_home_edit_url()) ?>" class="btn btn-secondary btn-sm">Modulok</a>
+            <a href="<?= h(latinfo_home_modules_stat_url()) ?>" class="btn btn-secondary btn-sm">Összes modul</a>
             <a href="<?= h(nextgen_url('events/djs_admin.php')) ?>" class="btn btn-secondary btn-sm">DJ katalógus</a>
         </div>
     </div>

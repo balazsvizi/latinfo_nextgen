@@ -216,8 +216,27 @@ $deviceLabel = static function (string $device): string {
                         <tr><td colspan="5" class="text-muted">Nincs app modul-kattintás a kiválasztott időszakban.</td></tr>
                     <?php else: ?>
                         <?php foreach ($modules as $row): ?>
+                            <?php
+                            $moduleKey = (string) ($row['module_key'] ?? '');
+                            $moduleLabel = (string) ($row['label'] ?? '');
+                            $detailUrl = $moduleKey !== ''
+                                ? latinfo_home_module_item_stats_url($moduleKey, [
+                                    'date_from' => (string) ($statsParams['date_from'] ?? ''),
+                                    'date_to' => (string) ($statsParams['date_to'] ?? ''),
+                                    'visitor' => (string) ($statsParams['visitor'] ?? 'human'),
+                                    'device' => (string) ($statsParams['device'] ?? 'all'),
+                                    'surface' => 'app',
+                                ])
+                                : null;
+                            ?>
                             <tr>
-                                <td><?= h((string) ($row['label'] ?? '')) ?></td>
+                                <td>
+                                    <?php if ($detailUrl !== null): ?>
+                                        <a class="events-cell-edit" href="<?= h($detailUrl) ?>" title="Modul statisztikái"><?= h($moduleLabel) ?></a>
+                                    <?php else: ?>
+                                        <?= h($moduleLabel) ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?= number_format((int) ($row['clicks_human'] ?? 0), 0, ',', ' ') ?></td>
                                 <td><?= number_format((int) ($row['clicks_bot'] ?? 0), 0, ',', ' ') ?></td>
                                 <td><?= number_format((int) ($row['unique_human'] ?? 0), 0, ',', ' ') ?></td>

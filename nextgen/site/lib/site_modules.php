@@ -148,6 +148,42 @@ function latinfo_home_modules_stat_url(string $query = ''): string
     return $query === '' ? $base : $base . '?' . ltrim($query, '?');
 }
 
+/**
+ * Modul részletes kattintás-stat URL (szerkesztő #module-item-stats), vagy null ha nincs.
+ *
+ * @param array{date_from?: string, date_to?: string, visitor?: string, lang?: string, device?: string, surface?: string} $params
+ */
+function latinfo_home_module_item_stats_url(string $moduleKey, array $params = []): ?string
+{
+    $catalog = latinfo_home_module_catalog();
+    if (empty($catalog[$moduleKey]['has_item_stats'])) {
+        return null;
+    }
+
+    $extra = array_filter([
+        'visitor' => (($params['visitor'] ?? 'human') !== 'human') ? (string) ($params['visitor'] ?? '') : null,
+        'traf_lang' => (($params['lang'] ?? 'all') !== 'all') ? (string) ($params['lang'] ?? '') : null,
+        'device' => (($params['device'] ?? 'all') !== 'all') ? (string) ($params['device'] ?? '') : null,
+        'surface' => (($params['surface'] ?? 'all') !== 'all') ? (string) ($params['surface'] ?? '') : null,
+    ], static fn (?string $v): bool => $v !== null && $v !== '');
+
+    $base = latinfo_home_module_edit_url($moduleKey);
+    $dateFrom = (string) ($params['date_from'] ?? '');
+    $dateTo = (string) ($params['date_to'] ?? '');
+    if ($dateFrom !== '' && $dateTo !== '') {
+        $url = events_edit_stats_filter_url(
+            $base,
+            ['date_from' => $dateFrom, 'date_to' => $dateTo],
+            $extra
+        );
+    } else {
+        $qs = http_build_query($extra);
+        $url = $qs === '' ? $base : $base . '?' . $qs;
+    }
+
+    return $url . '#module-item-stats';
+}
+
 function latinfo_home_modules_ensure_schema(PDO $db): bool
 {
     static $done = false;
