@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             flash('success', 'Címke mentve.');
             rendszer_log('tag', $id, 'Módosítva', $name);
-            redirect(events_url('tags.php'));
+            redirect(events_url('tags.php?open_tag=') . $id);
         }
 
         $db->beginTransaction();
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         flash('success', 'Címke létrehozva.');
         rendszer_log('tag', $newId, 'Létrehozva', $name);
-        redirect(events_url('tags.php'));
+        redirect(events_url('tags.php?open_tag=') . $newId);
     }
 
     if ($action === 'delete_tag') {
