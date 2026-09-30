@@ -120,6 +120,27 @@ if (!function_exists('events_public_djs_hub_canonical_url')) {
     }
 }
 
+if (!function_exists('events_public_zenekar_canonical_url')) {
+    /**
+     * Zenekar oldal URL (még nem pretty publikus útvonal – nextgen tag.php slug).
+     */
+    function events_public_zenekar_canonical_url(string $slug): string {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return events_url('zenekarok.php');
+        }
+
+        return events_url('tag.php?slug=' . rawurlencode($slug));
+    }
+}
+
+if (!function_exists('events_public_zenekarok_hub_canonical_url')) {
+    /** Zenekarok hub (előnézet, még nem publikus pretty URL). */
+    function events_public_zenekarok_hub_canonical_url(): string {
+        return events_url('zenekarok.php');
+    }
+}
+
 if (!function_exists('events_public_partners_canonical_url')) {
     /** Publikus partner oldal: /partnereink/ */
     function events_public_partners_canonical_url(): string {

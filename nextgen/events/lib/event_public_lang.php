@@ -610,6 +610,7 @@ function events_public_tag_strings(string $lang): array {
         'admin_edit_title' => 'Szerkesztés',
         'admin_edit_aria' => 'Címke szerkesztése az adminban',
         'all_djs_link' => 'Összes DJ',
+        'all_zenekarok_link' => 'Összes zenekar',
         'dj_profile_aria' => 'DJ profil',
         'dj_contacts_aria' => 'Elérhetőségek',
         'dj_bio_heading' => 'Bemutatkozás',
@@ -649,6 +650,7 @@ function events_public_tag_strings(string $lang): array {
         'admin_edit_title' => 'Edit',
         'admin_edit_aria' => 'Edit this tag in admin',
         'all_djs_link' => 'All DJs',
+        'all_zenekarok_link' => 'All bands',
         'dj_profile_aria' => 'DJ profile',
         'dj_contacts_aria' => 'Contact links',
         'dj_bio_heading' => 'About',
@@ -770,6 +772,114 @@ function events_public_djs_strings(string $lang): array {
         'local_nav_spotlight' => 'DJ picks',
         'local_nav_info' => 'Info for DJs',
         'cms_before_aria' => 'Text before the DJ list',
+        'cms_after_aria' => 'Text after the statistics',
+        'list_display_label' => 'Showing:',
+        'list_display_all' => 'All',
+    ];
+
+    return $lang === 'en' ? $en : $hu;
+}
+
+/**
+ * @return array<string, string>
+ */
+function events_public_zenekarok_strings(string $lang): array {
+    $hu = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Zenekarok',
+        'page_desc' => 'Összes zenekar, statisztikák és közzétett eseményeik a Latinfo.hu-n.',
+        'page_intro' => 'Itt találod a Latinfo.hu zenekarait: a teljes névsor, összesítő számok és toplisták.',
+        'eyebrow' => 'Zenekarok',
+        'lang_nav' => 'Nyelv',
+        'lang_hu' => 'Magyar',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu kezdőoldala',
+        'logo_home_aria' => 'Ugrás a Latinfo.hu kezdőoldalára',
+        'footer_home_link' => 'Latinfo.hu',
+        'stats_heading' => 'Áttekintés',
+        'stat_djs' => 'Zenekar',
+        'stat_djs_with_events' => 'Eseményes zenekar',
+        'stat_djs_upcoming' => 'Aktív zenekar',
+        'stat_events' => 'Zenekaros esemény',
+        'stat_events_upcoming' => 'Aktuális esemény',
+        'rank_events_heading' => 'Legtöbb esemény',
+        'rank_upcoming_heading' => 'Legtöbb aktuális',
+        'rank_next_heading' => 'Következő fellépések',
+        'rank_empty' => 'Még nincs adat.',
+        'catalog_heading' => 'Összes zenekar',
+        'filter_label' => 'Keresés név szerint',
+        'filter_placeholder' => 'Zenekar neve…',
+        'sort_label' => 'Rendezés',
+        'sort_name_asc' => 'Név (A→Z)',
+        'sort_name_desc' => 'Név (Z→A)',
+        'sort_events_desc' => 'Összes esemény (több→kevesebb)',
+        'sort_events_asc' => 'Összes esemény (kevesebb→több)',
+        'sort_upcoming_desc' => 'Aktuális események (több→kevesebb)',
+        'events_total_lead' => 'összesen',
+        'events_total' => 'esemény',
+        'events_upcoming' => 'aktuális esemény',
+        'next_event' => 'Következő',
+        'empty' => 'Nincs zenekar a listában.',
+        'empty_filter' => 'Nincs találat a szűrésre.',
+        'card_aria' => 'Zenekar profil megnyitása',
+        'spotlight_heading' => 'Zenekar ajánló',
+        'spotlight_aria' => 'Véletlenszerűen váltakozó zenekar ajánló',
+        'local_nav_aria' => 'Ugrás az oldalon',
+        'local_nav_djs' => 'Zenekarok',
+        'local_nav_spotlight' => 'Zenekar ajánló',
+        'local_nav_info' => 'Infók zenekaroknak',
+        'cms_before_aria' => 'Szöveg a zenekar lista előtt',
+        'cms_after_aria' => 'Szöveg a statisztikák után',
+        'list_display_label' => 'Megjelenítve:',
+        'list_display_all' => 'Mind',
+    ];
+    $en = [
+        'html_title_suffix' => ' – ',
+        'page_title' => 'Bands',
+        'page_desc' => 'All bands, stats and published events on Latinfo.hu.',
+        'page_intro' => 'Browse Latinfo.hu bands: the full directory, summary stats and rankings.',
+        'eyebrow' => 'Bands',
+        'lang_nav' => 'Language',
+        'lang_hu' => 'Hungarian',
+        'lang_en' => 'English',
+        'logo_alt' => 'Latinfo.hu',
+        'logo_home_title' => 'Latinfo.hu home',
+        'logo_home_aria' => 'Go to the Latinfo.hu homepage',
+        'footer_home_link' => 'Latinfo.hu',
+        'stats_heading' => 'Overview',
+        'stat_djs' => 'Bands',
+        'stat_djs_with_events' => 'Bands with events',
+        'stat_djs_upcoming' => 'Active bands',
+        'stat_events' => 'Events with bands',
+        'stat_events_upcoming' => 'Upcoming events',
+        'rank_events_heading' => 'Most events',
+        'rank_upcoming_heading' => 'Most upcoming',
+        'rank_next_heading' => 'Next appearances',
+        'rank_empty' => 'No data yet.',
+        'catalog_heading' => 'All bands',
+        'filter_label' => 'Search by name',
+        'filter_placeholder' => 'Band name…',
+        'sort_label' => 'Sort',
+        'sort_name_asc' => 'Name (A→Z)',
+        'sort_name_desc' => 'Name (Z→A)',
+        'sort_events_desc' => 'Total events (most→least)',
+        'sort_events_asc' => 'Total events (least→most)',
+        'sort_upcoming_desc' => 'Upcoming events (most→least)',
+        'events_total_lead' => 'total',
+        'events_total' => 'events',
+        'events_upcoming' => 'upcoming events',
+        'next_event' => 'Next',
+        'empty' => 'No bands in the catalog.',
+        'empty_filter' => 'No matches for your search.',
+        'card_aria' => 'Open band profile',
+        'spotlight_heading' => 'Band picks',
+        'spotlight_aria' => 'Randomly rotating band picks',
+        'local_nav_aria' => 'On this page',
+        'local_nav_djs' => 'Bands',
+        'local_nav_spotlight' => 'Band picks',
+        'local_nav_info' => 'Info for bands',
+        'cms_before_aria' => 'Text before the band list',
         'cms_after_aria' => 'Text after the statistics',
         'list_display_label' => 'Showing:',
         'list_display_all' => 'All',
@@ -1160,6 +1270,47 @@ function events_public_djs_lang_switch_url(string $targetLang, array $extraParam
     return events_public_append_query(events_public_djs_hub_canonical_url(), $q);
 }
 
+function events_public_zenekarok_page_url(string $lang, array $extraParams = []): string {
+    $url = events_public_zenekarok_hub_canonical_url();
+    $q = $extraParams;
+    if ($lang === 'en') {
+        $q['lang'] = 'en';
+    } else {
+        unset($q['lang']);
+    }
+
+    return events_public_append_query($url, $q);
+}
+
+function events_public_zenekarok_lang_switch_url(string $targetLang, array $extraParams = []): string {
+    $q = $extraParams;
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
+
+    return events_public_append_query(events_public_zenekarok_hub_canonical_url(), $q);
+}
+
+/**
+ * @param array<string, scalar|null> $extraParams
+ */
+function events_public_zenekar_page_url(string $slug, string $lang, array $extraParams = []): string {
+    $url = events_public_zenekar_canonical_url($slug);
+    $q = $extraParams;
+    if ($lang === 'en') {
+        $q['lang'] = 'en';
+    } else {
+        unset($q['lang']);
+    }
+
+    return events_public_append_query($url, $q);
+}
+
+function events_public_zenekar_lang_switch_url(string $slug, string $targetLang, array $extraParams = []): string {
+    $q = $extraParams;
+    $q['lang'] = $targetLang === 'en' ? 'en' : 'hu';
+
+    return events_public_append_query(events_public_zenekar_canonical_url($slug), $q);
+}
+
 function events_public_partners_page_url(string $lang, array $extraParams = []): string {
     $q = $extraParams;
     if ($lang === 'en') {
@@ -1213,7 +1364,7 @@ function events_public_dj_lang_switch_url(string $slug, string $targetLang, arra
 }
 
 /**
- * Nyilvános címke-oldal URL (DJ típusnál pretty /DJ/{slug}/).
+ * Nyilvános címke-oldal URL (DJ típusnál pretty /DJ/{slug}/; zenekarnál slugos tag.php).
  *
  * @param array<string, scalar|null> $extraParams
  */
@@ -1225,6 +1376,10 @@ function events_public_tag_page_url(int $tagId, string $lang, array $extraParams
             $djSlug = events_public_tag_dj_slug($db, $tagId);
             if ($djSlug !== null && $djSlug !== '') {
                 return events_public_dj_page_url($djSlug, $lang, $extraParams);
+            }
+            $zenekarSlug = events_public_tag_zenekar_slug($db, $tagId);
+            if ($zenekarSlug !== null && $zenekarSlug !== '') {
+                return events_public_zenekar_page_url($zenekarSlug, $lang, $extraParams);
             }
         } catch (Throwable) {
             // fallback query URL
@@ -1243,6 +1398,10 @@ function events_public_tag_lang_switch_url(int $tagId, string $targetLang, array
             $djSlug = events_public_tag_dj_slug($db, $tagId);
             if ($djSlug !== null && $djSlug !== '') {
                 return events_public_dj_lang_switch_url($djSlug, $lang, $extraParams);
+            }
+            $zenekarSlug = events_public_tag_zenekar_slug($db, $tagId);
+            if ($zenekarSlug !== null && $zenekarSlug !== '') {
+                return events_public_zenekar_lang_switch_url($zenekarSlug, $lang, $extraParams);
             }
         } catch (Throwable) {
             // fallback query URL

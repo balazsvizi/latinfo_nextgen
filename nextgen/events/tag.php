@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_tags.php';
 require_once __DIR__ . '/lib/event_public_djs.php';
+require_once __DIR__ . '/lib/event_public_zenekarok.php';
 require_once __DIR__ . '/lib/tag_profile.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
@@ -28,20 +29,24 @@ if (!events_tags_tables_available($db)) {
 }
 
 events_tags_ensure_dj_slugs($db);
+events_tags_ensure_zenekar_slugs($db);
 events_tags_ensure_profile_columns($db);
 
 if ($slugParam !== '') {
-    $djRow = events_public_dj_by_slug($db, $slugParam);
-    if ($djRow === null || (int) $djRow['id'] <= 0) {
+    $slugRow = events_public_dj_by_slug($db, $slugParam);
+    if ($slugRow === null || (int) $slugRow['id'] <= 0) {
+        $slugRow = events_public_zenekar_by_slug($db, $slugParam);
+    }
+    if ($slugRow === null || (int) $slugRow['id'] <= 0) {
         http_response_code(404);
         events_public_send_noindex_header();
         header('Content-Type: text/html; charset=UTF-8');
         echo events_public_tag_not_found_html($lang);
         exit;
     }
-    $tagId = (int) $djRow['id'];
-    $tagSlug = (string) $djRow['slug'];
-    $tagName = (string) $djRow['name'];
+    $tagId = (int) $slugRow['id'];
+    $tagSlug = (string) $slugRow['slug'];
+    $tagName = (string) $slugRow['name'];
     $tag = ['id' => $tagId, 'name' => $tagName, 'slug' => $tagSlug];
 } elseif ($tagId > 0) {
     $slugSelect = events_tags_slug_column_available($db) ? ', `slug`' : '';
@@ -70,7 +75,8 @@ $djProfile = events_tag_profile_for_public(events_tag_profile_load($db, $tagId))
 $tagTypeRows = events_public_tag_type_rows_for_display($db, $tagId);
 $tagIsDj = events_public_tag_has_type_code($db, $tagId, 'dj');
 $tagIsZenekar = events_public_tag_has_type_code($db, $tagId, 'zenekar');
-$tagFavoriteEligible = $tagIsDj || $tagIsZenekar;
+$tagIsArtistProfile = $tagIsDj || $tagIsZenekar;
+$tagFavoriteEligible = $tagIsArtistProfile;
 
 if ($fromDjPretty && !$tagIsDj) {
     http_response_code(404);
@@ -82,6 +88,13 @@ if ($fromDjPretty && !$tagIsDj) {
 
 if ($tagIsDj && $tagSlug === '') {
     $synced = events_tag_sync_dj_slug($db, $tagId, $tagName, ['dj']);
+    if ($synced !== null) {
+        $tagSlug = $synced;
+    }
+}
+
+if ($tagIsZenekar && $tagSlug === '') {
+    $synced = events_tag_sync_zenekar_slug($db, $tagId, $tagName, ['zenekar']);
     if ($synced !== null) {
         $tagSlug = $synced;
     }
@@ -115,7 +128,7 @@ $eventsPastCount = count($eventsPast);
 
 $title = $tagName !== '' ? $tagName : ('#' . $tagId);
 $bioPlain = trim(strip_tags((string) ($djProfile['description'] ?? '')));
-if ($tagIsDj && $bioPlain !== '') {
+if ($tagIsArtistProfile && $bioPlain !== '') {
     $desc = function_exists('mb_substr') ? mb_substr($bioPlain, 0, 160, 'UTF-8') : substr($bioPlain, 0, 160);
 } else {
     $desc = $lang === 'en'
@@ -128,6 +141,11 @@ if ($tagIsDj && $tagSlug !== '') {
     $ogPageUrl = events_absolute_url(events_public_dj_page_url($tagSlug, $lang, $limitParams));
     $urlHu = events_public_dj_lang_switch_url($tagSlug, 'hu', $limitParams);
     $urlEn = events_public_dj_lang_switch_url($tagSlug, 'en', $limitParams);
+} elseif ($tagIsZenekar && $tagSlug !== '') {
+    $canonical = events_absolute_url(events_public_zenekar_page_url($tagSlug, 'hu'));
+    $ogPageUrl = events_absolute_url(events_public_zenekar_page_url($tagSlug, $lang, $limitParams));
+    $urlHu = events_public_zenekar_lang_switch_url($tagSlug, 'hu', $limitParams);
+    $urlEn = events_public_zenekar_lang_switch_url($tagSlug, 'en', $limitParams);
 } else {
     $canonical = events_absolute_url(events_url('tag.php?id=' . $tagId));
     $ogPageUrl = events_absolute_url(events_public_tag_page_url($tagId, $lang, $limitParams));
@@ -138,9 +156,11 @@ $cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_a
 $htmlLang = $lang === 'en' ? 'en' : 'hu';
 $S = $G;
 $showAdminEdit = isLoggedIn();
-$adminEditUrl = $tagIsDj
-    ? events_url('dj_szerkeszt.php?id=') . $tagId
-    : events_url('tags.php?open_tag=') . $tagId;
+$adminEditUrl = match (true) {
+    $tagIsDj => events_url('dj_szerkeszt.php?id=') . $tagId,
+    $tagIsZenekar => events_url('zenekar_szerkeszt.php?id=') . $tagId,
+    default => events_url('tags.php?open_tag=') . $tagId,
+};
 
 require_once dirname(__DIR__) . '/lib/user/favorites.php';
 $publicFavoritesEnabled = $tagFavoriteEligible && latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
@@ -152,13 +172,19 @@ $favoriteEventPicker = null;
 
 $djPhotoAbs = '';
 $djLogoAbs = '';
-if ($tagIsDj) {
+if ($tagIsArtistProfile) {
     $photoRaw = trim((string) ($djProfile['photo_url'] ?? ''));
     $logoRaw = trim((string) ($djProfile['logo_url'] ?? ''));
     $djPhotoAbs = $photoRaw !== '' ? events_absolute_url($photoRaw) : '';
     $djLogoAbs = $logoRaw !== '' ? events_absolute_url($logoRaw) : '';
 }
 $djOgImage = $djPhotoAbs !== '' ? $djPhotoAbs : $djLogoAbs;
+$artistPhotoAlt = $tagIsZenekar
+    ? ($lang === 'en' ? 'Band photo' : 'Zenekar fotó')
+    : (string) ($G['dj_photo_alt'] ?? 'DJ fotó');
+$artistInitials = $tagIsZenekar
+    ? events_public_zenekar_initials($tagName)
+    : events_public_dj_initials($tagName);
 
 events_public_send_noindex_follow_header();
 header('Content-Type: text/html; charset=UTF-8');
@@ -193,7 +219,7 @@ header('Content-Type: text/html; charset=UTF-8');
 </head>
 <body class="event-public-page"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <div class="event-shell">
-<article class="event-public organizer-public<?= $tagIsDj ? ' dj-public' : '' ?>">
+<article class="event-public organizer-public<?= $tagIsArtistProfile ? ' dj-public' : '' ?>">
     <header class="event-public__hero">
         <?php
         $S = $G;
@@ -204,11 +230,17 @@ header('Content-Type: text/html; charset=UTF-8');
                 'label' => '← ' . (string) $G['all_djs_link'],
                 'aria' => (string) $G['all_djs_link'],
             ];
+        } elseif ($tagIsZenekar) {
+            $heroExtraBackLinks[] = [
+                'href' => events_public_zenekarok_page_url($lang),
+                'label' => '← ' . (string) $G['all_zenekarok_link'],
+                'aria' => (string) $G['all_zenekarok_link'],
+            ];
         }
         require __DIR__ . '/partials/public_shell_hero_bar.php';
         ?>
-        <div class="event-public__hero-inner<?= $tagIsDj ? ' dj-public__hero-inner' : '' ?>">
-            <?php if ($tagIsDj): ?>
+        <div class="event-public__hero-inner<?= $tagIsArtistProfile ? ' dj-public__hero-inner' : '' ?>">
+            <?php if ($tagIsArtistProfile): ?>
                 <div class="dj-public__identity">
                     <div class="dj-public__media">
                         <?php
@@ -223,14 +255,14 @@ header('Content-Type: text/html; charset=UTF-8');
                                     <img
                                         class="dj-public__avatar-img<?= $djAvatarIsLogo ? ' dj-public__avatar-img--logo' : '' ?>"
                                         src="<?= h($djAvatarSrc) ?>"
-                                        alt="<?= h((string) ($G['dj_photo_alt'] ?? 'DJ fotó')) ?>"
+                                        alt="<?= h($artistPhotoAlt) ?>"
                                         loading="eager"
                                         decoding="async"
                                         style="<?= h(events_dj_media_img_style($djProfile, $djAvatarKind)) ?>"
                                     >
                                 </button>
                             <?php else: ?>
-                                <span class="dj-public__avatar-initials"><?= h(events_public_dj_initials($tagName)) ?></span>
+                                <span class="dj-public__avatar-initials"><?= h($artistInitials) ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -291,7 +323,7 @@ header('Content-Type: text/html; charset=UTF-8');
                 <?php endif; ?>
                 <div class="event-public__title-row">
                     <h1 class="event-public__title"><?= h($title) ?></h1>
-                    <?php if ($publicFavoritesEnabled && !$tagIsDj): ?>
+                    <?php if ($publicFavoritesEnabled && !$tagIsArtistProfile): ?>
                         <?php require __DIR__ . '/partials/public_favorite_heart.php'; ?>
                     <?php endif; ?>
                 </div>
@@ -299,7 +331,7 @@ header('Content-Type: text/html; charset=UTF-8');
         </div>
     </header>
 
-    <?php if ($tagIsDj): ?>
+    <?php if ($tagIsArtistProfile): ?>
         <?php
         $djDisplayName = $tagName;
         require __DIR__ . '/partials/public_dj_profile.php';
@@ -408,10 +440,10 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
 <?php
-if ($tagIsDj) {
+if ($tagIsArtistProfile) {
     $djLightboxSrc = $djPhotoAbs !== '' ? $djPhotoAbs : $djLogoAbs;
     if ($djLightboxSrc !== '') {
-        $djLightboxAlt = trim($tagName . ' – ' . (string) ($G['dj_photo_alt'] ?? 'DJ fotó'));
+        $djLightboxAlt = trim($tagName . ' – ' . $artistPhotoAlt);
         require __DIR__ . '/partials/public_dj_photo_lightbox.php';
     }
 }

@@ -90,6 +90,14 @@ function pm_tools_page_catalog(): array
             'display_name' => 'DJ-k (events)',
             'purpose' => 'DJ adatlapok listája és szerkesztése az Event Adminban.',
         ],
+        '/nextgen/events/zenekarok_admin.php' => [
+            'display_name' => 'Zenekarok (Latinfo)',
+            'purpose' => 'Zenekar adatlapok listája és szerkesztése a Latinfo.hu részen (még nem publikus menü).',
+        ],
+        '/nextgen/events/zenekarok.php' => [
+            'display_name' => 'Zenekarok kezdőoldal',
+            'purpose' => 'Zenekar katalógus előnézet (DJ hub mintájára, még nem publikus).',
+        ],
         '/nextgen/config/cimkek.php' => [
             'display_name' => 'Címkék',
             'purpose' => 'NextGen config – címkék kezelése.',
@@ -100,7 +108,7 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/latinfo/index.php' => [
             'display_name' => 'Latinfo.hu',
-            'purpose' => 'Latinfo.hu alkalmazás: kezdőoldal, statok, slug, Partnereink, levélsablonok, adatok, CSV import.',
+            'purpose' => 'Latinfo.hu alkalmazás: zenekarok, kezdőoldal, statok, Partnereink, levélsablonok, adatok, CSV import.',
         ],
         '/nextgen/site/index.php' => [
             'display_name' => 'Latinfo kezdőoldal',

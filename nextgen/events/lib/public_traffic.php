@@ -19,6 +19,7 @@ function events_public_traffic_page_catalog(): array
         'list' => ['label' => 'Eseménylista', 'group' => 'hub', 'color' => '#2f6f8f'],
         'map' => ['label' => 'Térkép', 'group' => 'hub', 'color' => '#5a8a6a'],
         'djs' => ['label' => 'DJ lista', 'group' => 'hub', 'color' => '#8b5a9e'],
+        'zenekarok' => ['label' => 'Zenekar lista', 'group' => 'hub', 'color' => '#5a7a9e'],
         'organizers' => ['label' => 'Szervezők lista', 'group' => 'hub', 'color' => '#c45c26'],
         'partners' => ['label' => 'Partnereink', 'group' => 'hub', 'color' => '#8a6d4f'],
     ];

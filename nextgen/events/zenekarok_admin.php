@@ -1,0 +1,303 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/bootstrap.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
+require_once __DIR__ . '/lib/admin_event_filters.php';
+require_once __DIR__ . '/lib/zenekarok_admin.php';
+require_once __DIR__ . '/lib/event_public_lang.php';
+require_once __DIR__ . '/lib/public_zenekarok_content.php';
+requireLogin();
+
+$db = getDb();
+
+if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+    $pageTitle = 'Zenekarok';
+    $mainContentClass = 'main-content main-content--fullwidth';
+    require_once dirname(__DIR__) . '/partials/header.php';
+    echo '<div class="card events-admin-card">';
+    echo '<p class="alert alert-error">Hiányoznak a címke / típus táblák.</p>';
+    echo '<p><a href="' . h(events_url('events_admin.php')) . '" class="btn btn-secondary">Vissza</a></p>';
+    echo '</div>';
+    require_once dirname(__DIR__) . '/partials/footer.php';
+    exit;
+}
+
+$cmsAnchorBefore = EVENTS_PUBLIC_ZENEKAROK_HUB_ANCHOR_BEFORE;
+$cmsAnchorAfter = EVENTS_PUBLIC_ZENEKAROK_HUB_ANCHOR_AFTER;
+$cmsPublicBeforeUrl = events_public_zenekarok_hub_anchor_url($cmsAnchorBefore);
+$cmsPublicAfterUrl = events_public_zenekarok_hub_anchor_url($cmsAnchorAfter);
+$cmsContent = events_public_zenekarok_hub_load($db);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['zenekarok_hub_cms_save'])) {
+    $cmsRedirect = events_url('zenekarok_admin.php#zenekarok-hub-cms');
+    csrf_require('events_zenekarok_hub_cms', '_csrf', $cmsRedirect);
+    try {
+        events_public_zenekarok_hub_save(
+            $db,
+            (string) ($_POST['content_before'] ?? ''),
+            (string) ($_POST['content_after'] ?? '')
+        );
+        if (function_exists('rendszer_log')) {
+            rendszer_log('zenekar_hub', 1, 'Szövegek mentve', '');
+        }
+        flash('success', 'A zenekar oldal szövegei mentve.');
+    } catch (Throwable $e) {
+        error_log('zenekarok_admin hub cms save: ' . $e->getMessage());
+        flash('error', 'A szövegek mentése nem sikerült.');
+    }
+    redirect($cmsRedirect);
+}
+
+$listLimitParsed = events_admin_list_limit_from_get();
+$list_limit = $listLimitParsed['sql_limit'];
+$listLimitValue = $listLimitParsed['value'];
+$listTotalInDb = events_zenekarok_admin_total_count($db);
+
+$filters = events_zenekarok_admin_filters_from_request();
+$f_q = $filters['f_q'];
+$order = $filters['order'];
+$dir_param = $filters['dir_param'];
+$get_params = events_admin_list_limit_merge_get_params($filters['get_params'], $listLimitValue);
+
+$rows = events_zenekarok_admin_fetch($db, $filters, $list_limit);
+$listDisplayedCount = count($rows);
+$hasFilters = $f_q !== '';
+$colspan = 9;
+
+/** @param array<string, string> $params */
+$zenekarSortTh = static function (string $label, string $orderCol, string $currentOrder, string $currentDir, array $params): string {
+    $rel = sort_url($params, $orderCol, $currentOrder, $currentDir);
+    $qs = ltrim($rel, '?');
+    $href = events_url('zenekarok_admin.php' . ($qs !== '' ? '?' . $qs : ''));
+    $arrow = '';
+    if ($currentOrder === $orderCol) {
+        $arrow = $currentDir === 'asc'
+            ? ' <span class="sort-arrow" aria-hidden="true">↑</span>'
+            : ' <span class="sort-arrow" aria-hidden="true">↓</span>';
+    }
+
+    return '<a href="' . h($href) . '" class="th-sort">' . h($label) . $arrow . '</a>';
+};
+
+$pageTitle = 'Zenekarok';
+$mainContentClass = 'main-content main-content--fullwidth';
+
+$publicZenekarHubUrl = events_url('zenekarok.php');
+$adminFloatTools = [
+    [
+        'href' => events_url('zenekar_letrehoz.php'),
+        'title' => 'Új zenekar',
+        'aria' => 'Új zenekar létrehozása',
+        'icon' => 'plus',
+    ],
+    [
+        'href' => $publicZenekarHubUrl,
+        'title' => 'Megnyitás megtekintésre',
+        'aria' => 'Nyilvános zenekar lista megnyitása megtekintésre',
+        'icon' => 'eye',
+        'target' => '_blank',
+    ],
+    [
+        'submit_form' => 'zenekarok-hub-cms-form',
+        'title' => 'Zenekar oldal szövegeinek mentése',
+        'aria' => 'Zenekar oldal szövegeinek mentése',
+        'icon' => 'save',
+    ],
+];
+$adminFloatToolsRequireLogin = false;
+
+require_once dirname(__DIR__) . '/partials/header.php';
+?>
+<?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
+<?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
+
+<?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
+
+<div class="card events-admin-card">
+    <form method="get" action="<?= h(events_url('zenekarok_admin.php')) ?>" class="events-admin-form" id="zenekarok-admin-filter-form">
+        <input type="hidden" name="order" value="<?= h($order) ?>">
+        <input type="hidden" name="dir" value="<?= h($dir_param) ?>">
+
+        <div class="events-list-head">
+            <div class="events-list-head__start">
+                <h1 class="events-list-title card-title" style="margin:0;">Zenekarok</h1>
+                <?php
+                $listLimitInForm = true;
+                $listLimitStandalone = true;
+                require __DIR__ . '/partials/admin_list_display_limit.php';
+                ?>
+            </div>
+            <div class="events-list-actions">
+                <a href="<?= h(events_url('zenekarok_admin.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
+                <a href="<?= h(events_url('zenekar_letrehoz.php')) ?>" class="btn btn-primary">Új zenekar</a>
+                <a href="<?= h(events_url('organizers.php')) ?>" class="btn btn-secondary">Szervezők</a>
+                <a href="<?= h($publicZenekarHubUrl) ?>" class="events-icon-action events-edit-preview-action" title="Nyilvános zenekar lista megtekintése (új lap)" aria-label="Nyilvános zenekar lista megtekintése új lapon" target="_blank" rel="noopener">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <section class="events-filters-shell" aria-label="Szűrők">
+            <div class="events-filters-grid">
+                <div class="events-filter-field">
+                    <label class="events-filter-label<?= $f_q !== '' ? ' events-filter-label--active' : '' ?>" for="zenekar-f-q">Keresés</label>
+                    <input class="events-filter-input" type="search" name="f_q" id="zenekar-f-q" value="<?= h($f_q) ?>" placeholder="Név, slug vagy ID…" autocomplete="off">
+                </div>
+            </div>
+        </section>
+
+        <div class="table-wrap events-admin-table-wrap">
+            <table class="sortable-table events-admin-table">
+                <thead>
+                    <tr>
+                        <th class="events-djs-admin__th-photo"><?= $zenekarSortTh('Fotó', 'photo', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $zenekarSortTh('ID', 'id', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $zenekarSortTh('Név', 'name', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $zenekarSortTh('Slug', 'slug', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num"><?= $zenekarSortTh('Események', 'events', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num"><?= $zenekarSortTh('Közzétéve', 'published', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num"><?= $zenekarSortTh('Közelgő', 'upcoming', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $zenekarSortTh('Utolsó esemény', 'last_event', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $zenekarSortTh('Következő', 'next_event', $order, $dir_param, $get_params) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($rows === []): ?>
+                        <tr>
+                            <td colspan="<?= (int) $colspan ?>">
+                                <?php if ($hasFilters): ?>
+                                    Nincs a szűrésnek megfelelő zenekar.
+                                <?php else: ?>
+                                    Nincs zenekar. Adj hozzá újat.
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($rows as $r): ?>
+                            <?php
+                            $zid = (int) $r['id'];
+                            $zname = (string) $r['name'];
+                            $zslug = (string) $r['slug'];
+                            $photo = trim((string) $r['photo_url']);
+                            $logo = trim((string) ($r['logo_url'] ?? ''));
+                            $thumb = $photo !== '' ? $photo : $logo;
+                            $photoAbs = $thumb !== '' ? events_absolute_url($thumb) : '';
+                            $thumbIsLogo = $photo === '' && $logo !== '';
+                            $editUrl = events_url('zenekar_szerkeszt.php?id=') . $zid;
+                            $publicUrl = $zslug !== ''
+                                ? events_public_zenekar_page_url($zslug, 'hu')
+                                : events_public_tag_page_url($zid, 'hu');
+                            $eventsUrl = events_zenekarok_admin_events_filter_url($zid);
+                            $eventCount = (int) ($r['event_count'] ?? 0);
+                            $publishedCount = (int) ($r['published_count'] ?? 0);
+                            $upcomingCount = (int) ($r['upcoming_count'] ?? 0);
+                            ?>
+                            <tr>
+                                <td class="events-djs-admin__td-photo">
+                                    <a href="<?= h($editUrl) ?>" class="events-djs-admin__thumb-link" title="Szerkesztés">
+                                        <?php if ($photoAbs !== ''): ?>
+                                            <img class="events-djs-admin__thumb<?= $thumbIsLogo ? ' events-djs-admin__thumb--logo' : '' ?>" src="<?= h($photoAbs) ?>" alt="" loading="lazy" width="40" height="40">
+                                        <?php else: ?>
+                                            <span class="events-djs-admin__thumb events-djs-admin__thumb--empty" aria-hidden="true">🎸</span>
+                                        <?php endif; ?>
+                                    </a>
+                                </td>
+                                <td><a href="<?= h($editUrl) ?>"><?= $zid ?></a></td>
+                                <td>
+                                    <a href="<?= h($editUrl) ?>"><strong><?= h($zname) ?></strong></a>
+                                    <div class="events-admin-row-actions">
+                                        <a href="<?= h($publicUrl) ?>" target="_blank" rel="noopener">Nyilvános</a>
+                                    </div>
+                                </td>
+                                <td><code><?= h($zslug !== '' ? $zslug : '—') ?></code></td>
+                                <td class="td-num">
+                                    <?php if ($eventCount > 0): ?>
+                                        <a href="<?= h($eventsUrl) ?>" class="events-cell-link" title="Események szűrése erre a zenekarra"><?= $eventCount ?></a>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-num">
+                                    <?php if ($publishedCount > 0): ?>
+                                        <?= $publishedCount ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-num">
+                                    <?php if ($upcomingCount > 0): ?>
+                                        <?= $upcomingCount ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= h(events_zenekarok_admin_format_datetime($r['last_event_at'] ?? null)) ?></td>
+                                <td><?= h(events_zenekarok_admin_format_datetime($r['next_event_at'] ?? null)) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+<div class="card events-admin-card" id="zenekarok-hub-cms">
+    <h2 class="card-title" style="margin-top:0;">Nyilvános zenekar oldal szövegei</h2>
+    <p class="help">HTML blokkok a <a href="<?= h($publicZenekarHubUrl) ?>" target="_blank" rel="noopener">zenekarok.php</a> előnézeti oldalon. Mindkettőhöz named anchor tartozik, így linkelhető. Képet a szerkesztő kép gombjával tölthetsz fel vagy URL-lel szúrhatsz be.</p>
+    <form method="post" action="<?= h(events_url('zenekarok_admin.php')) ?>" class="events-admin-form" id="zenekarok-hub-cms-form">
+        <?= csrf_input('events_zenekarok_hub_cms') ?>
+        <input type="hidden" name="zenekarok_hub_cms_save" value="1">
+
+        <div class="form-group">
+            <label for="content_before">Szöveg az összes zenekar előtt</label>
+            <p class="help">Horgony: <a href="<?= h($cmsPublicBeforeUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorBefore) ?></code></a></p>
+            <textarea class="js-tinymce" id="content_before" name="content_before" rows="12"><?= h($cmsContent['content_before']) ?></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="content_after">Szöveg a statisztikák után</label>
+            <p class="help">Horgony: <a href="<?= h($cmsPublicAfterUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorAfter) ?></code></a></p>
+            <textarea class="js-tinymce" id="content_after" name="content_after" rows="12"><?= h($cmsContent['content_after']) ?></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Szövegek mentése</button>
+        </div>
+    </form>
+</div>
+<?php
+require __DIR__ . '/partials/admin_event_filters_script.php';
+require __DIR__ . '/partials/tinymce_script.php';
+?>
+<script>
+(function () {
+    var key = 'zenekarok-admin-search-focus';
+    var input = document.getElementById('zenekar-f-q');
+    if (!input) return;
+    try {
+        var raw = sessionStorage.getItem(key);
+        if (raw) {
+            sessionStorage.removeItem(key);
+            var data = JSON.parse(raw);
+            if (data && typeof data.pos === 'number') {
+                input.focus({ preventScroll: true });
+                var pos = Math.min(Math.max(0, data.pos), (input.value || '').length);
+                if (typeof input.setSelectionRange === 'function') {
+                    input.setSelectionRange(pos, pos);
+                }
+            }
+        }
+    } catch (e) {}
+    input.addEventListener('input', function () {
+        try {
+            sessionStorage.setItem(key, JSON.stringify({
+                pos: typeof input.selectionStart === 'number' ? input.selectionStart : (input.value || '').length
+            }));
+        } catch (e) {}
+    });
+})();
+</script>
+<?php
+require_once dirname(__DIR__) . '/partials/footer.php';

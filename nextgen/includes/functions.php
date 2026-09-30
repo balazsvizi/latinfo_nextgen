@@ -178,6 +178,10 @@ function ng_nav_latinfo_event_scripts(): array
         'menu_szerkeszt.php',
         'partnerek_szerkeszt.php',
         'slug_atiranyitasok.php',
+        'zenekarok.php',
+        'zenekarok_admin.php',
+        'zenekar_letrehoz.php',
+        'zenekar_szerkeszt.php',
     ];
 }
 

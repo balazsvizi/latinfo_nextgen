@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Latinfo.hu alkalmazás – kezdőoldal, statok, slug, partnereink, levélsablonok, adatok, CSV import.
+ * Latinfo.hu alkalmazás – zenekarok, kezdőoldal, statok, slug, partnereink, levélsablonok, adatok, CSV import.
  * URL: /nextgen/latinfo/
  */
 
@@ -14,14 +14,19 @@ require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <div class="card">
     <h2>Latinfo.hu</h2>
-    <p>Nyilvános latinfo.hu felület: kezdőoldal, statisztikák, slug, partnerek, levélsablonok, adatok és CSV import.</p>
+    <p>Nyilvános latinfo.hu felület: zenekarok, kezdőoldal, statisztikák, slug, partnerek, levélsablonok, adatok és CSV import.</p>
 </div>
 
 <div class="dash-cards dash-cards-apps">
-    <a href="<?= h(nextgen_url('site/')) ?>" class="dash-card">
-        <h3>Latinfo.hu kezdőoldal</h3>
+    <a href="<?= h(nextgen_url('events/zenekarok.php')) ?>" class="dash-card">
+        <h3>Zenekarok kezdőoldal</h3>
         <div class="num">→</div>
-        <p>Előnézet és szerkesztés – <code>site/</code></p>
+        <p>Katalógus előnézet – <code>zenekarok.php</code> (még nem publikus menü)</p>
+    </a>
+    <a href="<?= h(nextgen_url('events/zenekarok_admin.php')) ?>" class="dash-card">
+        <h3>Zenekarok admin</h3>
+        <div class="num">→</div>
+        <p>Lista, szerkesztés, oldal szövegek</p>
     </a>
     <a href="<?= h(nextgen_url('admin/users/')) ?>" class="dash-card">
         <h3>Userek</h3>

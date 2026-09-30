@@ -713,3 +713,153 @@ function events_tag_set_dj_slug(PDO $db, int $tagId, string $name, string $slugI
 
     return $slug;
 }
+
+/**
+ * Hiányzó zenekar slugok kitöltése (névből, underscore konvenció).
+ */
+function events_tags_ensure_zenekar_slugs(PDO $db): void
+{
+    if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+        return;
+    }
+    events_tags_ensure_slug_column($db);
+    if (!events_tags_slug_column_available($db)) {
+        return;
+    }
+    $typeId = events_tag_type_id_by_code($db, 'zenekar');
+    if ($typeId === null || $typeId <= 0) {
+        return;
+    }
+    try {
+        $st = $db->prepare('
+            SELECT t.`id`, t.`name`, t.`slug`
+            FROM `events_tags` t
+            INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
+            WHERE t.`slug` IS NULL OR t.`slug` = \'\'
+            ORDER BY t.`id` ASC
+        ');
+        $st->execute([$typeId]);
+        $upd = $db->prepare('UPDATE `events_tags` SET `slug` = ? WHERE `id` = ?');
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            $name = (string) ($row['name'] ?? '');
+            if ($id <= 0 || $name === '') {
+                continue;
+            }
+            $slug = events_ensure_unique_tag_slug($db, events_dj_slugify($name), $id);
+            $upd->execute([$slug, $id]);
+        }
+    } catch (PDOException) {
+        // schema / race – csendben kihagyjuk
+    }
+}
+
+/**
+ * Egy címke zenekar slugja (ha zenekar típusú és van slug).
+ */
+function events_public_tag_zenekar_slug(PDO $db, int $tagId): ?string
+{
+    if ($tagId <= 0 || !events_tags_tables_available($db) || !events_tags_slug_column_available($db)) {
+        return null;
+    }
+    if (!in_array('zenekar', events_load_tag_type_codes($db, $tagId), true)) {
+        return null;
+    }
+    $st = $db->prepare('SELECT `slug` FROM `events_tags` WHERE `id` = ? LIMIT 1');
+    $st->execute([$tagId]);
+    $slug = trim((string) ($st->fetchColumn() ?: ''));
+    if ($slug === '') {
+        events_tags_ensure_zenekar_slugs($db);
+        $st->execute([$tagId]);
+        $slug = trim((string) ($st->fetchColumn() ?: ''));
+    }
+
+    return $slug !== '' ? $slug : null;
+}
+
+/**
+ * Zenekar címke betöltése slug alapján.
+ *
+ * @return array{
+ *   id:int,
+ *   name:string,
+ *   slug:string,
+ *   description:string,
+ *   photo_url:string,
+ *   logo_url:string,
+ *   website_url:string,
+ *   facebook_url:string,
+ *   instagram_url:string,
+ *   soundcloud_url:string,
+ *   youtube_url:string,
+ *   email:string,
+ *   phone:string
+ * }|null
+ */
+function events_public_zenekar_by_slug(PDO $db, string $slug): ?array
+{
+    $slug = trim($slug);
+    if ($slug === '' || !events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
+        return null;
+    }
+    events_tags_ensure_slug_column($db);
+    if (!events_tags_slug_column_available($db)) {
+        return null;
+    }
+    require_once __DIR__ . '/tag_profile.php';
+    $typeId = events_tag_type_id_by_code($db, 'zenekar');
+    if ($typeId === null || $typeId <= 0) {
+        return null;
+    }
+    $profileSelect = events_tag_profile_sql_select($db, 't');
+    $st = $db->prepare('
+        SELECT t.`id`, t.`name`, t.`slug`, ' . $profileSelect . '
+        FROM `events_tags` t
+        INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id` AND l.`tag_type_id` = ?
+        WHERE t.`slug` = ?
+        LIMIT 1
+    ');
+    $st->execute([$typeId, $slug]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+    $profile = events_tag_profile_from_row($row);
+
+    return array_merge([
+        'id' => (int) ($row['id'] ?? 0),
+        'name' => (string) ($row['name'] ?? ''),
+        'slug' => (string) ($row['slug'] ?? $slug),
+    ], $profile);
+}
+
+/**
+ * @param list<string> $typeCodes
+ */
+function events_tag_sync_zenekar_slug(PDO $db, int $tagId, string $name, array $typeCodes): ?string
+{
+    if ($tagId <= 0) {
+        return null;
+    }
+    $typeCodes = events_tag_type_normalize_codes($typeCodes, $db);
+    if (!in_array('zenekar', $typeCodes, true)) {
+        return null;
+    }
+    events_tags_ensure_slug_column($db);
+    if (!events_tags_slug_column_available($db)) {
+        return null;
+    }
+    $st = $db->prepare('SELECT `slug` FROM `events_tags` WHERE `id` = ? LIMIT 1');
+    $st->execute([$tagId]);
+    $current = trim((string) ($st->fetchColumn() ?: ''));
+    if ($current !== '') {
+        return $current;
+    }
+
+    return events_tag_set_zenekar_slug($db, $tagId, $name, '');
+}
+
+function events_tag_set_zenekar_slug(PDO $db, int $tagId, string $name, string $slugInput = ''): ?string
+{
+    return events_tag_set_dj_slug($db, $tagId, $name, $slugInput);
+}

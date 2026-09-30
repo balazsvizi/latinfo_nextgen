@@ -120,6 +120,17 @@ if ($navZone === 'events') {
                 <?php elseif ($navZone === 'latinfo'): ?>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('events/zenekarok_admin.php')) ?>" class="nav-parent-link">Zenekarok</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-zenekarok" aria-label="Zenekarok almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-latinfo-zenekarok" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('events/zenekarok.php')) ?>" role="menuitem">Kezdőoldal (előnézet)</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/zenekarok_admin.php')) ?>" role="menuitem">Admin lista</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/zenekar_letrehoz.php')) ?>" role="menuitem">Új zenekar</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" class="nav-parent-link">Kezdőoldal</a>
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-home" aria-label="Kezdőoldal almenü">▾</button>
                     </span>
