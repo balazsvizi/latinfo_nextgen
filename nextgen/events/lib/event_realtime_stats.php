@@ -7,13 +7,13 @@ require_once __DIR__ . '/public_traffic.php';
 require_once __DIR__ . '/public_home_notice_stats.php';
 
 const EVENTS_REALTIME_WINDOW_MINUTES = 30;
-/** 0 = nincs limit: minden buli, amin van mért aktivitás az ablakban. */
+/** 0 = nincs limit (legacy top_events helper). */
 const EVENTS_REALTIME_TOP_EVENTS = 0;
 const EVENTS_REALTIME_TOP_PAGES = 8;
 const EVENTS_REALTIME_TOP_NAV = 8;
-const EVENTS_REALTIME_RECENT_LIMIT = 40;
-const EVENTS_REALTIME_FEED_POOL = 120;
-const EVENTS_REALTIME_PRESENCE_LIMIT = 18;
+const EVENTS_REALTIME_RECENT_LIMIT = 80;
+const EVENTS_REALTIME_FEED_POOL = 240;
+const EVENTS_REALTIME_PRESENCE_LIMIT = 24;
 
 /**
  * @return 'human'|'all'|'bot'
@@ -110,6 +110,11 @@ function events_realtime_metric_label(string $metric): string
         'hub_page' => 'Statikus oldal',
         'nav_click' => 'Menü',
         'notice_click' => 'Értesítő',
+        'cms_page' => 'CMS',
+        'module_click' => 'Modul',
+        'mobilapp' => 'Mobilapp',
+        'favorite' => 'Kedvenc',
+        'rating' => 'Értékelés',
         default => $metric !== '' ? $metric : '—',
     };
 }
@@ -123,8 +128,71 @@ function events_realtime_kind_label(string $kind): string
         'hub' => 'Statikus oldal',
         'nav' => 'Menü',
         'notice' => 'Értesítő',
+        'cms' => 'CMS',
+        'module' => 'Modul',
+        'mobilapp' => 'Mobilapp',
+        'favorite' => 'Kedvenc',
+        'rating' => 'Értékelés',
         default => $kind !== '' ? $kind : '—',
     };
+}
+
+/**
+ * Idempotens táblaellenőrzés (whitelist).
+ */
+function events_realtime_table_ready(PDO $db, string $table): bool
+{
+    static $cache = [];
+    $allowed = [
+        'cms_post_views' => true,
+        'cms_posts' => true,
+        'latinfo_home_module_clicks' => true,
+        'latinfo_mobilapp_events' => true,
+        'latinfo_favorites' => true,
+        'latinfo_home_ratings' => true,
+    ];
+    if (!isset($allowed[$table])) {
+        return false;
+    }
+    if (array_key_exists($table, $cache)) {
+        return $cache[$table];
+    }
+    try {
+        $db->query('SELECT 1 FROM `' . $table . '` LIMIT 1');
+        $cache[$table] = true;
+    } catch (Throwable) {
+        $cache[$table] = false;
+    }
+
+    return $cache[$table];
+}
+
+function events_realtime_count_simple_hits(
+    PDO $db,
+    string $table,
+    string $timeColumn,
+    string $start,
+    string $visitor,
+    bool $hasBot
+): int {
+    if (!events_realtime_table_ready($db, $table)) {
+        return 0;
+    }
+    $timeAllowed = [
+        'occurred_at' => true,
+        'created_at' => true,
+        'clicked_at' => true,
+    ];
+    if (!isset($timeAllowed[$timeColumn])) {
+        return 0;
+    }
+    $visitor = events_realtime_normalize_visitor($visitor);
+    $botAnd = $hasBot ? events_realtime_bot_and($visitor, true) : ($visitor === 'bot' ? ' AND 1 = 0' : '');
+    $sql = "SELECT COUNT(*) FROM `{$table}` WHERE `{$timeColumn}` >= ?{$botAnd}";
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$start]);
+
+    return (int) $stmt->fetchColumn();
 }
 
 function events_realtime_device_label(string $device): string
@@ -508,6 +576,11 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
         'preview_hits_30m' => 0,
         'external_hits_30m' => 0,
         'notice_hits_30m' => 0,
+        'cms_hits_30m' => 0,
+        'module_hits_30m' => 0,
+        'mobilapp_hits_30m' => 0,
+        'favorite_hits_30m' => 0,
+        'rating_hits_30m' => 0,
         'bot_hits_30m' => 0,
         'visitor' => $visitor,
         'window_start' => $start,
@@ -526,6 +599,12 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
     }
 
     try {
+        $cmsReady = events_realtime_table_ready($db, 'cms_post_views');
+        $moduleReady = events_realtime_table_ready($db, 'latinfo_home_module_clicks');
+        $mobilappReady = events_realtime_table_ready($db, 'latinfo_mobilapp_events');
+        $favoriteReady = events_realtime_table_ready($db, 'latinfo_favorites');
+        $ratingReady = events_realtime_table_ready($db, 'latinfo_home_ratings');
+
         $partyHits = events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_PAGE, $visitor, $botReady, $tableReady);
         $previewHits = $tableReady
             ? events_realtime_count_hits($db, $start, EVENTS_VIEW_METRIC_CALENDAR_PREVIEW, $visitor, $botReady, $tableReady)
@@ -542,9 +621,35 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
         $noticeHits = $noticeReady
             ? events_realtime_count_notice_clicks($db, $start, $visitor)
             : 0;
+        $cmsHits = $cmsReady
+            ? events_realtime_count_simple_hits($db, 'cms_post_views', 'occurred_at', $start, $visitor, true)
+            : 0;
+        $moduleHits = $moduleReady
+            ? events_realtime_count_simple_hits($db, 'latinfo_home_module_clicks', 'occurred_at', $start, $visitor, true)
+            : 0;
+        $mobilappHits = $mobilappReady
+            ? events_realtime_count_simple_hits($db, 'latinfo_mobilapp_events', 'occurred_at', $start, $visitor, true)
+            : 0;
+        $favoriteHits = $favoriteReady
+            ? events_realtime_count_simple_hits($db, 'latinfo_favorites', 'created_at', $start, $visitor, false)
+            : 0;
+        $ratingHits = $ratingReady
+            ? events_realtime_count_simple_hits($db, 'latinfo_home_ratings', 'occurred_at', $start, $visitor, true)
+            : 0;
 
         $users30 = events_realtime_count_unique_users_all($db, $start, $visitor, $botReady, $tableReady, $trafficReady);
-        $botHits = events_realtime_count_bot_hits_all($db, $start, $botReady, $tableReady, $trafficReady, $noticeReady);
+        $botHits = events_realtime_count_bot_hits_all(
+            $db,
+            $start,
+            $botReady,
+            $tableReady,
+            $trafficReady,
+            $noticeReady,
+            $cmsReady,
+            $moduleReady,
+            $mobilappReady,
+            $ratingReady
+        );
 
         $perMinuteMap = [];
         foreach ($empty['per_minute'] as $row) {
@@ -577,12 +682,17 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
             'preview_hits_30m' => $previewHits,
             'external_hits_30m' => $externalHits,
             'notice_hits_30m' => $noticeHits,
+            'cms_hits_30m' => $cmsHits,
+            'module_hits_30m' => $moduleHits,
+            'mobilapp_hits_30m' => $mobilappHits,
+            'favorite_hits_30m' => $favoriteHits,
+            'rating_hits_30m' => $ratingHits,
             'bot_hits_30m' => $botHits,
             'visitor' => $visitor,
             'window_start' => $start,
             'window_end' => $window['end'],
             'per_minute' => $perMinute,
-            'top_events' => events_realtime_top_events($db, $start, $visitor, $botReady, $tableReady),
+            'top_events' => [],
             'top_pages' => $trafficReady ? events_realtime_top_pages($db, $start, $visitor) : [],
             'top_nav' => $trafficReady ? events_realtime_top_nav($db, $start, $visitor) : [],
             'by_source' => events_realtime_by_source($db, $start, $visitor, $botReady, $tableReady),
@@ -723,7 +833,11 @@ function events_realtime_count_bot_hits_all(
     bool $botReady,
     bool $tableReady,
     bool $trafficReady,
-    bool $noticeReady
+    bool $noticeReady,
+    bool $cmsReady = false,
+    bool $moduleReady = false,
+    bool $mobilappReady = false,
+    bool $ratingReady = false
 ): int {
     $total = 0;
     if ($botReady) {
@@ -735,6 +849,18 @@ function events_realtime_count_bot_hits_all(
     }
     if ($noticeReady) {
         $total += events_realtime_count_notice_clicks($db, $start, 'bot');
+    }
+    if ($cmsReady) {
+        $total += events_realtime_count_simple_hits($db, 'cms_post_views', 'occurred_at', $start, 'bot', true);
+    }
+    if ($moduleReady) {
+        $total += events_realtime_count_simple_hits($db, 'latinfo_home_module_clicks', 'occurred_at', $start, 'bot', true);
+    }
+    if ($mobilappReady) {
+        $total += events_realtime_count_simple_hits($db, 'latinfo_mobilapp_events', 'occurred_at', $start, 'bot', true);
+    }
+    if ($ratingReady) {
+        $total += events_realtime_count_simple_hits($db, 'latinfo_home_ratings', 'occurred_at', $start, 'bot', true);
     }
 
     return $total;
@@ -1219,6 +1345,224 @@ function events_realtime_recent_all(
                 'source' => 'notice',
                 'source_label' => 'Értesítő',
             ], $row['ip_hash'] ?? null, $isBot, '', (int) ($row['user_id'] ?? 0));
+        }
+    }
+
+    if (events_realtime_table_ready($db, 'cms_post_views')) {
+        $cmsBotAnd = events_realtime_bot_and($visitor, true, 'v.`is_bot`');
+        $cmsPostsReady = events_realtime_table_ready($db, 'cms_posts');
+        $cmsTitleSelect = $cmsPostsReady ? 'p.`title`' : "CONCAT('CMS #', v.`post_id`)";
+        $cmsJoin = $cmsPostsReady ? 'LEFT JOIN `cms_posts` p ON p.`id` = v.`post_id`' : '';
+        $sqlCms = "SELECT v.`occurred_at` AS at_ts, v.`post_id`, {$cmsTitleSelect} AS title,
+                          v.`source`, v.`is_bot`, v.`ip_hash`
+                   FROM `cms_post_views` v
+                   {$cmsJoin}
+                   WHERE v.`occurred_at` >= ?{$cmsBotAnd}
+                   ORDER BY v.`occurred_at` DESC
+                   LIMIT {$poolLimit}";
+        $stmt = $db->prepare($sqlCms);
+        $stmt->execute([$start]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $postId = (int) ($row['post_id'] ?? 0);
+            $title = trim((string) ($row['title'] ?? ''));
+            if ($title === '') {
+                $title = $postId > 0 ? 'CMS #' . $postId : 'CMS cikk';
+            }
+            $source = trim((string) ($row['source'] ?? 'direct'));
+            $isBot = (int) ($row['is_bot'] ?? 0) === 1;
+            $items[] = events_realtime_with_visitor([
+                'at' => (string) ($row['at_ts'] ?? ''),
+                'kind' => 'cms',
+                'kind_label' => events_realtime_kind_label('cms'),
+                'target' => $title,
+                'href' => '',
+                'detail' => 'Cikk megtekintés · ' . ($source !== '' ? $source : 'direct'),
+                'event_id' => 0,
+                'name' => $title,
+                'event_date' => '–',
+                'metric' => 'cms_page',
+                'metric_label' => events_realtime_metric_label('cms_page'),
+                'source' => $source,
+                'source_label' => $source !== '' ? $source : 'direct',
+            ], $row['ip_hash'] ?? null, $isBot, '', 0);
+        }
+    }
+
+    if (events_realtime_table_ready($db, 'latinfo_home_module_clicks')) {
+        if (!function_exists('latinfo_home_module_label')) {
+            $modLib = dirname(__DIR__, 2) . '/site/lib/site_modules.php';
+            if (is_file($modLib)) {
+                require_once $modLib;
+            }
+        }
+        $moduleBotAnd = events_realtime_bot_and($visitor, true);
+        $sqlModule = "SELECT `occurred_at` AS at_ts, `module_key`, `item_key`, `item_label`,
+                             `lang`, `device`, `surface`, `is_bot`, `ip_hash`
+                      FROM `latinfo_home_module_clicks`
+                      WHERE `occurred_at` >= ?{$moduleBotAnd}
+                      ORDER BY `occurred_at` DESC
+                      LIMIT {$poolLimit}";
+        $stmt = $db->prepare($sqlModule);
+        $stmt->execute([$start]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $moduleKey = (string) ($row['module_key'] ?? '');
+            $moduleLabel = function_exists('latinfo_home_module_label')
+                ? latinfo_home_module_label($moduleKey)
+                : $moduleKey;
+            $itemLabel = trim((string) ($row['item_label'] ?? ''));
+            $target = $moduleLabel !== '' ? $moduleLabel : ($moduleKey !== '' ? $moduleKey : 'Modul');
+            if ($itemLabel !== '') {
+                $target .= ' · ' . $itemLabel;
+            }
+            $lang = strtoupper((string) ($row['lang'] ?? 'hu'));
+            $surface = (string) ($row['surface'] ?? 'web');
+            $isBot = (int) ($row['is_bot'] ?? 0) === 1;
+            $items[] = events_realtime_with_visitor([
+                'at' => (string) ($row['at_ts'] ?? ''),
+                'kind' => 'module',
+                'kind_label' => events_realtime_kind_label('module'),
+                'target' => $target,
+                'href' => '',
+                'detail' => 'Modul kattintás · ' . $lang . ' · ' . $surface,
+                'event_id' => 0,
+                'name' => $target,
+                'event_date' => '–',
+                'metric' => 'module_click',
+                'metric_label' => events_realtime_metric_label('module_click'),
+                'source' => $moduleKey,
+                'source_label' => $moduleLabel,
+            ], $row['ip_hash'] ?? null, $isBot, (string) ($row['device'] ?? ''), 0);
+        }
+    }
+
+    if (events_realtime_table_ready($db, 'latinfo_mobilapp_events')) {
+        if (!function_exists('latinfo_mobilapp_event_label')) {
+            $maLib = dirname(__DIR__, 2) . '/site/lib/mobilapp_stats.php';
+            if (is_file($maLib)) {
+                require_once $maLib;
+            }
+        }
+        $maBotAnd = events_realtime_bot_and($visitor, true);
+        $sqlMa = "SELECT `occurred_at` AS at_ts, `event_type`, `device`, `is_bot`, `ip_hash`
+                  FROM `latinfo_mobilapp_events`
+                  WHERE `occurred_at` >= ?{$maBotAnd}
+                  ORDER BY `occurred_at` DESC
+                  LIMIT {$poolLimit}";
+        $stmt = $db->prepare($sqlMa);
+        $stmt->execute([$start]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $type = (string) ($row['event_type'] ?? '');
+            $target = function_exists('latinfo_mobilapp_event_label')
+                ? latinfo_mobilapp_event_label($type)
+                : ($type !== '' ? $type : 'Mobilapp');
+            $isBot = (int) ($row['is_bot'] ?? 0) === 1;
+            $items[] = events_realtime_with_visitor([
+                'at' => (string) ($row['at_ts'] ?? ''),
+                'kind' => 'mobilapp',
+                'kind_label' => events_realtime_kind_label('mobilapp'),
+                'target' => $target,
+                'href' => '',
+                'detail' => 'Mobilapp / PWA',
+                'event_id' => 0,
+                'name' => $target,
+                'event_date' => '–',
+                'metric' => 'mobilapp',
+                'metric_label' => events_realtime_metric_label('mobilapp'),
+                'source' => $type,
+                'source_label' => $target,
+            ], $row['ip_hash'] ?? null, $isBot, (string) ($row['device'] ?? ''), 0);
+        }
+    }
+
+    if ($visitor !== 'bot' && events_realtime_table_ready($db, 'latinfo_favorites')) {
+        if (!function_exists('latinfo_favorites_entity_public_meta')) {
+            $favLib = dirname(__DIR__, 2) . '/lib/user/favorites.php';
+            if (is_file($favLib)) {
+                require_once $favLib;
+            }
+        }
+        if (!function_exists('latinfo_favorite_stats_type_labels')) {
+            $favStatsLib = __DIR__ . '/favorite_stats.php';
+            if (is_file($favStatsLib)) {
+                require_once $favStatsLib;
+            }
+        }
+        $typeLabels = function_exists('latinfo_favorite_stats_type_labels')
+            ? latinfo_favorite_stats_type_labels('hu')
+            : [];
+        $sqlFav = "SELECT `created_at` AS at_ts, `entity_type`, `entity_id`, `actor_key`
+                   FROM `latinfo_favorites`
+                   WHERE `created_at` >= ?
+                   ORDER BY `created_at` DESC
+                   LIMIT {$poolLimit}";
+        $stmt = $db->prepare($sqlFav);
+        $stmt->execute([$start]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $entityType = (string) ($row['entity_type'] ?? '');
+            $entityId = (int) ($row['entity_id'] ?? 0);
+            $typeLabel = (string) ($typeLabels[$entityType] ?? ($entityType !== '' ? $entityType : 'Kedvenc'));
+            $target = $typeLabel . ($entityId > 0 ? ' #' . $entityId : '');
+            if (function_exists('latinfo_favorites_entity_public_meta') && $entityId > 0 && $entityType !== '') {
+                $meta = latinfo_favorites_entity_public_meta($db, $entityType, $entityId, 'hu');
+                if (is_array($meta) && trim((string) ($meta['label'] ?? '')) !== '') {
+                    $target = trim((string) $meta['label']);
+                }
+            }
+            $actorKey = trim((string) ($row['actor_key'] ?? ''));
+            $userId = 0;
+            $visitorHash = null;
+            if (str_starts_with($actorKey, 'u:')) {
+                $userId = (int) substr($actorKey, 2);
+            } elseif (str_starts_with($actorKey, 'v:') && strlen($actorKey) > 2) {
+                $visitorHash = substr($actorKey, 2);
+            }
+            $items[] = events_realtime_with_visitor([
+                'at' => (string) ($row['at_ts'] ?? ''),
+                'kind' => 'favorite',
+                'kind_label' => events_realtime_kind_label('favorite'),
+                'target' => $target,
+                'href' => '',
+                'detail' => 'Szívecske · ' . $typeLabel,
+                'event_id' => $entityType === 'event' ? $entityId : 0,
+                'name' => $target,
+                'event_date' => '–',
+                'metric' => 'favorite',
+                'metric_label' => events_realtime_metric_label('favorite'),
+                'source' => $entityType,
+                'source_label' => $typeLabel,
+            ], $visitorHash, false, '', $userId);
+        }
+    }
+
+    if (events_realtime_table_ready($db, 'latinfo_home_ratings')) {
+        $ratingBotAnd = events_realtime_bot_and($visitor, true);
+        $sqlRating = "SELECT `occurred_at` AS at_ts, `stars`, `lang`, `device`, `is_bot`, `ip_hash`
+                      FROM `latinfo_home_ratings`
+                      WHERE `occurred_at` >= ?{$ratingBotAnd}
+                      ORDER BY `occurred_at` DESC
+                      LIMIT {$poolLimit}";
+        $stmt = $db->prepare($sqlRating);
+        $stmt->execute([$start]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $stars = (int) ($row['stars'] ?? 0);
+            $target = $stars > 0 ? ($stars . ' csillag') : 'Értékelés';
+            $lang = strtoupper((string) ($row['lang'] ?? 'hu'));
+            $isBot = (int) ($row['is_bot'] ?? 0) === 1;
+            $items[] = events_realtime_with_visitor([
+                'at' => (string) ($row['at_ts'] ?? ''),
+                'kind' => 'rating',
+                'kind_label' => events_realtime_kind_label('rating'),
+                'target' => $target,
+                'href' => '',
+                'detail' => 'Kezdőlap értékelés · ' . $lang,
+                'event_id' => 0,
+                'name' => $target,
+                'event_date' => '–',
+                'metric' => 'rating',
+                'metric_label' => events_realtime_metric_label('rating'),
+                'source' => 'rating',
+                'source_label' => 'Értékelés',
+            ], $row['ip_hash'] ?? null, $isBot, (string) ($row['device'] ?? ''), 0);
         }
     }
 

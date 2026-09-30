@@ -45,6 +45,11 @@ $kindBadgeClass = static function (string $kind): string {
         'hub' => 'events-rt-kind--hub',
         'nav' => 'events-rt-kind--nav',
         'notice' => 'events-rt-kind--notice',
+        'cms' => 'events-rt-kind--cms',
+        'module' => 'events-rt-kind--module',
+        'mobilapp' => 'events-rt-kind--mobilapp',
+        'favorite' => 'events-rt-kind--favorite',
+        'rating' => 'events-rt-kind--rating',
         default => 'events-rt-kind--other',
     };
 };
@@ -116,7 +121,7 @@ $whoButton = static function (array $mark) use ($rtColor): string {
     <div class="events-list-head events-cal-page__head">
         <div class="events-cal-page__head-start">
             <h2 class="events-list-title">Valós idejű áttekintés</h2>
-            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · menü, statikus oldalak, bulik, előnézet, további info, értesítő</p>
+            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · buli, menü, statikus, CMS, modul, mobilapp, kedvenc, értesítő</p>
         </div>
         <div class="events-list-actions">
             <a href="<?= h(events_url('events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Statisztikák</a>
@@ -197,6 +202,26 @@ $whoButton = static function (array $mark) use ($rtColor): string {
             <p class="events-rt-kpi__value" id="events-rt-external"><?= (int) ($snapshot['external_hits_30m'] ?? 0) ?></p>
             <p class="events-rt-kpi__hint">CTA kattintás</p>
         </div>
+        <div class="events-rt-kpi events-rt-kpi--cms">
+            <p class="events-rt-kpi__label">CMS</p>
+            <p class="events-rt-kpi__value" id="events-rt-cms"><?= (int) ($snapshot['cms_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">cikk megtekintés</p>
+        </div>
+        <div class="events-rt-kpi events-rt-kpi--module">
+            <p class="events-rt-kpi__label">Modul</p>
+            <p class="events-rt-kpi__value" id="events-rt-module"><?= (int) ($snapshot['module_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">kezdőlap modul</p>
+        </div>
+        <div class="events-rt-kpi events-rt-kpi--mobilapp">
+            <p class="events-rt-kpi__label">Mobilapp</p>
+            <p class="events-rt-kpi__value" id="events-rt-mobilapp"><?= (int) ($snapshot['mobilapp_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">PWA esemény</p>
+        </div>
+        <div class="events-rt-kpi events-rt-kpi--favorite">
+            <p class="events-rt-kpi__label">Kedvenc</p>
+            <p class="events-rt-kpi__value" id="events-rt-favorite"><?= (int) ($snapshot['favorite_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">szívecske</p>
+        </div>
         <div class="events-rt-kpi events-rt-kpi--notice">
             <p class="events-rt-kpi__label">Értesítő</p>
             <p class="events-rt-kpi__value" id="events-rt-notice"><?= (int) ($snapshot['notice_hits_30m'] ?? 0) ?></p>
@@ -217,42 +242,7 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         </div>
     </section>
 
-    <div class="events-rt-split events-rt-split--triple">
-        <section class="events-rt-panel" aria-labelledby="events-rt-top-title">
-            <h3 class="events-rt-section-title" id="events-rt-top-title">Aktív bulik</h3>
-            <p class="events-rt-section-hint">Minden buli, amin van oldal-, előnézet- vagy további info aktivitás.</p>
-            <div class="table-wrap events-rt-table-wrap">
-                <table class="events-admin-table events-rt-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Esemény</th>
-                            <th class="th-center" scope="col" title="Egyedi emberi oldal-látogató">Egyedi</th>
-                            <th class="th-center" scope="col">Oldal</th>
-                            <th class="th-center" scope="col">Előnézet</th>
-                            <th class="th-center" scope="col" title="További információ gombra kattintás">Tov. info</th>
-                        </tr>
-                    </thead>
-                    <tbody id="events-rt-top-body">
-                        <?php if ($snapshot['top_events'] === []): ?>
-                            <tr class="events-rt-empty-row"><td colspan="5">Nincs buli aktivitás az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</td></tr>
-                        <?php else: ?>
-                            <?php foreach ($snapshot['top_events'] as $ev): ?>
-                                <tr>
-                                    <td>
-                                        <a href="<?= h($editBase . (int) $ev['id']) ?>"><?= h((string) $ev['name']) ?></a>
-                                    </td>
-                                    <td class="text-center"><?= (int) $ev['unique'] ?></td>
-                                    <td class="text-center"><?= (int) $ev['page'] ?></td>
-                                    <td class="text-center"><?= (int) $ev['preview'] ?></td>
-                                    <td class="text-center"><?= (int) ($ev['external'] ?? 0) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+    <div class="events-rt-split">
         <section class="events-rt-panel" aria-labelledby="events-rt-pages-title">
             <h3 class="events-rt-section-title" id="events-rt-pages-title">Top statikus oldalak</h3>
             <p class="events-rt-section-hint">Emberi oldalmegtekintések.</p>
@@ -320,7 +310,7 @@ $whoButton = static function (array $mark) use ($rtColor): string {
 
     <section class="events-rt-panel events-rt-recent-panel" aria-labelledby="events-rt-recent-title">
         <h3 class="events-rt-section-title" id="events-rt-recent-title">Mire kattintanak most</h3>
-        <p class="events-rt-section-hint">Ugyanaz a szín és ikon ugyanazt a látogatót jelöli. Kattints egy jelölésre, és csak az ő útvonala marad kiemelve.</p>
+        <p class="events-rt-section-hint">Minden mért aktivitás: buli, menü, statikus, CMS, modul, mobilapp, kedvenc, értesítő. Bejelentkezett felhasználónál a név jelenik meg. Kattints egy jelölésre a szűréshez.</p>
         <?php $presence = is_array($snapshot['presence'] ?? null) ? $snapshot['presence'] : []; ?>
         <div class="events-rt-people" id="events-rt-people"<?= $presence === [] ? ' hidden' : '' ?>>
             <button type="button" class="events-rt-person-clear" hidden>Összes</button>
@@ -601,7 +591,12 @@ $whoButton = static function (array $mark) use ($rtColor): string {
             external: 'events-rt-kind--external',
             hub: 'events-rt-kind--hub',
             nav: 'events-rt-kind--nav',
-            notice: 'events-rt-kind--notice'
+            notice: 'events-rt-kind--notice',
+            cms: 'events-rt-kind--cms',
+            module: 'events-rt-kind--module',
+            mobilapp: 'events-rt-kind--mobilapp',
+            favorite: 'events-rt-kind--favorite',
+            rating: 'events-rt-kind--rating'
         };
         return map[kind] || 'events-rt-kind--other';
     }
@@ -723,26 +718,6 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         });
     }
 
-    function renderTop(payload) {
-        var body = document.getElementById('events-rt-top-body');
-        if (!body) return;
-        var rows = payload.top_events || [];
-        if (!rows.length) {
-            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs buli aktivitás az elmúlt ' + windowMinutes + ' percben.</td></tr>';
-            return;
-        }
-        body.innerHTML = rows.map(function (ev) {
-            var href = editBase + String(ev.id || 0);
-            return '<tr>'
-                + '<td><a href="' + esc(href) + '">' + esc(ev.name || '') + '</a></td>'
-                + '<td class="text-center">' + Number(ev.unique || 0) + '</td>'
-                + '<td class="text-center">' + Number(ev.page || 0) + '</td>'
-                + '<td class="text-center">' + Number(ev.preview || 0) + '</td>'
-                + '<td class="text-center">' + Number(ev.external || 0) + '</td>'
-                + '</tr>';
-        }).join('');
-    }
-
     function renderPresence(payload) {
         var box = document.getElementById('events-rt-people');
         if (!box) return;
@@ -849,11 +824,14 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         setText('events-rt-nav', Number(payload.nav_hits_30m || 0));
         setText('events-rt-preview', Number(payload.preview_hits_30m || 0));
         setText('events-rt-external', Number(payload.external_hits_30m || 0));
+        setText('events-rt-cms', Number(payload.cms_hits_30m || 0));
+        setText('events-rt-module', Number(payload.module_hits_30m || 0));
+        setText('events-rt-mobilapp', Number(payload.mobilapp_hits_30m || 0));
+        setText('events-rt-favorite', Number(payload.favorite_hits_30m || 0));
         setText('events-rt-notice', Number(payload.notice_hits_30m || 0));
         setText('events-rt-bot', Number(payload.bot_hits_30m || 0));
         setText('events-rt-updated', 'Frissítve: ' + (payload.generated_at || ''));
         buildChart(payload);
-        renderTop(payload);
         renderBarList('events-rt-pages', payload.top_pages || [], 'events-rt-source__bar--hub');
         renderBarList('events-rt-nav-list', payload.top_nav || [], 'events-rt-source__bar--nav');
         renderRecent(payload);

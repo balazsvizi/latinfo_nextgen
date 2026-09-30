@@ -68,7 +68,7 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/events/events_realtime.php' => [
             'display_name' => 'Valós idejű áttekintés',
-            'purpose' => 'GA-szerű élő áttekintés: aktív egyediek, minden mért buli, forrás, utolsó 30 perc.',
+            'purpose' => 'GA-szerű élő áttekintés: minden mért aktivitás (buli, menü, CMS, modul, mobilapp, kedvenc), utolsó 30 perc.',
         ],
         '/nextgen/events/events_naptar.php' => [
             'display_name' => 'Esemény naptár',
