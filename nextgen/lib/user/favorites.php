@@ -88,6 +88,42 @@ function latinfo_favorites_build_event_picker(
     }
     $activeSet = latinfo_favorites_active_set_for_actor($db, latinfo_favorites_current_actor_key(), $pairs);
     $eventState = latinfo_favorites_state($db, LATINFO_FAVORITE_TYPE_EVENT, $eventId);
+
+    return latinfo_favorites_assemble_event_picker(
+        $eventId,
+        $eventName,
+        $lang,
+        $organizers,
+        $venue,
+        $djs,
+        $bands,
+        $activeSet,
+        $eventState['count']
+    );
+}
+
+/**
+ * Kedvenc-választó összeállítása előre betöltött activeSet / count alapján (naptár batch).
+ *
+ * @param list<array{id?:int,name?:string}> $organizers
+ * @param array{id?:int,label?:string}|null $venue
+ * @param list<array{id?:int,name?:string}> $djs
+ * @param list<array{id?:int,name?:string}> $bands
+ * @param array<string, true> $activeSet
+ * @return array{items:list<array{type:string,id:int,groupLabel:string,label:string,active:bool}>,active:bool,count:int}
+ */
+function latinfo_favorites_assemble_event_picker(
+    int $eventId,
+    string $eventName,
+    string $lang,
+    array $organizers,
+    ?array $venue,
+    array $djs,
+    array $bands,
+    array $activeSet,
+    int $eventCount
+): array {
+    $lang = $lang === 'en' ? 'en' : 'hu';
     $items = [[
         'type' => LATINFO_FAVORITE_TYPE_EVENT,
         'id' => $eventId,
@@ -108,6 +144,7 @@ function latinfo_favorites_build_event_picker(
             'active' => isset($activeSet[LATINFO_FAVORITE_TYPE_ORGANIZER . ':' . $oid]),
         ];
     }
+    $venueId = (int) ($venue['id'] ?? 0);
     if ($venueId > 0) {
         $items[] = [
             'type' => LATINFO_FAVORITE_TYPE_VENUE,
@@ -154,8 +191,70 @@ function latinfo_favorites_build_event_picker(
     return [
         'items' => $items,
         'active' => $anyActive,
-        'count' => $eventState['count'],
+        'count' => max(0, $eventCount),
     ];
+}
+
+/**
+ * @param list<int> $entityIds
+ * @return array<int, int> entity_id => count
+ */
+function latinfo_favorites_counts_for_type(PDO $db, string $type, array $entityIds): array
+{
+    $type = latinfo_favorites_normalize_type($type) ?? '';
+    $entityIds = array_values(array_unique(array_filter(
+        array_map(static fn ($id): int => (int) $id, $entityIds),
+        static fn (int $id): bool => $id > 0
+    )));
+    if ($type === '' || $entityIds === [] || !latinfo_favorites_table_ready($db)) {
+        return [];
+    }
+    $out = [];
+    try {
+        // Chunk, ha nagyon sok ID van (naptár hónap / lista).
+        foreach (array_chunk($entityIds, 500) as $chunk) {
+            $ph = implode(',', array_fill(0, count($chunk), '?'));
+            $st = $db->prepare("
+                SELECT `entity_id`, COUNT(*) AS `cnt`
+                FROM `latinfo_favorites`
+                WHERE `entity_type` = ? AND `entity_id` IN ({$ph})
+                GROUP BY `entity_id`
+            ");
+            $st->execute(array_merge([$type], $chunk));
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $out[(int) $row['entity_id']] = (int) $row['cnt'];
+            }
+        }
+    } catch (Throwable $ex) {
+        error_log('latinfo_favorites_counts_for_type: ' . $ex->getMessage());
+    }
+
+    return $out;
+}
+
+/**
+ * Van-e legalább egy kedvence az actor-nak (könnyű EXISTS).
+ */
+function latinfo_favorites_actor_has_any(PDO $db, ?string $actorKey = null): bool
+{
+    $actorKey = $actorKey ?? latinfo_favorites_current_actor_key();
+    if ($actorKey === null || $actorKey === '' || !latinfo_favorites_table_ready($db)) {
+        return false;
+    }
+    static $cache = [];
+    if (array_key_exists($actorKey, $cache)) {
+        return $cache[$actorKey];
+    }
+    try {
+        $st = $db->prepare('SELECT 1 FROM `latinfo_favorites` WHERE `actor_key` = ? LIMIT 1');
+        $st->execute([$actorKey]);
+        $cache[$actorKey] = (bool) $st->fetchColumn();
+    } catch (Throwable $ex) {
+        error_log('latinfo_favorites_actor_has_any: ' . $ex->getMessage());
+        $cache[$actorKey] = false;
+    }
+
+    return $cache[$actorKey];
 }
 
 /**
@@ -183,15 +282,17 @@ function latinfo_favorites_active_set_for_actor(PDO $db, ?string $actorKey, arra
     try {
         foreach ($byType as $type => $idsMap) {
             $ids = array_keys($idsMap);
-            $ph = implode(',', array_fill(0, count($ids), '?'));
-            $st = $db->prepare("
-                SELECT `entity_id`
-                FROM `latinfo_favorites`
-                WHERE `actor_key` = ? AND `entity_type` = ? AND `entity_id` IN ({$ph})
-            ");
-            $st->execute(array_merge([$actorKey, $type], $ids));
-            foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $eid) {
-                $out[$type . ':' . (int) $eid] = true;
+            foreach (array_chunk($ids, 500) as $chunk) {
+                $ph = implode(',', array_fill(0, count($chunk), '?'));
+                $st = $db->prepare("
+                    SELECT `entity_id`
+                    FROM `latinfo_favorites`
+                    WHERE `actor_key` = ? AND `entity_type` = ? AND `entity_id` IN ({$ph})
+                ");
+                $st->execute(array_merge([$actorKey, $type], $chunk));
+                foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $eid) {
+                    $out[$type . ':' . (int) $eid] = true;
+                }
             }
         }
     } catch (Throwable $ex) {
@@ -225,6 +326,11 @@ function latinfo_favorites_ids_by_type_for_actor(PDO $db, ?string $actorKey = nu
     if ($actorKey === null || $actorKey === '' || !latinfo_favorites_table_ready($db)) {
         return $empty;
     }
+    static $cache = [];
+    if (isset($cache[$actorKey])) {
+        return $cache[$actorKey];
+    }
+    $out = $empty;
     try {
         $st = $db->prepare('
             SELECT `entity_type`, `entity_id`
@@ -235,48 +341,56 @@ function latinfo_favorites_ids_by_type_for_actor(PDO $db, ?string $actorKey = nu
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $type = latinfo_favorites_normalize_type((string) ($row['entity_type'] ?? ''));
             $id = (int) ($row['entity_id'] ?? 0);
-            if ($type === null || $id <= 0 || !isset($empty[$type])) {
+            if ($type === null || $id <= 0 || !isset($out[$type])) {
                 continue;
             }
-            $empty[$type][] = $id;
+            $out[$type][] = $id;
         }
-        foreach ($empty as $type => $ids) {
-            $empty[$type] = array_values(array_unique($ids));
+        foreach ($out as $type => $ids) {
+            $out[$type] = array_values(array_unique($ids));
         }
     } catch (Throwable $ex) {
         error_log('latinfo_favorites_ids_by_type_for_actor: ' . $ex->getMessage());
     }
+    $cache[$actorKey] = $out;
 
-    return $empty;
+    return $out;
 }
 
 /**
  * WHERE feltétel: az eseményben van az actor valamelyik kedvence
  * (maga az esemény, szervező, helyszín, DJ vagy előadó).
  *
+ * @param array{
+ *   event?: list<int>,
+ *   organizer?: list<int>,
+ *   venue?: list<int>,
+ *   dj?: list<int>,
+ *   zenekar?: list<int>
+ * }|null $byTypePreloaded
  * @return array{sql: string, params: list<mixed>}
  */
-function latinfo_favorites_event_contains_any_where(PDO $db, ?string $actorKey = null): array
+function latinfo_favorites_event_contains_any_where(PDO $db, ?string $actorKey = null, ?array $byTypePreloaded = null): array
 {
-    $byType = latinfo_favorites_ids_by_type_for_actor($db, $actorKey);
+    $byType = $byTypePreloaded ?? latinfo_favorites_ids_by_type_for_actor($db, $actorKey);
     $parts = [];
     $params = [];
 
-    $eventIds = $byType[LATINFO_FAVORITE_TYPE_EVENT];
+    $eventIds = $byType[LATINFO_FAVORITE_TYPE_EVENT] ?? [];
     if ($eventIds !== []) {
         $ph = implode(',', array_fill(0, count($eventIds), '?'));
         $parts[] = "e.`id` IN ({$ph})";
         array_push($params, ...$eventIds);
     }
 
-    $venueIds = $byType[LATINFO_FAVORITE_TYPE_VENUE];
+    $venueIds = $byType[LATINFO_FAVORITE_TYPE_VENUE] ?? [];
     if ($venueIds !== []) {
         $ph = implode(',', array_fill(0, count($venueIds), '?'));
         $parts[] = "e.`venue_id` IN ({$ph})";
         array_push($params, ...$venueIds);
     }
 
-    $orgIds = $byType[LATINFO_FAVORITE_TYPE_ORGANIZER];
+    $orgIds = $byType[LATINFO_FAVORITE_TYPE_ORGANIZER] ?? [];
     if ($orgIds !== []) {
         $ph = implode(',', array_fill(0, count($orgIds), '?'));
         $parts[] = "EXISTS (
@@ -287,8 +401,8 @@ function latinfo_favorites_event_contains_any_where(PDO $db, ?string $actorKey =
     }
 
     $tagIds = array_values(array_unique(array_merge(
-        $byType[LATINFO_FAVORITE_TYPE_DJ],
-        $byType[LATINFO_FAVORITE_TYPE_ZENEKAR]
+        $byType[LATINFO_FAVORITE_TYPE_DJ] ?? [],
+        $byType[LATINFO_FAVORITE_TYPE_ZENEKAR] ?? []
     )));
     if ($tagIds !== []) {
         $ph = implode(',', array_fill(0, count($tagIds), '?'));
@@ -328,7 +442,13 @@ function latinfo_favorites_table_ready(PDO $db, bool $forceRefresh = false): boo
 function latinfo_favorites_ensure_schema(PDO $db): bool
 {
     static $done = false;
-    if ($done && latinfo_favorites_table_ready($db)) {
+    if ($done) {
+        return true;
+    }
+    // Gyors út: ha a tábla már létezik, ne fusson CREATE / users schema minden requestnél.
+    if (latinfo_favorites_table_ready($db)) {
+        $done = true;
+
         return true;
     }
 
@@ -397,7 +517,13 @@ function latinfo_users_ensure_notification_email_column(PDO $db): void
 
 function latinfo_favorites_public_enabled(PDO $db): bool
 {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
     if (!events_slug_redirects_tables_available($db)) {
+        $cached = true;
+
         return true;
     }
     try {
@@ -405,11 +531,17 @@ function latinfo_favorites_public_enabled(PDO $db): bool
         $st->execute([EVENTS_APP_SETTING_PUBLIC_HEARTS]);
         $raw = $st->fetchColumn();
         if ($raw === false) {
+            $cached = true;
+
             return true;
         }
 
-        return (string) $raw === '1';
+        $cached = (string) $raw === '1';
+
+        return $cached;
     } catch (Throwable) {
+        $cached = true;
+
         return true;
     }
 }

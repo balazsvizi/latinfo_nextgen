@@ -4264,6 +4264,28 @@ body.event-notify-modal-open {
 .events-tags-admin__td-check input {
     margin: 0;
 }
+.events-tags-admin__usage {
+    min-width: 7.5rem;
+}
+.events-tags-admin__usage-bits {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 0.15rem 0.35rem;
+    font-size: 0.875rem;
+}
+.events-tags-admin__usage-unit {
+    font-weight: 400;
+    color: var(--text-muted);
+}
+.events-tags-admin__usage-sep {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+.events-tags-admin__usage-link {
+    font-variant-numeric: tabular-nums;
+}
 
 /* Képek–események (superadmin) */
 .events-kepek-esemenyek__bulk {

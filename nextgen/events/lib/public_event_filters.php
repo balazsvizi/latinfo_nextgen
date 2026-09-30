@@ -127,20 +127,25 @@ function events_public_filters_from_request(PDO $db): array {
     $favoritesAvailable = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
     $favoritesLoggedIn = $favoritesAvailable && user_is_logged_in();
     $favoritesHasAny = false;
+    $favByType = null;
+    $wantFavoritesFilter = $favoritesAvailable && (string) ($_GET['f_favorites'] ?? '') === '1';
     if ($favoritesAvailable) {
-        $favByType = latinfo_favorites_ids_by_type_for_actor($db);
-        foreach ($favByType as $favIds) {
-            if ($favIds !== []) {
-                $favoritesHasAny = true;
-                break;
+        // Szűrő gombhoz elég egy EXISTS; teljes listát csak aktív szűrőnél töltünk.
+        if ($wantFavoritesFilter) {
+            $favByType = latinfo_favorites_ids_by_type_for_actor($db);
+            foreach ($favByType as $favIds) {
+                if ($favIds !== []) {
+                    $favoritesHasAny = true;
+                    break;
+                }
             }
+        } else {
+            $favoritesHasAny = latinfo_favorites_actor_has_any($db);
         }
     }
-    $f_favorites = $favoritesAvailable
-        && $favoritesHasAny
-        && (string) ($_GET['f_favorites'] ?? '') === '1';
+    $f_favorites = $wantFavoritesFilter && $favoritesHasAny;
     if ($f_favorites) {
-        $favClause = latinfo_favorites_event_contains_any_where($db);
+        $favClause = latinfo_favorites_event_contains_any_where($db, null, $favByType);
         $filters['where'][] = $favClause['sql'];
         foreach ($favClause['params'] as $favParam) {
             $filters['params'][] = $favParam;

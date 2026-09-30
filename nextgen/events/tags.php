@@ -8,6 +8,7 @@ require_once __DIR__ . '/lib/tag_type.php';
 require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/tag_event_copy.php';
+require_once __DIR__ . '/lib/tag_usage.php';
 requireLogin();
 
 $db = getDb();
@@ -258,18 +259,22 @@ $tagRows = $db->query('
 ')->fetchAll(PDO::FETCH_ASSOC);
 $listDisplayedCount = count($tagRows);
 
+$tagIdsDisplayed = array_values(array_unique(array_map(static fn (array $tr): int => (int) $tr['id'], $tagRows)));
+$tagUsageByTag = events_tag_usage_counts_map($db, $tagIdsDisplayed);
+
 $tagTypesByTag = [];
 if (events_tag_types_tables_available($db) && $tagRows !== []) {
-    $tagIdsForTypes = array_values(array_unique(array_map(static fn (array $tr): int => (int) $tr['id'], $tagRows)));
-    $tagTypesByTag = events_load_tag_types_map($db, $tagIdsForTypes);
+    $tagTypesByTag = events_load_tag_types_map($db, $tagIdsDisplayed);
 }
 
 $typeDisplayMeta = events_tag_type_display_meta($db);
 $typeLabelMap = events_tag_type_labels($db);
 $tagBulkTypesEnabled = events_tag_types_tables_available($db);
+$tagTableColspan = $tagBulkTypesEnabled ? 5 : 4;
 $tagTableColId = $tagBulkTypesEnabled ? 1 : 0;
 $tagTableColName = $tagBulkTypesEnabled ? 2 : 1;
 $tagTableColTypes = $tagBulkTypesEnabled ? 3 : 2;
+$tagTableColUsage = $tagBulkTypesEnabled ? 4 : 3;
 
 $openTagRaw = (string) ($_GET['open_tag'] ?? '');
 $openTagGroup = '';
@@ -372,6 +377,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <span class="events-inline-th-label">Típusok</span>
                         <button type="button" class="events-inline-sort-btn" data-sort-col="<?= $tagTableColTypes ?>" data-sort-type="text" aria-label="Rendezés típus szerint">↕</button>
                     </th>
+                    <th scope="col" class="th-num">
+                        <span class="events-inline-th-label">Használat</span>
+                        <button type="button" class="events-inline-sort-btn" data-sort-col="<?= $tagTableColUsage ?>" data-sort-type="int" aria-label="Rendezés használat szerint">↕</button>
+                    </th>
                 </tr>
                 <tr class="events-inline-filter-row">
                     <?php if ($tagBulkTypesEnabled): ?>
@@ -380,6 +389,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <th><input type="search" class="events-inline-filter-input" data-filter-col="<?= $tagTableColId ?>" placeholder="Szűrés…" aria-label="Szűrés ID"></th>
                     <th><input type="search" class="events-inline-filter-input" data-filter-col="<?= $tagTableColName ?>" placeholder="Szűrés…" aria-label="Szűrés név"></th>
                     <th><input type="search" class="events-inline-filter-input" data-filter-col="<?= $tagTableColTypes ?>" placeholder="Szűrés…" aria-label="Szűrés típus"></th>
+                    <th><input type="search" class="events-inline-filter-input" data-filter-col="<?= $tagTableColUsage ?>" placeholder="Szűrés…" aria-label="Szűrés használat"></th>
                 </tr>
             </thead>
             <tbody>
@@ -395,9 +405,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <?php endif; ?>
                     <td class="events-inline-summary-muted">—</td>
                     <td colspan="2"><strong>Új címke</strong> <span class="events-inline-summary-hint">(kattints a szerkesztéshez)</span></td>
+                    <td class="td-num events-inline-summary-muted" data-sort-value="0">—</td>
                 </tr>
                 <tr class="events-inline-detail" data-expand-group="new" <?= $openTagGroup === 'new' ? '' : 'hidden' ?>>
-                    <td colspan="<?= $tagBulkTypesEnabled ? 4 : 3 ?>">
+                    <td colspan="<?= $tagTableColspan ?>">
                         <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                             <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                 <?= csrf_input('events_tags') ?>
@@ -424,6 +435,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     $tid = (int) $tr['id'];
                     $typeCodesRow = $tagTypesByTag[$tid] ?? [];
                     $isOpen = $openTagGroup !== '' && $openTagGroup === (string) $tid;
+                    $usage = $tagUsageByTag[$tid] ?? ['events' => 0, 'cms' => 0, 'total' => 0];
+                    $eventUseCnt = (int) ($usage['events'] ?? 0);
+                    $cmsUseCnt = (int) ($usage['cms'] ?? 0);
+                    $usageTotal = (int) ($usage['total'] ?? ($eventUseCnt + $cmsUseCnt));
+                    $eventsFilterUrl = events_tag_admin_events_filter_url($tid);
+                    $cmsFilterUrl = events_tag_admin_cms_filter_url($tid);
                     ?>
                     <tr
                         id="open-tag-<?= $tid ?>"
@@ -466,9 +483,32 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 </span>
                             <?php endif; ?>
                         </td>
+                        <td class="td-num events-tags-admin__usage" data-sort-value="<?= $usageTotal ?>">
+                            <span class="events-tags-admin__usage-bits">
+                                <?php if ($eventUseCnt > 0): ?>
+                                    <a
+                                        href="<?= h($eventsFilterUrl) ?>"
+                                        class="events-cell-link events-tags-admin__usage-link"
+                                        title="Események listázása ezzel a címkével"
+                                    ><?= $eventUseCnt ?></a><span class="events-tags-admin__usage-unit"> esem.</span>
+                                <?php else: ?>
+                                    <span class="text-muted">0<span class="events-tags-admin__usage-unit"> esem.</span></span>
+                                <?php endif; ?>
+                                <span class="events-tags-admin__usage-sep" aria-hidden="true">·</span>
+                                <?php if ($cmsUseCnt > 0): ?>
+                                    <a
+                                        href="<?= h($cmsFilterUrl) ?>"
+                                        class="events-cell-link events-tags-admin__usage-link"
+                                        title="CMS cikkek listázása ezzel a címkével"
+                                    ><?= $cmsUseCnt ?></a><span class="events-tags-admin__usage-unit"> CMS</span>
+                                <?php else: ?>
+                                    <span class="text-muted">0<span class="events-tags-admin__usage-unit"> CMS</span></span>
+                                <?php endif; ?>
+                            </span>
+                        </td>
                     </tr>
                     <tr class="events-inline-detail" data-expand-group="<?= $tid ?>" <?= $isOpen ? '' : 'hidden' ?>>
-                        <td colspan="<?= $tagBulkTypesEnabled ? 4 : 3 ?>">
+                        <td colspan="<?= $tagTableColspan ?>">
                             <div class="events-tags-admin__form-panel events-tags-admin__form-panel--inline">
                                 <form method="post" action="<?= h(events_url('tags.php')) ?>">
                                     <?= csrf_input('events_tags') ?>
@@ -500,7 +540,21 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     <input type="hidden" name="id" value="<?= $tid ?>">
                                     <button type="submit" class="btn btn-secondary">Címke törlése</button>
                                 </form>
-                                <p class="help">Törlés csak akkor lehetséges, ha sem esemény, sem CMS cikk nem használja.</p>
+                                <p class="help events-tags-admin__usage-help">
+                                    Használat:
+                                    <?php if ($eventUseCnt > 0): ?>
+                                        <a href="<?= h($eventsFilterUrl) ?>"><?= $eventUseCnt ?> esemény</a>
+                                    <?php else: ?>
+                                        0 esemény
+                                    <?php endif; ?>
+                                    ·
+                                    <?php if ($cmsUseCnt > 0): ?>
+                                        <a href="<?= h($cmsFilterUrl) ?>"><?= $cmsUseCnt ?> CMS cikk</a>
+                                    <?php else: ?>
+                                        0 CMS cikk
+                                    <?php endif; ?>
+                                    . Törlés csak akkor lehetséges, ha mindkettő 0.
+                                </p>
                             </div>
                         </td>
                     </tr>
@@ -525,6 +579,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
     function getCellText(tr, colIndex) {
         var td = tr.cells[colIndex];
         return td ? td.textContent.trim() : '';
+    }
+
+    function getCellSortText(tr, colIndex) {
+        var td = tr.cells[colIndex];
+        if (!td) return '';
+        var sortVal = td.getAttribute('data-sort-value');
+        if (sortVal !== null && sortVal !== '') {
+            return String(sortVal).trim();
+        }
+        return td.textContent.trim();
     }
 
     function parseSortValue(type, text) {
@@ -563,8 +627,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
         var movable = pairs.filter(function (p) { return !p.sticky; });
 
         movable.sort(function (a, b) {
-            var va = parseSortValue(sortType, getCellText(a.summary, colIndex));
-            var vb = parseSortValue(sortType, getCellText(b.summary, colIndex));
+            var va = parseSortValue(sortType, getCellSortText(a.summary, colIndex));
+            var vb = parseSortValue(sortType, getCellSortText(b.summary, colIndex));
             var c = 0;
             if (sortType === 'int') {
                 c = va - vb;

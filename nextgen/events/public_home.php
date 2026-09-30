@@ -66,17 +66,45 @@ if (!function_exists('user_is_logged_in')) {
 }
 $publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
 $favoriteDialogLang = $lang;
+
+$bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
+$undated = $bucket['undated'];
+$byDay = $bucket['byDay'];
+
 if ($view === 'cal' || $view === 'mcal') {
-    $organizersByEventId = events_calendar_load_organizer_rows_by_event_id($db, $rows);
-    $stylesByEventId = events_public_load_styles_by_event_id($db, $rows);
+    // Preview / kedvencek csak a látható hónap (+ dátum nélküli) eseményeire — ne az összes szűrt sorra.
+    $previewRows = [];
+    $previewSeen = [];
+    foreach ($byDay as $dayRows) {
+        foreach ($dayRows as $dayEv) {
+            $pid = (int) ($dayEv['id'] ?? 0);
+            if ($pid <= 0 || isset($previewSeen[$pid])) {
+                continue;
+            }
+            $previewSeen[$pid] = true;
+            $previewRows[] = $dayEv;
+        }
+    }
+    foreach ($undated as $undatedEv) {
+        $pid = (int) ($undatedEv['id'] ?? 0);
+        if ($pid <= 0 || isset($previewSeen[$pid])) {
+            continue;
+        }
+        $previewSeen[$pid] = true;
+        $previewRows[] = $undatedEv;
+    }
+
+    $organizersByEventId = events_calendar_load_organizer_rows_by_event_id($db, $previewRows);
+    $stylesByEventId = events_public_load_styles_by_event_id($db, $previewRows);
     $djsByEventId = [];
     $bandsByEventId = [];
     if ($publicFavoritesEnabled) {
-        $djsByEventId = events_calendar_load_tags_by_types_for_events($db, $rows, ['dj']);
-        $bandsByEventId = events_calendar_load_tags_by_types_for_events($db, $rows, ['zenekar']);
+        $favTags = events_calendar_load_dj_and_band_tags_for_events($db, $previewRows);
+        $djsByEventId = $favTags['dj'];
+        $bandsByEventId = $favTags['zenekar'];
     }
     $calendarPreviewById = events_calendar_preview_build_map(
-        $rows,
+        $previewRows,
         $categoriesByEventId,
         $organizersByEventId,
         $lang,
@@ -91,9 +119,6 @@ if ($view === 'cal' || $view === 'mcal') {
     }
 }
 
-$bucket = events_admin_calendar_bucket_events($rows, $monthFirst, $monthLast);
-$undated = $bucket['undated'];
-$byDay = $bucket['byDay'];
 $gridDays = events_admin_calendar_grid_days($monthFirst, $monthLast);
 $calendarWeeks = events_admin_calendar_build_week_layouts($rows, $gridDays, $monthFirst, $monthLast);
 $weekdayHeaders = events_public_calendar_weekday_headers($lang);

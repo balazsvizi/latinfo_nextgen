@@ -115,7 +115,7 @@ function events_calendar_load_tags_by_types_for_events(PDO $db, array $rows, arr
     $phEvents = implode(',', array_fill(0, count($eventIds), '?'));
     $phTypes = implode(',', array_fill(0, count($typeCodes), '?'));
     $st = $db->prepare("
-        SELECT DISTINCT et.`event_id`, t.`id`, t.`name`
+        SELECT DISTINCT et.`event_id`, t.`id`, t.`name`, ty.`code` AS `type_code`
         FROM `events_tags` t
         INNER JOIN `events_calendar_event_tags` et ON et.`tag_id` = t.`id`
         INNER JOIN `events_tag_type_links` l ON l.`tag_id` = t.`id`
@@ -126,16 +126,51 @@ function events_calendar_load_tags_by_types_for_events(PDO $db, array $rows, arr
     $st->execute(array_merge($eventIds, $typeCodes));
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $eid = (int) $row['event_id'];
+        $tid = (int) $row['id'];
+        if ($eid <= 0 || $tid <= 0) {
+            continue;
+        }
         if (!isset($out[$eid])) {
             $out[$eid] = [];
         }
         $out[$eid][] = [
-            'id' => (int) $row['id'],
+            'id' => $tid,
             'name' => (string) $row['name'],
+            'type_code' => (string) ($row['type_code'] ?? ''),
         ];
     }
 
     return $out;
+}
+
+/**
+ * @param list<array<string, mixed>> $rows
+ * @return array{dj: array<int, list<array{id:int,name:string}>>, zenekar: array<int, list<array{id:int,name:string}>>}
+ */
+function events_calendar_load_dj_and_band_tags_for_events(PDO $db, array $rows): array
+{
+    $mixed = events_calendar_load_tags_by_types_for_events($db, $rows, ['dj', 'zenekar']);
+    $djs = [];
+    $bands = [];
+    foreach ($mixed as $eid => $tags) {
+        foreach ($tags as $tag) {
+            $code = (string) ($tag['type_code'] ?? '');
+            $item = [
+                'id' => (int) ($tag['id'] ?? 0),
+                'name' => (string) ($tag['name'] ?? ''),
+            ];
+            if ($item['id'] <= 0) {
+                continue;
+            }
+            if ($code === 'zenekar') {
+                $bands[$eid][] = $item;
+            } else {
+                $djs[$eid][] = $item;
+            }
+        }
+    }
+
+    return ['dj' => $djs, 'zenekar' => $bands];
 }
 
 /**
@@ -162,11 +197,61 @@ function events_calendar_preview_build_map(
     require_once __DIR__ . '/event_public_lang.php';
     $strings = events_public_megjelenit_strings($lang);
     $favoritesLibReady = false;
+    $db = null;
+    $activeSet = [];
+    $favoriteCounts = [];
     if ($includeFavorites) {
         require_once dirname(__DIR__, 2) . '/lib/user/favorites.php';
-        $favoritesLibReady = latinfo_favorites_ensure_schema(getDb()) && latinfo_favorites_public_enabled(getDb());
+        $db = getDb();
+        $favoritesLibReady = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+        if ($favoritesLibReady) {
+            $allPairs = [];
+            $eventIdsForCount = [];
+            foreach ($rows as $evPrep) {
+                $eidPrep = (int) ($evPrep['id'] ?? 0);
+                if ($eidPrep <= 0) {
+                    continue;
+                }
+                $eventIdsForCount[] = $eidPrep;
+                $allPairs[] = ['type' => LATINFO_FAVORITE_TYPE_EVENT, 'id' => $eidPrep];
+                foreach ($organizersByEventId[$eidPrep] ?? [] as $orgPrep) {
+                    if (!is_array($orgPrep)) {
+                        continue;
+                    }
+                    $oidPrep = (int) ($orgPrep['id'] ?? 0);
+                    if ($oidPrep > 0) {
+                        $allPairs[] = ['type' => LATINFO_FAVORITE_TYPE_ORGANIZER, 'id' => $oidPrep];
+                    }
+                }
+                $venueIdPrep = (int) ($evPrep['venue_id'] ?? 0);
+                if ($venueIdPrep > 0) {
+                    $allPairs[] = ['type' => LATINFO_FAVORITE_TYPE_VENUE, 'id' => $venueIdPrep];
+                }
+                foreach ($djsByEventId[$eidPrep] ?? [] as $djPrep) {
+                    $didPrep = (int) ($djPrep['id'] ?? 0);
+                    if ($didPrep > 0) {
+                        $allPairs[] = ['type' => LATINFO_FAVORITE_TYPE_DJ, 'id' => $didPrep];
+                    }
+                }
+                foreach ($bandsByEventId[$eidPrep] ?? [] as $bandPrep) {
+                    $bidPrep = (int) ($bandPrep['id'] ?? 0);
+                    if ($bidPrep > 0) {
+                        $allPairs[] = ['type' => LATINFO_FAVORITE_TYPE_ZENEKAR, 'id' => $bidPrep];
+                    }
+                }
+            }
+            $activeSet = latinfo_favorites_active_set_for_actor(
+                $db,
+                latinfo_favorites_current_actor_key(),
+                $allPairs
+            );
+            $favoriteCounts = latinfo_favorites_counts_for_type(
+                $db,
+                LATINFO_FAVORITE_TYPE_EVENT,
+                $eventIdsForCount
+            );
+        }
     }
-    $db = $favoritesLibReady ? getDb() : null;
     $map = [];
     foreach ($rows as $ev) {
         $eid = (int) ($ev['id'] ?? 0);
@@ -228,7 +313,7 @@ function events_calendar_preview_build_map(
             'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
             'change' => $changePayload,
         ];
-        if ($favoritesLibReady && $db instanceof PDO) {
+        if ($favoritesLibReady) {
             $venueId = (int) ($ev['venue_id'] ?? 0);
             $venueLabel = trim((string) ($ev['venue_name'] ?? ''));
             if ($venueLabel === '') {
@@ -237,15 +322,16 @@ function events_calendar_preview_build_map(
             $venueForPicker = ($venueId > 0 && $venueLabel !== '')
                 ? ['id' => $venueId, 'label' => $venueLabel]
                 : null;
-            $picker = latinfo_favorites_build_event_picker(
-                $db,
+            $picker = latinfo_favorites_assemble_event_picker(
                 $eid,
                 (string) ($ev['event_name'] ?? ''),
                 $lang,
                 $organizerRows,
                 $venueForPicker,
                 $djsByEventId[$eid] ?? [],
-                $bandsByEventId[$eid] ?? []
+                $bandsByEventId[$eid] ?? [],
+                $activeSet,
+                (int) ($favoriteCounts[$eid] ?? 0)
             );
             $entry['favorite'] = [
                 'enabled' => true,
