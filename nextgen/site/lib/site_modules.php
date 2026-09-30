@@ -1335,7 +1335,7 @@ function latinfo_home_module_item_stats(PDO $db, string $moduleKey, array $param
             WHERE {$where['sql']} AND c.`item_key` <> ''
             GROUP BY c.`item_key`
             ORDER BY clicks_human DESC, clicks DESC
-            LIMIT 100
+            LIMIT 500
         ");
         $stItems->execute($where['bind']);
         $items = [];

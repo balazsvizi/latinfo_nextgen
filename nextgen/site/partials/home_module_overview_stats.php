@@ -208,20 +208,50 @@ $surfaceIntro = match ($activeSurface) {
             </script>
         <?php endif; ?>
 
+        <div class="lh-item-stats-list-controls" id="lh-home-module-list-controls"<?= $moduleRows === [] ? ' hidden' : '' ?>>
+            <div class="events-edit-stats__filter-grid lh-item-stats-list-filters">
+                <div class="form-group">
+                    <label class="events-filter-label" for="lh_mod_filter_search">Keresés</label>
+                    <input class="events-filter-input" type="search" id="lh_mod_filter_search" placeholder="Modul neve…" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="events-filter-label" for="lh_mod_filter_min_human">Min. ember</label>
+                    <input class="events-filter-input" type="number" id="lh_mod_filter_min_human" min="0" step="1" placeholder="0">
+                </div>
+                <div class="form-group events-edit-stats__filter-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" id="lh_mod_filter_clear">Szűrés törlése</button>
+                </div>
+            </div>
+            <p class="lh-item-stats-list-count" aria-live="polite">
+                <strong><span id="lh-home-module-visible-count"><?= count($moduleRows) ?></span></strong>
+                / <span id="lh-home-module-total-count"><?= count($moduleRows) ?></span> modul
+            </p>
+        </div>
+
         <div class="table-wrap" style="margin-top:1rem">
-            <table class="sortable-table">
+            <table class="sortable-table" id="lh-home-module-stats-table">
                 <thead>
                     <tr>
-                        <th>Modul</th>
-                        <th>Ember</th>
-                        <th>Bot</th>
-                        <th>Egyedi</th>
-                        <th>Összesen</th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="label" aria-pressed="false">Modul</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort is-active" data-sort="human" aria-pressed="true">Ember ↓</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="bot" aria-pressed="false">Bot</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="unique" aria-pressed="false">Egyedi</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="total" aria-pressed="false">Összesen</button>
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="lh-home-module-stats-tbody">
                     <?php if ($moduleRows === []): ?>
-                        <tr><td colspan="5" class="text-muted">Nincs kattintás a kiválasztott időszakban.</td></tr>
+                        <tr id="lh-home-module-stats-empty"><td colspan="5" class="text-muted">Nincs kattintás a kiválasztott időszakban.</td></tr>
                     <?php else: ?>
                         <?php foreach ($moduleRows as $row): ?>
                             <?php
@@ -230,8 +260,21 @@ $surfaceIntro = match ($activeSurface) {
                             $detailUrl = $moduleKey !== ''
                                 ? latinfo_home_module_item_stats_url($moduleKey, $statsParams)
                                 : null;
+                            $searchHaystack = mb_strtolower($moduleLabel . ' ' . $moduleKey, 'UTF-8');
+                            $clicksHuman = (int) ($row['clicks_human'] ?? 0);
+                            $clicksBot = (int) ($row['clicks_bot'] ?? 0);
+                            $uniqueHuman = (int) ($row['unique_human'] ?? 0);
+                            $clicksTotal = (int) ($row['clicks'] ?? 0);
                             ?>
-                            <tr>
+                            <tr
+                                data-module-row
+                                data-search="<?= h($searchHaystack) ?>"
+                                data-human="<?= $clicksHuman ?>"
+                                data-bot="<?= $clicksBot ?>"
+                                data-unique="<?= $uniqueHuman ?>"
+                                data-total="<?= $clicksTotal ?>"
+                                data-label="<?= h(mb_strtolower($moduleLabel, 'UTF-8')) ?>"
+                            >
                                 <td>
                                     <?php if ($detailUrl !== null): ?>
                                         <a class="events-cell-edit" href="<?= h($detailUrl) ?>" title="Modul statisztikái"><?= h($moduleLabel) ?></a>
@@ -239,15 +282,154 @@ $surfaceIntro = match ($activeSurface) {
                                         <?= h($moduleLabel) ?>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= number_format((int) ($row['clicks_human'] ?? 0), 0, ',', ' ') ?></td>
-                                <td><?= number_format((int) ($row['clicks_bot'] ?? 0), 0, ',', ' ') ?></td>
-                                <td><?= number_format((int) ($row['unique_human'] ?? 0), 0, ',', ' ') ?></td>
-                                <td><?= number_format((int) ($row['clicks'] ?? 0), 0, ',', ' ') ?></td>
+                                <td><?= number_format($clicksHuman, 0, ',', ' ') ?></td>
+                                <td><?= number_format($clicksBot, 0, ',', ' ') ?></td>
+                                <td><?= number_format($uniqueHuman, 0, ',', ' ') ?></td>
+                                <td><?= number_format($clicksTotal, 0, ',', ' ') ?></td>
                             </tr>
                         <?php endforeach; ?>
+                        <tr id="lh-home-module-stats-empty" hidden><td colspan="5" class="text-muted">Nincs találat a szűrésre.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
+        <?php if ($moduleRows !== []): ?>
+            <style>
+            .lh-item-stats-list-controls{margin-top:1rem}
+            .lh-item-stats-list-filters{margin:0}
+            .lh-item-stats-list-count{margin:.65rem 0 0;font-size:.8125rem;color:var(--text-muted,#6b7280)}
+            </style>
+            <script>
+            (function () {
+                var table = document.getElementById('lh-home-module-stats-table');
+                var tbody = document.getElementById('lh-home-module-stats-tbody');
+                var controls = document.getElementById('lh-home-module-list-controls');
+                if (!table || !tbody || !controls) return;
+
+                var rows = Array.prototype.slice.call(tbody.querySelectorAll('[data-module-row]'));
+                var emptyRow = document.getElementById('lh-home-module-stats-empty');
+                var visibleCountEl = document.getElementById('lh-home-module-visible-count');
+                var searchInput = document.getElementById('lh_mod_filter_search');
+                var minHumanInput = document.getElementById('lh_mod_filter_min_human');
+                var clearBtn = document.getElementById('lh_mod_filter_clear');
+                var searchTimer = null;
+                var sortKey = 'human';
+                var sortDir = 'desc';
+
+                function parseMin(value) {
+                    if (value === '' || value == null) return null;
+                    var n = parseInt(value, 10);
+                    return isNaN(n) ? null : Math.max(0, n);
+                }
+
+                function rowMatches(row) {
+                    var search = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                    if (search !== '' && (row.getAttribute('data-search') || '').indexOf(search) === -1) {
+                        return false;
+                    }
+                    var minHuman = minHumanInput ? parseMin(minHumanInput.value) : null;
+                    if (minHuman !== null && parseInt(row.getAttribute('data-human') || '0', 10) < minHuman) {
+                        return false;
+                    }
+                    return true;
+                }
+
+                function sortValue(row, key) {
+                    if (key === 'label') {
+                        return row.getAttribute('data-label') || '';
+                    }
+                    return parseInt(row.getAttribute('data-' + key) || '0', 10);
+                }
+
+                function updateSortHeaders() {
+                    table.querySelectorAll('thead .th-sort[data-sort]').forEach(function (btn) {
+                        var key = btn.getAttribute('data-sort') || '';
+                        var active = key === sortKey;
+                        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                        btn.classList.toggle('is-active', active);
+                        var label = (btn.getAttribute('data-label') || btn.textContent || '').replace(/\s*[↑↓]\s*$/, '').trim();
+                        btn.setAttribute('data-label', label);
+                        btn.textContent = active ? (label + (sortDir === 'asc' ? ' ↑' : ' ↓')) : label;
+                    });
+                }
+
+                function applySort() {
+                    rows.sort(function (a, b) {
+                        var va = sortValue(a, sortKey);
+                        var vb = sortValue(b, sortKey);
+                        var cmp = 0;
+                        if (typeof va === 'number' && typeof vb === 'number') {
+                            cmp = va - vb;
+                        } else {
+                            cmp = String(va).localeCompare(String(vb), 'hu', { sensitivity: 'base', numeric: true });
+                        }
+                        if (cmp === 0) {
+                            cmp = (a.getAttribute('data-label') || '').localeCompare(
+                                b.getAttribute('data-label') || '',
+                                'hu',
+                                { sensitivity: 'base' }
+                            );
+                        }
+                        return sortDir === 'asc' ? cmp : -cmp;
+                    });
+                    rows.forEach(function (row) {
+                        tbody.insertBefore(row, emptyRow || null);
+                    });
+                    updateSortHeaders();
+                }
+
+                function applyFilters() {
+                    var visible = 0;
+                    rows.forEach(function (row) {
+                        var show = rowMatches(row);
+                        row.hidden = !show;
+                        if (show) visible++;
+                    });
+                    if (visibleCountEl) visibleCountEl.textContent = String(visible);
+                    if (emptyRow) emptyRow.hidden = visible > 0;
+                }
+
+                function refresh() {
+                    applySort();
+                    applyFilters();
+                }
+
+                table.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.th-sort[data-sort]');
+                    if (!btn || !table.contains(btn)) return;
+                    var key = btn.getAttribute('data-sort') || '';
+                    if (key === '') return;
+                    if (sortKey === key) {
+                        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortKey = key;
+                        sortDir = key === 'label' ? 'asc' : 'desc';
+                    }
+                    refresh();
+                });
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', function () {
+                        clearTimeout(searchTimer);
+                        searchTimer = setTimeout(applyFilters, 120);
+                    });
+                }
+                if (minHumanInput) {
+                    minHumanInput.addEventListener('input', applyFilters);
+                }
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function () {
+                        if (searchInput) searchInput.value = '';
+                        if (minHumanInput) minHumanInput.value = '';
+                        applyFilters();
+                        if (searchInput) searchInput.focus();
+                    });
+                }
+
+                updateSortHeaders();
+                applyFilters();
+            })();
+            </script>
+        <?php endif; ?>
     <?php endif; ?>
 </div>
