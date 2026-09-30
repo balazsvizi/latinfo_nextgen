@@ -16,7 +16,7 @@ function latinfo_favorite_stats_type_labels(string $lang = 'hu'): array
         LATINFO_FAVORITE_TYPE_ORGANIZER => $isEn ? 'Organizers' : 'Szervezők',
         LATINFO_FAVORITE_TYPE_VENUE => $isEn ? 'Venues' : 'Helyszínek',
         LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
-        LATINFO_FAVORITE_TYPE_ZENEKAR => $isEn ? 'Bands' : 'Zenekarok',
+        LATINFO_FAVORITE_TYPE_ZENEKAR => $isEn ? 'Artists' : 'Előadók',
     ];
 }
 

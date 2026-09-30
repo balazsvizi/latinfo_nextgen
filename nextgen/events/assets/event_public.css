@@ -3052,6 +3052,23 @@ a.event-hero-chip--category-link:hover {
     color: var(--li-green-dark);
 }
 
+.djs-public__catalog-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.djs-public__catalog-scope {
+    margin: 0;
+    padding: 0;
+    font-family: var(--ev-font);
+    font-size: clamp(0.92rem, 2.2vw, 1.02rem);
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--li-muted, #5a6b5e);
+}
+
 .event-public__hero--bar-only {
     padding-bottom: clamp(0.85rem, 2vw, 1.15rem);
 }

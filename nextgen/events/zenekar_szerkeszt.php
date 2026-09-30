@@ -29,7 +29,7 @@ $st = $db->prepare('SELECT `id`, `name`' . $slugSelect . ' FROM `events_tags` WH
 $st->execute([$id]);
 $tag = $st->fetch(PDO::FETCH_ASSOC);
 if (!$tag) {
-    flash('error', 'Zenekar / címke nem található.');
+    flash('error', 'Előadó / címke nem található.');
     redirect(events_url('zenekarok_admin.php'));
 }
 
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stUse->execute([$id]);
         $useCnt = (int) $stUse->fetchColumn();
         if ($useCnt > 0) {
-            $hiba = 'A zenekar nem törölhető, mert ' . $useCnt . ' eseményhez van rendelve.';
+            $hiba = 'Az előadó nem törölhető, mert ' . $useCnt . ' eseményhez van rendelve.';
         } else {
             try {
                 $db->beginTransaction();
@@ -61,8 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $db->prepare('DELETE FROM `events_tags` WHERE `id` = ?')->execute([$id]);
                 $db->commit();
-                rendszer_log('tag', $id, 'Zenekar törölve', $name);
-                flash('success', 'Zenekar törölve.');
+                rendszer_log('tag', $id, 'Előadó törölve', $name);
+                flash('success', 'Előadó törölve.');
                 redirect(events_url('zenekarok_admin.php'));
             } catch (Throwable $e) {
                 if ($db->inTransaction()) {
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dup = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? AND `id` <> ? LIMIT 1');
                 $dup->execute([$name, $id]);
                 if ($dup->fetchColumn() !== false) {
-                    $hiba = 'Már létezik ilyen nevű címke / zenekar.';
+                    $hiba = 'Már létezik ilyen nevű címke / előadó.';
                 } else {
                     try {
                         $ensure = events_tags_ensure_profile_columns($db);
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if ($db->inTransaction()) {
                                 $db->commit();
                             }
-                            rendszer_log('tag', $id, 'Zenekar módosítva', $name);
+                            rendszer_log('tag', $id, 'Előadó módosítva', $name);
                             flash('success', 'Mentve.');
                             redirect(events_url('zenekar_szerkeszt.php?id=') . $id);
                         }
@@ -173,20 +173,20 @@ $adminFloatTools = [
     [
         'href' => $publicUrl,
         'title' => 'Megnyitás megtekintésre',
-        'aria' => 'Nyilvános zenekar oldal megnyitása megtekintésre',
+        'aria' => 'Nyilvános előadó oldal megnyitása megtekintésre',
         'icon' => 'eye',
         'target' => '_blank',
     ],
     [
         'href' => events_url('zenekarok_admin.php'),
-        'title' => 'Vissza a zenekarok listájához',
-        'aria' => 'Vissza a zenekarok listájához',
+        'title' => 'Vissza az előadók listájához',
+        'aria' => 'Vissza az előadók listájához',
         'icon' => 'back',
     ],
 ];
 $adminFloatToolsRequireLogin = false;
 
-$pageTitle = 'Zenekar szerkesztése: ' . $name;
+$pageTitle = 'Előadó szerkesztése: ' . $name;
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
@@ -194,10 +194,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="card events-admin-card">
     <div class="events-list-head">
-        <h1 class="card-title" style="margin:0;">Zenekar szerkesztése</h1>
+        <h1 class="card-title" style="margin:0;">Előadó szerkesztése</h1>
         <div class="events-list-actions">
             <a href="<?= h($publicUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal</a>
-            <a href="<?= h(events_url('zenekarok_admin.php')) ?>" class="btn btn-secondary">← Zenekarok listája</a>
+            <a href="<?= h(events_url('zenekarok_admin.php')) ?>" class="btn btn-secondary">← Előadók listája</a>
         </div>
     </div>
     <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
@@ -258,7 +258,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             name="form_action"
                             value="delete"
                             formnovalidate
-                            onclick="return confirm('Biztosan törlöd ezt a zenekart? A művelet nem vonható vissza.');"
+                            onclick="return confirm('Biztosan törlöd ezt az előadót? A művelet nem vonható vissza.');"
                         >Törlés</button>
                     <?php else: ?>
                         <p class="help events-dj-edit-delete-hint">

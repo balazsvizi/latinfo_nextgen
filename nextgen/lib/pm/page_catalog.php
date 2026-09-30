@@ -91,12 +91,12 @@ function pm_tools_page_catalog(): array
             'purpose' => 'DJ adatlapok listája és szerkesztése az Event Adminban.',
         ],
         '/nextgen/events/zenekarok_admin.php' => [
-            'display_name' => 'Zenekarok (Latinfo)',
-            'purpose' => 'Zenekar adatlapok listája és szerkesztése a Latinfo.hu részen (még nem publikus menü).',
+            'display_name' => 'Előadók (Latinfo)',
+            'purpose' => 'Előadó adatlapok (zenekarok, énekesek, zenészek) listája és szerkesztése a Latinfo.hu részen (még nem publikus menü).',
         ],
         '/nextgen/events/zenekarok.php' => [
-            'display_name' => 'Zenekarok kezdőoldal',
-            'purpose' => 'Zenekar katalógus előnézet (DJ hub mintájára, még nem publikus).',
+            'display_name' => 'Előadók kezdőoldal',
+            'purpose' => 'Előadó katalógus előnézet (DJ hub mintájára, még nem publikus).',
         ],
         '/nextgen/config/cimkek.php' => [
             'display_name' => 'Címkék',

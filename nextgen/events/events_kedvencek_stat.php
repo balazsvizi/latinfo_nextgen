@@ -57,7 +57,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div>
         <h1 class="events-stat-page-title">Kedvencek (szívecskék)</h1>
         <p class="events-stat-page-lead">
-            Esemény, szervező, helyszín, DJ és zenekar szívecskéi időszak, típus és fiók/vendég bontásban.
+            Esemény, szervező, helyszín, DJ és előadó szívecskéi időszak, típus és fiók/vendég bontásban.
             <?= h((string) $statsParams['date_from']) ?> – <?= h((string) $statsParams['date_to']) ?>.
         </p>
     </div>

@@ -12,7 +12,7 @@ requireLogin();
 $db = getDb();
 
 if (!events_tags_tables_available($db) || !events_tag_types_tables_available($db)) {
-    $pageTitle = 'Zenekarok';
+    $pageTitle = 'Előadók';
     $mainContentClass = 'main-content main-content--fullwidth';
     require_once dirname(__DIR__) . '/partials/header.php';
     echo '<div class="card events-admin-card">';
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['zenekarok_hub_cms_sav
         if (function_exists('rendszer_log')) {
             rendszer_log('zenekar_hub', 1, 'Szövegek mentve', '');
         }
-        flash('success', 'A zenekar oldal szövegei mentve.');
+        flash('success', 'Az előadó oldal szövegei mentve.');
     } catch (Throwable $e) {
         error_log('zenekarok_admin hub cms save: ' . $e->getMessage());
         flash('error', 'A szövegek mentése nem sikerült.');
@@ -80,28 +80,28 @@ $zenekarSortTh = static function (string $label, string $orderCol, string $curre
     return '<a href="' . h($href) . '" class="th-sort">' . h($label) . $arrow . '</a>';
 };
 
-$pageTitle = 'Zenekarok';
+$pageTitle = 'Előadók';
 $mainContentClass = 'main-content main-content--fullwidth';
 
 $publicZenekarHubUrl = events_url('zenekarok.php');
 $adminFloatTools = [
     [
         'href' => events_url('zenekar_letrehoz.php'),
-        'title' => 'Új zenekar',
-        'aria' => 'Új zenekar létrehozása',
+        'title' => 'Új előadó',
+        'aria' => 'Új előadó létrehozása',
         'icon' => 'plus',
     ],
     [
         'href' => $publicZenekarHubUrl,
         'title' => 'Megnyitás megtekintésre',
-        'aria' => 'Nyilvános zenekar lista megnyitása megtekintésre',
+        'aria' => 'Nyilvános előadó lista megnyitása megtekintésre',
         'icon' => 'eye',
         'target' => '_blank',
     ],
     [
         'submit_form' => 'zenekarok-hub-cms-form',
-        'title' => 'Zenekar oldal szövegeinek mentése',
-        'aria' => 'Zenekar oldal szövegeinek mentése',
+        'title' => 'Előadó oldal szövegeinek mentése',
+        'aria' => 'Előadó oldal szövegeinek mentése',
         'icon' => 'save',
     ],
 ];
@@ -121,7 +121,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
         <div class="events-list-head">
             <div class="events-list-head__start">
-                <h1 class="events-list-title card-title" style="margin:0;">Zenekarok</h1>
+                <h1 class="events-list-title card-title" style="margin:0;">Előadók</h1>
+                <p class="help" style="margin:0.35rem 0 0;">Előadók, zenekarok, énekesek, zenészek.</p>
                 <?php
                 $listLimitInForm = true;
                 $listLimitStandalone = true;
@@ -130,9 +131,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
             <div class="events-list-actions">
                 <a href="<?= h(events_url('zenekarok_admin.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
-                <a href="<?= h(events_url('zenekar_letrehoz.php')) ?>" class="btn btn-primary">Új zenekar</a>
+                <a href="<?= h(events_url('zenekar_letrehoz.php')) ?>" class="btn btn-primary">Új előadó</a>
                 <a href="<?= h(events_url('organizers.php')) ?>" class="btn btn-secondary">Szervezők</a>
-                <a href="<?= h($publicZenekarHubUrl) ?>" class="events-icon-action events-edit-preview-action" title="Nyilvános zenekar lista megtekintése (új lap)" aria-label="Nyilvános zenekar lista megtekintése új lapon" target="_blank" rel="noopener">
+                <a href="<?= h($publicZenekarHubUrl) ?>" class="events-icon-action events-edit-preview-action" title="Nyilvános előadó lista megtekintése (új lap)" aria-label="Nyilvános előadó lista megtekintése új lapon" target="_blank" rel="noopener">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
                 </a>
             </div>
@@ -167,9 +168,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <tr>
                             <td colspan="<?= (int) $colspan ?>">
                                 <?php if ($hasFilters): ?>
-                                    Nincs a szűrésnek megfelelő zenekar.
+                                    Nincs a szűrésnek megfelelő előadó.
                                 <?php else: ?>
-                                    Nincs zenekar. Adj hozzá újat.
+                                    Nincs előadó. Adj hozzá újat.
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -213,7 +214,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td><code><?= h($zslug !== '' ? $zslug : '—') ?></code></td>
                                 <td class="td-num">
                                     <?php if ($eventCount > 0): ?>
-                                        <a href="<?= h($eventsUrl) ?>" class="events-cell-link" title="Események szűrése erre a zenekarra"><?= $eventCount ?></a>
+                                        <a href="<?= h($eventsUrl) ?>" class="events-cell-link" title="Események szűrése erre az előadóra"><?= $eventCount ?></a>
                                     <?php else: ?>
                                         <span class="text-muted">0</span>
                                     <?php endif; ?>
@@ -244,14 +245,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <div class="card events-admin-card" id="zenekarok-hub-cms">
-    <h2 class="card-title" style="margin-top:0;">Nyilvános zenekar oldal szövegei</h2>
+    <h2 class="card-title" style="margin-top:0;">Nyilvános előadó oldal szövegei</h2>
     <p class="help">HTML blokkok a <a href="<?= h($publicZenekarHubUrl) ?>" target="_blank" rel="noopener">zenekarok.php</a> előnézeti oldalon. Mindkettőhöz named anchor tartozik, így linkelhető. Képet a szerkesztő kép gombjával tölthetsz fel vagy URL-lel szúrhatsz be.</p>
     <form method="post" action="<?= h(events_url('zenekarok_admin.php')) ?>" class="events-admin-form" id="zenekarok-hub-cms-form">
         <?= csrf_input('events_zenekarok_hub_cms') ?>
         <input type="hidden" name="zenekarok_hub_cms_save" value="1">
 
         <div class="form-group">
-            <label for="content_before">Szöveg az összes zenekar előtt</label>
+            <label for="content_before">Szöveg az összes előadó előtt</label>
             <p class="help">Horgony: <a href="<?= h($cmsPublicBeforeUrl) ?>" target="_blank" rel="noopener"><code>#<?= h($cmsAnchorBefore) ?></code></a></p>
             <textarea class="js-tinymce" id="content_before" name="content_before" rows="12"><?= h($cmsContent['content_before']) ?></textarea>
         </div>

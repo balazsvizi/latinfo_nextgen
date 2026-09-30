@@ -61,7 +61,7 @@ function events_tag_types_tables_available(PDO $db): bool {
 function events_tag_types_default_seed_rows(): array {
     return [
         ['code' => 'dj', 'name' => 'DJ', 'icon' => '🎧', 'tone' => 'dj', 'sort_order' => 10],
-        ['code' => 'zenekar', 'name' => 'Zenekar', 'icon' => '🎸', 'tone' => 'zenekar', 'sort_order' => 20],
+        ['code' => 'zenekar', 'name' => 'Előadó', 'icon' => '🎸', 'tone' => 'zenekar', 'sort_order' => 20],
         ['code' => 'tanar', 'name' => 'Tanár', 'icon' => '📚', 'tone' => 'tanar', 'sort_order' => 30],
         ['code' => 'muvesz', 'name' => 'Művész', 'icon' => '🎨', 'tone' => 'muvesz', 'sort_order' => 40],
         ['code' => 'szervezo', 'name' => 'Szervező', 'icon' => '🎪', 'tone' => 'szervezo', 'sort_order' => 50],
@@ -75,6 +75,8 @@ function events_tag_types_ensure_seeded(PDO $db): void {
     try {
         $cnt = (int) $db->query('SELECT COUNT(*) FROM `events_tag_types`')->fetchColumn();
         if ($cnt > 0) {
+            events_tag_types_ensure_display_names($db);
+
             return;
         }
     } catch (PDOException) {
@@ -91,6 +93,26 @@ function events_tag_types_ensure_seeded(PDO $db): void {
         ]);
     }
     events_tag_types_clear_cache();
+}
+
+/**
+ * Régi alapértelmezett megjelenő nevek frissítése (csak ha még a seed név van).
+ */
+function events_tag_types_ensure_display_names(PDO $db): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    try {
+        $st = $db->prepare('UPDATE `events_tag_types` SET `name` = ? WHERE `code` = ? AND `name` = ?');
+        $st->execute(['Előadó', 'zenekar', 'Zenekar']);
+        if ($st->rowCount() > 0) {
+            events_tag_types_clear_cache();
+        }
+    } catch (PDOException) {
+        // ignore
+    }
 }
 
 /**

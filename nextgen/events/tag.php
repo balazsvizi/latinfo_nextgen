@@ -180,7 +180,7 @@ if ($tagIsArtistProfile) {
 }
 $djOgImage = $djPhotoAbs !== '' ? $djPhotoAbs : $djLogoAbs;
 $artistPhotoAlt = $tagIsZenekar
-    ? ($lang === 'en' ? 'Band photo' : 'Zenekar fotó')
+    ? ($lang === 'en' ? 'Artist photo' : 'Előadó fotó')
     : (string) ($G['dj_photo_alt'] ?? 'DJ fotó');
 $artistInitials = $tagIsZenekar
     ? events_public_zenekar_initials($tagName)

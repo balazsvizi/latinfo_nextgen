@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dup = $db->prepare('SELECT `id` FROM `events_tags` WHERE `name` = ? LIMIT 1');
                 $dup->execute([$name]);
                 if ($dup->fetchColumn() !== false) {
-                    $hiba = 'Már létezik ilyen nevű címke / zenekar.';
+                    $hiba = 'Már létezik ilyen nevű címke / előadó.';
                 } else {
                     try {
                         $ensure = events_tags_ensure_profile_columns($db);
@@ -73,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if ($db->inTransaction()) {
                                 $db->commit();
                             }
-                            rendszer_log('tag', $newId, 'Zenekar létrehozva', $name);
-                            flash('success', 'Zenekar létrehozva.');
+                            rendszer_log('tag', $newId, 'Előadó létrehozva', $name);
+                            flash('success', 'Előadó létrehozva.');
                             redirect(events_url('zenekar_szerkeszt.php?id=') . $newId);
                         }
                     } catch (Throwable $e) {
@@ -94,19 +94,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Új zenekar';
+$pageTitle = 'Új előadó';
 
 $adminFloatTools = [
     [
         'submit_form' => 'dj-edit-form',
         'title' => 'Létrehozás',
-        'aria' => 'Zenekar létrehozása',
+        'aria' => 'Előadó létrehozása',
         'icon' => 'save',
     ],
     [
         'href' => events_url('zenekarok_admin.php'),
-        'title' => 'Vissza a zenekarok listájához',
-        'aria' => 'Vissza a zenekarok listájához',
+        'title' => 'Vissza az előadók listájához',
+        'aria' => 'Vissza az előadók listájához',
         'icon' => 'back',
     ],
 ];
@@ -118,7 +118,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="card">
     <div class="events-list-head">
-        <h1 class="card-title" style="margin:0;">Új zenekar</h1>
+        <h1 class="card-title" style="margin:0;">Új előadó</h1>
         <div class="events-list-actions">
             <a href="<?= h(events_url('zenekarok_admin.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
         </div>
@@ -133,15 +133,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <div class="events-edit-title-row venue-edit-title-row">
                         <div class="form-group venue-edit-name-field">
                             <label for="dj_name">Név *</label>
-                            <input type="text" id="dj_name" name="name" value="<?= h($name) ?>" required maxlength="255" autofocus placeholder="Zenekar Példa">
+                            <input type="text" id="dj_name" name="name" value="<?= h($name) ?>" required maxlength="255" autofocus placeholder="Előadó neve">
                         </div>
                         <button type="button" class="btn btn-secondary events-edit-slug-refresh" id="dj-slug-refresh" title="Slug frissítése a névből" aria-label="Slug frissítése a névből">🔄</button>
                         <div class="form-group venue-edit-slug-field">
                             <label for="dj_slug">Slug (URL)</label>
-                            <input type="text" id="dj_slug" name="slug" value="<?= h($slug) ?>" maxlength="255" pattern="[a-z0-9_]*" title="Kisbetű, szám és aláhúzás" placeholder="zenekar_pelda">
+                            <input type="text" id="dj_slug" name="slug" value="<?= h($slug) ?>" maxlength="255" pattern="[a-z0-9_]*" title="Kisbetű, szám és aláhúzás" placeholder="eloado_neve">
                         </div>
                     </div>
-                    <p class="help">Üres slug esetén mentéskor a névből generálódik. Nyilvános URL: <code>tag.php?slug=…</code></p>
+                    <p class="help">Üres slug esetén mentéskor a névből generálódik. Nyilvános URL: <code>tag.php?slug=…</code> Zenekar, énekes vagy zenész is ide tartozik.</p>
                 </div>
                 <div class="events-edit-panel">
                     <h3 class="events-edit-panel__title">Profil</h3>

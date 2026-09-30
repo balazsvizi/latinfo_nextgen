@@ -57,13 +57,13 @@ if (isLoggedIn()) {
         [
             'href' => events_url('zenekarok_admin.php#zenekarok-hub-cms'),
             'title' => 'Szövegek szerkesztése',
-            'aria' => 'Nyilvános zenekar oldal szövegeinek szerkesztése',
+            'aria' => 'Nyilvános előadó oldal szövegeinek szerkesztése',
             'icon' => 'edit',
         ],
         [
             'href' => events_url('zenekar_letrehoz.php'),
-            'title' => 'Új zenekar',
-            'aria' => 'Új zenekar létrehozása',
+            'title' => 'Új előadó',
+            'aria' => 'Új előadó létrehozása',
             'icon' => 'plus',
         ],
     ];
@@ -143,7 +143,10 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <section class="djs-public__catalog" id="<?= h($cmsAnchorCatalog) ?>" aria-labelledby="zenekarok-catalog-heading">
         <div class="djs-public__catalog-head">
-            <h2 class="djs-public__catalog-title" id="zenekarok-catalog-heading"><?= h((string) $D['catalog_heading']) ?></h2>
+            <div class="djs-public__catalog-titles">
+                <h2 class="djs-public__catalog-title" id="zenekarok-catalog-heading"><?= h((string) $D['catalog_heading']) ?></h2>
+                <p class="djs-public__catalog-scope"><?= h((string) $D['page_scope']) ?></p>
+            </div>
         </div>
 
         <?php if ($zenekarRows === []): ?>

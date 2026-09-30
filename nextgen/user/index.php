@@ -78,7 +78,7 @@ $typeLabels = [
     LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervezők',
     LATINFO_FAVORITE_TYPE_VENUE => 'Helyszínek',
     LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
-    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Zenekarok',
+    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Előadók',
 ];
 $favoritesTotal = 0;
 foreach ($favoritesByType as $items) {
@@ -194,7 +194,7 @@ header('Content-Type: text/html; charset=UTF-8');
                 <div class="user-favorites-empty-state">
                     <span class="user-favorites-empty-state__heart" aria-hidden="true">♡</span>
                     <p class="user-favorites-empty-state__title">Még nincs kedvenced</p>
-                    <p class="user-favorites-empty-state__text">Eseményeken, szervezőknél, helyszíneken és DJ-knél a ♥ gombbal mentheted ide a kedvenceidet.</p>
+                    <p class="user-favorites-empty-state__text">Eseményeken, szervezőknél, helyszíneken, DJ-knél és előadóknál a ♥ gombbal mentheted ide a kedvenceidet.</p>
                     <a class="user-favorites-empty-state__cta" href="<?= h(events_public_home_page_url('hu')) ?>">Naptár böngészése</a>
                 </div>
             <?php else: ?>

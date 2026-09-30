@@ -50,7 +50,7 @@ $typeLabels = [
     LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervezők',
     LATINFO_FAVORITE_TYPE_VENUE => 'Helyszínek',
     LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
-    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Zenekarok',
+    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Előadók',
 ];
 $favoritesTotal = 0;
 foreach ($favoritesByType as $items) {

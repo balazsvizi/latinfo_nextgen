@@ -87,7 +87,7 @@ function events_public_zenekarok_hub_load(PDO $db): array
 function events_public_zenekarok_hub_save(PDO $db, string $contentBefore, string $contentAfter): void
 {
     if (!events_public_zenekarok_hub_ensure_schema($db)) {
-        throw new RuntimeException('A zenekar oldal szövegei nem menthetők.');
+        throw new RuntimeException('Az előadó oldal szövegei nem menthetők.');
     }
 
     $before = events_sanitize_html_fragment($contentBefore);
