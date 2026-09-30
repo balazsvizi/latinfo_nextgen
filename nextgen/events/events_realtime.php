@@ -36,86 +36,6 @@ $payloadJson = json_encode(
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Valós idejű áttekintés';
 require_once dirname(__DIR__) . '/partials/header.php';
-
-$kindBadgeClass = static function (string $kind): string {
-    return match ($kind) {
-        'party' => 'events-rt-kind--party',
-        'preview' => 'events-rt-kind--preview',
-        'external' => 'events-rt-kind--external',
-        'hub' => 'events-rt-kind--hub',
-        'nav' => 'events-rt-kind--nav',
-        'notice' => 'events-rt-kind--notice',
-        'cms' => 'events-rt-kind--cms',
-        'module' => 'events-rt-kind--module',
-        'mobilapp' => 'events-rt-kind--mobilapp',
-        'favorite' => 'events-rt-kind--favorite',
-        'rating' => 'events-rt-kind--rating',
-        default => 'events-rt-kind--other',
-    };
-};
-
-$rtColor = static function (mixed $color): string {
-    $value = (string) $color;
-
-    return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1 ? $value : '#8b9198';
-};
-
-$whoButton = static function (array $mark) use ($rtColor): string {
-    $label = (string) ($mark['label'] ?? 'Ismeretlen');
-    $emoji = (string) ($mark['emoji'] ?? '•');
-    $code = (string) ($mark['code'] ?? '');
-    $key = (string) ($mark['key'] ?? '');
-    $color = $rtColor($mark['color'] ?? '');
-    $bot = !empty($mark['is_bot']);
-    $registered = !empty($mark['is_registered']) || (int) ($mark['user_id'] ?? 0) > 0;
-    $profileUrl = trim((string) ($mark['profile_url'] ?? ''));
-    $title = $label;
-    if ($code !== '') {
-        $title .= ' · ' . $code;
-    }
-    if ($bot) {
-        $title .= ' · bot';
-    }
-    if ($registered && $profileUrl !== '') {
-        $title = $label . ' · admin adatlap';
-    }
-
-    $classes = 'events-rt-who'
-        . ($bot ? ' events-rt-who--bot' : '')
-        . ($registered ? ' events-rt-who--user' : '');
-    $style = ' style="--rt-c:' . h($color) . '"';
-    $keyAttr = $key !== '' ? ' data-visitor-key="' . h($key) . '"' : '';
-    $titleAttr = ' title="' . h($title) . '"';
-
-    if ($registered && $profileUrl !== '') {
-        $html = '<a class="' . h($classes) . '" href="' . h($profileUrl) . '"'
-            . $style . $titleAttr . $keyAttr . '>'
-            . '<span class="events-rt-who__name">' . h($label) . '</span>';
-        if ($bot) {
-            $html .= '<span class="events-rt-who__bot">bot</span>';
-        }
-        $html .= '</a>';
-
-        return $html;
-    }
-
-    $html = '<button type="button" class="' . h($classes) . '"'
-        . $style . $titleAttr . $keyAttr
-        . ' aria-pressed="false">';
-    if (!$registered && $emoji !== '') {
-        $html .= '<span class="events-rt-who__mark" aria-hidden="true">' . h($emoji) . '</span>';
-    }
-    $html .= '<span class="events-rt-who__name">' . h($label) . '</span>';
-    if (!$registered && $code !== '') {
-        $html .= '<span class="events-rt-who__code">' . h($code) . '</span>';
-    }
-    if ($bot) {
-        $html .= '<span class="events-rt-who__bot">bot</span>';
-    }
-    $html .= '</button>';
-
-    return $html;
-};
 ?>
 <div class="card events-admin-card events-rt-page" id="events-rt-root" data-ajax-url="<?= h($ajaxUrl) ?>" data-poll-ms="15000" data-visitor="<?= h($visitor) ?>">
     <div class="events-list-head events-cal-page__head">
@@ -308,50 +228,73 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         </section>
     </div>
 
+    <?php
+    $kindFilterOptions = [
+        '' => 'Összes típus',
+        'party' => 'Buli',
+        'preview' => 'Előnézet',
+        'external' => 'További info',
+        'hub' => 'Statikus oldal',
+        'nav' => 'Menü',
+        'notice' => 'Értesítő',
+        'cms' => 'CMS',
+        'module' => 'Modul',
+        'mobilapp' => 'Mobilapp',
+        'favorite' => 'Kedvenc',
+        'rating' => 'Értékelés',
+    ];
+    ?>
     <section class="events-rt-panel events-rt-recent-panel" aria-labelledby="events-rt-recent-title">
         <h3 class="events-rt-section-title" id="events-rt-recent-title">Mire kattintanak most</h3>
         <p class="events-rt-section-hint">Minden mért aktivitás: buli, menü, statikus, CMS, modul, mobilapp, kedvenc, értesítő. Bejelentkezett felhasználónál a név jelenik meg.</p>
+
+        <div class="events-rt-recent-controls" id="events-rt-recent-controls">
+            <div class="events-rt-recent-filters">
+                <div class="form-group">
+                    <label class="events-filter-label" for="events_rt_filter_search">Keresés</label>
+                    <input class="events-filter-input" type="search" id="events_rt_filter_search" placeholder="Cél, részlet, látogató…" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="events-filter-label" for="events_rt_filter_kind">Típus</label>
+                    <select class="events-filter-input" id="events_rt_filter_kind">
+                        <?php foreach ($kindFilterOptions as $kindKey => $kindLabel): ?>
+                            <option value="<?= h($kindKey) ?>"><?= h($kindLabel) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group events-rt-recent-filters__actions">
+                    <button type="button" class="btn btn-secondary btn-sm" id="events_rt_filter_clear">Szűrés törlése</button>
+                </div>
+            </div>
+            <p class="events-rt-recent-count" aria-live="polite">
+                <strong><span id="events-rt-recent-visible"><?= count($snapshot['recent']) ?></span></strong>
+                / <span id="events-rt-recent-total"><?= count($snapshot['recent']) ?></span> sor
+            </p>
+        </div>
+
         <div class="table-wrap events-rt-table-wrap">
-            <table class="events-admin-table events-rt-table events-rt-table--recent">
+            <table class="sortable-table events-admin-table events-rt-table events-rt-table--recent" id="events-rt-recent-table">
                 <thead>
                     <tr>
-                        <th scope="col">Idő</th>
-                        <th scope="col">Típus</th>
-                        <th scope="col">Cél</th>
-                        <th scope="col">Részlet</th>
-                        <th scope="col">Látogató</th>
+                        <th scope="col">
+                            <button type="button" class="th-sort is-active" data-sort="at" aria-pressed="true">Idő ↓</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="kind" aria-pressed="false">Típus</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="target" aria-pressed="false">Cél</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="detail" aria-pressed="false">Részlet</button>
+                        </th>
+                        <th scope="col">
+                            <button type="button" class="th-sort" data-sort="visitor" aria-pressed="false">Látogató</button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="events-rt-recent-body">
-                    <?php if ($snapshot['recent'] === []): ?>
-                        <tr class="events-rt-empty-row"><td colspan="5">Nincs friss aktivitás.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($snapshot['recent'] as $row): ?>
-                            <?php
-                            $kind = (string) ($row['kind'] ?? '');
-                            $eventId = (int) ($row['event_id'] ?? 0);
-                            $target = (string) ($row['target'] ?? $row['name'] ?? '');
-                            $mark = is_array($row['visitor'] ?? null) ? $row['visitor'] : [];
-                            $rowKey = (string) ($mark['key'] ?? '');
-                            $rowColor = $rtColor($mark['color'] ?? '');
-                            ?>
-                            <tr<?= $rowKey !== '' ? ' data-visitor-key="' . h($rowKey) . '"' : '' ?> style="--rt-c: <?= h($rowColor) ?>">
-                                <td class="events-rt-recent-time"><?= h((string) $row['at']) ?></td>
-                                <td>
-                                    <span class="events-rt-kind <?= h($kindBadgeClass($kind)) ?>"><?= h((string) ($row['kind_label'] ?? $row['metric_label'] ?? '')) ?></span>
-                                </td>
-                                <td>
-                                    <?php if ($eventId > 0): ?>
-                                        <a href="<?= h($editBase . $eventId) ?>"><?= h($target) ?></a>
-                                    <?php else: ?>
-                                        <?= h($target) ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="events-rt-recent-detail"><?= h((string) ($row['detail'] ?? $row['source_label'] ?? '')) ?></td>
-                                <td><?= $whoButton($mark) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                    <tr class="events-rt-empty-row"><td colspan="5">Betöltés…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -373,6 +316,10 @@ $whoButton = static function (array $mark) use ($rtColor): string {
     var windowMinutes = <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?>;
     var visitor = root.getAttribute('data-visitor') || 'human';
     var focusKey = '';
+    var recentRows = [];
+    var recentSortKey = 'at';
+    var recentSortDir = 'desc';
+    var recentSearchTimer = null;
 
     function esc(s) {
         return String(s == null ? '' : s)
@@ -638,14 +585,97 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         });
     }
 
-    function renderRecent(payload) {
+    function recentSearchValue() {
+        var input = document.getElementById('events_rt_filter_search');
+        return input ? input.value.trim().toLowerCase() : '';
+    }
+
+    function recentKindValue() {
+        var select = document.getElementById('events_rt_filter_kind');
+        return select ? String(select.value || '') : '';
+    }
+
+    function recentRowSearchBlob(r) {
+        var mark = visitorOf(r);
+        return [
+            r.at || '',
+            r.kind || '',
+            r.kind_label || r.metric_label || '',
+            r.target || r.name || '',
+            r.detail || r.source_label || '',
+            mark.label || '',
+            mark.code || '',
+            mark.is_bot ? 'bot' : ''
+        ].join(' ').toLowerCase();
+    }
+
+    function recentSortValue(r, key) {
+        var mark = visitorOf(r);
+        if (key === 'at') return String(r.at || '');
+        if (key === 'kind') return String(r.kind_label || r.kind || '');
+        if (key === 'target') return String(r.target || r.name || '');
+        if (key === 'detail') return String(r.detail || r.source_label || '');
+        if (key === 'visitor') return String(mark.label || '');
+        return '';
+    }
+
+    function updateRecentSortHeaders() {
+        var table = document.getElementById('events-rt-recent-table');
+        if (!table) return;
+        table.querySelectorAll('thead .th-sort[data-sort]').forEach(function (btn) {
+            var key = btn.getAttribute('data-sort') || '';
+            var active = key === recentSortKey;
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            btn.classList.toggle('is-active', active);
+            var label = (btn.getAttribute('data-label') || btn.textContent || '').replace(/\s*[↑↓]\s*$/, '').trim();
+            btn.setAttribute('data-label', label);
+            btn.textContent = active ? (label + (recentSortDir === 'asc' ? ' ↑' : ' ↓')) : label;
+        });
+    }
+
+    function filteredRecentRows() {
+        var search = recentSearchValue();
+        var kind = recentKindValue();
+        var rows = recentRows.slice();
+        if (kind !== '') {
+            rows = rows.filter(function (r) { return String(r.kind || '') === kind; });
+        }
+        if (search !== '') {
+            rows = rows.filter(function (r) {
+                return recentRowSearchBlob(r).indexOf(search) !== -1;
+            });
+        }
+        rows.sort(function (a, b) {
+            var va = recentSortValue(a, recentSortKey);
+            var vb = recentSortValue(b, recentSortKey);
+            var cmp = String(va).localeCompare(String(vb), 'hu', { sensitivity: 'base', numeric: true });
+            if (cmp === 0) {
+                cmp = String(a.at || '').localeCompare(String(b.at || ''), 'hu');
+            }
+            return recentSortDir === 'asc' ? cmp : -cmp;
+        });
+        return rows;
+    }
+
+    function paintRecent() {
         var body = document.getElementById('events-rt-recent-body');
         if (!body) return;
-        var rows = payload.recent || [];
-        if (!rows.length) {
+        setText('events-rt-recent-total', recentRows.length);
+        updateRecentSortHeaders();
+
+        if (!recentRows.length) {
             body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs friss aktivitás.</td></tr>';
+            setText('events-rt-recent-visible', 0);
             return;
         }
+
+        var rows = filteredRecentRows();
+        setText('events-rt-recent-visible', rows.length);
+        if (!rows.length) {
+            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs találat a szűrésre.</td></tr>';
+            return;
+        }
+
         body.innerHTML = rows.map(function (r) {
             var eventId = Number(r.event_id || 0);
             var target = r.target || r.name || '';
@@ -668,6 +698,11 @@ $whoButton = static function (array $mark) use ($rtColor): string {
                 + '<td>' + whoButtonHtml(mark) + '</td>'
                 + '</tr>';
         }).join('');
+    }
+
+    function setRecentRows(rows) {
+        recentRows = Array.isArray(rows) ? rows.slice() : [];
+        paintRecent();
     }
 
     function applyPayload(payload) {
@@ -697,7 +732,7 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         buildChart(payload);
         renderBarList('events-rt-pages', payload.top_pages || [], 'events-rt-source__bar--hub');
         renderBarList('events-rt-nav-list', payload.top_nav || [], 'events-rt-source__bar--nav');
-        renderRecent(payload);
+        setRecentRows(payload.recent || []);
         applyFocus();
     }
 
@@ -729,6 +764,44 @@ $whoButton = static function (array $mark) use ($rtColor): string {
             setVisitor(btn.getAttribute('data-visitor') || 'human');
         });
     });
+
+    var searchInput = document.getElementById('events_rt_filter_search');
+    var kindSelect = document.getElementById('events_rt_filter_kind');
+    var clearBtn = document.getElementById('events_rt_filter_clear');
+    var recentTable = document.getElementById('events-rt-recent-table');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            clearTimeout(recentSearchTimer);
+            recentSearchTimer = setTimeout(paintRecent, 120);
+        });
+    }
+    if (kindSelect) {
+        kindSelect.addEventListener('change', paintRecent);
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            if (searchInput) searchInput.value = '';
+            if (kindSelect) kindSelect.value = '';
+            paintRecent();
+            if (searchInput) searchInput.focus();
+        });
+    }
+    if (recentTable) {
+        recentTable.addEventListener('click', function (e) {
+            var btn = e.target.closest('.th-sort[data-sort]');
+            if (!btn || !recentTable.contains(btn)) return;
+            var key = btn.getAttribute('data-sort') || '';
+            if (key === '') return;
+            if (recentSortKey === key) {
+                recentSortDir = recentSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                recentSortKey = key;
+                recentSortDir = key === 'at' ? 'desc' : 'asc';
+            }
+            paintRecent();
+        });
+    }
 
     root.addEventListener('click', function (ev) {
         var link = ev.target.closest('a.events-rt-who--user');
