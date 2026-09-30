@@ -191,6 +191,7 @@ $isEventsHome = true;
 $showAdminEdit = false;
 $adminEditUrl = '';
 $publicAdminParams = $filters['get_params'];
+unset($publicAdminParams['f_favorites']);
 if ($view === 'list') {
     $matchingAdminUrl = events_admin_list_view_url($publicAdminParams);
     $matchingAdminTitle = (string) $D['admin_edit_aria_list'];

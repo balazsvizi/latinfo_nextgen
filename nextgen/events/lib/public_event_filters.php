@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/admin_event_filters.php';
 require_once __DIR__ . '/event_status.php';
+require_once dirname(__DIR__, 2) . '/lib/user/favorites.php';
 
 /**
  * Térkép nézet csak bejelentkezett adminnak (nyilvános főoldal).
@@ -119,7 +120,19 @@ function events_public_filters_from_request(PDO $db): array {
         $filters['params'][] = '%' . $f_city . '%';
     }
 
+    $favoritesAvailable = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+    $f_favorites = $favoritesAvailable && (string) ($_GET['f_favorites'] ?? '') === '1';
+    if ($f_favorites) {
+        $favClause = latinfo_favorites_event_contains_any_where($db);
+        $filters['where'][] = $favClause['sql'];
+        foreach ($favClause['params'] as $favParam) {
+            $filters['params'][] = $favParam;
+        }
+    }
+
     $filters['f_city'] = $f_city;
+    $filters['f_favorites'] = $f_favorites;
+    $filters['favoritesAvailable'] = $favoritesAvailable;
     $filters['status'] = '';
     $filters['f_id'] = '';
     $filters['f_views_min'] = '';
@@ -134,6 +147,9 @@ function events_public_filters_from_request(PDO $db): array {
     unset($getParams['status'], $getParams['f_id'], $getParams['f_views_min'], $getParams['list_limit']);
     if ($f_city !== '') {
         $getParams['f_city'] = $f_city;
+    }
+    if ($f_favorites) {
+        $getParams['f_favorites'] = '1';
     }
     if ($view === 'list') {
         $getParams['view'] = 'list';
@@ -181,6 +197,9 @@ function events_public_filters_are_active(array $filters): bool {
         return true;
     }
     if (trim((string) ($filters['f_city'] ?? '')) !== '') {
+        return true;
+    }
+    if (!empty($filters['f_favorites'])) {
         return true;
     }
     if (is_array($filters['f_category_ids'] ?? null) && $filters['f_category_ids'] !== []) {

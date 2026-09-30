@@ -478,6 +478,7 @@ function events_filter_label_attr_classes(array $filters, string $key): string
         'dj' => (int) ($filters['f_dj_id'] ?? 0) > 0,
         'main_style' => (int) ($filters['f_main_style_id'] ?? 0) > 0,
         'supplementary_style' => (int) ($filters['f_supplementary_style_id'] ?? 0) > 0,
+        'favorites' => !empty($filters['f_favorites']),
         'start_from' => trim((string) ($filters['f_start_from'] ?? '')) !== '',
         'start_to' => trim((string) ($filters['f_start_to'] ?? '')) !== '',
         default => false,

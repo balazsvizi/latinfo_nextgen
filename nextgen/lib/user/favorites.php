@@ -201,6 +201,114 @@ function latinfo_favorites_active_set_for_actor(PDO $db, ?string $actorKey, arra
     return $out;
 }
 
+/**
+ * Aktuális actor kedvencei típus szerint (eseményszűrőhöz).
+ *
+ * @return array{
+ *   event: list<int>,
+ *   organizer: list<int>,
+ *   venue: list<int>,
+ *   dj: list<int>,
+ *   zenekar: list<int>
+ * }
+ */
+function latinfo_favorites_ids_by_type_for_actor(PDO $db, ?string $actorKey = null): array
+{
+    $empty = [
+        LATINFO_FAVORITE_TYPE_EVENT => [],
+        LATINFO_FAVORITE_TYPE_ORGANIZER => [],
+        LATINFO_FAVORITE_TYPE_VENUE => [],
+        LATINFO_FAVORITE_TYPE_DJ => [],
+        LATINFO_FAVORITE_TYPE_ZENEKAR => [],
+    ];
+    $actorKey = $actorKey ?? latinfo_favorites_current_actor_key();
+    if ($actorKey === null || $actorKey === '' || !latinfo_favorites_table_ready($db)) {
+        return $empty;
+    }
+    try {
+        $st = $db->prepare('
+            SELECT `entity_type`, `entity_id`
+            FROM `latinfo_favorites`
+            WHERE `actor_key` = ?
+        ');
+        $st->execute([$actorKey]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $type = latinfo_favorites_normalize_type((string) ($row['entity_type'] ?? ''));
+            $id = (int) ($row['entity_id'] ?? 0);
+            if ($type === null || $id <= 0 || !isset($empty[$type])) {
+                continue;
+            }
+            $empty[$type][] = $id;
+        }
+        foreach ($empty as $type => $ids) {
+            $empty[$type] = array_values(array_unique($ids));
+        }
+    } catch (Throwable $ex) {
+        error_log('latinfo_favorites_ids_by_type_for_actor: ' . $ex->getMessage());
+    }
+
+    return $empty;
+}
+
+/**
+ * WHERE feltétel: az eseményben van az actor valamelyik kedvence
+ * (maga az esemény, szervező, helyszín, DJ vagy előadó).
+ *
+ * @return array{sql: string, params: list<mixed>}
+ */
+function latinfo_favorites_event_contains_any_where(PDO $db, ?string $actorKey = null): array
+{
+    $byType = latinfo_favorites_ids_by_type_for_actor($db, $actorKey);
+    $parts = [];
+    $params = [];
+
+    $eventIds = $byType[LATINFO_FAVORITE_TYPE_EVENT];
+    if ($eventIds !== []) {
+        $ph = implode(',', array_fill(0, count($eventIds), '?'));
+        $parts[] = "e.`id` IN ({$ph})";
+        array_push($params, ...$eventIds);
+    }
+
+    $venueIds = $byType[LATINFO_FAVORITE_TYPE_VENUE];
+    if ($venueIds !== []) {
+        $ph = implode(',', array_fill(0, count($venueIds), '?'));
+        $parts[] = "e.`venue_id` IN ({$ph})";
+        array_push($params, ...$venueIds);
+    }
+
+    $orgIds = $byType[LATINFO_FAVORITE_TYPE_ORGANIZER];
+    if ($orgIds !== []) {
+        $ph = implode(',', array_fill(0, count($orgIds), '?'));
+        $parts[] = "EXISTS (
+            SELECT 1 FROM `events_calendar_event_organizers` eo_fav
+            WHERE eo_fav.`event_id` = e.`id` AND eo_fav.`organizer_id` IN ({$ph})
+        )";
+        array_push($params, ...$orgIds);
+    }
+
+    $tagIds = array_values(array_unique(array_merge(
+        $byType[LATINFO_FAVORITE_TYPE_DJ],
+        $byType[LATINFO_FAVORITE_TYPE_ZENEKAR]
+    )));
+    if ($tagIds !== []) {
+        $ph = implode(',', array_fill(0, count($tagIds), '?'));
+        $parts[] = "EXISTS (
+            SELECT 1 FROM `events_calendar_event_tags` et_fav
+            WHERE et_fav.`event_id` = e.`id` AND et_fav.`tag_id` IN ({$ph})
+        )";
+        array_push($params, ...$tagIds);
+    }
+
+    if ($parts === []) {
+        return ['sql' => '0 = 1', 'params' => []];
+    }
+
+    return [
+        'sql' => '(' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
 function latinfo_favorites_table_ready(PDO $db, bool $forceRefresh = false): bool
 {
     static $cached = null;

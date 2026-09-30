@@ -150,6 +150,17 @@ $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
             <label class="<?= h(events_public_filter_label_attr_classes($filters, 'name')) ?>" for="ev-f-name"><?= h((string) ($D['filter_name'] ?? 'Esemény neve')) ?></label>
             <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($filters['f_name']) ?>" placeholder="<?= h((string) ($D['filter_name_ph'] ?? '')) ?>" autocomplete="off">
         </div>
+        <?php if (!empty($filters['favoritesAvailable'])): ?>
+        <div class="events-filter-field events-filter-field--status events-filter-field--favorites">
+            <label class="<?= h(events_public_filter_label_attr_classes($filters, 'favorites')) ?>" for="ev-f-favorites"><?= h((string) ($D['filter_favorites'] ?? 'Szívecske')) ?></label>
+            <div class="events-filter-select-wrap">
+                <select class="events-filter-select" name="f_favorites" id="ev-f-favorites" title="<?= h((string) ($D['filter_favorites'] ?? 'Szívecske')) ?>">
+                    <option value=""><?= h((string) ($D['filter_favorites_all'] ?? 'Összes esemény')) ?></option>
+                    <option value="1" <?= !empty($filters['f_favorites']) ? 'selected' : '' ?>><?= h((string) ($D['filter_favorites_mine'] ?? '♥ Kedvenceim')) ?></option>
+                </select>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <?php if (!$hideMapDateFiltersInPanel): ?>
         <div class="events-filter-field events-filter-field--full">
