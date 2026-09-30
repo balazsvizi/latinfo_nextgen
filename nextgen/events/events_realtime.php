@@ -310,85 +310,7 @@ $whoButton = static function (array $mark) use ($rtColor): string {
 
     <section class="events-rt-panel events-rt-recent-panel" aria-labelledby="events-rt-recent-title">
         <h3 class="events-rt-section-title" id="events-rt-recent-title">Mire kattintanak most</h3>
-        <p class="events-rt-section-hint">Minden mért aktivitás: buli, menü, statikus, CMS, modul, mobilapp, kedvenc, értesítő. Bejelentkezett felhasználónál a név jelenik meg. Kattints egy jelölésre a szűréshez.</p>
-        <?php $presence = is_array($snapshot['presence'] ?? null) ? $snapshot['presence'] : []; ?>
-        <div class="events-rt-people" id="events-rt-people"<?= $presence === [] ? ' hidden' : '' ?>>
-            <button type="button" class="events-rt-person-clear" hidden>Összes</button>
-            <?php foreach ($presence as $person): ?>
-                <?php
-                $mark = is_array($person) ? $person : [];
-                $personKey = (string) ($mark['key'] ?? '');
-                $personColor = $rtColor($mark['color'] ?? '');
-                $where = trim((string) ($mark['last_kind'] ?? '') . ' · ' . (string) ($mark['last_target'] ?? ''), ' ·');
-                $hits = (int) ($mark['hits'] ?? 0);
-                $personLabel = (string) ($mark['label'] ?? 'Ismeretlen');
-                $personRegistered = !empty($mark['is_registered']) || (int) ($mark['user_id'] ?? 0) > 0;
-                $personProfileUrl = trim((string) ($mark['profile_url'] ?? ''));
-                $personTitle = $personLabel;
-                if ((string) ($mark['code'] ?? '') !== '') {
-                    $personTitle .= ' · ' . (string) $mark['code'];
-                }
-                if ($hits > 0) {
-                    $personTitle .= ' · ' . $hits . ' friss esemény';
-                }
-                if ($where !== '') {
-                    $personTitle .= ' · utoljára: ' . $where;
-                }
-                if ($personRegistered && $personProfileUrl !== '') {
-                    $personTitle = $personLabel . ' · admin adatlap';
-                    if ($where !== '') {
-                        $personTitle .= ' · utoljára: ' . $where;
-                    }
-                }
-                $personClass = 'events-rt-person'
-                    . (!empty($mark['is_bot']) ? ' events-rt-person--bot' : '')
-                    . ($personRegistered ? ' events-rt-person--user' : '');
-                ?>
-                <?php if ($personRegistered && $personProfileUrl !== ''): ?>
-                    <a
-                        class="<?= h($personClass) ?>"
-                        href="<?= h($personProfileUrl) ?>"
-                        style="--rt-c: <?= h($personColor) ?>"
-                        data-visitor-key="<?= h($personKey) ?>"
-                        title="<?= h($personTitle) ?>"
-                    >
-                        <span class="events-rt-person__body">
-                            <span class="events-rt-person__name"><?= h($personLabel) ?></span>
-                            <span class="events-rt-person__where"><?= h($where) ?></span>
-                        </span>
-                        <?php if ($hits > 0): ?>
-                            <span class="events-rt-person__hits"><?= $hits ?></span>
-                        <?php endif; ?>
-                    </a>
-                <?php else: ?>
-                    <button
-                        type="button"
-                        class="<?= h($personClass) ?>"
-                        style="--rt-c: <?= h($personColor) ?>"
-                        data-visitor-key="<?= h($personKey) ?>"
-                        aria-pressed="false"
-                        title="<?= h($personTitle) ?>"
-                    >
-                        <span class="events-rt-who__mark" aria-hidden="true"><?= h((string) ($mark['emoji'] ?? '•')) ?></span>
-                        <span class="events-rt-person__body">
-                            <span class="events-rt-person__name">
-                                <?= h($personLabel) ?>
-                                <?php if ((string) ($mark['code'] ?? '') !== ''): ?>
-                                    <span class="events-rt-who__code"><?= h((string) $mark['code']) ?></span>
-                                <?php endif; ?>
-                                <?php if (!empty($mark['is_bot'])): ?>
-                                    <span class="events-rt-who__bot">bot</span>
-                                <?php endif; ?>
-                            </span>
-                            <span class="events-rt-person__where"><?= h($where) ?></span>
-                        </span>
-                        <?php if ($hits > 0): ?>
-                            <span class="events-rt-person__hits"><?= $hits ?></span>
-                        <?php endif; ?>
-                    </button>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
+        <p class="events-rt-section-hint">Minden mért aktivitás: buli, menü, statikus, CMS, modul, mobilapp, kedvenc, értesítő. Bejelentkezett felhasználónál a név jelenik meg.</p>
         <div class="table-wrap events-rt-table-wrap">
             <table class="events-admin-table events-rt-table events-rt-table--recent">
                 <thead>
@@ -573,15 +495,13 @@ $whoButton = static function (array $mark) use ($rtColor): string {
     function applyFocus() {
         var on = focusKey !== '';
         root.classList.toggle('is-visitor-focus', on);
-        root.querySelectorAll('tr[data-visitor-key], .events-rt-person[data-visitor-key], .events-rt-who[data-visitor-key]').forEach(function (el) {
+        root.querySelectorAll('tr[data-visitor-key], .events-rt-who[data-visitor-key]').forEach(function (el) {
             var match = on && el.getAttribute('data-visitor-key') === focusKey;
             el.classList.toggle('is-person-match', match);
             if (el.tagName === 'BUTTON') {
                 el.setAttribute('aria-pressed', match ? 'true' : 'false');
             }
         });
-        var clearBtn = root.querySelector('.events-rt-person-clear');
-        if (clearBtn) clearBtn.hidden = !on;
     }
 
     function kindClass(kind) {
@@ -718,63 +638,6 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         });
     }
 
-    function renderPresence(payload) {
-        var box = document.getElementById('events-rt-people');
-        if (!box) return;
-        var rows = payload.presence || [];
-        if (!rows.length) {
-            box.hidden = true;
-            box.innerHTML = '';
-            return;
-        }
-        box.hidden = false;
-        var html = '<button type="button" class="events-rt-person-clear"' + (focusKey ? '' : ' hidden') + '>Összes</button>';
-        html += rows.map(function (person) {
-            var mark = visitorOf(person);
-            var where = [person.last_kind || '', person.last_target || ''].filter(Boolean).join(' · ');
-            var hits = Number(person.hits || 0);
-            var registered = !!mark.is_registered && !!mark.profile_url;
-            var title = mark.label;
-            if (registered) {
-                title = mark.label + ' · admin adatlap';
-                if (where) title += ' · utoljára: ' + where;
-            } else {
-                if (mark.code) title += ' · ' + mark.code;
-                if (hits > 0) title += ' · ' + hits + ' friss esemény';
-                if (where) title += ' · utoljára: ' + where;
-            }
-            var classes = 'events-rt-person'
-                + (mark.is_bot ? ' events-rt-person--bot' : '')
-                + (registered ? ' events-rt-person--user' : '');
-            var body = '<span class="events-rt-person__body">'
-                + '<span class="events-rt-person__name">' + esc(mark.label)
-                + (!registered && mark.code ? ' <span class="events-rt-who__code">' + esc(mark.code) + '</span>' : '')
-                + (!registered && mark.is_bot ? ' <span class="events-rt-who__bot">bot</span>' : '')
-                + '</span>'
-                + '<span class="events-rt-person__where">' + esc(where) + '</span>'
-                + '</span>'
-                + (hits > 0 ? '<span class="events-rt-person__hits">' + hits + '</span>' : '');
-            if (registered) {
-                return '<a class="' + classes + '"'
-                    + ' href="' + esc(mark.profile_url) + '"'
-                    + ' style="--rt-c:' + mark.color + '"'
-                    + ' data-visitor-key="' + esc(mark.key) + '"'
-                    + ' title="' + esc(title) + '">'
-                    + body
-                    + '</a>';
-            }
-            return '<button type="button" class="' + classes + '"'
-                + ' style="--rt-c:' + mark.color + '"'
-                + ' data-visitor-key="' + esc(mark.key) + '"'
-                + ' aria-pressed="false"'
-                + ' title="' + esc(title) + '">'
-                + '<span class="events-rt-who__mark" aria-hidden="true">' + esc(mark.emoji) + '</span>'
-                + body
-                + '</button>';
-        }).join('');
-        box.innerHTML = html;
-    }
-
     function renderRecent(payload) {
         var body = document.getElementById('events-rt-recent-body');
         if (!body) return;
@@ -835,7 +698,6 @@ $whoButton = static function (array $mark) use ($rtColor): string {
         renderBarList('events-rt-pages', payload.top_pages || [], 'events-rt-source__bar--hub');
         renderBarList('events-rt-nav-list', payload.top_nav || [], 'events-rt-source__bar--nav');
         renderRecent(payload);
-        renderPresence(payload);
         applyFocus();
     }
 
@@ -869,17 +731,11 @@ $whoButton = static function (array $mark) use ($rtColor): string {
     });
 
     root.addEventListener('click', function (ev) {
-        var clearBtn = ev.target.closest('.events-rt-person-clear');
-        if (clearBtn && root.contains(clearBtn)) {
-            focusKey = '';
-            applyFocus();
-            return;
-        }
-        var link = ev.target.closest('a.events-rt-who--user, a.events-rt-person--user');
+        var link = ev.target.closest('a.events-rt-who--user');
         if (link && root.contains(link)) {
             return;
         }
-        var btn = ev.target.closest('.events-rt-who, .events-rt-person');
+        var btn = ev.target.closest('.events-rt-who');
         if (!btn || !root.contains(btn)) return;
         var key = btn.getAttribute('data-visitor-key') || '';
         if (!key) return;

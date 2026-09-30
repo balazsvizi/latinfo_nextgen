@@ -1577,11 +1577,7 @@ function events_realtime_recent_all(
 
     return [
         'recent' => array_slice($items, 0, $fetchLimit),
-        'presence' => array_slice(
-            events_realtime_presence_from_items($items),
-            0,
-            (int) EVENTS_REALTIME_PRESENCE_LIMIT
-        ),
+        'presence' => [],
     ];
 }
 
