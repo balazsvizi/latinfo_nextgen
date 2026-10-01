@@ -563,6 +563,15 @@ body.event-public-page--latinfo-home .event-public__hero--bar-only {
     text-decoration: underline;
 }
 
+.latinfo-home__flash-item {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.latinfo-home__flash-item.is-swapping {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
 /* --------------------------------------------------------------------------
    9. DJ ajánló kártyák a bal sávban
    -------------------------------------------------------------------------- */
@@ -941,6 +950,7 @@ body.event-public-page--latinfo-home-app .latinfo-home__module {
     .latinfo-home__event,
     .latinfo-home__flash,
     .latinfo-home__flash-title,
+    .latinfo-home__flash-item,
     .latinfo-home__event-stripe,
     .latinfo-home__event-go,
     .latinfo-home__day-more,

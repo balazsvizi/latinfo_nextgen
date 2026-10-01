@@ -49,6 +49,7 @@ if ($isAppSurface) {
 }
 $news = $schemaOk ? latinfo_home_news_all($db, true, $homeSurface) : [];
 $quickNews = latinfo_home_quick_news($news, 3);
+$news2 = $schemaOk ? latinfo_home_news2_all($db, true, $homeSurface) : [];
 $dayEvents = latinfo_home_today_tomorrow_events($db);
 $homeEventRows = array_merge($dayEvents['today'], $dayEvents['tomorrow']);
 $categoriesByEventId = events_public_load_categories_by_event_id($db, $homeEventRows);
@@ -90,6 +91,9 @@ $spotlightMobileCount = $djSpotlight['visible_count'];
 $spotlightVisible = array_slice($spotlightCards, 0, $spotlightMobileCount);
 $cmsAnchorSpotlight = 'latinfo-dj-ajanlo';
 $Dj = $djSpotlight['strings'];
+$announcements2Spotlight = latinfo_home_announcements2_spotlight($news2, $calendarUrl, 2);
+$announcements2Cards = $announcements2Spotlight['cards'];
+$announcements2VisibleCount = $announcements2Spotlight['visible_count'];
 $ratingStrings = latinfo_home_rating_strings($lang);
 $ratingAjaxUrl = nextgen_url('site/ajax_rating.php');
 $ratingSummary = $schemaOk

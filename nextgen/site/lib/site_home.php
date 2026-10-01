@@ -230,8 +230,27 @@ function latinfo_home_ensure_schema(PDO $db): bool
                 KEY `idx_visible_sort` (`is_visible`, `sort_order`, `id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `latinfo_home_news2` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `title` VARCHAR(200) NOT NULL,
+                `dek` TEXT NOT NULL,
+                `kicker` VARCHAR(80) NOT NULL DEFAULT '',
+                `image_url` VARCHAR(500) NOT NULL DEFAULT '',
+                `url` VARCHAR(500) NOT NULL DEFAULT '',
+                `is_hero` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+                `is_visible` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `show_on_web` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `show_on_app` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                KEY `idx_visible_sort` (`is_visible`, `sort_order`, `id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
         latinfo_home_news_ensure_surface_columns($db);
         latinfo_home_news_ensure_dek_column($db);
+        latinfo_home_news2_ensure_schema($db);
         latinfo_home_seed_if_empty($db);
         $done = true;
 
@@ -751,6 +770,238 @@ function latinfo_home_news_set_surface(PDO $db, int $id, string $field, bool $en
 }
 
 /**
+ * Bejelentések 2 tábla (rotáló modul) – biztosítja a sémát.
+ */
+function latinfo_home_news2_ensure_schema(PDO $db): bool
+{
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+
+    try {
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `latinfo_home_news2` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `title` VARCHAR(200) NOT NULL,
+                `dek` TEXT NOT NULL,
+                `kicker` VARCHAR(80) NOT NULL DEFAULT '',
+                `image_url` VARCHAR(500) NOT NULL DEFAULT '',
+                `url` VARCHAR(500) NOT NULL DEFAULT '',
+                `is_hero` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+                `is_visible` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `show_on_web` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `show_on_app` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                KEY `idx_visible_sort` (`is_visible`, `sort_order`, `id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+        $done = true;
+
+        return true;
+    } catch (Throwable $e) {
+        error_log('latinfo_home_news2_ensure_schema: ' . $e->getMessage());
+
+        return false;
+    }
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function latinfo_home_news2_all(PDO $db, bool $visibleOnly = false, ?string $surface = null): array
+{
+    if (!latinfo_home_news2_ensure_schema($db)) {
+        return [];
+    }
+    $sql = 'SELECT * FROM `latinfo_home_news2`';
+    $where = [];
+    if ($visibleOnly) {
+        $where[] = '`is_visible` = 1';
+    }
+    $surfaceNorm = $surface !== null ? latinfo_home_normalize_surface($surface) : null;
+    if ($surfaceNorm === 'app') {
+        $where[] = '`show_on_app` = 1';
+    } elseif ($surfaceNorm === 'web') {
+        $where[] = '`show_on_web` = 1';
+    }
+    if ($where !== []) {
+        $sql .= ' WHERE ' . implode(' AND ', $where);
+    }
+    $sql .= ' ORDER BY `sort_order` ASC, `id` ASC';
+
+    try {
+        $rows = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        error_log('latinfo_home_news2_all: ' . $e->getMessage());
+
+        return [];
+    }
+
+    foreach ($rows as &$row) {
+        if (!array_key_exists('show_on_web', $row)) {
+            $row['show_on_web'] = 1;
+        }
+        if (!array_key_exists('show_on_app', $row)) {
+            $row['show_on_app'] = 1;
+        }
+    }
+    unset($row);
+
+    return $rows;
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function latinfo_home_news2_get(PDO $db, int $id): ?array
+{
+    if ($id <= 0 || !latinfo_home_news2_ensure_schema($db)) {
+        return null;
+    }
+    $st = $db->prepare('SELECT * FROM `latinfo_home_news2` WHERE `id` = ? LIMIT 1');
+    $st->execute([$id]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+
+    return is_array($row) ? $row : null;
+}
+
+/**
+ * @param array<string, mixed> $input
+ */
+function latinfo_home_news2_save(PDO $db, int $id, array $input): int
+{
+    if (!latinfo_home_news2_ensure_schema($db)) {
+        throw new RuntimeException('A bejelentések 2 tábla nem érhető el.');
+    }
+    $title = latinfo_home_clamp((string) ($input['title'] ?? ''), 200);
+    if ($title === '') {
+        throw new InvalidArgumentException('A hír címe kötelező.');
+    }
+    $dek = latinfo_home_clamp(events_sanitize_html_fragment((string) ($input['dek'] ?? '')), 20000);
+    $kicker = latinfo_home_clamp((string) ($input['kicker'] ?? ''), 80);
+    $imageUrl = latinfo_home_sanitize_url((string) ($input['image_url'] ?? ''));
+    $url = latinfo_home_sanitize_url((string) ($input['url'] ?? ''));
+    $isHero = !empty($input['is_hero']) ? 1 : 0;
+    $isVisible = !empty($input['is_visible']) ? 1 : 0;
+    $showOnWeb = array_key_exists('show_on_web', $input) ? (!empty($input['show_on_web']) ? 1 : 0) : 1;
+    $showOnApp = array_key_exists('show_on_app', $input) ? (!empty($input['show_on_app']) ? 1 : 0) : 1;
+    $sort = filter_var($input['sort_order'] ?? 0, FILTER_VALIDATE_INT);
+    $sortOrder = ($sort === false) ? 0 : (int) $sort;
+
+    if ($id > 0) {
+        $st = $db->prepare('
+            UPDATE `latinfo_home_news2`
+            SET `title` = ?, `dek` = ?, `kicker` = ?, `image_url` = ?, `url` = ?,
+                `is_hero` = ?, `is_visible` = ?, `show_on_web` = ?, `show_on_app` = ?, `sort_order` = ?
+            WHERE `id` = ?
+        ');
+        $st->execute([
+            $title, $dek, $kicker, $imageUrl, $url,
+            $isHero, $isVisible, $showOnWeb, $showOnApp, $sortOrder, $id,
+        ]);
+
+        return $id;
+    }
+
+    $st = $db->prepare('
+        INSERT INTO `latinfo_home_news2`
+            (`title`, `dek`, `kicker`, `image_url`, `url`, `is_hero`, `is_visible`, `show_on_web`, `show_on_app`, `sort_order`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ');
+    $st->execute([
+        $title, $dek, $kicker, $imageUrl, $url,
+        $isHero, $isVisible, $showOnWeb, $showOnApp, $sortOrder,
+    ]);
+
+    return (int) $db->lastInsertId();
+}
+
+function latinfo_home_news2_delete(PDO $db, int $id): void
+{
+    if ($id <= 0 || !latinfo_home_news2_ensure_schema($db)) {
+        return;
+    }
+    $st = $db->prepare('DELETE FROM `latinfo_home_news2` WHERE `id` = ?');
+    $st->execute([$id]);
+}
+
+/**
+ * @return bool Az új érték (true = bekapcsolva)
+ */
+function latinfo_home_news2_set_surface(PDO $db, int $id, string $field, bool $enabled): bool
+{
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Érvénytelen bejelentés.');
+    }
+    if (!latinfo_home_news2_ensure_schema($db)) {
+        throw new RuntimeException('A bejelentések 2 tábla nem érhető el.');
+    }
+    $sql = match ($field) {
+        'is_visible' => 'UPDATE `latinfo_home_news2` SET `is_visible` = ? WHERE `id` = ?',
+        'show_on_web' => 'UPDATE `latinfo_home_news2` SET `show_on_web` = ? WHERE `id` = ?',
+        'show_on_app' => 'UPDATE `latinfo_home_news2` SET `show_on_app` = ? WHERE `id` = ?',
+        default => throw new InvalidArgumentException('Érvénytelen kimenet.'),
+    };
+    $st = $db->prepare($sql);
+    $st->execute([$enabled ? 1 : 0, $id]);
+    if ($st->rowCount() === 0 && latinfo_home_news2_get($db, $id) === null) {
+        throw new InvalidArgumentException('A bejelentés nem található.');
+    }
+
+    return $enabled;
+}
+
+/**
+ * Rotáló bejelentések 2 kártyák (kezdőoldal).
+ *
+ * @param list<array<string, mixed>> $news
+ * @return array{cards: list<array<string, mixed>>, visible_count: int}
+ */
+function latinfo_home_announcements2_spotlight(array $news, string $calendarUrl, int $visibleCount = 2): array
+{
+    $visibleCount = max(1, min(4, $visibleCount));
+    $hero = [];
+    $rest = [];
+    foreach ($news as $row) {
+        $id = (int) ($row['id'] ?? 0);
+        $title = trim((string) ($row['title'] ?? ''));
+        if ($title === '') {
+            continue;
+        }
+        $url = trim((string) ($row['url'] ?? ''));
+        if ($url === '') {
+            $url = $calendarUrl;
+        }
+        $card = [
+            'id' => $id,
+            'title' => $title,
+            'kicker' => trim((string) ($row['kicker'] ?? '')),
+            'dek' => trim((string) ($row['dek'] ?? '')),
+            'url' => $url,
+        ];
+        if (!empty($row['is_hero'])) {
+            $hero[] = $card;
+        } else {
+            $rest[] = $card;
+        }
+    }
+    if ($hero !== []) {
+        shuffle($hero);
+    }
+    if ($rest !== []) {
+        shuffle($rest);
+    }
+
+    return [
+        'cards' => array_merge($hero, $rest),
+        'visible_count' => $visibleCount,
+    ];
+}
+
+/**
  * @return list<array<string, mixed>>
  */
 function latinfo_home_collectors_all(PDO $db, bool $visibleOnly = false): array
@@ -990,6 +1241,9 @@ function latinfo_home_strings(string $lang): array
         'share_image_alt' => 'Latinfo.hu – ahol a táncos közösség informálódik',
         'quick_news' => 'Bejelentések',
         'quick_news_aria' => 'Kiemelt bejelentések',
+        'quick_news2' => 'Bejelentések',
+        'quick_news2_aria' => 'Váltakozó bejelentések',
+        'empty_news2' => 'Most nincs bejelentés.',
         'today' => 'Ma',
         'tomorrow' => 'Holnap',
         'calendar' => 'Teljes naptár',
@@ -1012,6 +1266,9 @@ function latinfo_home_strings(string $lang): array
         'share_image_alt' => 'Latinfo.hu – where the dance community gets informed',
         'quick_news' => 'Announcements',
         'quick_news_aria' => 'Featured announcements',
+        'quick_news2' => 'Announcements',
+        'quick_news2_aria' => 'Rotating announcements',
+        'empty_news2' => 'No announcements right now.',
         'today' => 'Today',
         'tomorrow' => 'Tomorrow',
         'calendar' => 'Full calendar',

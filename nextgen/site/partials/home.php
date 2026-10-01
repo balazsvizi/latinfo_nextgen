@@ -5,6 +5,8 @@ declare(strict_types=1);
  * @var array<string, string> $H
  * @var list<array<string, mixed>> $enabledModules
  * @var list<array<string, mixed>> $quickNews
+ * @var list<array<string, mixed>> $announcements2Cards
+ * @var int $announcements2VisibleCount
  * @var array<string, mixed> $dayEvents
  * @var array<int, list<array{color?: string}>> $categoriesByEventId
  * @var list<array<string, mixed>> $spotlightCards
@@ -157,6 +159,7 @@ $bodyHomeClass = 'event-public-page event-public-page--home event-public-page--l
 </article>
 </div>
 <?php require $eventsPartial . '/public_dj_spotlight_script.php'; ?>
+<?php require __DIR__ . '/home_module_announcements2_script.php'; ?>
 <?php require $eventsPartial . '/event_image_orientation_script.php'; ?>
 <?php require __DIR__ . '/home_module_track_script.php'; ?>
 <?php if ($calendarPreviewById !== []): ?>

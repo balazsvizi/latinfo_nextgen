@@ -7,6 +7,8 @@ declare(strict_types=1);
  * @var array<string, mixed> $mod
  * @var array<string, string> $H
  * @var list<array<string, mixed>> $quickNews
+ * @var list<array<string, mixed>> $announcements2Cards
+ * @var int $announcements2VisibleCount
  * @var array<string, mixed> $dayEvents
  * @var array<int, list<array{color?: string}>> $categoriesByEventId
  * @var list<array<string, mixed>> $spotlightVisible
@@ -36,6 +38,8 @@ $mobileOrder = (int) ($mobileOrderIndex[$modKey] ?? ($mod['sort_order_mobile'] ?
 >
     <?php if ($modKey === 'announcements'): ?>
         <?php require __DIR__ . '/home_module_announcements.php'; ?>
+    <?php elseif ($modKey === 'announcements2'): ?>
+        <?php require __DIR__ . '/home_module_announcements2.php'; ?>
     <?php elseif ($modKey === 'today'): ?>
         <?php
         $dayWord = $H['today'];

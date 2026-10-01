@@ -44,6 +44,18 @@ function latinfo_home_module_catalog(): array
             'default_enabled' => true,
             'default_enabled_app' => true,
         ],
+        'announcements2' => [
+            'label' => 'Bejelentések 2',
+            'menu_label' => 'Bejelentések 2',
+            'editable' => true,
+            'has_item_stats' => true,
+            'column' => 'rail',
+            'default_order' => 15,
+            'default_order_mobile' => 35,
+            'default_order_app' => 35,
+            'default_enabled' => false,
+            'default_enabled_app' => false,
+        ],
         'today' => [
             'label' => 'Mai események',
             'menu_label' => 'Mai események',
@@ -131,6 +143,7 @@ function latinfo_home_module_edit_url(string $key, string $query = ''): string
 {
     $map = [
         'announcements' => 'modul_bejelentesek.php',
+        'announcements2' => 'modul_bejelentesek2.php',
         'dj_spotlight' => 'modul_dj.php',
         'rating' => 'modul_ertekeles.php',
         'donably' => 'modul_donably.php',
@@ -1227,6 +1240,7 @@ function latinfo_home_module_overview_stats(PDO $db, array $params): array
         $series = [];
         $colors = [
             'announcements' => '#3d6b4f',
+            'announcements2' => '#5a8f6a',
             'today' => '#2f6f8f',
             'tomorrow' => '#5a8a6a',
             'dj_spotlight' => '#8b5a9e',
