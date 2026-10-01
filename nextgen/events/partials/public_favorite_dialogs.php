@@ -33,7 +33,16 @@ $closeLabel = $isEn ? 'Close' : 'Bezárás';
             <span class="public-favorite-dialog__badge-heart">♥</span>
         </div>
         <h2 class="public-favorite-dialog__title" id="public-favorite-auth-title"><?= h($isEn ? 'Save to favorites' : 'Mentsd kedvencnek') ?></h2>
-        <p class="public-favorite-dialog__lead">
+        <p
+            class="public-favorite-dialog__lead"
+            data-public-favorite-auth-lead
+            data-lead-default="<?= h($isEn
+                ? 'Sign in to sync hearts across devices and edit them on your profile — or continue as a guest on this device.'
+                : 'Jelentkezz be, hogy minden eszközön lásd a kedvenceidet és a profilodon szerkeszd őket — vagy folytasd vendégként ezen a böngészőn.') ?>"
+            data-lead-filter="<?= h($isEn
+                ? 'Sign in to use the favorites filter and sync hearts across devices.'
+                : 'Jelentkezz be a kedvencek szűrő használatához, és hogy minden eszközön lásd a kedvenceidet.') ?>"
+        >
             <?= h($isEn
                 ? 'Sign in to sync hearts across devices and edit them on your profile — or continue as a guest on this device.'
                 : 'Jelentkezz be, hogy minden eszközön lásd a kedvenceidet és a profilodon szerkeszd őket — vagy folytasd vendégként ezen a böngészőn.') ?>
@@ -42,10 +51,12 @@ $closeLabel = $isEn ? 'Close' : 'Bezárás';
             <a class="public-favorite-dialog__cta public-favorite-dialog__cta--primary" href="<?= h($favoriteLoginUrl) ?>" data-public-favorite-login-link><?= h($isEn ? 'Sign in' : 'Bejelentkezés') ?></a>
             <a class="public-favorite-dialog__cta public-favorite-dialog__cta--secondary" href="<?= h($favoriteSignupUrl) ?>" data-public-favorite-signup-link><?= h($isEn ? 'Create account' : 'Regisztráció') ?></a>
         </div>
-        <div class="public-favorite-dialog__divider" role="presentation">
-            <span><?= h($isEn ? 'or' : 'vagy') ?></span>
+        <div data-public-favorite-guest-only>
+            <div class="public-favorite-dialog__divider" role="presentation">
+                <span><?= h($isEn ? 'or' : 'vagy') ?></span>
+            </div>
+            <button type="submit" class="public-favorite-dialog__text-action" value="guest"><?= h($isEn ? 'Continue without account' : 'Fiók nélkül folytatom') ?></button>
         </div>
-        <button type="submit" class="public-favorite-dialog__text-action" value="guest"><?= h($isEn ? 'Continue without account' : 'Fiók nélkül folytatom') ?></button>
     </form>
 </dialog>
 

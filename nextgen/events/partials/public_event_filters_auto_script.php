@@ -153,16 +153,6 @@
             return;
         }
 
-        var GUEST_KEY = 'latinfo_fav_guest';
-
-        function setGuestOk() {
-            try {
-                localStorage.setItem(GUEST_KEY, '1');
-            } catch (e) {
-                /* ignore */
-            }
-        }
-
         function openDialog(dlg) {
             if (!dlg || typeof dlg.showModal !== 'function') {
                 return Promise.resolve('');
@@ -210,17 +200,37 @@
             }
             var loginLink = dlg.querySelector('[data-public-favorite-login-link]');
             var signupLink = dlg.querySelector('[data-public-favorite-signup-link]');
+            var lead = dlg.querySelector('[data-public-favorite-auth-lead]');
+            var guestOnly = dlg.querySelector('[data-public-favorite-guest-only]');
             if (loginLink) {
                 loginLink.href = withFavoritesReturn(loginLink.getAttribute('href') || loginLink.href);
             }
             if (signupLink) {
                 signupLink.href = withFavoritesReturn(signupLink.getAttribute('href') || signupLink.href);
             }
-            return openDialog(dlg).then(function (val) {
-                if (val === 'guest') {
-                    setGuestOk();
-                    return true;
+            // Szűrőnél nincs vendég folytatás — csak bejelentkezés / regisztráció.
+            dlg.setAttribute('data-auth-mode', 'filter');
+            if (guestOnly) {
+                guestOnly.hidden = true;
+            }
+            if (lead) {
+                var filterLead = lead.getAttribute('data-lead-filter');
+                if (filterLead) {
+                    lead.textContent = filterLead;
                 }
+            }
+            return openDialog(dlg).then(function () {
+                dlg.removeAttribute('data-auth-mode');
+                if (guestOnly) {
+                    guestOnly.hidden = false;
+                }
+                if (lead) {
+                    var defaultLead = lead.getAttribute('data-lead-default');
+                    if (defaultLead) {
+                        lead.textContent = defaultLead;
+                    }
+                }
+                // Vendég út szándékosan nincs a szűrő flow-ban.
                 return false;
             });
         }
