@@ -19,9 +19,6 @@ declare(strict_types=1);
 $filtersPanelInline = !empty($filtersPanelInline);
 $favoritesFilterAlsoOutside = $filtersPanelInline && !empty($filters['favoritesAvailable']);
 $filtersSummaryActive = !empty($filtersActive);
-if ($favoritesFilterAlsoOutside) {
-    $filtersSummaryActive = events_public_filters_are_active_excluding_favorites($filters);
-}
 $panelClass = 'home-public__filters-panel';
 if ($view === 'mcal') {
     $panelClass .= ' home-public__filters-panel--mcal';
