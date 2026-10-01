@@ -268,6 +268,21 @@ function events_public_filters_are_active_excluding_name(array $filters): bool
 }
 
 /**
+ * Van-e aktív szűrő a kedvencek (szívecske) szűrőn kívül.
+ * A naptár toolbaron a szívecske a panelen kívül van, ezért önmagában
+ * ne nyissa ki a szűrő panelt.
+ *
+ * @param array<string, mixed> $filters
+ */
+function events_public_filters_are_active_excluding_favorites(array $filters): bool
+{
+    $saved = $filters;
+    $saved['f_favorites'] = false;
+
+    return events_public_filters_are_active($saved);
+}
+
+/**
  * Szűrőmező címke osztályai – aktív értéknél ugyanaz a kiemelés, mint az „aktív” jelvény.
  *
  * @param array<string, mixed> $filters

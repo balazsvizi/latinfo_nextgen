@@ -31,6 +31,9 @@ $viewExplicit = !empty($filters['view_explicit']);
 $filtersPanelOpen = $filtersActive;
 if ($view === 'mcal') {
     $filtersPanelOpen = events_public_filters_are_active_excluding_name($filters);
+} elseif ($view === 'cal') {
+    // A szívecske a „Szűrők megnyitása” mellett van; önmagában ne nyissa a panelt.
+    $filtersPanelOpen = events_public_filters_are_active_excluding_favorites($filters);
 }
 
 [$monthFirst, $monthLast, $monthKey] = events_admin_calendar_resolve_month((string) ($_GET['month'] ?? ''));

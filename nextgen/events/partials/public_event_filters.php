@@ -5,6 +5,7 @@ declare(strict_types=1);
 /** @var array<string, string> $filterFormHidden */
 /** @var array<string, string> $D nyelvi sztringek */
 /** @var bool $hideMapDateFiltersInPanel térkép nézetben a dátum a külön sávban van */
+/** @var bool $favoritesFilterOutsidePanel ha true, a szívecske a panelen kívül van (naptár toolbar) */
 $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
 ?>
 <section class="events-filters-shell home-public__filters" aria-label="<?= h((string) ($D['filters_aria'] ?? 'Szűrők')) ?>"
@@ -150,34 +151,12 @@ $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
             <label class="<?= h(events_public_filter_label_attr_classes($filters, 'name')) ?>" for="ev-f-name"><?= h((string) ($D['filter_name'] ?? 'Esemény neve')) ?></label>
             <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($filters['f_name']) ?>" placeholder="<?= h((string) ($D['filter_name_ph'] ?? '')) ?>" autocomplete="off">
         </div>
-        <?php if (!empty($filters['favoritesAvailable'])): ?>
-        <?php
-        $favoritesFilterActive = !empty($filters['f_favorites']);
-        $favoritesFilterLabel = (string) ($D['filter_favorites'] ?? 'Szívecske');
-        $favoritesFilterApply = (string) ($D['filter_favorites_apply'] ?? 'Csak a kedvenceimet tartalmazó események');
-        $favoritesFilterClear = (string) ($D['filter_favorites_clear'] ?? 'Kedvencek szűrő kikapcsolása');
-        $favoritesFilterTitle = $favoritesFilterActive ? $favoritesFilterClear : $favoritesFilterApply;
-        $favoritesFilterLang = (isset($lang) && $lang === 'en') ? 'en' : 'hu';
-        ?>
+        <?php if (!empty($filters['favoritesAvailable']) && empty($favoritesFilterOutsidePanel)): ?>
         <div class="events-filter-field events-filter-field--favorites">
-            <input type="hidden" name="f_favorites" id="ev-f-favorites" value="1"<?= $favoritesFilterActive ? '' : ' disabled' ?>>
-            <button
-                type="button"
-                class="events-filter-favorites-btn<?= $favoritesFilterActive ? ' is-active' : '' ?>"
-                id="ev-f-favorites-btn"
-                data-favorites-filter-btn
-                data-logged-in="<?= !empty($filters['favoritesLoggedIn']) ? '1' : '0' ?>"
-                data-has-favorites="<?= !empty($filters['favoritesHasAny']) ? '1' : '0' ?>"
-                data-lang="<?= h($favoritesFilterLang) ?>"
-                data-label-apply="<?= h($favoritesFilterApply) ?>"
-                data-label-clear="<?= h($favoritesFilterClear) ?>"
-                aria-pressed="<?= $favoritesFilterActive ? 'true' : 'false' ?>"
-                aria-label="<?= h($favoritesFilterTitle) ?>"
-                title="<?= h($favoritesFilterTitle) ?>"
-            >
-                <span class="events-filter-favorites-btn__icon" aria-hidden="true">♥</span>
-                <span class="visually-hidden"><?= h($favoritesFilterLabel) ?></span>
-            </button>
+            <?php
+            $favoritesFilterBtnExtraClass = '';
+            require __DIR__ . '/public_filter_favorites_btn.php';
+            ?>
         </div>
         <?php endif; ?>
 

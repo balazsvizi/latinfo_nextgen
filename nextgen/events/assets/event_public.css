@@ -4579,7 +4579,26 @@ body.event-public-page--home .event-public__hero-inner {
     text-decoration: underline;
 }
 
-/* Inline valtozat: nyitogomb a honap lapozo mellett, legordulo panel a fejlec alatt */
+/* Inline: favorites heart left of filters toggle; dropdown under toolbar */
+.home-public__filters-inline-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+}
+
+.home-public__filters-favorites-slot {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.home-public .events-filter-favorites-btn--toolbar {
+    width: 2.15rem;
+    height: 2.15rem;
+    font-size: 1.15rem;
+}
+
 .home-public__filters-panel--inline {
     margin: 0;
     border: 0;
@@ -4631,10 +4650,25 @@ body.event-public-page--home .event-public__hero-inner {
         flex-wrap: wrap;
     }
 
-    .home-public__filters-panel--inline {
+    .home-public__filters-inline-tools {
         flex: 1 1 100%;
         order: -1;
+        align-items: stretch;
+        gap: 0.55rem;
         margin-bottom: 0.35rem;
+    }
+
+    .home-public__filters-favorites-slot {
+        align-self: center;
+        padding-left: 0.15rem;
+    }
+
+    .home-public__filters-inline-tools > .home-public__filters-panel--inline {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .home-public__filters-panel--inline {
         border: 1px solid var(--li-border);
         border-radius: var(--ev-radius);
         background: var(--li-card);
