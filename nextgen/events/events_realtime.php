@@ -18,6 +18,7 @@ $editBase = events_url('szerkeszt.php?id=');
 $listaStatUrl = events_url('events_lista_stat.php');
 $listUrl = events_url('events_admin.php');
 $publicStatUrl = events_url('events_public_stat.php');
+$favoritesStatUrl = events_url('events_kedvencek_stat.php');
 
 $payload = array_merge(
     [
@@ -41,11 +42,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head events-cal-page__head">
         <div class="events-cal-page__head-start">
             <h2 class="events-list-title">Valós idejű áttekintés</h2>
-            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · buli, menü, statikus, CMS, modul, mobilapp, kedvenc, értesítő</p>
+            <p class="events-rt-subtitle">Utolsó <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> perc · buli, menü, statikus, CMS, modul, mobilapp, kedvencnek jelölés, értékelés, értesítő</p>
         </div>
         <div class="events-list-actions">
             <a href="<?= h(events_url('events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Statisztikák</a>
             <a href="<?= h($publicStatUrl) ?>" class="btn btn-secondary btn-sm">Nyilvános forgalom</a>
+            <a href="<?= h($favoritesStatUrl) ?>" class="btn btn-secondary btn-sm">Kedvencek</a>
             <a href="<?= h($listaStatUrl) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
             <a href="<?= h($listUrl) ?>" class="btn btn-secondary btn-sm">Események lista</a>
         </div>
@@ -137,10 +139,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <p class="events-rt-kpi__value" id="events-rt-mobilapp"><?= (int) ($snapshot['mobilapp_hits_30m'] ?? 0) ?></p>
             <p class="events-rt-kpi__hint">PWA esemény</p>
         </div>
-        <div class="events-rt-kpi events-rt-kpi--favorite">
-            <p class="events-rt-kpi__label">Kedvenc</p>
+        <div class="events-rt-kpi events-rt-kpi--favorite" data-kind-filter="favorite" title="Szűrés: kedvencnek jelölés">
+            <p class="events-rt-kpi__label">Kedvencnek jelölés</p>
             <p class="events-rt-kpi__value" id="events-rt-favorite"><?= (int) ($snapshot['favorite_hits_30m'] ?? 0) ?></p>
             <p class="events-rt-kpi__hint">szívecske</p>
+        </div>
+        <div class="events-rt-kpi events-rt-kpi--rating" data-kind-filter="rating" title="Szűrés: értékelés">
+            <p class="events-rt-kpi__label">Értékelés</p>
+            <p class="events-rt-kpi__value" id="events-rt-rating"><?= (int) ($snapshot['rating_hits_30m'] ?? 0) ?></p>
+            <p class="events-rt-kpi__hint">kezdőlap csillag</p>
         </div>
         <div class="events-rt-kpi events-rt-kpi--notice">
             <p class="events-rt-kpi__label">Értesítő</p>
@@ -156,13 +163,13 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
     <section class="events-rt-chart-panel" aria-labelledby="events-rt-chart-title">
         <h3 class="events-rt-section-title" id="events-rt-chart-title">Percenkénti aktivitás</h3>
-        <p class="events-rt-section-hint">Egyedi felhasználók, buli-, statikus oldal- és menükattintások az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</p>
+        <p class="events-rt-section-hint">Egyedi felhasználók, buli-, statikus oldal-, menü- és kedvencnek jelölések az elmúlt <?= (int) EVENTS_REALTIME_WINDOW_MINUTES ?> percben.</p>
         <div class="events-rt-chart-canvas">
             <canvas id="events-rt-chart" aria-label="Valós idejű aktivitás grafikonja"></canvas>
         </div>
     </section>
 
-    <div class="events-rt-split">
+    <div class="events-rt-split events-rt-split--triple">
         <section class="events-rt-panel" aria-labelledby="events-rt-pages-title">
             <h3 class="events-rt-section-title" id="events-rt-pages-title">Top statikus oldalak</h3>
             <p class="events-rt-section-hint">Emberi oldalmegtekintések.</p>
@@ -226,6 +233,39 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 <?php endif; ?>
             </ul>
         </section>
+
+        <section class="events-rt-panel" aria-labelledby="events-rt-fav-title">
+            <h3 class="events-rt-section-title" id="events-rt-fav-title">Top kedvencnek jelölés</h3>
+            <p class="events-rt-section-hint">Szívecskével megjelölt elemek.</p>
+            <ul class="events-rt-sources" id="events-rt-favorites">
+                <?php
+                $favTop = is_array($snapshot['top_favorites'] ?? null) ? $snapshot['top_favorites'] : [];
+                $favTotal = 0;
+                foreach ($favTop as $favRow) {
+                    $favTotal += (int) ($favRow['count'] ?? 0);
+                }
+                if ($favTop === []):
+                ?>
+                    <li class="events-rt-sources__empty">Nincs kedvencnek jelölés.</li>
+                <?php else: ?>
+                    <?php foreach ($favTop as $favRow): ?>
+                        <?php
+                        $cnt = (int) ($favRow['count'] ?? 0);
+                        $pct = $favTotal > 0 ? (int) round(($cnt / $favTotal) * 100) : 0;
+                        ?>
+                        <li class="events-rt-source">
+                            <div class="events-rt-source__meta">
+                                <span class="events-rt-source__label"><?= h((string) ($favRow['label'] ?? '')) ?></span>
+                                <span class="events-rt-source__count"><?= $cnt ?> · <?= $pct ?>%</span>
+                            </div>
+                            <div class="events-rt-source__bar events-rt-source__bar--favorite" aria-hidden="true">
+                                <span class="events-rt-source__fill" style="width: <?= $pct ?>%"></span>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </ul>
+        </section>
     </div>
 
     <?php
@@ -240,13 +280,13 @@ require_once dirname(__DIR__) . '/partials/header.php';
         'cms' => 'CMS',
         'module' => 'Modul',
         'mobilapp' => 'Mobilapp',
-        'favorite' => 'Kedvenc',
+        'favorite' => 'Kedvencnek jelölés',
         'rating' => 'Értékelés',
     ];
     ?>
     <section class="events-rt-panel events-rt-recent-panel" aria-labelledby="events-rt-recent-title">
         <h3 class="events-rt-section-title" id="events-rt-recent-title">Mire kattintanak most</h3>
-        <p class="events-rt-section-hint">Minden mért aktivitás: buli, menü, statikus, CMS, modul, mobilapp, kedvenc, értesítő. Bejelentkezett felhasználónál a név jelenik meg.</p>
+        <p class="events-rt-section-hint">Minden mért aktivitás: buli, menü, statikus, CMS, modul, mobilapp, kedvencnek jelölés, értékelés, értesítő. Bejelentkezett felhasználónál a név jelenik meg.</p>
 
         <div class="events-rt-recent-controls" id="events-rt-recent-controls">
             <div class="events-rt-recent-filters">
@@ -501,6 +541,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         var party = perMinute.map(function (r) { return Number(r.party != null ? r.party : r.page || 0); });
         var hub = perMinute.map(function (r) { return Number(r.hub || 0); });
         var nav = perMinute.map(function (r) { return Number(r.nav || 0); });
+        var favorite = perMinute.map(function (r) { return Number(r.favorite || 0); });
 
         if (chart) {
             chart.data.labels = labels;
@@ -508,6 +549,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             chart.data.datasets[1].data = party;
             chart.data.datasets[2].data = hub;
             chart.data.datasets[3].data = nav;
+            chart.data.datasets[4].data = favorite;
             chart.update('none');
             return;
         }
@@ -554,6 +596,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         label: 'Menü',
                         data: nav,
                         borderColor: '#a8784a',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        fill: false
+                    },
+                    {
+                        label: 'Kedvenc',
+                        data: favorite,
+                        borderColor: '#c4477a',
                         backgroundColor: 'transparent',
                         borderWidth: 2,
                         tension: 0.25,
@@ -726,12 +779,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
         setText('events-rt-module', Number(payload.module_hits_30m || 0));
         setText('events-rt-mobilapp', Number(payload.mobilapp_hits_30m || 0));
         setText('events-rt-favorite', Number(payload.favorite_hits_30m || 0));
+        setText('events-rt-rating', Number(payload.rating_hits_30m || 0));
         setText('events-rt-notice', Number(payload.notice_hits_30m || 0));
         setText('events-rt-bot', Number(payload.bot_hits_30m || 0));
         setText('events-rt-updated', 'Frissítve: ' + (payload.generated_at || ''));
         buildChart(payload);
         renderBarList('events-rt-pages', payload.top_pages || [], 'events-rt-source__bar--hub');
         renderBarList('events-rt-nav-list', payload.top_nav || [], 'events-rt-source__bar--nav');
+        renderBarList('events-rt-favorites', payload.top_favorites || [], 'events-rt-source__bar--favorite');
         setRecentRows(payload.recent || []);
         applyFocus();
     }
@@ -804,6 +859,20 @@ require_once dirname(__DIR__) . '/partials/header.php';
     }
 
     root.addEventListener('click', function (ev) {
+        var kindCard = ev.target.closest('[data-kind-filter]');
+        if (kindCard && root.contains(kindCard)) {
+            var kind = kindCard.getAttribute('data-kind-filter') || '';
+            var kindSelectEl = document.getElementById('events_rt_filter_kind');
+            if (kindSelectEl && kind !== '') {
+                kindSelectEl.value = kindSelectEl.value === kind ? '' : kind;
+                paintRecent();
+                var recentPanel = document.getElementById('events-rt-recent-title');
+                if (recentPanel) {
+                    recentPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+            return;
+        }
         var link = ev.target.closest('a.events-rt-who--user');
         if (link && root.contains(link)) {
             return;

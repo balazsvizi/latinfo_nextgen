@@ -6148,6 +6148,12 @@ html.events-stats-loading-active body {
 .events-rt-kpi--favorite {
     border-color: color-mix(in srgb, #c4477a 28%, var(--border, #e5e7eb));
     background: linear-gradient(180deg, #fbf4f7 0%, #fff 100%);
+    cursor: pointer;
+}
+.events-rt-kpi--rating {
+    border-color: color-mix(in srgb, #c9a227 28%, var(--border, #e5e7eb));
+    background: linear-gradient(180deg, #fbf8ef 0%, #fff 100%);
+    cursor: pointer;
 }
 .events-rt-kpi--bot {
     border-color: color-mix(in srgb, #9ca3af 28%, var(--border, #e5e7eb));
@@ -6310,6 +6316,9 @@ html.events-stats-loading-active body {
 }
 .events-rt-source__bar--nav .events-rt-source__fill {
     background: linear-gradient(90deg, #c45c26, #a8784a);
+}
+.events-rt-source__bar--favorite .events-rt-source__fill {
+    background: linear-gradient(90deg, #c4477a, #a8784a);
 }
 .events-rt-kind {
     display: inline-block;

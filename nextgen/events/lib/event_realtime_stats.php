@@ -11,6 +11,7 @@ const EVENTS_REALTIME_WINDOW_MINUTES = 30;
 const EVENTS_REALTIME_TOP_EVENTS = 0;
 const EVENTS_REALTIME_TOP_PAGES = 8;
 const EVENTS_REALTIME_TOP_NAV = 8;
+const EVENTS_REALTIME_TOP_FAVORITES = 8;
 const EVENTS_REALTIME_RECENT_LIMIT = 80;
 const EVENTS_REALTIME_FEED_POOL = 240;
 const EVENTS_REALTIME_PRESENCE_LIMIT = 24;
@@ -113,7 +114,7 @@ function events_realtime_metric_label(string $metric): string
         'cms_page' => 'CMS',
         'module_click' => 'Modul',
         'mobilapp' => 'Mobilapp',
-        'favorite' => 'Kedvenc',
+        'favorite' => 'Kedvencnek jelölés',
         'rating' => 'Értékelés',
         default => $metric !== '' ? $metric : '—',
     };
@@ -131,7 +132,7 @@ function events_realtime_kind_label(string $kind): string
         'cms' => 'CMS',
         'module' => 'Modul',
         'mobilapp' => 'Mobilapp',
-        'favorite' => 'Kedvenc',
+        'favorite' => 'Kedvencnek jelölés',
         'rating' => 'Értékelés',
         default => $kind !== '' ? $kind : '—',
     };
@@ -564,6 +565,7 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
             'nav' => 0,
             'preview' => 0,
             'external' => 0,
+            'favorite' => 0,
         ];
     };
 
@@ -589,6 +591,7 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
         'top_events' => [],
         'top_pages' => [],
         'top_nav' => [],
+        'top_favorites' => [],
         'by_source' => [],
         'recent' => [],
         'presence' => [],
@@ -655,7 +658,16 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
         foreach ($empty['per_minute'] as $row) {
             $perMinuteMap[$row['t']] = $row;
         }
-        events_realtime_fill_per_minute($db, $start, $visitor, $botReady, $tableReady, $trafficReady, $perMinuteMap);
+        events_realtime_fill_per_minute(
+            $db,
+            $start,
+            $visitor,
+            $botReady,
+            $tableReady,
+            $trafficReady,
+            $favoriteReady,
+            $perMinuteMap
+        );
 
         $perMinute = [];
         foreach ($window['minutes'] as $minute) {
@@ -695,6 +707,9 @@ function events_realtime_snapshot(PDO $db, string $visitor = 'human'): array
             'top_events' => [],
             'top_pages' => $trafficReady ? events_realtime_top_pages($db, $start, $visitor) : [],
             'top_nav' => $trafficReady ? events_realtime_top_nav($db, $start, $visitor) : [],
+            'top_favorites' => ($visitor !== 'bot' && $favoriteReady)
+                ? events_realtime_top_favorites($db, $start)
+                : [],
             'by_source' => events_realtime_by_source($db, $start, $visitor, $botReady, $tableReady),
             'recent' => $feed['recent'],
             'presence' => $feed['presence'],
@@ -876,6 +891,7 @@ function events_realtime_fill_per_minute(
     bool $botReady,
     bool $tableReady,
     bool $trafficReady,
+    bool $favoriteReady,
     array &$perMinuteMap
 ): void {
     $visitor = events_realtime_normalize_visitor($visitor);
@@ -928,6 +944,23 @@ function events_realtime_fill_per_minute(
             } elseif ($type === EVENTS_PUBLIC_TRAFFIC_NAV_CLICK) {
                 $perMinuteMap[$bucket]['nav'] += $cnt;
             }
+        }
+    }
+
+    if ($favoriteReady && $visitor !== 'bot') {
+        $sqlFav = "SELECT DATE_FORMAT(`created_at`, '%Y-%m-%d %H:%i:00') AS bucket,
+                          COUNT(*) AS cnt
+                   FROM `latinfo_favorites`
+                   WHERE `created_at` >= ?
+                   GROUP BY bucket";
+        $stmt = $db->prepare($sqlFav);
+        $stmt->execute([$start]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $bucket = (string) ($row['bucket'] ?? '');
+            if (!isset($perMinuteMap[$bucket])) {
+                continue;
+            }
+            $perMinuteMap[$bucket]['favorite'] = (int) ($row['cnt'] ?? 0);
         }
     }
 
@@ -1136,6 +1169,63 @@ function events_realtime_top_nav(PDO $db, string $start, string $visitor = 'huma
             'key' => $key,
             'label' => events_public_traffic_nav_label($key, $db),
             'count' => (int) ($row['cnt'] ?? 0),
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * @return list<array{key: string, label: string, count: int, entity_type: string, entity_id: int}>
+ */
+function events_realtime_top_favorites(PDO $db, string $start): array
+{
+    if (!events_realtime_table_ready($db, 'latinfo_favorites')) {
+        return [];
+    }
+    if (!function_exists('latinfo_favorites_entity_public_meta')) {
+        $favLib = dirname(__DIR__, 2) . '/lib/user/favorites.php';
+        if (is_file($favLib)) {
+            require_once $favLib;
+        }
+    }
+    if (!function_exists('latinfo_favorite_stats_type_labels')) {
+        $favStatsLib = __DIR__ . '/favorite_stats.php';
+        if (is_file($favStatsLib)) {
+            require_once $favStatsLib;
+        }
+    }
+    $typeLabels = function_exists('latinfo_favorite_stats_type_labels')
+        ? latinfo_favorite_stats_type_labels('hu')
+        : [];
+
+    $sql = "SELECT `entity_type`, `entity_id`, COUNT(*) AS cnt
+            FROM `latinfo_favorites`
+            WHERE `created_at` >= ?
+            GROUP BY `entity_type`, `entity_id`
+            ORDER BY cnt DESC, `entity_type` ASC, `entity_id` ASC
+            LIMIT " . (int) EVENTS_REALTIME_TOP_FAVORITES;
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$start]);
+
+    $out = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $entityType = (string) ($row['entity_type'] ?? '');
+        $entityId = (int) ($row['entity_id'] ?? 0);
+        $typeLabel = (string) ($typeLabels[$entityType] ?? ($entityType !== '' ? $entityType : 'Kedvenc'));
+        $label = $typeLabel . ($entityId > 0 ? ' #' . $entityId : '');
+        if (function_exists('latinfo_favorites_entity_public_meta') && $entityId > 0 && $entityType !== '') {
+            $meta = latinfo_favorites_entity_public_meta($db, $entityType, $entityId, 'hu');
+            if (is_array($meta) && trim((string) ($meta['label'] ?? '')) !== '') {
+                $label = trim((string) $meta['label']);
+            }
+        }
+        $out[] = [
+            'key' => $entityType . ':' . $entityId,
+            'label' => $label,
+            'count' => (int) ($row['cnt'] ?? 0),
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
         ];
     }
 
@@ -1522,7 +1612,7 @@ function events_realtime_recent_all(
                 'kind_label' => events_realtime_kind_label('favorite'),
                 'target' => $target,
                 'href' => '',
-                'detail' => 'Szívecske · ' . $typeLabel,
+                'detail' => 'Kedvencnek jelölés · ' . $typeLabel,
                 'event_id' => $entityType === 'event' ? $entityId : 0,
                 'name' => $target,
                 'event_date' => '–',
