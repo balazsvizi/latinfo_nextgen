@@ -5,8 +5,9 @@ declare(strict_types=1);
 /** @var array<string, string> $filterFormHidden */
 /** @var array<string, string> $D nyelvi sztringek */
 /** @var bool $hideMapDateFiltersInPanel térkép nézetben a dátum a külön sávban van */
-/** @var bool $favoritesFilterOutsidePanel ha true, a szívecske a panelen kívül van (naptár toolbar) */
+/** @var bool $favoritesFilterAlsoOutside ha true, a szívecske a toolbaron is ott van (input ott van) */
 $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
+$favoritesFilterAlsoOutside = !empty($favoritesFilterAlsoOutside);
 ?>
 <section class="events-filters-shell home-public__filters" aria-label="<?= h((string) ($D['filters_aria'] ?? 'Szűrők')) ?>"
     data-axis-min="<?= h($filters['axisMinStr']) ?>"
@@ -151,10 +152,12 @@ $hideMapDateFiltersInPanel = !empty($hideMapDateFiltersInPanel);
             <label class="<?= h(events_public_filter_label_attr_classes($filters, 'name')) ?>" for="ev-f-name"><?= h((string) ($D['filter_name'] ?? 'Esemény neve')) ?></label>
             <input class="events-filter-input" type="text" name="f_name" id="ev-f-name" value="<?= h($filters['f_name']) ?>" placeholder="<?= h((string) ($D['filter_name_ph'] ?? '')) ?>" autocomplete="off">
         </div>
-        <?php if (!empty($filters['favoritesAvailable']) && empty($favoritesFilterOutsidePanel)): ?>
+        <?php if (!empty($filters['favoritesAvailable'])): ?>
         <div class="events-filter-field events-filter-field--favorites">
             <?php
             $favoritesFilterBtnExtraClass = '';
+            $favoritesFilterRenderInput = !$favoritesFilterAlsoOutside;
+            $favoritesFilterPrimaryIds = !$favoritesFilterAlsoOutside;
             require __DIR__ . '/public_filter_favorites_btn.php';
             ?>
         </div>

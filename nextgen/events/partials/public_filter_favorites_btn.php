@@ -8,6 +8,8 @@ declare(strict_types=1);
  * @var array<string, string> $D
  * @var string|null $lang
  * @var string $favoritesFilterBtnExtraClass Extra CSS osztály(ok) a gombra
+ * @var bool $favoritesFilterRenderInput Hidden f_favorites mező kirajzolása (csak egyszer legyen a formban)
+ * @var bool $favoritesFilterPrimaryIds id="ev-f-favorites*" csak az első példányon
  */
 if (empty($filters['favoritesAvailable'])) {
     return;
@@ -20,6 +22,8 @@ $favoritesFilterClear = (string) ($D['filter_favorites_clear'] ?? 'Kedvencek sz�
 $favoritesFilterTitle = $favoritesFilterActive ? $favoritesFilterClear : $favoritesFilterApply;
 $favoritesFilterLang = (isset($lang) && $lang === 'en') ? 'en' : 'hu';
 $favoritesFilterBtnExtraClass = trim((string) ($favoritesFilterBtnExtraClass ?? ''));
+$favoritesFilterRenderInput = !isset($favoritesFilterRenderInput) || !empty($favoritesFilterRenderInput);
+$favoritesFilterPrimaryIds = !isset($favoritesFilterPrimaryIds) || !empty($favoritesFilterPrimaryIds);
 $favoritesFilterBtnClass = 'events-filter-favorites-btn';
 if ($favoritesFilterActive) {
     $favoritesFilterBtnClass .= ' is-active';
@@ -28,11 +32,13 @@ if ($favoritesFilterBtnExtraClass !== '') {
     $favoritesFilterBtnClass .= ' ' . $favoritesFilterBtnExtraClass;
 }
 ?>
+<?php if ($favoritesFilterRenderInput): ?>
 <input type="hidden" name="f_favorites" id="ev-f-favorites" value="1"<?= $favoritesFilterActive ? '' : ' disabled' ?>>
+<?php endif; ?>
 <button
     type="button"
     class="<?= h($favoritesFilterBtnClass) ?>"
-    id="ev-f-favorites-btn"
+    <?php if ($favoritesFilterPrimaryIds): ?>id="ev-f-favorites-btn"<?php endif; ?>
     data-favorites-filter-btn
     data-logged-in="<?= !empty($filters['favoritesLoggedIn']) ? '1' : '0' ?>"
     data-has-favorites="<?= !empty($filters['favoritesHasAny']) ? '1' : '0' ?>"
