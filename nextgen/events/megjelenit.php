@@ -12,6 +12,7 @@ require_once __DIR__ . '/lib/event_public_styles.php';
 require_once __DIR__ . '/lib/event_view_tracking.php';
 require_once __DIR__ . '/lib/event_change.php';
 require_once __DIR__ . '/lib/admin_event_calendar.php';
+require_once __DIR__ . '/lib/event_jsonld.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 
@@ -205,41 +206,22 @@ if (isLoggedIn()) {
 $eventExternalUrl = trim((string) ($event['event_url'] ?? ''));
 $eventChangeType = function_exists('events_event_change_type') ? events_event_change_type($event) : null;
 
-$jsonLd = [
-    '@context' => 'https://schema.org',
-    '@type' => 'Event',
-    'name' => (string) $event['event_name'],
-    'url' => $canonical,
-    'inLanguage' => $lang === 'en' ? 'en' : 'hu',
-];
-if ($desc !== '') {
-    $jsonLd['description'] = $desc;
-}
-if (!empty($event['event_start']) && $tsStart) {
-    $jsonLd['startDate'] = date('c', $tsStart);
-}
-if (!empty($event['event_end']) && $tsEnd) {
-    $jsonLd['endDate'] = date('c', $tsEnd);
-}
-if ($eventChangeType === events_event_change_type_cancelled()) {
-    $jsonLd['eventStatus'] = 'https://schema.org/EventCancelled';
-} elseif ($eventChangeType === events_event_change_type_modified()) {
-    $jsonLd['eventStatus'] = 'https://schema.org/EventRescheduled';
-} else {
-    $jsonLd['eventStatus'] = 'https://schema.org/EventScheduled';
-}
-if ($showVenue && ($venueName !== '' || $venueAddrLine !== '')) {
-    $jsonLd['location'] = [
-        '@type' => 'Place',
-        'name' => $venueName !== '' ? $venueName : $venueSlug,
-    ];
-    if ($venueAddrLine !== '') {
-        $jsonLd['location']['address'] = $venueAddrLine;
-    }
-}
-if ($featuredAbsolute !== '') {
-    $jsonLd['image'] = [$featuredAbsolute];
-}
+$jsonLd = events_public_event_jsonld($event, [
+    'canonical' => $canonical,
+    'description' => $desc,
+    'lang' => $lang,
+    'venue_name' => $venueName,
+    'venue_slug' => $venueSlug,
+    'venue_country' => (string) ($event['venue_country'] ?? ''),
+    'venue_city' => (string) ($event['venue_city'] ?? ''),
+    'venue_postal_code' => (string) ($event['venue_postal_code'] ?? ''),
+    'venue_address' => (string) ($event['venue_address'] ?? ''),
+    'venue_coords' => $venueCoords,
+    'featured_image_url' => $featuredAbsolute,
+    'change_type' => $eventChangeType,
+    'ts_start' => $tsStart,
+    'ts_end' => $tsEnd,
+]);
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -274,7 +256,9 @@ header('Content-Type: text/html; charset=UTF-8');
     <link rel="alternate" hreflang="x-default" href="<?= h($hreflangHu) ?>">
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
+    <?php if ($jsonLd !== null): ?>
     <script type="application/ld+json"><?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+    <?php endif; ?>
 </head>
 <body class="event-public-page"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
