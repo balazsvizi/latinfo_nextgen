@@ -18,8 +18,16 @@ $f_q = trim((string) ($_GET['f_q'] ?? ''));
 $f_city = trim((string) ($_GET['f_city'] ?? ''));
 $f_id = trim((string) ($_GET['f_id'] ?? ''));
 $f_map = trim((string) ($_GET['f_map'] ?? ''));
+$f_events = trim((string) ($_GET['f_events'] ?? ''));
+$f_upcoming = trim((string) ($_GET['f_upcoming'] ?? ''));
 if (!in_array($f_map, ['', 'yes', 'no'], true)) {
     $f_map = '';
+}
+if (!in_array($f_events, ['', 'yes', 'no'], true)) {
+    $f_events = '';
+}
+if (!in_array($f_upcoming, ['', 'yes', 'no'], true)) {
+    $f_upcoming = '';
 }
 
 $allowedOrder = ['id', 'name', 'cim', 'upcoming', 'events', 'map', 'modified'];
@@ -58,6 +66,16 @@ if ($f_map === 'yes') {
 } elseif ($f_map === 'no') {
     $where[] = 'NOT ' . $coordsSql;
 }
+if ($f_events === 'yes') {
+    $where[] = 'COALESCE(st.`event_count`, 0) > 0';
+} elseif ($f_events === 'no') {
+    $where[] = 'COALESCE(st.`event_count`, 0) = 0';
+}
+if ($f_upcoming === 'yes') {
+    $where[] = 'COALESCE(st.`upcoming_count`, 0) > 0';
+} elseif ($f_upcoming === 'no') {
+    $where[] = 'COALESCE(st.`upcoming_count`, 0) = 0';
+}
 
 $whereSql = $where !== [] ? 'WHERE ' . implode(' AND ', $where) : '';
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
@@ -77,6 +95,8 @@ $get_params = array_filter([
     'f_city' => $f_city !== '' ? $f_city : null,
     'f_id' => $f_id !== '' ? $f_id : null,
     'f_map' => $f_map !== '' ? $f_map : null,
+    'f_events' => $f_events !== '' ? $f_events : null,
+    'f_upcoming' => $f_upcoming !== '' ? $f_upcoming : null,
 ]);
 $get_params = events_admin_list_limit_merge_get_params($get_params, $listLimitValue);
 
@@ -149,7 +169,7 @@ $excerpt = static function (?string $s, int $max): string {
     return $s;
 };
 
-$hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '' || $f_map !== '';
+$hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '' || $f_map !== '' || $f_events !== '' || $f_upcoming !== '';
 $colspan = $rows !== [] ? 8 : 7;
 
 $pageTitle = 'Helyszínek';
@@ -217,6 +237,26 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <option value=""<?= $f_map === '' ? ' selected' : '' ?>>Összes</option>
                             <option value="yes"<?= $f_map === 'yes' ? ' selected' : '' ?>>Van GPS – térképen</option>
                             <option value="no"<?= $f_map === 'no' ? ' selected' : '' ?>>Nincs GPS</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="events-filter-field events-filter-field--status">
+                    <label class="events-filter-label<?= $f_events !== '' ? ' events-filter-label--active' : '' ?>" for="v-f-events">Összes esemény</label>
+                    <div class="events-filter-select-wrap">
+                        <select class="events-filter-select" name="f_events" id="v-f-events" title="Összes esemény">
+                            <option value=""<?= $f_events === '' ? ' selected' : '' ?>>Összes</option>
+                            <option value="yes"<?= $f_events === 'yes' ? ' selected' : '' ?>>Van eseménye</option>
+                            <option value="no"<?= $f_events === 'no' ? ' selected' : '' ?>>Nincs eseménye</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="events-filter-field events-filter-field--status">
+                    <label class="events-filter-label<?= $f_upcoming !== '' ? ' events-filter-label--active' : '' ?>" for="v-f-upcoming">Aktuális esemény</label>
+                    <div class="events-filter-select-wrap">
+                        <select class="events-filter-select" name="f_upcoming" id="v-f-upcoming" title="Aktuális esemény">
+                            <option value=""<?= $f_upcoming === '' ? ' selected' : '' ?>>Összes</option>
+                            <option value="yes"<?= $f_upcoming === 'yes' ? ' selected' : '' ?>>Van aktuális</option>
+                            <option value="no"<?= $f_upcoming === 'no' ? ' selected' : '' ?>>Nincs aktuális</option>
                         </select>
                     </div>
                 </div>
