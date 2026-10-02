@@ -72,6 +72,55 @@ $orderSql = match ($order) {
     default => 'v.`name` ASC, v.`id` ASC',
 };
 
+$get_params = array_filter([
+    'f_q' => $f_q !== '' ? $f_q : null,
+    'f_city' => $f_city !== '' ? $f_city : null,
+    'f_id' => $f_id !== '' ? $f_id : null,
+    'f_map' => $f_map !== '' ? $f_map : null,
+]);
+$get_params = events_admin_list_limit_merge_get_params($get_params, $listLimitValue);
+
+$listUrl = events_url('venues.php');
+if ($get_params !== []) {
+    $listUrl .= '?' . http_build_query($get_params);
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? '');
+    if ($action === 'delete_venue' || $action === 'delete_venues') {
+        if (!csrf_validate('venues_admin')) {
+            flash('error', 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.');
+            redirect($listUrl);
+        }
+        if ($action === 'delete_venue') {
+            $deleteId = (int) ($_POST['id'] ?? 0);
+            $deleted = events_venues_admin_delete($db, $deleteId);
+            if ($deleted['ok']) {
+                flash('success', 'Helyszín törölve: ' . $deleted['name']);
+            } else {
+                flash('error', $deleted['error']);
+            }
+            redirect($listUrl);
+        }
+        $ids = events_venues_admin_ids_from_post($_POST['ids'] ?? null);
+        $deleted = events_venues_admin_delete_many($db, $ids);
+        if ($deleted['ok']) {
+            $n = (int) $deleted['deleted'];
+            $skipped = (int) ($deleted['skipped'] ?? 0);
+            $msg = $n === 1
+                ? 'Helyszín törölve: ' . ($deleted['names'][0] ?? '')
+                : $n . ' helyszín törölve.';
+            if ($skipped > 0) {
+                $msg .= ' ' . $skipped . ' helyszín kihagyva (eseményhez van rendelve).';
+            }
+            flash('success', $msg);
+        } else {
+            flash('error', $deleted['error']);
+        }
+        redirect($listUrl);
+    }
+}
+
 $statsSql = events_venues_admin_stats_subquery_sql();
 $sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`, v.`modified`,
                COALESCE(st.`event_count`, 0) AS `event_count`,
@@ -89,14 +138,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $listDisplayedCount = count($rows);
 $missingCoordsCount = events_venues_geocode_candidates_count($db);
 
-$get_params = array_filter([
-    'f_q' => $f_q !== '' ? $f_q : null,
-    'f_city' => $f_city !== '' ? $f_city : null,
-    'f_id' => $f_id !== '' ? $f_id : null,
-    'f_map' => $f_map !== '' ? $f_map : null,
-]);
-$get_params = events_admin_list_limit_merge_get_params($get_params, $listLimitValue);
-
 $excerpt = static function (?string $s, int $max): string {
     $s = $s ?? '';
     if (function_exists('mb_strlen') && mb_strlen($s, 'UTF-8') > $max) {
@@ -109,7 +150,7 @@ $excerpt = static function (?string $s, int $max): string {
 };
 
 $hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '' || $f_map !== '';
-$colspan = 7;
+$colspan = $rows !== [] ? 8 : 7;
 
 $pageTitle = 'Helyszínek';
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -181,11 +222,29 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
             </div>
         </section>
+    </form>
+
+    <?php if ($rows !== []): ?>
+        <form method="post" action="<?= h($listUrl) ?>" class="venues-admin-bulk" id="venues-bulk-form">
+            <?= csrf_input('venues_admin') ?>
+            <input type="hidden" name="action" value="delete_venues">
+            <div class="venues-admin-bulk__toolbar">
+                <span class="venues-admin-bulk__selected" id="venues-selected-label" aria-live="polite">0 kiválasztva</span>
+                <button type="submit" class="btn btn-danger" id="venues-bulk-delete-btn" disabled>Kijelöltek törlése</button>
+            </div>
+            <p class="help venues-admin-bulk__hint">Csak az esemény nélküli helyszínek törölhetők. Ha egy helyszínhez van esemény, az kihagyásra kerül.</p>
+        </form>
+    <?php endif; ?>
 
         <div class="table-wrap events-admin-table-wrap">
-            <table class="sortable-table events-admin-table">
+            <table class="sortable-table events-admin-table" id="venues-admin-table">
                 <thead>
                     <tr>
+                        <?php if ($rows !== []): ?>
+                        <th scope="col" class="venues-admin-th-check">
+                            <input type="checkbox" id="venues-check-all" aria-label="Látható helyszínek kijelölése" title="Összes kijelölése">
+                        </th>
+                        <?php endif; ?>
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Cím', 'cim', $order, $dir_param, $get_params) ?></th>
@@ -218,6 +277,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $upcomingCount = (int) ($r['upcoming_count'] ?? 0);
                             ?>
                             <tr>
+                                <td class="venues-admin-td-check">
+                                    <input
+                                        type="checkbox"
+                                        class="venues-admin-row-check"
+                                        form="venues-bulk-form"
+                                        name="ids[]"
+                                        value="<?= $vid ?>"
+                                        data-events="<?= (int) $eventCount ?>"
+                                        aria-label="Kijelölés: <?= h($venueName) ?>"
+                                    >
+                                </td>
                                 <td><?= $vid ?></td>
                                 <td class="venues-td-name">
                                     <span class="venues-name-with-action">
@@ -225,6 +295,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                         <a href="<?= h($pubUrl) ?>" class="events-icon-action" title="Nyilvános megjelenítés (új lap)" aria-label="Nyilvános megjelenítés új lapon" target="_blank" rel="noopener">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                                         </a>
+                                        <form method="post" action="<?= h($listUrl) ?>" class="inline-form venues-admin-delete-form" data-name="<?= h($venueName) ?>" data-events="<?= (int) $eventCount ?>">
+                                            <?= csrf_input('venues_admin') ?>
+                                            <input type="hidden" name="action" value="delete_venue">
+                                            <input type="hidden" name="id" value="<?= $vid ?>">
+                                            <button type="submit" class="events-icon-action events-icon-action--danger" title="Helyszín törlése" aria-label="Helyszín törlése: <?= h($venueName) ?>">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4h8v2m1 0v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6h10zM10 11v6M14 11v6"/></svg>
+                                            </button>
+                                        </form>
                                     </span>
                                 </td>
                                 <td><?php
@@ -253,7 +331,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </tbody>
             </table>
         </div>
-    </form>
 </div>
 <?php require __DIR__ . '/partials/venues_filter_script.php'; ?>
 <?php require __DIR__ . '/partials/admin_list_display_limit_script.php'; ?>

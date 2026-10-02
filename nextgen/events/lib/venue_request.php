@@ -417,6 +417,158 @@ function events_venues_admin_events_filter_url(string $venueName): string
     return events_url('events_admin.php') . '?' . http_build_query(['f_venue' => $venueName]);
 }
 
+/**
+ * @param mixed $raw
+ * @return list<int>
+ */
+function events_venues_admin_ids_from_post(mixed $raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+    $ids = [];
+    foreach ($raw as $value) {
+        $id = (int) $value;
+        if ($id <= 0 || in_array($id, $ids, true)) {
+            continue;
+        }
+        $ids[] = $id;
+        if (count($ids) >= 500) {
+            break;
+        }
+    }
+
+    return $ids;
+}
+
+/**
+ * Helyszín törlése: csak ha nincs esemény hozzárendelve. linked_venue_id hivatkozások nullázódnak.
+ *
+ * @return array{ok: true, name: string}|array{ok: false, error: string}
+ */
+function events_venues_admin_delete(PDO $db, int $id): array
+{
+    $many = events_venues_admin_delete_many($db, [$id]);
+    if ($many['ok'] && (int) ($many['deleted'] ?? 0) === 1) {
+        return ['ok' => true, 'name' => $many['names'][0] ?? ('#' . $id)];
+    }
+    if (!$many['ok'] && (int) ($many['skipped'] ?? 0) === 1 && ($many['skipped_names'][0] ?? '') !== '') {
+        return [
+            'ok' => false,
+            'error' => 'A helyszín nem törölhető: eseményhez van rendelve („' . $many['skipped_names'][0] . '”). Előbb válaszd le a helyszínt az eseményeken.',
+        ];
+    }
+
+    return ['ok' => false, 'error' => $many['error'] ?? 'Helyszín nem található.'];
+}
+
+/**
+ * @param list<int> $ids
+ * @return array{
+ *   ok: true,
+ *   deleted: int,
+ *   names: list<string>,
+ *   skipped: int,
+ *   skipped_names: list<string>
+ * }|array{
+ *   ok: false,
+ *   error: string,
+ *   deleted?: int,
+ *   names?: list<string>,
+ *   skipped?: int,
+ *   skipped_names?: list<string>
+ * }
+ */
+function events_venues_admin_delete_many(PDO $db, array $ids): array
+{
+    $ids = events_venues_admin_ids_from_post($ids);
+    if ($ids === []) {
+        return ['ok' => false, 'error' => 'Nincs kiválasztott helyszín.'];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $st = $db->prepare("SELECT `id`, `name` FROM `events_venues` WHERE `id` IN ({$placeholders})");
+    $st->execute($ids);
+    $found = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $found[(int) ($row['id'] ?? 0)] = (string) ($row['name'] ?? '');
+    }
+    if ($found === []) {
+        return ['ok' => false, 'error' => 'Helyszín nem található.'];
+    }
+
+    $usageById = [];
+    $usageSt = $db->prepare("
+        SELECT `venue_id`, COUNT(*) AS `cnt`
+        FROM `events_calendar_events`
+        WHERE `venue_id` IN ({$placeholders})
+        GROUP BY `venue_id`
+    ");
+    $usageSt->execute($ids);
+    foreach ($usageSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $usageById[(int) ($row['venue_id'] ?? 0)] = (int) ($row['cnt'] ?? 0);
+    }
+
+    $toDelete = [];
+    $skipped = [];
+    foreach ($ids as $id) {
+        if (!isset($found[$id])) {
+            continue;
+        }
+        if (($usageById[$id] ?? 0) > 0) {
+            $skipped[$id] = $found[$id];
+            continue;
+        }
+        $toDelete[$id] = $found[$id];
+    }
+
+    if ($toDelete === []) {
+        $n = count($skipped);
+        $msg = $n === 1
+            ? 'A helyszín nem törölhető: eseményhez van rendelve. Előbb válaszd le a helyszínt az eseményeken.'
+            : $n . ' helyszín nem törölhető, mert eseményhez van rendelve.';
+
+        return [
+            'ok' => false,
+            'error' => $msg,
+            'deleted' => 0,
+            'names' => [],
+            'skipped' => $n,
+            'skipped_names' => array_values($skipped),
+        ];
+    }
+
+    try {
+        $db->beginTransaction();
+        $delLink = $db->prepare('UPDATE `events_venues` SET `linked_venue_id` = NULL WHERE `linked_venue_id` = ?');
+        $delVenue = $db->prepare('DELETE FROM `events_venues` WHERE `id` = ?');
+        foreach ($toDelete as $id => $_name) {
+            $delLink->execute([$id]);
+            $delVenue->execute([$id]);
+        }
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('events_venues_admin_delete_many: ' . $e->getMessage());
+
+        return ['ok' => false, 'error' => 'A törlés nem sikerült. Kérlek próbáld újra.'];
+    }
+
+    foreach ($toDelete as $id => $name) {
+        rendszer_log('helyszín', (int) $id, 'Törölve', $name);
+    }
+
+    return [
+        'ok' => true,
+        'deleted' => count($toDelete),
+        'names' => array_values($toDelete),
+        'skipped' => count($skipped),
+        'skipped_names' => array_values($skipped),
+    ];
+}
+
 function events_normalize_venue_id(PDO $db, ?int $id): ?int {
     if ($id === null || $id <= 0) {
         return null;
