@@ -22,7 +22,7 @@ if (!in_array($f_map, ['', 'yes', 'no'], true)) {
     $f_map = '';
 }
 
-$allowedOrder = ['id', 'name', 'cim', 'map', 'modified'];
+$allowedOrder = ['id', 'name', 'cim', 'upcoming', 'events', 'map', 'modified'];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && $_GET['dir'] === 'asc' ? 'asc' : 'desc';
@@ -65,13 +65,19 @@ $orderSql = match ($order) {
     'id' => "v.`id` $dirSql",
     'name' => "v.`name` $dirSql",
     'cim' => "v.`city` IS NULL, v.`city` $dirSql, v.`postal_code` IS NULL, v.`postal_code` $dirSql, v.`address` IS NULL, v.`address` $dirSql",
+    'upcoming' => "COALESCE(st.`upcoming_count`, 0) $dirSql, v.`name` ASC",
+    'events' => "COALESCE(st.`event_count`, 0) $dirSql, v.`name` ASC",
     'map' => '(CASE WHEN ' . $coordsSql . ' THEN 1 ELSE 0 END) ' . $dirSql . ', v.`name` ASC',
     'modified' => "v.`modified` $dirSql",
     default => 'v.`name` ASC, v.`id` ASC',
 };
 
-$sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`, v.`modified`
+$statsSql = events_venues_admin_stats_subquery_sql();
+$sql = "SELECT v.`id`, v.`name`, v.`slug`, v.`country`, v.`city`, v.`postal_code`, v.`address`, v.`latitude`, v.`longitude`, v.`modified`,
+               COALESCE(st.`event_count`, 0) AS `event_count`,
+               COALESCE(st.`upcoming_count`, 0) AS `upcoming_count`
         FROM `events_venues` v
+        LEFT JOIN ({$statsSql}) st ON st.`venue_id` = v.`id`
         $whereSql
         ORDER BY $orderSql";
 if ($list_limit !== null) {
@@ -103,7 +109,7 @@ $excerpt = static function (?string $s, int $max): string {
 };
 
 $hasFilters = $f_q !== '' || $f_city !== '' || $f_id !== '' || $f_map !== '';
-$colspan = 5;
+$colspan = 7;
 
 $pageTitle = 'Helyszínek';
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -183,6 +189,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Cím', 'cim', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Közzétett, még nem lezárult események"><?= sort_th('Aktuális', 'upcoming', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Összes esemény (kukába helyezettek nélkül)"><?= sort_th('Összes', 'events', $order, $dir_param, $get_params) ?></th>
                         <th class="th-center"><?= sort_th('Térkép', 'map', $order, $dir_param, $get_params) ?></th>
                         <th><?= sort_th('Módosítva', 'modified', $order, $dir_param, $get_params) ?></th>
                     </tr>
@@ -202,14 +210,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <?php foreach ($rows as $r): ?>
                             <?php
                             $vid = (int) $r['id'];
+                            $venueName = (string) ($r['name'] ?? '');
                             $editUrl = events_url('venue_szerkeszt.php?id=') . $vid;
                             $pubUrl = events_helyszin_megjelenit_url((string) ($r['slug'] ?? ''));
+                            $eventsUrl = events_venues_admin_events_filter_url($venueName);
+                            $eventCount = (int) ($r['event_count'] ?? 0);
+                            $upcomingCount = (int) ($r['upcoming_count'] ?? 0);
                             ?>
                             <tr>
                                 <td><?= $vid ?></td>
                                 <td class="venues-td-name">
                                     <span class="venues-name-with-action">
-                                        <a class="events-cell-edit" href="<?= h($editUrl) ?>"><?= h((string) $r['name']) ?></a>
+                                        <a class="events-cell-edit" href="<?= h($editUrl) ?>"><?= h($venueName) ?></a>
                                         <a href="<?= h($pubUrl) ?>" class="events-icon-action" title="Nyilvános megjelenítés (új lap)" aria-label="Nyilvános megjelenítés új lapon" target="_blank" rel="noopener">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                                         </a>
@@ -219,6 +231,20 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                     $line = events_venue_address_summary($r);
                                     echo $line !== '' ? h($excerpt($line, 200)) : '–';
                                 ?></td>
+                                <td class="td-num">
+                                    <?php if ($upcomingCount > 0): ?>
+                                        <?= $upcomingCount ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-num">
+                                    <?php if ($eventCount > 0): ?>
+                                        <a href="<?= h($eventsUrl) ?>" class="events-cell-link" title="Események szűrése erre a helyszínre"><?= $eventCount ?></a>
+                                    <?php else: ?>
+                                        <span class="text-muted">0</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="venues-td-map"><?= events_venue_coordinates_from_row($r) !== null ? '📍' : '–' ?></td>
                                 <td><?= !empty($r['modified']) ? h((string) $r['modified']) : '–' ?></td>
                             </tr>

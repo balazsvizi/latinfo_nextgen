@@ -388,6 +388,35 @@ function events_venue_calendar_event_count(PDO $db, int $venueId): int {
     return (int) $st->fetchColumn();
 }
 
+/**
+ * Helyszín lista admin – eseményszámok al-lekérdezés (összes + aktuális/közelgő).
+ */
+function events_venues_admin_stats_subquery_sql(): string
+{
+    require_once __DIR__ . '/event_status.php';
+    $publishedSql = "'" . str_replace("'", "''", events_public_post_status()) . "'";
+
+    return "
+        SELECT
+            e.`venue_id`,
+            COUNT(*) AS `event_count`,
+            COUNT(CASE
+                WHEN e.`event_status` = {$publishedSql}
+                    AND COALESCE(e.`event_end`, e.`event_start`) >= NOW()
+                THEN 1
+            END) AS `upcoming_count`
+        FROM `events_calendar_events` e
+        WHERE e.`venue_id` IS NOT NULL
+          AND e.`event_status` NOT IN ('trash')
+        GROUP BY e.`venue_id`
+    ";
+}
+
+function events_venues_admin_events_filter_url(string $venueName): string
+{
+    return events_url('events_admin.php') . '?' . http_build_query(['f_venue' => $venueName]);
+}
+
 function events_normalize_venue_id(PDO $db, ?int $id): ?int {
     if ($id === null || $id <= 0) {
         return null;
