@@ -120,11 +120,13 @@ function events_monthly_stats_available_years(PDO $db): array
             SELECT DISTINCT YEAR(`event_start`) AS y
             FROM `events_calendar_events`
             WHERE `event_start` IS NOT NULL
+              AND ' . events_stats_exclude_trash_sql('') . '
             UNION
             SELECT DISTINCT YEAR(`event_published_at`) AS y
             FROM `events_calendar_events`
             WHERE `event_published_at` IS NOT NULL
               AND `event_published_at` NOT IN (\'\', \'0000-00-00 00:00:00\')
+              AND ' . events_stats_exclude_trash_sql('') . '
             ORDER BY y DESC
         ')->fetchAll(PDO::FETCH_COLUMN);
         foreach ($rows as $raw) {

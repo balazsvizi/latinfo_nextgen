@@ -42,6 +42,38 @@ function events_is_allowed_post_status(string $s): bool {
     return in_array($s, events_allowed_post_statuses(), true);
 }
 
+/**
+ * Statisztikákban a lomtár (archivált) események kizárása.
+ * Üres alias: nyers oszlophivatkozás a FROM táblára.
+ */
+function events_stats_exclude_trash_sql(string $alias = 'e'): string
+{
+    $alias = trim($alias);
+    if ($alias !== '' && preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $alias) !== 1) {
+        return '0 = 1';
+    }
+    $col = $alias === '' ? '`event_status`' : '`' . $alias . '`.`event_status`';
+
+    return $col . " <> 'trash'";
+}
+
+/**
+ * View → esemény INNER JOIN lomtár kizárással (stat aggregációkhoz).
+ */
+function events_stats_views_non_trash_join_sql(string $viewAlias = 'v', string $eventAlias = 'e'): string
+{
+    if (
+        preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $viewAlias) !== 1
+        || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $eventAlias) !== 1
+    ) {
+        return '';
+    }
+
+    return ' INNER JOIN `events_calendar_events` `' . $eventAlias . '`'
+        . ' ON `' . $eventAlias . '`.`id` = `' . $viewAlias . '`.`esemény_id`'
+        . ' AND ' . events_stats_exclude_trash_sql($eventAlias);
+}
+
 function events_post_status_label(string $s): string {
     return match ($s) {
         'publish' => 'Közzétéve',

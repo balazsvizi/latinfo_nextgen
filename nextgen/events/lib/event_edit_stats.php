@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/event_view_tracking.php';
 require_once __DIR__ . '/admin_event_calendar.php';
+require_once __DIR__ . '/event_status.php';
 
 $nextgenMediaValueLib = dirname(__DIR__, 2) . '/lib/partner/media_value_trials.php';
 if (is_file($nextgenMediaValueLib)) {
@@ -179,25 +180,17 @@ function events_edit_stats_smart_cutoff_sql(
 }
 
 /**
- * INNER JOIN az esemény táblára smart cutoff-hoz. Üres, ha nem smart mód.
+ * INNER JOIN az esemény táblára: mindig (lomtár kizárás), smart cutoff külön AND-del jön.
+ * Korábban csak smart módban joinolt — a lomtár így „összes” módban is kiesik.
  */
 function events_edit_stats_smart_event_join_sql(
     array $params,
     string $viewAlias = 'v',
     string $eventAlias = 'e'
 ): string {
-    if (!events_edit_stats_is_smart_mode($params)) {
-        return '';
-    }
-    if (
-        preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $viewAlias) !== 1
-        || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $eventAlias) !== 1
-    ) {
-        return '';
-    }
+    unset($params);
 
-    return " INNER JOIN `events_calendar_events` {$eventAlias}"
-        . " ON {$eventAlias}.`id` = {$viewAlias}.`esemény_id`";
+    return events_stats_views_non_trash_join_sql($viewAlias, $eventAlias);
 }
 
 /** Oldalmegnyitás / Detail Page View (emberi) — adminban beállított reklámérték egységár. */
@@ -1389,6 +1382,7 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
             FROM `events_calendar_event_organizers` eo
             WHERE eo.`organizer_id` IN ({$orgPh})
         )
+          AND " . events_stats_exclude_trash_sql('e') . "
         ORDER BY e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
     ";
 
@@ -1790,7 +1784,7 @@ function events_edit_stats_all_events_list(
            AND v.`létrehozva` >= ?
            AND v.`létrehozva` < ?
            {$smartAnd}
-        WHERE e.`event_status` NOT IN ('draft', 'auto-draft')
+        WHERE e.`event_status` NOT IN ('draft', 'auto-draft', 'trash')
         GROUP BY e.`id`
         ORDER BY megtekintesek DESC, e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
         LIMIT {$limit}
@@ -1802,7 +1796,7 @@ function events_edit_stats_all_events_list(
     try {
         $totalStmt = $db->query("
             SELECT COUNT(*) FROM `events_calendar_events`
-            WHERE `event_status` NOT IN ('draft', 'auto-draft')
+            WHERE `event_status` NOT IN ('draft', 'auto-draft', 'trash')
         ");
         $eventsTotal = (int) $totalStmt->fetchColumn();
 
@@ -1821,7 +1815,7 @@ function events_edit_stats_all_events_list(
         $inPeriodStmt = $db->prepare("
             SELECT COUNT(*)
             FROM `events_calendar_events`
-            WHERE `event_status` NOT IN ('draft', 'auto-draft')
+            WHERE `event_status` NOT IN ('draft', 'auto-draft', 'trash')
               AND `event_start` IS NOT NULL
               AND DATE(`event_start`) <= ?
               AND DATE(COALESCE(`event_end`, `event_start`)) >= ?

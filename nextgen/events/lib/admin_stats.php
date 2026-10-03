@@ -53,6 +53,7 @@ function events_admin_stats_home_summary(PDO $db): array
         $byStatus = $db->query('
             SELECT `event_status` AS st, COUNT(*) AS cnt
             FROM `events_calendar_events`
+            WHERE ' . events_stats_exclude_trash_sql('') . '
             GROUP BY `event_status`
         ')->fetchAll(PDO::FETCH_ASSOC);
         foreach ($byStatus as $row) {
@@ -75,6 +76,7 @@ function events_admin_stats_home_summary(PDO $db): array
             SELECT COUNT(*)
             FROM `events_calendar_events`
             WHERE COALESCE(`event_end`, `event_start`) >= ?
+              AND ' . events_stats_exclude_trash_sql('') . '
         ');
         $stmt->execute([$todayStart]);
         $empty['upcoming'] = (int) $stmt->fetchColumn();
@@ -89,6 +91,7 @@ function events_admin_stats_home_summary(PDO $db): array
             LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
             WHERE e.`event_start` IS NOT NULL
               AND e.`event_start` >= ?
+              AND ' . events_stats_exclude_trash_sql('e') . '
             ORDER BY e.`event_start` ASC, e.`id` ASC
             LIMIT 1
         ');
@@ -106,6 +109,7 @@ function events_admin_stats_home_summary(PDO $db): array
             LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
             WHERE e.`event_start` IS NOT NULL
               AND COALESCE(e.`event_end`, e.`event_start`) >= ?
+              AND ' . events_stats_exclude_trash_sql('e') . '
             ORDER BY e.`event_start` ASC, e.`id` ASC
             LIMIT 5
         ');

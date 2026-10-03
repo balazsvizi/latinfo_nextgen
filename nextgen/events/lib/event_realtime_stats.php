@@ -2,9 +2,19 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/event_view_tracking.php';
+require_once __DIR__ . '/event_status.php';
 require_once __DIR__ . '/event_edit_stats.php';
 require_once __DIR__ . '/public_traffic.php';
 require_once __DIR__ . '/public_home_notice_stats.php';
+
+/**
+ * View tábla lomtár nélküli eseményekre szűrve (stat / realtime).
+ */
+function events_realtime_views_from_non_trash_sql(): string
+{
+    return '`events_calendar_event_views` v'
+        . events_stats_views_non_trash_join_sql('v', 'e');
+}
 
 const EVENTS_REALTIME_WINDOW_MINUTES = 30;
 /** 0 = nincs limit (legacy top_events helper). */
@@ -742,12 +752,13 @@ function events_realtime_count_unique_users_all(
     $parts = [];
     $params = [];
 
-    $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
-    $botAnd = events_realtime_bot_and($visitor, $botReady);
-    $parts[] = "SELECT `ip_hash`
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?
-                  AND `ip_hash` IS NOT NULL AND `ip_hash` <> ''
+    $metricAnd = $tableReady ? ' AND v.`metric_type` = ?' : '';
+    $botAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
+    $viewsFrom = events_realtime_views_from_non_trash_sql();
+    $parts[] = "SELECT v.`ip_hash`
+                FROM {$viewsFrom}
+                WHERE v.`létrehozva` >= ?
+                  AND v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> ''
                   {$botAnd}{$metricAnd}";
     $params[] = $start;
     if ($tableReady) {
@@ -786,11 +797,12 @@ function events_realtime_count_hits(
     bool $tableReady
 ): int {
     $visitor = events_realtime_normalize_visitor($visitor);
-    $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
-    $botAnd = events_realtime_bot_and($visitor, $botReady);
+    $metricAnd = $tableReady ? ' AND v.`metric_type` = ?' : '';
+    $botAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
+    $viewsFrom = events_realtime_views_from_non_trash_sql();
 
-    $sql = "SELECT COUNT(*) FROM `events_calendar_event_views`
-            WHERE `létrehozva` >= ?{$botAnd}{$metricAnd}";
+    $sql = "SELECT COUNT(*) FROM {$viewsFrom}
+            WHERE v.`létrehozva` >= ?{$botAnd}{$metricAnd}";
     $params = [$start];
     if ($tableReady) {
         $params[] = $metricType;
@@ -827,9 +839,10 @@ function events_realtime_count_notice_clicks(PDO $db, string $start, string $vis
 
 function events_realtime_count_bot_hits(PDO $db, string $start, bool $tableReady): int
 {
-    $metricAnd = $tableReady ? ' AND `metric_type` IN (?, ?, ?)' : '';
-    $sql = "SELECT COUNT(*) FROM `events_calendar_event_views`
-            WHERE `létrehozva` >= ? AND `is_bot` = 1{$metricAnd}";
+    $metricAnd = $tableReady ? ' AND v.`metric_type` IN (?, ?, ?)' : '';
+    $viewsFrom = events_realtime_views_from_non_trash_sql();
+    $sql = "SELECT COUNT(*) FROM {$viewsFrom}
+            WHERE v.`létrehozva` >= ? AND v.`is_bot` = 1{$metricAnd}";
     $params = [$start];
     if ($tableReady) {
         $params[] = EVENTS_VIEW_METRIC_PAGE;
@@ -895,15 +908,16 @@ function events_realtime_fill_per_minute(
     array &$perMinuteMap
 ): void {
     $visitor = events_realtime_normalize_visitor($visitor);
-    $botAnd = events_realtime_bot_and($visitor, $botReady);
-    $metricSelect = $tableReady ? '`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
+    $botAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
+    $metricSelect = $tableReady ? 'v.`metric_type`' : "'" . EVENTS_VIEW_METRIC_PAGE . "' AS `metric_type`";
+    $viewsFrom = events_realtime_views_from_non_trash_sql();
 
-    $sqlHits = "SELECT DATE_FORMAT(`létrehozva`, '%Y-%m-%d %H:%i:00') AS bucket,
+    $sqlHits = "SELECT DATE_FORMAT(v.`létrehozva`, '%Y-%m-%d %H:%i:00') AS bucket,
                        {$metricSelect},
                        COUNT(*) AS cnt
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?{$botAnd}
-                GROUP BY bucket" . ($tableReady ? ', `metric_type`' : '');
+                FROM {$viewsFrom}
+                WHERE v.`létrehozva` >= ?{$botAnd}
+                GROUP BY bucket" . ($tableReady ? ', v.`metric_type`' : '');
     $stmt = $db->prepare($sqlHits);
     $stmt->execute([$start]);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -967,11 +981,12 @@ function events_realtime_fill_per_minute(
     // Unique users per minute (buli + hub oldal).
     $parts = [];
     $params = [];
-    $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
-    $parts[] = "SELECT DATE_FORMAT(`létrehozva`, '%Y-%m-%d %H:%i:00') AS bucket, `ip_hash`
-                FROM `events_calendar_event_views`
-                WHERE `létrehozva` >= ?
-                  AND `ip_hash` IS NOT NULL AND `ip_hash` <> ''
+    $metricAnd = $tableReady ? ' AND v.`metric_type` = ?' : '';
+    $viewsFrom = events_realtime_views_from_non_trash_sql();
+    $parts[] = "SELECT DATE_FORMAT(v.`létrehozva`, '%Y-%m-%d %H:%i:00') AS bucket, v.`ip_hash`
+                FROM {$viewsFrom}
+                WHERE v.`létrehozva` >= ?
+                  AND v.`ip_hash` IS NOT NULL AND v.`ip_hash` <> ''
                   {$botAnd}{$metricAnd}";
     $params[] = $start;
     if ($tableReady) {
@@ -1065,6 +1080,7 @@ function events_realtime_top_events(PDO $db, string $start, string $visitor, boo
             WHERE v.`létrehozva` >= ?{$botAnd}{$externalMetricAnd}
             GROUP BY v.`esemény_id`
         ) ex ON ex.event_id = e.`id`
+        WHERE " . events_stats_exclude_trash_sql('e') . "
         ORDER BY total_cnt DESC, page_cnt DESC, unique_cnt DESC, e.`id` DESC
         {$limitSql}";
 
@@ -1238,11 +1254,12 @@ function events_realtime_top_favorites(PDO $db, string $start): array
 function events_realtime_by_source(PDO $db, string $start, string $visitor, bool $botReady, bool $tableReady): array
 {
     $visitor = events_realtime_normalize_visitor($visitor);
-    $botAnd = events_realtime_bot_and($visitor, $botReady);
-    $metricAnd = $tableReady ? ' AND `metric_type` = ?' : '';
-    $sql = "SELECT COALESCE(NULLIF(TRIM(`source`), ''), 'direct') AS src, COUNT(*) AS cnt
-            FROM `events_calendar_event_views`
-            WHERE `létrehozva` >= ?{$botAnd}{$metricAnd}
+    $botAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
+    $metricAnd = $tableReady ? ' AND v.`metric_type` = ?' : '';
+    $viewsFrom = events_realtime_views_from_non_trash_sql();
+    $sql = "SELECT COALESCE(NULLIF(TRIM(v.`source`), ''), 'direct') AS src, COUNT(*) AS cnt
+            FROM {$viewsFrom}
+            WHERE v.`létrehozva` >= ?{$botAnd}{$metricAnd}
             GROUP BY src
             ORDER BY cnt DESC";
     $params = [$start];
@@ -1298,7 +1315,8 @@ function events_realtime_recent_all(
                          e.`event_name`, e.`event_start`, e.`event_end`, e.`event_allday`,
                          {$metricSelect}, v.`source`, {$botSelect}, v.`ip_hash`, {$userSelect}
                   FROM `events_calendar_event_views` v
-                  LEFT JOIN `events_calendar_events` e ON e.`id` = v.`esemény_id`
+                  INNER JOIN `events_calendar_events` e ON e.`id` = v.`esemény_id`
+                    AND " . events_stats_exclude_trash_sql('e') . "
                   WHERE v.`létrehozva` >= ?{$eventsBotAnd}
                   ORDER BY v.`létrehozva` DESC
                   LIMIT {$poolLimit}";

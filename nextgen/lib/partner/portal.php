@@ -176,6 +176,7 @@ function partner_portal_fetch_events(PDO $db, int $partnerId, ?array $context = 
             FROM `events_calendar_events` e
             LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
             WHERE {$where}
+              AND e.`event_status` <> 'trash'
             ORDER BY e.`event_start` IS NULL, e.`event_start` DESC, e.`id` DESC
             {$limitSql}
         ");
