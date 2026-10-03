@@ -134,7 +134,7 @@ function events_realtime_metric_label(string $metric): string
  * Recent tábla „Dátum” oszlop:
  * - mai → „Ma” (színkeretes jelölő a UI-ban)
  * - jövőbeli → csak a napszám (színkeretes jelölő)
- * - múltbeli → hány napja volt + formázott dátum
+ * - múltbeli → csak „X napja”
  *
  * @return array{event_date: string, event_days: ?int}
  */
@@ -156,10 +156,7 @@ function events_realtime_event_date_column(?string $eventStart, string $formatte
     } elseif ($days === 0) {
         $label = 'Ma';
     } else {
-        $label = abs($days) . ' napja volt';
-        if ($formatted !== '–') {
-            $label .= ' · ' . $formatted;
-        }
+        $label = abs($days) . ' napja';
     }
 
     return [

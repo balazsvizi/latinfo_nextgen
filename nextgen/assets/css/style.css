@@ -6427,12 +6427,9 @@ html.events-stats-loading-active body {
     font-size: 0.85rem;
     color: var(--text-secondary, #6b7280);
 }
-.events-rt-recent-event-date {
-    max-width: 16rem;
-    white-space: normal;
-}
 .events-rt-recent-event-date--past {
     color: #8a6a1f;
+    font-weight: 600;
 }
 .events-rt-date-chip {
     --rt-date-c: #8b9198;
@@ -6462,7 +6459,12 @@ html.events-stats-loading-active body {
     max-width: 18rem;
 }
 .events-rt-table--recent {
-    min-width: 860px;
+    min-width: 760px;
+}
+.events-rt-table--recent th:nth-child(4),
+.events-rt-table--recent td:nth-child(4) {
+    width: 1%;
+    white-space: nowrap;
 }
 .events-rt-table--recent tbody tr[data-visitor-key] {
     box-shadow: inset 4px 0 0 var(--rt-c, transparent);
