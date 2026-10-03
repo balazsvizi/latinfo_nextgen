@@ -646,6 +646,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
         pop.style.right = '';
         pop.style.transform = '';
         pop.style.maxWidth = '';
+        pop.style.width = '';
         pop.classList.remove('events-edit-stats__info-popover--fixed');
     }
 
@@ -655,17 +656,26 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
         pop.style.transform = 'none';
         pop.style.maxWidth = '22rem';
         var rect = btn.getBoundingClientRect();
-        var width = Math.min(352, Math.max(220, window.innerWidth - 24));
-        var left = rect.left + (rect.width / 2) - (width / 2);
+        var inTableHead = !!btn.closest('th');
+        var width = Math.min(352, Math.max(240, window.innerWidth - 24));
+        var left = inTableHead
+            ? rect.left
+            : rect.left + (rect.width / 2) - (width / 2);
         left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
-        var top = rect.bottom + 8;
         pop.style.width = width + 'px';
         pop.hidden = false;
         var popH = pop.offsetHeight || 120;
-        if (top + popH > window.innerHeight - 12 && rect.top > popH + 16) {
-            top = rect.top - popH - 8;
+        var gap = 10;
+        var top;
+        // Fejlécben a felirat fölé nyitunk, hogy ne takarja a th szöveget.
+        if (inTableHead && rect.top > popH + gap + 12) {
+            top = rect.top - popH - gap;
+        } else if (rect.bottom + gap + popH <= window.innerHeight - 12) {
+            top = rect.bottom + gap;
+        } else {
+            top = Math.max(12, rect.top - popH - gap);
         }
-        pop.style.top = Math.max(12, top) + 'px';
+        pop.style.top = top + 'px';
         pop.style.left = left + 'px';
     }
 
@@ -761,11 +771,26 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
 .events-monthly-stats__th:first-child .events-monthly-stats__th-inner {
     justify-content: flex-start;
 }
-.events-edit-stats__info-popover--fixed {
-    z-index: 80;
+.events-monthly-stats .events-edit-stats__info-popover,
+.events-monthly-stats .events-edit-stats__info-popover--fixed {
+    z-index: 120;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+    font-size: 0.8125rem;
+    font-style: normal;
+    line-height: 1.45;
+    color: #1f2937;
+    background: #fff;
+    white-space: normal;
+    text-align: left;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
 }
-.events-edit-stats__info-popover--fixed::before {
+.events-monthly-stats .events-edit-stats__info-popover--fixed::before,
+.events-monthly-stats th .events-edit-stats__info-popover::before {
     display: none;
+}
+.events-monthly-stats__table th .events-edit-stats__info {
+    text-transform: none;
 }
 </style>
