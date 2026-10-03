@@ -48,7 +48,7 @@ $actionsClass = 'events-edit-form-actions'
         <a href="<?= h($eventFormCopyUrl) ?>" class="btn btn-secondary">Másolás</a>
     <?php endif; ?>
     <a href="<?= h($eventFormCancelUrl) ?>" class="btn btn-secondary">Mégse</a>
-    <?php if ($eventFormShowTrash): ?>
+    <?php if ($placement === 'footer' && $eventFormShowTrash): ?>
         <button
             type="submit"
             class="btn btn-danger events-edit-form-actions__delete"
@@ -58,7 +58,7 @@ $actionsClass = 'events-edit-form-actions'
             onclick="return confirm('Biztosan a lomtárba helyezed ezt az eseményt?');"
         >Törlés</button>
     <?php endif; ?>
-    <?php if ($eventFormShowPermanentDelete): ?>
+    <?php if ($placement === 'footer' && $eventFormShowPermanentDelete): ?>
         <button
             type="submit"
             class="btn btn-danger events-edit-form-actions__delete"
