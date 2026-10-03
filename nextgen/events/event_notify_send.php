@@ -56,6 +56,7 @@ $subject = (string) ($_POST['notify_subject'] ?? '');
 $bodyHtml = (string) ($_POST['notify_html'] ?? '');
 $templateId = (int) ($_POST['notify_template_id'] ?? 0);
 $smtpId = (int) ($_POST['notify_smtp'] ?? 0);
+$ccRaw = trim((string) ($_POST['notify_cc'] ?? ''));
 $bccRaw = trim((string) ($_POST['notify_bcc'] ?? ''));
 
 $result = events_notify_email_send(
@@ -68,7 +69,8 @@ $result = events_notify_email_send(
     $bodyHtml,
     $templateId > 0 ? $templateId : null,
     $smtpId > 0 ? $smtpId : null,
-    $bccRaw !== '' ? $bccRaw : null
+    $bccRaw !== '' ? $bccRaw : null,
+    $ccRaw
 );
 
 if ($result['ok']) {

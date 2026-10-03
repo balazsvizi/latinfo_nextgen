@@ -48,6 +48,7 @@ function events_notify_email_ensure_schema(PDO $db): bool
                     `template_id` INT UNSIGNED NULL,
                     `tracking_token` CHAR(64) NOT NULL,
                     `to_emails` TEXT NOT NULL,
+                    `cc_emails` TEXT NULL,
                     `bcc_emails` TEXT NULL,
                     `from_email` VARCHAR(255) NULL,
                     `smtp_account_id` INT UNSIGNED NULL,
@@ -66,6 +67,15 @@ function events_notify_email_ensure_schema(PDO $db): bool
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ");
         }
+
+        try {
+            $ccCol = $db->query("SHOW COLUMNS FROM `events_email_send_log` LIKE 'cc_emails'")->fetch(PDO::FETCH_ASSOC);
+            if (!$ccCol) {
+                $db->exec('ALTER TABLE `events_email_send_log` ADD COLUMN `cc_emails` TEXT NULL AFTER `to_emails`');
+            }
+        } catch (Throwable $ccEx) {
+            error_log('events_notify_email_ensure_schema cc_emails: ' . $ccEx->getMessage());
+        }
     } catch (Throwable $ex) {
         error_log('events_notify_email_ensure_schema: ' . $ex->getMessage());
 
@@ -76,6 +86,22 @@ function events_notify_email_ensure_schema(PDO $db): bool
     $done = true;
 
     return true;
+}
+
+/**
+ * @return list<string>
+ */
+function events_notify_email_parse_address_list(string $raw): array
+{
+    $out = [];
+    foreach (preg_split('/[\s,;]+/', $raw) ?: [] as $part) {
+        $part = trim(mb_strtolower($part, 'UTF-8'));
+        if ($part !== '' && filter_var($part, FILTER_VALIDATE_EMAIL)) {
+            $out[$part] = true;
+        }
+    }
+
+    return array_keys($out);
 }
 
 /**
@@ -218,7 +244,7 @@ function events_notify_email_default_smtp_id(PDO $db): int
 }
 
 /**
- * @return list<array{id: int, nev: string, kod: string, targy: string, html_tartalom: string}>
+ * @return list<array{id: int, nev: string, kod: string, targy: string, cc_emails: string, html_tartalom: string}>
  */
 function events_notify_email_list_templates(PDO $db): array
 {
@@ -227,16 +253,27 @@ function events_notify_email_list_templates(PDO $db): array
 
     try {
         $stmt = $db->prepare('
-            SELECT `id`, `név`, `kód`, `tárgy`, `html_tartalom`
+            SELECT `id`, `név`, `kód`, `tárgy`, `cc_emails`, `html_tartalom`
             FROM `finance_email_templates`
             ORDER BY (`id` = ?) DESC, (`kód` = ?) DESC, `név` ASC
         ');
         $stmt->execute([$defaultId, EVENTS_NOTIFY_EMAIL_TEMPLATE_CODE]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (Throwable $ex) {
-        error_log('events_notify_email_list_templates: ' . $ex->getMessage());
+        // Régi séma: cc_emails oszlop nélkül.
+        try {
+            $stmt = $db->prepare('
+                SELECT `id`, `név`, `kód`, `tárgy`, `html_tartalom`
+                FROM `finance_email_templates`
+                ORDER BY (`id` = ?) DESC, (`kód` = ?) DESC, `név` ASC
+            ');
+            $stmt->execute([$defaultId, EVENTS_NOTIFY_EMAIL_TEMPLATE_CODE]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $ex2) {
+            error_log('events_notify_email_list_templates: ' . $ex2->getMessage());
 
-        return [];
+            return [];
+        }
     }
 
     $out = [];
@@ -246,6 +283,7 @@ function events_notify_email_list_templates(PDO $db): array
             'nev' => (string) ($row['név'] ?? ''),
             'kod' => (string) ($row['kód'] ?? ''),
             'targy' => (string) ($row['tárgy'] ?? ''),
+            'cc_emails' => trim((string) ($row['cc_emails'] ?? '')),
             'html_tartalom' => (string) ($row['html_tartalom'] ?? ''),
         ];
     }
@@ -656,9 +694,9 @@ function events_levelsablon_placeholder_catalog_for_code(string $kod): array
 }
 
 /**
- * @param list<array{id: int, nev: string, kod: string, targy: string, html_tartalom: string}> $templates
+ * @param list<array{id: int, nev: string, kod: string, targy: string, cc_emails?: string, html_tartalom: string}> $templates
  * @param array<string, string> $placeholders
- * @return list<array{id: int, nev: string, kod: string, targy: string, html_tartalom: string}>
+ * @return list<array{id: int, nev: string, kod: string, targy: string, cc_emails: string, html_tartalom: string}>
  */
 function events_notify_email_render_templates(array $templates, array $placeholders): array
 {
@@ -669,6 +707,7 @@ function events_notify_email_render_templates(array $templates, array $placehold
             'nev' => (string) ($tpl['nev'] ?? ''),
             'kod' => (string) ($tpl['kod'] ?? ''),
             'targy' => events_notify_email_apply_placeholders((string) ($tpl['targy'] ?? ''), $placeholders),
+            'cc_emails' => trim((string) ($tpl['cc_emails'] ?? '')),
             'html_tartalom' => events_notify_email_apply_placeholders((string) ($tpl['html_tartalom'] ?? ''), $placeholders),
         ];
     }
@@ -707,19 +746,13 @@ function events_notify_email_send(
     string $bodyHtml,
     ?int $templateId,
     ?int $smtpConfigId,
-    ?string $bccOverride = null
+    ?string $bccOverride = null,
+    ?string $ccOverride = null
 ): array {
     events_notify_email_ensure_schema($db);
     events_notify_email_load_deps();
 
-    $toClean = [];
-    foreach ($toEmails as $email) {
-        $email = trim(mb_strtolower((string) $email, 'UTF-8'));
-        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $toClean[$email] = true;
-        }
-    }
-    $toList = array_keys($toClean);
+    $toList = events_notify_email_parse_address_list(implode(', ', array_map('strval', $toEmails)));
     if ($toList === []) {
         return ['ok' => false, 'error' => 'Nincs érvényes címzett e-mail cím.'];
     }
@@ -730,15 +763,9 @@ function events_notify_email_send(
         return ['ok' => false, 'error' => 'A levél tárgya és tartalma kötelező.'];
     }
 
+    $ccEmails = events_notify_email_parse_address_list((string) ($ccOverride ?? ''));
     $bccRaw = $bccOverride !== null ? $bccOverride : events_notify_email_default_bcc($db);
-    $bccList = [];
-    foreach (preg_split('/[\s,;]+/', $bccRaw) ?: [] as $part) {
-        $part = trim(mb_strtolower($part, 'UTF-8'));
-        if ($part !== '' && filter_var($part, FILTER_VALIDATE_EMAIL)) {
-            $bccList[$part] = true;
-        }
-    }
-    $bccEmails = array_keys($bccList);
+    $bccEmails = events_notify_email_parse_address_list($bccRaw);
 
     $smtpId = $smtpConfigId !== null && $smtpConfigId > 0
         ? $smtpConfigId
@@ -762,6 +789,7 @@ function events_notify_email_send(
     $mailOpts = [
         'html' => true,
         'config_id' => $smtpId,
+        'cc' => $ccEmails,
         'bcc' => $bccEmails,
     ];
     $mailResult = email_kuld($toList, $subject, $bodyWithPixel, $mailOpts);
@@ -784,15 +812,16 @@ function events_notify_email_send(
     try {
         $ins = $db->prepare('
             INSERT INTO `events_email_send_log`
-                (`event_id`, `template_id`, `tracking_token`, `to_emails`, `bcc_emails`, `from_email`,
+                (`event_id`, `template_id`, `tracking_token`, `to_emails`, `cc_emails`, `bcc_emails`, `from_email`,
                  `smtp_account_id`, `subject`, `body_html`, `organizer_ids`, `admin_id`)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $ins->execute([
             $eventId,
             $templateId !== null && $templateId > 0 ? $templateId : null,
             $token,
             implode(', ', $toList),
+            $ccEmails !== [] ? implode(', ', $ccEmails) : null,
             $bccEmails !== [] ? implode(', ', $bccEmails) : null,
             $fromEmail !== '' ? $fromEmail : null,
             $smtpId,
@@ -812,6 +841,9 @@ function events_notify_email_send(
         'Tárgy: ' . $subject,
         'Esemény ID: ' . $eventId,
     ];
+    if ($ccEmails !== []) {
+        $detailLines[] = 'CC: ' . implode(', ', $ccEmails);
+    }
     if ($bccEmails !== []) {
         $detailLines[] = 'BCC: ' . implode(', ', $bccEmails);
     }

@@ -28,5 +28,14 @@ function ensure_levelsablonok_table(PDO $db): void
     } catch (Throwable $e) {
         // nincs ALTER jog -> marad fallback tárgy a kódban
     }
+
+    try {
+        $col = $db->query("SHOW COLUMNS FROM finance_email_templates LIKE 'cc_emails'")->fetch();
+        if (!$col) {
+            $db->exec("ALTER TABLE finance_email_templates ADD COLUMN cc_emails TEXT NULL DEFAULT NULL AFTER tárgy");
+        }
+    } catch (Throwable $e) {
+        // nincs ALTER jog
+    }
 }
 

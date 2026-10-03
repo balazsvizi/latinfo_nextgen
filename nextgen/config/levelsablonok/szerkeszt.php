@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nev = trim($_POST['név'] ?? '');
     $kod = trim($_POST['kód'] ?? '');
     $targy = trim($_POST['tárgy'] ?? '');
+    $ccEmails = trim((string) ($_POST['cc_emails'] ?? ''));
     $megjegyzes = trim($_POST['megjegyzés'] ?? '');
     $html = trim($_POST['html_tartalom'] ?? '');
 
@@ -44,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'A kód csak betűt, számot, pontot, kötőjelet és alsóvonalat tartalmazhat.';
     } else {
         try {
-            $upd = $db->prepare('UPDATE finance_email_templates SET név = ?, kód = ?, tárgy = ?, megjegyzés = ?, html_tartalom = ? WHERE id = ?');
-            $upd->execute([$nev, $kod, $targy, $megjegyzes ?: null, $html, $id]);
+            $upd = $db->prepare('UPDATE finance_email_templates SET név = ?, kód = ?, tárgy = ?, cc_emails = ?, megjegyzés = ?, html_tartalom = ? WHERE id = ?');
+            $upd->execute([$nev, $kod, $targy, $ccEmails !== '' ? $ccEmails : null, $megjegyzes ?: null, $html, $id]);
             rendszer_log('levélsablon', $id, 'Módosítva', 'Kód: ' . $kod);
             flash('success', 'Levélsablon mentve.');
             redirect(nextgen_url('config/levelsablonok/szerkeszt.php?id=') . $id);
@@ -59,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sablon['név'] = $nev;
     $sablon['kód'] = $kod;
     $sablon['tárgy'] = $targy;
+    $sablon['cc_emails'] = $ccEmails;
     $sablon['megjegyzés'] = $megjegyzes;
     $sablon['html_tartalom'] = $html;
 }
@@ -107,6 +109,17 @@ require_once __DIR__ . '/../../partials/header.php';
         <div class="form-group">
             <label for="sablon_targy">Tárgy *</label>
             <input type="text" id="sablon_targy" name="tárgy" class="js-levelsablon-insert-target" value="<?= h($sablon['tárgy'] ?? '') ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="sablon_cc">Alapértelmezett CC</label>
+            <input
+                type="text"
+                id="sablon_cc"
+                name="cc_emails"
+                value="<?= h((string) ($sablon['cc_emails'] ?? '')) ?>"
+                placeholder="masolat@pelda.hu, masik@pelda.hu"
+            >
+            <p class="help">Az esemény szerkesztő levélküldő modaljában ez töltődik be a sablon kiválasztásakor / újrageneráláskor.</p>
         </div>
         <div class="form-group"><label for="sablon_megjegyzes">Megjegyzés</label><input type="text" id="sablon_megjegyzes" name="megjegyzés" value="<?= h($sablon['megjegyzés'] ?? '') ?>"></div>
 

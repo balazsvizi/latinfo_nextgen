@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nev = trim($_POST['név'] ?? '');
     $kod = trim($_POST['kód'] ?? '');
     $targy = trim($_POST['tárgy'] ?? '');
+    $ccEmails = trim((string) ($_POST['cc_emails'] ?? ''));
     $megjegyzes = trim($_POST['megjegyzés'] ?? '');
     $html = trim($_POST['html_tartalom'] ?? '');
 
@@ -22,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'A kód csak betűt, számot, pontot, kötőjelet és alsóvonalat tartalmazhat.';
     } else {
         try {
-            $stmt = $db->prepare('INSERT INTO finance_email_templates (név, kód, tárgy, megjegyzés, html_tartalom) VALUES (?, ?, ?, ?, ?)');
-            $stmt->execute([$nev, $kod, $targy, $megjegyzes ?: null, $html]);
+            $stmt = $db->prepare('INSERT INTO finance_email_templates (név, kód, tárgy, cc_emails, megjegyzés, html_tartalom) VALUES (?, ?, ?, ?, ?, ?)');
+            $stmt->execute([$nev, $kod, $targy, $ccEmails !== '' ? $ccEmails : null, $megjegyzes ?: null, $html]);
             $id = (int)$db->lastInsertId();
             rendszer_log('levélsablon', $id, 'Létrehozva', 'Kód: ' . $kod);
             flash('success', 'Levélsablon létrehozva.');
@@ -46,6 +47,11 @@ require_once __DIR__ . '/../../partials/header.php';
         <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h($_POST['név'] ?? '') ?>" required></div>
         <div class="form-group"><label>Kód *</label><input type="text" name="kód" value="<?= h($_POST['kód'] ?? '') ?>" required placeholder="pl. szamla_kikuldes"></div>
         <div class="form-group"><label>Tárgy *</label><input type="text" name="tárgy" value="<?= h($_POST['tárgy'] ?? '') ?>" required placeholder="pl. Számla: {{szamla_szam}}"></div>
+        <div class="form-group">
+            <label>Alapértelmezett CC</label>
+            <input type="text" name="cc_emails" value="<?= h((string) ($_POST['cc_emails'] ?? '')) ?>" placeholder="masolat@pelda.hu, masik@pelda.hu">
+            <p class="help">Opcionális. Az esemény levélküldőben a sablon CC mezőjeként jelenik meg.</p>
+        </div>
         <div class="form-group"><label>Megjegyzés</label><input type="text" name="megjegyzés" value="<?= h($_POST['megjegyzés'] ?? '') ?>"></div>
         <div class="form-group">
             <label>HTML szerkesztő *</label>

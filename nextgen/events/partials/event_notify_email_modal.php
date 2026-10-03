@@ -5,8 +5,8 @@ declare(strict_types=1);
  * Esemény szervezői értesítő e-mail előugró (<dialog>).
  *
  * @var int $id
- * @var list<array{id: int, nev: string, kod: string, targy: string, html_tartalom: string}> $notifyEmailTemplatesRendered
- * @var array{id: int, nev: string, kod: string, targy: string, html_tartalom: string}|null $notifyEmailSelected
+ * @var list<array{id: int, nev: string, kod: string, targy: string, cc_emails?: string, html_tartalom: string}> $notifyEmailTemplatesRendered
+ * @var array{id: int, nev: string, kod: string, targy: string, cc_emails?: string, html_tartalom: string}|null $notifyEmailSelected
  * @var list<array{id: int, nev: string, from_email: string, from_name: string, alapertelmezett: int}> $notifyEmailSmtpAccounts
  * @var int $notifyEmailSmtpId
  * @var list<string> $notifyEmailRecipients
@@ -24,6 +24,7 @@ $notifyEmailSentLogs = $notifyEmailSentLogs ?? [];
 $selectedTplId = (int) ($notifyEmailSelected['id'] ?? 0);
 $initialSubject = (string) ($notifyEmailSelected['targy'] ?? '');
 $initialHtml = (string) ($notifyEmailSelected['html_tartalom'] ?? '');
+$initialCc = trim((string) ($notifyEmailSelected['cc_emails'] ?? ''));
 $toDefault = implode(', ', $notifyEmailRecipients);
 $canSend = $notifyEmailSmtpAccounts !== [];
 $templatesListUrl = nextgen_url('config/levelsablonok/');
@@ -127,23 +128,36 @@ $templatesJson = json_encode(
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="notify_to">Címzett *</label>
+                    <input
+                        type="text"
+                        id="notify_to"
+                        name="notify_to"
+                        value="<?= h($toDefault) ?>"
+                        required
+                        autocomplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
+                        data-event-notify-recipients-url="<?= h(events_url('ajax_event_notify_recipients.php?event_id=' . (int) $id)) ?>"
+                        placeholder="email@pelda.hu, masik@pelda.hu"
+                    >
+                    <p class="help event-notify-blocked" id="event-notify-blocked" hidden></p>
+                </div>
+
                 <div class="form-row form-row-2">
                     <div class="form-group">
-                        <label for="notify_to">Címzett *</label>
+                        <label for="notify_cc">CC</label>
                         <input
                             type="text"
-                            id="notify_to"
-                            name="notify_to"
-                            value="<?= h($toDefault) ?>"
-                            required
+                            id="notify_cc"
+                            name="notify_cc"
+                            value="<?= h($initialCc) ?>"
+                            placeholder="masolat@pelda.hu"
                             autocomplete="off"
-                            data-lpignore="true"
-                            data-1p-ignore="true"
-                            data-form-type="other"
-                            data-event-notify-recipients-url="<?= h(events_url('ajax_event_notify_recipients.php?event_id=' . (int) $id)) ?>"
-                            placeholder="email@pelda.hu, masik@pelda.hu"
                         >
-                        <p class="help event-notify-blocked" id="event-notify-blocked" hidden></p>
+                        <p class="help">Alapértelmezés a kiválasztott sablonból (Újragenerálás frissíti).</p>
                     </div>
                     <div class="form-group">
                         <label for="notify_bcc">BCC</label>
@@ -199,6 +213,7 @@ $templatesJson = json_encode(
     var regenBtn = document.getElementById('event-notify-regen');
     var subjectEl = document.getElementById('notify_subject');
     var htmlEl = document.getElementById('notify_html');
+    var ccEl = document.getElementById('notify_cc');
     var form = document.getElementById('event-notify-email-form');
     var raw = document.getElementById('event-notify-templates-json');
     var templates = [];
@@ -424,6 +439,7 @@ $templatesJson = json_encode(
         }
         if (!found) return;
         if (subjectEl) subjectEl.value = found.targy || '';
+        if (ccEl) ccEl.value = found.cc_emails || '';
         var html = found.html_tartalom || '';
         if (window.eventNotifyHtmlEditor) {
             window.eventNotifyHtmlEditor.setHtml(html);
@@ -451,6 +467,11 @@ $templatesJson = json_encode(
         document.body.classList.remove('event-notify-modal-open');
     });
 
+    if (select) {
+        select.addEventListener('change', function () {
+            applyTemplate(select.value);
+        });
+    }
     if (regenBtn) {
         regenBtn.addEventListener('click', function () {
             if (select) applyTemplate(select.value);
