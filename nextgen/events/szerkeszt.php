@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             rendszer_log('esemény', $id, 'Lomtárba helyezve', $trashMsg);
             flash('success', 'Az esemény a lomtárba került.');
-            redirect(events_url('szerkeszt.php?id=') . $id);
+            redirect(events_url('events_admin.php?status=trash'));
         }
     } elseif ($formAction === 'permanent_delete') {
         [$deleted, $deleteMsg] = events_permanent_delete_event($db, $id);

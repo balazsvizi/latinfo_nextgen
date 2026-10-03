@@ -35,9 +35,29 @@ function events_admin_list_limit_from_get(int $defaultLimit = EVENTS_ADMIN_LIST_
 
 /**
  * Admin lista — megjelenítési pool FROM klauzula (legújabb N esemény id szerint).
+ *
+ * @param 'exclude_trash'|'trash_only'|'all' $statusScope
  */
-function events_admin_list_pool_from_sql(?int $listLimit): string {
-    return events_admin_table_pool_from_sql('events_calendar_events', 'e', $listLimit);
+function events_admin_list_pool_from_sql(?int $listLimit, string $statusScope = 'exclude_trash'): string {
+    if (!in_array($statusScope, ['exclude_trash', 'trash_only', 'all'], true)) {
+        $statusScope = 'exclude_trash';
+    }
+    if ($listLimit === null) {
+        return '`events_calendar_events` e';
+    }
+    $statusWhere = match ($statusScope) {
+        'trash_only' => "WHERE p.`event_status` = 'trash'",
+        'exclude_trash' => "WHERE p.`event_status` <> 'trash'",
+        default => '',
+    };
+
+    return '(
+        SELECT p.*
+        FROM `events_calendar_events` p
+        ' . $statusWhere . '
+        ORDER BY p.`id` DESC
+        LIMIT ' . (int) $listLimit . '
+    ) e';
 }
 
 function events_admin_table_pool_from_sql(string $table, string $alias, ?int $listLimit): string {
@@ -54,6 +74,16 @@ function events_admin_table_pool_from_sql(string $table, string $alias, ?int $li
         ORDER BY p.`id` DESC
         LIMIT ' . $listLimit . '
     ) ' . $alias;
+}
+
+/** Nem lomtáras / csak lomtáras események száma. */
+function events_admin_events_count_by_trash_scope(PDO $db, bool $trashOnly): int
+{
+    $sql = $trashOnly
+        ? "SELECT COUNT(*) FROM `events_calendar_events` WHERE `event_status` = 'trash'"
+        : "SELECT COUNT(*) FROM `events_calendar_events` WHERE `event_status` <> 'trash'";
+
+    return (int) $db->query($sql)->fetchColumn();
 }
 
 function events_admin_table_total_count(PDO $db, string $table): int {
@@ -385,9 +415,16 @@ function events_admin_filters_from_request(PDO $db): array {
         $where[] = '(e.event_start IS NOT NULL AND e.event_start <= ?)';
         $params[] = $f_start_to . (strlen($f_start_to) <= 10 ? ' 23:59:59' : '');
     }
-    if ($status !== '') {
+    if ($status === 'trash') {
+        $where[] = 'e.event_status = ?';
+        $params[] = 'trash';
+    } elseif ($status !== '') {
         $where[] = 'e.event_status = ?';
         $params[] = $status;
+    } else {
+        // Alap lista: lomtáras események nélkül (külön Lomtár nézet).
+        $where[] = 'e.event_status <> ?';
+        $params[] = 'trash';
     }
     if ($f_views_min !== '' && ctype_digit($f_views_min)) {
         require_once __DIR__ . '/event_view_tracking.php';
@@ -434,6 +471,7 @@ function events_admin_filters_from_request(PDO $db): array {
         'f_main_style_id' => $f_main_style_id,
         'f_supplementary_style_id' => $f_supplementary_style_id,
         'status' => $status,
+        'is_trash_view' => $status === 'trash',
         'categoryOptions' => $categoryOptions,
         'categoryParentById' => $categoryParentById,
         'tagOptions' => $tagOptions,

@@ -37,7 +37,11 @@ if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, tr
 
 $whereSql = $filters['where'] !== [] ? 'WHERE ' . implode(' AND ', $filters['where']) : '';
 $params = $filters['params'];
-$poolFromSql = events_admin_list_pool_from_sql($filters['list_limit']);
+$isTrashViewEarly = (string) ($filters['status'] ?? '') === 'trash';
+$poolFromSql = events_admin_list_pool_from_sql(
+    $filters['list_limit'],
+    $isTrashViewEarly ? 'trash_only' : 'exclude_trash'
+);
 
 $dirSql = $dir_param === 'asc' ? 'ASC' : 'DESC';
 $orderSql = match ($order) {
@@ -54,7 +58,7 @@ $orderSql = match ($order) {
 };
 
 $listLimitValue = $filters['list_limit_value'];
-$listTotalInDb = events_admin_table_total_count($db, 'events_calendar_events');
+$listTotalInDb = events_admin_events_count_by_trash_scope($db, $isTrashViewEarly);
 
 $sql = "
     SELECT e.*,
@@ -181,9 +185,14 @@ if ($rows !== []) {
 }
 
 $editBase = events_url('szerkeszt.php?id=');
+$isTrashView = !empty($filters['is_trash_view']);
 $filterFormAction = events_url('events_admin.php');
 $filterFormHidden = ['order' => $order, 'dir' => $dir_param];
-$filterClearUrl = events_url('events_admin.php');
+$filterClearUrl = $isTrashView
+    ? events_url('events_admin.php?status=trash')
+    : events_url('events_admin.php');
+$trashListUrl = events_url('events_admin.php?status=trash');
+$eventsListUrl = events_url('events_admin.php');
 $calendarViewUrl = events_admin_calendar_view_url(events_admin_calendar_view_month_key($filters), $get_params);
 $listViewUrl = events_admin_list_view_url($get_params, ['order' => $order, 'dir' => $dir_param]);
 $mapViewUrl = events_admin_map_view_url($get_params);
@@ -194,6 +203,8 @@ $listLimitDefault = EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT;
 $publicPreviewParams = $get_params;
 $publicPreviewParams['month'] = events_admin_calendar_view_month_key($filters);
 $publicHomePreviewUrl = events_public_home_url('hu', $publicPreviewParams);
+$pageListTitle = $isTrashView ? 'Lomtár' : 'Események';
+$pageTitle = $pageListTitle;
 
 $adminFloatTools = [
     [
@@ -234,7 +245,6 @@ try {
 }
 
 $mainContentClass = 'main-content main-content--fullwidth';
-$pageTitle = 'Események';
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
@@ -242,13 +252,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 
-<?php require __DIR__ . '/partials/admin_preliminary_events.php'; ?>
+<?php if (!$isTrashView): ?>
+    <?php require __DIR__ . '/partials/admin_preliminary_events.php'; ?>
+<?php endif; ?>
 
-<div class="card events-admin-card">
+<div class="card events-admin-card<?= $isTrashView ? ' events-admin-card--trash' : '' ?>">
     <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-admin-filter-form">
         <div class="events-list-head events-cal-page__head">
             <div class="events-cal-page__head-start">
-                <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
+                <?php if (!$isTrashView): ?>
+                    <?php require __DIR__ . '/partials/admin_event_view_switch.php'; ?>
+                <?php endif; ?>
                 <button
                     type="button"
                     class="events-cal-filters-toggle<?= $filtersActive ? ' is-active' : '' ?>"
@@ -273,15 +287,20 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     aria-label="Esemény neve"
                     <?= $filtersActive ? 'hidden' : '' ?>
                 >
-                <h2 class="events-list-title">Események</h2>
+                <h2 class="events-list-title"><?= h($pageListTitle) ?></h2>
             </div>
             <div class="events-list-actions">
                 <a href="<?= h($filterClearUrl) ?>" class="btn btn-secondary btn-sm">Szűrők törlése</a>
-                <a href="<?= h(events_url('events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Stat</a>
-                <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
-                <a href="<?= h($publicHomePreviewUrl) ?>" class="events-icon-action events-edit-preview-action" title="Naptár főoldal megtekintése (új lap)" aria-label="Naptár főoldal megtekintése új lapon" target="_blank" rel="noopener">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
-                </a>
+                <?php if ($isTrashView): ?>
+                    <a href="<?= h($eventsListUrl) ?>" class="btn btn-secondary btn-sm">← Események</a>
+                <?php else: ?>
+                    <a href="<?= h($trashListUrl) ?>" class="btn btn-secondary btn-sm">Lomtár</a>
+                    <a href="<?= h(events_url('events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Stat</a>
+                    <a href="<?= h(events_url('letrehoz.php')) ?>" class="btn btn-primary btn-sm">Új esemény</a>
+                    <a href="<?= h($publicHomePreviewUrl) ?>" class="events-icon-action events-edit-preview-action" title="Naptár főoldal megtekintése (új lap)" aria-label="Naptár főoldal megtekintése új lapon" target="_blank" rel="noopener">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
 

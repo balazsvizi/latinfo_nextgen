@@ -93,15 +93,24 @@ $filterFormHidden = is_array($filterFormHidden ?? null) ? $filterFormHidden : []
             <input class="events-filter-input" type="number" name="f_views_min" id="ev-f-views" value="<?= h($filters['f_views_min']) ?>" placeholder="0" min="0" step="1">
         </div>
         <div class="events-filter-field events-filter-field--status">
-            <label class="<?= h(events_filter_label_attr_classes($filters, 'status')) ?>" for="ev-f-status">Státusz</label>
-            <div class="events-filter-select-wrap">
-                <select class="events-filter-select events-filter-status" name="status" id="ev-f-status" title="Státusz szűrő">
-                    <option value="">Összes státusz</option>
-                    <?php foreach (events_allowed_post_statuses() as $st): ?>
-                        <option value="<?= h($st) ?>" <?= $filters['status'] === $st ? 'selected' : '' ?>><?= h(events_post_status_label($st)) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+            <?php if (!empty($filters['is_trash_view'])): ?>
+                <label class="events-filter-label events-filter-label--active" for="ev-f-status-trash">Státusz</label>
+                <input type="hidden" name="status" value="trash">
+                <input class="events-filter-input" type="text" id="ev-f-status-trash" value="Lomtár" readonly>
+            <?php else: ?>
+                <label class="<?= h(events_filter_label_attr_classes($filters, 'status')) ?>" for="ev-f-status">Státusz</label>
+                <div class="events-filter-select-wrap">
+                    <select class="events-filter-select events-filter-status" name="status" id="ev-f-status" title="Státusz szűrő">
+                        <option value="">Összes státusz</option>
+                        <?php foreach (events_allowed_post_statuses() as $st): ?>
+                            <?php if ($st === 'trash') {
+                                continue;
+                            } ?>
+                            <option value="<?= h($st) ?>" <?= $filters['status'] === $st ? 'selected' : '' ?>><?= h(events_post_status_label($st)) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="events-filter-field events-filter-field--full">
