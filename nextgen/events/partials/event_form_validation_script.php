@@ -16,10 +16,33 @@
         if (pendingSaveAction === 'publish') {
             return publishStatus;
         }
+        if (pendingSaveAction === 'preliminary') {
+            return preliminaryStatus;
+        }
         if (pendingSaveAction === 'draft') {
             return 'draft';
         }
         return statusSelect ? (statusSelect.value || '') : '';
+    }
+
+    function preparePreliminaryForSave() {
+        if (statusSelect) {
+            statusSelect.value = preliminaryStatus;
+        }
+        if (preliminaryFill) {
+            preliminaryFill.checked = true;
+        }
+        var api = contentApi();
+        var template = preliminaryFill
+            ? (preliminaryFill.getAttribute('data-preliminary-content-template') || '')
+            : '';
+        if (api && template !== '') {
+            var currentPlain = stripTags(api.getData());
+            if (currentPlain === '' || currentPlain.indexOf('előzetes információ') !== -1) {
+                api.setData(template);
+            }
+        }
+        syncRequiredFields();
     }
 
     function contentApi() {
@@ -132,6 +155,9 @@
             return;
         }
         pendingSaveAction = submitter.name === 'save_action' ? (submitter.value || '') : '';
+        if (pendingSaveAction === 'preliminary') {
+            preparePreliminaryForSave();
+        }
         syncRequiredFields();
         var api = contentApi();
         if (api && contentInp) {

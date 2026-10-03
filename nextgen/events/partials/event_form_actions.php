@@ -3,21 +3,24 @@ declare(strict_types=1);
 /** @var string|null $eventFormCopyUrl Másolás link (szerkesztésnél) */
 /** @var string $eventFormCancelUrl Mégse link */
 /** @var string $eventFormActionsPlacement sidebar|footer */
-/** @var bool $eventFormIsCopy Másolat létrehozása (két mentés gomb) */
+/** @var bool $eventFormIsCopy Másolat létrehozása (státuszos mentés gombok) */
+/** @var bool $eventFormShowStatusSaveActions Létrehozás: Mentés / Előzetes / Közzététel */
 /** @var bool $eventFormShowNotifyEmail Szerkesztő: szervezői értesítő e-mail gomb */
 $eventFormCancelUrl = $eventFormCancelUrl ?? events_url('events_admin.php');
 $eventFormCopyUrl = $eventFormCopyUrl ?? null;
 $eventFormIsCopy = !empty($eventFormIsCopy);
+$eventFormShowStatusSaveActions = !empty($eventFormShowStatusSaveActions) || $eventFormIsCopy;
 $eventFormShowNotifyEmail = !empty($eventFormShowNotifyEmail);
 $placement = $eventFormActionsPlacement ?? 'footer';
 $actionsClass = 'events-edit-form-actions'
     . ($placement === 'sidebar' ? ' events-edit-form-actions--sidebar' : '')
-    . ($eventFormIsCopy ? ' events-edit-form-actions--copy' : '')
+    . ($eventFormShowStatusSaveActions ? ' events-edit-form-actions--copy' : '')
     . ($eventFormShowNotifyEmail ? ' events-edit-form-actions--with-email' : '');
 ?>
 <div class="<?= h($actionsClass) ?>">
-    <?php if ($eventFormIsCopy): ?>
+    <?php if ($eventFormShowStatusSaveActions): ?>
         <button type="submit" name="save_action" value="draft" class="btn btn-secondary">Mentés</button>
+        <button type="submit" name="save_action" value="preliminary" class="btn btn-secondary events-edit-form-actions__preliminary">Előzetes</button>
         <button type="submit" name="save_action" value="publish" class="btn btn-primary">Mentés és közzététel</button>
     <?php else: ?>
         <button type="submit" class="btn btn-primary events-edit-form-actions__save" name="form_action" value="save">Mentés</button>

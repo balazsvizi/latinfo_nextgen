@@ -72,11 +72,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
     [$row, $err, $organizerIds, $categoryIds, $tagIds, $mainStyleIds, $supplementaryStyleIds] = events_row_from_request($db, $defaults, null);
-    if ($eventFormIsCopy) {
-        $saveAction = (string) ($_POST['save_action'] ?? 'draft');
-        $row['event_status'] = $saveAction === 'publish'
-            ? events_public_post_status()
-            : events_default_post_status();
+    $saveAction = (string) ($_POST['save_action'] ?? '');
+    if ($saveAction !== '' || $eventFormIsCopy) {
+        $row['event_status'] = match ($saveAction) {
+            'publish' => events_public_post_status(),
+            'preliminary' => events_preliminary_post_status(),
+            default => events_default_post_status(),
+        };
+        if ($row['event_status'] === events_preliminary_post_status()) {
+            $contentPlain = trim(strip_tags((string) ($row['event_content'] ?? '')));
+            if ($contentPlain === '') {
+                $row['event_content'] = events_preliminary_content_template();
+            }
+        }
         if ($err === null) {
             $err = events_validate_publish_requires_event_url($row);
         }
@@ -195,6 +203,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php
         $eventFormAutoSlug = true;
         $eventFormCancelUrl = events_url('events_admin.php');
+        $eventFormShowStatusSaveActions = true;
         require __DIR__ . '/partials/event_fields.php';
         $eventFormActionsPlacement = 'footer';
         require __DIR__ . '/partials/event_form_actions.php';
