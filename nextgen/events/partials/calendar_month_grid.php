@@ -119,11 +119,9 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             href="<?= h($eventUrl) ?>"
                                             <?= $calendarPublicPreview ? 'data-preview-id="' . $eid . '" aria-haspopup="dialog"' : '' ?>
                                             <?= $openExternal ? 'target="_blank" rel="noopener"' : 'target="_self"' ?>
-                                            title="<?= h((string) ($ev['event_name'] ?? '')) ?><?= $isPubliclyVisible && !$isPreliminary ? '' : ' (' . $statusLabel . ')' ?><?= $isOwnEvent ? ' · Saját' : '' ?>"
+                                            title="<?= h((string) ($ev['event_name'] ?? '')) ?><?= (!$calendarPublicPreview && !$isPublished) ? ' (' . $statusLabel . ')' : '' ?><?= $isOwnEvent ? ' · Saját' : '' ?>"
                                         >
-                                            <?php if ((!$isPublished || $isPreliminary) && !$calendarPublicPreview): ?>
-                                                <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
-                                            <?php elseif ($isPreliminary && $calendarPublicPreview): ?>
+                                            <?php if (!$calendarPublicPreview && !$isPublished): ?>
                                                 <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
                                             <?php endif; ?>
                                             <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>
@@ -202,7 +200,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                                 <?= $calendarPublicPreview ? 'data-preview-id="' . $eid . '" aria-haspopup="dialog"' : '' ?>
                                                 target="<?= h($barTarget) ?>"
                                                 <?= $barRel !== '' ? 'rel="' . h($barRel) . '"' : '' ?>
-                                                title="<?= h($barTitle) ?><?= $isPubliclyVisible && !$isPreliminary ? '' : ' (' . $statusLabel . ')' ?>"
+                                                title="<?= h($barTitle) ?><?= (!$calendarPublicPreview && !$isPublished) ? ' (' . $statusLabel . ')' : '' ?>"
                                                 aria-label="<?= h($barTitle) ?>"
                                             ></a>
                                         <?php endif; ?>
@@ -253,9 +251,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                 class="<?= h($labelClasses) ?>"
                                 style="<?= h($eventStyle) ?>;--cal-col-start:<?= $colStart ?>;--cal-span:<?= $colSpan ?>;--cal-lane:<?= $lane ?>"
                             >
-                                <?php if ((!$isPublished || $isPreliminary) && !$calendarPublicPreview): ?>
-                                    <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
-                                <?php elseif ($isPreliminary && $calendarPublicPreview): ?>
+                                <?php if (!$calendarPublicPreview && !$isPublished): ?>
                                     <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
                                 <?php endif; ?>
                                 <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>

@@ -6708,6 +6708,24 @@ a.home-public-map-popup__title:hover {
     display: none !important;
 }
 
+.events-cal-preview__preliminary {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 0 0.45rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #075985;
+    background: #e0f2fe;
+    border: 1px solid #7dd3fc;
+}
+
+.events-cal-preview__preliminary[hidden] {
+    display: none !important;
+}
+
 .events-cal-preview__title {
     margin: 0;
     font-family: var(--ev-font);

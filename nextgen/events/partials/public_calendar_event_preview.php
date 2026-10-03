@@ -40,6 +40,7 @@ $previewFavLabelAdd = $previewFavoriteLang === 'en' ? 'Add to favorites' : 'Kedv
                     </div>
                 </div>
             </div>
+            <p class="events-cal-preview__preliminary" id="events-cal-preview-preliminary" hidden></p>
             <div class="events-cal-preview__title-row">
                 <h2 class="events-cal-preview__title" id="events-cal-preview-title">
                     <a class="events-cal-preview__title-link" id="events-cal-preview-title-link" href="#"></a>
@@ -105,6 +106,7 @@ $previewFavLabelAdd = $previewFavoriteLang === 'en' ? 'Add to favorites' : 'Kedv
     var mediaLinkEl = document.getElementById('events-cal-preview-media-link');
     var toplineEl = document.getElementById('events-cal-preview-topline');
     var metaEl = document.getElementById('events-cal-preview-meta');
+    var preliminaryEl = document.getElementById('events-cal-preview-preliminary');
     var changeWrap = document.getElementById('events-cal-preview-change');
     var changeIconEl = document.getElementById('events-cal-preview-change-icon');
     var changeBadgeEl = document.getElementById('events-cal-preview-change-badge');
@@ -260,6 +262,16 @@ $previewFavLabelAdd = $previewFavoriteLang === 'en' ? 'Add to favorites' : 'Kedv
         metaEl.hidden = metaText === '';
         var catCount = fillCategories(catsEl, data.categories);
         toplineEl.hidden = metaText === '' && catCount === 0;
+
+        if (preliminaryEl) {
+            var prelimLabel = data.preliminary ? String(data.preliminaryLabel || '').trim() : '';
+            if (prelimLabel === '' && data.preliminary) {
+                prelimLabel = 'Előzetes';
+            }
+            preliminaryEl.textContent = prelimLabel;
+            preliminaryEl.hidden = prelimLabel === '';
+            dialog.classList.toggle('events-cal-preview--preliminary', prelimLabel !== '');
+        }
 
         if (changeWrap && changeTitleEl && changeNoteEl) {
             var change = data.change || null;

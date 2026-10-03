@@ -293,6 +293,7 @@ function events_calendar_preview_build_map(
                 $accent = trim($m[1]);
             }
         }
+        $isPreliminary = events_admin_calendar_event_is_preliminary($ev);
         $entry = [
             'name' => (string) ($ev['event_name'] ?? ''),
             'date' => events_admin_format_datum_cell($ev),
@@ -312,6 +313,10 @@ function events_calendar_preview_build_map(
             'image' => events_calendar_preview_featured_image_url($ev),
             'url' => events_public_calendar_event_url($ev, EVENTS_VIEW_SOURCE_CAL_PREVIEW),
             'change' => $changePayload,
+            'preliminary' => $isPreliminary,
+            'preliminaryLabel' => $isPreliminary
+                ? (string) ($strings['preliminary_badge'] ?? ($lang === 'en' ? 'Preliminary' : 'Előzetes'))
+                : '',
         ];
         if ($favoritesLibReady) {
             $venueId = (int) ($ev['venue_id'] ?? 0);

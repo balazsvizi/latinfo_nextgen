@@ -30,9 +30,6 @@ require __DIR__ . '/calendar_month_grid.php';
                 ?>
                 <li role="listitem"<?= $isPreliminaryUndated ? ' class="events-cal__event--preliminary"' : '' ?>>
                     <a class="<?= h($undatedLinkClass) ?>" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" data-preview-id="<?= $eid ?>" aria-haspopup="dialog">
-                        <?php if ($isPreliminaryUndated): ?>
-                            <span class="events-cal__event-status event-status-badge <?= h(events_post_status_badge_class(events_preliminary_post_status())) ?>"><?= h(events_post_status_label(events_preliminary_post_status())) ?></span>
-                        <?php endif; ?>
                         <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>
                         <span class="<?= h($undatedNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                     </a>
