@@ -37,6 +37,11 @@ if (!defined('EVENTS_VIEW_SOURCE_LIST')) {
             $listLang = $listLang ?? ($lang ?? 'hu');
             $hasChange = events_event_change_active($ev);
             $listCardClass = 'home-public__list-card';
+            $isPreliminaryCard = function_exists('events_is_preliminary_post_status')
+                && events_is_preliminary_post_status((string) ($ev['event_status'] ?? ''));
+            if ($isPreliminaryCard) {
+                $listCardClass .= ' home-public__list-card--preliminary';
+            }
             if ($hasChange) {
                 $listCardClass .= events_event_change_list_card_class($ev);
                 $changeStyle = events_event_change_calendar_block_style($ev);
@@ -68,6 +73,9 @@ if (!defined('EVENTS_VIEW_SOURCE_LIST')) {
                     </div>
                     <div class="home-public__list-body">
                         <?php require __DIR__ . '/public_event_list_change.php'; ?>
+                        <?php if ($isPreliminaryCard): ?>
+                            <span class="home-public__list-preliminary-badge">Előzetes</span>
+                        <?php endif; ?>
                         <span class="home-public__list-date"><?= h($dateLabel) ?></span>
                         <span class="<?= h($listNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                         <?php if ($venueLine !== ''): ?>

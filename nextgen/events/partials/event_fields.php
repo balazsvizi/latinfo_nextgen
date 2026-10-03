@@ -74,8 +74,10 @@ $coverPreviewCaption = $coverPreview['source'] === 'url'
     : ($coverPreview['source'] === 'eventpic'
         ? 'Előnézet az eventpics borító alapján (nincs kitöltött URL).'
         : '');
-$canPreviewPublic = ($e['event_status'] ?? '') === events_public_post_status()
+$canPreviewPublic = events_is_publicly_visible_post_status((string) ($e['event_status'] ?? ''))
     && trim((string) ($e['event_slug'] ?? '')) !== '';
+$isPreliminaryStatus = events_is_preliminary_post_status((string) ($e['event_status'] ?? ''));
+$preliminaryContentTemplate = events_preliminary_content_template();
 $eventFormAutoSlug = !empty($eventFormAutoSlug);
 $eventSlugRefreshTitle = 'Slug frissítése (név + kezdő dátum), vágólapra másolva';
 $organizerFinanceForJs = [];
@@ -219,9 +221,29 @@ require __DIR__ . '/wp_token_field.php';
 </div>
 <div class="events-edit-panel events-edit-panel--tone-content">
     <h3 class="events-edit-panel__title">Leírás</h3>
-    <div class="form-group">
-        <label class="visually-hidden" for="event_content">Leírás (HTML) *</label>
-        <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="14" required><?= h($e['event_content']) ?></textarea>
+    <div class="form-group events-edit-preliminary-content">
+        <label class="events-edit-checkbox-label" for="event_preliminary_content_fill">
+            <input
+                type="checkbox"
+                id="event_preliminary_content_fill"
+                data-preliminary-content-template="<?= h($preliminaryContentTemplate) ?>"
+                <?= $isPreliminaryStatus && trim(strip_tags((string) ($e['event_content'] ?? ''))) !== ''
+                    && str_contains((string) ($e['event_content'] ?? ''), 'előzetes információ')
+                    ? 'checked'
+                    : '' ?>
+            >
+            <span>Ez még csak egy előzetes infó – részletek később lesznek erről az eseményről (szöveg beillesztése a leírásba)</span>
+        </label>
+        <label class="visually-hidden" for="event_content">Leírás (HTML)<?= $isPreliminaryStatus ? '' : ' *' ?></label>
+        <textarea
+            id="event_content"
+            name="event_content"
+            class="js-html-editor-source"
+            rows="14"
+            data-required-unless-preliminary="1"
+            <?= $isPreliminaryStatus ? '' : 'required' ?>
+        ><?= h($e['event_content']) ?></textarea>
+        <p class="help">Előzetes státusznál a leírás nem kötelező; a pipával kitölthető az előzetes tájékoztató szöveg.</p>
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-cost events-edit-cost-block">

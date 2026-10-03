@@ -2098,6 +2098,18 @@ tr:hover td { background: var(--bg); }
     background-color: #f1f5f9 !important;
     box-shadow: inset 3px 0 0 var(--events-cal-accent, #94a3b8), 0 2px 6px rgba(0, 0, 0, 0.08);
 }
+.events-cal__event-link--preliminary,
+.events-cal__week-bar-label--preliminary {
+    opacity: 0.48;
+    filter: saturate(0.55);
+}
+.events-cal__event-link--preliminary:hover {
+    opacity: 0.72;
+    filter: saturate(0.75) brightness(1.03);
+}
+.events-cal__event--preliminary .events-cal__event-status {
+    opacity: 1;
+}
 .events-cal__event-status {
     display: inline-block;
     margin-bottom: 0.2rem;
@@ -2276,6 +2288,11 @@ tr:hover td { background: var(--bg); }
     color: #065f46;
     border-color: #6ee7b7;
 }
+.event-status-badge--preliminary {
+    background: #e0f2fe;
+    color: #075985;
+    border-color: #7dd3fc;
+}
 .event-status-badge--draft {
     background: #f1f5f9;
     color: #475569;
@@ -2317,6 +2334,11 @@ tr:hover td { background: var(--bg); }
 }
 .event-status-dot.event-status-badge--publish {
     background: #10b981;
+    border-color: transparent;
+    color: transparent;
+}
+.event-status-dot.event-status-badge--preliminary {
+    background: #0ea5e9;
     border-color: transparent;
     color: transparent;
 }
@@ -7338,6 +7360,35 @@ a.events-rt-person:hover .events-rt-person__name {
 }
 .events-organizer-drafts__empty {
     margin: 0;
+}
+.events-preliminary-list {
+    margin-bottom: 1rem;
+}
+.events-preliminary-list__empty {
+    margin: 0;
+}
+.events-preliminary-list__days {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: #0369a1;
+}
+.events-preliminary-list__days--past {
+    color: #64748b;
+    font-weight: 500;
+}
+.events-edit-preliminary-content .events-edit-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 0.65rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    color: #334155;
+    cursor: pointer;
+}
+.events-edit-preliminary-content .events-edit-checkbox-label input {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
 }
 .events-org-stats-list-controls {
     margin: 0 0 0.85rem;

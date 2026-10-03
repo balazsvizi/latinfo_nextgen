@@ -271,8 +271,10 @@ function events_view_tracking_is_published_event(PDO $db, int $eventId): bool
         return false;
     }
 
-    $stmt = $db->prepare('SELECT 1 FROM `events_calendar_events` WHERE `id` = ? AND `event_status` = ? LIMIT 1');
-    $stmt->execute([$eventId, events_public_post_status()]);
+    $statuses = events_publicly_visible_post_statuses();
+    $ph = implode(',', array_fill(0, count($statuses), '?'));
+    $stmt = $db->prepare("SELECT 1 FROM `events_calendar_events` WHERE `id` = ? AND `event_status` IN ({$ph}) LIMIT 1");
+    $stmt->execute(array_merge([$eventId], $statuses));
 
     return (bool) $stmt->fetchColumn();
 }

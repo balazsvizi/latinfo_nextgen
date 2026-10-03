@@ -1101,6 +1101,12 @@ body.event-featured-lightbox-open {
     border-color: var(--li-border-strong);
 }
 
+.event-badge--preliminary {
+    background: #e0f2fe;
+    color: #075985;
+    border-color: #7dd3fc;
+}
+
 .event-meta {
     display: grid;
     gap: 0.75rem;
@@ -5965,6 +5971,34 @@ a.home-public-map-popup__title:hover {
     text-decoration: none;
 }
 
+.home-public .events-cal__event-link--preliminary,
+.home-public .events-cal__week-bar-label--preliminary {
+    opacity: 0.48;
+    filter: saturate(0.55);
+}
+
+.home-public .events-cal__event-link--preliminary:hover {
+    opacity: 0.72;
+    filter: saturate(0.75) brightness(1.03);
+}
+
+.home-public .events-cal__event-status.event-status-badge {
+    display: inline-block;
+    margin-bottom: 0.15rem;
+    padding: 0.08rem 0.35rem;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1.2;
+    border: 1px solid transparent;
+}
+
+.home-public .event-status-badge--preliminary {
+    background: #e0f2fe;
+    color: #075985;
+    border-color: #7dd3fc;
+}
+
 .home-public .events-cal__event-time {
     display: block;
     font-size: 0.6875rem;
@@ -6122,6 +6156,45 @@ a.home-public-map-popup__title:hover {
     box-shadow: var(--li-shadow-lg);
     transform: translateY(-2px);
     text-decoration: none;
+}
+
+.home-public__list-card--preliminary {
+    opacity: 0.58;
+    filter: saturate(0.65);
+}
+
+.home-public__list-card--preliminary:hover {
+    opacity: 0.82;
+    filter: saturate(0.85);
+}
+
+.home-public__list-preliminary-badge {
+    display: inline-block;
+    align-self: flex-start;
+    margin: 0 0 0.35rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #075985;
+    background: #e0f2fe;
+    border: 1px solid #7dd3fc;
+}
+
+.event-preliminary-notice {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.65rem;
+    border: 1px solid #7dd3fc;
+    background: #f0f9ff;
+    color: #0c4a6e;
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.event-public--detail .event-preliminary-notice {
+    margin-top: 0.25rem;
 }
 
 .home-public__list-media {

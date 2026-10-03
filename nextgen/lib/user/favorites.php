@@ -1040,8 +1040,8 @@ function latinfo_favorites_entity_public_meta(PDO $db, string $type, int $entity
                     $label = 'Esemény #' . $entityId;
                 }
                 $slug = trim((string) ($row['event_slug'] ?? ''));
-                $isPublic = function_exists('events_public_post_status')
-                    && (string) ($row['event_status'] ?? '') === events_public_post_status();
+                $isPublic = function_exists('events_is_publicly_visible_post_status')
+                    && events_is_publicly_visible_post_status((string) ($row['event_status'] ?? ''));
                 $url = ($isPublic && $slug !== '' && function_exists('events_public_event_page_url'))
                     ? events_public_event_page_url($slug, $lang)
                     : '#';

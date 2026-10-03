@@ -14,15 +14,17 @@ header('X-Robots-Tag: noindex', true);
 header('Cache-Control: public, max-age=3600');
 
 $db = getDb();
-$stmt = $db->prepare('
+$visibleStatuses = events_publicly_visible_post_statuses();
+$statusPh = implode(',', array_fill(0, count($visibleStatuses), '?'));
+$stmt = $db->prepare("
     SELECT `event_slug`, `event_start`
     FROM `events_calendar_events`
-    WHERE `event_status` = ?
+    WHERE `event_status` IN ({$statusPh})
       AND `event_slug` IS NOT NULL
-      AND TRIM(`event_slug`) <> \'\'
+      AND TRIM(`event_slug`) <> ''
     ORDER BY `event_start` IS NULL, `event_start` DESC, `id` DESC
-');
-$stmt->execute([events_public_post_status()]);
+");
+$stmt->execute($visibleStatuses);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

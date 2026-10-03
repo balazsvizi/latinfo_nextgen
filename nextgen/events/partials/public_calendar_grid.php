@@ -21,11 +21,18 @@ require __DIR__ . '/calendar_month_grid.php';
                 $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, true);
                 $eventUrl = events_public_calendar_event_url($ev);
                 $undatedLinkClass = 'events-cal-undated__link events-cal__event-link js-cal-event-preview';
+                if (events_admin_calendar_event_is_preliminary($ev)) {
+                    $undatedLinkClass .= ' events-cal__event-link--preliminary';
+                }
                 $undatedLinkClass .= events_event_change_calendar_link_class($ev);
                 $undatedNameClass = 'events-cal__event-name' . events_event_change_event_name_class($ev);
+                $isPreliminaryUndated = events_admin_calendar_event_is_preliminary($ev);
                 ?>
-                <li role="listitem">
+                <li role="listitem"<?= $isPreliminaryUndated ? ' class="events-cal__event--preliminary"' : '' ?>>
                     <a class="<?= h($undatedLinkClass) ?>" style="<?= h($eventStyle) ?>" href="<?= h($eventUrl) ?>" data-preview-id="<?= $eid ?>" aria-haspopup="dialog">
+                        <?php if ($isPreliminaryUndated): ?>
+                            <span class="events-cal__event-status event-status-badge <?= h(events_post_status_badge_class(events_preliminary_post_status())) ?>"><?= h(events_post_status_label(events_preliminary_post_status())) ?></span>
+                        <?php endif; ?>
                         <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>
                         <span class="<?= h($undatedNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                     </a>

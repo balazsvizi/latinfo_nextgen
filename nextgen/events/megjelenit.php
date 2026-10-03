@@ -55,10 +55,10 @@ $stmt = $db->prepare('
     FROM `events_calendar_events` e
     LEFT JOIN `events_venues` v ON v.`id` = e.`venue_id`
     LEFT JOIN `events_venues` l ON l.`id` = v.`linked_venue_id`
-    WHERE e.`event_slug` = ? AND e.`event_status` = ?
+    WHERE e.`event_slug` = ? AND e.`event_status` IN (?, ?)
     LIMIT 1
 ');
-$stmt->execute([$slug, events_public_post_status()]);
+$stmt->execute([$slug, events_public_post_status(), events_preliminary_post_status()]);
 $event = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$event) {
     $redirectSlug = events_slug_redirect_target($db, $slug);
@@ -268,15 +268,25 @@ header('Content-Type: text/html; charset=UTF-8');
         <?php require __DIR__ . '/partials/public_shell_hero_bar.php'; ?>
         <div class="event-public__hero-inner">
             <?php require __DIR__ . '/partials/public_event_change_notice.php'; ?>
+            <?php require __DIR__ . '/partials/public_event_preliminary_notice.php'; ?>
             <div class="event-public__title-row">
                 <h1 class="event-public__title<?= events_event_change_type($event) === events_event_change_type_cancelled() ? ' event-public__title--cancelled' : '' ?>"><?= h((string) $event['event_name']) ?></h1>
                 <?php if ($publicFavoritesEnabled): ?>
                     <?php require __DIR__ . '/partials/public_favorite_heart.php'; ?>
                 <?php endif; ?>
             </div>
-            <?php if (!empty($event['event_latinfohu_partner'])): ?>
+            <?php
+            $showPreliminaryBadge = events_is_preliminary_post_status((string) ($event['event_status'] ?? ''));
+            $showPartnerBadge = !empty($event['event_latinfohu_partner']);
+            ?>
+            <?php if ($showPreliminaryBadge || $showPartnerBadge): ?>
                 <div class="event-public__badges">
-                    <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>
+                    <?php if ($showPreliminaryBadge): ?>
+                        <span class="event-badge event-badge--preliminary"><?= h((string) ($T['preliminary_badge'] ?? 'Előzetes')) ?></span>
+                    <?php endif; ?>
+                    <?php if ($showPartnerBadge): ?>
+                        <span class="event-badge event-badge--accent"><?= h($T['badge_partner']) ?></span>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 

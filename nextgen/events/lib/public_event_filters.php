@@ -113,8 +113,12 @@ function events_public_filters_from_request(PDO $db): array {
     $filters = events_admin_filters_from_request($db);
     $_GET = $savedGet;
 
-    $filters['where'][] = 'e.event_status = ?';
-    $filters['params'][] = events_public_post_status();
+    $visibleStatuses = events_publicly_visible_post_statuses();
+    $statusPh = implode(',', array_fill(0, count($visibleStatuses), '?'));
+    $filters['where'][] = "e.event_status IN ({$statusPh})";
+    foreach ($visibleStatuses as $st) {
+        $filters['params'][] = $st;
+    }
 
     if ($f_city !== '') {
         $filters['where'][] = 'EXISTS (
@@ -329,10 +333,12 @@ function events_public_fetch_filtered_events(PDO $db, array $filters): array {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/** Közzétett események száma az adatbázisban. */
+/** Nyilvánosan látható (közzétett + előzetes) események száma az adatbázisban. */
 function events_public_published_events_total_count(PDO $db): int {
-    $stmt = $db->prepare('SELECT COUNT(*) FROM `events_calendar_events` WHERE `event_status` = ?');
-    $stmt->execute([events_public_post_status()]);
+    $statuses = events_publicly_visible_post_statuses();
+    $ph = implode(',', array_fill(0, count($statuses), '?'));
+    $stmt = $db->prepare("SELECT COUNT(*) FROM `events_calendar_events` WHERE `event_status` IN ({$ph})");
+    $stmt->execute($statuses);
 
     return (int) $stmt->fetchColumn();
 }

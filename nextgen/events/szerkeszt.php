@@ -179,7 +179,7 @@ $eventEditBackCalendarUrl = events_admin_calendar_view_url($eventEditMonthKey, [
 $eventEditPublicCalendarUrl = events_public_home_url('hu', ['month' => $eventEditMonthKey]);
 $eventEditCopyUrl = events_url('letrehoz.php?copy_from=') . $id;
 $eventEditPreviewUrl = null;
-if ((string) ($event['event_status'] ?? '') === events_public_post_status()
+if (events_is_publicly_visible_post_status((string) ($event['event_status'] ?? ''))
     && trim((string) ($event['event_slug'] ?? '')) !== '') {
     $eventEditPreviewUrl = events_megjelenit_url((string) $event['event_slug']);
 }

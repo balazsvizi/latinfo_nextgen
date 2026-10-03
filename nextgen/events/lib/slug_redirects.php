@@ -174,7 +174,7 @@ function events_slug_published_at_for_save(?string $existingPublishedAt, string 
 {
     $current = $existingPublishedAt !== null ? trim($existingPublishedAt) : '';
     $current = $current !== '' ? $current : null;
-    if ($newStatus === events_public_post_status()) {
+    if (events_is_publicly_visible_post_status($newStatus)) {
         return $current ?? date('Y-m-d H:i:s');
     }
 
@@ -296,10 +296,10 @@ function events_slug_redirect_target(PDO $db, string $slug): ?string
         SELECT e.`event_slug`
         FROM `events_slug_redirects` r
         INNER JOIN `events_calendar_events` e ON e.`id` = r.`event_id`
-        WHERE r.`old_slug` = ? AND e.`event_status` = ?
+        WHERE r.`old_slug` = ? AND e.`event_status` IN (?, ?)
         LIMIT 1
     ');
-    $st->execute([$slug, events_public_post_status()]);
+    $st->execute([$slug, events_public_post_status(), events_preliminary_post_status()]);
     $target = $st->fetchColumn();
     if (!is_string($target) || $target === '' || $target === $slug) {
         return null;

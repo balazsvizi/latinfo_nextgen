@@ -70,9 +70,11 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                     <?php
                                     $eid = (int) ($ev['id'] ?? 0);
                                     $isPublished = events_admin_calendar_event_is_published($ev);
+                                    $isPreliminary = events_admin_calendar_event_is_preliminary($ev);
+                                    $isPubliclyVisible = $isPublished || $isPreliminary;
                                     $isOwnEvent = isset($calendarOwnEventIds[$eid]);
                                     $timeLabel = events_admin_calendar_event_time_label($ev);
-                                    $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished);
+                                    $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPubliclyVisible);
                                     if (is_callable($calendarEventUrlBuilder)) {
                                         $eventUrl = (string) $calendarEventUrlBuilder($ev);
                                     } else {
@@ -84,7 +86,9 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                     if ($calendarPublicPreview) {
                                         $linkClass .= ' js-cal-event-preview';
                                     }
-                                    if (!$isPublished) {
+                                    if ($isPreliminary) {
+                                        $linkClass .= ' events-cal__event-link--preliminary';
+                                    } elseif (!$isPublished) {
                                         $linkClass .= ' events-cal__event-link--unpublished';
                                     }
                                     if ($isOwnEvent) {
@@ -97,18 +101,29 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                     $eventStatus = (string) ($ev['event_status'] ?? '');
                                     $statusBadgeClass = events_post_status_badge_class($eventStatus);
                                     $statusLabel = events_post_status_label($eventStatus);
-                                    $openExternal = $calendarEventUrlBuilder === null && ($calendarPublicPreview || $isPublished);
+                                    $openExternal = $calendarEventUrlBuilder === null && ($calendarPublicPreview || $isPubliclyVisible);
+                                    $liExtra = '';
+                                    if ($isPreliminary) {
+                                        $liExtra .= ' events-cal__event--preliminary';
+                                    } elseif (!$isPublished) {
+                                        $liExtra .= ' events-cal__event--unpublished';
+                                    }
+                                    if ($isOwnEvent) {
+                                        $liExtra .= ' events-cal__event--mine';
+                                    }
                                     ?>
-                                    <li class="events-cal__event<?= $isPublished ? '' : ' events-cal__event--unpublished' ?><?= $isOwnEvent ? ' events-cal__event--mine' : '' ?>" role="listitem">
+                                    <li class="events-cal__event<?= $liExtra ?>" role="listitem">
                                         <a
                                             class="<?= h($linkClass) ?>"
                                             style="<?= h($eventStyle) ?>"
                                             href="<?= h($eventUrl) ?>"
                                             <?= $calendarPublicPreview ? 'data-preview-id="' . $eid . '" aria-haspopup="dialog"' : '' ?>
                                             <?= $openExternal ? 'target="_blank" rel="noopener"' : 'target="_self"' ?>
-                                            title="<?= h((string) ($ev['event_name'] ?? '')) ?><?= $isPublished ? '' : ' (' . $statusLabel . ')' ?><?= $isOwnEvent ? ' · Saját' : '' ?>"
+                                            title="<?= h((string) ($ev['event_name'] ?? '')) ?><?= $isPubliclyVisible && !$isPreliminary ? '' : ' (' . $statusLabel . ')' ?><?= $isOwnEvent ? ' · Saját' : '' ?>"
                                         >
-                                            <?php if (!$isPublished && !$calendarPublicPreview): ?>
+                                            <?php if ((!$isPublished || $isPreliminary) && !$calendarPublicPreview): ?>
+                                                <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
+                                            <?php elseif ($isPreliminary && $calendarPublicPreview): ?>
                                                 <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
                                             <?php endif; ?>
                                             <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>
@@ -131,8 +146,10 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             $ev = $part['event'];
                                             $eid = (int) ($ev['id'] ?? 0);
                                             $isPublished = events_admin_calendar_event_is_published($ev);
+                                            $isPreliminary = events_admin_calendar_event_is_preliminary($ev);
+                                            $isPubliclyVisible = $isPublished || $isPreliminary;
                                             $isOwnEvent = isset($calendarOwnEventIds[$eid]);
-                                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished, false);
+                                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPubliclyVisible, false);
                                             if (is_callable($calendarEventUrlBuilder)) {
                                                 $eventUrl = (string) $calendarEventUrlBuilder($ev);
                                             } else {
@@ -146,7 +163,9 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             if ($calendarPublicPreview) {
                                                 $barClasses .= ' js-cal-event-preview';
                                             }
-                                            if (!$isPublished) {
+                                            if ($isPreliminary) {
+                                                $barClasses .= ' events-cal__event-link--preliminary';
+                                            } elseif (!$isPublished) {
                                                 $barClasses .= ' events-cal__event-link--unpublished';
                                             }
                                             if ($isOwnEvent) {
@@ -172,7 +191,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             $eventStatus = (string) ($ev['event_status'] ?? '');
                                             $statusBadgeClass = events_post_status_badge_class($eventStatus);
                                             $statusLabel = events_post_status_label($eventStatus);
-                                            $openExternal = $calendarEventUrlBuilder === null && ($calendarPublicPreview || $isPublished);
+                                            $openExternal = $calendarEventUrlBuilder === null && ($calendarPublicPreview || $isPubliclyVisible);
                                             $barTarget = $openExternal ? '_blank' : '_self';
                                             $barRel = $barTarget === '_blank' ? 'noopener' : '';
                                             ?>
@@ -183,7 +202,7 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                                 <?= $calendarPublicPreview ? 'data-preview-id="' . $eid . '" aria-haspopup="dialog"' : '' ?>
                                                 target="<?= h($barTarget) ?>"
                                                 <?= $barRel !== '' ? 'rel="' . h($barRel) . '"' : '' ?>
-                                                title="<?= h($barTitle) ?><?= $isPublished ? '' : ' (' . $statusLabel . ')' ?>"
+                                                title="<?= h($barTitle) ?><?= $isPubliclyVisible && !$isPreliminary ? '' : ' (' . $statusLabel . ')' ?>"
                                                 aria-label="<?= h($barTitle) ?>"
                                             ></a>
                                         <?php endif; ?>
@@ -200,14 +219,19 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                             $ev = $segment['event'];
                             $eid = (int) ($ev['id'] ?? 0);
                             $isPublished = events_admin_calendar_event_is_published($ev);
+                            $isPreliminary = events_admin_calendar_event_is_preliminary($ev);
+                            $isPubliclyVisible = $isPublished || $isPreliminary;
                             $isOwnEvent = isset($calendarOwnEventIds[$eid]);
-                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPublished, false);
+                            $eventStyle = events_admin_calendar_event_block_style_for_event($categoriesByEventId, $ev, $isPubliclyVisible, false);
                             $barTitle = (string) ($ev['event_name'] ?? '');
                             $timeLabel = $segment['showTime'] ? events_admin_calendar_event_time_label($ev) : '';
                             $labelClasses = 'events-cal__week-bar-label';
                             $barEventNameClass = 'events-cal__event-name' . events_event_change_event_name_class($ev);
                             if ($isOwnEvent) {
                                 $labelClasses .= ' events-cal__week-bar-label--mine';
+                            }
+                            if ($isPreliminary) {
+                                $labelClasses .= ' events-cal__week-bar-label--preliminary';
                             }
                             if ($segment['roundLeft']) {
                                 $labelClasses .= ' events-cal__week-bar-label--round-left';
@@ -229,7 +253,9 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                 class="<?= h($labelClasses) ?>"
                                 style="<?= h($eventStyle) ?>;--cal-col-start:<?= $colStart ?>;--cal-span:<?= $colSpan ?>;--cal-lane:<?= $lane ?>"
                             >
-                                <?php if (!$isPublished && !$calendarPublicPreview): ?>
+                                <?php if ((!$isPublished || $isPreliminary) && !$calendarPublicPreview): ?>
+                                    <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
+                                <?php elseif ($isPreliminary && $calendarPublicPreview): ?>
                                     <span class="events-cal__event-status event-status-badge <?= h($statusBadgeClass) ?>"><?= h($statusLabel) ?></span>
                                 <?php endif; ?>
                                 <?php require __DIR__ . '/calendar_event_change_badge.php'; ?>

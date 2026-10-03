@@ -217,6 +217,22 @@ $adminFloatTools = [
 ];
 $adminFloatToolsRequireLogin = false;
 
+$preliminaryRows = [];
+try {
+    $prelimSt = $db->prepare('
+        SELECT e.`id`, e.`event_name`, e.`event_slug`, e.`event_status`, e.`event_start`, e.`event_end`, e.`event_allday`
+        FROM `events_calendar_events` e
+        WHERE e.`event_status` = ?
+        ORDER BY e.`event_start` IS NULL, e.`event_start` ASC, e.`event_name` ASC
+        LIMIT 100
+    ');
+    $prelimSt->execute([events_preliminary_post_status()]);
+    $preliminaryRows = $prelimSt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable $e) {
+    error_log('events_admin preliminary list: ' . $e->getMessage());
+    $preliminaryRows = [];
+}
+
 $mainContentClass = 'main-content main-content--fullwidth';
 $pageTitle = 'Események';
 require_once dirname(__DIR__) . '/partials/header.php';
@@ -225,6 +241,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
+
+<?php require __DIR__ . '/partials/admin_preliminary_events.php'; ?>
 
 <div class="card events-admin-card">
     <form method="get" action="<?= h($filterFormAction) ?>" class="events-admin-form events-cal-page" id="events-admin-filter-form">

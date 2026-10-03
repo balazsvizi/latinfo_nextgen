@@ -12,12 +12,23 @@ function events_admin_calendar_event_is_published(array $ev): bool {
     return (string) ($ev['event_status'] ?? '') === events_public_post_status();
 }
 
+function events_admin_calendar_event_is_preliminary(array $ev): bool {
+    return events_is_preliminary_post_status((string) ($ev['event_status'] ?? ''));
+}
+
+/**
+ * Közzétett vagy előzetes: nyilvános oldalon megnyitható.
+ */
+function events_admin_calendar_event_is_publicly_visible(array $ev): bool {
+    return events_is_publicly_visible_post_status((string) ($ev['event_status'] ?? ''));
+}
+
 /**
  * @param array<int, list<array{color:string}>> $categoriesByEventId
  */
 function events_admin_calendar_event_public_url(array $ev): string {
     $id = (int) ($ev['id'] ?? 0);
-    if (!events_admin_calendar_event_is_published($ev)) {
+    if (!events_admin_calendar_event_is_publicly_visible($ev)) {
         return events_url('szerkeszt.php?id=') . $id;
     }
     $slug = trim((string) ($ev['event_slug'] ?? ''));

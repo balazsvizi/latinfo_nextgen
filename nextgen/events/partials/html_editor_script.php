@@ -105,6 +105,10 @@
 
         if (!hasCk) {
             textarea.hidden = false;
+            textarea.__eventsHtmlEditor = {
+                getData: function () { return textarea.value || ''; },
+                setData: function (html) { textarea.value = html || ''; }
+            };
             return;
         }
 
@@ -139,11 +143,37 @@
         }).then(function (editor) {
             editorInstance = editor;
             textarea.hidden = true;
+            textarea.__eventsHtmlEditor = {
+                getData: function () {
+                    if (sourceMode) {
+                        return sourceBox.value || '';
+                    }
+                    return editorInstance ? editorInstance.getData() : (textarea.value || '');
+                },
+                setData: function (html) {
+                    var value = html || '';
+                    textarea.value = value;
+                    sourceBox.value = value;
+                    if (editorInstance && !sourceMode) {
+                        editorInstance.setData(value);
+                    }
+                }
+            };
         }).catch(function () {
             textarea.hidden = false;
+            textarea.__eventsHtmlEditor = {
+                getData: function () { return textarea.value || ''; },
+                setData: function (html) { textarea.value = html || ''; }
+            };
         });
     }
 
-    document.querySelectorAll('.js-html-editor-source').forEach(buildEnhancedEditor);
+    document.querySelectorAll('.js-html-editor-source').forEach(function (ta) {
+        ta.__eventsHtmlEditor = {
+            getData: function () { return ta.value || ''; },
+            setData: function (html) { ta.value = html || ''; }
+        };
+        buildEnhancedEditor(ta);
+    });
 })();
 </script>
