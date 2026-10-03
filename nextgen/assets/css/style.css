@@ -6431,11 +6431,31 @@ html.events-stats-loading-active body {
     max-width: 16rem;
     white-space: normal;
 }
-.events-rt-recent-event-date--upcoming {
-    color: #1f6b3a;
-}
 .events-rt-recent-event-date--past {
     color: #8a6a1f;
+}
+.events-rt-date-chip {
+    --rt-date-c: #8b9198;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.85rem;
+    padding: 0.12rem 0.55rem;
+    border: 1px solid color-mix(in srgb, var(--rt-date-c) 38%, #e5e7eb);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--rt-date-c) 12%, #fff);
+    color: #1f2933;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+.events-rt-date-chip--today {
+    --rt-date-c: #1f8a4c;
+}
+.events-rt-date-chip--upcoming {
+    --rt-date-c: #2f6fed;
 }
 .events-rt-recent-detail {
     white-space: normal;

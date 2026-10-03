@@ -131,8 +131,12 @@ function events_realtime_metric_label(string $metric): string
 }
 
 /**
- * Recent tábla „Dátum” oszlop: jövőbeli/mai → hány nap múlva lesz kiemelten;
- * múltbeli → hány napja volt + formázott dátum.
+ * Recent tábla „Dátum” oszlop:
+ * - mai → „Ma” (színkeretes jelölő a UI-ban)
+ * - jövőbeli → csak a napszám (színkeretes jelölő)
+ * - múltbeli → hány napja volt + formázott dátum
+ *
+ * @return array{event_date: string, event_days: ?int}
  */
 function events_realtime_event_date_column(?string $eventStart, string $formattedDate = ''): array
 {
@@ -148,9 +152,9 @@ function events_realtime_event_date_column(?string $eventStart, string $formatte
         ];
     }
     if ($days > 0) {
-        $label = $days . ' nap múlva lesz kiemelten';
+        $label = (string) $days;
     } elseif ($days === 0) {
-        $label = 'Ma lesz kiemelten';
+        $label = 'Ma';
     } else {
         $label = abs($days) . ' napja volt';
         if ($formatted !== '–') {

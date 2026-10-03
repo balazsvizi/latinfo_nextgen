@@ -762,11 +762,20 @@ require_once dirname(__DIR__) . '/partials/header.php';
             var detail = r.detail || r.source_label || '';
             var eventDate = r.event_date || '–';
             var days = r.event_days;
-            var dateClass = 'events-rt-recent-event-date';
-            if (days != null && days !== '' && Number(days) < 0) {
-                dateClass += ' events-rt-recent-event-date--past';
-            } else if (days != null && days !== '' && Number(days) >= 0) {
-                dateClass += ' events-rt-recent-event-date--upcoming';
+            var daysNum = (days != null && days !== '') ? Number(days) : null;
+            var dateHtml;
+            if (daysNum === 0) {
+                dateHtml = '<span class="events-rt-date-chip events-rt-date-chip--today" title="Ma lesz kiemelten">'
+                    + esc(eventDate) + '</span>';
+            } else if (daysNum != null && daysNum > 0) {
+                dateHtml = '<span class="events-rt-date-chip events-rt-date-chip--upcoming" title="'
+                    + esc(String(daysNum) + ' nap múlva lesz kiemelten') + '">'
+                    + esc(eventDate) + '</span>';
+            } else if (daysNum != null && daysNum < 0) {
+                dateHtml = '<span class="events-rt-recent-event-date events-rt-recent-event-date--past">'
+                    + esc(eventDate) + '</span>';
+            } else {
+                dateHtml = '<span class="events-rt-recent-event-date">' + esc(eventDate) + '</span>';
             }
             var mark = visitorOf(r);
             var rowAttr = mark.key ? ' data-visitor-key="' + esc(mark.key) + '"' : '';
@@ -774,7 +783,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 + '<td class="events-rt-recent-time">' + esc(r.at || '') + '</td>'
                 + '<td><span class="events-rt-kind ' + kindClass(kind) + '">' + esc(kindLabel) + '</span></td>'
                 + '<td>' + nameHtml + '</td>'
-                + '<td class="' + dateClass + '">' + esc(eventDate) + '</td>'
+                + '<td>' + dateHtml + '</td>'
                 + '<td class="events-rt-recent-detail">' + esc(detail) + '</td>'
                 + '<td>' + whoButtonHtml(mark) + '</td>'
                 + '</tr>';
