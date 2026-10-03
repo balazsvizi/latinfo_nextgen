@@ -142,12 +142,258 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
         }
 
         nextgen_partner_ensure_permission_schema($db);
+        nextgen_partner_ensure_emails_schema($db);
 
         return true;
     } catch (Throwable $ex) {
         error_log('nextgen_partner_ensure_extended_schema: ' . $ex->getMessage());
 
         return false;
+    }
+}
+
+function nextgen_partner_emails_table_ready(PDO $db, bool $refresh = false): bool
+{
+    static $cached = null;
+    if ($refresh) {
+        $cached = null;
+    }
+    if ($cached !== null) {
+        return $cached;
+    }
+    try {
+        $db->query('SELECT 1 FROM `nextgen_partner_emails` LIMIT 1');
+        $cached = true;
+    } catch (Throwable) {
+        $cached = false;
+    }
+
+    return $cached;
+}
+
+function nextgen_partner_ensure_emails_schema(PDO $db): bool
+{
+    if (!nextgen_partners_table_ready($db)) {
+        return false;
+    }
+    try {
+        if (!nextgen_partner_emails_table_ready($db)) {
+            $db->exec('
+                CREATE TABLE IF NOT EXISTS `nextgen_partner_emails` (
+                    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    `partner_id` INT UNSIGNED NOT NULL,
+                    `email` VARCHAR(255) NOT NULL,
+                    `email_event_bekerult` TINYINT(1) NOT NULL DEFAULT 1,
+                    `email_szervezo_stat` TINYINT(1) NOT NULL DEFAULT 1,
+                    `is_login` TINYINT(1) NOT NULL DEFAULT 0,
+                    `sort_order` INT NOT NULL DEFAULT 0,
+                    `létrehozva` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    UNIQUE KEY `uq_partner_email` (`partner_id`, `email`),
+                    KEY `idx_partner_emails_partner` (`partner_id`, `sort_order`),
+                    KEY `idx_partner_emails_login` (`partner_id`, `is_login`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            nextgen_partner_emails_table_ready($db, true);
+        }
+
+        if (!nextgen_partner_emails_table_ready($db)) {
+            return false;
+        }
+
+        // Meglévő partnerek login e-mailjének migrálása, ha még nincs sor.
+        $db->exec("
+            INSERT INTO `nextgen_partner_emails`
+                (`partner_id`, `email`, `email_event_bekerult`, `email_szervezo_stat`, `is_login`, `sort_order`)
+            SELECT
+                p.`id`,
+                LOWER(TRIM(p.`email`)),
+                CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED),
+                CAST(COALESCE(p.`email_szervezo_stat`, 1) AS UNSIGNED),
+                1,
+                0
+            FROM `nextgen_partners` p
+            LEFT JOIN `nextgen_partner_emails` e
+                ON e.`partner_id` = p.`id`
+               AND e.`email` = LOWER(TRIM(p.`email`))
+            WHERE TRIM(COALESCE(p.`email`, '')) <> ''
+              AND e.`id` IS NULL
+        ");
+
+        return true;
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_ensure_emails_schema: ' . $ex->getMessage());
+
+        return false;
+    }
+}
+
+/**
+ * @return list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool, is_login: bool}>
+ */
+function nextgen_partner_emails_for_partner(PDO $db, int $partnerId): array
+{
+    if ($partnerId <= 0) {
+        return [];
+    }
+    nextgen_partner_ensure_emails_schema($db);
+    if (!nextgen_partner_emails_table_ready($db)) {
+        return [];
+    }
+    try {
+        $stmt = $db->prepare('
+            SELECT `email`, `email_event_bekerult`, `email_szervezo_stat`, `is_login`, `sort_order`
+            FROM `nextgen_partner_emails`
+            WHERE `partner_id` = ?
+            ORDER BY `is_login` DESC, `sort_order` ASC, `id` ASC
+        ');
+        $stmt->execute([$partnerId]);
+        $rows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $email = trim((string) ($row['email'] ?? ''));
+            if ($email === '') {
+                continue;
+            }
+            $rows[] = [
+                'email' => $email,
+                'email_event_bekerult' => ((int) ($row['email_event_bekerult'] ?? 1) === 1),
+                'email_szervezo_stat' => ((int) ($row['email_szervezo_stat'] ?? 1) === 1),
+                'is_login' => ((int) ($row['is_login'] ?? 0) === 1),
+            ];
+        }
+
+        return $rows;
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_emails_for_partner: ' . $ex->getMessage());
+
+        return [];
+    }
+}
+
+/**
+ * @param mixed $raw
+ * @return list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool}>
+ */
+function nextgen_partner_email_rows_from_post(mixed $raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+    $out = [];
+    $seen = [];
+    foreach ($raw as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $email = trim(mb_strtolower((string) ($row['email'] ?? ''), 'UTF-8'));
+        if ($email === '') {
+            continue;
+        }
+        if (isset($seen[$email])) {
+            continue;
+        }
+        $seen[$email] = true;
+        $out[] = [
+            'email' => $email,
+            'email_event_bekerult' => ((string) ($row['email_event_bekerult'] ?? '0') === '1'),
+            'email_szervezo_stat' => ((string) ($row['email_szervezo_stat'] ?? '0') === '1'),
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool}> $emailRows
+ * @return array{ok: true, login_email: string, email_event_bekerult: bool, email_szervezo_stat: bool, rows: list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool}>}|array{ok: false, error: string}
+ */
+function nextgen_partner_normalize_email_rows(array $emailRows): array
+{
+    if ($emailRows === []) {
+        return ['ok' => false, 'error' => 'Legalább egy érvényes e-mail cím szükséges.'];
+    }
+    $normalized = [];
+    $seen = [];
+    foreach ($emailRows as $row) {
+        $email = trim(mb_strtolower((string) ($row['email'] ?? ''), 'UTF-8'));
+        if ($email === '') {
+            continue;
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Érvénytelen e-mail cím: ' . $email];
+        }
+        if (isset($seen[$email])) {
+            continue;
+        }
+        $seen[$email] = true;
+        $normalized[] = [
+            'email' => $email,
+            'email_event_bekerult' => !empty($row['email_event_bekerult']),
+            'email_szervezo_stat' => !empty($row['email_szervezo_stat']),
+        ];
+    }
+    if ($normalized === []) {
+        return ['ok' => false, 'error' => 'Legalább egy érvényes e-mail cím szükséges.'];
+    }
+
+    return [
+        'ok' => true,
+        'login_email' => (string) $normalized[0]['email'],
+        'email_event_bekerult' => (bool) $normalized[0]['email_event_bekerult'],
+        'email_szervezo_stat' => (bool) $normalized[0]['email_szervezo_stat'],
+        'rows' => $normalized,
+    ];
+}
+
+/**
+ * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool}> $emailRows
+ * @return array{ok: true}|array{ok: false, error: string}
+ */
+function nextgen_partner_sync_emails(PDO $db, int $partnerId, array $emailRows): array
+{
+    if ($partnerId <= 0) {
+        return ['ok' => false, 'error' => 'Érvénytelen partner.'];
+    }
+    $normalized = nextgen_partner_normalize_email_rows($emailRows);
+    if (!$normalized['ok']) {
+        return ['ok' => false, 'error' => (string) ($normalized['error'] ?? 'Érvénytelen e-mail címek.')];
+    }
+    /** @var list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool}> $rows */
+    $rows = $normalized['rows'];
+
+    nextgen_partner_ensure_emails_schema($db);
+    if (!nextgen_partner_emails_table_ready($db)) {
+        return ['ok' => false, 'error' => 'E-mail tábla nem elérhető.'];
+    }
+
+    try {
+        $db->beginTransaction();
+        $db->prepare('DELETE FROM `nextgen_partner_emails` WHERE `partner_id` = ?')->execute([$partnerId]);
+        $ins = $db->prepare('
+            INSERT INTO `nextgen_partner_emails`
+                (`partner_id`, `email`, `email_event_bekerult`, `email_szervezo_stat`, `is_login`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ');
+        foreach ($rows as $i => $row) {
+            $ins->execute([
+                $partnerId,
+                $row['email'],
+                !empty($row['email_event_bekerult']) ? 1 : 0,
+                !empty($row['email_szervezo_stat']) ? 1 : 0,
+                $i === 0 ? 1 : 0,
+                $i,
+            ]);
+        }
+        $db->commit();
+
+        return ['ok' => true];
+    } catch (Throwable $ex) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('nextgen_partner_sync_emails: ' . $ex->getMessage());
+
+        return ['ok' => false, 'error' => 'E-mail címek mentése sikertelen.'];
     }
 }
 
@@ -939,8 +1185,18 @@ function nextgen_partners_list(
     $params = [];
     if ($search !== null && trim($search) !== '') {
         $like = '%' . trim($search) . '%';
-        $where = 'WHERE (p.`név` LIKE ? OR p.`kieg_info` LIKE ? OR p.`település` LIKE ? OR p.`email` LIKE ? OR CAST(p.`id` AS CHAR) LIKE ?)';
-        $params = [$like, $like, $like, $like, $like];
+        $where = 'WHERE (
+            p.`név` LIKE ?
+            OR p.`kieg_info` LIKE ?
+            OR p.`település` LIKE ?
+            OR p.`email` LIKE ?
+            OR CAST(p.`id` AS CHAR) LIKE ?
+            OR EXISTS (
+                SELECT 1 FROM `nextgen_partner_emails` pe
+                WHERE pe.`partner_id` = p.`id` AND pe.`email` LIKE ?
+            )
+        )';
+        $params = [$like, $like, $like, $like, $like, $like];
     }
     try {
         $stmt = $db->prepare("
@@ -1036,7 +1292,13 @@ function nextgen_partner_create(
         ]);
 
         $partnerId = (int) $db->lastInsertId();
-        $logDetail = $email . ($requireChangeOnLogin ? ' (kötelező jelszócsere)' : '');
+        $emailNorm = trim(mb_strtolower($email, 'UTF-8'));
+        nextgen_partner_sync_emails($db, $partnerId, [[
+            'email' => $emailNorm,
+            'email_event_bekerult' => true,
+            'email_szervezo_stat' => true,
+        ]]);
+        $logDetail = $emailNorm . ($requireChangeOnLogin ? ' (kötelező jelszócsere)' : '');
         if ($password === '') {
             $logDetail .= ' (jelszó később állítható be)';
         }
@@ -1051,6 +1313,7 @@ function nextgen_partner_create(
 }
 
 /**
+ * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool}>|null $emailRows
  * @return array{ok: true}|array{ok: false, error: string}
  */
 function nextgen_partner_update_profile(
@@ -1064,20 +1327,35 @@ function nextgen_partner_update_profile(
     ?string $kiegInfo = null,
     ?string $telepules = null,
     ?bool $emailEventBekerult = null,
-    ?bool $emailSzervezoStat = null
+    ?bool $emailSzervezoStat = null,
+    ?array $emailRows = null
 ): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
     }
     nextgen_partner_ensure_extended_schema($db);
     $nev = trim($nev);
-    $email = trim($email);
     if ($nev === '') {
         return ['ok' => false, 'error' => 'A név megadása kötelező.'];
     }
-    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        return ['ok' => false, 'error' => 'Érvényes e-mail cím szükséges.'];
+
+    $syncEmailRows = null;
+    if ($emailRows !== null) {
+        $normalized = nextgen_partner_normalize_email_rows($emailRows);
+        if (!$normalized['ok']) {
+            return ['ok' => false, 'error' => (string) ($normalized['error'] ?? 'Érvénytelen e-mail címek.')];
+        }
+        $email = (string) $normalized['login_email'];
+        $emailEventBekerult = (bool) $normalized['email_event_bekerult'];
+        $emailSzervezoStat = (bool) $normalized['email_szervezo_stat'];
+        $syncEmailRows = $normalized['rows'];
+    } else {
+        $email = trim(mb_strtolower($email, 'UTF-8'));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Érvényes e-mail cím szükséges.'];
+        }
     }
+
     $telefon = $telefon !== null ? trim($telefon) : '';
     $egyebKontakt = $egyebKontakt !== null ? trim($egyebKontakt) : '';
     $egyebInfo = $egyebInfo !== null ? trim($egyebInfo) : '';
@@ -1094,7 +1372,7 @@ function nextgen_partner_update_profile(
         $dup = $db->prepare('SELECT `id` FROM `nextgen_partners` WHERE `email` = ? AND `id` <> ? LIMIT 1');
         $dup->execute([$email, $partnerId]);
         if ($dup->fetchColumn() !== false) {
-            return ['ok' => false, 'error' => 'Ez az e-mail cím már foglalt.'];
+            return ['ok' => false, 'error' => 'Ez az e-mail cím már foglalt (bejelentkezési cím).'];
         }
 
         $setParts = [
@@ -1130,7 +1408,51 @@ function nextgen_partner_update_profile(
         );
         $stmt->execute($params);
 
-        nextgen_partner_log($db, $partnerId, 'Profil módosítva', $email);
+        if ($syncEmailRows !== null) {
+            $sync = nextgen_partner_sync_emails($db, $partnerId, $syncEmailRows);
+            if (!$sync['ok']) {
+                return $sync;
+            }
+            $emailSummary = implode(', ', array_map(
+                static fn (array $r): string => (string) $r['email'],
+                $syncEmailRows
+            ));
+        } else {
+            // Portál / egyszerű mentés: login e-mail frissül, a többi cím és kapcsolói megmaradnak.
+            nextgen_partner_ensure_emails_schema($db);
+            if (nextgen_partner_emails_table_ready($db)) {
+                $existing = nextgen_partner_emails_for_partner($db, $partnerId);
+                $loginEvent = $emailEventBekerult;
+                $loginStat = $emailSzervezoStat;
+                $merged = [];
+                foreach ($existing as $row) {
+                    if (!empty($row['is_login'])) {
+                        if ($loginEvent === null) {
+                            $loginEvent = (bool) $row['email_event_bekerult'];
+                        }
+                        if ($loginStat === null) {
+                            $loginStat = (bool) $row['email_szervezo_stat'];
+                        }
+                        continue;
+                    }
+                    if (strcasecmp((string) $row['email'], $email) === 0) {
+                        continue;
+                    }
+                    $merged[] = $row;
+                }
+                array_unshift($merged, [
+                    'email' => $email,
+                    'email_event_bekerult' => $loginEvent ?? true,
+                    'email_szervezo_stat' => $loginStat ?? true,
+                ]);
+                $sync = nextgen_partner_sync_emails($db, $partnerId, $merged);
+                if (!$sync['ok']) {
+                    return $sync;
+                }
+            }
+            $emailSummary = $email;
+        }
+        nextgen_partner_log($db, $partnerId, 'Profil módosítva', $emailSummary);
 
         return ['ok' => true];
     } catch (Throwable $ex) {
@@ -1450,6 +1772,9 @@ function nextgen_partner_delete(PDO $db, int $partnerId): array
         $db->prepare('DELETE FROM `nextgen_partner_events_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
         $db->prepare('DELETE FROM `nextgen_partner_djs` WHERE `partner_id` = ?')->execute([$partnerId]);
         $db->prepare('DELETE FROM `nextgen_partner_finance_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
+        if (nextgen_partner_emails_table_ready($db)) {
+            $db->prepare('DELETE FROM `nextgen_partner_emails` WHERE `partner_id` = ?')->execute([$partnerId]);
+        }
         if (nextgen_partner_activity_log_table_ready($db)) {
             $db->prepare('DELETE FROM `nextgen_partner_activity_log` WHERE `partner_id` = ?')->execute([$partnerId]);
         }

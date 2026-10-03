@@ -334,14 +334,25 @@ function events_notify_email_blocked_partner_emails(PDO $db, array $organizerIds
         }
         nextgen_partner_ensure_extended_schema($db);
 
-        $st = $db->prepare("
-            SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
-            FROM `nextgen_partner_events_organizers` po
-            INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
-            WHERE po.`organizer_id` IN ({$placeholders})
-              AND TRIM(COALESCE(p.`email`, '')) <> ''
-              AND CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED) = 0
-        ");
+        if (function_exists('nextgen_partner_emails_table_ready') && nextgen_partner_emails_table_ready($db)) {
+            $st = $db->prepare("
+                SELECT DISTINCT LOWER(TRIM(e.`email`)) AS email
+                FROM `nextgen_partner_events_organizers` po
+                INNER JOIN `nextgen_partner_emails` e ON e.`partner_id` = po.`partner_id`
+                WHERE po.`organizer_id` IN ({$placeholders})
+                  AND TRIM(COALESCE(e.`email`, '')) <> ''
+                  AND CAST(COALESCE(e.`email_event_bekerult`, 1) AS UNSIGNED) = 0
+            ");
+        } else {
+            $st = $db->prepare("
+                SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
+                FROM `nextgen_partner_events_organizers` po
+                INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
+                WHERE po.`organizer_id` IN ({$placeholders})
+                  AND TRIM(COALESCE(p.`email`, '')) <> ''
+                  AND CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED) = 0
+            ");
+        }
         $st->execute($organizerIds);
         foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $email) {
             $email = trim((string) $email);
@@ -383,14 +394,25 @@ function events_notify_email_recipient_emails(PDO $db, array $organizerIds): arr
         }
         nextgen_partner_ensure_extended_schema($db);
 
-        $st = $db->prepare("
-            SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
-            FROM `nextgen_partner_events_organizers` po
-            INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
-            WHERE po.`organizer_id` IN ({$placeholders})
-              AND TRIM(COALESCE(p.`email`, '')) <> ''
-              AND CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED) = 1
-        ");
+        if (function_exists('nextgen_partner_emails_table_ready') && nextgen_partner_emails_table_ready($db)) {
+            $st = $db->prepare("
+                SELECT DISTINCT LOWER(TRIM(e.`email`)) AS email
+                FROM `nextgen_partner_events_organizers` po
+                INNER JOIN `nextgen_partner_emails` e ON e.`partner_id` = po.`partner_id`
+                WHERE po.`organizer_id` IN ({$placeholders})
+                  AND TRIM(COALESCE(e.`email`, '')) <> ''
+                  AND CAST(COALESCE(e.`email_event_bekerult`, 1) AS UNSIGNED) = 1
+            ");
+        } else {
+            $st = $db->prepare("
+                SELECT DISTINCT LOWER(TRIM(p.`email`)) AS email
+                FROM `nextgen_partner_events_organizers` po
+                INNER JOIN `nextgen_partners` p ON p.`id` = po.`partner_id`
+                WHERE po.`organizer_id` IN ({$placeholders})
+                  AND TRIM(COALESCE(p.`email`, '')) <> ''
+                  AND CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED) = 1
+            ");
+        }
         $st->execute($organizerIds);
         foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $email) {
             $email = trim((string) $email);

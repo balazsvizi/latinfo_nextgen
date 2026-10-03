@@ -114,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $hiba = (string) ($result['error'] ?? 'Státusz mentése sikertelen.');
         } else {
+            $emailRowsPost = nextgen_partner_email_rows_from_post($_POST['email_rows'] ?? []);
             $result = nextgen_partner_update_profile(
                 $db,
                 $id,
@@ -124,8 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string) ($_POST['egyeb_info'] ?? ''),
                 (string) ($_POST['kieg_info'] ?? ''),
                 (string) ($_POST['telepules'] ?? ''),
-                ((string) ($_POST['email_event_bekerult'] ?? '0') === '1'),
-                ((string) ($_POST['email_szervezo_stat'] ?? '0') === '1')
+                null,
+                null,
+                $emailRowsPost
             );
             if (!$result['ok']) {
                 $hiba = (string) ($result['error'] ?? 'Profil mentése sikertelen.');
@@ -280,46 +282,35 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             </div>
         </div>
         <?php
-        $emailNotifyFromPost = $_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'save') === 'save';
-        $emailEventBekerultOn = $emailNotifyFromPost
-            ? ((string) ($_POST['email_event_bekerult'] ?? '0') === '1')
-            : ((int) ($partner['email_event_bekerult'] ?? 1) === 1);
-        $emailSzervezoStatOn = $emailNotifyFromPost
-            ? ((string) ($_POST['email_szervezo_stat'] ?? '0') === '1')
-            : ((int) ($partner['email_szervezo_stat'] ?? 1) === 1);
+        $emailRowsForForm = [];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'save') === 'save' && $hiba !== '') {
+            $emailRowsForForm = nextgen_partner_email_rows_from_post($_POST['email_rows'] ?? []);
+        } else {
+            $emailRowsForForm = nextgen_partner_emails_for_partner($db, $id);
+        }
+        if ($emailRowsForForm === []) {
+            $emailRowsForForm[] = [
+                'email' => (string) ($partner['email'] ?? ''),
+                'email_event_bekerult' => ((int) ($partner['email_event_bekerult'] ?? 1) === 1),
+                'email_szervezo_stat' => ((int) ($partner['email_szervezo_stat'] ?? 1) === 1),
+                'is_login' => true,
+            ];
+        }
         ?>
         <div class="form-group partner-email-field">
-            <label for="email">E-mail *</label>
-            <div class="partner-email-row">
-                <input type="email" id="email" name="email" class="partner-email-row__input" value="<?= h((string) ($partner['email'] ?? '')) ?>" required>
-                <div class="partner-email-notify" role="group" aria-label="E-mail értesítések">
-                    <label class="partner-email-switch" for="email_event_bekerult">
-                        <input type="hidden" name="email_event_bekerult" value="0">
-                        <input
-                            type="checkbox"
-                            name="email_event_bekerult"
-                            value="1"
-                            id="email_event_bekerult"
-                            class="partner-email-switch__input"
-                            <?= $emailEventBekerultOn ? 'checked' : '' ?>
-                        >
-                        <span class="partner-email-switch__text">Event bekerült</span>
-                    </label>
-                    <label class="partner-email-switch" for="email_szervezo_stat">
-                        <input type="hidden" name="email_szervezo_stat" value="0">
-                        <input
-                            type="checkbox"
-                            name="email_szervezo_stat"
-                            value="1"
-                            id="email_szervezo_stat"
-                            class="partner-email-switch__input"
-                            <?= $emailSzervezoStatOn ? 'checked' : '' ?>
-                        >
-                        <span class="partner-email-switch__text">Szervező stat</span>
-                    </label>
-                </div>
+            <label>E-mail címek *</label>
+            <div id="partner-email-rows" class="partner-email-rows">
+                <?php foreach ($emailRowsForForm as $partnerEmailRowIndex => $partnerEmailRow): ?>
+                    <?php
+                    $partnerEmailIsFirst = ((int) $partnerEmailRowIndex === 0);
+                    require __DIR__ . '/partials/partner_email_row.php';
+                    ?>
+                <?php endforeach; ?>
             </div>
-            <p class="help">Milyen automatikus e-maileket kapjon a partner erre a címre.</p>
+            <p class="toolbar" style="margin-top:0.5rem;">
+                <button type="button" class="btn btn-secondary btn-sm" id="partner-email-add">+ E-mail</button>
+            </p>
+            <p class="help">Az első cím a bejelentkezési e-mail. Minden címhez külön állítható, milyen automatikus e-maileket kapjon.</p>
         </div>
         <div class="form-group">
             <label for="telefon">Telefon</label>
@@ -393,6 +384,19 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         </p>
     </form>
 </div>
+
+<template id="partner-email-row-template">
+<?php
+$partnerEmailRowIndex = '__INDEX__';
+$partnerEmailRow = [
+    'email' => '',
+    'email_event_bekerult' => true,
+    'email_szervezo_stat' => true,
+];
+$partnerEmailIsFirst = false;
+require __DIR__ . '/partials/partner_email_row.php';
+?>
+</template>
 
 <template id="partner-organizer-row-template">
 <?php
@@ -470,6 +474,7 @@ require __DIR__ . '/partials/activity_log.php';
 
 <?php require dirname(__DIR__, 2) . '/events/partials/wp_token_input_script.php'; ?>
 <?php require __DIR__ . '/partials/partner_assignment_script.php'; ?>
+<?php require __DIR__ . '/partials/partner_email_script.php'; ?>
 <?php require dirname(__DIR__, 2) . '/events/partials/html_editor_script.php'; ?>
 
 <?php require_once dirname(__DIR__, 2) . '/partials/footer.php'; ?>

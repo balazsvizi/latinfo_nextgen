@@ -6816,11 +6816,24 @@ a.events-rt-person:hover .events-rt-person__name {
     gap: 1rem;
     align-items: end;
 }
+.partner-email-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
 .partner-email-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+.partner-email-row__main {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.65rem 1rem;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 .partner-email-field .partner-email-row__input {
     flex: 1 1 16rem;
@@ -6835,6 +6848,23 @@ a.events-rt-person:hover .events-rt-person__name {
     gap: 0.45rem 0.75rem;
     margin: 0;
     flex: 0 1 auto;
+}
+.partner-email-row__remove {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    margin-top: 0.15rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.partner-email-row__remove:hover {
+    color: #dc3545;
+    border-color: #dc3545;
 }
 .form-group.partner-email-field .partner-email-switch {
     display: inline-flex;
