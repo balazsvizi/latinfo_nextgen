@@ -117,7 +117,7 @@ if ($organizerFinanceJson === false) {
         <label class="events-toggle" for="event_allday">
             <input type="checkbox" name="event_allday" value="1" id="event_allday" class="events-toggle__input" <?= !empty($e['event_allday']) ? 'checked' : '' ?>>
             <span class="events-toggle__ui" aria-hidden="true"></span>
-            <span class="events-toggle__label">Egész napos</span>
+            <span class="events-toggle__label">Időpont nélkül</span>
         </label>
     </div>
     <div class="form-row events-edit-dates-grid">
@@ -156,9 +156,6 @@ if ($organizerFinanceJson === false) {
 <div class="events-edit-panel events-edit-panel--tone-url">
     <h3 class="events-edit-panel__title">További információ</h3>
     <div class="form-group events-url-open-row">
-        <?php
-        $eventUrlRequiredForPublish = ($e['event_status'] ?? '') === events_public_post_status();
-        ?>
         <input
             type="url"
             id="event_url"
@@ -166,9 +163,8 @@ if ($organizerFinanceJson === false) {
             value="<?= h($e['event_url']) ?>"
             maxlength="2000"
             placeholder="https://"
-            aria-label="További információ URL<?= $eventUrlRequiredForPublish ? ' (közzétételhez kötelező)' : '' ?>"
+            aria-label="További információ URL"
             data-required-for-publish="1"
-            <?= $eventUrlRequiredForPublish ? 'required' : '' ?>
         >
         <?php if (!empty($e['event_url'])): ?>
             <a class="btn btn-secondary events-url-open-btn" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a>

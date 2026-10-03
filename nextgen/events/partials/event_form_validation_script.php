@@ -58,12 +58,20 @@
 
     function syncContentRequired() {
         if (!contentInp) return;
-        var preliminary = intendedStatus() === preliminaryStatus;
-        if (preliminary) {
+        var status = intendedStatus();
+        // Előzetes / piszkozat: leírás nem kötelező. Közzétételhez igen.
+        if (status === preliminaryStatus || status === 'draft' || status === 'auto-draft') {
             contentInp.removeAttribute('required');
-        } else {
+        } else if (status === publishStatus) {
             contentInp.setAttribute('required', 'required');
+        } else {
+            contentInp.removeAttribute('required');
         }
+    }
+
+    function syncRequiredFields() {
+        syncEventUrlRequired();
+        syncContentRequired();
     }
 
     function applyPreliminaryContent(checked) {
@@ -81,7 +89,12 @@
                 api.setData(template);
             } else {
                 preliminaryFill.checked = false;
+                return;
             }
+            if (statusSelect && statusSelect.value !== preliminaryStatus) {
+                statusSelect.value = preliminaryStatus;
+            }
+            syncRequiredFields();
             return;
         }
         if (normalizeHtml(current) === normalizeHtml(template) || currentPlain === templatePlain) {
@@ -89,39 +102,51 @@
         }
     }
 
+    function resolveSubmitterForm(submitter) {
+        if (!submitter) return null;
+        if (submitter.form) return submitter.form;
+        var formId = submitter.getAttribute('form');
+        if (formId) {
+            return document.getElementById(formId);
+        }
+        return null;
+    }
+
     if (statusSelect) {
-        statusSelect.addEventListener('change', function () {
-            syncEventUrlRequired();
-            syncContentRequired();
-        });
+        statusSelect.addEventListener('change', syncRequiredFields);
+        statusSelect.addEventListener('input', syncRequiredFields);
     }
     if (preliminaryFill) {
         preliminaryFill.addEventListener('change', function () {
             applyPreliminaryContent(!!preliminaryFill.checked);
-            if (preliminaryFill.checked && statusSelect && statusSelect.value !== preliminaryStatus && statusSelect.value !== publishStatus) {
-                statusSelect.value = preliminaryStatus;
-                syncEventUrlRequired();
-                syncContentRequired();
-            }
         });
     }
-    form.querySelectorAll('button[type="submit"][name="save_action"]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            pendingSaveAction = btn.value || '';
-            syncEventUrlRequired();
-            syncContentRequired();
-        });
-    });
+
+    // Capture: a böngésző HTML5 validációja ELŐTT szinkronizáljuk a required-eket
+    // (lebegő Mentés gomb is form="events-edit-form"-mal jön).
+    document.addEventListener('click', function (e) {
+        var submitter = e.target && e.target.closest
+            ? e.target.closest('button[type="submit"], input[type="submit"]')
+            : null;
+        if (!submitter || resolveSubmitterForm(submitter) !== form) {
+            return;
+        }
+        pendingSaveAction = submitter.name === 'save_action' ? (submitter.value || '') : '';
+        syncRequiredFields();
+        var api = contentApi();
+        if (api && contentInp) {
+            contentInp.value = api.getData();
+        }
+    }, true);
+
     form.addEventListener('submit', function () {
-        syncEventUrlRequired();
-        syncContentRequired();
+        syncRequiredFields();
         var api = contentApi();
         if (api && contentInp) {
             contentInp.value = api.getData();
         }
     });
-    syncEventUrlRequired();
-    syncContentRequired();
+    syncRequiredFields();
 
     form.addEventListener('invalid', function (e) {
         var el = e.target;
@@ -158,7 +183,7 @@
         }
     }, true);
 
-    form.addEventListener('change', function (e) {
+    form.addEventListener('change', function () {
         if (!alertEl || alertEl.hidden) {
             return;
         }
