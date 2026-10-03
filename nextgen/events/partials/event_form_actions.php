@@ -6,11 +6,15 @@ declare(strict_types=1);
 /** @var bool $eventFormIsCopy Másolat létrehozása (státuszos mentés gombok) */
 /** @var bool $eventFormShowStatusSaveActions Létrehozás: Mentés / Előzetes / Közzététel */
 /** @var bool $eventFormShowNotifyEmail Szerkesztő: szervezői értesítő e-mail gomb */
+/** @var bool $eventFormShowTrash Szerkesztő: lomtárba helyezés */
+/** @var bool $eventFormShowPermanentDelete Szerkesztő: végleges törlés (lomtár) */
 $eventFormCancelUrl = $eventFormCancelUrl ?? events_url('events_admin.php');
 $eventFormCopyUrl = $eventFormCopyUrl ?? null;
 $eventFormIsCopy = !empty($eventFormIsCopy);
 $eventFormShowStatusSaveActions = !empty($eventFormShowStatusSaveActions) || $eventFormIsCopy;
 $eventFormShowNotifyEmail = !empty($eventFormShowNotifyEmail);
+$eventFormShowTrash = !empty($eventFormShowTrash);
+$eventFormShowPermanentDelete = !empty($eventFormShowPermanentDelete);
 $placement = $eventFormActionsPlacement ?? 'footer';
 $actionsClass = 'events-edit-form-actions'
     . ($placement === 'sidebar' ? ' events-edit-form-actions--sidebar' : '')
@@ -44,4 +48,24 @@ $actionsClass = 'events-edit-form-actions'
         <a href="<?= h($eventFormCopyUrl) ?>" class="btn btn-secondary">Másolás</a>
     <?php endif; ?>
     <a href="<?= h($eventFormCancelUrl) ?>" class="btn btn-secondary">Mégse</a>
+    <?php if ($eventFormShowTrash): ?>
+        <button
+            type="submit"
+            class="btn btn-danger events-edit-form-actions__delete"
+            name="form_action"
+            value="trash"
+            formnovalidate
+            onclick="return confirm('Biztosan a lomtárba helyezed ezt az eseményt?');"
+        >Törlés</button>
+    <?php endif; ?>
+    <?php if ($eventFormShowPermanentDelete): ?>
+        <button
+            type="submit"
+            class="btn btn-danger events-edit-form-actions__delete"
+            name="form_action"
+            value="permanent_delete"
+            formnovalidate
+            onclick="return confirm('Biztosan véglegesen törlöd ezt az eseményt? A művelet nem vonható vissza. A kapcsolódó adatok törlődnek; a borítókép csak akkor, ha máshol nem használják.');"
+        >Végleges törlés</button>
+    <?php endif; ?>
 </div>

@@ -46,14 +46,25 @@ $e = events_row_for_form($event);
 if ($e['finance_payer_organizer_ids'] === [] && $e['organizer_ids'] !== []) {
     $e['finance_payer_organizer_ids'] = array_slice($e['organizer_ids'], 0, 2);
 }
-$eventFormShowPermanentDelete = (string) ($event['event_status'] ?? '') === 'trash';
+$eventStatusCurrent = (string) ($event['event_status'] ?? '');
+$eventFormShowPermanentDelete = $eventStatusCurrent === 'trash';
+$eventFormShowTrash = $eventStatusCurrent !== 'trash';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('events_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
     $formAction = (string) ($_POST['form_action'] ?? 'save');
-    if ($formAction === 'permanent_delete') {
+    if ($formAction === 'trash') {
+        [$trashed, $trashMsg] = events_trash_event($db, $id);
+        if (!$trashed) {
+            $hiba = $trashMsg;
+        } else {
+            rendszer_log('esemény', $id, 'Lomtárba helyezve', $trashMsg);
+            flash('success', 'Az esemény a lomtárba került.');
+            redirect(events_url('szerkeszt.php?id=') . $id);
+        }
+    } elseif ($formAction === 'permanent_delete') {
         [$deleted, $deleteMsg] = events_permanent_delete_event($db, $id);
         if (!$deleted) {
             $hiba = $deleteMsg;

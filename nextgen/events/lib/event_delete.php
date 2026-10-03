@@ -6,6 +6,46 @@ require_once __DIR__ . '/style_request.php';
 require_once __DIR__ . '/tag_type.php';
 
 /**
+ * Esemény lomtárba helyezése (státusz → trash).
+ *
+ * @return array{0: bool, 1: string} [success, eseménynév vagy hibaüzenet]
+ */
+function events_trash_event(PDO $db, int $eventId): array
+{
+    if ($eventId <= 0) {
+        return [false, 'Érvénytelen esemény azonosító.'];
+    }
+
+    $st = $db->prepare('
+        SELECT `id`, `event_name`, `event_status`
+        FROM `events_calendar_events`
+        WHERE `id` = ?
+        LIMIT 1
+    ');
+    $st->execute([$eventId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return [false, 'Esemény nem található.'];
+    }
+
+    $eventName = trim((string) ($row['event_name'] ?? ''));
+    if ((string) ($row['event_status'] ?? '') === 'trash') {
+        return [false, 'Az esemény már a lomtárban van.'];
+    }
+
+    try {
+        $upd = $db->prepare('UPDATE `events_calendar_events` SET `event_status` = ? WHERE `id` = ?');
+        $upd->execute(['trash', $eventId]);
+    } catch (Throwable $e) {
+        error_log('events_trash_event: ' . $e->getMessage());
+
+        return [false, 'A törlés nem sikerült. Kérlek próbáld újra.'];
+    }
+
+    return [true, $eventName !== '' ? $eventName : ('#' . $eventId)];
+}
+
+/**
  * Esemény végleges törlése (csak lomtár státusz). Kapcsolótáblák, megtekintések;
  * eventpics fájl csak akkor törlődik, ha máshol nem használják.
  *
