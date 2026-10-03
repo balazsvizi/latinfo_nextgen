@@ -6427,12 +6427,22 @@ html.events-stats-loading-active body {
     font-size: 0.85rem;
     color: var(--text-secondary, #6b7280);
 }
+.events-rt-recent-event-date {
+    max-width: 16rem;
+    white-space: normal;
+}
+.events-rt-recent-event-date--upcoming {
+    color: #1f6b3a;
+}
+.events-rt-recent-event-date--past {
+    color: #8a6a1f;
+}
 .events-rt-recent-detail {
     white-space: normal;
     max-width: 18rem;
 }
 .events-rt-table--recent {
-    min-width: 720px;
+    min-width: 860px;
 }
 .events-rt-table--recent tbody tr[data-visitor-key] {
     box-shadow: inset 4px 0 0 var(--rt-c, transparent);

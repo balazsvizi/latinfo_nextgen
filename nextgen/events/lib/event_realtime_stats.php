@@ -130,6 +130,40 @@ function events_realtime_metric_label(string $metric): string
     };
 }
 
+/**
+ * Recent tábla „Dátum” oszlop: jövőbeli/mai → hány nap múlva lesz kiemelten;
+ * múltbeli → hány napja volt + formázott dátum.
+ */
+function events_realtime_event_date_column(?string $eventStart, string $formattedDate = ''): array
+{
+    $formatted = trim($formattedDate);
+    if ($formatted === '') {
+        $formatted = '–';
+    }
+    $days = events_days_until_event_start($eventStart);
+    if ($days === null) {
+        return [
+            'event_date' => $formatted,
+            'event_days' => null,
+        ];
+    }
+    if ($days > 0) {
+        $label = $days . ' nap múlva lesz kiemelten';
+    } elseif ($days === 0) {
+        $label = 'Ma lesz kiemelten';
+    } else {
+        $label = abs($days) . ' napja volt';
+        if ($formatted !== '–') {
+            $label .= ' · ' . $formatted;
+        }
+    }
+
+    return [
+        'event_date' => $label,
+        'event_days' => $days,
+    ];
+}
+
 function events_realtime_kind_label(string $kind): string
 {
     return match ($kind) {
@@ -524,6 +558,7 @@ function events_realtime_presence_from_items(array $items): array
  *     event_id: int,
  *     name: string,
  *     event_date: string,
+ *     event_days: ?int,
  *     metric: string,
  *     metric_label: string,
  *     source: string,
@@ -1336,6 +1371,10 @@ function events_realtime_recent_all(
             default => 'party',
         };
         $isBot = (int) ($row['is_bot'] ?? 0) === 1;
+        $dateCol = events_realtime_event_date_column(
+            isset($row['event_start']) ? (string) $row['event_start'] : null,
+            events_admin_format_datum_cell($row)
+        );
         $items[] = events_realtime_with_visitor([
             'at' => (string) ($row['at_ts'] ?? ''),
             'kind' => $kind,
@@ -1345,7 +1384,8 @@ function events_realtime_recent_all(
             'detail' => events_realtime_source_label($source),
             'event_id' => $eventId,
             'name' => $name,
-            'event_date' => events_admin_format_datum_cell($row),
+            'event_date' => $dateCol['event_date'],
+            'event_days' => $dateCol['event_days'],
             'metric' => $metric,
             'metric_label' => events_realtime_metric_label($metric),
             'source' => $source,
@@ -1389,6 +1429,7 @@ function events_realtime_recent_all(
                     'event_id' => 0,
                     'name' => $target,
                     'event_date' => '–',
+                    'event_days' => null,
                     'metric' => 'nav_click',
                     'metric_label' => events_realtime_metric_label('nav_click'),
                     'source' => $navKey,
@@ -1410,6 +1451,7 @@ function events_realtime_recent_all(
                     'event_id' => 0,
                     'name' => $target,
                     'event_date' => '–',
+                    'event_days' => null,
                     'metric' => 'hub_page',
                     'metric_label' => events_realtime_metric_label('hub_page'),
                     'source' => $pageKey,
@@ -1448,6 +1490,7 @@ function events_realtime_recent_all(
                 'event_id' => 0,
                 'name' => $text,
                 'event_date' => '–',
+                'event_days' => null,
                 'metric' => 'notice_click',
                 'metric_label' => events_realtime_metric_label('notice_click'),
                 'source' => 'notice',
@@ -1488,6 +1531,7 @@ function events_realtime_recent_all(
                 'event_id' => 0,
                 'name' => $title,
                 'event_date' => '–',
+                'event_days' => null,
                 'metric' => 'cms_page',
                 'metric_label' => events_realtime_metric_label('cms_page'),
                 'source' => $source,
@@ -1535,6 +1579,7 @@ function events_realtime_recent_all(
                 'event_id' => 0,
                 'name' => $target,
                 'event_date' => '–',
+                'event_days' => null,
                 'metric' => 'module_click',
                 'metric_label' => events_realtime_metric_label('module_click'),
                 'source' => $moduleKey,
@@ -1574,6 +1619,7 @@ function events_realtime_recent_all(
                 'event_id' => 0,
                 'name' => $target,
                 'event_date' => '–',
+                'event_days' => null,
                 'metric' => 'mobilapp',
                 'metric_label' => events_realtime_metric_label('mobilapp'),
                 'source' => $type,
@@ -1634,6 +1680,7 @@ function events_realtime_recent_all(
                 'event_id' => $entityType === 'event' ? $entityId : 0,
                 'name' => $target,
                 'event_date' => '–',
+                'event_days' => null,
                 'metric' => 'favorite',
                 'metric_label' => events_realtime_metric_label('favorite'),
                 'source' => $entityType,
@@ -1666,6 +1713,7 @@ function events_realtime_recent_all(
                 'event_id' => 0,
                 'name' => $target,
                 'event_date' => '–',
+                'event_days' => null,
                 'metric' => 'rating',
                 'metric_label' => events_realtime_metric_label('rating'),
                 'source' => 'rating',

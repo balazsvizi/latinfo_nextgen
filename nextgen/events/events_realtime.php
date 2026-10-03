@@ -326,6 +326,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <button type="button" class="th-sort" data-sort="target" aria-pressed="false">Cél</button>
                         </th>
                         <th scope="col">
+                            <button type="button" class="th-sort" data-sort="event_date" aria-pressed="false">Dátum</button>
+                        </th>
+                        <th scope="col">
                             <button type="button" class="th-sort" data-sort="detail" aria-pressed="false">Részlet</button>
                         </th>
                         <th scope="col">
@@ -334,7 +337,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     </tr>
                 </thead>
                 <tbody id="events-rt-recent-body">
-                    <tr class="events-rt-empty-row"><td colspan="5">Betöltés…</td></tr>
+                    <tr class="events-rt-empty-row"><td colspan="6">Betöltés…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -655,6 +658,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             r.kind || '',
             r.kind_label || r.metric_label || '',
             r.target || r.name || '',
+            r.event_date || '',
             r.detail || r.source_label || '',
             mark.label || '',
             mark.code || '',
@@ -667,6 +671,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
         if (key === 'at') return String(r.at || '');
         if (key === 'kind') return String(r.kind_label || r.kind || '');
         if (key === 'target') return String(r.target || r.name || '');
+        if (key === 'event_date') {
+            if (r.event_days != null && r.event_days !== '') {
+                return Number(r.event_days);
+            }
+            return String(r.event_date || '');
+        }
         if (key === 'detail') return String(r.detail || r.source_label || '');
         if (key === 'visitor') return String(mark.label || '');
         return '';
@@ -701,7 +711,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
         rows.sort(function (a, b) {
             var va = recentSortValue(a, recentSortKey);
             var vb = recentSortValue(b, recentSortKey);
-            var cmp = String(va).localeCompare(String(vb), 'hu', { sensitivity: 'base', numeric: true });
+            var cmp;
+            if (typeof va === 'number' && typeof vb === 'number') {
+                cmp = va - vb;
+            } else if (typeof va === 'number') {
+                cmp = -1;
+            } else if (typeof vb === 'number') {
+                cmp = 1;
+            } else {
+                cmp = String(va).localeCompare(String(vb), 'hu', { sensitivity: 'base', numeric: true });
+            }
             if (cmp === 0) {
                 cmp = String(a.at || '').localeCompare(String(b.at || ''), 'hu');
             }
@@ -717,7 +736,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         updateRecentSortHeaders();
 
         if (!recentRows.length) {
-            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs friss aktivitás.</td></tr>';
+            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="6">Nincs friss aktivitás.</td></tr>';
             setText('events-rt-recent-visible', 0);
             return;
         }
@@ -725,7 +744,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         var rows = filteredRecentRows();
         setText('events-rt-recent-visible', rows.length);
         if (!rows.length) {
-            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="5">Nincs találat a szűrésre.</td></tr>';
+            body.innerHTML = '<tr class="events-rt-empty-row"><td colspan="6">Nincs találat a szűrésre.</td></tr>';
             return;
         }
 
@@ -741,12 +760,21 @@ require_once dirname(__DIR__) . '/partials/header.php';
             var kind = r.kind || '';
             var kindLabel = r.kind_label || r.metric_label || '';
             var detail = r.detail || r.source_label || '';
+            var eventDate = r.event_date || '–';
+            var days = r.event_days;
+            var dateClass = 'events-rt-recent-event-date';
+            if (days != null && days !== '' && Number(days) < 0) {
+                dateClass += ' events-rt-recent-event-date--past';
+            } else if (days != null && days !== '' && Number(days) >= 0) {
+                dateClass += ' events-rt-recent-event-date--upcoming';
+            }
             var mark = visitorOf(r);
             var rowAttr = mark.key ? ' data-visitor-key="' + esc(mark.key) + '"' : '';
             return '<tr' + rowAttr + ' style="--rt-c:' + mark.color + '">'
                 + '<td class="events-rt-recent-time">' + esc(r.at || '') + '</td>'
                 + '<td><span class="events-rt-kind ' + kindClass(kind) + '">' + esc(kindLabel) + '</span></td>'
                 + '<td>' + nameHtml + '</td>'
+                + '<td class="' + dateClass + '">' + esc(eventDate) + '</td>'
                 + '<td class="events-rt-recent-detail">' + esc(detail) + '</td>'
                 + '<td>' + whoButtonHtml(mark) + '</td>'
                 + '</tr>';
