@@ -2,15 +2,16 @@
 declare(strict_types=1);
 
 /**
- * Éves / havi esemény-összehasonlító UI.
+ * Év/év esemény-összehasonlító UI.
  *
- * @var array{year:int,bucket_by:string,status:string} $statsParams
+ * @var array{year_from:int,year_to:int,bucket_by:string,status:string} $statsParams
  * @var array<string, mixed> $statsData
  * @var string $statsFormAction
  */
 
 $statsParams = $statsParams ?? [
-    'year' => (int) date('Y'),
+    'year_from' => (int) date('Y') - 4,
+    'year_to' => (int) date('Y'),
     'bucket_by' => 'event_start',
     'status' => 'public',
     'mode' => 'smart',
@@ -19,12 +20,12 @@ $statsData = is_array($statsData ?? null) ? $statsData : [];
 $statsFormAction = (string) ($statsFormAction ?? '');
 
 $summary = is_array($statsData['summary'] ?? null) ? $statsData['summary'] : [];
-$months = is_array($statsData['months'] ?? null) ? $statsData['months'] : [];
+$years = is_array($statsData['years'] ?? null) ? $statsData['years'] : [];
 $chart = is_array($statsData['chart'] ?? null) ? $statsData['chart'] : [];
 $insights = is_array($statsData['insights'] ?? null) ? $statsData['insights'] : [];
 $availableYears = is_array($statsData['available_years'] ?? null) ? $statsData['available_years'] : [];
-$year = (int) ($statsData['year'] ?? $statsParams['year']);
-$prevYear = (int) ($statsData['prev_year'] ?? ($year - 1));
+$yearFrom = (int) ($statsData['year_from'] ?? $statsParams['year_from']);
+$yearTo = (int) ($statsData['year_to'] ?? $statsParams['year_to']);
 $bucketBy = (string) ($statsParams['bucket_by'] ?? 'event_start');
 $status = (string) ($statsParams['status'] ?? 'public');
 $statsMode = events_edit_stats_normalize_mode($statsParams['mode'] ?? ($statsData['mode'] ?? 'smart'));
@@ -57,10 +58,10 @@ $pctClass = static function (?float $v): string {
         return '';
     }
     if ($v > 0) {
-        return ' events-monthly-stats__delta--up';
+        return ' events-yearly-stats__delta--up';
     }
     if ($v < 0) {
-        return ' events-monthly-stats__delta--down';
+        return ' events-yearly-stats__delta--down';
     }
 
     return '';
@@ -73,7 +74,8 @@ $buildUrl = static function (array $overrides) use ($statsFormAction, $statsPara
     $q = array_merge($statsParams, $overrides);
 
     return $statsFormAction . '?' . http_build_query([
-        'stat_year' => (int) $q['year'],
+        'stat_year_from' => (int) $q['year_from'],
+        'stat_year_to' => (int) $q['year_to'],
         'stat_bucket' => (string) $q['bucket_by'],
         'stat_status' => (string) $q['status'],
         'stat_mode' => events_edit_stats_normalize_mode($q['mode'] ?? 'smart'),
@@ -81,32 +83,34 @@ $buildUrl = static function (array $overrides) use ($statsFormAction, $statsPara
 };
 
 $helpTexts = [
-    'Év' => 'A vizsgált naptári év. A gyorsgombok a rendelkezésre álló évek között váltanak.',
-    'Hónap szerint' => 'Esemény dátuma: a hónap az event_start alapján. Publikálás dátuma: a hónap az event_published_at (első közzététel) alapján.',
+    'Évtől' => 'A tartomány kezdő éve. A gyorsgombok gyakori intervallumokat állítanak be.',
+    'Évig' => 'A tartomány záró éve (beleértve).',
+    'Év szerint' => 'Esemény dátuma: az év az event_start alapján. Publikálás dátuma: az év az event_published_at (első közzététel) alapján.',
     'Státusz' => 'Közzétéve + előzetes: nyilvános események. Csak közzétéve: publish. Összes: lomtár és auto-draft nélkül.',
     'Számítási mód' => 'Latinfo.hu smart stat: csak emberi forgalom, és csak az esemény záró napján vagy azelőtt. Összes: botok és esemény utáni kattintások is beleszámítanak.',
-    'Események' => 'A választott évben, a hónap-szabály és státuszszűrő szerint számolt események összesen. Az év/év százalék az előző évhez viszonyít.',
-    'Kattintások (ember)' => 'Smart mód: botok nélkül, csak az esemény záró napjáig. Oldalmegnyitás + „További információ”. Az adott hónapba sorolt események forgalma.',
-    'Kattintások (összes)' => 'Összes mód: botok és esemény utáni kattintások is. Oldalmegnyitás + „További információ” az adott hónap eseményein.',
-    'Kattintás / esemény' => '(Oldalnézet + további info kattintás) ÷ eseményszám. Megmutatja, átlagosan hány emberi interakció jut egy eseményre.',
-    'Átlag lead time' => 'Átlagos napok a publikálás (event_published_at) és az esemény napja (event_start) között. Csak ahol van publikálási dátum, és az nem későbbi, mint az esemény.',
-    'Külső CTR' => 'További info kattintások ÷ oldalnézetek × 100. Az eseményoldalról a külső linkre („További információ”) váltás aránya.',
-    'Adatminőség' => 'Kitöltöttség: helyszínnel, illetve külső URL-lel rendelkező események aránya az összeshez képest.',
-    'Események és forgalom' => 'Oszlopok: eseményszám az aktuális és az előző évben. Vonalak: emberi oldalnézet és további info kattintás az adott hónap eseményein (életciklus).',
-    'Kattintás / esemény grafikon' => 'Havi kattintás/esemény arány időbeli alakulása — (oldal + további info) / esemény.',
-    'Lead time (nap)' => 'Havi átlagos előkészítési idő: publikálás és esemény napja közötti napok száma.',
-    'Hónap' => 'A naptári hónap a választott évben.',
-    'Esemény' => 'Az adott hónapba sorolt események száma (a „Hónap szerint” szűrő alapján).',
-    'Hó/hó' => 'Az eseményszám százalékos változása az előző hónaphoz képest. Januárnál az előző év decemberéhez viszonyít.',
-    'Év/év' => 'Az eseményszám százalékos változása az előző év ugyanazon hónapjához képest.',
-    'Oldal' => 'Emberi (nem bot) oldalmegnyitások az adott hónapba sorolt eseményeken, a teljes életciklus alatt.',
-    'További info' => 'Emberi „További információ” / külső link átkattintások az adott hónap eseményein (életciklus).',
-    'Katt / esemény' => '(Oldal + További info) ÷ Esemény. Üres, ha nincs esemény a hónapban.',
+    'Események' => 'A választott évtartományban, az év-szabály és státuszszűrő szerint számolt események összesen.',
+    'Kattintások (ember)' => 'Smart mód: botok nélkül, csak az esemény záró napjáig. Oldalmegnyitás + „További információ” az adott év eseményein.',
+    'Kattintások (összes)' => 'Összes mód: botok és esemény utáni kattintások is. Oldalmegnyitás + „További információ” az adott év eseményein.',
+    'Kattintás / esemény' => '(Oldalnézet + további info kattintás) ÷ eseményszám a teljes tartományra.',
+    'Átlag lead time' => 'Átlagos napok a publikálás és az esemény napja között a tartomány eseményein. Csak ahol a publikálás nem későbbi, mint az esemény.',
+    'Külső CTR' => 'További info kattintások ÷ oldalnézetek × 100 a teljes tartományra.',
+    'Adatminőség' => 'Helyszínnel, illetve külső URL-lel rendelkező események aránya az összeshez képest a tartományban.',
+    'Események és forgalom' => 'Oszlop: éves eseményszám. Vonalak: emberi oldalnézet és további info kattintás az év eseményein (életciklus).',
+    'Kattintás / esemény grafikon' => 'Éves kattintás/esemény arány időbeli alakulása.',
+    'Lead time (nap)' => 'Éves átlagos előkészítési idő: publikálás és esemény napja közötti napok.',
+    'Év/év változás' => 'Az eseményszám százalékos változása az előző évhez képest, évenként.',
+    'Év' => 'A naptári év a választott tartományban.',
+    'Esemény' => 'Az adott évbe sorolt események száma (az „Év szerint” szűrő alapján).',
+    'Év/év' => 'Az eseményszám százalékos változása az előző évhez képest.',
+    'Katt. év/év' => 'Az emberi kattintások (oldal + további info) százalékos változása az előző évhez képest.',
+    'Oldal' => 'Emberi oldalmegnyitások az adott évbe sorolt eseményeken, a teljes életciklus alatt.',
+    'További info' => 'Emberi „További információ” / külső link átkattintások az adott év eseményein (életciklus).',
+    'Katt / esemény' => '(Oldal + További info) ÷ Esemény. Üres, ha nincs esemény az évben.',
     'CTR %' => 'További info ÷ Oldal × 100. Üres, ha nincs oldalnézet.',
-    'Lead nap' => 'Átlagos napok a publikálás és az esemény között abban a hónapban.',
-    'Szervező' => 'Egyedi szervezők száma, akikhez legalább egy esemény tartozik az adott hónapban.',
-    'Helyszín %' => 'Helyszínhez (venue) kötött események aránya a hónap eseményei között.',
-    'URL %' => 'Külső URL-lel (event_url) rendelkező események aránya a hónap eseményei között.',
+    'Lead nap' => 'Átlagos napok a publikálás és az esemény között abban az évben.',
+    'Szervező' => 'Egyedi szervezők száma, akikhez legalább egy esemény tartozik az adott évben.',
+    'Helyszín %' => 'Helyszínhez (venue) kötött események aránya az év eseményei között.',
+    'URL %' => 'Külső URL-lel (event_url) rendelkező események aránya az év eseményei között.',
 ];
 
 $renderHelp = static function (string $key, bool $wide = false) use ($helpTexts): void {
@@ -114,7 +118,7 @@ $renderHelp = static function (string $key, bool $wide = false) use ($helpTexts)
     if ($help === '') {
         return;
     }
-    $helpId = 'monthly-help-' . substr(sha1($key), 0, 10);
+    $helpId = 'yearly-help-' . substr(sha1($key), 0, 10);
     ?>
     <span class="events-edit-stats__info">
         <button
@@ -136,33 +140,44 @@ $renderHelp = static function (string $key, bool $wide = false) use ($helpTexts)
 
 $thHelp = static function (string $label, string $helpKey, string $extraClass = 'th-center') use ($renderHelp): void {
     ?>
-    <th class="<?= h($extraClass) ?> events-monthly-stats__th" scope="col">
-        <span class="events-monthly-stats__th-inner">
+    <th class="<?= h($extraClass) ?> events-yearly-stats__th" scope="col">
+        <span class="events-yearly-stats__th-inner">
             <span><?= h($label) ?></span>
             <?php $renderHelp($helpKey); ?>
         </span>
     </th>
     <?php
 };
+
+$presetRanges = [];
+if ($availableYears !== []) {
+    $maxAvail = max(array_map('intval', $availableYears));
+    $minAvail = min(array_map('intval', $availableYears));
+    $presetRanges = [
+        ['label' => '5 év', 'from' => max($minAvail, $maxAvail - 4), 'to' => $maxAvail],
+        ['label' => '3 év', 'from' => max($minAvail, $maxAvail - 2), 'to' => $maxAvail],
+        ['label' => 'Összes', 'from' => $minAvail, 'to' => $maxAvail],
+    ];
+}
 ?>
-<div class="card events-edit-stats events-monthly-stats">
+<div class="card events-edit-stats events-yearly-stats">
     <p class="events-edit-stats__intro">
-        Éves áttekintés havi bontásban: eseményszám, megtekintések / kattintások, kattintás/esemény arány,
+        Évek összehasonlítása: eseményszám, megtekintések / kattintások, kattintás/esemény arány,
         valamint a publikálás és az esemény napja közötti átlagos előkészítési idő.
-        A forgalmi adatok az adott hónapba sorolt események metrikái
+        A forgalmi adatok az adott évbe sorolt események metrikái
         <?php if ($isSmartMode): ?>
             (<strong>Latinfo.hu smart</strong>: emberi, esemény záró napjáig).
         <?php else: ?>
             (<strong>összes</strong>: botokkal és esemény utáni kattintásokkal).
         <?php endif; ?>
-        Összehasonlítás: előző hónap (hó/hó) és <?= (int) $prevYear ?> ugyanaz a hónapja (év/év).
+        Az <strong>év/év</strong> oszlop mindig az előző évhez viszonyít.
     </p>
 
     <form method="get" action="<?= h($statsFormAction) ?>" class="events-edit-stats__filters">
         <div class="events-edit-stats__mode-bar<?= $isSmartMode ? ' events-edit-stats__mode-bar--smart' : ' events-edit-stats__mode-bar--all' ?>">
             <div class="events-edit-stats__mode-bar-top">
                 <div class="events-edit-stats__mode-bar-copy">
-                    <p class="events-edit-stats__mode-bar-title events-monthly-stats__title-with-info">
+                    <p class="events-edit-stats__mode-bar-title events-yearly-stats__title-with-info">
                         <span>Számítási mód</span>
                         <?php $renderHelp('Számítási mód', true); ?>
                     </p>
@@ -187,39 +202,56 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
             </div>
         </div>
 
-        <div class="events-edit-stats__presets-row">
-            <span class="events-filter-label">Év</span>
-            <?php if ($availableYears !== []): ?>
-                <?php foreach ($availableYears as $y): ?>
-                    <?php $y = (int) $y; ?>
+        <?php if ($presetRanges !== []): ?>
+            <div class="events-edit-stats__presets-row">
+                <span class="events-filter-label">Tartomány</span>
+                <?php foreach ($presetRanges as $preset): ?>
+                    <?php
+                    $active = $yearFrom === (int) $preset['from'] && $yearTo === (int) $preset['to'];
+                    ?>
                     <a
-                        class="btn btn-sm <?= $y === $year ? 'btn-primary' : 'btn-secondary' ?>"
-                        href="<?= h($buildUrl(['year' => $y])) ?>"
-                    ><?= $y ?></a>
+                        class="btn btn-sm <?= $active ? 'btn-primary' : 'btn-secondary' ?>"
+                        href="<?= h($buildUrl(['year_from' => $preset['from'], 'year_to' => $preset['to']])) ?>"
+                    ><?= h((string) $preset['label']) ?></a>
                 <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
+            </div>
+        <?php endif; ?>
 
         <div class="events-edit-stats__filter-grid">
             <div class="form-group">
-                <label class="events-filter-label events-monthly-stats__label-with-info" for="stat_year">
-                    <span>Év</span>
-                    <?php $renderHelp('Év'); ?>
+                <label class="events-filter-label events-yearly-stats__label-with-info" for="stat_year_from">
+                    <span>Évtől</span>
+                    <?php $renderHelp('Évtől'); ?>
                 </label>
                 <input
                     class="events-filter-input"
                     type="number"
-                    name="stat_year"
-                    id="stat_year"
+                    name="stat_year_from"
+                    id="stat_year_from"
                     min="2000"
                     max="<?= (int) date('Y') + 5 ?>"
-                    value="<?= $year ?>"
+                    value="<?= $yearFrom ?>"
                 >
             </div>
             <div class="form-group">
-                <label class="events-filter-label events-monthly-stats__label-with-info" for="stat_bucket">
-                    <span>Hónap szerint</span>
-                    <?php $renderHelp('Hónap szerint', true); ?>
+                <label class="events-filter-label events-yearly-stats__label-with-info" for="stat_year_to">
+                    <span>Évig</span>
+                    <?php $renderHelp('Évig'); ?>
+                </label>
+                <input
+                    class="events-filter-input"
+                    type="number"
+                    name="stat_year_to"
+                    id="stat_year_to"
+                    min="2000"
+                    max="<?= (int) date('Y') + 5 ?>"
+                    value="<?= $yearTo ?>"
+                >
+            </div>
+            <div class="form-group">
+                <label class="events-filter-label events-yearly-stats__label-with-info" for="stat_bucket">
+                    <span>Év szerint</span>
+                    <?php $renderHelp('Év szerint', true); ?>
                 </label>
                 <select class="events-filter-input" name="stat_bucket" id="stat_bucket">
                     <option value="event_start"<?= $bucketBy === 'event_start' ? ' selected' : '' ?>>Esemény dátuma</option>
@@ -227,7 +259,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                 </select>
             </div>
             <div class="form-group">
-                <label class="events-filter-label events-monthly-stats__label-with-info" for="stat_status">
+                <label class="events-filter-label events-yearly-stats__label-with-info" for="stat_status">
                     <span>Státusz</span>
                     <?php $renderHelp('Státusz', true); ?>
                 </label>
@@ -243,13 +275,13 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
             </div>
         </div>
         <p class="events-edit-stats__filter-hint">
-            Aktív nézet: <strong><?= $year ?></strong> · <?= h($bucketLabel) ?> · <?= h($statusLabel) ?>
+            Aktív nézet: <strong><?= $yearFrom ?>–<?= $yearTo ?></strong> · <?= h($bucketLabel) ?> · <?= h($statusLabel) ?>
             · <?= $isSmartMode ? 'smart' : 'összes' ?>.
         </p>
     </form>
     <script>
     (function () {
-        var form = document.querySelector('.events-monthly-stats form.events-edit-stats__filters');
+        var form = document.querySelector('.events-yearly-stats form.events-edit-stats__filters');
         if (!form) return;
         form.querySelectorAll('input[name="stat_mode"]').forEach(function (input) {
             input.addEventListener('change', function () {
@@ -270,9 +302,10 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                 <?php $renderHelp('Események', true); ?>
             </p>
             <p class="events-edit-stats__card-value"><?= $eventsCount ?></p>
-            <?php if (($summary['yoy_events_pct'] ?? null) !== null): ?>
-                <p class="events-edit-stats__card-hint<?= $pctClass(isset($summary['yoy_events_pct']) ? (float) $summary['yoy_events_pct'] : null) ?>">
-                    <?= h($fmtPct(isset($summary['yoy_events_pct']) ? (float) $summary['yoy_events_pct'] : null)) ?> vs <?= $prevYear ?>
+            <?php if (($summary['range_events_change_pct'] ?? null) !== null): ?>
+                <p class="events-edit-stats__card-hint<?= $pctClass(isset($summary['range_events_change_pct']) ? (float) $summary['range_events_change_pct'] : null) ?>">
+                    <?= h($fmtPct(isset($summary['range_events_change_pct']) ? (float) $summary['range_events_change_pct'] : null)) ?>
+                    első→utolsó év
                 </p>
             <?php endif; ?>
         </div>
@@ -295,9 +328,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                 <?php $renderHelp('Kattintás / esemény', true); ?>
             </p>
             <p class="events-edit-stats__card-value"><?= $clicksPerEvent !== null ? h((string) $clicksPerEvent) : '—' ?></p>
-            <p class="events-edit-stats__card-hint">
-                oldal + további info / eseményszám
-            </p>
+            <p class="events-edit-stats__card-hint">oldal + további info / eseményszám</p>
         </div>
         <div class="events-edit-stats__card">
             <p class="events-edit-stats__card-label-wrap">
@@ -331,9 +362,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
     </div>
 
     <?php if ($eventsCount === 0): ?>
-        <p class="help events-edit-stats__empty">
-            Nincs esemény a választott évben / szűrőkkel.
-        </p>
+        <p class="help events-edit-stats__empty">Nincs esemény a választott évtartományban / szűrőkkel.</p>
     <?php else: ?>
         <?php
         $peakEvents = is_array($insights['peak_events'] ?? null) ? $insights['peak_events'] : null;
@@ -341,25 +370,25 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
         $peakLead = is_array($insights['peak_lead_days'] ?? null) ? $insights['peak_lead_days'] : null;
         ?>
         <?php if ($peakEvents || $peakCpe || $peakLead): ?>
-            <ul class="events-monthly-stats__insights">
+            <ul class="events-yearly-stats__insights">
                 <?php if ($peakEvents): ?>
                     <li>
                         Legtöbb esemény:
-                        <strong><?= h((string) ($peakEvents['label_full'] ?? '')) ?></strong>
+                        <strong><?= (int) ($peakEvents['year'] ?? 0) ?></strong>
                         (<?= (int) ($peakEvents['events_count'] ?? 0) ?> db)
                     </li>
                 <?php endif; ?>
                 <?php if ($peakCpe): ?>
                     <li>
                         Legjobb kattintás/esemény:
-                        <strong><?= h((string) ($peakCpe['label_full'] ?? '')) ?></strong>
+                        <strong><?= (int) ($peakCpe['year'] ?? 0) ?></strong>
                         (<?= h((string) ($peakCpe['clicks_per_event'] ?? '')) ?>)
                     </li>
                 <?php endif; ?>
                 <?php if ($peakLead): ?>
                     <li>
                         Leghosszabb előkészítés:
-                        <strong><?= h((string) ($peakLead['label_full'] ?? '')) ?></strong>
+                        <strong><?= (int) ($peakLead['year'] ?? 0) ?></strong>
                         (átlag <?= h((string) ($peakLead['avg_lead_days'] ?? '')) ?> nap)
                     </li>
                 <?php endif; ?>
@@ -371,40 +400,40 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
         <div class="events-edit-stats__chart-wrap">
             <div class="events-edit-stats__chart-head">
                 <div>
-                    <h3 class="events-edit-stats__chart-title events-monthly-stats__title-with-info">
+                    <h3 class="events-edit-stats__chart-title events-yearly-stats__title-with-info">
                         <span>Események és forgalom</span>
                         <?php $renderHelp('Események és forgalom', true); ?>
                     </h3>
                     <p class="events-edit-stats__chart-hint">
-                        Oszlop: eseményszám (<?= $year ?> vs <?= $prevYear ?>). Vonal: emberi oldalnézet és további info kattintás.
+                        Oszlop: eseményszám. Vonal: emberi oldalnézet és további info kattintás.
                     </p>
                 </div>
             </div>
             <div class="events-edit-stats__chart-canvas">
-                <canvas id="monthly-stats-main-chart" aria-label="Havi események és forgalom"></canvas>
+                <canvas id="yearly-stats-main-chart" aria-label="Éves események és forgalom"></canvas>
             </div>
         </div>
-        <script type="application/json" id="monthly-stats-main-chart-data"><?= json_encode($chart, $jsonFlags) ?></script>
+        <script type="application/json" id="yearly-stats-main-chart-data"><?= json_encode($chart, $jsonFlags) ?></script>
 
         <div class="events-public-traffic-stats__chart-grid">
             <div class="events-edit-stats__chart-wrap">
                 <div class="events-edit-stats__chart-head">
                     <div>
-                        <h3 class="events-edit-stats__chart-title events-monthly-stats__title-with-info">
+                        <h3 class="events-edit-stats__chart-title events-yearly-stats__title-with-info">
                             <span>Kattintás / esemény</span>
                             <?php $renderHelp('Kattintás / esemény grafikon', true); ?>
                         </h3>
-                        <p class="events-edit-stats__chart-hint">Hány emberi interakció jut egy eseményre.</p>
+                        <p class="events-edit-stats__chart-hint">Hány emberi interakció jut egy eseményre évente.</p>
                     </div>
                 </div>
                 <div class="events-edit-stats__chart-canvas">
-                    <canvas id="monthly-stats-cpe-chart" aria-label="Kattintás per esemény"></canvas>
+                    <canvas id="yearly-stats-cpe-chart" aria-label="Kattintás per esemény évente"></canvas>
                 </div>
             </div>
             <div class="events-edit-stats__chart-wrap">
                 <div class="events-edit-stats__chart-head">
                     <div>
-                        <h3 class="events-edit-stats__chart-title events-monthly-stats__title-with-info">
+                        <h3 class="events-edit-stats__chart-title events-yearly-stats__title-with-info">
                             <span>Lead time (nap)</span>
                             <?php $renderHelp('Lead time (nap)', true); ?>
                         </h3>
@@ -412,24 +441,39 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                     </div>
                 </div>
                 <div class="events-edit-stats__chart-canvas">
-                    <canvas id="monthly-stats-lead-chart" aria-label="Lead time napokban"></canvas>
+                    <canvas id="yearly-stats-lead-chart" aria-label="Lead time napokban évente"></canvas>
                 </div>
+            </div>
+        </div>
+
+        <div class="events-edit-stats__chart-wrap">
+            <div class="events-edit-stats__chart-head">
+                <div>
+                    <h3 class="events-edit-stats__chart-title events-yearly-stats__title-with-info">
+                        <span>Év/év eseményszám változás</span>
+                        <?php $renderHelp('Év/év változás', true); ?>
+                    </h3>
+                    <p class="events-edit-stats__chart-hint">Százalékos változás az előző évhez képest.</p>
+                </div>
+            </div>
+            <div class="events-edit-stats__chart-canvas">
+                <canvas id="yearly-stats-yoy-chart" aria-label="Év/év változás"></canvas>
             </div>
         </div>
     <?php endif; ?>
 
-    <h3 class="events-edit-stats__events-title">Havi táblázat</h3>
+    <h3 class="events-edit-stats__events-title">Éves táblázat</h3>
     <p class="events-edit-stats__events-hint">
-        Hó/hó: változás az előző hónaphoz. Év/év: változás <?= $prevYear ?> ugyanazon hónapjához. Az „i” gombok magyarázzák az oszlopokat.
+        Év/év: változás az előző évhez. Az „i” gombok magyarázzák az oszlopokat.
     </p>
     <div class="table-wrap events-admin-table-wrap">
-        <table class="events-admin-table events-monthly-stats__table">
+        <table class="events-admin-table events-yearly-stats__table">
             <thead>
                 <tr>
-                    <?php $thHelp('Hónap', 'Hónap', ''); ?>
+                    <?php $thHelp('Év', 'Év', ''); ?>
                     <?php $thHelp('Esemény', 'Esemény'); ?>
-                    <?php $thHelp('Hó/hó', 'Hó/hó'); ?>
                     <?php $thHelp('Év/év', 'Év/év'); ?>
+                    <?php $thHelp('Katt. év/év', 'Katt. év/év'); ?>
                     <?php $thHelp('Oldal', 'Oldal'); ?>
                     <?php $thHelp('További info', 'További info'); ?>
                     <?php $thHelp('Katt / esemény', 'Katt / esemény'); ?>
@@ -441,19 +485,27 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($months as $row): ?>
+                <?php foreach ($years as $row): ?>
                     <?php
                     $hasData = (int) ($row['events_count'] ?? 0) > 0
                         || (int) ($row['total_clicks_human'] ?? 0) > 0;
+                    $haviUrl = events_url('events_havi_stat.php?' . http_build_query([
+                        'stat_year' => (int) ($row['year'] ?? 0),
+                        'stat_bucket' => $bucketBy,
+                        'stat_status' => $status,
+                        'stat_mode' => $statsMode,
+                    ]));
                     ?>
-                    <tr<?= $hasData ? '' : ' class="events-monthly-stats__row--empty"' ?>>
-                        <td><?= h((string) ($row['label_full'] ?? '')) ?></td>
-                        <td class="text-center events-stats-cell--human"><?= (int) ($row['events_count'] ?? 0) ?></td>
-                        <td class="text-center<?= $pctClass(isset($row['mom_events_pct']) ? (float) $row['mom_events_pct'] : null) ?>">
-                            <?= h($fmtPct(isset($row['mom_events_pct']) ? (float) $row['mom_events_pct'] : null)) ?>
+                    <tr<?= $hasData ? '' : ' class="events-yearly-stats__row--empty"' ?>>
+                        <td>
+                            <a href="<?= h($haviUrl) ?>"><?= (int) ($row['year'] ?? 0) ?></a>
                         </td>
+                        <td class="text-center events-stats-cell--human"><?= (int) ($row['events_count'] ?? 0) ?></td>
                         <td class="text-center<?= $pctClass(isset($row['yoy_events_pct']) ? (float) $row['yoy_events_pct'] : null) ?>">
                             <?= h($fmtPct(isset($row['yoy_events_pct']) ? (float) $row['yoy_events_pct'] : null)) ?>
+                        </td>
+                        <td class="text-center<?= $pctClass(isset($row['yoy_clicks_pct']) ? (float) $row['yoy_clicks_pct'] : null) ?>">
+                            <?= h($fmtPct(isset($row['yoy_clicks_pct']) ? (float) $row['yoy_clicks_pct'] : null)) ?>
                         </td>
                         <td class="text-center"><?= (int) ($row['page_views_human'] ?? 0) ?></td>
                         <td class="text-center"><?= (int) ($row['external_clicks_human'] ?? 0) ?></td>
@@ -479,12 +531,10 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
             <?php if ($eventsCount > 0): ?>
                 <tfoot>
                     <tr>
-                        <th scope="row">Éves összesen</th>
+                        <th scope="row">Összesen (<?= $yearFrom ?>–<?= $yearTo ?>)</th>
                         <th class="th-center"><?= $eventsCount ?></th>
                         <th class="th-center">—</th>
-                        <th class="th-center<?= $pctClass(isset($summary['yoy_events_pct']) ? (float) $summary['yoy_events_pct'] : null) ?>">
-                            <?= h($fmtPct(isset($summary['yoy_events_pct']) ? (float) $summary['yoy_events_pct'] : null)) ?>
-                        </th>
+                        <th class="th-center">—</th>
                         <th class="th-center"><?= (int) ($summary['page_views_human'] ?? 0) ?></th>
                         <th class="th-center"><?= (int) ($summary['external_clicks_human'] ?? 0) ?></th>
                         <th class="th-center"><?= $clicksPerEvent !== null ? h((string) $clicksPerEvent) : '—' ?></th>
@@ -512,11 +562,11 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
             try { return JSON.parse(el.textContent || '{}'); } catch (e) { return null; }
         }
 
-        var payload = parseJson('monthly-stats-main-chart-data');
+        var payload = parseJson('yearly-stats-main-chart-data');
         if (!payload) return;
         var labels = payload.labels || [];
 
-        var main = document.getElementById('monthly-stats-main-chart');
+        var main = document.getElementById('yearly-stats-main-chart');
         if (main) {
             new Chart(main.getContext('2d'), {
                 data: {
@@ -524,23 +574,13 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                     datasets: [
                         {
                             type: 'bar',
-                            label: 'Események <?= (int) $year ?>',
+                            label: 'Események',
                             data: payload.events || [],
                             backgroundColor: 'rgba(61, 107, 79, 0.55)',
                             borderColor: '#3d6b4f',
                             borderWidth: 1,
                             yAxisID: 'y',
                             order: 2
-                        },
-                        {
-                            type: 'bar',
-                            label: 'Események <?= (int) $prevYear ?>',
-                            data: payload.prev_events || [],
-                            backgroundColor: 'rgba(148, 163, 184, 0.35)',
-                            borderColor: '#94a3b8',
-                            borderWidth: 1,
-                            yAxisID: 'y',
-                            order: 3
                         },
                         {
                             type: 'line',
@@ -550,7 +590,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                             backgroundColor: 'rgba(47, 111, 143, 0.12)',
                             borderWidth: 2,
                             tension: 0.25,
-                            pointRadius: 3,
+                            pointRadius: 4,
                             yAxisID: 'y1',
                             order: 1
                         },
@@ -562,7 +602,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                             backgroundColor: 'rgba(196, 92, 38, 0.12)',
                             borderWidth: 2,
                             tension: 0.25,
-                            pointRadius: 3,
+                            pointRadius: 4,
                             yAxisID: 'y1',
                             order: 0
                         }
@@ -572,9 +612,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
+                    plugins: { legend: { position: 'bottom' } },
                     scales: {
                         y: {
                             type: 'linear',
@@ -610,7 +648,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                         backgroundColor: color + '22',
                         borderWidth: 2,
                         tension: 0.25,
-                        pointRadius: 3,
+                        pointRadius: 4,
                         spanGaps: true,
                         fill: false
                     }]
@@ -619,22 +657,57 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    scales: { y: { beginAtZero: true } }
                 }
             });
         }
 
-        makeLine('monthly-stats-cpe-chart', payload.clicks_per_event || [], '#6d8f63', 'Katt / esemény');
-        makeLine('monthly-stats-lead-chart', payload.avg_lead_days || [], '#8b5a9e', 'Lead nap');
+        makeLine('yearly-stats-cpe-chart', payload.clicks_per_event || [], '#6d8f63', 'Katt / esemény');
+        makeLine('yearly-stats-lead-chart', payload.avg_lead_days || [], '#8b5a9e', 'Lead nap');
+
+        var yoy = document.getElementById('yearly-stats-yoy-chart');
+        if (yoy) {
+            var yoyData = payload.yoy_events_pct || [];
+            new Chart(yoy.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Év/év %',
+                        data: yoyData,
+                        backgroundColor: yoyData.map(function (v) {
+                            if (v === null || v === undefined) return 'rgba(148,163,184,0.35)';
+                            return v >= 0 ? 'rgba(47, 107, 58, 0.55)' : 'rgba(163, 59, 43, 0.55)';
+                        }),
+                        borderColor: yoyData.map(function (v) {
+                            if (v === null || v === undefined) return '#94a3b8';
+                            return v >= 0 ? '#2f6b3a' : '#a33b2b';
+                        }),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            title: { display: true, text: '%' },
+                            ticks: {
+                                callback: function (v) { return v + '%'; }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     })();
     </script>
 <?php endif; ?>
 
 <script>
 (function () {
-    var root = document.querySelector('.events-monthly-stats');
+    var root = document.querySelector('.events-yearly-stats');
     if (!root) return;
     var infos = root.querySelectorAll('.events-edit-stats__info');
     if (!infos.length) return;
@@ -646,6 +719,7 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
         pop.style.right = '';
         pop.style.transform = '';
         pop.style.maxWidth = '';
+        pop.style.width = '';
         pop.classList.remove('events-edit-stats__info-popover--fixed');
     }
 
@@ -686,7 +760,6 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
         var btn = info.querySelector('.events-edit-stats__info-btn');
         var pop = info.querySelector('.events-edit-stats__info-popover');
         if (!btn || !pop) return;
-
         btn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -695,29 +768,22 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
             if (!open) {
                 info.classList.add('is-open');
                 btn.setAttribute('aria-expanded', 'true');
-                // Táblázat overflow miatt fixed; máshol is biztonságos.
                 placeFixed(btn, pop);
             }
         });
     });
 
-    document.addEventListener('click', function () {
-        closeAll();
-    });
+    document.addEventListener('click', function () { closeAll(); });
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeAll();
     });
-    window.addEventListener('scroll', function () {
-        closeAll();
-    }, true);
-    window.addEventListener('resize', function () {
-        closeAll();
-    });
+    window.addEventListener('scroll', function () { closeAll(); }, true);
+    window.addEventListener('resize', function () { closeAll(); });
 })();
 </script>
 
 <style>
-.events-monthly-stats__insights {
+.events-yearly-stats__insights {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem 1.25rem;
@@ -728,44 +794,27 @@ $thHelp = static function (string $label, string $helpKey, string $extraClass = 
     border-radius: 8px;
     font-size: 0.92rem;
 }
-.events-monthly-stats__insights li {
-    margin: 0;
-}
-.events-monthly-stats__delta--up,
-.events-monthly-stats td.events-monthly-stats__delta--up,
-.events-monthly-stats .events-edit-stats__card-hint.events-monthly-stats__delta--up {
+.events-yearly-stats__insights li { margin: 0; }
+.events-yearly-stats__delta--up,
+.events-yearly-stats td.events-yearly-stats__delta--up,
+.events-yearly-stats .events-edit-stats__card-hint.events-yearly-stats__delta--up {
     color: #2f6b3a;
 }
-.events-monthly-stats__delta--down,
-.events-monthly-stats td.events-monthly-stats__delta--down,
-.events-monthly-stats .events-edit-stats__card-hint.events-monthly-stats__delta--down {
+.events-yearly-stats__delta--down,
+.events-yearly-stats td.events-yearly-stats__delta--down,
+.events-yearly-stats .events-edit-stats__card-hint.events-yearly-stats__delta--down {
     color: #a33b2b;
 }
-.events-monthly-stats__row--empty td {
-    opacity: 0.45;
-}
-.events-monthly-stats__table th,
-.events-monthly-stats__table td {
-    white-space: nowrap;
-}
-.events-monthly-stats__label-with-info,
-.events-monthly-stats__title-with-info,
-.events-monthly-stats__th-inner {
+.events-yearly-stats__row--empty td { opacity: 0.45; }
+.events-yearly-stats__table th,
+.events-yearly-stats__table td { white-space: nowrap; }
+.events-yearly-stats__label-with-info,
+.events-yearly-stats__title-with-info,
+.events-yearly-stats__th-inner {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
 }
-.events-monthly-stats__th-inner {
-    justify-content: center;
-}
-.events-monthly-stats__th:first-child .events-monthly-stats__th-inner {
-    justify-content: flex-start;
-}
-.events-edit-stats__info-popover--fixed {
-    z-index: 80;
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
-}
-.events-edit-stats__info-popover--fixed::before {
-    display: none;
-}
+.events-yearly-stats__th-inner { justify-content: center; }
+.events-yearly-stats__th:first-child .events-yearly-stats__th-inner { justify-content: flex-start; }
 </style>

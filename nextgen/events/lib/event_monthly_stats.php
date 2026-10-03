@@ -10,7 +10,7 @@ require_once __DIR__ . '/event_edit_stats.php';
  */
 
 /**
- * @return array{year:int,bucket_by:string,status:string}
+ * @return array{year:int,bucket_by:string,status:string,mode:string}
  */
 function events_monthly_stats_params_from_request(array $query): array
 {
@@ -34,6 +34,78 @@ function events_monthly_stats_params_from_request(array $query): array
         'year' => (int) $year,
         'bucket_by' => $bucketBy,
         'status' => $status,
+        'mode' => events_edit_stats_normalize_mode($query['stat_mode'] ?? 'smart'),
+    ];
+}
+
+/**
+ * Forgalmi aggregáció eseményenként: smart módban csak emberi + esemény záró napjáig.
+ *
+ * @return array{join:string,selects:string,bind:list<mixed>,smart:bool}
+ */
+function events_period_stats_views_join(PDO $db, string $mode): array
+{
+    $tableReady = events_edit_stats_table_ready($db);
+    $emptySelects = '
+        0 AS page_views_human,
+        0 AS external_clicks_human,
+        0 AS calendar_previews_human,
+        0 AS engaged_events
+    ';
+    if (!$tableReady) {
+        return [
+            'join' => '',
+            'selects' => $emptySelects,
+            'bind' => [],
+            'smart' => events_edit_stats_is_smart_mode(['mode' => $mode]),
+        ];
+    }
+
+    $modeParams = ['mode' => events_edit_stats_normalize_mode($mode)];
+    $isSmart = events_edit_stats_is_smart_mode($modeParams);
+    $botReady = events_view_tracking_bot_column_ready($db);
+    $humanFilter = ($isSmart && $botReady) ? 'AND COALESCE(v.`is_bot`, 0) = 0' : '';
+    $smartJoin = events_edit_stats_smart_event_join_sql($modeParams, 'v', 'ev');
+    $smartAnd = events_edit_stats_smart_cutoff_sql($modeParams, 'v', 'ev');
+
+    $join = '
+        LEFT JOIN (
+            SELECT
+                v.`esemény_id` AS event_id,
+                SUM(CASE WHEN v.`metric_type` = ? ' . $humanFilter . ' THEN 1 ELSE 0 END) AS page_views_human,
+                SUM(CASE WHEN v.`metric_type` = ? ' . $humanFilter . ' THEN 1 ELSE 0 END) AS external_clicks_human,
+                SUM(CASE WHEN v.`metric_type` = ? ' . $humanFilter . ' THEN 1 ELSE 0 END) AS calendar_previews_human,
+                SUM(
+                    CASE
+                        WHEN v.`metric_type` IN (?, ?, ?) ' . $humanFilter . '
+                        THEN 1 ELSE 0
+                    END
+                ) AS total_hits_human
+            FROM `events_calendar_event_views` v
+            ' . $smartJoin . '
+            WHERE 1 = 1
+              ' . $smartAnd . '
+            GROUP BY v.`esemény_id`
+        ) views ON views.event_id = e.`id`
+    ';
+
+    return [
+        'join' => $join,
+        'selects' => '
+            COALESCE(SUM(views.page_views_human), 0) AS page_views_human,
+            COALESCE(SUM(views.external_clicks_human), 0) AS external_clicks_human,
+            COALESCE(SUM(views.calendar_previews_human), 0) AS calendar_previews_human,
+            SUM(CASE WHEN COALESCE(views.total_hits_human, 0) > 0 THEN 1 ELSE 0 END) AS engaged_events
+        ',
+        'bind' => [
+            EVENTS_VIEW_METRIC_PAGE,
+            EVENTS_VIEW_METRIC_EXTERNAL_INFO,
+            EVENTS_VIEW_METRIC_CALENDAR_PREVIEW,
+            EVENTS_VIEW_METRIC_PAGE,
+            EVENTS_VIEW_METRIC_EXTERNAL_INFO,
+            EVENTS_VIEW_METRIC_CALENDAR_PREVIEW,
+        ],
+        'smart' => $isSmart,
     ];
 }
 
@@ -174,48 +246,17 @@ function events_monthly_stats_bucket_where(string $bucketBy, int $year, string $
 /**
  * @return array<string, array<string, int|float|null>>
  */
-function events_monthly_stats_fetch_year_rows(PDO $db, int $year, string $bucketBy, string $status): array
-{
+function events_monthly_stats_fetch_year_rows(
+    PDO $db,
+    int $year,
+    string $bucketBy,
+    string $status,
+    string $mode = 'smart'
+): array {
     $statusClause = events_monthly_stats_status_clause($status);
     $bucketWhere = events_monthly_stats_bucket_where($bucketBy, $year);
     $bucketExpr = events_monthly_stats_bucket_expr($bucketBy);
-    $botReady = events_view_tracking_bot_column_ready($db);
-    $tableReady = events_edit_stats_table_ready($db);
-
-    $humanFilter = $botReady ? 'AND COALESCE(v.`is_bot`, 0) = 0' : '';
-    $viewsJoin = '';
-    $viewSelects = '
-        0 AS page_views_human,
-        0 AS external_clicks_human,
-        0 AS calendar_previews_human,
-        0 AS engaged_events
-    ';
-
-    if ($tableReady) {
-        $viewsJoin = '
-            LEFT JOIN (
-                SELECT
-                    v.`esemény_id` AS event_id,
-                    SUM(CASE WHEN v.`metric_type` = ? ' . $humanFilter . ' THEN 1 ELSE 0 END) AS page_views_human,
-                    SUM(CASE WHEN v.`metric_type` = ? ' . $humanFilter . ' THEN 1 ELSE 0 END) AS external_clicks_human,
-                    SUM(CASE WHEN v.`metric_type` = ? ' . $humanFilter . ' THEN 1 ELSE 0 END) AS calendar_previews_human,
-                    SUM(
-                        CASE
-                            WHEN v.`metric_type` IN (?, ?, ?) ' . $humanFilter . '
-                            THEN 1 ELSE 0
-                        END
-                    ) AS total_hits_human
-                FROM `events_calendar_event_views` v
-                GROUP BY v.`esemény_id`
-            ) views ON views.event_id = e.`id`
-        ';
-        $viewSelects = '
-            COALESCE(SUM(views.page_views_human), 0) AS page_views_human,
-            COALESCE(SUM(views.external_clicks_human), 0) AS external_clicks_human,
-            COALESCE(SUM(views.calendar_previews_human), 0) AS calendar_previews_human,
-            SUM(CASE WHEN COALESCE(views.total_hits_human, 0) > 0 THEN 1 ELSE 0 END) AS engaged_events
-        ';
-    }
+    $views = events_period_stats_views_join($db, $mode);
 
     $sql = '
         SELECT
@@ -262,9 +303,9 @@ function events_monthly_stats_fetch_year_rows(PDO $db, int $year, string $bucket
                     ELSE 0
                 END
             ) AS lead_days_count,
-            ' . $viewSelects . '
+            ' . $views['selects'] . '
         FROM `events_calendar_events` e
-        ' . $viewsJoin . '
+        ' . $views['join'] . '
         WHERE ' . $bucketWhere['sql'] . '
           AND ' . $statusClause['sql'] . '
         GROUP BY month_key
@@ -276,13 +317,8 @@ function events_monthly_stats_fetch_year_rows(PDO $db, int $year, string $bucket
         events_public_post_status(),
         events_preliminary_post_status(),
     ];
-    if ($tableReady) {
-        $bind[] = EVENTS_VIEW_METRIC_PAGE;
-        $bind[] = EVENTS_VIEW_METRIC_EXTERNAL_INFO;
-        $bind[] = EVENTS_VIEW_METRIC_CALENDAR_PREVIEW;
-        $bind[] = EVENTS_VIEW_METRIC_PAGE;
-        $bind[] = EVENTS_VIEW_METRIC_EXTERNAL_INFO;
-        $bind[] = EVENTS_VIEW_METRIC_CALENDAR_PREVIEW;
+    foreach ($views['bind'] as $v) {
+        $bind[] = $v;
     }
     foreach ($bucketWhere['bind'] as $v) {
         $bind[] = $v;
@@ -391,7 +427,7 @@ function events_monthly_stats_pct_change(?float $current, ?float $previous): ?fl
 }
 
 /**
- * @param array{year:int,bucket_by:string,status:string} $params
+ * @param array{year:int,bucket_by:string,status:string,mode?:string} $params
  * @return array<string, mixed>
  */
 function events_monthly_stats(PDO $db, array $params): array
@@ -401,10 +437,11 @@ function events_monthly_stats(PDO $db, array $params): array
     $year = (int) $params['year'];
     $bucketBy = (string) $params['bucket_by'];
     $status = (string) $params['status'];
+    $mode = events_edit_stats_normalize_mode($params['mode'] ?? 'smart');
     $prevYear = $year - 1;
 
-    $currentRaw = events_monthly_stats_fetch_year_rows($db, $year, $bucketBy, $status);
-    $prevRaw = events_monthly_stats_fetch_year_rows($db, $prevYear, $bucketBy, $status);
+    $currentRaw = events_monthly_stats_fetch_year_rows($db, $year, $bucketBy, $status, $mode);
+    $prevRaw = events_monthly_stats_fetch_year_rows($db, $prevYear, $bucketBy, $status, $mode);
 
     $months = [];
     $totals = [
@@ -625,6 +662,7 @@ function events_monthly_stats(PDO $db, array $params): array
         'prev_year' => $prevYear,
         'bucket_by' => $bucketBy,
         'status' => $status,
+        'mode' => $mode,
         'table_ready' => events_edit_stats_table_ready($db),
         'bot_ready' => events_view_tracking_bot_column_ready($db),
         'months' => $months,
