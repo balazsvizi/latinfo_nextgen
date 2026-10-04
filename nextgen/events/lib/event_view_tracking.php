@@ -64,7 +64,9 @@ function events_view_tracking_current_user_id(): int
 }
 
 /**
- * Kereső / AI / scraper User-Agent felismerés (UA alapú, nem 100%).
+ * Kereső, AI-crawler, unfurler, monitor és prefetch.
+ * Minden stat (buli, nyilvános oldal, CMS, modul, értékelés, értesítő, mobilapp) ezt hívja.
+ * Élő kérésnél a spekulatív fejléceket is nézi; explicit UA-nál csak a szöveget.
  */
 function events_view_tracking_detect_bot(?string $userAgent = null): bool
 {
@@ -73,23 +75,88 @@ function events_view_tracking_detect_bot(?string $userAgent = null): bool
         return true;
     }
 
+    if ($userAgent === null && events_view_tracking_request_is_speculative()) {
+        return true;
+    }
+
+    return events_view_tracking_ua_is_bot($ua);
+}
+
+/**
+ * Chrome prefetch / prerender és link-preview kérés: nincs valódi megtekintés.
+ */
+function events_view_tracking_request_is_speculative(): bool
+{
+    $values = [
+        (string) ($_SERVER['HTTP_SEC_PURPOSE'] ?? ''),
+        (string) ($_SERVER['HTTP_PURPOSE'] ?? ''),
+        (string) ($_SERVER['HTTP_X_PURPOSE'] ?? ''),
+        (string) ($_SERVER['HTTP_X_MOZ'] ?? ''),
+    ];
+    foreach ($values as $value) {
+        if ($value !== '' && preg_match('/\b(?:prefetch|prerender|preview)\b/i', $value) === 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function events_view_tracking_ua_is_bot(string $ua): bool
+{
+    if (preg_match('/\+https?:\/\//i', $ua) === 1) {
+        return true;
+    }
+
+    // (compatible; …) crawler-konvenció. A régi IE „compatible; MSIE” ember marad.
+    if (
+        preg_match('/\(compatible\s*;/i', $ua) === 1
+        && preg_match('/\b(?:msie|trident)\b/i', $ua) !== 1
+    ) {
+        return true;
+    }
+
+    // Unfurler rövid ügynök. Az alkalmazás böngészője (Mozilla + WhatsApp/Pinterest/…) ember.
+    if (
+        preg_match('/\b(?:whatsapp|tumblr|pinterest|flipboard)\b/i', $ua) === 1
+        && preg_match('/mozilla/i', $ua) !== 1
+    ) {
+        return true;
+    }
+
+    // *bot token (Googlebot, UptimeRobot, …). A Cubot telefonmárka nem crawler.
+    if (preg_match_all('/(?<![a-z0-9])([a-z0-9_-]*bot)(?![a-z0-9])/i', $ua, $matches) > 0) {
+        foreach ($matches[1] as $token) {
+            if (strcasecmp((string) $token, 'cubot') !== 0) {
+                return true;
+            }
+        }
+    }
+
     static $pattern = null;
     if ($pattern === null) {
         $pattern = '/'
-            . 'googlebot|google-extended|storebot-google|adsbot-google|apis-google|mediapartners-google|feedfetcher'
-            . '|bingbot|bingpreview|msnbot|adidxbot'
-            . '|slurp|duckduckbot|duckassistbot|baiduspider|yandex(?:bot|images)|sogou|exabot|seznambot|coccocbot'
-            . '|applebot|petalbot|bytespider|amazonbot|ia_archiver|archive\.org_bot'
-            . '|ahrefsbot|semrushbot|dotbot|mj12bot|rogerbot|screaming frog|serpstat|majestic'
-            . '|gptbot|chatgpt-user|oai-searchbot|claudebot|anthropic|ccbot|perplexitybot|diffbot'
-            . '|facebookexternalhit|facebot|twitterbot|linkedinbot|pinterest|redditbot|slackbot|discordbot'
-            . '|whatsapp|telegrambot|embedly|quora\s*link\s*preview|outbrain|flipboard|tumblr|bitlybot'
-            . '|crawler|spider|scrapy|wget|curl|python-requests|python-urllib|go-http-client|java\/|okhttp'
-            . '|libwww-perl|httpclient|headlesschrome|phantomjs|selenium|puppeteer|playwright|httrack'
+            . 'googleother|google-inspectiontool|google-read-aloud|googleproducer|duplexweb-google'
+            . '|google-safety|google-site-verification|google-favicon|google-extended|feedfetcher'
+            . '|mediapartners-google|apis-google|adsbot-google'
+            . '|bingpreview|microsoftpreview|msnbot|adidxbot|slurp'
+            . '|baiduspider|bytespider|yandex(?:images|render)|duckassist'
+            . '|sogou(?:\s+web)?\s*spider|ia_archiver|archive\.org_bot'
+            . '|ahrefs|semrush|screaming\s*frog|serpstat|mj12|dataforseo|barkrowler|zoominfo'
+            . '|seekport|mojeek|qwantify|majestic'
+            . '|chatgpt-user|oai-searchbot|claude-user|anthropic-ai|perplexity-user|cohere-ai|imagesift'
+            . '|facebookexternalhit|meta-external|facebookcatalog|embedly|iframely'
+            . '|quora\s*link\s*preview|outbrain'
+            . '|crawler|spider|scrapy|archiver|scraper|wget|curl|python-requests|python-urllib'
+            . '|aiohttp|httpx\/|okhttp|go-http-client|java\/|apache-httpclient|libwww|httpclient'
+            . '|node-fetch|undici|axios\/|guzzlehttp|fasthttp|colly|mechanize|httrack'
+            . '|headless|phantomjs|selenium|puppeteer|playwright'
+            . '|lighthouse|ptst\/|gtmetrix|pingdom|statuscake|site24x7|netcraft|censys|shodan'
+            . '|zgrab|masscan|nuclei|nikto|sqlmap'
             . '/i';
     }
 
-    return (bool) preg_match($pattern, $ua);
+    return preg_match($pattern, $ua) === 1;
 }
 
 function events_view_tracking_bot_column_ready(PDO $db, bool $refresh = false): bool
