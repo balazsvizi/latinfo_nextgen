@@ -122,7 +122,13 @@ $ct = $ctRaw !== null && $ctRaw !== '' ? (float) $ctRaw : null;
 $costText = events_public_megjelenit_cost_text($cf, $ct, $lang);
 
 $pageSource = events_view_tracking_resolve_page_source((string) ($_GET['ref'] ?? ''));
-events_track_event_view($db, (int) $event['id'], EVENTS_VIEW_METRIC_PAGE, $pageSource);
+if (events_public_visitor_metrics_allowed()) {
+    $clientPageView = [
+        'type' => 'event',
+        'event_id' => (int) $event['id'],
+        'source' => $pageSource,
+    ];
+}
 
 $canonical = events_absolute_url(events_public_event_page_url((string) $event['event_slug'], $lang));
 $title = $event['event_name'];

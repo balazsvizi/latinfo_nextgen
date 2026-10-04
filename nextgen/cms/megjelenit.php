@@ -50,8 +50,15 @@ if ($post === null || ((string) ($post['status'] ?? '') !== cms_status_publish()
 }
 
 $postId = (int) ($post['id'] ?? 0);
-if ((string) ($post['status'] ?? '') === cms_status_publish()) {
-    cms_record_post_view($db, $postId, CMS_VIEW_SOURCE_DIRECT);
+if (
+    (string) ($post['status'] ?? '') === cms_status_publish()
+    && function_exists('events_public_visitor_metrics_allowed')
+    && events_public_visitor_metrics_allowed()
+) {
+    $clientPageView = [
+        'type' => 'cms',
+        'post_id' => $postId,
+    ];
 }
 
 $themeName = '';

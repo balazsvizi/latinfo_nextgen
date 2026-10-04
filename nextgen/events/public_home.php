@@ -274,7 +274,7 @@ $homePageKey = match ($view) {
     default => 'calendar',
 };
 $eventsPublicTrafficPageKey = $homePageKey;
-events_public_traffic_hit($db, $homePageKey, $lang, ['view_mode' => $view]);
+$eventsPublicTrafficViewMode = $view;
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>

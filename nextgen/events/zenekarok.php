@@ -84,7 +84,6 @@ $zenekarHref = static function (array $row, string $lang): string {
 
 require_once __DIR__ . '/lib/public_traffic.php';
 $eventsPublicTrafficPageKey = 'zenekarok';
-events_public_traffic_hit($db, 'zenekarok', $lang);
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>

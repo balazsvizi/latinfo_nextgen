@@ -21,7 +21,6 @@ $orgRows = events_public_organizer_catalog($db, events_public_post_status(), $li
 
 require_once __DIR__ . '/lib/public_traffic.php';
 $eventsPublicTrafficPageKey = 'organizers';
-events_public_traffic_hit($db, 'organizers', $lang);
 
 $title = (string) $D['page_title'];
 $desc = (string) $D['page_desc'];

@@ -23,7 +23,8 @@ function events_view_metric_types(): array
 }
 
 /**
- * Ajax / beacon útvonalon rögzíthető metrikák (oldalmegtekintés szerveroldalon megy).
+ * Naptár-előnézet és CTA: ezek továbbra is a ajax_event_metric.php-n mennek.
+ * Az oldalmegtekintés külön, csak böngészős beacon (ajax_client_page_view.php).
  *
  * @return list<string>
  */
@@ -344,6 +345,28 @@ function events_view_tracking_is_published_event(PDO $db, int $eventId): bool
     $stmt->execute(array_merge([$eventId], $statuses));
 
     return (bool) $stmt->fetchColumn();
+}
+
+/**
+ * A saját oldal JS-éből induló beacon (sendBeacon / fetch).
+ * A HTML-t csak letöltő crawler ezt nem tudja küldeni — ugyanaz a feltétel, mint a GA4-nél.
+ */
+function events_view_tracking_is_same_origin_beacon(): bool
+{
+    $site = strtolower(trim((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '')));
+    if ($site === 'same-origin') {
+        return true;
+    }
+    if ($site !== '') {
+        return false;
+    }
+
+    $referer = trim((string) ($_SERVER['HTTP_REFERER'] ?? ''));
+    $refHost = strtolower((string) (parse_url($referer, PHP_URL_HOST) ?? ''));
+    $own = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $own = (string) preg_replace('/:\d+$/', '', $own);
+
+    return $refHost !== '' && $own !== '' && $refHost === $own;
 }
 
 /**
