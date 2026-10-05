@@ -69,7 +69,13 @@
         quickName.addEventListener('input', function () {
             panelName.value = quickName.value;
             quickName.classList.toggle('is-active', (quickName.value || '').trim() !== '');
-            debouncedSubmit(450);
+        });
+        quickName.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            panelName.value = quickName.value;
+            quickName.classList.toggle('is-active', (quickName.value || '').trim() !== '');
+            submitForm();
         });
     }
 
