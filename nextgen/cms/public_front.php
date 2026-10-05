@@ -4,12 +4,23 @@ declare(strict_types=1);
 /**
  * Gyökér /{slug} belső belépő.
  * Publikus (vagy előnézeti) CMS cikk esetén a megjelenítő fut.
+ * Lefoglalt Latinfo útvonalak (pl. /eloadok) → a megfelelő nextgen script
+ * (ne WordPress-nek adjuk, különben DB_* konstans ütközés keletkezik).
  * Ismeretlen slug: WordPress index.php, ha a docrootban van.
  */
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
 if ($slug === '' || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
     cms_public_front_passthrough();
+}
+
+require_once dirname(__DIR__) . '/core/config.php';
+
+$reservedScript = cms_public_front_reserved_script($slug);
+if ($reservedScript !== null) {
+    unset($_GET['slug']);
+    require $reservedScript;
+    exit;
 }
 
 require_once dirname(__DIR__) . '/core/database.php';
@@ -37,6 +48,35 @@ if ($needsCanonical && !headers_sent()) {
 
 require __DIR__ . '/megjelenit.php';
 exit;
+
+/**
+ * Lefoglalt gyökér-útvonalak → nextgen script (csak kisbetűs, egy szegmensű slugok).
+ */
+function cms_public_front_reserved_script(string $slug): ?string
+{
+    $slug = strtolower($slug);
+    $eventsDir = dirname(__DIR__) . '/events';
+    $map = [];
+
+    $add = static function (string $segment, string $script) use (&$map): void {
+        $segment = strtolower(trim($segment, '/'));
+        if ($segment === '' || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $segment) !== 1) {
+            return;
+        }
+        if (!is_file($script)) {
+            return;
+        }
+        $map[$segment] = $script;
+    };
+
+    $add((string) (defined('EVENTS_ELOADOK_PATH') ? EVENTS_ELOADOK_PATH : 'eloadok'), $eventsDir . '/zenekarok.php');
+    $add((string) (defined('EVENTS_HOME_PATH') ? EVENTS_HOME_PATH : 'events'), $eventsDir . '/index.php');
+    $add((string) (defined('EVENTS_PARTNERS_PATH') ? EVENTS_PARTNERS_PATH : 'partnereink'), $eventsDir . '/partnereink.php');
+    $add((string) (defined('EVENTS_DJ_PATH') ? EVENTS_DJ_PATH : 'DJ'), $eventsDir . '/djs.php');
+    $add('belepes', dirname(__DIR__) . '/login.php');
+
+    return $map[$slug] ?? null;
+}
 
 function cms_public_front_post_status(string $slug): ?string
 {

@@ -85,7 +85,8 @@ RewriteCond %{QUERY_STRING} (^|&)slug=([a-z0-9]+(?:-[a-z0-9]+)*)(&|$)
 RewriteRule ^nextgen/cms/megjelenit\.php$ /%2? [R=301,L,QSD]
 
 # CMS cikk: /{slug}
-# A konkrét Latinfo útvonalak (events, belepes, …) FELJEBB vannak, azok nyernek.
+# A konkrét Latinfo útvonalak (events, eloadok, DJ, belepes, …) FELJEBB legyenek,
+# különben pl. /eloadok a CMS catch-allra esik → WordPress DB_* ütközés.
 # Létező fájl/mappa kimarad. Ismeretlen slugot a front a WordPressnek adja, ha van index.php.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
