@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/html_security.php';
 
 const EVENTS_PUBLIC_ZENEKAROK_HUB_ANCHOR_BEFORE = 'Zenekar-first';
-const EVENTS_PUBLIC_ZENEKAROK_HUB_ANCHOR_AFTER = 'Zenekar-Infok';
+const EVENTS_PUBLIC_ZENEKAROK_HUB_ANCHOR_AFTER = 'Eloadok-infok';
 const EVENTS_PUBLIC_ZENEKAROK_HUB_ANCHOR_SPOTLIGHT = 'Zenekar-ajanlo';
 const EVENTS_PUBLIC_ZENEKAROK_HUB_ANCHOR_CATALOG = 'zenekarok-catalog';
 
