@@ -112,6 +112,18 @@ if ($tagIsDj && $tagSlug !== '' && events_public_is_legacy_tag_request()) {
     events_public_redirect_to(events_public_dj_page_url($tagSlug, $targetLang, $legacyParams));
 }
 
+if ($tagIsZenekar && $tagSlug !== '' && events_public_is_legacy_tag_request()) {
+    $legacyParams = [];
+    foreach (['lang', 'limit'] as $param) {
+        if (isset($_GET[$param]) && (string) $_GET[$param] !== '') {
+            $legacyParams[$param] = (string) $_GET[$param];
+        }
+    }
+    $targetLang = ($legacyParams['lang'] ?? $lang) === 'en' ? 'en' : 'hu';
+    unset($legacyParams['lang']);
+    events_public_redirect_to(events_public_zenekar_page_url($tagSlug, $targetLang, $legacyParams));
+}
+
 $publishedStatus = events_public_post_status();
 $listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_EVENTS_LIST_DEFAULT_LIMIT);
 $list_limit = $listLimitParsed['sql_limit'];

@@ -80,6 +80,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/venues.php')) ?>" role="menuitem">Helyszínek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/organizers.php')) ?>" role="menuitem">Szervezők</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/djs_admin.php')) ?>" role="menuitem">DJ-k</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/zenekarok_admin.php')) ?>" role="menuitem">Előadók</a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu">
@@ -124,7 +125,7 @@ if ($navZone === 'events') {
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-zenekarok" aria-label="Előadók almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-latinfo-zenekarok" role="menu">
-                        <li role="none"><a href="<?= h(nextgen_url('events/zenekarok.php')) ?>" role="menuitem">Kezdőoldal (előnézet)</a></li>
+                        <li role="none"><a href="<?= h(function_exists('events_public_zenekarok_hub_canonical_url') ? events_public_zenekarok_hub_canonical_url() : nextgen_url('events/zenekarok.php')) ?>" role="menuitem">Nyilvános lista (/eloadok)</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/zenekarok_admin.php')) ?>" role="menuitem">Admin lista</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/zenekar_letrehoz.php')) ?>" role="menuitem">Új előadó</a></li>
                     </ul>

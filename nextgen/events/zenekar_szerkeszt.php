@@ -219,7 +219,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <input type="text" id="dj_slug" name="slug" value="<?= h($slug) ?>" maxlength="255" pattern="[a-z0-9_]*" title="Kisbetű, szám és aláhúzás" placeholder="zenekar_pelda">
                         </div>
                     </div>
-                    <p class="help">Nyilvános URL: <code>tag.php?slug=<?= h($slug !== '' ? $slug : '…') ?></code></p>
+                    <p class="help">Nyilvános URL: <code>/eloadok/<?= h($slug !== '' ? $slug : '…') ?>/</code></p>
                 </div>
                 <div class="events-edit-panel">
                     <h3 class="events-edit-panel__title">Profil</h3>

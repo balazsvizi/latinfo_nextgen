@@ -198,6 +198,11 @@ if (!defined('EVENTS_DJ_PATH')) {
     define('EVENTS_DJ_PATH', trim((string) cfg_get('EVENTS_DJ_PATH', 'DJ', $localConfig), '/'));
 }
 
+/** Nyilvános előadó (zenekar) oldal URL szegmens (pl. eloadok → /eloadok/{slug}/). */
+if (!defined('EVENTS_ELOADOK_PATH')) {
+    define('EVENTS_ELOADOK_PATH', trim((string) cfg_get('EVENTS_ELOADOK_PATH', 'eloadok', $localConfig), '/'));
+}
+
 /** Nyilvános partner oldal URL szegmens (pl. partnereink → /partnereink/). */
 if (!defined('EVENTS_PARTNERS_PATH')) {
     define('EVENTS_PARTNERS_PATH', trim((string) cfg_get('EVENTS_PARTNERS_PATH', 'partnereink', $localConfig), '/'));

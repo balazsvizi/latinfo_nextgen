@@ -36,6 +36,12 @@ RewriteRule ^DJ/?$ nextgen/events/djs.php [L,QSA,NC]
 # DJ oldal: /DJ/{slug}/  →  nextgen/events/tag.php?slug=
 RewriteRule ^DJ/([^/]+)/?$ nextgen/events/tag.php?slug=$1 [L,QSA,NC]
 
+# Előadók kezdőlap: /eloadok/  →  nextgen/events/zenekarok.php
+RewriteRule ^eloadok/?$ nextgen/events/zenekarok.php [L,QSA,NC]
+
+# Előadó oldal: /eloadok/{slug}/  →  nextgen/events/tag.php?slug=
+RewriteRule ^eloadok/([^/]+)/?$ nextgen/events/tag.php?slug=$1 [L,QSA,NC]
+
 # Esemény sitemap: /events/sitemap.xml
 # (Search Console-ban add hozzá: https://latinfo.hu/events/sitemap.xml)
 RewriteRule ^events/sitemap\.xml$ nextgen/events/sitemap_events.php [L,QSA,NC]

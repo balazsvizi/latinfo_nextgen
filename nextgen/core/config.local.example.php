@@ -41,6 +41,9 @@ return [
     // Nyilvános DJ: /{EVENTS_DJ_PATH}/{slug}/ (alap: DJ → /DJ/dj_adalberto/)
     // 'EVENTS_DJ_PATH' => 'DJ',
 
+    // Nyilvános előadók: /{EVENTS_ELOADOK_PATH}/{slug}/ (alap: eloadok → /eloadok/…)
+    // 'EVENTS_ELOADOK_PATH' => 'eloadok',
+
     // Esemény megjelenítő: logó és lábléc „főoldal” link (alap: https://latinfo.hu/)
     // 'LATINFO_PUBLIC_HOME_URL' => 'http://localhost/wordpress',
 

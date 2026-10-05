@@ -15,6 +15,7 @@ const EVENTS_PUBLIC_NAV_PRESET_KEYS = [
     'calendar_month',
     'calendar_list',
     'djs',
+    'eloadok',
     'organizers',
     'partners',
     'latinfo',
@@ -29,6 +30,7 @@ function events_public_nav_preset_labels(): array {
         'calendar_month' => 'Havi naptár',
         'calendar_list' => 'Eseménylista',
         'djs' => 'DJ-k',
+        'eloadok' => 'Előadók',
         'organizers' => 'Szervezők',
         'partners' => 'Partnereink',
         'latinfo' => 'Latinfo.hu',
@@ -60,6 +62,7 @@ function events_public_nav_preset_href(string $preset, string $lang = 'hu'): str
         'calendar_month' => events_public_home_url($lang, ['view' => 'cal']),
         'calendar_list' => events_public_home_url($lang, ['view' => 'list']),
         'djs' => events_public_djs_page_url($lang),
+        'eloadok' => events_public_zenekarok_page_url($lang),
         'organizers' => events_public_organizers_catalog_page_url($lang),
         'partners' => events_public_partners_page_url($lang),
         'latinfo' => defined('LATINFO_PUBLIC_HOME_URL') ? (string) LATINFO_PUBLIC_HOME_URL : '/',
@@ -111,6 +114,8 @@ function events_public_nav_items_ensure_schema(PDO $db): bool {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ');
             events_public_nav_items_seed_defaults($db);
+        } else {
+            events_public_nav_items_ensure_eloadok_preset($db);
         }
 
         $done = true;
@@ -137,11 +142,44 @@ function events_public_nav_items_seed_defaults(PDO $db): void {
     $insert->execute([$calendarId, 20, 'calendar-list', 'Eseménylista', 'Event list', 'calendar_list', 0]);
 
     $insert->execute([null, 20, 'djs', 'DJ-k', 'DJs', 'djs', 0]);
+    $insert->execute([null, 25, 'eloadok', 'Előadók', 'Artists', 'eloadok', 0]);
     $insert->execute([null, 30, 'organizers', 'Szervezők', 'Organizers', 'organizers', 0]);
 
     $insert->execute([null, 40, 'latinfo', 'Latinfo.hu', 'Latinfo.hu', 'latinfo', 1]);
     $latinfoId = (int) $db->lastInsertId();
     $insert->execute([$latinfoId, 10, 'partners', 'Partnereink', 'Our partners', 'partners', 0]);
+}
+
+/**
+ * Meglévő menütáblához hozzáadja az Előadók pontot, ha még nincs.
+ */
+function events_public_nav_items_ensure_eloadok_preset(PDO $db): void {
+    if (events_public_nav_items_key_taken($db, 'eloadok')) {
+        return;
+    }
+
+    $sort = 25;
+    try {
+        $st = $db->query("
+            SELECT `sort_order` FROM `events_public_nav_items`
+            WHERE `parent_id` IS NULL AND `menu_key` = 'djs'
+            LIMIT 1
+        ");
+        $djsSort = $st !== false ? $st->fetchColumn() : false;
+        if ($djsSort !== false) {
+            $sort = (int) $djsSort + 5;
+        }
+    } catch (Throwable) {
+        // default sort
+    }
+
+    $insert = $db->prepare('
+        INSERT INTO `events_public_nav_items`
+            (`parent_id`, `sort_order`, `is_visible`, `menu_key`, `label_hu`, `label_en`,
+             `link_type`, `preset_key`, `href`, `is_external`, `open_in_new_tab`)
+        VALUES (NULL, ?, 1, \'eloadok\', \'Előadók\', \'Artists\', \'preset\', \'eloadok\', \'\', 0, 0)
+    ');
+    $insert->execute([$sort]);
 }
 
 /**

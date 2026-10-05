@@ -22,6 +22,7 @@ function events_public_nav_strings(string $lang): array {
         'calendar_month' => 'Havi naptár',
         'calendar_list' => 'Eseménylista',
         'djs' => 'DJ-k',
+        'eloadok' => 'Előadók',
         'organizers' => 'Szervezők',
         'latinfo' => 'Latinfo.hu',
         'partners' => 'Partnereink',
@@ -39,6 +40,7 @@ function events_public_nav_strings(string $lang): array {
         'calendar_month' => 'Month view',
         'calendar_list' => 'Event list',
         'djs' => 'DJs',
+        'eloadok' => 'Artists',
         'organizers' => 'Organizers',
         'latinfo' => 'Latinfo.hu',
         'partners' => 'Our partners',
@@ -83,6 +85,11 @@ function events_public_nav_menu_items_fallback(string $lang): array {
             'href' => events_public_djs_page_url($lang),
         ],
         [
+            'key' => 'eloadok',
+            'label' => $N['eloadok'],
+            'href' => events_public_zenekarok_page_url($lang),
+        ],
+        [
             'key' => 'organizers',
             'label' => $N['organizers'],
             'href' => events_public_organizers_catalog_page_url($lang),
@@ -113,7 +120,7 @@ function events_public_nav_menu_items(string $lang): array {
         try {
             require_once __DIR__ . '/public_nav_items.php';
             $db = getDb();
-            if (events_public_nav_items_table_available($db)) {
+            if (events_public_nav_items_ensure_schema($db) && events_public_nav_items_table_available($db)) {
                 return events_public_nav_items_tree_for_public($db, $lang);
             }
         } catch (Throwable $e) {
@@ -133,6 +140,16 @@ function events_public_nav_active_keys_by_script(): array {
         return ['latinfo'];
     }
 
+    $path = events_public_nav_current_request_path();
+    $eloadSeg = '/' . strtolower(defined('EVENTS_ELOADOK_PATH') ? EVENTS_ELOADOK_PATH : 'eloadok');
+    $djSeg = '/' . strtolower(defined('EVENTS_DJ_PATH') ? EVENTS_DJ_PATH : 'DJ');
+    if ($eloadSeg !== '/' && ($path === $eloadSeg || str_starts_with($path, $eloadSeg . '/'))) {
+        return ['eloadok'];
+    }
+    if ($djSeg !== '/' && ($path === $djSeg || str_starts_with($path, $djSeg . '/'))) {
+        return ['djs'];
+    }
+
     $script = basename($scriptName);
     $view = strtolower(trim((string) ($_GET['view'] ?? '')));
 
@@ -143,7 +160,9 @@ function events_public_nav_active_keys_by_script(): array {
             default => ['calendar', 'calendar-month'],
         },
         'megjelenit.php', 'helyszin_megjelenit.php' => ['calendar'],
-        'djs.php', 'tag.php' => ['djs'],
+        'djs.php' => ['djs'],
+        'zenekarok.php' => ['eloadok'],
+        'tag.php' => ['djs'],
         'szervezok.php', 'organizer.php' => ['organizers'],
         'partnereink.php' => ['latinfo', 'partners'],
         default => [],

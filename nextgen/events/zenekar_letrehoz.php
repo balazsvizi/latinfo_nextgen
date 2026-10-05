@@ -141,7 +141,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <input type="text" id="dj_slug" name="slug" value="<?= h($slug) ?>" maxlength="255" pattern="[a-z0-9_]*" title="Kisbetű, szám és aláhúzás" placeholder="eloado_neve">
                         </div>
                     </div>
-                    <p class="help">Üres slug esetén mentéskor a névből generálódik. Nyilvános URL: <code>tag.php?slug=…</code> Zenekar, énekes vagy zenész is ide tartozik.</p>
+                    <p class="help">Üres slug esetén mentéskor a névből generálódik. Nyilvános URL: <code>/eloadok/…/</code> Zenekar, énekes vagy zenész is ide tartozik.</p>
                 </div>
                 <div class="events-edit-panel">
                     <h3 class="events-edit-panel__title">Profil</h3>

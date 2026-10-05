@@ -83,7 +83,7 @@ $zenekarSortTh = static function (string $label, string $orderCol, string $curre
 $pageTitle = 'Előadók';
 $mainContentClass = 'main-content main-content--fullwidth';
 
-$publicZenekarHubUrl = events_url('zenekarok.php');
+$publicZenekarHubUrl = events_public_zenekarok_page_url('hu');
 $adminFloatTools = [
     [
         'href' => events_url('zenekar_letrehoz.php'),
@@ -246,7 +246,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card" id="zenekarok-hub-cms">
     <h2 class="card-title" style="margin-top:0;">Nyilvános előadó oldal szövegei</h2>
-    <p class="help">HTML blokkok a <a href="<?= h($publicZenekarHubUrl) ?>" target="_blank" rel="noopener">zenekarok.php</a> előnézeti oldalon. Mindkettőhöz named anchor tartozik, így linkelhető. Képet a szerkesztő kép gombjával tölthetsz fel vagy URL-lel szúrhatsz be.</p>
+    <p class="help">HTML blokkok a <a href="<?= h($publicZenekarHubUrl) ?>" target="_blank" rel="noopener">/eloadok/</a> oldalon. Mindkettőhöz named anchor tartozik, így linkelhető. Képet a szerkesztő kép gombjával tölthetsz fel vagy URL-lel szúrhatsz be.</p>
     <form method="post" action="<?= h(events_url('zenekarok_admin.php')) ?>" class="events-admin-form" id="zenekarok-hub-cms-form">
         <?= csrf_input('events_zenekarok_hub_cms') ?>
         <input type="hidden" name="zenekarok_hub_cms_save" value="1">

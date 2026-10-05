@@ -37,6 +37,7 @@ function events_public_traffic_nav_catalog(): array
         'calendar-month' => 'Havi naptár',
         'calendar-list' => 'Eseménylista',
         'djs' => 'DJ-k',
+        'eloadok' => 'Előadók',
         'organizers' => 'Szervezők',
         'latinfo' => 'Latinfo.hu',
         'partners' => 'Partnereink',

@@ -122,22 +122,25 @@ if (!function_exists('events_public_djs_hub_canonical_url')) {
 
 if (!function_exists('events_public_zenekar_canonical_url')) {
     /**
-     * Zenekar oldal URL (még nem pretty publikus útvonal – nextgen tag.php slug).
+     * Publikus előadó canonical URL: /eloadok/{slug}/
      */
     function events_public_zenekar_canonical_url(string $slug): string {
+        $seg = defined('EVENTS_ELOADOK_PATH') ? EVENTS_ELOADOK_PATH : 'eloadok';
         $slug = trim($slug);
         if ($slug === '') {
-            return events_url('zenekarok.php');
+            return rtrim(site_url($seg), '/') . '/';
         }
 
-        return events_url('tag.php?slug=' . rawurlencode($slug));
+        return rtrim(site_url($seg . '/' . rawurlencode($slug)), '/') . '/';
     }
 }
 
 if (!function_exists('events_public_zenekarok_hub_canonical_url')) {
-    /** Zenekarok hub (előnézet, még nem publikus pretty URL). */
+    /** Publikus előadó kezdőlap: /eloadok/ */
     function events_public_zenekarok_hub_canonical_url(): string {
-        return events_url('zenekarok.php');
+        $seg = defined('EVENTS_ELOADOK_PATH') ? EVENTS_ELOADOK_PATH : 'eloadok';
+
+        return rtrim(site_url($seg), '/') . '/';
     }
 }
 
@@ -153,12 +156,16 @@ if (!function_exists('events_public_partners_canonical_url')) {
 if (!function_exists('events_public_is_legacy_tag_request')) {
     /**
      * Csak akkor igaz, ha a kliens közvetlenül a tag.php-t kérte.
-     * A /DJ/{slug}/ → tag.php belső rewrite NEM legacy.
+     * A /DJ/{slug}/ és /eloadok/{slug}/ → tag.php belső rewrite NEM legacy.
      */
     function events_public_is_legacy_tag_request(): bool {
         $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
-        $seg = defined('EVENTS_DJ_PATH') ? EVENTS_DJ_PATH : 'DJ';
-        if ($seg !== '' && preg_match('#/' . preg_quote($seg, '#') . '/([^/]+)/?$#i', $path) === 1) {
+        $djSeg = defined('EVENTS_DJ_PATH') ? EVENTS_DJ_PATH : 'DJ';
+        if ($djSeg !== '' && preg_match('#/' . preg_quote($djSeg, '#') . '/([^/]+)/?$#i', $path) === 1) {
+            return false;
+        }
+        $eloadSeg = defined('EVENTS_ELOADOK_PATH') ? EVENTS_ELOADOK_PATH : 'eloadok';
+        if ($eloadSeg !== '' && preg_match('#/' . preg_quote($eloadSeg, '#') . '/([^/]+)/?$#i', $path) === 1) {
             return false;
         }
 
@@ -176,6 +183,16 @@ if (!function_exists('events_public_is_dj_pretty_request')) {
     }
 }
 
+if (!function_exists('events_public_is_zenekar_pretty_request')) {
+    /** A kérés a /eloadok/{slug}/ pretty útvonalról jött-e. */
+    function events_public_is_zenekar_pretty_request(): bool {
+        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        $seg = defined('EVENTS_ELOADOK_PATH') ? EVENTS_ELOADOK_PATH : 'eloadok';
+
+        return $seg !== '' && preg_match('#/' . preg_quote($seg, '#') . '/([^/]+)/?$#i', $path) === 1;
+    }
+}
+
 if (!function_exists('events_public_is_legacy_djs_request')) {
     /**
      * Közvetlen djs.php kérés (nem a /DJ/ rewrite).
@@ -188,6 +205,21 @@ if (!function_exists('events_public_is_legacy_djs_request')) {
         }
 
         return str_contains($path, 'djs.php');
+    }
+}
+
+if (!function_exists('events_public_is_legacy_zenekarok_request')) {
+    /**
+     * Közvetlen zenekarok.php kérés (nem a /eloadok/ rewrite).
+     */
+    function events_public_is_legacy_zenekarok_request(): bool {
+        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        $seg = defined('EVENTS_ELOADOK_PATH') ? EVENTS_ELOADOK_PATH : 'eloadok';
+        if ($seg !== '' && preg_match('#/' . preg_quote($seg, '#') . '/?$#i', $path) === 1) {
+            return false;
+        }
+
+        return str_contains($path, 'zenekarok.php');
     }
 }
 

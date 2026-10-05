@@ -1382,7 +1382,7 @@ function events_public_dj_lang_switch_url(string $slug, string $targetLang, arra
 }
 
 /**
- * Nyilvános címke-oldal URL (DJ típusnál pretty /DJ/{slug}/; zenekarnál slugos tag.php).
+ * Nyilvános címke-oldal URL (DJ típusnál pretty /DJ/{slug}/; előadónál /eloadok/{slug}/).
  *
  * @param array<string, scalar|null> $extraParams
  */

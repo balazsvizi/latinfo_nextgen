@@ -18,10 +18,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <div class="dash-cards dash-cards-apps">
-    <a href="<?= h(nextgen_url('events/zenekarok.php')) ?>" class="dash-card">
+    <a href="<?= h(function_exists('events_public_zenekarok_hub_canonical_url') ? events_public_zenekarok_hub_canonical_url() : nextgen_url('events/zenekarok.php')) ?>" class="dash-card">
         <h3>Előadók kezdőoldal</h3>
         <div class="num">→</div>
-        <p>Katalógus előnézet – <code>zenekarok.php</code> (még nem publikus menü)</p>
+        <p>Nyilvános lista – <code>/eloadok/</code></p>
     </a>
     <a href="<?= h(nextgen_url('events/zenekarok_admin.php')) ?>" class="dash-card">
         <h3>Előadók admin</h3>

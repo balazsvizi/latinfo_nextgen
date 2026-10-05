@@ -15,6 +15,16 @@ $listLimitParsed = events_admin_list_limit_from_get(EVENTS_ADMIN_LIST_DEFAULT_LI
 $listLimitValue = $listLimitParsed['value'];
 $limitParams = events_public_catalog_get_params($listLimitValue);
 
+if (events_public_is_legacy_zenekarok_request()) {
+    $legacyParams = $limitParams;
+    if (isset($_GET['lang']) && (string) $_GET['lang'] !== '') {
+        $legacyParams['lang'] = (string) $_GET['lang'];
+    }
+    $targetLang = ($legacyParams['lang'] ?? $lang) === 'en' ? 'en' : 'hu';
+    unset($legacyParams['lang']);
+    events_public_redirect_to(events_public_zenekarok_page_url($targetLang, $legacyParams));
+}
+
 events_public_send_noindex_follow_header();
 
 $db = getDb();
