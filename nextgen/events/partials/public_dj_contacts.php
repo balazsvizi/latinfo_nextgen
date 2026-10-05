@@ -12,13 +12,14 @@ $djProfile = is_array($djProfile ?? null) ? $djProfile : [];
 $website = trim((string) ($djProfile['website_url'] ?? ''));
 $facebook = trim((string) ($djProfile['facebook_url'] ?? ''));
 $instagram = trim((string) ($djProfile['instagram_url'] ?? ''));
+$tiktok = trim((string) ($djProfile['tiktok_url'] ?? ''));
 $soundcloud = trim((string) ($djProfile['soundcloud_url'] ?? ''));
 $youtube = trim((string) ($djProfile['youtube_url'] ?? ''));
 $mixcloud = trim((string) ($djProfile['mixcloud_url'] ?? ''));
 $email = trim((string) ($djProfile['email'] ?? ''));
 $phone = trim((string) ($djProfile['phone'] ?? ''));
 
-$hasLinks = $website !== '' || $facebook !== '' || $instagram !== '' || $soundcloud !== '' || $youtube !== '' || $mixcloud !== '' || $email !== '' || $phone !== '';
+$hasLinks = $website !== '' || $facebook !== '' || $instagram !== '' || $tiktok !== '' || $soundcloud !== '' || $youtube !== '' || $mixcloud !== '' || $email !== '' || $phone !== '';
 if (!$hasLinks) {
     return;
 }
@@ -42,6 +43,12 @@ $svgAttrs = 'class="dj-public__contact-svg" viewBox="0 0 24 24" width="16" heigh
         <a class="dj-public__contact" href="<?= h($instagram) ?>" target="_blank" rel="noopener noreferrer">
             <svg <?= $svgAttrs ?>><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
             <span><?= h((string) ($G['dj_link_instagram'] ?? 'Instagram')) ?></span>
+        </a>
+    <?php endif; ?>
+    <?php if ($tiktok !== ''): ?>
+        <a class="dj-public__contact" href="<?= h($tiktok) ?>" target="_blank" rel="noopener noreferrer">
+            <svg <?= $svgAttrs ?>><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+            <span><?= h((string) ($G['dj_link_tiktok'] ?? 'TikTok')) ?></span>
         </a>
     <?php endif; ?>
     <?php if ($youtube !== ''): ?>

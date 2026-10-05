@@ -26,6 +26,7 @@ function events_tag_profile_column_names(): array {
         'website_url',
         'facebook_url',
         'instagram_url',
+        'tiktok_url',
         'soundcloud_url',
         'youtube_url',
         'mixcloud_url',
@@ -146,6 +147,10 @@ function events_tag_profile_column_alter_sqls(): array {
         'instagram_url' => [
             'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` TEXT NULL',
             'ALTER TABLE `events_tags` ADD COLUMN `instagram_url` VARCHAR(512) NULL DEFAULT NULL',
+        ],
+        'tiktok_url' => [
+            'ALTER TABLE `events_tags` ADD COLUMN `tiktok_url` TEXT NULL',
+            'ALTER TABLE `events_tags` ADD COLUMN `tiktok_url` VARCHAR(512) NULL DEFAULT NULL',
         ],
         'soundcloud_url' => [
             'ALTER TABLE `events_tags` ADD COLUMN `soundcloud_url` TEXT NULL',
@@ -416,6 +421,7 @@ function events_tag_profile_flag_is_on(mixed $value): bool {
  *   website_url: string,
  *   facebook_url: string,
  *   instagram_url: string,
+ *   tiktok_url: string,
  *   soundcloud_url: string,
  *   youtube_url: string,
  *   email: string,
@@ -440,6 +446,7 @@ function events_tag_profile_empty(): array {
         'website_url' => '',
         'facebook_url' => '',
         'instagram_url' => '',
+        'tiktok_url' => '',
         'soundcloud_url' => '',
         'youtube_url' => '',
         'mixcloud_url' => '',
@@ -460,6 +467,7 @@ function events_tag_profile_empty(): array {
  *   website_url: string,
  *   facebook_url: string,
  *   instagram_url: string,
+ *   tiktok_url: string,
  *   soundcloud_url: string,
  *   youtube_url: string,
  *   email: string,
@@ -502,6 +510,7 @@ function events_tag_profile_from_row(array $row): array {
  *   website_url: string,
  *   facebook_url: string,
  *   instagram_url: string,
+ *   tiktok_url: string,
  *   soundcloud_url: string,
  *   youtube_url: string,
  *   email: string,
@@ -628,6 +637,7 @@ function events_tag_profile_from_post(): array {
         'website_url' => 'tag_website_url',
         'facebook_url' => 'tag_facebook_url',
         'instagram_url' => 'tag_instagram_url',
+        'tiktok_url' => 'tag_tiktok_url',
         'soundcloud_url' => 'tag_soundcloud_url',
         'youtube_url' => 'tag_youtube_url',
         'mixcloud_url' => 'tag_mixcloud_url',
@@ -736,6 +746,7 @@ function events_tag_profile_from_post_without_photo(): array {
         'website_url' => 'tag_website_url',
         'facebook_url' => 'tag_facebook_url',
         'instagram_url' => 'tag_instagram_url',
+        'tiktok_url' => 'tag_tiktok_url',
         'soundcloud_url' => 'tag_soundcloud_url',
         'youtube_url' => 'tag_youtube_url',
         'mixcloud_url' => 'tag_mixcloud_url',
@@ -760,7 +771,7 @@ function events_tag_profile_from_post_without_photo(): array {
  */
 function events_tag_profile_has_public_content(array $profile): bool {
     $public = events_tag_profile_for_public($profile);
-    foreach (['description', 'photo_url', 'logo_url', 'website_url', 'facebook_url', 'instagram_url', 'soundcloud_url', 'youtube_url', 'mixcloud_url', 'email', 'phone'] as $key) {
+    foreach (['description', 'photo_url', 'logo_url', 'website_url', 'facebook_url', 'instagram_url', 'tiktok_url', 'soundcloud_url', 'youtube_url', 'mixcloud_url', 'email', 'phone'] as $key) {
         if (trim((string) ($public[$key] ?? '')) !== '') {
             return true;
         }

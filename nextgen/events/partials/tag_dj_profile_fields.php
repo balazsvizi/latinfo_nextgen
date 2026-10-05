@@ -57,6 +57,10 @@ endif;
             <input type="text" id="tag_instagram_url_<?= h($fid) ?>" name="tag_instagram_url" maxlength="2000" value="<?= h((string) ($tagProfile['instagram_url'] ?? '')) ?>" placeholder="https://instagram.com/…" inputmode="url" autocomplete="url">
         </div>
         <div class="form-group">
+            <label for="tag_tiktok_url_<?= h($fid) ?>">TikTok</label>
+            <input type="text" id="tag_tiktok_url_<?= h($fid) ?>" name="tag_tiktok_url" maxlength="2000" value="<?= h((string) ($tagProfile['tiktok_url'] ?? '')) ?>" placeholder="https://tiktok.com/@…" inputmode="url" autocomplete="url">
+        </div>
+        <div class="form-group">
             <label for="tag_soundcloud_url_<?= h($fid) ?>">SoundCloud</label>
             <input type="text" id="tag_soundcloud_url_<?= h($fid) ?>" name="tag_soundcloud_url" maxlength="2000" value="<?= h((string) ($tagProfile['soundcloud_url'] ?? '')) ?>" placeholder="https://soundcloud.com/…" inputmode="url" autocomplete="url">
         </div>
