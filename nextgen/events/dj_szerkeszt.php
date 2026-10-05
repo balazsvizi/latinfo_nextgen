@@ -303,4 +303,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
     }
 })();
 </script>
+<?php require __DIR__ . '/partials/html_editor_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

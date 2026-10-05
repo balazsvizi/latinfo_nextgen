@@ -34,14 +34,14 @@ endif;
 ?>
 <div class="events-tag-dj-profile events-tag-dj-profile--standalone">
     <div class="form-group">
-        <label for="tag_description_<?= h($fid) ?>">Bio / leírás</label>
+        <label for="tag_description_<?= h($fid) ?>">Bio / leírás (HTML)</label>
         <textarea
             id="tag_description_<?= h($fid) ?>"
             name="tag_description"
-            rows="6"
+            class="js-html-editor-source"
+            rows="12"
             placeholder="Rövid bemutatkozás…"
         ><?= h((string) ($tagProfile['description'] ?? '')) ?></textarea>
-        <p class="help">Egyszerű HTML megengedett (bekezdések, linkek, listák).</p>
     </div>
     <div class="events-tag-dj-profile__grid">
         <div class="form-group">
