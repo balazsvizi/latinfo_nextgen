@@ -109,7 +109,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php endif; ?>
         <a href="<?= h(events_url('events_havi_stat.php')) ?>" class="btn btn-secondary btn-sm">Havi stat</a>
         <a href="<?= h(events_url('events_evi_stat.php')) ?>" class="btn btn-secondary btn-sm">Év/év stat</a>
-        <a href="<?= h(events_url('events_elotti_stat.php')) ?>" class="btn btn-secondary btn-sm">Előtti 30 nap</a>
+        <a href="<?= h(events_url('events_elotti_stat.php')) ?>" class="btn btn-secondary btn-sm">30 nap</a>
         <a href="<?= h(events_url('events_stat.php')) ?>" class="btn btn-secondary btn-sm">Áttekintés</a>
         <a href="<?= h(events_url('events_public_stat.php')) ?>" class="btn btn-secondary btn-sm">Publikus oldalak</a>
         <a href="<?= h(events_url('events_kedvencek_stat.php')) ?>" class="btn btn-secondary btn-sm">Kedvencek</a>

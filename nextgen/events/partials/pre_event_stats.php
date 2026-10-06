@@ -330,7 +330,7 @@ foreach ($distribution as $dRow) {
                             <th class="th-center" scope="col">Kezdés</th>
                             <th class="th-center" scope="col">Publikálva</th>
                             <th class="th-center" scope="col">Státusz</th>
-                            <th class="th-center" scope="col">Előtti 30 nap</th>
+                            <th class="th-center" scope="col">30 nap</th>
                             <th class="th-center" scope="col">Részesedés</th>
                             <th class="th-center" scope="col"></th>
                         </tr>

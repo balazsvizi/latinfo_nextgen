@@ -15,7 +15,7 @@ $statsData = events_pre_event_stats($db, $statsParams);
 $statsFormAction = events_url('events_elotti_stat.php');
 
 $mainContentClass = 'main-content main-content--fullwidth';
-$pageTitle = 'Előtti 30 nap stat';
+$pageTitle = '30 nap';
 require_once dirname(__DIR__) . '/partials/header.php';
 
 $visitorLabel = match ($statsParams['visitor']) {
@@ -28,7 +28,7 @@ $visitorLabel = match ($statsParams['visitor']) {
 
 <div class="events-stat-page-head">
     <div>
-        <h1 class="events-stat-page-title">Esemény előtti 30 nap</h1>
+        <h1 class="events-stat-page-title">30 nap</h1>
         <p class="events-stat-page-lead">
             Az esemény napját megelőző 30 naptári nap oldalbetöltései eseményenként,
             és a relatív napok százalékos eloszlása (<?= h($visitorLabel) ?>).
