@@ -9,10 +9,29 @@ require_once __DIR__ . '/event_realtime_stats.php';
 
 /**
  * Esemény előtti 30 nap oldalbetöltés-statisztika.
- * Ablak: [event_start − 30 nap 00:00, event_start nap 00:00) — a megelőző 30 naptári nap.
+ * Ablak: [max(event_start − 30 nap, publikálás), event_start nap) — a publikálás előtti forgalom nem számít.
  */
 
 const EVENTS_PRE_EVENT_STATS_WINDOW_DAYS = 30;
+
+/**
+ * Érvényes publikálási dátum SQL kifejezés (NULL, ha nincs / invalid).
+ */
+function events_pre_event_stats_published_at_expr(string $eventAlias = 'e'): string
+{
+    $alias = trim($eventAlias);
+    if ($alias !== '' && preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $alias) !== 1) {
+        return 'NULL';
+    }
+    $col = $alias === '' ? '`event_published_at`' : '`' . $alias . '`.`event_published_at`';
+
+    return 'CASE
+        WHEN ' . $col . ' IS NULL
+             OR ' . $col . ' IN (\'\', \'0000-00-00 00:00:00\')
+        THEN NULL
+        ELSE ' . $col . '
+    END';
+}
 
 /**
  * @return array{year:int,status:string,visitor:string,event_id:int|null}
@@ -44,15 +63,19 @@ function events_pre_event_stats_params_from_request(array $query): array
 }
 
 /**
+ * Nézet ablak: event_start előtti 30 nap, de nem korábban, mint a publikálás.
+ *
  * @return array{sql:string,bind:list<mixed>}
  */
 function events_pre_event_stats_window_clause(string $eventAlias = 'e', string $viewAlias = 'v'): array
 {
     $days = EVENTS_PRE_EVENT_STATS_WINDOW_DAYS;
+    $published = events_pre_event_stats_published_at_expr($eventAlias);
 
     return [
         'sql' => $viewAlias . '.`létrehozva` >= DATE_SUB(DATE(' . $eventAlias . '.`event_start`), INTERVAL ' . $days . ' DAY)'
-            . ' AND ' . $viewAlias . '.`létrehozva` < DATE(' . $eventAlias . '.`event_start`)',
+            . ' AND ' . $viewAlias . '.`létrehozva` < DATE(' . $eventAlias . '.`event_start`)'
+            . ' AND (' . $published . ' IS NULL OR ' . $viewAlias . '.`létrehozva` >= ' . $published . ')',
         'bind' => [],
     ];
 }
@@ -249,7 +272,8 @@ function events_pre_event_stats_median(array $values): ?float
 /**
  * @return list<array{
  *   id:int,event_name:string,event_slug:string,event_status:string,
- *   event_start:string,page_views:int,share_pct:float|null
+ *   event_start:string,event_published_at:string|null,publish_days_before:int|null,
+ *   page_views:int,share_pct:float|null
  * }>
  */
 function events_pre_event_stats_fetch_events(
@@ -262,6 +286,7 @@ function events_pre_event_stats_fetch_events(
     $statusClause = events_monthly_stats_status_clause($status, 'e');
     $window = events_pre_event_stats_window_clause('e', 'v');
     $botAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
+    $publishedExpr = events_pre_event_stats_published_at_expr('e');
 
     $sql = '
         SELECT
@@ -270,6 +295,12 @@ function events_pre_event_stats_fetch_events(
             e.`event_slug`,
             e.`event_status`,
             e.`event_start`,
+            ' . $publishedExpr . ' AS event_published_at,
+            CASE
+                WHEN ' . $publishedExpr . ' IS NULL OR DATE(' . $publishedExpr . ') > DATE(e.`event_start`)
+                THEN NULL
+                ELSE DATEDIFF(DATE(e.`event_start`), DATE(' . $publishedExpr . '))
+            END AS publish_days_before,
             COUNT(v.`esemény_id`) AS page_views
         FROM `events_calendar_events` e
         LEFT JOIN `events_calendar_event_views` v
@@ -281,7 +312,7 @@ function events_pre_event_stats_fetch_events(
           AND YEAR(e.`event_start`) = ?
           AND ' . $statusClause['sql'] . '
           AND ' . events_stats_exclude_trash_sql('e') . '
-        GROUP BY e.`id`, e.`event_name`, e.`event_slug`, e.`event_status`, e.`event_start`
+        GROUP BY e.`id`, e.`event_name`, e.`event_slug`, e.`event_status`, e.`event_start`, e.`event_published_at`
         ORDER BY page_views DESC, e.`event_start` DESC, e.`id` DESC
     ';
 
@@ -298,12 +329,20 @@ function events_pre_event_stats_fetch_events(
     $out = [];
     foreach ($rows as $row) {
         $views = (int) ($row['page_views'] ?? 0);
+        $publishedRaw = $row['event_published_at'] ?? null;
+        $publishedAt = is_string($publishedRaw) && $publishedRaw !== '' ? $publishedRaw : null;
+        $publishDays = isset($row['publish_days_before']) && $row['publish_days_before'] !== null
+            ? (int) $row['publish_days_before']
+            : null;
+
         $out[] = [
             'id' => (int) ($row['id'] ?? 0),
             'event_name' => (string) ($row['event_name'] ?? ''),
             'event_slug' => (string) ($row['event_slug'] ?? ''),
             'event_status' => (string) ($row['event_status'] ?? ''),
             'event_start' => (string) ($row['event_start'] ?? ''),
+            'event_published_at' => $publishedAt,
+            'publish_days_before' => $publishDays,
             'page_views' => $views,
             'share_pct' => $total > 0 ? round(($views / $total) * 100, 2) : null,
         ];
@@ -388,8 +427,16 @@ function events_pre_event_stats_build_selected_event(
 
     if ($meta === null) {
         try {
+            $publishedExpr = events_pre_event_stats_published_at_expr('');
             $stmt = $db->prepare('
-                SELECT `id`, `event_name`, `event_slug`, `event_status`, `event_start`
+                SELECT
+                    `id`, `event_name`, `event_slug`, `event_status`, `event_start`,
+                    ' . $publishedExpr . ' AS event_published_at,
+                    CASE
+                        WHEN ' . $publishedExpr . ' IS NULL OR DATE(' . $publishedExpr . ') > DATE(`event_start`)
+                        THEN NULL
+                        ELSE DATEDIFF(DATE(`event_start`), DATE(' . $publishedExpr . '))
+                    END AS publish_days_before
                 FROM `events_calendar_events`
                 WHERE `id` = ?
                   AND `event_start` IS NOT NULL
@@ -401,12 +448,17 @@ function events_pre_event_stats_build_selected_event(
             if (!$found) {
                 return null;
             }
+            $publishedRaw = $found['event_published_at'] ?? null;
             $meta = [
                 'id' => (int) $found['id'],
                 'event_name' => (string) ($found['event_name'] ?? ''),
                 'event_slug' => (string) ($found['event_slug'] ?? ''),
                 'event_status' => (string) ($found['event_status'] ?? ''),
                 'event_start' => (string) ($found['event_start'] ?? ''),
+                'event_published_at' => is_string($publishedRaw) && $publishedRaw !== '' ? $publishedRaw : null,
+                'publish_days_before' => isset($found['publish_days_before']) && $found['publish_days_before'] !== null
+                    ? (int) $found['publish_days_before']
+                    : null,
                 'page_views' => 0,
                 'share_pct' => null,
             ];
@@ -420,6 +472,9 @@ function events_pre_event_stats_build_selected_event(
     $window = events_pre_event_stats_window_clause('e', 'v');
     $botAnd = events_realtime_bot_and($visitor, $botReady, 'v.`is_bot`');
     $daysExpr = events_pre_event_stats_days_before_expr('e', 'v');
+    $publishDaysBefore = isset($meta['publish_days_before']) && $meta['publish_days_before'] !== null
+        ? (int) $meta['publish_days_before']
+        : null;
 
     $sql = '
         SELECT
@@ -454,15 +509,23 @@ function events_pre_event_stats_build_selected_event(
     $total = 0;
     foreach (events_pre_event_stats_day_offsets() as $daysBefore) {
         $cnt = (int) ($counts[$daysBefore] ?? 0);
-        $total += $cnt;
+        $beforePublish = $publishDaysBefore !== null && $daysBefore > $publishDaysBefore;
+        if (!$beforePublish) {
+            $total += $cnt;
+        }
         $distribution[] = [
             'days_before' => $daysBefore,
             'label' => '-' . $daysBefore,
-            'count' => $cnt,
+            'count' => $beforePublish ? 0 : $cnt,
             'pct' => null,
+            'before_publish' => $beforePublish,
         ];
     }
     foreach ($distribution as &$row) {
+        if (!empty($row['before_publish'])) {
+            $row['pct'] = null;
+            continue;
+        }
         $row['pct'] = $total > 0
             ? round(((int) $row['count'] / $total) * 100, 2)
             : null;
@@ -473,7 +536,10 @@ function events_pre_event_stats_build_selected_event(
     $meta['distribution'] = $distribution;
     $meta['chart'] = [
         'labels' => array_column($distribution, 'label'),
-        'counts' => array_map(static fn (array $r): int => (int) $r['count'], $distribution),
+        'counts' => array_map(
+            static fn (array $r): ?int => !empty($r['before_publish']) ? null : (int) $r['count'],
+            $distribution
+        ),
         'pcts' => array_map(static fn (array $r): ?float => $r['pct'], $distribution),
     ];
 

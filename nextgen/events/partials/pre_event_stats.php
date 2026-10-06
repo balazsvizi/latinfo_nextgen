@@ -94,8 +94,8 @@ foreach ($distribution as $dRow) {
     <p class="events-edit-stats__intro">
         Az ablak az esemény napját <strong>nem</strong> tartalmazza: a megelőző 30 naptári nap
         (<code>−30</code> … <code>−1</code>) oldalbetöltései (<code>page_view</code>).
-        Az aggregált eloszlás azt mutatja, a forgalom hány százaléka esett az eseményhez képest
-        hányadik megelőző napra — minden vizsgált eseményt egybevetve.
+        A <strong>publikálás előtti</strong> időszak nem számít bele — csak a publikálástól az esemény napjáig tartó forgalom.
+        Az aggregált eloszlás a vizsgált események relatív napjainak százalékos megoszlását mutatja.
         Szűrő: <?= h($visitorLabel) ?>, státusz: <?= h($statusLabel) ?>.
     </p>
 
@@ -173,7 +173,7 @@ foreach ($distribution as $dRow) {
 
         <?php if ($pageViews === 0): ?>
             <p class="help events-edit-stats__empty">
-                Nincs oldalbetöltés a választott év eseményeinek megelőző 30 napjában a megadott szűrőkkel.
+                Nincs oldalbetöltés a választott év eseményeinek publikálás utáni, esemény előtti 30 napjában a megadott szűrőkkel.
             </p>
         <?php endif; ?>
 
@@ -231,8 +231,15 @@ foreach ($distribution as $dRow) {
             $selDist = is_array($selectedEvent['distribution'] ?? null) ? $selectedEvent['distribution'] : [];
             $selChart = is_array($selectedEvent['chart'] ?? null) ? $selectedEvent['chart'] : [];
             $selViews = (int) ($selectedEvent['page_views'] ?? 0);
+            $selPublished = (string) ($selectedEvent['event_published_at'] ?? '');
+            $selPublishDays = isset($selectedEvent['publish_days_before']) && $selectedEvent['publish_days_before'] !== null
+                ? (int) $selectedEvent['publish_days_before']
+                : null;
             $selMax = 0;
             foreach ($selDist as $sd) {
+                if (!empty($sd['before_publish'])) {
+                    continue;
+                }
                 $selMax = max($selMax, (int) ($sd['count'] ?? 0));
             }
             ?>
@@ -243,8 +250,14 @@ foreach ($distribution as $dRow) {
                             Esemény: <?= h((string) ($selectedEvent['event_name'] ?? '')) ?>
                         </h3>
                         <p class="events-edit-stats__chart-hint">
-                            <?= h($fmtDate((string) ($selectedEvent['event_start'] ?? ''))) ?>
-                            · előtti 30 nap: <?= number_format($selViews, 0, ',', ' ') ?> oldalbetöltés
+                            Kezdés: <?= h($fmtDate((string) ($selectedEvent['event_start'] ?? ''))) ?>
+                            · Publikálva: <?= h($selPublished !== '' ? $fmtDate($selPublished) : '—') ?>
+                            <?php if ($selPublishDays !== null): ?>
+                                <span class="events-pre-event-stats__publish-badge">
+                                    <?= $selPublishDays ?> nappal az esemény előtt
+                                </span>
+                            <?php endif; ?>
+                            · mért ablak: <?= number_format($selViews, 0, ',', ' ') ?> oldalbetöltés
                             · <?= h($visitorLabel) ?>
                         </p>
                     </div>
@@ -259,7 +272,7 @@ foreach ($distribution as $dRow) {
                     </div>
                     <script type="application/json" id="pre-event-selected-chart-data"><?= json_encode($selChart, $jsonFlags) ?></script>
                 <?php else: ?>
-                    <p class="help">Ehhez az eseményhez nincs oldalbetöltés a megelőző 30 napban.</p>
+                    <p class="help">Ehhez az eseményhez nincs oldalbetöltés a publikálás utáni, esemény előtti 30 napban.</p>
                 <?php endif; ?>
 
                 <div class="events-edit-stats__table-wrap">
@@ -275,16 +288,27 @@ foreach ($distribution as $dRow) {
                         <tbody>
                             <?php foreach ($selDist as $dRow): ?>
                                 <?php
+                                $beforePublish = !empty($dRow['before_publish']);
                                 $cnt = (int) ($dRow['count'] ?? 0);
                                 $pct = $dRow['pct'] ?? null;
-                                $barPct = ($selMax > 0) ? round(($cnt / $selMax) * 100, 1) : 0;
+                                $barPct = (!$beforePublish && $selMax > 0) ? round(($cnt / $selMax) * 100, 1) : 0;
+                                $rowClass = $beforePublish
+                                    ? 'events-pre-event-stats__row--before-publish'
+                                    : ($cnt === 0 ? 'events-pre-event-stats__row--empty' : '');
                                 ?>
-                                <tr<?= $cnt === 0 ? ' class="events-pre-event-stats__row--empty"' : '' ?>>
-                                    <td><?= h((string) ($dRow['label'] ?? '')) ?></td>
-                                    <td class="th-center"><?= number_format($cnt, 0, ',', ' ') ?></td>
-                                    <td class="th-center"><?= h($fmtPct(is_float($pct) || is_int($pct) ? (float) $pct : null)) ?></td>
+                                <tr<?= $rowClass !== '' ? ' class="' . h($rowClass) . '"' : '' ?>>
                                     <td>
-                                        <span class="events-pre-event-stats__bar" style="--bar: <?= h((string) $barPct) ?>%"></span>
+                                        <?= h((string) ($dRow['label'] ?? '')) ?>
+                                        <?php if ($beforePublish): ?>
+                                            <span class="events-pre-event-stats__day-note">publikálás előtt</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="th-center"><?= $beforePublish ? '—' : number_format($cnt, 0, ',', ' ') ?></td>
+                                    <td class="th-center"><?= $beforePublish ? '—' : h($fmtPct(is_float($pct) || is_int($pct) ? (float) $pct : null)) ?></td>
+                                    <td>
+                                        <?php if (!$beforePublish): ?>
+                                            <span class="events-pre-event-stats__bar" style="--bar: <?= h((string) $barPct) ?>%"></span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -304,6 +328,7 @@ foreach ($distribution as $dRow) {
                         <tr>
                             <th scope="col">Esemény</th>
                             <th class="th-center" scope="col">Kezdés</th>
+                            <th class="th-center" scope="col">Publikálva</th>
                             <th class="th-center" scope="col">Státusz</th>
                             <th class="th-center" scope="col">Előtti 30 nap</th>
                             <th class="th-center" scope="col">Részesedés</th>
@@ -317,10 +342,20 @@ foreach ($distribution as $dRow) {
                             $isActive = $eventId !== null && $eid === (int) $eventId;
                             $evViews = (int) ($ev['page_views'] ?? 0);
                             $share = $ev['share_pct'] ?? null;
+                            $evPublished = (string) ($ev['event_published_at'] ?? '');
+                            $evPublishDays = isset($ev['publish_days_before']) && $ev['publish_days_before'] !== null
+                                ? (int) $ev['publish_days_before']
+                                : null;
                             ?>
                             <tr<?= $isActive ? ' class="events-pre-event-stats__row--active"' : ($evViews === 0 ? ' class="events-pre-event-stats__row--empty"' : '') ?>>
                                 <td><?= h((string) ($ev['event_name'] ?? '')) ?></td>
                                 <td class="th-center"><?= h($fmtDate((string) ($ev['event_start'] ?? ''))) ?></td>
+                                <td class="th-center">
+                                    <?= h($evPublished !== '' ? $fmtDate($evPublished) : '—') ?>
+                                    <?php if ($evPublishDays !== null): ?>
+                                        <div class="events-pre-event-stats__publish-sub">−<?= (int) $evPublishDays ?> nap</div>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="th-center"><?= h(events_post_status_label((string) ($ev['event_status'] ?? ''))) ?></td>
                                 <td class="th-center"><?= number_format($evViews, 0, ',', ' ') ?></td>
                                 <td class="th-center"><?= h($fmtPct(is_float($share) || is_int($share) ? (float) $share : null)) ?></td>
@@ -354,7 +389,9 @@ foreach ($distribution as $dRow) {
                 return;
             }
             var labels = payload.labels || [];
-            var counts = payload.counts || [];
+            var counts = (payload.counts || []).map(function (v) {
+                return v === null || typeof v === 'undefined' ? null : Number(v);
+            });
             var pcts = (payload.pcts || []).map(function (v) {
                 return v === null || typeof v === 'undefined' ? null : Number(v);
             });
@@ -371,7 +408,8 @@ foreach ($distribution as $dRow) {
                             borderColor: '#6d8f63',
                             borderWidth: 1,
                             yAxisID: 'y',
-                            order: 2
+                            order: 2,
+                            spanGaps: true
                         },
                         {
                             type: 'line',
@@ -448,6 +486,32 @@ foreach ($distribution as $dRow) {
 }
 .events-pre-event-stats__row--empty td {
     opacity: 0.45;
+}
+.events-pre-event-stats__row--before-publish td {
+    opacity: 0.55;
+    background: rgba(148, 163, 184, 0.12);
+    font-style: italic;
+}
+.events-pre-event-stats__day-note {
+    display: inline-block;
+    margin-left: 0.4rem;
+    font-size: 0.78rem;
+    font-style: normal;
+    color: #64748b;
+}
+.events-pre-event-stats__publish-badge {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    background: rgba(61, 107, 79, 0.12);
+    color: #3d6b4f;
+    font-size: 0.82rem;
+}
+.events-pre-event-stats__publish-sub {
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: #64748b;
 }
 .events-pre-event-stats__row--active td {
     background: rgba(109, 143, 99, 0.12);
