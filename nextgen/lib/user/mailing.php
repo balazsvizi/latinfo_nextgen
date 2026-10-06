@@ -10,7 +10,7 @@ const LATINFO_MAILING_STATUS_UNSUBSCRIBED = 'unsubscribed';
 
 /**
  * Beépített lista-katalógus (seed).
- * coming_soon = zárolt (nem feliratkozható); soon_label = „hamarosan” jelölés, de kattintható.
+ * soon_label = „hamarosan” jelvény (állítható); coming_soon csak legacy (ne zároljon).
  *
  * @return list<array{
  *   slug:string,
@@ -49,7 +49,7 @@ function latinfo_mailing_catalog(): array
         [
             'slug' => 'parties_favorites',
             'parent' => 'parties',
-            'name' => 'Hírek a te általad bejelölt kedvencekről',
+            'name' => 'A te általad bejelölt kedvencek / preferenciák',
             'description' => 'Csak a kedvenceidhez kapcsolódó bulik.',
             'sort' => 21,
             'coming_soon' => false,
@@ -59,7 +59,7 @@ function latinfo_mailing_catalog(): array
         [
             'slug' => 'parties_all',
             'parent' => 'parties',
-            'name' => 'Hírek az összes buliról',
+            'name' => 'Mind',
             'description' => 'Minden buli / esemény híre.',
             'sort' => 22,
             'coming_soon' => false,
@@ -80,9 +80,9 @@ function latinfo_mailing_catalog(): array
             'slug' => 'workshops_yours',
             'parent' => 'workshops',
             'name' => 'A te általad bejelölt preferenciák csak',
-            'description' => 'Preferencia-alapú szűrés – hamarosan.',
+            'description' => 'Preferencia-alapú szűrés.',
             'sort' => 31,
-            'coming_soon' => true,
+            'coming_soon' => false,
             'soon_label' => true,
             'is_group' => false,
         ],
@@ -110,9 +110,9 @@ function latinfo_mailing_catalog(): array
             'slug' => 'dance_schools_prefs',
             'parent' => 'dance_schools',
             'name' => 'A te általad bejelölt preferenciák csak',
-            'description' => 'Preferencia-alapú szűrés – hamarosan.',
+            'description' => 'Preferencia-alapú szűrés.',
             'sort' => 41,
-            'coming_soon' => true,
+            'coming_soon' => false,
             'soon_label' => true,
             'is_group' => false,
         ],
@@ -126,6 +126,51 @@ function latinfo_mailing_catalog(): array
             'soon_label' => true,
             'is_group' => false,
         ],
+        [
+            'slug' => 'dance_weekends',
+            'parent' => null,
+            'name' => 'Táncos hétvégék / táborok',
+            'description' => 'Hétvégék és táborok értesítései.',
+            'sort' => 50,
+            'coming_soon' => false,
+            'soon_label' => false,
+            'is_group' => true,
+        ],
+        [
+            'slug' => 'dance_weekends_prefs',
+            'parent' => 'dance_weekends',
+            'name' => 'A te általad bejelölt preferenciák csak',
+            'description' => 'Preferencia-alapú szűrés.',
+            'sort' => 51,
+            'coming_soon' => false,
+            'soon_label' => true,
+            'is_group' => false,
+        ],
+        [
+            'slug' => 'dance_weekends_all',
+            'parent' => 'dance_weekends',
+            'name' => 'Mind',
+            'description' => 'Minden hétvége / tábor hír.',
+            'sort' => 52,
+            'coming_soon' => false,
+            'soon_label' => true,
+            'is_group' => false,
+        ],
+    ];
+}
+
+/**
+ * Mind (all) slug → preferenciás slug. Mind bekapcsolása kikapcsolja a preferenciát.
+ *
+ * @return array<string, string>
+ */
+function latinfo_mailing_exclusive_pairs(): array
+{
+    return [
+        'parties_all' => 'parties_favorites',
+        'workshops_all' => 'workshops_yours',
+        'dance_schools_all' => 'dance_schools_prefs',
+        'dance_weekends_all' => 'dance_weekends_prefs',
     ];
 }
 
@@ -475,9 +520,6 @@ function latinfo_mailing_set_subscription(
         if (!empty($list['is_group'])) {
             return ['ok' => false, 'error' => 'Erre a csoportra nem lehet közvetlenül feliratkozni.'];
         }
-        if ($subscribe && !empty($list['is_coming_soon'])) {
-            return ['ok' => false, 'error' => 'Ez a lista hamarosan elérhető.'];
-        }
 
         $email = latinfo_users_normalize_email($email);
         if ($email === '' && function_exists('latinfo_user_by_id')) {
@@ -583,10 +625,23 @@ function latinfo_mailing_sync_user_lists(PDO $db, int $userId, array $wantedByLi
         }
     }
 
+    // slug → id a kizáró párokhoz
+    $slugToId = [];
     foreach ($subscribable as $listId => $list) {
-        if (!empty($list['is_coming_soon'])) {
-            continue;
+        $slug = (string) ($list['slug'] ?? '');
+        if ($slug !== '') {
+            $slugToId[$slug] = (int) $listId;
         }
+    }
+    foreach (latinfo_mailing_exclusive_pairs() as $allSlug => $prefsSlug) {
+        $allId = $slugToId[$allSlug] ?? 0;
+        $prefsId = $slugToId[$prefsSlug] ?? 0;
+        if ($allId > 0 && !empty($wantedByListId[$allId]) && $prefsId > 0) {
+            unset($wantedByListId[$prefsId]);
+        }
+    }
+
+    foreach ($subscribable as $listId => $list) {
         $want = !empty($wantedByListId[$listId]);
         $have = !empty($current[$listId]);
         if ($want === $have) {
@@ -616,7 +671,7 @@ function latinfo_mailing_subscribe_defaults(PDO $db, int $userId, ?array $slugs 
     $ok = true;
     foreach ($slugs as $slug) {
         $list = latinfo_mailing_list_by_slug($db, (string) $slug);
-        if ($list === null || !empty($list['is_group']) || !empty($list['is_coming_soon'])) {
+        if ($list === null || !empty($list['is_group'])) {
             continue;
         }
         $res = latinfo_mailing_set_subscription($db, $userId, (int) $list['id'], true, '', $source);

@@ -127,6 +127,14 @@ $policyVersion = latinfo_privacy_policy_version();
 latinfo_mailing_ensure_schema($db);
 $mailingTree = latinfo_mailing_lists_tree($db);
 $mailingActive = latinfo_mailing_user_active_map($db, $userId);
+$mailingExclusive = latinfo_mailing_exclusive_pairs();
+/** @var array<string, array{group:string,role:string}> $mailingPairMeta slug => meta */
+$mailingPairMeta = [];
+foreach ($mailingExclusive as $allSlug => $prefsSlug) {
+    $group = (string) preg_replace('/_all$/', '', $allSlug);
+    $mailingPairMeta[$allSlug] = ['group' => $group, 'role' => 'all'];
+    $mailingPairMeta[$prefsSlug] = ['group' => $group, 'role' => 'prefs'];
+}
 // Régi „általános hírlevél” consent → alap listák (csak ha még soha nem volt lista-preferencia)
 if (
     !latinfo_mailing_user_has_any_row($db, $userId)
@@ -243,7 +251,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     <h3 class="user-account-profile__notify-title">E-mail értesítések</h3>
                     <p class="user-account-help">Kapcsold be, milyen témákról szeretnél levelet kapni. Bármikor módosítható.</p>
                 </div>
-                <form method="post" class="user-account-form user-account-mailing-form">
+                <form method="post" class="user-account-form user-account-mailing-form" data-mailing-exclusive="1">
                     <?= csrf_input('user_account') ?>
                     <input type="hidden" name="action" value="save_mailing_lists">
                     <?php if ($mailingTree === []): ?>
@@ -273,9 +281,11 @@ header('Content-Type: text/html; charset=UTF-8');
                                                         $mailSwitchId = (int) ($child['id'] ?? 0);
                                                         $mailSwitchName = (string) ($child['name'] ?? '');
                                                         $mailSwitchChecked = !empty($mailingActive[$mailSwitchId]);
-                                                        $mailSwitchLocked = !empty($child['is_coming_soon']);
-                                                        $mailSwitchSoonLabel = !empty($child['show_soon_label']) || $mailSwitchLocked;
+                                                        $mailSwitchSoonLabel = !empty($child['show_soon_label']);
                                                         $mailSwitchDesc = '';
+                                                        $mailSwitchSlug = (string) ($child['slug'] ?? '');
+                                                        $mailSwitchPairRole = (string) ($mailingPairMeta[$mailSwitchSlug]['role'] ?? '');
+                                                        $mailSwitchPairGroup = (string) ($mailingPairMeta[$mailSwitchSlug]['group'] ?? '');
                                                         require __DIR__ . '/partials/mailing_switch.php';
                                                         ?>
                                                     </li>
@@ -287,9 +297,11 @@ header('Content-Type: text/html; charset=UTF-8');
                                         $mailSwitchId = $rootId;
                                         $mailSwitchName = (string) ($root['name'] ?? '');
                                         $mailSwitchChecked = !empty($mailingActive[$rootId]);
-                                        $mailSwitchLocked = !empty($root['is_coming_soon']);
-                                        $mailSwitchSoonLabel = !empty($root['show_soon_label']) || $mailSwitchLocked;
+                                        $mailSwitchSoonLabel = !empty($root['show_soon_label']);
                                         $mailSwitchDesc = trim((string) ($root['description'] ?? ''));
+                                        $mailSwitchSlug = (string) ($root['slug'] ?? '');
+                                        $mailSwitchPairRole = (string) ($mailingPairMeta[$mailSwitchSlug]['role'] ?? '');
+                                        $mailSwitchPairGroup = (string) ($mailingPairMeta[$mailSwitchSlug]['group'] ?? '');
                                         require __DIR__ . '/partials/mailing_switch.php';
                                         ?>
                                     <?php endif; ?>
@@ -386,5 +398,40 @@ header('Content-Type: text/html; charset=UTF-8');
 </article>
 </div>
 <script src="<?= h($accountFavoritesJsUrl) ?>" defer></script>
+<script>
+(function () {
+    var form = document.querySelector('[data-mailing-exclusive]');
+    if (!form) return;
+
+    function syncLabel(input) {
+        var label = input.closest('.user-mail-switch');
+        if (!label) return;
+        label.classList.toggle('is-on', input.checked);
+    }
+
+    form.addEventListener('change', function (e) {
+        var input = e.target;
+        if (!(input instanceof HTMLInputElement) || !input.classList.contains('user-mail-switch__input')) {
+            return;
+        }
+        syncLabel(input);
+        if (!input.checked) return;
+
+        var group = input.getAttribute('data-mail-pair-group');
+        var role = input.getAttribute('data-mail-pair-role');
+        if (!group || !role) return;
+
+        // Mind bekapcsolása → preferencia ki; preferencia be → Mind ki
+        var otherRole = role === 'all' ? 'prefs' : 'all';
+        var other = form.querySelector(
+            '.user-mail-switch__input[data-mail-pair-group="' + group + '"][data-mail-pair-role="' + otherRole + '"]'
+        );
+        if (other instanceof HTMLInputElement && other.checked) {
+            other.checked = false;
+            syncLabel(other);
+        }
+    });
+})();
+</script>
 </body>
 </html>
