@@ -241,7 +241,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="user-account-mailing">
                 <div class="user-account-mailing__head">
                     <h3 class="user-account-profile__notify-title">E-mail értesítések</h3>
-                    <p class="user-account-help">Válaszd ki, milyen témákról szeretnél levelet kapni. Bármikor módosítható.</p>
+                    <p class="user-account-help">Kapcsold be, milyen témákról szeretnél levelet kapni. Bármikor módosítható.</p>
                 </div>
                 <form method="post" class="user-account-form user-account-mailing-form">
                     <?= csrf_input('user_account') ?>
@@ -256,8 +256,6 @@ header('Content-Type: text/html; charset=UTF-8');
                                 $children = $node['children'];
                                 $rootId = (int) ($root['id'] ?? 0);
                                 $isGroup = !empty($root['is_group']);
-                                $rootComing = !empty($root['is_coming_soon']);
-                                $rootOn = !empty($mailingActive[$rootId]);
                                 ?>
                                 <li class="user-mailing-tree__group<?= $isGroup ? ' is-group' : '' ?>">
                                     <?php if ($isGroup): ?>
@@ -270,50 +268,30 @@ header('Content-Type: text/html; charset=UTF-8');
                                         <?php if ($children !== []): ?>
                                             <ul class="user-mailing-tree__children">
                                                 <?php foreach ($children as $child): ?>
-                                                    <?php
-                                                    $cid = (int) ($child['id'] ?? 0);
-                                                    $coming = !empty($child['is_coming_soon']);
-                                                    $checked = !empty($mailingActive[$cid]);
-                                                    ?>
                                                     <li>
-                                                        <label class="user-consent-check<?= $coming ? ' is-disabled' : '' ?>">
-                                                            <input
-                                                                type="checkbox"
-                                                                name="lists[<?= $cid ?>]"
-                                                                value="1"
-                                                                <?= $checked ? ' checked' : '' ?>
-                                                                <?= $coming ? ' disabled' : '' ?>
-                                                            >
-                                                            <span>
-                                                                <?= h((string) ($child['name'] ?? '')) ?>
-                                                                <?php if ($coming): ?>
-                                                                    <em class="user-mailing-soon">(hamarosan)</em>
-                                                                <?php endif; ?>
-                                                            </span>
-                                                        </label>
+                                                        <?php
+                                                        $mailSwitchId = (int) ($child['id'] ?? 0);
+                                                        $mailSwitchName = (string) ($child['name'] ?? '');
+                                                        $mailSwitchChecked = !empty($mailingActive[$mailSwitchId]);
+                                                        $mailSwitchLocked = !empty($child['is_coming_soon']);
+                                                        $mailSwitchSoonLabel = !empty($child['show_soon_label']) || $mailSwitchLocked;
+                                                        $mailSwitchDesc = '';
+                                                        require __DIR__ . '/partials/mailing_switch.php';
+                                                        ?>
                                                     </li>
                                                 <?php endforeach; ?>
                                             </ul>
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <label class="user-consent-check<?= $rootComing ? ' is-disabled' : '' ?>">
-                                            <input
-                                                type="checkbox"
-                                                name="lists[<?= $rootId ?>]"
-                                                value="1"
-                                                <?= $rootOn ? ' checked' : '' ?>
-                                                <?= $rootComing ? ' disabled' : '' ?>
-                                            >
-                                            <span>
-                                                <?= h((string) ($root['name'] ?? '')) ?>
-                                                <?php if ($rootComing): ?>
-                                                    <em class="user-mailing-soon">(hamarosan)</em>
-                                                <?php endif; ?>
-                                            </span>
-                                        </label>
-                                        <?php if (trim((string) ($root['description'] ?? '')) !== ''): ?>
-                                            <p class="user-mailing-tree__desc user-mailing-tree__desc--indent"><?= h((string) $root['description']) ?></p>
-                                        <?php endif; ?>
+                                        <?php
+                                        $mailSwitchId = $rootId;
+                                        $mailSwitchName = (string) ($root['name'] ?? '');
+                                        $mailSwitchChecked = !empty($mailingActive[$rootId]);
+                                        $mailSwitchLocked = !empty($root['is_coming_soon']);
+                                        $mailSwitchSoonLabel = !empty($root['show_soon_label']) || $mailSwitchLocked;
+                                        $mailSwitchDesc = trim((string) ($root['description'] ?? ''));
+                                        require __DIR__ . '/partials/mailing_switch.php';
+                                        ?>
                                     <?php endif; ?>
                                 </li>
                             <?php endforeach; ?>

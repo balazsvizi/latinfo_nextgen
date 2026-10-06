@@ -9,7 +9,8 @@ const LATINFO_MAILING_STATUS_ACTIVE = 'active';
 const LATINFO_MAILING_STATUS_UNSUBSCRIBED = 'unsubscribed';
 
 /**
- * Beépített lista-katalógus (seed). parent = csoport slug; coming_soon = nem feliratkozható.
+ * Beépített lista-katalógus (seed).
+ * coming_soon = zárolt (nem feliratkozható); soon_label = „hamarosan” jelölés, de kattintható.
  *
  * @return list<array{
  *   slug:string,
@@ -18,6 +19,7 @@ const LATINFO_MAILING_STATUS_UNSUBSCRIBED = 'unsubscribed';
  *   description:string,
  *   sort:int,
  *   coming_soon:bool,
+ *   soon_label:bool,
  *   is_group:bool
  * }>
  */
@@ -31,6 +33,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Általános hírek a Latinfo.hu-ról.',
             'sort' => 10,
             'coming_soon' => false,
+            'soon_label' => false,
             'is_group' => false,
         ],
         [
@@ -40,6 +43,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Események / bulik értesítései.',
             'sort' => 20,
             'coming_soon' => false,
+            'soon_label' => false,
             'is_group' => true,
         ],
         [
@@ -49,6 +53,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Csak a kedvenceidhez kapcsolódó bulik.',
             'sort' => 21,
             'coming_soon' => false,
+            'soon_label' => false,
             'is_group' => false,
         ],
         [
@@ -58,6 +63,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Minden buli / esemény híre.',
             'sort' => 22,
             'coming_soon' => false,
+            'soon_label' => false,
             'is_group' => false,
         ],
         [
@@ -67,15 +73,17 @@ function latinfo_mailing_catalog(): array
             'description' => 'Workshop értesítések.',
             'sort' => 30,
             'coming_soon' => false,
+            'soon_label' => false,
             'is_group' => true,
         ],
         [
             'slug' => 'workshops_yours',
             'parent' => 'workshops',
-            'name' => 'Tiéd',
-            'description' => 'A te preferenciáid / kedvenceid szerinti workshopok.',
+            'name' => 'A te általad bejelölt preferenciák csak',
+            'description' => 'Preferencia-alapú szűrés – hamarosan.',
             'sort' => 31,
-            'coming_soon' => false,
+            'coming_soon' => true,
+            'soon_label' => true,
             'is_group' => false,
         ],
         [
@@ -85,6 +93,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Minden workshop hír.',
             'sort' => 32,
             'coming_soon' => false,
+            'soon_label' => true,
             'is_group' => false,
         ],
         [
@@ -94,6 +103,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Tánciskola értesítések.',
             'sort' => 40,
             'coming_soon' => false,
+            'soon_label' => false,
             'is_group' => true,
         ],
         [
@@ -103,6 +113,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Preferencia-alapú szűrés – hamarosan.',
             'sort' => 41,
             'coming_soon' => true,
+            'soon_label' => true,
             'is_group' => false,
         ],
         [
@@ -112,6 +123,7 @@ function latinfo_mailing_catalog(): array
             'description' => 'Minden tánciskola hír.',
             'sort' => 42,
             'coming_soon' => false,
+            'soon_label' => true,
             'is_group' => false,
         ],
     ];
@@ -164,8 +176,23 @@ function latinfo_mailing_subscriptions_table_ready(PDO $db, bool $reset = false)
 function latinfo_mailing_ensure_schema(PDO $db): bool
 {
     static $done = false;
+    static $seeded = false;
+
+    $finish = static function (PDO $db) use (&$seeded): bool {
+        if (!$seeded) {
+            latinfo_mailing_seed_lists($db);
+            $seeded = true;
+        }
+
+        return true;
+    };
+
     if ($done) {
-        return latinfo_mailing_lists_table_ready($db) && latinfo_mailing_subscriptions_table_ready($db);
+        if (latinfo_mailing_lists_table_ready($db) && latinfo_mailing_subscriptions_table_ready($db)) {
+            return $finish($db);
+        }
+
+        return false;
     }
 
     try {
@@ -180,6 +207,7 @@ function latinfo_mailing_ensure_schema(PDO $db): bool
                 `is_group` TINYINT(1) NOT NULL DEFAULT 0,
                 `is_active` TINYINT(1) NOT NULL DEFAULT 1,
                 `is_coming_soon` TINYINT(1) NOT NULL DEFAULT 0,
+                `show_soon_label` TINYINT(1) NOT NULL DEFAULT 0,
                 `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (`id`),
@@ -208,10 +236,14 @@ function latinfo_mailing_ensure_schema(PDO $db): bool
         ");
         latinfo_mailing_lists_table_ready($db, true);
         latinfo_mailing_subscriptions_table_ready($db, true);
-        latinfo_mailing_seed_lists($db);
+        try {
+            $db->query('SELECT `show_soon_label` FROM `latinfo_mailing_lists` LIMIT 1');
+        } catch (Throwable) {
+            $db->exec('ALTER TABLE `latinfo_mailing_lists` ADD COLUMN `show_soon_label` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_coming_soon`');
+        }
         $done = true;
 
-        return true;
+        return $finish($db);
     } catch (Throwable $ex) {
         error_log('latinfo_mailing_ensure_schema: ' . $ex->getMessage());
 
@@ -239,8 +271,8 @@ function latinfo_mailing_seed_lists(PDO $db): void
 
     $upsert = $db->prepare('
         INSERT INTO `latinfo_mailing_lists`
-            (`slug`, `parent_id`, `name`, `description`, `sort_order`, `is_group`, `is_active`, `is_coming_soon`)
-        VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+            (`slug`, `parent_id`, `name`, `description`, `sort_order`, `is_group`, `is_active`, `is_coming_soon`, `show_soon_label`)
+        VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
         ON DUPLICATE KEY UPDATE
             `parent_id` = VALUES(`parent_id`),
             `name` = VALUES(`name`),
@@ -248,6 +280,7 @@ function latinfo_mailing_seed_lists(PDO $db): void
             `sort_order` = VALUES(`sort_order`),
             `is_group` = VALUES(`is_group`),
             `is_coming_soon` = VALUES(`is_coming_soon`),
+            `show_soon_label` = VALUES(`show_soon_label`),
             `is_active` = 1
     ');
 
@@ -279,6 +312,7 @@ function latinfo_mailing_seed_lists(PDO $db): void
             (int) $item['sort'],
             !empty($item['is_group']) ? 1 : 0,
             !empty($item['coming_soon']) ? 1 : 0,
+            !empty($item['soon_label']) ? 1 : 0,
         ]);
         if (!isset($bySlug[$item['slug']])) {
             $newId = (int) $db->lastInsertId();
