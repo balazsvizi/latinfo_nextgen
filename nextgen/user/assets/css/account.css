@@ -711,3 +711,161 @@ body.event-public-page .user-account-shell {
 .btn-sm {
     font-size: 0.85rem;
 }
+
+/* Consent / adatkezelés */
+.user-consent-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    margin: 0.85rem 0 0.35rem;
+    font-size: 0.9rem;
+    color: var(--ua-ink);
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.user-consent-check input {
+    margin-top: 0.2rem;
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.user-consent-check em {
+    color: var(--ua-muted);
+    font-style: normal;
+    font-size: 0.85em;
+}
+
+.user-consent-check a {
+    color: var(--ua-brand);
+    font-weight: 600;
+}
+
+.user-oauth-privacy-hint {
+    margin: 0 0 0.75rem;
+    font-size: 0.82rem;
+    color: var(--ua-muted);
+    text-align: center;
+    line-height: 1.35;
+}
+
+.user-privacy-lead {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    color: var(--ua-ink);
+    line-height: 1.45;
+    text-align: center;
+}
+
+.user-privacy-lead a {
+    color: var(--ua-brand);
+    font-weight: 600;
+}
+
+.user-account-profile__privacy {
+    margin-top: 1.15rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--ua-line);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.85rem 1.25rem;
+}
+
+.user-account-newsletter-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 0.85rem;
+}
+
+.user-account-newsletter-form .user-consent-check {
+    margin: 0;
+}
+
+/* Publikus adatkezelési dokumentum */
+.user-privacy-page {
+    padding: 2rem 1rem 3rem;
+}
+
+.user-privacy-doc {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 2rem;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--ua-line);
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(45, 58, 40, 0.1);
+    font-family: var(--ua-font);
+    color: var(--ua-ink);
+    line-height: 1.55;
+}
+
+.user-privacy-doc__brand {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.user-privacy-doc__brand a {
+    color: var(--ua-brand);
+    text-decoration: none;
+}
+
+.user-privacy-doc h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.55rem;
+    color: var(--ua-brand);
+}
+
+.user-privacy-doc__meta {
+    margin: 0 0 1.5rem;
+    font-size: 0.88rem;
+    color: var(--ua-muted);
+}
+
+.user-privacy-doc section {
+    margin-bottom: 1.35rem;
+}
+
+.user-privacy-doc h2 {
+    margin: 0 0 0.45rem;
+    font-size: 1.05rem;
+    color: var(--ua-brand);
+}
+
+.user-privacy-doc p,
+.user-privacy-doc ul {
+    margin: 0 0 0.65rem;
+    font-size: 0.95rem;
+}
+
+.user-privacy-doc ul {
+    padding-left: 1.2rem;
+}
+
+.user-privacy-doc .help {
+    font-size: 0.88rem;
+    color: var(--ua-muted);
+}
+
+.user-privacy-doc__footer {
+    margin: 1.75rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ua-line);
+    font-size: 0.9rem;
+    color: var(--ua-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+    align-items: center;
+}
+
+.user-privacy-doc__footer a {
+    color: var(--ua-brand);
+    font-weight: 600;
+}
+

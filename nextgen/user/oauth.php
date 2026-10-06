@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 
 if (user_is_logged_in()) {
-    redirect(user_url('index.php'));
+    user_redirect_after_auth_success();
 }
 
 $oauthError = trim((string) ($_GET['error'] ?? ''));
@@ -36,13 +36,42 @@ if (!$complete['ok'] || empty($complete['identity'])) {
     redirect(user_url('login.php'));
 }
 
-$result = latinfo_user_upsert_from_oauth(getDb(), $complete['identity']);
+$db = getDb();
+$result = latinfo_user_upsert_from_oauth($db, $complete['identity']);
 if (!$result['ok'] || !is_array($result['user'])) {
     flash('error', $result['error'] !== '' ? $result['error'] : 'A belépés sikertelen.');
     redirect(user_url('login.php'));
 }
 
+$userId = (int) ($result['user']['id'] ?? 0);
+$privacyPending = !empty($_SESSION['_latinfo_oauth_privacy_pending']);
+$newsletterPending = !empty($_SESSION['_latinfo_oauth_newsletter_pending']);
+unset($_SESSION['_latinfo_oauth_privacy_pending'], $_SESSION['_latinfo_oauth_newsletter_pending']);
+
+if ($userId > 0 && $privacyPending) {
+    $meta = latinfo_user_consent_request_meta();
+    $meta['source'] = 'oauth_signup';
+    if (!latinfo_user_has_current_privacy_consent($db, $userId)) {
+        latinfo_user_consent_record(
+            $db,
+            $userId,
+            LATINFO_CONSENT_PRIVACY,
+            true,
+            latinfo_privacy_policy_version(),
+            $meta
+        );
+    }
+    if ($newsletterPending && !latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER)) {
+        latinfo_user_consent_record(
+            $db,
+            $userId,
+            LATINFO_CONSENT_NEWSLETTER,
+            true,
+            '1.0',
+            $meta
+        );
+    }
+}
+
 user_login_from_row($result['user']);
-$url = user_safe_post_login_redirect($_SESSION['_user_redirect_after_login'] ?? null);
-unset($_SESSION['_user_redirect_after_login']);
-redirect($url);
+user_redirect_after_auth_success();

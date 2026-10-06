@@ -12,6 +12,7 @@ user_require_login();
 
 $db = getDb();
 latinfo_favorites_ensure_schema($db);
+latinfo_user_consents_ensure_schema($db);
 $user = user_current($db);
 if ($user === null) {
     redirect(user_url('login.php'));
@@ -36,6 +37,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             user_refresh_session_from_db($db);
         } else {
             flash('error', $res['error']);
+        }
+        redirect(user_url('index.php'));
+    }
+    if ($action === 'save_newsletter') {
+        $want = !empty($_POST['newsletter']);
+        $meta = latinfo_user_consent_request_meta();
+        $meta['source'] = 'account';
+        $currently = latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER);
+        if ($want !== $currently) {
+            $ok = latinfo_user_consent_record(
+                $db,
+                $userId,
+                LATINFO_CONSENT_NEWSLETTER,
+                $want,
+                '1.0',
+                $meta
+            );
+            flash($ok ? 'success' : 'error', $ok
+                ? ($want ? 'Feliratkozás mentve.' : 'Leiratkozás mentve.')
+                : 'A mentés sikertelen.');
+        } else {
+            flash('success', 'Nincs változás.');
         }
         redirect(user_url('index.php'));
     }
@@ -86,6 +109,10 @@ foreach ($favoritesByType as $items) {
 }
 $notificationEmail = trim((string) ($user['notification_email'] ?? ''));
 $accountEmail = trim((string) ($user['email'] ?? ''));
+$privacyConsent = latinfo_user_consent_latest($db, $userId, LATINFO_CONSENT_PRIVACY);
+$newsletterOn = latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER);
+$policyUrl = latinfo_privacy_policy_url();
+$policyVersion = latinfo_privacy_policy_version();
 
 $lang = 'hu';
 $accountUrl = user_url('index.php');
@@ -169,6 +196,31 @@ header('Content-Type: text/html; charset=UTF-8');
                     <input type="hidden" name="action" value="save_notification_email">
                     <label class="visually-hidden" for="notification_email">Értesítési e-mail</label>
                     <input type="email" id="notification_email" name="notification_email" maxlength="255" value="<?= h($notificationEmail) ?>" placeholder="<?= h($accountEmail) ?>" autocomplete="email">
+                    <button type="submit" class="btn btn-primary">Mentés</button>
+                </form>
+            </div>
+
+            <div class="user-account-profile__privacy">
+                <div class="user-account-profile__notify-copy">
+                    <h3 class="user-account-profile__notify-title">Adatkezelés és értesítések</h3>
+                    <p class="user-account-help">
+                        <a href="<?= h($policyUrl) ?>" target="_blank" rel="noopener">Adatkezelési tájékoztató</a>
+                        (aktuális verzió: <?= h($policyVersion) ?>)
+                        <?php if (is_array($privacyConsent) && !empty($privacyConsent['granted'])): ?>
+                            · Elfogadva: <?= h((string) ($privacyConsent['created_at'] ?? '')) ?>
+                            <?php if ((string) ($privacyConsent['version'] ?? '') !== ''): ?>
+                                (v<?= h((string) $privacyConsent['version']) ?>)
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <form method="post" class="user-account-form user-account-newsletter-form">
+                    <?= csrf_input('user_account') ?>
+                    <input type="hidden" name="action" value="save_newsletter">
+                    <label class="user-consent-check">
+                        <input type="checkbox" name="newsletter" value="1"<?= $newsletterOn ? ' checked' : '' ?>>
+                        <span>Latinfo értesítések / hírlevél</span>
+                    </label>
                     <button type="submit" class="btn btn-primary">Mentés</button>
                 </form>
             </div>

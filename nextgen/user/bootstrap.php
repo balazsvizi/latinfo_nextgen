@@ -8,6 +8,7 @@ require_once $nextgenRoot . '/core/database.php';
 require_once $nextgenRoot . '/includes/functions.php';
 require_once $nextgenRoot . '/lib/user/users.php';
 require_once $nextgenRoot . '/lib/user/oauth.php';
+require_once $nextgenRoot . '/lib/user/consents.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -24,4 +25,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/includes/auth.php';
 
-latinfo_users_ensure_schema(getDb());
+$dbBoot = getDb();
+latinfo_users_ensure_schema($dbBoot);
+latinfo_user_consents_ensure_schema($dbBoot);

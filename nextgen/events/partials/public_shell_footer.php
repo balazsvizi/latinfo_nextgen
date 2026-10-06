@@ -23,6 +23,8 @@ $footerClass = 'event-site-line' . ($standalone ? ' event-site-line--standalone'
     <?php endif; ?>
     <a href="<?= h($latinfoHomeUrl) ?>"><?= h($S['footer_home_link']) ?></a>
     <span class="event-site-line__sep" aria-hidden="true">·</span>
+    <a href="<?= h(site_url('adatkezeles/')) ?>">Adatkezelés</a>
+    <span class="event-site-line__sep" aria-hidden="true">·</span>
     <?= nextgen_footer_version_markup() ?>
 </p>
 <?php require __DIR__ . '/public_client_page_view.php'; ?>

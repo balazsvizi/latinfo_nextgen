@@ -52,7 +52,7 @@ if ($baseUrlResolved === '' && PHP_SAPI !== 'cli') {
         if ($src === '') {
             continue;
         }
-        foreach (['/nextgen/', '/lanueva/', '/feedback/', '/mobilapp/', '/mobileapp/'] as $needle) {
+        foreach (['/nextgen/', '/lanueva/', '/feedback/', '/mobilapp/', '/mobileapp/', '/account/', '/adatkezeles/'] as $needle) {
             $p = strpos($src, $needle);
             if ($p > 0) {
                 $baseUrlResolved = substr($src, 0, $p);
@@ -227,6 +227,17 @@ if (!defined('FACEBOOK_APP_ID')) {
 /** Facebook Login (publikus /account/ SSO) – App Secret. Üresen a Facebook belépés gomb rejtve. */
 if (!defined('FACEBOOK_APP_SECRET')) {
     define('FACEBOOK_APP_SECRET', (string) cfg_get('FACEBOOK_APP_SECRET', '', $localConfig));
+}
+
+/** Adatkezelési tájékoztató – adatkezelő megjelenített adatai (publikus /adatkezeles/). */
+if (!defined('PRIVACY_CONTROLLER_NAME')) {
+    define('PRIVACY_CONTROLLER_NAME', (string) cfg_get('PRIVACY_CONTROLLER_NAME', '', $localConfig));
+}
+if (!defined('PRIVACY_CONTROLLER_EMAIL')) {
+    define('PRIVACY_CONTROLLER_EMAIL', (string) cfg_get('PRIVACY_CONTROLLER_EMAIL', 'adatvedelem@latinfo.hu', $localConfig));
+}
+if (!defined('PRIVACY_CONTROLLER_ADDRESS')) {
+    define('PRIVACY_CONTROLLER_ADDRESS', (string) cfg_get('PRIVACY_CONTROLLER_ADDRESS', '', $localConfig));
 }
 
 /**

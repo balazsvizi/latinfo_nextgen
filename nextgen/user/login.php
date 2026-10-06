@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 
 if (user_is_logged_in()) {
-    redirect(user_url('index.php'));
+    user_redirect_after_auth_success();
 }
 
 $returnGet = trim((string) ($_GET['return'] ?? ''));
@@ -29,9 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (($email = trim((string) ($_POST['email'] ?? ''))) === '' || ($jelszo = (string) ($_POST['jelszo'] ?? '')) === '') {
         $hiba = 'Add meg az e-mail címet és a jelszót.';
     } elseif (user_login_with_password($email, $jelszo)) {
-        $url = user_safe_post_login_redirect($_SESSION['_user_redirect_after_login'] ?? null);
-        unset($_SESSION['_user_redirect_after_login']);
-        redirect($url);
+        user_redirect_after_auth_success();
     } else {
         $hiba = 'Hibás e-mail cím vagy jelszó.';
     }

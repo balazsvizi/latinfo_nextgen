@@ -20,6 +20,69 @@ function user_require_login(): void
         }
         redirect(user_login_url());
     }
+    user_require_privacy_consent();
+}
+
+/**
+ * Ha a bejelentkezett usernek nincs aktuális adatkezelési elfogadása, átirányít.
+ * Engedélyezett oldalak: privacy.php, logout.php.
+ */
+function user_require_privacy_consent(): void
+{
+    if (!user_is_logged_in()) {
+        return;
+    }
+    $script = strtolower(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
+    if (in_array($script, ['privacy.php', 'logout.php', 'router.php'], true)) {
+        // router.php-n belül a relatív cél számít – privacy/logout külön kezelve a hívó oldalon
+        if ($script !== 'router.php') {
+            return;
+        }
+    }
+
+    $db = getDb();
+    $userId = user_current_id();
+    if ($userId <= 0) {
+        return;
+    }
+    if (!function_exists('latinfo_user_has_current_privacy_consent')) {
+        return;
+    }
+    if (latinfo_user_has_current_privacy_consent($db, $userId)) {
+        return;
+    }
+
+    $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+    if ($uri !== '' && $uri[0] === '/' && !str_contains($uri, '://')) {
+        $path = strtolower((string) (parse_url($uri, PHP_URL_PATH) ?? ''));
+        if (str_ends_with($path, '/privacy.php') || str_ends_with($path, '/logout.php')) {
+            return;
+        }
+        $_SESSION['_user_redirect_after_login'] = user_safe_post_login_redirect($uri);
+    }
+    redirect(user_url('privacy.php'));
+}
+
+/**
+ * Belépés után: ha hiányzik a privacy consent, a privacy oldalra küld.
+ */
+function user_redirect_after_auth_success(): void
+{
+    $db = getDb();
+    $userId = user_current_id();
+    $intended = user_safe_post_login_redirect($_SESSION['_user_redirect_after_login'] ?? null);
+    unset($_SESSION['_user_redirect_after_login']);
+
+    if (
+        $userId > 0
+        && function_exists('latinfo_user_has_current_privacy_consent')
+        && !latinfo_user_has_current_privacy_consent($db, $userId)
+    ) {
+        $_SESSION['_user_redirect_after_login'] = $intended;
+        redirect(user_url('privacy.php'));
+    }
+
+    redirect($intended);
 }
 
 function user_current_id(): int
@@ -89,7 +152,9 @@ function user_logout(): void
         $_SESSION['user_email'],
         $_SESSION['_user_redirect_after_login'],
         $_SESSION['_latinfo_oauth_state'],
-        $_SESSION['_latinfo_oauth_provider']
+        $_SESSION['_latinfo_oauth_provider'],
+        $_SESSION['_latinfo_oauth_privacy_pending'],
+        $_SESSION['_latinfo_oauth_newsletter_pending']
     );
 }
 
@@ -129,7 +194,7 @@ function user_safe_post_login_redirect(?string $url): string
         return user_url('index.php');
     }
     $path = strtolower((string) (parse_url($url, PHP_URL_PATH) ?? ''));
-    $blocked = ['/login.php', '/signup.php', '/logout.php', '/oauth.php', '/connect.php'];
+    $blocked = ['/login.php', '/signup.php', '/logout.php', '/oauth.php', '/connect.php', '/privacy.php'];
     foreach ($blocked as $suffix) {
         if ($path === $suffix || str_ends_with($path, $suffix)) {
             return user_url('index.php');
@@ -157,6 +222,7 @@ function user_safe_return_path(?string $url, string $fallback): string
         '/logout.php',
         '/oauth.php',
         '/connect.php',
+        '/privacy.php',
         $accountBase,
         rtrim($accountBase, '/') . '/logout.php',
         rtrim($accountBase, '/') . '/oauth.php',

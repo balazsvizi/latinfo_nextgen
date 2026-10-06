@@ -49,6 +49,7 @@ $allowed = [
     'logout.php',
     'oauth.php',
     'connect.php',
+    'privacy.php',
     'index.php',
 ];
 $baseName = basename($rel);

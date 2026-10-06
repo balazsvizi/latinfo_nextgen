@@ -5,12 +5,17 @@ declare(strict_types=1);
 /** @var string $authSubtitle */
 /** @var string $authContent */
 /** @var bool $authTableReady */
+/** @var bool $authShowOauth */
+/** @var bool $authRequirePrivacyForOauth */
 
 $authTitle = $authTitle ?? 'Fiók';
 $authSubtitle = $authSubtitle ?? '';
 $authTableReady = $authTableReady ?? true;
-$googleOn = function_exists('latinfo_oauth_provider_enabled') && latinfo_oauth_provider_enabled('google');
-$facebookOn = function_exists('latinfo_oauth_provider_enabled') && latinfo_oauth_provider_enabled('facebook');
+$authShowOauth = $authShowOauth ?? true;
+$authRequirePrivacyForOauth = $authRequirePrivacyForOauth ?? false;
+$googleOn = $authShowOauth && function_exists('latinfo_oauth_provider_enabled') && latinfo_oauth_provider_enabled('google');
+$facebookOn = $authShowOauth && function_exists('latinfo_oauth_provider_enabled') && latinfo_oauth_provider_enabled('facebook');
+$policyUrl = function_exists('latinfo_privacy_policy_url') ? latinfo_privacy_policy_url() : site_url('adatkezeles/');
 ?>
 <!DOCTYPE html>
 <html lang="hu">
@@ -47,14 +52,27 @@ $facebookOn = function_exists('latinfo_oauth_provider_enabled') && latinfo_oauth
         <?= $authContent ?>
         <?php if ($googleOn || $facebookOn): ?>
             <div class="user-oauth-divider"><span>vagy</span></div>
-            <div class="user-oauth-buttons">
+            <?php if ($authRequirePrivacyForOauth): ?>
+                <p class="user-oauth-privacy-hint">
+                    A közösségi belépéshez pipáld be az adatkezelési tájékoztató elfogadását fent.
+                </p>
+            <?php endif; ?>
+            <div class="user-oauth-buttons"<?= $authRequirePrivacyForOauth ? ' data-oauth-require-privacy="1"' : '' ?>>
                 <?php if ($googleOn): ?>
-                    <a class="user-oauth-btn user-oauth-btn--google" href="<?= h(user_url('connect.php?provider=google')) ?>">
+                    <a
+                        class="user-oauth-btn user-oauth-btn--google"
+                        href="<?= h(user_url('connect.php?provider=google' . ($authRequirePrivacyForOauth ? '&from=signup' : ''))) ?>"
+                        data-oauth-provider="google"
+                    >
                         Folytatás Google-lel
                     </a>
                 <?php endif; ?>
                 <?php if ($facebookOn): ?>
-                    <a class="user-oauth-btn user-oauth-btn--facebook" href="<?= h(user_url('connect.php?provider=facebook')) ?>">
+                    <a
+                        class="user-oauth-btn user-oauth-btn--facebook"
+                        href="<?= h(user_url('connect.php?provider=facebook' . ($authRequirePrivacyForOauth ? '&from=signup' : ''))) ?>"
+                        data-oauth-provider="facebook"
+                    >
                         Folytatás Facebookkal
                     </a>
                 <?php endif; ?>
@@ -62,8 +80,38 @@ $facebookOn = function_exists('latinfo_oauth_provider_enabled') && latinfo_oauth
         <?php endif; ?>
         <p class="login-back-home">
             <a href="<?= h(LATINFO_PUBLIC_HOME_URL) ?>">← <?= h(SITE_NAME) ?></a>
+            <span aria-hidden="true"> · </span>
+            <a href="<?= h($policyUrl) ?>">Adatkezelés</a>
         </p>
     </div>
     <script src="<?= h(nextgen_url('assets/js/password-toggle.js')) ?>"></script>
+    <?php if ($authRequirePrivacyForOauth): ?>
+    <script>
+    (function () {
+        var wrap = document.querySelector('[data-oauth-require-privacy]');
+        if (!wrap) return;
+        wrap.addEventListener('click', function (e) {
+            var link = e.target.closest('a[data-oauth-provider]');
+            if (!link) return;
+            var privacy = document.getElementById('accept_privacy');
+            if (!privacy || !privacy.checked) {
+                e.preventDefault();
+                alert('Az adatkezelési tájékoztató elfogadása kötelező a regisztrációhoz.');
+                if (privacy) privacy.focus();
+                return;
+            }
+            e.preventDefault();
+            var url = new URL(link.href, window.location.origin);
+            url.searchParams.set('from', 'signup');
+            url.searchParams.set('privacy', '1');
+            var newsletter = document.getElementById('accept_newsletter');
+            if (newsletter && newsletter.checked) {
+                url.searchParams.set('newsletter', '1');
+            }
+            window.location.href = url.toString();
+        });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>

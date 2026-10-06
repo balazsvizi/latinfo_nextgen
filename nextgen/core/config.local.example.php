@@ -51,6 +51,11 @@ return [
     'APP_TIMEZONE' => 'Europe/Budapest',
     'APP_DISPLAY_ERRORS' => '1',
 
+    // Adatkezelési tájékoztató (/adatkezeles/) – adatkezelő adatai
+    // 'PRIVACY_CONTROLLER_NAME' => 'Latinfo.hu üzemeltetője',
+    // 'PRIVACY_CONTROLLER_EMAIL' => 'adatvedelem@latinfo.hu',
+    // 'PRIVACY_CONTROLLER_ADDRESS' => '1234 Budapest, Példa utca 1.',
+
     // Min. 32 karakter, ajánlott 64 hex
     'EMAIL_ENCRYPT_KEY' => 'change-this-to-a-random-secret-key',
 

@@ -8,11 +8,13 @@ require_once dirname(__DIR__, 2) . '/events/lib/event_public_lang.php';
 require_once dirname(__DIR__, 2) . '/events/lib/event_public_djs.php';
 require_once dirname(__DIR__, 2) . '/lib/user/users.php';
 require_once dirname(__DIR__, 2) . '/lib/user/favorites.php';
+require_once dirname(__DIR__, 2) . '/lib/user/consents.php';
 requireLogin();
 
 $db = getDb();
 latinfo_users_ensure_schema($db);
 latinfo_favorites_ensure_schema($db);
+latinfo_user_consents_ensure_schema($db);
 
 $userId = (int) ($_GET['id'] ?? 0);
 if ($userId <= 0) {
@@ -64,6 +66,9 @@ if ($displayName === '') {
     $displayName = $accountEmail !== '' ? $accountEmail : ('#' . $userId);
 }
 $isActive = !empty($user['is_active']);
+$privacyConsent = latinfo_user_consent_latest($db, $userId, LATINFO_CONSENT_PRIVACY);
+$newsletterOn = latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER);
+$consentHistory = latinfo_user_consents_list($db, $userId, 30);
 
 $pageTitle = 'User: ' . $displayName;
 require_once dirname(__DIR__, 2) . '/partials/header.php';
@@ -133,7 +138,54 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             <dt>Kedvencek</dt>
             <dd><?= (int) $favoritesTotal ?></dd>
         </div>
+        <div>
+            <dt>Adatkezelés</dt>
+            <dd>
+                <?php if (is_array($privacyConsent) && !empty($privacyConsent['granted'])): ?>
+                    v<?= h((string) ($privacyConsent['version'] ?? '—')) ?>
+                    · <?= h((string) ($privacyConsent['created_at'] ?? '')) ?>
+                <?php else: ?>
+                    <span class="text-muted">Nincs elfogadva</span>
+                <?php endif; ?>
+            </dd>
+        </div>
+        <div>
+            <dt>Hírlevél</dt>
+            <dd><?= $newsletterOn ? 'Igen' : 'Nem' ?></dd>
+        </div>
     </dl>
+</div>
+
+<div class="card">
+    <h2>Hozzájárulások</h2>
+    <?php if ($consentHistory === []): ?>
+        <p class="text-muted">Nincs rögzített hozzájárulás.</p>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Típus</th>
+                        <th>Verzió</th>
+                        <th>Állapot</th>
+                        <th>Forrás</th>
+                        <th>Időpont</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($consentHistory as $row): ?>
+                        <tr>
+                            <td><?= h(latinfo_user_consent_type_label((string) ($row['consent_type'] ?? ''))) ?></td>
+                            <td><?= h((string) ($row['version'] ?? '—')) ?></td>
+                            <td><?= !empty($row['granted']) ? 'Elfogadva' : 'Visszavonva' ?></td>
+                            <td><?= h((string) ($row['source'] ?? '—')) ?></td>
+                            <td><?= h((string) ($row['created_at'] ?? '—')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
 </div>
 
 <div class="card">
