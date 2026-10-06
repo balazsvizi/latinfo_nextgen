@@ -1372,6 +1372,162 @@ tr:hover td { background: var(--bg); }
 }
 
 /* Esemény naptár nézet (events_naptar.php) */
+.events-admin-card--map {
+    overflow: visible;
+}
+
+.events-admin-map {
+    margin-top: 0.85rem;
+}
+
+.events-admin-map .home-public__map {
+    margin: 0;
+}
+
+.events-admin-map .home-public__map-stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.65rem 1rem;
+    margin: 0 0 0.85rem;
+}
+
+.events-admin-map .home-public__map-stat {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 5.5rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid #d8e0d4;
+    background: linear-gradient(135deg, #fff 0%, #eef4eb 100%);
+}
+
+.events-admin-map .home-public__map-stat--muted {
+    background: #fff;
+}
+
+.events-admin-map .home-public__map-stat-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #4a6b42;
+}
+
+.events-admin-map .home-public__map-stat-label {
+    margin-top: 0.2rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b7568;
+}
+
+.events-admin-map .home-public__map-hint {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #6b7568;
+}
+
+.events-admin-map .home-public__map-empty {
+    margin: 0 0 0.85rem;
+    font-size: 0.9375rem;
+    color: #6b7568;
+}
+
+.events-admin-map .home-public__map-host,
+.events-admin-map .venue-public-map__host {
+    width: 100%;
+    height: min(68vh, 640px);
+    min-height: 360px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #d8e0d4;
+    background: #e8efe5;
+}
+
+.events-admin-map .venue-public-map__host .leaflet-container {
+    width: 100%;
+    height: 100%;
+}
+
+.events-admin-map .venue-public-map__attrib,
+.events-admin-map .home-public__map-attrib {
+    margin: 0.45rem 0 0;
+    text-align: center;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: #7a8477;
+}
+
+.events-admin-map .home-public-map-pin {
+    background: transparent;
+    border: 0;
+}
+
+.events-admin-map .home-public-map-pin__dot {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(30, 40, 26, 0.35);
+}
+
+.events-admin-map .home-public-map-popup {
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.events-admin-map .home-public-map-popup__title {
+    display: block;
+    margin: 0 0 0.35rem;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #4a6b42;
+    text-decoration: none;
+}
+
+.events-admin-map a.home-public-map-popup__title:hover {
+    text-decoration: underline;
+}
+
+.events-admin-map .home-public-map-popup__meta {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+    color: #6b7568;
+}
+
+.events-admin-map .home-public-map-popup__venue {
+    margin: 0 0 0.15rem;
+    font-weight: 600;
+}
+
+.events-admin-map .home-public-map-popup__addr {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #6b7568;
+}
+
+.events-admin-map .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    border: 1px solid #d8e0d4;
+}
+
+.events-admin-map .marker-cluster-small,
+.events-admin-map .marker-cluster-medium,
+.events-admin-map .marker-cluster-large {
+    background-color: rgba(109, 143, 99, 0.22);
+}
+
+@media (max-width: 720px) {
+    .events-admin-map .home-public__map-host,
+    .events-admin-map .venue-public-map__host {
+        height: min(55vh, 480px);
+        min-height: 280px;
+    }
+}
+
 .events-admin-card--calendar {
     border: 1px solid #e8ebe6;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);

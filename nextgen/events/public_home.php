@@ -225,9 +225,9 @@ if ($view === 'list') {
     $matchingAdminTitle = (string) $D['admin_edit_aria_list'];
     $matchingAdminIcon = 'list';
 } elseif ($view === 'map') {
-    $matchingAdminUrl = events_admin_list_view_url($publicAdminParams);
-    $matchingAdminTitle = (string) $D['admin_edit_aria_list'];
-    $matchingAdminIcon = 'list';
+    $matchingAdminUrl = events_admin_map_view_url($publicAdminParams);
+    $matchingAdminTitle = (string) $D['admin_edit_aria_map'];
+    $matchingAdminIcon = 'map';
 } else {
     $matchingAdminUrl = events_admin_calendar_view_url($monthKey, $publicAdminParams);
     $matchingAdminTitle = (string) $D['admin_edit_aria_cal'];
