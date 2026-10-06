@@ -167,6 +167,7 @@ function ng_nav_latinfo_event_scripts(): array
         'events_event_statisztika.php',
         'events_evi_stat.php',
         'events_havi_stat.php',
+        'events_elotti_stat.php',
         'events_lista_stat.php',
         'events_public_stat.php',
         'events_kedvencek_stat.php',
