@@ -9,12 +9,14 @@ require_once dirname(__DIR__, 2) . '/events/lib/event_public_djs.php';
 require_once dirname(__DIR__, 2) . '/lib/user/users.php';
 require_once dirname(__DIR__, 2) . '/lib/user/favorites.php';
 require_once dirname(__DIR__, 2) . '/lib/user/consents.php';
+require_once dirname(__DIR__, 2) . '/lib/user/mailing.php';
 requireLogin();
 
 $db = getDb();
 latinfo_users_ensure_schema($db);
 latinfo_favorites_ensure_schema($db);
 latinfo_user_consents_ensure_schema($db);
+latinfo_mailing_ensure_schema($db);
 
 $userId = (int) ($_GET['id'] ?? 0);
 if ($userId <= 0) {
@@ -67,8 +69,12 @@ if ($displayName === '') {
 }
 $isActive = !empty($user['is_active']);
 $privacyConsent = latinfo_user_consent_latest($db, $userId, LATINFO_CONSENT_PRIVACY);
-$newsletterOn = latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER);
 $consentHistory = latinfo_user_consents_list($db, $userId, 30);
+$mailingSubs = latinfo_mailing_user_subscriptions($db, $userId);
+$mailingActive = array_values(array_filter(
+    $mailingSubs,
+    static fn(array $r): bool => (string) ($r['status'] ?? '') === LATINFO_MAILING_STATUS_ACTIVE
+));
 
 $pageTitle = 'User: ' . $displayName;
 require_once dirname(__DIR__, 2) . '/partials/header.php';
@@ -150,10 +156,53 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             </dd>
         </div>
         <div>
-            <dt>Hírlevél</dt>
-            <dd><?= $newsletterOn ? 'Igen' : 'Nem' ?></dd>
+            <dt>Mail listák</dt>
+            <dd>
+                <?php if ($mailingActive === []): ?>
+                    <span class="text-muted">Nincs aktív</span>
+                <?php else: ?>
+                    <?= h(implode(', ', array_map(
+                        static fn(array $r): string => (string) ($r['name'] ?? $r['slug'] ?? ''),
+                        $mailingActive
+                    ))) ?>
+                <?php endif; ?>
+            </dd>
         </div>
     </dl>
+</div>
+
+<div class="card">
+    <h2>E-mail listák</h2>
+    <?php if ($mailingSubs === []): ?>
+        <p class="text-muted">Nincs feliratkozási előzmény.</p>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lista</th>
+                        <th>Slug</th>
+                        <th>Státusz</th>
+                        <th>Forrás</th>
+                        <th>Feliratkozva</th>
+                        <th>Leiratkozva</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($mailingSubs as $sub): ?>
+                        <tr>
+                            <td><?= h((string) ($sub['name'] ?? '')) ?></td>
+                            <td><code><?= h((string) ($sub['slug'] ?? '')) ?></code></td>
+                            <td><?= h((string) ($sub['status'] ?? '')) ?></td>
+                            <td><?= h((string) ($sub['source'] ?? '—')) ?></td>
+                            <td><?= h((string) ($sub['subscribed_at'] ?? '—')) ?></td>
+                            <td><?= h((string) ($sub['unsubscribed_at'] ?? '—')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
 </div>
 
 <div class="card">

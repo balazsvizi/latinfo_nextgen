@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         '1.0',
                         $meta
                     );
+                    latinfo_mailing_subscribe_defaults($db, $userId, null, 'signup');
                 }
                 user_login_from_row($result['user']);
                 user_redirect_after_auth_success();
@@ -95,7 +96,7 @@ ob_start();
     </label>
     <label class="user-consent-check">
         <input type="checkbox" name="accept_newsletter" id="accept_newsletter" value="1"<?= $acceptNewsletterChecked ? ' checked' : '' ?>>
-        <span>Feliratkozom a Latinfo értesítésekre / hírlevélre. <em>(opcionális, bármikor leiratkozhatsz)</em></span>
+        <span>Feliratkozom a Latinfo hírekre és kedvenceim buli-értesítéseire. <em>(opcionális – a fiókban később finomhangolható)</em></span>
     </label>
     <button type="submit">Regisztráció</button>
 </form>

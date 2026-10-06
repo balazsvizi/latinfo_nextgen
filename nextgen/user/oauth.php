@@ -70,6 +70,7 @@ if ($userId > 0 && $privacyPending) {
             '1.0',
             $meta
         );
+        latinfo_mailing_subscribe_defaults($db, $userId, null, 'oauth_signup');
     }
 }
 

@@ -40,25 +40,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         redirect(user_url('index.php'));
     }
-    if ($action === 'save_newsletter') {
-        $want = !empty($_POST['newsletter']);
-        $meta = latinfo_user_consent_request_meta();
-        $meta['source'] = 'account';
-        $currently = latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER);
-        if ($want !== $currently) {
-            $ok = latinfo_user_consent_record(
-                $db,
-                $userId,
-                LATINFO_CONSENT_NEWSLETTER,
-                $want,
-                '1.0',
-                $meta
-            );
-            flash($ok ? 'success' : 'error', $ok
-                ? ($want ? 'Feliratkozás mentve.' : 'Leiratkozás mentve.')
-                : 'A mentés sikertelen.');
+    if ($action === 'save_mailing_lists') {
+        $raw = $_POST['lists'] ?? [];
+        if (!is_array($raw)) {
+            $raw = [];
+        }
+        $wanted = [];
+        foreach ($raw as $listId => $val) {
+            $id = (int) $listId;
+            if ($id > 0 && !empty($val)) {
+                $wanted[$id] = true;
+            }
+        }
+        $res = latinfo_mailing_sync_user_lists($db, $userId, $wanted, 'account');
+        if ($res['ok']) {
+            $anyActive = latinfo_mailing_user_active_map($db, $userId) !== [];
+            $meta = latinfo_user_consent_request_meta();
+            $meta['source'] = 'account_lists';
+            $currently = latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER);
+            if ($anyActive !== $currently) {
+                latinfo_user_consent_record(
+                    $db,
+                    $userId,
+                    LATINFO_CONSENT_NEWSLETTER,
+                    $anyActive,
+                    '1.0',
+                    $meta
+                );
+            }
+            flash('success', $res['changed'] > 0 ? 'Értesítési preferenciák mentve.' : 'Nincs változás.');
         } else {
-            flash('success', 'Nincs változás.');
+            flash('error', $res['error'] !== '' ? $res['error'] : 'A mentés sikertelen.');
         }
         redirect(user_url('index.php'));
     }
@@ -110,9 +122,19 @@ foreach ($favoritesByType as $items) {
 $notificationEmail = trim((string) ($user['notification_email'] ?? ''));
 $accountEmail = trim((string) ($user['email'] ?? ''));
 $privacyConsent = latinfo_user_consent_latest($db, $userId, LATINFO_CONSENT_PRIVACY);
-$newsletterOn = latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER);
 $policyUrl = latinfo_privacy_policy_url();
 $policyVersion = latinfo_privacy_policy_version();
+latinfo_mailing_ensure_schema($db);
+$mailingTree = latinfo_mailing_lists_tree($db);
+$mailingActive = latinfo_mailing_user_active_map($db, $userId);
+// Régi „általános hírlevél” consent → alap listák (csak ha még soha nem volt lista-preferencia)
+if (
+    !latinfo_mailing_user_has_any_row($db, $userId)
+    && latinfo_user_consent_is_granted($db, $userId, LATINFO_CONSENT_NEWSLETTER)
+) {
+    latinfo_mailing_subscribe_defaults($db, $userId, null, 'consent_migrate');
+    $mailingActive = latinfo_mailing_user_active_map($db, $userId);
+}
 
 $lang = 'hu';
 $accountUrl = user_url('index.php');
@@ -202,7 +224,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
             <div class="user-account-profile__privacy">
                 <div class="user-account-profile__notify-copy">
-                    <h3 class="user-account-profile__notify-title">Adatkezelés és értesítések</h3>
+                    <h3 class="user-account-profile__notify-title">Adatkezelés</h3>
                     <p class="user-account-help">
                         <a href="<?= h($policyUrl) ?>" target="_blank" rel="noopener">Adatkezelési tájékoztató</a>
                         (aktuális verzió: <?= h($policyVersion) ?>)
@@ -214,14 +236,90 @@ header('Content-Type: text/html; charset=UTF-8');
                         <?php endif; ?>
                     </p>
                 </div>
-                <form method="post" class="user-account-form user-account-newsletter-form">
+            </div>
+
+            <div class="user-account-mailing">
+                <div class="user-account-mailing__head">
+                    <h3 class="user-account-profile__notify-title">E-mail értesítések</h3>
+                    <p class="user-account-help">Válaszd ki, milyen témákról szeretnél levelet kapni. Bármikor módosítható.</p>
+                </div>
+                <form method="post" class="user-account-form user-account-mailing-form">
                     <?= csrf_input('user_account') ?>
-                    <input type="hidden" name="action" value="save_newsletter">
-                    <label class="user-consent-check">
-                        <input type="checkbox" name="newsletter" value="1"<?= $newsletterOn ? ' checked' : '' ?>>
-                        <span>Latinfo értesítések / hírlevél</span>
-                    </label>
-                    <button type="submit" class="btn btn-primary">Mentés</button>
+                    <input type="hidden" name="action" value="save_mailing_lists">
+                    <?php if ($mailingTree === []): ?>
+                        <p class="user-account-help">A listák még nincsenek beállítva.</p>
+                    <?php else: ?>
+                        <ul class="user-mailing-tree">
+                            <?php foreach ($mailingTree as $node): ?>
+                                <?php
+                                $root = $node['list'];
+                                $children = $node['children'];
+                                $rootId = (int) ($root['id'] ?? 0);
+                                $isGroup = !empty($root['is_group']);
+                                $rootComing = !empty($root['is_coming_soon']);
+                                $rootOn = !empty($mailingActive[$rootId]);
+                                ?>
+                                <li class="user-mailing-tree__group<?= $isGroup ? ' is-group' : '' ?>">
+                                    <?php if ($isGroup): ?>
+                                        <div class="user-mailing-tree__group-title">
+                                            <?= h((string) ($root['name'] ?? '')) ?>
+                                        </div>
+                                        <?php if (trim((string) ($root['description'] ?? '')) !== ''): ?>
+                                            <p class="user-mailing-tree__desc"><?= h((string) $root['description']) ?></p>
+                                        <?php endif; ?>
+                                        <?php if ($children !== []): ?>
+                                            <ul class="user-mailing-tree__children">
+                                                <?php foreach ($children as $child): ?>
+                                                    <?php
+                                                    $cid = (int) ($child['id'] ?? 0);
+                                                    $coming = !empty($child['is_coming_soon']);
+                                                    $checked = !empty($mailingActive[$cid]);
+                                                    ?>
+                                                    <li>
+                                                        <label class="user-consent-check<?= $coming ? ' is-disabled' : '' ?>">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="lists[<?= $cid ?>]"
+                                                                value="1"
+                                                                <?= $checked ? ' checked' : '' ?>
+                                                                <?= $coming ? ' disabled' : '' ?>
+                                                            >
+                                                            <span>
+                                                                <?= h((string) ($child['name'] ?? '')) ?>
+                                                                <?php if ($coming): ?>
+                                                                    <em class="user-mailing-soon">(hamarosan)</em>
+                                                                <?php endif; ?>
+                                                            </span>
+                                                        </label>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <label class="user-consent-check<?= $rootComing ? ' is-disabled' : '' ?>">
+                                            <input
+                                                type="checkbox"
+                                                name="lists[<?= $rootId ?>]"
+                                                value="1"
+                                                <?= $rootOn ? ' checked' : '' ?>
+                                                <?= $rootComing ? ' disabled' : '' ?>
+                                            >
+                                            <span>
+                                                <?= h((string) ($root['name'] ?? '')) ?>
+                                                <?php if ($rootComing): ?>
+                                                    <em class="user-mailing-soon">(hamarosan)</em>
+                                                <?php endif; ?>
+                                            </span>
+                                        </label>
+                                        <?php if (trim((string) ($root['description'] ?? '')) !== ''): ?>
+                                            <p class="user-mailing-tree__desc user-mailing-tree__desc--indent"><?= h((string) $root['description']) ?></p>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <button type="submit" class="btn btn-primary">Preferenciák mentése</button>
+                    <?php endif; ?>
                 </form>
             </div>
         </section>

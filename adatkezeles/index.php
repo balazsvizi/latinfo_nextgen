@@ -83,7 +83,7 @@ header('Content-Type: text/html; charset=UTF-8');
                 <li><strong>Fiókadatok:</strong> név, e-mail cím, jelszó hash (ha e-mailes regisztráció), OAuth azonosítók (Google / Facebook), avatar URL, utolsó belépés ideje – a fiók létrehozásához és azonosításához.</li>
                 <li><strong>Kedvencek:</strong> a felhasználó által megjelölt események, szervezők, helyszínek, DJ-k, előadók – a személyre szabott listához.</li>
                 <li><strong>Értesítési e-mail:</strong> opcionális, eltérő cím a fiók e-mailjétől – értesítések kézbesítéséhez.</li>
-                <li><strong>Hozzájárulások:</strong> az adatkezelési tájékoztató és (ha van) hírlevél / marketing elfogadásának ténye, verziója, időpontja, forrása – jogi megfelelés igazolásához.</li>
+                <li><strong>Hírlevél / e-mail listák:</strong> a választott témák (pl. Latinfo hírek, bulik, workshopok, tánciskolák) szerinti értesítések – külön, visszavonható feliratkozással.</li>
                 <li><strong>Technikai napló:</strong> hozzájárulás rögzítésekor IP-cím hash és böngésző azonosító (user-agent) – biztonság és audit.</li>
             </ul>
         </section>
