@@ -13,6 +13,7 @@ user_require_login();
 $db = getDb();
 latinfo_favorites_ensure_schema($db);
 latinfo_user_consents_ensure_schema($db);
+latinfo_user_dance_styles_ensure_schema($db);
 $user = user_current($db);
 if ($user === null) {
     redirect(user_url('login.php'));
@@ -86,6 +87,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         redirect(user_url('index.php'));
     }
+    if ($action === 'save_dance_styles') {
+        $raw = $_POST['styles'] ?? [];
+        if (!is_array($raw)) {
+            $raw = [];
+        }
+        $res = latinfo_user_dance_styles_save($db, $userId, $raw);
+        if ($res['ok']) {
+            flash('success', $res['changed'] > 0 ? 'Táncstílusok mentve.' : 'Nincs változás.');
+        } else {
+            flash('error', $res['error'] !== '' ? $res['error'] : 'A mentés sikertelen.');
+        }
+        redirect(user_url('index.php'));
+    }
 }
 
 $user = user_current($db) ?? $user;
@@ -156,11 +170,14 @@ $S = [
     'logo_alt' => 'Latinfo.hu',
     'footer_home_link' => 'Latinfo.hu',
 ];
+$danceStyleCatalog = latinfo_dance_style_catalog($db);
+$danceStyleLevels = latinfo_user_dance_styles_map($db, $userId);
 $cssUrl = events_url('assets/event_public.css') . '?v=' . rawurlencode(nextgen_app_version());
 $accountCssUrl = user_asset_url('assets/css/account.css') . '?v=' . rawurlencode(nextgen_app_version());
 $styleCssUrl = nextgen_url('assets/css/style.css') . '?v=' . rawurlencode(nextgen_app_version());
 $favoritesAjaxUrl = events_url('ajax_favorite.php');
 $accountFavoritesJsUrl = user_asset_url('assets/js/account-favorites.js') . '?v=' . rawurlencode(nextgen_app_version());
+$accountDanceStylesJsUrl = user_asset_url('assets/js/account-dance-styles.js') . '?v=' . rawurlencode(nextgen_app_version());
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -314,6 +331,71 @@ header('Content-Type: text/html; charset=UTF-8');
             </div>
         </section>
 
+        <section class="user-account-section user-dance-styles" aria-labelledby="user-dance-styles-heading">
+            <div class="user-dance-styles__head">
+                <div class="user-dance-styles__titles">
+                    <h2 id="user-dance-styles-heading">Táncstílusaid</h2>
+                    <p class="user-account-help user-dance-styles__lead">
+                        Állítsd be a szintedet 1–10 között, vagy hagyd „Nem adom meg” állásban.
+                    </p>
+                </div>
+            </div>
+
+            <?php if ($danceStyleCatalog === []): ?>
+                <p class="user-account-help">A stílusok még nincsenek beállítva.</p>
+            <?php else: ?>
+                <form method="post" class="user-account-form user-dance-styles-form" data-dance-styles>
+                    <?= csrf_input('user_account') ?>
+                    <input type="hidden" name="action" value="save_dance_styles">
+                    <ul class="user-dance-styles__list">
+                        <?php foreach ($danceStyleCatalog as $styleId => $styleName): ?>
+                            <?php
+                            $level = (int) ($danceStyleLevels[$styleId] ?? 0);
+                            $levelLabel = latinfo_dance_style_level_label($level);
+                            $inputId = 'dance-style-' . $styleId;
+                            $fillPct = $level <= 0 ? 0 : (int) round(($level / 10) * 100);
+                            ?>
+                            <li class="user-dance-style<?= $level > 0 ? ' is-set' : '' ?>" data-dance-style-row>
+                                <div class="user-dance-style__top">
+                                    <label class="user-dance-style__name" for="<?= h($inputId) ?>"><?= h($styleName) ?></label>
+                                    <div class="user-dance-style__meta">
+                                        <span class="user-dance-style__value" data-dance-style-value aria-hidden="true">
+                                            <?= $level > 0 ? (string) $level : '—' ?>
+                                        </span>
+                                        <span class="user-dance-style__label" data-dance-style-label><?= h($levelLabel) ?></span>
+                                    </div>
+                                </div>
+                                <div class="user-dance-style__track" style="--level-pct: <?= $fillPct ?>%;">
+                                    <input
+                                        type="range"
+                                        class="user-dance-style__range"
+                                        id="<?= h($inputId) ?>"
+                                        name="styles[<?= (int) $styleId ?>]"
+                                        min="0"
+                                        max="10"
+                                        step="1"
+                                        value="<?= $level ?>"
+                                        data-dance-style-range
+                                        aria-valuemin="0"
+                                        aria-valuemax="10"
+                                        aria-valuenow="<?= $level ?>"
+                                        aria-valuetext="<?= h($levelLabel . ($level > 0 ? ' (' . $level . ')' : '')) ?>"
+                                    >
+                                    <div class="user-dance-style__ticks" aria-hidden="true">
+                                        <span>Nem</span>
+                                        <?php for ($tick = 1; $tick <= 10; $tick++): ?>
+                                            <span><?= $tick ?></span>
+                                        <?php endfor; ?>
+                                    </div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <button type="submit" class="btn btn-primary">Stílusok mentése</button>
+                </form>
+            <?php endif; ?>
+        </section>
+
         <section
             class="user-account-section user-favorites"
             aria-labelledby="user-favorites-heading"
@@ -398,6 +480,7 @@ header('Content-Type: text/html; charset=UTF-8');
 </article>
 </div>
 <script src="<?= h($accountFavoritesJsUrl) ?>" defer></script>
+<script src="<?= h($accountDanceStylesJsUrl) ?>" defer></script>
 <script>
 (function () {
     var form = document.querySelector('[data-mailing-exclusive]');
