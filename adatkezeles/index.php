@@ -71,10 +71,6 @@ header('Content-Type: text/html; charset=UTF-8');
                 kezeléséről a <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> fiók, kedvencek, értesítések
                 és kapcsolódó funkciók kapcsán.
             </p>
-            <p class="help">
-                Ez a szöveg technikai / sablon jellegű tájékoztató. Az Adatkezelő jogi felelőssége, hogy a
-                tényleges tevékenységéhez igazítsa (cégadatok, jogalapok, megőrzési idők).
-            </p>
         </section>
 
         <section>
