@@ -70,7 +70,10 @@ if ($lng !== null && $lng !== '') {
         </div>
         <div class="form-group">
             <label>Google Maps URL</label>
-            <input type="text" name="<?= h($prefix) ?>[google_maps_url]" value="<?= h((string) ($location['google_maps_url'] ?? '')) ?>" maxlength="2000" placeholder="https://maps…">
+            <div class="events-url-open-row">
+                <input type="text" name="<?= h($prefix) ?>[google_maps_url]" value="<?= h((string) ($location['google_maps_url'] ?? '')) ?>" maxlength="2000" placeholder="https://maps…">
+                <?= events_url_open_button((string) ($location['google_maps_url'] ?? '')) ?>
+            </div>
         </div>
     </div>
     <div class="form-group">

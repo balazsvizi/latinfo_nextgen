@@ -71,7 +71,10 @@ $ends = $toLocal($eventRow['ends_at'] ?? '');
         </div>
         <div class="form-group">
             <label>Jelentkezés URL</label>
-            <input type="text" name="<?= h($prefix) ?>[registration_url]" value="<?= h((string) ($eventRow['registration_url'] ?? '')) ?>" maxlength="2000" placeholder="https://…">
+            <div class="events-url-open-row">
+                <input type="text" name="<?= h($prefix) ?>[registration_url]" value="<?= h((string) ($eventRow['registration_url'] ?? '')) ?>" maxlength="2000" placeholder="https://…">
+                <?= events_url_open_button((string) ($eventRow['registration_url'] ?? '')) ?>
+            </div>
         </div>
         <div class="form-group">
             <label><input type="checkbox" name="<?= h($prefix) ?>[is_published]" value="1"<?= !empty($eventRow['is_published']) ? ' checked' : '' ?>> Publikált</label>

@@ -2670,7 +2670,10 @@ button.events-icon-action--danger:focus-visible {
     align-items: center;
     gap: 0.5rem 0.75rem;
 }
-.events-url-open-row input[type="url"] {
+.events-url-open-row > input[type="url"],
+.events-url-open-row > input[type="text"],
+.events-url-open-row > input[type="email"],
+.events-url-open-row > input[type="tel"] {
     flex: 1 1 12rem;
     min-width: 0;
 }

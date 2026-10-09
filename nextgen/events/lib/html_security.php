@@ -161,3 +161,49 @@ function events_normalize_safe_url(?string $raw, bool $allowRelative = true): ar
 
     return [$u, null];
 }
+
+/**
+ * „Megnyitás új ablakban” gomb http(s) URL mező mellé (üres / érvénytelen → üres string).
+ */
+function events_url_open_button(?string $raw, string $label = 'Megnyitás új ablakban'): string
+{
+    [$safe] = events_normalize_safe_url((string) $raw, false);
+    if ($safe === null || $safe === '') {
+        return '';
+    }
+
+    return '<a class="btn btn-secondary events-url-open-btn" href="' . h($safe)
+        . '" target="_blank" rel="noopener noreferrer">' . h($label) . '</a>';
+}
+
+/**
+ * E-mail mező mellé mailto: megnyitás (új ablak / levelező).
+ */
+function events_mailto_open_button(?string $email, string $label = 'Megnyitás új ablakban'): string
+{
+    $addr = trim((string) $email);
+    if ($addr === '' || filter_var($addr, FILTER_VALIDATE_EMAIL) === false) {
+        return '';
+    }
+
+    return '<a class="btn btn-secondary events-url-open-btn" href="mailto:' . h($addr)
+        . '" target="_blank" rel="noopener noreferrer">' . h($label) . '</a>';
+}
+
+/**
+ * Telefon mező mellé tel: megnyitás.
+ */
+function events_tel_open_button(?string $phone, string $label = 'Megnyitás új ablakban'): string
+{
+    $raw = trim((string) $phone);
+    if ($raw === '') {
+        return '';
+    }
+    $tel = preg_replace('/[^\d+]/', '', $raw) ?? '';
+    if ($tel === '' || $tel === '+') {
+        return '';
+    }
+
+    return '<a class="btn btn-secondary events-url-open-btn" href="tel:' . h($tel)
+        . '" target="_blank" rel="noopener noreferrer">' . h($label) . '</a>';
+}
