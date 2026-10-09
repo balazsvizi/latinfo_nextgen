@@ -163,7 +163,20 @@ function events_normalize_safe_url(?string $raw, bool $allowRelative = true): ar
 }
 
 /**
- * „Megnyitás új ablakban” gomb http(s) URL mező mellé (üres / érvénytelen → üres string).
+ * Külső megnyitás ikon (SVG) – mezőnév utáni linkhez.
+ */
+function events_url_open_icon_svg(): string
+{
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" aria-hidden="true">'
+        . '<path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'
+        . '<path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6"/>'
+        . '<path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M10 14L21 3"/>'
+        . '</svg>';
+}
+
+/**
+ * „Megnyitás új ablakban” ikon-link (üres / érvénytelen → üres string).
+ * A mező neve (label) után helyezd el.
  */
 function events_url_open_button(?string $raw, string $label = 'Megnyitás új ablakban'): string
 {
@@ -172,12 +185,13 @@ function events_url_open_button(?string $raw, string $label = 'Megnyitás új ab
         return '';
     }
 
-    return '<a class="btn btn-secondary events-url-open-btn" href="' . h($safe)
-        . '" target="_blank" rel="noopener noreferrer">' . h($label) . '</a>';
+    return '<a class="events-icon-action events-url-open-icon" href="' . h($safe)
+        . '" target="_blank" rel="noopener noreferrer" title="' . h($label)
+        . '" aria-label="' . h($label) . '">' . events_url_open_icon_svg() . '</a>';
 }
 
 /**
- * E-mail mező mellé mailto: megnyitás (új ablak / levelező).
+ * E-mail mező neve után: mailto megnyitás ikon.
  */
 function events_mailto_open_button(?string $email, string $label = 'Megnyitás új ablakban'): string
 {
@@ -186,12 +200,13 @@ function events_mailto_open_button(?string $email, string $label = 'Megnyitás �
         return '';
     }
 
-    return '<a class="btn btn-secondary events-url-open-btn" href="mailto:' . h($addr)
-        . '" target="_blank" rel="noopener noreferrer">' . h($label) . '</a>';
+    return '<a class="events-icon-action events-url-open-icon" href="mailto:' . h($addr)
+        . '" target="_blank" rel="noopener noreferrer" title="' . h($label)
+        . '" aria-label="' . h($label) . '">' . events_url_open_icon_svg() . '</a>';
 }
 
 /**
- * Telefon mező mellé tel: megnyitás.
+ * Telefon mező neve után: tel megnyitás ikon.
  */
 function events_tel_open_button(?string $phone, string $label = 'Megnyitás új ablakban'): string
 {
@@ -204,6 +219,7 @@ function events_tel_open_button(?string $phone, string $label = 'Megnyitás új 
         return '';
     }
 
-    return '<a class="btn btn-secondary events-url-open-btn" href="tel:' . h($tel)
-        . '" target="_blank" rel="noopener noreferrer">' . h($label) . '</a>';
+    return '<a class="events-icon-action events-url-open-icon" href="tel:' . h($tel)
+        . '" target="_blank" rel="noopener noreferrer" title="' . h($label)
+        . '" aria-label="' . h($label) . '">' . events_url_open_icon_svg() . '</a>';
 }

@@ -154,8 +154,10 @@ if ($organizerFinanceJson === false) {
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-url">
-    <h3 class="events-edit-panel__title">További információ</h3>
-    <div class="form-group events-url-open-row">
+    <h3 class="events-edit-panel__title">
+        További információ<?= events_url_open_button((string) ($e['event_url'] ?? '')) ?>
+    </h3>
+    <div class="form-group">
         <input
             type="url"
             id="event_url"
@@ -166,9 +168,6 @@ if ($organizerFinanceJson === false) {
             aria-label="További információ URL"
             data-required-for-publish="1"
         >
-        <?php if (!empty($e['event_url'])): ?>
-            <a class="btn btn-secondary events-url-open-btn" href="<?= h($e['event_url']) ?>" target="_blank" rel="noopener noreferrer">Megnyitás új ablakban</a>
-        <?php endif; ?>
     </div>
 </div>
 <div class="events-edit-org-venue-grid">

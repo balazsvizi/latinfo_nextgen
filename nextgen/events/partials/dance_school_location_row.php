@@ -65,7 +65,7 @@ $editVenueUrl = $venueId > 0 ? events_url('venue_szerkeszt.php?id=') . $venueId 
                 <p class="help muted" style="margin:0.25rem 0 0;">
                     <?= h(implode(' · ', $venueMeta)) ?>
                     <?php if ($venueMaps !== ''): ?>
-                        · <?= events_url_open_button($venueMaps, 'Térkép') ?>
+                        <?= events_url_open_button($venueMaps, 'Térkép megnyitása új ablakban') ?>
                     <?php endif; ?>
                 </p>
             <?php endif; ?>

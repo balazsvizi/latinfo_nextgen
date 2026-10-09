@@ -247,18 +247,12 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     </div>
                     <div class="events-tag-dj-profile__grid">
                         <div class="form-group">
-                            <label for="schedule_url">Órarend URL</label>
-                            <div class="events-url-open-row">
-                                <input type="text" id="schedule_url" name="schedule_url" value="<?= h((string) ($row['schedule_url'] ?? '')) ?>" maxlength="2000" placeholder="https://…">
-                                <?= events_url_open_button((string) ($row['schedule_url'] ?? '')) ?>
-                            </div>
+                            <label for="schedule_url">Órarend URL<?= events_url_open_button((string) ($row['schedule_url'] ?? '')) ?></label>
+                            <input type="text" id="schedule_url" name="schedule_url" value="<?= h((string) ($row['schedule_url'] ?? '')) ?>" maxlength="2000" placeholder="https://…">
                         </div>
                         <div class="form-group">
-                            <label for="registration_url">Jelentkezés URL</label>
-                            <div class="events-url-open-row">
-                                <input type="text" id="registration_url" name="registration_url" value="<?= h((string) ($row['registration_url'] ?? '')) ?>" maxlength="2000" placeholder="https://…">
-                                <?= events_url_open_button((string) ($row['registration_url'] ?? '')) ?>
-                            </div>
+                            <label for="registration_url">Jelentkezés URL<?= events_url_open_button((string) ($row['registration_url'] ?? '')) ?></label>
+                            <input type="text" id="registration_url" name="registration_url" value="<?= h((string) ($row['registration_url'] ?? '')) ?>" maxlength="2000" placeholder="https://…">
                         </div>
                     </div>
                 </div>
@@ -267,65 +261,44 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     <h3 class="events-edit-panel__title">Kapcsolatok</h3>
                     <div class="events-tag-dj-profile__grid">
                         <div class="form-group">
-                            <label for="website_url">Weboldal</label>
-                            <div class="events-url-open-row">
-                                <input type="text" id="website_url" name="website_url" maxlength="2000" value="<?= h((string) ($row['website_url'] ?? '')) ?>" placeholder="https://…">
-                                <?= events_url_open_button((string) ($row['website_url'] ?? '')) ?>
-                            </div>
+                            <label for="website_url">Weboldal<?= events_url_open_button((string) ($row['website_url'] ?? '')) ?></label>
+                            <input type="text" id="website_url" name="website_url" maxlength="2000" value="<?= h((string) ($row['website_url'] ?? '')) ?>" placeholder="https://…">
                         </div>
                         <div class="form-group">
-                            <label for="facebook_url">Facebook</label>
-                            <div class="events-url-open-row">
-                                <input type="text" id="facebook_url" name="facebook_url" maxlength="2000" value="<?= h((string) ($row['facebook_url'] ?? '')) ?>">
-                                <?= events_url_open_button((string) ($row['facebook_url'] ?? '')) ?>
-                            </div>
+                            <label for="facebook_url">Facebook<?= events_url_open_button((string) ($row['facebook_url'] ?? '')) ?></label>
+                            <input type="text" id="facebook_url" name="facebook_url" maxlength="2000" value="<?= h((string) ($row['facebook_url'] ?? '')) ?>">
                         </div>
                         <div class="form-group">
-                            <label for="instagram_url">Instagram</label>
-                            <div class="events-url-open-row">
-                                <input type="text" id="instagram_url" name="instagram_url" maxlength="2000" value="<?= h((string) ($row['instagram_url'] ?? '')) ?>">
-                                <?= events_url_open_button((string) ($row['instagram_url'] ?? '')) ?>
-                            </div>
+                            <label for="instagram_url">Instagram<?= events_url_open_button((string) ($row['instagram_url'] ?? '')) ?></label>
+                            <input type="text" id="instagram_url" name="instagram_url" maxlength="2000" value="<?= h((string) ($row['instagram_url'] ?? '')) ?>">
                         </div>
                         <div class="form-group">
-                            <label for="tiktok_url">TikTok</label>
-                            <div class="events-url-open-row">
-                                <input type="text" id="tiktok_url" name="tiktok_url" maxlength="2000" value="<?= h((string) ($row['tiktok_url'] ?? '')) ?>">
-                                <?= events_url_open_button((string) ($row['tiktok_url'] ?? '')) ?>
-                            </div>
+                            <label for="tiktok_url">TikTok<?= events_url_open_button((string) ($row['tiktok_url'] ?? '')) ?></label>
+                            <input type="text" id="tiktok_url" name="tiktok_url" maxlength="2000" value="<?= h((string) ($row['tiktok_url'] ?? '')) ?>">
                         </div>
                         <div class="form-group">
-                            <label for="youtube_url">YouTube</label>
-                            <div class="events-url-open-row">
-                                <input type="text" id="youtube_url" name="youtube_url" maxlength="2000" value="<?= h((string) ($row['youtube_url'] ?? '')) ?>">
-                                <?= events_url_open_button((string) ($row['youtube_url'] ?? '')) ?>
-                            </div>
+                            <label for="youtube_url">YouTube<?= events_url_open_button((string) ($row['youtube_url'] ?? '')) ?></label>
+                            <input type="text" id="youtube_url" name="youtube_url" maxlength="2000" value="<?= h((string) ($row['youtube_url'] ?? '')) ?>">
                         </div>
                         <div class="form-group events-tag-dj-privacy<?= $emailIsPrivate ? ' is-private' : '' ?>" data-dj-privacy-field>
                             <div class="events-tag-dj-profile__field-head">
-                                <label for="email">E-mail</label>
+                                <label for="email">E-mail<?= events_mailto_open_button((string) ($row['email'] ?? '')) ?></label>
                                 <label class="events-tag-dj-privacy__chip" for="email_is_private">
                                     <input type="checkbox" name="email_is_private" value="1" id="email_is_private" class="events-tag-dj-privacy__input" data-dj-privacy-toggle<?= $emailIsPrivate ? ' checked' : '' ?>>
                                     <span class="events-tag-dj-privacy__chip-label">Privát</span>
                                 </label>
                             </div>
-                            <div class="events-url-open-row">
-                                <input type="email" id="email" name="email" maxlength="255" value="<?= h((string) ($row['email'] ?? '')) ?>">
-                                <?= events_mailto_open_button((string) ($row['email'] ?? '')) ?>
-                            </div>
+                            <input type="email" id="email" name="email" maxlength="255" value="<?= h((string) ($row['email'] ?? '')) ?>">
                         </div>
                         <div class="form-group events-tag-dj-privacy<?= $phoneIsPrivate ? ' is-private' : '' ?>" data-dj-privacy-field>
                             <div class="events-tag-dj-profile__field-head">
-                                <label for="phone">Telefon</label>
+                                <label for="phone">Telefon<?= events_tel_open_button((string) ($row['phone'] ?? '')) ?></label>
                                 <label class="events-tag-dj-privacy__chip" for="phone_is_private">
                                     <input type="checkbox" name="phone_is_private" value="1" id="phone_is_private" class="events-tag-dj-privacy__input" data-dj-privacy-toggle<?= $phoneIsPrivate ? ' checked' : '' ?>>
                                     <span class="events-tag-dj-privacy__chip-label">Privát</span>
                                 </label>
                             </div>
-                            <div class="events-url-open-row">
-                                <input type="tel" id="phone" name="phone" maxlength="64" value="<?= h((string) ($row['phone'] ?? '')) ?>">
-                                <?= events_tel_open_button((string) ($row['phone'] ?? '')) ?>
-                            </div>
+                            <input type="tel" id="phone" name="phone" maxlength="64" value="<?= h((string) ($row['phone'] ?? '')) ?>">
                         </div>
                     </div>
                 </div>
