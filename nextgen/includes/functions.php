@@ -185,6 +185,12 @@ function ng_nav_latinfo_event_scripts(): array
         'zenekarok_admin.php',
         'zenekar_letrehoz.php',
         'zenekar_szerkeszt.php',
+        'tanciskolak_admin.php',
+        'tanciskola_letrehoz.php',
+        'tanciskola_szerkeszt.php',
+        'tanarok_admin.php',
+        'tanar_letrehoz.php',
+        'tanar_szerkeszt.php',
     ];
 }
 

@@ -62,7 +62,7 @@ function events_tag_types_default_seed_rows(): array {
     return [
         ['code' => 'dj', 'name' => 'DJ', 'icon' => '🎧', 'tone' => 'dj', 'sort_order' => 10],
         ['code' => 'zenekar', 'name' => 'Előadó', 'icon' => '🎸', 'tone' => 'zenekar', 'sort_order' => 20],
-        ['code' => 'tanar', 'name' => 'Tanár', 'icon' => '📚', 'tone' => 'tanar', 'sort_order' => 30],
+        ['code' => 'tanar', 'name' => 'Tánctanár', 'icon' => '📚', 'tone' => 'tanar', 'sort_order' => 30],
         ['code' => 'muvesz', 'name' => 'Művész', 'icon' => '🎨', 'tone' => 'muvesz', 'sort_order' => 40],
         ['code' => 'szervezo', 'name' => 'Szervező', 'icon' => '🎪', 'tone' => 'szervezo', 'sort_order' => 50],
     ];
@@ -107,7 +107,9 @@ function events_tag_types_ensure_display_names(PDO $db): void {
     try {
         $st = $db->prepare('UPDATE `events_tag_types` SET `name` = ? WHERE `code` = ? AND `name` = ?');
         $st->execute(['Előadó', 'zenekar', 'Zenekar']);
-        if ($st->rowCount() > 0) {
+        $changed = $st->rowCount() > 0;
+        $st->execute(['Tánctanár', 'tanar', 'Tanár']);
+        if ($changed || $st->rowCount() > 0) {
             events_tag_types_clear_cache();
         }
     } catch (PDOException) {

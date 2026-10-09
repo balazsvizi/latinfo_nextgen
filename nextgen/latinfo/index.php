@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Latinfo.hu alkalmazás – előadók, kezdőoldal, statok, slug, partnereink, levélsablonok, adatok, CSV import.
+ * Latinfo.hu alkalmazás – előadók, tánciskolák, tánctanárok, kezdőoldal, statok, slug, partnereink, levélsablonok, adatok, CSV import.
  * URL: /nextgen/latinfo/
  */
 
@@ -14,7 +14,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 ?>
 <div class="card">
     <h2>Latinfo.hu</h2>
-    <p>Nyilvános latinfo.hu felület: előadók (zenekarok, énekesek, zenészek), kezdőoldal, statisztikák, slug, partnerek, levélsablonok, adatok és CSV import.</p>
+    <p>Nyilvános latinfo.hu felület: előadók, tánciskolák / tánctanárok (egyelőre csak admin), kezdőoldal, statisztikák, slug, partnerek, levélsablonok, adatok és CSV import.</p>
 </div>
 
 <div class="dash-cards dash-cards-apps">
@@ -27,6 +27,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <h3>Előadók admin</h3>
         <div class="num">→</div>
         <p>Lista, szerkesztés, oldal szövegek</p>
+    </a>
+    <a href="<?= h(nextgen_url('events/tanciskolak_admin.php')) ?>" class="dash-card">
+        <h3>Tánciskolák</h3>
+        <div class="num">→</div>
+        <p>Admin lista – helyszínek, órák, workshopok (még nem publikus)</p>
+    </a>
+    <a href="<?= h(nextgen_url('events/tanarok_admin.php')) ?>" class="dash-card">
+        <h3>Tánctanárok</h3>
+        <div class="num">→</div>
+        <p>Admin lista – kontakt, stílusok, magánóra (még nem publikus)</p>
     </a>
     <a href="<?= h(nextgen_url('admin/users/')) ?>" class="dash-card">
         <h3>Userek</h3>

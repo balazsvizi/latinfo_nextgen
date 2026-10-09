@@ -132,6 +132,18 @@ if ($navZone === 'events') {
                 </li>
                 <li class="nav-item has-submenu">
                     <span class="nav-parent-wrap">
+                        <a href="<?= h(nextgen_url('events/tanciskolak_admin.php')) ?>" class="nav-parent-link">Tánciskolák</a>
+                        <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-tanciskolak" aria-label="Tánciskolák almenü">▾</button>
+                    </span>
+                    <ul class="nav-submenu" id="submenu-latinfo-tanciskolak" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('events/tanciskolak_admin.php')) ?>" role="menuitem">Iskolák lista</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/tanciskola_letrehoz.php')) ?>" role="menuitem">Új tánciskola</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/tanarok_admin.php')) ?>" role="menuitem">Tánctanárok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/tanar_letrehoz.php')) ?>" role="menuitem">Új tánctanár</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu">
+                    <span class="nav-parent-wrap">
                         <a href="<?= h(nextgen_url('site/szerkeszt.php')) ?>" class="nav-parent-link">Kezdőoldal</a>
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="latinfo-home" aria-label="Kezdőoldal almenü">▾</button>
                     </span>

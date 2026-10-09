@@ -7,10 +7,13 @@ require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/login_invite.php';
+require_once dirname(__DIR__, 2) . '/events/lib/dance_schools.php';
+require_once dirname(__DIR__, 2) . '/events/lib/dance_teachers.php';
 requireLogin();
 
 $db = getDb();
 nextgen_partner_ensure_extended_schema($db);
+dance_schools_ensure_schema($db);
 nextgen_partner_ensure_assignment_unique_indexes($db);
 nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_events_organizers', 'organizer_id');
 nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_djs', 'tag_id');
@@ -33,9 +36,15 @@ if ($partner === null) {
 $hiba = '';
 $organizerRoleLabels = nextgen_partner_organizer_role_labels();
 $djRoleLabels = nextgen_partner_dj_role_labels();
+$danceSchoolRoleLabels = nextgen_partner_dance_school_role_labels();
+$teacherRoleLabels = nextgen_partner_teacher_role_labels();
 $partnerOrganizerChipLinkPattern = events_url('organizer.php?id={id}');
 $partnerOrganizerManageUrl = events_url('organizer_letrehoz.php');
 $partnerDjChipLinkPattern = events_url('tags.php?open_tag={id}#open-tag-{id}');
+$partnerDanceSchoolChipLinkPattern = events_url('tanciskola_szerkeszt.php?id={id}');
+$partnerTeacherChipLinkPattern = events_url('tanar_szerkeszt.php?id={id}');
+$partnerDanceSchoolManageUrl = events_url('tanciskola_letrehoz.php');
+$partnerTeacherManageUrl = events_url('tanar_letrehoz.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('partner_admin_edit')) {
@@ -142,7 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $organizerRows = nextgen_partner_organizer_rows_from_post($_POST['organizer_rows'] ?? []);
                     $djRows = nextgen_partner_dj_rows_from_post($_POST['dj_rows'] ?? []);
-                    $assignResult = nextgen_partner_sync_assignments($db, $id, $organizerRows, $djRows);
+                    $schoolRows = nextgen_partner_dance_school_rows_from_post($_POST['school_rows'] ?? []);
+                    $teacherRows = nextgen_partner_teacher_rows_from_post($_POST['teacher_rows'] ?? []);
+                    $assignResult = nextgen_partner_sync_assignments($db, $id, $organizerRows, $djRows, $schoolRows, $teacherRows);
                     if ($assignResult['ok']) {
                         flash('success', 'Mentve.');
                         redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
@@ -157,9 +168,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $assignedOrganizers = nextgen_partner_events_organizers($db, $id);
 $assignedDjs = nextgen_partner_djs($db, $id);
+$assignedDanceSchools = nextgen_partner_dance_schools($db, $id);
+$assignedTeachers = nextgen_partner_teachers($db, $id);
 
 $organizerRowsForForm = [];
 $djRowsForForm = [];
+$schoolRowsForForm = [];
+$teacherRowsForForm = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'save') === 'save' && $hiba !== '') {
     foreach ((array) ($_POST['organizer_rows'] ?? []) as $row) {
@@ -194,9 +209,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
             'role_note' => (string) ($row['role_note'] ?? ''),
         ];
     }
+    foreach ((array) ($_POST['school_rows'] ?? []) as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $roleTypes = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            $roleTypes = array_values(array_map('strval', $row['role_types']));
+        } elseif (isset($row['role_type'])) {
+            $roleTypes = [(string) $row['role_type']];
+        }
+        $schoolRowsForForm[] = [
+            'school_id' => (int) ($row['school_id'] ?? 0),
+            'role_types' => $roleTypes,
+            'role_note' => (string) ($row['role_note'] ?? ''),
+        ];
+    }
+    foreach ((array) ($_POST['teacher_rows'] ?? []) as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $roleTypes = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            $roleTypes = array_values(array_map('strval', $row['role_types']));
+        } elseif (isset($row['role_type'])) {
+            $roleTypes = [(string) $row['role_type']];
+        }
+        $teacherRowsForForm[] = [
+            'tag_id' => (int) ($row['tag_id'] ?? 0),
+            'role_types' => $roleTypes,
+            'role_note' => (string) ($row['role_note'] ?? ''),
+        ];
+    }
 } else {
     $organizerRowsForForm = nextgen_partner_group_organizer_assignments_for_form($assignedOrganizers);
     $djRowsForForm = nextgen_partner_group_dj_assignments_for_form($assignedDjs);
+    $schoolRowsForForm = nextgen_partner_group_dance_school_assignments_for_form($assignedDanceSchools);
+    $teacherRowsForForm = nextgen_partner_group_teacher_assignments_for_form($assignedTeachers);
 }
 
 if ($organizerRowsForForm === []) {
@@ -205,9 +254,17 @@ if ($organizerRowsForForm === []) {
 if ($djRowsForForm === []) {
     $djRowsForForm[] = ['tag_id' => 0, 'role_types' => ['dj'], 'role_note' => ''];
 }
+if ($schoolRowsForForm === []) {
+    $schoolRowsForForm[] = ['school_id' => 0, 'role_types' => ['school'], 'role_note' => ''];
+}
+if ($teacherRowsForForm === []) {
+    $teacherRowsForForm[] = ['tag_id' => 0, 'role_types' => ['teacher'], 'role_note' => ''];
+}
 
 $allOrganizers = nextgen_partner_selectable_events_organizers($db);
 $allDjs = nextgen_partner_selectable_djs($db);
+$allDanceSchools = dance_schools_selectable_list($db);
+$allTeachers = dance_teachers_selectable_list($db);
 $partnerActivityLog = nextgen_partner_activity_log_for_partner($db, $id);
 
 $loginInviteTemplates = nextgen_partner_login_invite_list_templates($db);
@@ -379,6 +436,50 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
             </p>
         </section>
 
+        <section class="partner-admin-assign-section">
+            <div class="partner-admin-assign-section__head">
+                <h4>Tánciskolák</h4>
+                <p class="help">Tánciskola hozzárendelése a partnerhez.</p>
+            </div>
+            <div id="partner-school-rows" class="partner-admin-assign-rows">
+                <?php foreach ($schoolRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
+                    <?php
+                    $partnerAssignAllSchools = $allDanceSchools;
+                    $partnerDanceSchoolRoleLabels = $danceSchoolRoleLabels;
+                    require __DIR__ . '/partials/partner_dance_school_assign_row.php';
+                    ?>
+                <?php endforeach; ?>
+            </div>
+            <p class="toolbar partner-admin-assign-section__actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="partner-school-add">+ Tánciskola sor</button>
+                <?php if ($partnerDanceSchoolManageUrl !== null): ?>
+                    <a href="<?= h($partnerDanceSchoolManageUrl) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">Új tánciskola</a>
+                <?php endif; ?>
+            </p>
+        </section>
+
+        <section class="partner-admin-assign-section">
+            <div class="partner-admin-assign-section__head">
+                <h4>Tánctanárok</h4>
+                <p class="help">Tánctanár hozzárendelése a partnerhez.</p>
+            </div>
+            <div id="partner-teacher-rows" class="partner-admin-assign-rows">
+                <?php foreach ($teacherRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
+                    <?php
+                    $partnerAssignAllTeachers = $allTeachers;
+                    $partnerTeacherRoleLabels = $teacherRoleLabels;
+                    require __DIR__ . '/partials/partner_teacher_assign_row.php';
+                    ?>
+                <?php endforeach; ?>
+            </div>
+            <p class="toolbar partner-admin-assign-section__actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="partner-teacher-add">+ Tánctanár sor</button>
+                <?php if ($partnerTeacherManageUrl !== null): ?>
+                    <a href="<?= h($partnerTeacherManageUrl) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">Új tánctanár</a>
+                <?php endif; ?>
+            </p>
+        </section>
+
         <p class="toolbar" style="margin-top:1rem;">
             <button type="submit" class="btn btn-primary">Mentés</button>
         </p>
@@ -415,6 +516,26 @@ $partnerAssignRow = ['tag_id' => 0, 'role_types' => ['dj'], 'role_note' => ''];
 $partnerAssignAllDjs = $allDjs;
 $partnerDjRoleLabels = $djRoleLabels;
 require __DIR__ . '/partials/partner_dj_assign_row.php';
+?>
+</template>
+
+<template id="partner-school-row-template">
+<?php
+$partnerAssignRowIndex = '__INDEX__';
+$partnerAssignRow = ['school_id' => 0, 'role_types' => ['school'], 'role_note' => ''];
+$partnerAssignAllSchools = $allDanceSchools;
+$partnerDanceSchoolRoleLabels = $danceSchoolRoleLabels;
+require __DIR__ . '/partials/partner_dance_school_assign_row.php';
+?>
+</template>
+
+<template id="partner-teacher-row-template">
+<?php
+$partnerAssignRowIndex = '__INDEX__';
+$partnerAssignRow = ['tag_id' => 0, 'role_types' => ['teacher'], 'role_note' => ''];
+$partnerAssignAllTeachers = $allTeachers;
+$partnerTeacherRoleLabels = $teacherRoleLabels;
+require __DIR__ . '/partials/partner_teacher_assign_row.php';
 ?>
 </template>
 

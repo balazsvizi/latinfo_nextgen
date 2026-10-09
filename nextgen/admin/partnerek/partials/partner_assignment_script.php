@@ -194,5 +194,23 @@ declare(strict_types=1);
         namePrefix: 'dj_rows',
         defaultRole: 'dj'
     });
+
+    setupSection({
+        containerId: 'partner-school-rows',
+        addButtonId: 'partner-school-add',
+        templateId: 'partner-school-row-template',
+        rowSelector: '[data-partner-assign-row="dance-school"]',
+        namePrefix: 'school_rows',
+        defaultRole: 'school'
+    });
+
+    setupSection({
+        containerId: 'partner-teacher-rows',
+        addButtonId: 'partner-teacher-add',
+        templateId: 'partner-teacher-row-template',
+        rowSelector: '[data-partner-assign-row="teacher"]',
+        namePrefix: 'teacher_rows',
+        defaultRole: 'teacher'
+    });
 })();
 </script>

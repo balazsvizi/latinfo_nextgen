@@ -20,6 +20,8 @@ function events_public_traffic_page_catalog(): array
         'map' => ['label' => 'Térkép', 'group' => 'hub', 'color' => '#5a8a6a'],
         'djs' => ['label' => 'DJ lista', 'group' => 'hub', 'color' => '#8b5a9e'],
         'zenekarok' => ['label' => 'Előadó lista', 'group' => 'hub', 'color' => '#5a7a9e'],
+        'tanciskolak' => ['label' => 'Tánciskolák lista', 'group' => 'hub', 'color' => '#2a7a7a'],
+        'tanarok' => ['label' => 'Tánctanárok lista', 'group' => 'hub', 'color' => '#3d6b8f'],
         'organizers' => ['label' => 'Szervezők lista', 'group' => 'hub', 'color' => '#c45c26'],
         'partners' => ['label' => 'Partnereink', 'group' => 'hub', 'color' => '#8a6d4f'],
     ];
@@ -38,6 +40,8 @@ function events_public_traffic_nav_catalog(): array
         'calendar-list' => 'Eseménylista',
         'djs' => 'DJ-k',
         'eloadok' => 'Előadók',
+        'tanciskolak' => 'Tánciskolák',
+        'tanarok' => 'Tánctanárok',
         'organizers' => 'Szervezők',
         'latinfo' => 'Latinfo.hu',
         'partners' => 'Partnereink',

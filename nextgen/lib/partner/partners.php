@@ -878,6 +878,28 @@ function nextgen_partner_dj_role_labels(): array
 }
 
 /**
+ * @return array<string, string>
+ */
+function nextgen_partner_dance_school_role_labels(): array
+{
+    return [
+        'school' => 'Tánciskola',
+        'other' => 'Egyéb',
+    ];
+}
+
+/**
+ * @return array<string, string>
+ */
+function nextgen_partner_teacher_role_labels(): array
+{
+    return [
+        'teacher' => 'Tánctanár',
+        'other' => 'Egyéb',
+    ];
+}
+
+/**
  * @return list<array{organizer_id: int, role_types: list<string>, role_note: string}>
  */
 function nextgen_partner_group_organizer_assignments_for_form(array $rows): array
@@ -1619,13 +1641,17 @@ function nextgen_partner_can_access_organizer(PDO $db, int $partnerId, int $orga
 /**
  * @param list<array{organizer_id: int, role_type: string, role_note: ?string}> $organizerRows
  * @param list<array{tag_id: int, role_type: string, role_note: ?string}> $djRows
+ * @param list<array{school_id: int, role_type: string, role_note: ?string}> $schoolRows
+ * @param list<array{tag_id: int, role_type: string, role_note: ?string}> $teacherRows
  * @return array{ok: true}|array{ok: false, error: string}
  */
 function nextgen_partner_sync_assignments(
     PDO $db,
     int $partnerId,
     array $organizerRows,
-    array $djRows
+    array $djRows,
+    array $schoolRows = [],
+    array $teacherRows = []
 ): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
@@ -1633,6 +1659,10 @@ function nextgen_partner_sync_assignments(
 
     nextgen_partner_ensure_extended_schema($db);
     nextgen_partner_ensure_assignment_unique_indexes($db);
+    if (is_file(dirname(__DIR__, 2) . '/events/lib/dance_schools_schema.php')) {
+        require_once dirname(__DIR__, 2) . '/events/lib/dance_schools_schema.php';
+        dance_schools_ensure_schema($db);
+    }
 
     // Mentés előtt mindig dobjuk a legacy (partner, entitás) unique-okat.
     nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_events_organizers', 'organizer_id');
@@ -1703,14 +1733,56 @@ function nextgen_partner_sync_assignments(
                 ]);
             }
 
+            try {
+                $db->prepare('DELETE FROM `nextgen_partner_dance_schools` WHERE `partner_id` = ?')->execute([$partnerId]);
+                $insSchool = $db->prepare('
+                    INSERT INTO `nextgen_partner_dance_schools` (`partner_id`, `school_id`, `role_type`, `role_note`, `sort_order`)
+                    VALUES (?, ?, ?, ?, ?)
+                ');
+                foreach ($schoolRows as $i => $row) {
+                    $insSchool->execute([
+                        $partnerId,
+                        (int) $row['school_id'],
+                        (string) $row['role_type'],
+                        $row['role_note'] ?? null,
+                        $i,
+                    ]);
+                }
+            } catch (Throwable $schoolEx) {
+                if ($schoolRows !== []) {
+                    throw $schoolEx;
+                }
+            }
+
+            try {
+                $db->prepare('DELETE FROM `nextgen_partner_teachers` WHERE `partner_id` = ?')->execute([$partnerId]);
+                $insTeacher = $db->prepare('
+                    INSERT INTO `nextgen_partner_teachers` (`partner_id`, `tag_id`, `role_type`, `role_note`, `sort_order`)
+                    VALUES (?, ?, ?, ?, ?)
+                ');
+                foreach ($teacherRows as $i => $row) {
+                    $insTeacher->execute([
+                        $partnerId,
+                        (int) $row['tag_id'],
+                        (string) $row['role_type'],
+                        $row['role_note'] ?? null,
+                        $i,
+                    ]);
+                }
+            } catch (Throwable $teacherEx) {
+                if ($teacherRows !== []) {
+                    throw $teacherEx;
+                }
+            }
+
             $db->commit();
 
             $summary = sprintf(
-                '%d esemény szervező, %d DJ (%d szervező-szerep, %d DJ-szerep)',
+                '%d szervező, %d DJ, %d tánciskola, %d tanár',
                 count(array_unique(array_map(static fn (array $r): int => (int) $r['organizer_id'], $organizerRows))),
                 count(array_unique(array_map(static fn (array $r): int => (int) $r['tag_id'], $djRows))),
-                count($organizerRows),
-                count($djRows)
+                count(array_unique(array_map(static fn (array $r): int => (int) $r['school_id'], $schoolRows))),
+                count(array_unique(array_map(static fn (array $r): int => (int) $r['tag_id'], $teacherRows)))
             );
             nextgen_partner_log($db, $partnerId, 'Hozzárendelések módosítva', $summary);
 
@@ -1771,6 +1843,12 @@ function nextgen_partner_delete(PDO $db, int $partnerId): array
         $db->prepare('DELETE FROM `nextgen_partner_messages` WHERE `partner_id` = ?')->execute([$partnerId]);
         $db->prepare('DELETE FROM `nextgen_partner_events_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
         $db->prepare('DELETE FROM `nextgen_partner_djs` WHERE `partner_id` = ?')->execute([$partnerId]);
+        try {
+            $db->prepare('DELETE FROM `nextgen_partner_dance_schools` WHERE `partner_id` = ?')->execute([$partnerId]);
+            $db->prepare('DELETE FROM `nextgen_partner_teachers` WHERE `partner_id` = ?')->execute([$partnerId]);
+        } catch (Throwable) {
+            // új táblák opcionálisak
+        }
         $db->prepare('DELETE FROM `nextgen_partner_finance_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
         if (nextgen_partner_emails_table_ready($db)) {
             $db->prepare('DELETE FROM `nextgen_partner_emails` WHERE `partner_id` = ?')->execute([$partnerId]);
@@ -1841,4 +1919,218 @@ function nextgen_partner_selectable_djs(PDO $db): array
     } catch (Throwable) {
         return [];
     }
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function nextgen_partner_dance_schools(PDO $db, int $partnerId): array
+{
+    if ($partnerId <= 0) {
+        return [];
+    }
+    try {
+        $stmt = $db->prepare('
+            SELECT s.`id`, s.`name`, pds.`sort_order`, pds.`role_type`, pds.`role_note`
+            FROM `nextgen_partner_dance_schools` pds
+            INNER JOIN `dance_schools` s ON s.`id` = pds.`school_id`
+            WHERE pds.`partner_id` = ?
+            ORDER BY pds.`sort_order` ASC, s.`name` ASC
+        ');
+        $stmt->execute([$partnerId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function nextgen_partner_teachers(PDO $db, int $partnerId): array
+{
+    if ($partnerId <= 0) {
+        return [];
+    }
+    try {
+        $stmt = $db->prepare('
+            SELECT t.`id`, t.`name`, pt.`sort_order`, pt.`role_type`, pt.`role_note`
+            FROM `nextgen_partner_teachers` pt
+            INNER JOIN `events_tags` t ON t.`id` = pt.`tag_id`
+            WHERE pt.`partner_id` = ?
+            ORDER BY pt.`sort_order` ASC, t.`name` ASC
+        ');
+        $stmt->execute([$partnerId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+/**
+ * @return list<array{school_id: int, role_types: list<string>, role_note: string, name?: string}>
+ */
+function nextgen_partner_group_dance_school_assignments_for_form(array $rows): array
+{
+    $grouped = [];
+    $validRoles = array_keys(nextgen_partner_dance_school_role_labels());
+    foreach ($rows as $row) {
+        $schoolId = (int) ($row['id'] ?? $row['school_id'] ?? 0);
+        if ($schoolId <= 0) {
+            continue;
+        }
+        if (!isset($grouped[$schoolId])) {
+            $grouped[$schoolId] = [
+                'school_id' => $schoolId,
+                'name' => (string) ($row['name'] ?? ''),
+                'role_types' => [],
+                'role_note' => '',
+            ];
+        }
+        $roleType = strtolower(trim((string) ($row['role_type'] ?? '')));
+        if ($roleType !== '' && in_array($roleType, $validRoles, true) && !in_array($roleType, $grouped[$schoolId]['role_types'], true)) {
+            $grouped[$schoolId]['role_types'][] = $roleType;
+        }
+        if ($roleType === 'other') {
+            $note = trim((string) ($row['role_note'] ?? ''));
+            if ($note !== '') {
+                $grouped[$schoolId]['role_note'] = $note;
+            }
+        }
+    }
+
+    return array_values($grouped);
+}
+
+/**
+ * @return list<array{tag_id: int, role_types: list<string>, role_note: string, name?: string}>
+ */
+function nextgen_partner_group_teacher_assignments_for_form(array $rows): array
+{
+    $grouped = [];
+    $validRoles = array_keys(nextgen_partner_teacher_role_labels());
+    foreach ($rows as $row) {
+        $tagId = (int) ($row['id'] ?? $row['tag_id'] ?? 0);
+        if ($tagId <= 0) {
+            continue;
+        }
+        if (!isset($grouped[$tagId])) {
+            $grouped[$tagId] = [
+                'tag_id' => $tagId,
+                'name' => (string) ($row['name'] ?? ''),
+                'role_types' => [],
+                'role_note' => '',
+            ];
+        }
+        $roleType = strtolower(trim((string) ($row['role_type'] ?? '')));
+        if ($roleType !== '' && in_array($roleType, $validRoles, true) && !in_array($roleType, $grouped[$tagId]['role_types'], true)) {
+            $grouped[$tagId]['role_types'][] = $roleType;
+        }
+        if ($roleType === 'other') {
+            $note = trim((string) ($row['role_note'] ?? ''));
+            if ($note !== '') {
+                $grouped[$tagId]['role_note'] = $note;
+            }
+        }
+    }
+
+    return array_values($grouped);
+}
+
+/**
+ * @return list<array{school_id: int, role_type: string, role_note: ?string}>
+ */
+function nextgen_partner_dance_school_rows_from_post(mixed $raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+    $validRoles = array_keys(nextgen_partner_dance_school_role_labels());
+    $flat = [];
+    foreach ($raw as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $schoolId = (int) ($row['school_id'] ?? 0);
+        if ($schoolId <= 0) {
+            continue;
+        }
+        $roles = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            foreach ($row['role_types'] as $r) {
+                $r = strtolower(trim((string) $r));
+                if (in_array($r, $validRoles, true)) {
+                    $roles[] = $r;
+                }
+            }
+        } elseif (isset($row['role_type'])) {
+            $r = strtolower(trim((string) $row['role_type']));
+            if (in_array($r, $validRoles, true)) {
+                $roles[] = $r;
+            }
+        }
+        if ($roles === []) {
+            $roles = ['school'];
+        }
+        $note = trim((string) ($row['role_note'] ?? ''));
+        foreach ($roles as $role) {
+            $flat[] = [
+                'school_id' => $schoolId,
+                'role_type' => $role,
+                'role_note' => $role === 'other' ? ($note !== '' ? $note : null) : null,
+            ];
+        }
+    }
+
+    return $flat;
+}
+
+/**
+ * @return list<array{tag_id: int, role_type: string, role_note: ?string}>
+ */
+function nextgen_partner_teacher_rows_from_post(mixed $raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+    $validRoles = array_keys(nextgen_partner_teacher_role_labels());
+    $flat = [];
+    foreach ($raw as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $tagId = (int) ($row['tag_id'] ?? 0);
+        if ($tagId <= 0) {
+            continue;
+        }
+        $roles = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            foreach ($row['role_types'] as $r) {
+                $r = strtolower(trim((string) $r));
+                if (in_array($r, $validRoles, true)) {
+                    $roles[] = $r;
+                }
+            }
+        } elseif (isset($row['role_type'])) {
+            $r = strtolower(trim((string) $row['role_type']));
+            if (in_array($r, $validRoles, true)) {
+                $roles[] = $r;
+            }
+        }
+        if ($roles === []) {
+            $roles = ['teacher'];
+        }
+        $note = trim((string) ($row['role_note'] ?? ''));
+        foreach ($roles as $role) {
+            $flat[] = [
+                'tag_id' => $tagId,
+                'role_type' => $role,
+                'role_note' => $role === 'other' ? ($note !== '' ? $note : null) : null,
+            ];
+        }
+    }
+
+    return $flat;
 }
