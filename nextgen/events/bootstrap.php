@@ -278,6 +278,15 @@ if (!function_exists('events_helyszin_megjelenit_url')) {
     }
 }
 
+if (!function_exists('events_tanciskola_megjelenit_url')) {
+    /**
+     * Tánciskola nyilvános / előnézet oldal (slug).
+     */
+    function events_tanciskola_megjelenit_url(string $slug): string {
+        return events_url('tanciskola_megjelenit.php?slug=' . rawurlencode($slug));
+    }
+}
+
 if (!function_exists('events_absolute_url')) {
     /**
      * Teljes URL (OG, kép src): https://…, //…, vagy site_url szerinti útvonal.

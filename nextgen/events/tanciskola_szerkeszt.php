@@ -160,6 +160,8 @@ foreach ($locationsForm as $loc) {
 $emailIsPrivate = !empty($row['email_is_private']);
 $phoneIsPrivate = !empty($row['phone_is_private']);
 $name = (string) ($row['name'] ?? '');
+$slug = trim((string) ($row['slug'] ?? ''));
+$previewUrl = $slug !== '' ? dance_school_public_url($slug) : '';
 
 $pageTitle = 'Tánciskola szerkesztése: ' . $name;
 
@@ -170,12 +172,21 @@ $adminFloatTools = [
         'aria' => 'Mentés',
         'icon' => 'save',
     ],
-    [
-        'href' => events_url('tanciskolak_admin.php'),
-        'title' => 'Vissza a tánciskolák listájához',
-        'aria' => 'Vissza a tánciskolák listájához',
-        'icon' => 'back',
-    ],
+];
+if ($previewUrl !== '') {
+    $adminFloatTools[] = [
+        'href' => $previewUrl,
+        'title' => 'Előnézet',
+        'aria' => 'Tánciskola előnézet megnyitása új lapon',
+        'icon' => 'eye',
+        'target' => '_blank',
+    ];
+}
+$adminFloatTools[] = [
+    'href' => events_url('tanciskolak_admin.php'),
+    'title' => 'Vissza a tánciskolák listájához',
+    'aria' => 'Vissza a tánciskolák listájához',
+    'icon' => 'back',
 ];
 $adminFloatToolsRequireLogin = false;
 
@@ -188,6 +199,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-list-head">
         <h1 class="card-title" style="margin:0;">Tánciskola szerkesztése</h1>
         <div class="events-list-actions">
+            <?php if ($previewUrl !== ''): ?>
+                <a href="<?= h($previewUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">Előnézet</a>
+            <?php endif; ?>
             <a href="<?= h(events_url('tanciskolak_admin.php')) ?>" class="btn btn-secondary">← Tánciskolák listája</a>
         </div>
     </div>

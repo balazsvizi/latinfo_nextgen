@@ -152,6 +152,35 @@ function dance_school_by_id(PDO $db, int $id): ?array
     return $row !== false ? $row : null;
 }
 
+function dance_school_by_slug(PDO $db, string $slug): ?array
+{
+    $slug = trim($slug);
+    if ($slug === '' || !dance_schools_tables_ready($db)) {
+        return null;
+    }
+    $st = $db->prepare('SELECT * FROM `dance_schools` WHERE `slug` = ? LIMIT 1');
+    $st->execute([$slug]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+
+    return $row !== false ? $row : null;
+}
+
+/**
+ * Nyilvános / előnézet URL slug alapján.
+ */
+function dance_school_public_url(string $slug): string
+{
+    $slug = trim($slug);
+    if ($slug === '') {
+        return '';
+    }
+    if (function_exists('events_tanciskola_megjelenit_url')) {
+        return events_tanciskola_megjelenit_url($slug);
+    }
+
+    return events_url('tanciskola_megjelenit.php?slug=' . rawurlencode($slug));
+}
+
 /**
  * @param array{f_q?:string,f_city?:string,f_active?:string,order?:string,dir_param?:string} $filters
  * @return list<array<string, mixed>>
