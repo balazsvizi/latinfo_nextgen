@@ -2,44 +2,91 @@
 declare(strict_types=1);
 
 /**
- * CLI: latin / salsa / bachata / kizomba tánciskolák feltöltése nyilvános webes forrásokból.
- * Futtatás: php nextgen/tools/seed_dance_schools.php
+ * Latin / salsa / bachata / kizomba tánciskolák feltöltése.
+ *
+ * CLI:  php nextgen/tools/seed_dance_schools.php
+ * Web:  dance_schools_seed_run($db)  (Latinfo admin gomb)
  *
  * Újrafuttatható: meglévő slug esetén frissít (nem duplikál).
- * is_published mindig 0 marad (még nem publikus felület).
+ * is_published mindig 0 marad.
  */
 
-if (PHP_SAPI !== 'cli') {
-    fwrite(STDERR, "Csak CLI-ből futtatható.\n");
-    exit(1);
-}
-
-require_once dirname(__DIR__) . '/init.php';
 require_once dirname(__DIR__) . '/events/lib/dance_schools.php';
 
-$db = getDb();
-if (!dance_schools_ensure_schema($db)) {
-    fwrite(STDERR, "Séma létrehozás sikertelen.\n");
-    exit(1);
+if (!defined('DANCE_SEED_STYLE_CUBAN')) {
+    define('DANCE_SEED_STYLE_CUBAN', 'salsa_cuban');
+    define('DANCE_SEED_STYLE_BACHATA', 'bachata');
+    define('DANCE_SEED_STYLE_LINE', 'salsa_line');
+    define('DANCE_SEED_STYLE_KIZOMBA', 'kizomba');
+    define('DANCE_SEED_STYLE_ZOUK', 'zouk');
+    define('DANCE_SEED_STYLE_BALLROOM', 'ballroom');
 }
 
-const STYLE_CUBAN = 26000;
-const STYLE_BACHATA = 26001;
-const STYLE_LINE = 26002;
-const STYLE_KIZOMBA = 26003;
-const STYLE_ZOUK = 26004;
-const STYLE_BALLROOM = 26005;
+/** @deprecated alias – a katalógus STYLE_* konstansai */
+if (!defined('STYLE_CUBAN')) {
+    define('STYLE_CUBAN', DANCE_SEED_STYLE_CUBAN);
+    define('STYLE_BACHATA', DANCE_SEED_STYLE_BACHATA);
+    define('STYLE_LINE', DANCE_SEED_STYLE_LINE);
+    define('STYLE_KIZOMBA', DANCE_SEED_STYLE_KIZOMBA);
+    define('STYLE_ZOUK', DANCE_SEED_STYLE_ZOUK);
+    define('STYLE_BALLROOM', DANCE_SEED_STYLE_BALLROOM);
+}
 
 /**
+ * @return array<string, int> kulcs => style_id
+ */
+function dance_schools_seed_style_id_map(PDO $db): array
+{
+    $wanted = [
+        DANCE_SEED_STYLE_CUBAN => ['salsa (kubai/cuban)', 'kubai salsa', 'salsa cubana', 'salsa'],
+        DANCE_SEED_STYLE_BACHATA => ['bachata'],
+        DANCE_SEED_STYLE_LINE => ['salsa (vonalas/crossbody)', 'vonalas salsa', 'salsa la', 'crossbody'],
+        DANCE_SEED_STYLE_KIZOMBA => ['kizomba'],
+        DANCE_SEED_STYLE_ZOUK => ['zouk', 'brazil zouk'],
+        DANCE_SEED_STYLE_BALLROOM => ['társastánc/ballroom dance', 'társastánc', 'ballroom'],
+    ];
+    $byName = [];
+    try {
+        $rows = $db->query('SELECT `id`, `name` FROM `events_styles`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        foreach ($rows as $r) {
+            $byName[mb_strtolower(trim((string) $r['name']), 'UTF-8')] = (int) $r['id'];
+        }
+    } catch (Throwable) {
+        return [];
+    }
+    $map = [];
+    foreach ($wanted as $key => $aliases) {
+        foreach ($aliases as $alias) {
+            $k = mb_strtolower($alias, 'UTF-8');
+            if (isset($byName[$k])) {
+                $map[$key] = $byName[$k];
+                break;
+            }
+        }
+    }
+
+    return $map;
+}
+
+/**
+ * @param list<array{0: ?string, 1: string, 2?: string, 3?: string, 4?: string, 5?: string}> $items
  * @return list<array{style_id:?int,style_label:string,age_group:string,level:string,class_type:string,schedule_note:string}>
  */
-function seed_offs(array $items): array
+function dance_schools_seed_offs(array $items): array
 {
+    global $SEED_STYLE_IDS;
     $out = [];
     foreach ($items as $it) {
+        $key = $it[0];
+        $styleId = null;
+        if (is_string($key) && $key !== '' && isset($SEED_STYLE_IDS[$key])) {
+            $styleId = (int) $SEED_STYLE_IDS[$key];
+        } elseif (is_int($key) && $key > 0) {
+            $styleId = $key;
+        }
         $out[] = [
             'id' => 0,
-            'style_id' => $it[0],
+            'style_id' => $styleId,
             'style_label' => $it[1],
             'age_group' => $it[2] ?? 'adult',
             'level' => $it[3] ?? 'all',
@@ -51,10 +98,16 @@ function seed_offs(array $items): array
     return $out;
 }
 
+/** @deprecated */
+function seed_offs(array $items): array
+{
+    return dance_schools_seed_offs($items);
+}
+
 /**
  * @return array{name:string,address:string,city:string,postal_code:string,country:string,notes:string,is_active:int,offerings:list<array<string,mixed>>}
  */
-function seed_loc(string $name, string $address, string $city, string $postal = '', array $offerings = [], string $notes = ''): array
+function dance_schools_seed_loc(string $name, string $address, string $city, string $postal = '', array $offerings = [], string $notes = ''): array
 {
     return [
         'id' => 0,
@@ -72,10 +125,38 @@ function seed_loc(string $name, string $address, string $city, string $postal = 
     ];
 }
 
-$sourceNote = 'Forrás: nyilvános weboldalak / Latinfo beváltóhelyek lista (2026-10-09). Ellenőrizendő: aktuális órarend, telefonszám, helyszín.';
+/** @deprecated */
+function seed_loc(string $name, string $address, string $city, string $postal = '', array $offerings = [], string $notes = ''): array
+{
+    return dance_schools_seed_loc($name, $address, $city, $postal, $offerings, $notes);
+}
 
-/** @var list<array<string,mixed>> $schools */
-$schools = [
+/**
+ * @return array{ok:bool,created:int,updated:int,errors:int,total:int,lines:list<string>,error?:string}
+ */
+function dance_schools_seed_run(PDO $db): array
+{
+    if (!dance_schools_ensure_schema($db)) {
+        return [
+            'ok' => false,
+            'created' => 0,
+            'updated' => 0,
+            'errors' => 1,
+            'total' => 0,
+            'lines' => [],
+            'error' => 'A tánciskola táblák nem hozhatók létre.',
+        ];
+    }
+
+    global $SEED_STYLE_IDS;
+    $SEED_STYLE_IDS = dance_schools_seed_style_id_map($db);
+    $lines = [];
+    $lines[] = 'Stílus map: ' . json_encode($SEED_STYLE_IDS, JSON_UNESCAPED_UNICODE);
+
+    $sourceNote = 'Forrás: nyilvános weboldalak / Latinfo beváltóhelyek lista (2026-10-09). Ellenőrizendő: aktuális órarend, telefonszám, helyszín.';
+
+    /** @var list<array<string,mixed>> $schools */
+    $schools = [
     [
         'name' => 'Chili Salsa Tánciskola',
         'slug' => 'chili_salsa',
@@ -868,77 +949,102 @@ $schools = [
     ],
 ];
 
-$created = 0;
-$updated = 0;
-$errors = 0;
+    $created = 0;
+    $updated = 0;
+    $errors = 0;
 
-foreach ($schools as $pack) {
-    $slug = (string) $pack['slug'];
-    $existingId = null;
-    $st = $db->prepare('SELECT `id` FROM `dance_schools` WHERE `slug` = ? LIMIT 1');
-    $st->execute([$slug]);
-    $found = $st->fetchColumn();
-    if ($found !== false) {
-        $existingId = (int) $found;
-    }
-
-    $row = dance_school_empty_row();
-    $row['name'] = (string) $pack['name'];
-    $row['slug'] = $slug;
-    $row['description'] = (string) ($pack['description'] ?? '');
-    $row['founded_year'] = $pack['founded_year'] ?? null;
-    $row['city'] = (string) ($pack['city'] ?? '');
-    $row['website_url'] = (string) ($pack['website_url'] ?? '');
-    $row['facebook_url'] = (string) ($pack['facebook_url'] ?? '');
-    $row['instagram_url'] = (string) ($pack['instagram_url'] ?? '');
-    $row['tiktok_url'] = (string) ($pack['tiktok_url'] ?? '');
-    $row['youtube_url'] = (string) ($pack['youtube_url'] ?? '');
-    $row['email'] = (string) ($pack['email'] ?? '');
-    $row['phone'] = (string) ($pack['phone'] ?? '');
-    $row['schedule_url'] = (string) ($pack['schedule_url'] ?? '');
-    $row['registration_url'] = (string) ($pack['registration_url'] ?? '');
-    $row['trial_lesson_info'] = (string) ($pack['trial_lesson_info'] ?? '');
-    $row['pricing_info'] = (string) ($pack['pricing_info'] ?? '');
-    $row['languages'] = (string) ($pack['languages'] ?? 'HU');
-    $row['accepts_beginners'] = !empty($pack['accepts_beginners']) ? 1 : 0;
-    $row['has_kids_classes'] = !empty($pack['has_kids_classes']) ? 1 : 0;
-    $row['has_performance_team'] = !empty($pack['has_performance_team']) ? 1 : 0;
-    $row['is_active'] = 1;
-    $row['is_published'] = 0;
-    $row['admin_notes'] = (string) ($pack['admin_notes'] ?? $sourceNote);
-
-    try {
-        $save = dance_school_save($db, $row, $existingId);
-        if (!$save['ok']) {
-            throw new RuntimeException((string) ($save['error'] ?? 'save fail'));
+    foreach ($schools as $pack) {
+        $slug = (string) $pack['slug'];
+        $existingId = null;
+        $st = $db->prepare('SELECT `id` FROM `dance_schools` WHERE `slug` = ? LIMIT 1');
+        $st->execute([$slug]);
+        $found = $st->fetchColumn();
+        if ($found !== false) {
+            $existingId = (int) $found;
         }
-        $id = (int) ($save['id'] ?? 0);
-        $locs = $pack['locations'] ?? [];
-        $syncL = dance_school_sync_locations($db, $id, is_array($locs) ? $locs : []);
-        if (!$syncL['ok']) {
-            throw new RuntimeException((string) ($syncL['error'] ?? 'loc fail'));
-        }
-        $evs = $pack['events'] ?? [];
-        if (is_array($evs) && $evs !== []) {
-            $syncE = dance_school_sync_events($db, $id, $evs);
-            if (!$syncE['ok']) {
-                throw new RuntimeException((string) ($syncE['error'] ?? 'ev fail'));
+
+        $row = dance_school_empty_row();
+        $row['name'] = (string) $pack['name'];
+        $row['slug'] = $slug;
+        $row['description'] = (string) ($pack['description'] ?? '');
+        $row['founded_year'] = $pack['founded_year'] ?? null;
+        $row['city'] = (string) ($pack['city'] ?? '');
+        $row['website_url'] = (string) ($pack['website_url'] ?? '');
+        $row['facebook_url'] = (string) ($pack['facebook_url'] ?? '');
+        $row['instagram_url'] = (string) ($pack['instagram_url'] ?? '');
+        $row['tiktok_url'] = (string) ($pack['tiktok_url'] ?? '');
+        $row['youtube_url'] = (string) ($pack['youtube_url'] ?? '');
+        $row['email'] = (string) ($pack['email'] ?? '');
+        $row['phone'] = (string) ($pack['phone'] ?? '');
+        $row['schedule_url'] = (string) ($pack['schedule_url'] ?? '');
+        $row['registration_url'] = (string) ($pack['registration_url'] ?? '');
+        $row['trial_lesson_info'] = (string) ($pack['trial_lesson_info'] ?? '');
+        $row['pricing_info'] = (string) ($pack['pricing_info'] ?? '');
+        $row['languages'] = (string) ($pack['languages'] ?? 'HU');
+        $row['accepts_beginners'] = !empty($pack['accepts_beginners']) ? 1 : 0;
+        $row['has_kids_classes'] = !empty($pack['has_kids_classes']) ? 1 : 0;
+        $row['has_performance_team'] = !empty($pack['has_performance_team']) ? 1 : 0;
+        $row['is_active'] = 1;
+        $row['is_published'] = 0;
+        $row['admin_notes'] = (string) ($pack['admin_notes'] ?? $sourceNote);
+
+        try {
+            $save = dance_school_save($db, $row, $existingId);
+            if (!$save['ok']) {
+                throw new RuntimeException((string) ($save['error'] ?? 'save fail'));
             }
+            $id = (int) ($save['id'] ?? 0);
+            $locs = $pack['locations'] ?? [];
+            $syncL = dance_school_sync_locations($db, $id, is_array($locs) ? $locs : []);
+            if (!$syncL['ok']) {
+                throw new RuntimeException((string) ($syncL['error'] ?? 'loc fail'));
+            }
+            $evs = $pack['events'] ?? [];
+            if (is_array($evs) && $evs !== []) {
+                $syncE = dance_school_sync_events($db, $id, $evs);
+                if (!$syncE['ok']) {
+                    throw new RuntimeException((string) ($syncE['error'] ?? 'ev fail'));
+                }
+            }
+            if ($existingId !== null) {
+                $updated++;
+                $lines[] = "UPD  #{$id} {$row['name']}";
+            } else {
+                $created++;
+                $lines[] = "NEW  #{$id} {$row['name']}";
+            }
+        } catch (Throwable $e) {
+            $errors++;
+            $lines[] = "ERR  {$row['name']}: " . $e->getMessage();
         }
-        if ($existingId !== null) {
-            $updated++;
-            echo "UPD  #{$id} {$row['name']}\n";
-        } else {
-            $created++;
-            echo "NEW  #{$id} {$row['name']}\n";
-        }
-    } catch (Throwable $e) {
-        $errors++;
-        fwrite(STDERR, "ERR  {$row['name']}: " . $e->getMessage() . "\n");
     }
+
+    $total = dance_schools_admin_total_count($db);
+    $lines[] = '';
+    $lines[] = "Kész. Új: {$created}, frissítve: {$updated}, hiba: {$errors}, összesen DB: {$total}";
+    $lines[] = 'Megjegyzés: latin/salsa-bachata-kizomba fókuszú iskolák (Latinfo kontextus).';
+
+    return [
+        'ok' => $errors === 0,
+        'created' => $created,
+        'updated' => $updated,
+        'errors' => $errors,
+        'total' => $total,
+        'lines' => $lines,
+    ];
 }
 
-echo "\nKész. Új: {$created}, frissítve: {$updated}, hiba: {$errors}, összesen DB: "
-    . dance_schools_admin_total_count($db) . "\n";
-echo "Megjegyzés: latin/salsa-bachata-kizomba fókuszú iskolák (Latinfo kontextus). "
-    . "Nem tartalmazza az összes magyar balett/hiphop/általános társastánc iskolát.\n";
+// CLI belépési pont
+if (PHP_SAPI === 'cli' && isset($_SERVER['SCRIPT_FILENAME'])
+    && realpath((string) $_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)
+) {
+    require_once dirname(__DIR__) . '/init.php';
+    $result = dance_schools_seed_run(getDb());
+    foreach ($result['lines'] as $line) {
+        echo $line . PHP_EOL;
+    }
+    if (!empty($result['error'])) {
+        fwrite(STDERR, $result['error'] . PHP_EOL);
+    }
+    exit(($result['errors'] ?? 1) > 0 ? 1 : 0);
+}

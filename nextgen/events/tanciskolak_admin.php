@@ -10,6 +10,30 @@ requireLogin();
 $db = getDb();
 dance_schools_ensure_schema($db);
 
+$seedRedirect = events_url('tanciskolak_admin.php');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_dance_schools'])) {
+    if (!isSuperadmin()) {
+        flash('error', 'Nincs jogosultságod ehhez a művelethez.');
+        redirect($seedRedirect);
+    }
+    csrf_require('dance_schools_seed', '_csrf', $seedRedirect);
+    require_once dirname(__DIR__) . '/tools/seed_dance_schools.php';
+    @set_time_limit(120);
+    $result = dance_schools_seed_run($db);
+    $created = (int) ($result['created'] ?? 0);
+    $updated = (int) ($result['updated'] ?? 0);
+    $errors = (int) ($result['errors'] ?? 0);
+    $total = (int) ($result['total'] ?? 0);
+    if (!empty($result['error'])) {
+        flash('error', (string) $result['error']);
+    } elseif ($errors > 0) {
+        flash('error', "Seed kész hibákkal. Új: {$created}, frissítve: {$updated}, hiba: {$errors}, összesen: {$total}.");
+    } else {
+        flash('success', "Seed kész. Új: {$created}, frissítve: {$updated}, összesen: {$total}. (Publikálatlanul mentve.)");
+    }
+    redirect($seedRedirect);
+}
+
 $f_q = trim((string) ($_GET['f_q'] ?? ''));
 $allowedOrder = ['name', 'city', 'locations', 'teachers', 'events', 'views', 'active', 'id', 'slug'];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
@@ -81,6 +105,22 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <?php if ($s = flash('error')): ?><p class="alert alert-error"><?= h($s) ?></p><?php endif; ?>
 
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
+
+<?php if (isSuperadmin()): ?>
+<div class="card events-admin-card" style="margin-bottom:1rem;">
+    <form method="post" action="<?= h(events_url('tanciskolak_admin.php')) ?>" onsubmit="return confirm('Feltölti / frissíti a latin tánciskola katalógust (slug alapján)? Publikálatlanul ment.');">
+        <?= csrf_input('dance_schools_seed') ?>
+        <div class="events-list-head">
+            <div class="events-list-head__start">
+                <p class="help" style="margin:0;">Katalógus feltöltés a nyilvános weboldalak alapján (~28 iskola). Újrafuttatható; meglévő slug frissül. Mindig publikálatlan.</p>
+            </div>
+            <div class="events-list-actions">
+                <button type="submit" name="seed_dance_schools" value="1" class="btn btn-primary">Seed katalógus futtatása</button>
+            </div>
+        </div>
+    </form>
+</div>
+<?php endif; ?>
 
 <div class="card events-admin-card">
     <form method="get" action="<?= h(events_url('tanciskolak_admin.php')) ?>" class="events-admin-form" id="tanciskolak-admin-filter-form">
