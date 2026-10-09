@@ -31,13 +31,14 @@ $djPhotoPick = '';
 $djLogoPick = '';
 
 $locationsForm = [];
-foreach (dance_school_locations($db, $id) as $loc) {
-    $locId = (int) $loc['id'];
-    $loc['offerings'] = dance_school_offerings_for_location($db, $locId);
+foreach (dance_school_venues($db, $id) as $loc) {
+    $linkId = (int) $loc['id'];
+    $loc['offerings'] = dance_school_offerings_for_school_venue($db, $linkId);
     $locationsForm[] = $loc;
 }
 $eventsForm = dance_school_events_list($db, $id);
 $teachersForm = dance_school_teachers_list($db, $id);
+$venueOptions = events_load_venue_options($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     dance_entity_view_record($db, 'school', $id, 'admin_view');
@@ -59,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else {
         [$rowIn, $rowErr] = dance_school_from_post($_POST);
-        $locationsForm = dance_school_locations_from_post($_POST['locations'] ?? null);
+        $locationsForm = dance_school_venues_from_post($_POST['venues'] ?? ($_POST['locations'] ?? null));
         $eventsForm = dance_school_events_from_post($_POST['events'] ?? null);
         $teachersForm = dance_school_teachers_from_post($_POST['teachers'] ?? null);
 
@@ -88,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!$save['ok']) {
                         throw new RuntimeException((string) ($save['error'] ?? 'Mentési hiba.'));
                     }
-                    $syncLoc = dance_school_sync_locations($db, $id, $locationsForm);
+                    $syncLoc = dance_school_sync_venues($db, $id, $locationsForm);
                     if (!$syncLoc['ok']) {
                         throw new RuntimeException((string) ($syncLoc['error'] ?? 'Helyszínek mentése sikertelen.'));
                     }
@@ -146,10 +147,13 @@ $teacherOptions = dance_teachers_selectable_list($db);
 
 $locationOptions = [];
 foreach ($locationsForm as $loc) {
-    $lid = (int) ($loc['id'] ?? 0);
-    $lname = trim((string) ($loc['name'] ?? ''));
-    if ($lid > 0 && $lname !== '') {
-        $locationOptions[] = ['id' => $lid, 'name' => $lname];
+    $vid = (int) ($loc['venue_id'] ?? 0);
+    $lname = trim((string) ($loc['venue_name'] ?? ''));
+    if ($lname === '' && $vid > 0 && isset($venueOptions[$vid])) {
+        $lname = (string) $venueOptions[$vid];
+    }
+    if ($vid > 0 && $lname !== '') {
+        $locationOptions[] = ['id' => $vid, 'name' => $lname];
     }
 }
 
@@ -350,12 +354,13 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
 
                 <div class="events-edit-panel" id="dance-locations-panel">
-                    <h3 class="events-edit-panel__title">B) Helyszínek</h3>
+                    <h3 class="events-edit-panel__title">B) Helyszínek (bulihelyszínek)</h3>
+                    <p class="help">Válassz a meglévő bulihelyszínek közül. Cím, térkép és GPS a helyszín saját oldalán szerkeszthető; itt az iskolához tartozó kínálat / megjegyzés kerül.</p>
                     <div id="dance-locations-list">
                         <?php
                         if ($locationsForm === []) {
                             $locIndex = 0;
-                            $location = ['is_active' => 1, 'country' => 'Magyarország'];
+                            $location = ['is_active' => 1, 'venue_id' => 0];
                             $offerings = [];
                             require __DIR__ . '/partials/dance_school_location_row.php';
                         } else {
@@ -366,7 +371,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         }
                         ?>
                     </div>
-                    <button type="button" class="btn btn-secondary" id="dance-location-add">+ Helyszín hozzáadása</button>
+                    <button type="button" class="btn btn-secondary" id="dance-location-add">+ Helyszín a listából</button>
+                    <a href="<?= h(events_url('venue_letrehoz.php')) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Új bulihelyszín</a>
                 </div>
 
                 <div class="events-edit-panel" id="dance-events-panel">
@@ -380,14 +386,15 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
 
                 <div class="events-edit-panel" id="dance-teachers-panel">
-                    <h3 class="events-edit-panel__title">D) Tanárok</h3>
+                    <h3 class="events-edit-panel__title">D) Tánctanárok</h3>
+                    <p class="help">A tánctanárok a DJ-khez hasonlóan címkeként (tag) kezeltek: saját profil, fotó, kontakt. Először vedd fel őket a <a href="<?= h(events_url('tanarok_admin.php')) ?>">tánctanárok</a> között, majd rendelj hozzá itt.</p>
                     <div id="dance-teachers-list">
                         <?php foreach ($teachersForm as $tchIndex => $teacherRow): ?>
                             <?php require __DIR__ . '/partials/dance_school_teacher_row.php'; ?>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn btn-secondary" id="dance-teacher-add">+ Tanár hozzáadása</button>
-                    <p class="help">Ha nincs a listában a tanár, előbb vedd fel a <a href="<?= h(events_url('tanar_letrehoz.php')) ?>">tánctanárok</a> között.</p>
+                    <button type="button" class="btn btn-secondary" id="dance-teacher-add">+ Tanár a listából</button>
+                    <a href="<?= h(events_url('tanar_letrehoz.php')) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Új tánctanár</a>
                 </div>
             </div>
 
@@ -426,7 +433,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <template id="dance-location-template">
 <?php
 $locIndex = 9990;
-$location = ['is_active' => 1, 'country' => 'Magyarország'];
+$location = ['is_active' => 1, 'venue_id' => 0];
 $offerings = [];
 require __DIR__ . '/partials/dance_school_location_row.php';
 ?>
@@ -484,12 +491,13 @@ require __DIR__ . '/partials/dance_school_offering_row.php';
         root.querySelectorAll('[name]').forEach(function (el) {
             var n = el.getAttribute('name') || '';
             el.setAttribute('name', n
-                .replace(/^locations\[\d+]/, 'locations[' + index + ']')
+                .replace(/^venues\[\d+]/, 'venues[' + index + ']')
+                .replace(/^locations\[\d+]/, 'venues[' + index + ']')
                 .replace(/^events\[\d+]/, 'events[' + index + ']')
                 .replace(/^teachers\[\d+]/, 'teachers[' + index + ']')
             );
         });
-        if (base === 'locations') {
+        if (base === 'locations' || base === 'venues') {
             root.setAttribute('data-loc-index', String(index));
             var title = root.querySelector('.events-edit-panel__title');
             if (title) title.textContent = 'Helyszín #' + (index + 1);
@@ -511,7 +519,10 @@ require __DIR__ . '/partials/dance_school_offering_row.php';
         list.querySelectorAll('[data-dance-offering-row]').forEach(function (off, oi) {
             off.querySelectorAll('[name]').forEach(function (el) {
                 var n = el.getAttribute('name') || '';
-                el.setAttribute('name', n.replace(/locations\[\d+\]\[offerings\]\[\d+\]/, 'locations[' + locIdx + '][offerings][' + oi + ']'));
+                el.setAttribute('name', n
+                    .replace(/venues\[\d+\]\[offerings\]\[\d+\]/, 'venues[' + locIdx + '][offerings][' + oi + ']')
+                    .replace(/locations\[\d+\]\[offerings\]\[\d+\]/, 'venues[' + locIdx + '][offerings][' + oi + ']')
+                );
             });
         });
     }

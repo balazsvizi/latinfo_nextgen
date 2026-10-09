@@ -6,7 +6,7 @@ declare(strict_types=1);
  *
  * @var int $evIndex
  * @var array<string, mixed> $eventRow
- * @var list<array{id:int,name:string}> $locationOptions
+ * @var list<array{id:int,name:string}> $locationOptions  (venue_id + név az iskola helyszíneiből)
  * @var array<string, string> $eventTypeLabels
  */
 $evIndex = (int) ($evIndex ?? 0);
@@ -15,7 +15,7 @@ $locationOptions = $locationOptions ?? [];
 $eventTypeLabels = $eventTypeLabels ?? dance_school_event_type_labels();
 $prefix = 'events[' . $evIndex . ']';
 $eventType = (string) ($eventRow['event_type'] ?? 'workshop');
-$locId = (int) ($eventRow['location_id'] ?? 0);
+$venueId = (int) ($eventRow['venue_id'] ?? ($eventRow['location_id'] ?? 0));
 
 $toLocal = static function (mixed $raw): string {
     $s = trim((string) ($raw ?? ''));
@@ -57,13 +57,14 @@ $ends = $toLocal($eventRow['ends_at'] ?? '');
             <input type="datetime-local" name="<?= h($prefix) ?>[ends_at]" value="<?= h($ends) ?>">
         </div>
         <div class="form-group">
-            <label>Helyszín</label>
-            <select name="<?= h($prefix) ?>[location_id]">
+            <label>Helyszín (bulihelyszín)</label>
+            <select name="<?= h($prefix) ?>[venue_id]">
                 <option value="0">— nincs —</option>
                 <?php foreach ($locationOptions as $loc): ?>
-                    <option value="<?= (int) $loc['id'] ?>"<?= $locId === (int) $loc['id'] ? ' selected' : '' ?>><?= h($loc['name']) ?></option>
+                    <option value="<?= (int) $loc['id'] ?>"<?= $venueId === (int) $loc['id'] ? ' selected' : '' ?>><?= h($loc['name']) ?></option>
                 <?php endforeach; ?>
             </select>
+            <p class="help" style="margin:0.35rem 0 0;">A lista az iskolahoz rendelt bulihelyszínekből jön.</p>
         </div>
         <div class="form-group">
             <label>Ár / info</label>

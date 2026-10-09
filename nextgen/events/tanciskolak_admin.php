@@ -130,7 +130,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <div class="events-list-head">
             <div class="events-list-head__start">
                 <h1 class="events-list-title card-title" style="margin:0;">Tánciskolák</h1>
-                <p class="help" style="margin:0.35rem 0 0;">Tánciskolák, helyszínek, tanárok és workshopok.</p>
+                <p class="help" style="margin:0.35rem 0 0;">Tánciskolák; helyszínek a bulihelyszínek közül; tánctanárok (DJ-szerű címkék); workshopok.</p>
                 <?php
                 $listLimitInForm = true;
                 $listLimitStandalone = true;

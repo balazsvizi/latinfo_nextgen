@@ -31,6 +31,13 @@ $role = (string) ($teacherRow['role_type'] ?? 'teacher');
                     <option value="<?= (int) $opt['id'] ?>"<?= $tagId === (int) $opt['id'] ? ' selected' : '' ?>><?= h($opt['name']) ?></option>
                 <?php endforeach; ?>
             </select>
+            <p class="help" style="margin:0.35rem 0 0;">
+                A tánctanárok a DJ-khez hasonló címkék.
+                <?php if ($tagId > 0): ?>
+                    <a href="<?= h(events_url('tanar_szerkeszt.php?id=') . $tagId) ?>" target="_blank" rel="noopener">Szerkesztés</a> ·
+                <?php endif; ?>
+                <a href="<?= h(events_url('tanar_letrehoz.php')) ?>" target="_blank" rel="noopener">Új tánctanár</a>
+            </p>
         </div>
         <div class="form-group">
             <label>Szerep</label>

@@ -12,6 +12,9 @@ declare(strict_types=1);
  */
 
 require_once dirname(__DIR__) . '/events/lib/dance_schools.php';
+require_once dirname(__DIR__) . '/events/lib/slug.php';
+require_once dirname(__DIR__) . '/events/lib/venue_request.php';
+require_once dirname(__DIR__) . '/events/lib/entity_quick_create.php';
 
 if (!defined('DANCE_SEED_STYLE_CUBAN')) {
     define('DANCE_SEED_STYLE_CUBAN', 'salsa_cuban');
@@ -105,20 +108,18 @@ function seed_offs(array $items): array
 }
 
 /**
+ * Seed helyszín → később bulihelyszínné (events_venues) alakul.
+ *
  * @return array{name:string,address:string,city:string,postal_code:string,country:string,notes:string,is_active:int,offerings:list<array<string,mixed>>}
  */
 function dance_schools_seed_loc(string $name, string $address, string $city, string $postal = '', array $offerings = [], string $notes = ''): array
 {
     return [
-        'id' => 0,
         'name' => $name,
         'address' => $address,
         'city' => $city,
         'postal_code' => $postal,
         'country' => 'Magyarország',
-        'latitude' => '',
-        'longitude' => '',
-        'google_maps_url' => '',
         'notes' => $notes,
         'is_active' => 1,
         'offerings' => $offerings,
@@ -129,6 +130,53 @@ function dance_schools_seed_loc(string $name, string $address, string $city, str
 function seed_loc(string $name, string $address, string $city, string $postal = '', array $offerings = [], string $notes = ''): array
 {
     return dance_schools_seed_loc($name, $address, $city, $postal, $offerings, $notes);
+}
+
+/**
+ * @param array<string, mixed> $loc
+ */
+function dance_schools_seed_find_or_create_venue(PDO $db, array $loc): int
+{
+    return dance_schools_find_or_create_venue_from_legacy($db, [
+        'name' => (string) ($loc['name'] ?? ''),
+        'address' => (string) ($loc['address'] ?? ''),
+        'city' => (string) ($loc['city'] ?? ''),
+        'postal_code' => (string) ($loc['postal_code'] ?? ''),
+        'country' => (string) ($loc['country'] ?? 'Magyarország'),
+        'google_maps_url' => (string) ($loc['google_maps_url'] ?? ''),
+        'latitude' => $loc['latitude'] ?? null,
+        'longitude' => $loc['longitude'] ?? null,
+        'notes' => (string) ($loc['notes'] ?? ''),
+    ]);
+}
+
+/**
+ * Seed locations[] → dance_school_venues sync payload.
+ *
+ * @param list<array<string, mixed>> $locations
+ * @return list<array<string, mixed>>
+ */
+function dance_schools_seed_locations_to_venues(PDO $db, array $locations): array
+{
+    $out = [];
+    foreach ($locations as $loc) {
+        if (!is_array($loc)) {
+            continue;
+        }
+        $venueId = dance_schools_seed_find_or_create_venue($db, $loc);
+        if ($venueId <= 0) {
+            continue;
+        }
+        $out[] = [
+            'id' => 0,
+            'venue_id' => $venueId,
+            'notes' => trim((string) ($loc['notes'] ?? '')),
+            'is_active' => !empty($loc['is_active']) ? 1 : 0,
+            'offerings' => is_array($loc['offerings'] ?? null) ? $loc['offerings'] : [],
+        ];
+    }
+
+    return $out;
 }
 
 /**
@@ -995,12 +1043,22 @@ function dance_schools_seed_run(PDO $db): array
             }
             $id = (int) ($save['id'] ?? 0);
             $locs = $pack['locations'] ?? [];
-            $syncL = dance_school_sync_locations($db, $id, is_array($locs) ? $locs : []);
+            $venueRows = dance_schools_seed_locations_to_venues($db, is_array($locs) ? $locs : []);
+            $syncL = dance_school_sync_venues($db, $id, $venueRows);
             if (!$syncL['ok']) {
                 throw new RuntimeException((string) ($syncL['error'] ?? 'loc fail'));
             }
             $evs = $pack['events'] ?? [];
             if (is_array($evs) && $evs !== []) {
+                foreach ($evs as &$ev) {
+                    if (!is_array($ev)) {
+                        continue;
+                    }
+                    if (!isset($ev['venue_id']) && isset($ev['location_id'])) {
+                        $ev['venue_id'] = (int) $ev['location_id'];
+                    }
+                }
+                unset($ev);
                 $syncE = dance_school_sync_events($db, $id, $evs);
                 if (!$syncE['ok']) {
                     throw new RuntimeException((string) ($syncE['error'] ?? 'ev fail'));
