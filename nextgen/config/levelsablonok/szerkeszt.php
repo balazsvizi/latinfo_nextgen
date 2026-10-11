@@ -156,6 +156,7 @@ require_once __DIR__ . '/../../partials/header.php';
         </div>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Mentés</button>
+            <a href="<?= h(nextgen_url('config/levelsablonok/letrehoz.php?copy_from=' . $id)) ?>" class="btn btn-secondary">Másolás</a>
             <a href="<?= h(nextgen_url('config/levelsablonok/')) ?>" class="btn btn-secondary">Vissza</a>
         </div>
     </form>

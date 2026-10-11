@@ -102,6 +102,7 @@ require_once __DIR__ . '/../../partials/header.php';
                     <td><?= h($s['létrehozva']) ?></td>
                     <td class="actions">
                         <a href="<?= h(nextgen_url('config/levelsablonok/szerkeszt.php?id=')) ?><?= $sid ?>" class="btn btn-sm btn-secondary">Szerkeszt</a>
+                        <a href="<?= h(nextgen_url('config/levelsablonok/letrehoz.php?copy_from=' . $sid)) ?>" class="btn btn-sm btn-secondary">Másolás</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

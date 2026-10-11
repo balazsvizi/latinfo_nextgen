@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
@@ -8,57 +10,103 @@ requireLogin();
 $db = getDb();
 ensure_levelsablonok_table($db);
 $hiba = '';
+$isCopy = false;
+$copyNotice = '';
+$copyFromId = (int) ($_GET['copy_from'] ?? 0);
+
+$form = [
+    'név' => '',
+    'kód' => '',
+    'tárgy' => '',
+    'cc_emails' => '',
+    'megjegyzés' => '',
+    'html_tartalom' => '',
+];
+
+if ($copyFromId > 0 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $copied = levelsablonok_load_copy_template($db, $copyFromId);
+    if ($copied !== null) {
+        $form = $copied;
+        $isCopy = true;
+        $copyNotice = 'Sablon másolva. Ellenőrizd a nevet és a kódot, majd mentsd.';
+    } else {
+        flash('error', 'A másolandó sablon nem található.');
+        redirect(nextgen_url('config/levelsablonok/'));
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nev = trim($_POST['név'] ?? '');
-    $kod = trim($_POST['kód'] ?? '');
-    $targy = trim($_POST['tárgy'] ?? '');
-    $ccEmails = trim((string) ($_POST['cc_emails'] ?? ''));
-    $megjegyzes = trim($_POST['megjegyzés'] ?? '');
-    $html = trim($_POST['html_tartalom'] ?? '');
+    if (($_POST['is_copy'] ?? '') === '1') {
+        $isCopy = true;
+        $copyFromId = (int) ($_POST['copy_from_id'] ?? $copyFromId);
+    }
 
-    if ($nev === '' || $kod === '' || $targy === '' || $html === '') {
+    $form['név'] = trim((string) ($_POST['név'] ?? ''));
+    $form['kód'] = trim((string) ($_POST['kód'] ?? ''));
+    $form['tárgy'] = trim((string) ($_POST['tárgy'] ?? ''));
+    $form['cc_emails'] = trim((string) ($_POST['cc_emails'] ?? ''));
+    $form['megjegyzés'] = trim((string) ($_POST['megjegyzés'] ?? ''));
+    $form['html_tartalom'] = trim((string) ($_POST['html_tartalom'] ?? ''));
+
+    if ($form['név'] === '' || $form['kód'] === '' || $form['tárgy'] === '' || $form['html_tartalom'] === '') {
         $hiba = 'Név, kód, tárgy és HTML tartalom kötelező.';
-    } elseif (!preg_match('/^[a-z0-9_.-]+$/i', $kod)) {
+    } elseif (!preg_match('/^[a-z0-9_.-]+$/i', $form['kód'])) {
         $hiba = 'A kód csak betűt, számot, pontot, kötőjelet és alsóvonalat tartalmazhat.';
     } else {
         try {
             $stmt = $db->prepare('INSERT INTO finance_email_templates (név, kód, tárgy, cc_emails, megjegyzés, html_tartalom) VALUES (?, ?, ?, ?, ?, ?)');
-            $stmt->execute([$nev, $kod, $targy, $ccEmails !== '' ? $ccEmails : null, $megjegyzes ?: null, $html]);
-            $id = (int)$db->lastInsertId();
-            rendszer_log('levélsablon', $id, 'Létrehozva', 'Kód: ' . $kod);
-            flash('success', 'Levélsablon létrehozva.');
+            $stmt->execute([
+                $form['név'],
+                $form['kód'],
+                $form['tárgy'],
+                $form['cc_emails'] !== '' ? $form['cc_emails'] : null,
+                $form['megjegyzés'] !== '' ? $form['megjegyzés'] : null,
+                $form['html_tartalom'],
+            ]);
+            $id = (int) $db->lastInsertId();
+            $logDetail = 'Kód: ' . $form['kód'];
+            if ($isCopy && $copyFromId > 0) {
+                $logDetail .= ' · Másolat forrás ID: ' . $copyFromId;
+            }
+            rendszer_log('levélsablon', $id, $isCopy ? 'Másolva' : 'Létrehozva', $logDetail);
+            flash('success', $isCopy ? 'Levélsablon másolat mentve.' : 'Levélsablon létrehozva.');
             redirect(nextgen_url('config/levelsablonok/szerkeszt.php?id=') . $id);
         } catch (PDOException $e) {
-            $hiba = ((string)$e->getCode() === '23000')
+            error_log('levelsablonok letrehoz: ' . $e->getMessage());
+            $hiba = ((string) $e->getCode() === '23000')
                 ? 'Ez a kód már foglalt.'
-                : ('Hiba: ' . $e->getMessage());
+                : 'Mentési hiba történt. Próbáld újra.';
         }
     }
 }
 
-$pageTitle = 'Új levélsablon';
+$pageTitle = $isCopy ? 'Levélsablon másolása' : 'Új levélsablon';
 require_once __DIR__ . '/../../partials/header.php';
 ?>
 <div class="card">
-    <h2>Új levélsablon</h2>
+    <h2><?= $isCopy ? 'Levélsablon másolása' : 'Új levélsablon' ?></h2>
+    <?php if ($copyNotice !== ''): ?><p class="alert alert-success"><?= h($copyNotice) ?></p><?php endif; ?>
     <?php if ($hiba): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
     <form method="post">
-        <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h($_POST['név'] ?? '') ?>" required></div>
-        <div class="form-group"><label>Kód *</label><input type="text" name="kód" value="<?= h($_POST['kód'] ?? '') ?>" required placeholder="pl. szamla_kikuldes"></div>
-        <div class="form-group"><label>Tárgy *</label><input type="text" name="tárgy" value="<?= h($_POST['tárgy'] ?? '') ?>" required placeholder="pl. Számla: {{szamla_szam}}"></div>
+        <?php if ($isCopy && $copyFromId > 0): ?>
+            <input type="hidden" name="is_copy" value="1">
+            <input type="hidden" name="copy_from_id" value="<?= $copyFromId ?>">
+        <?php endif; ?>
+        <div class="form-group"><label>Név *</label><input type="text" name="név" value="<?= h((string) $form['név']) ?>" required></div>
+        <div class="form-group"><label>Kód *</label><input type="text" name="kód" value="<?= h((string) $form['kód']) ?>" required placeholder="pl. szamla_kikuldes"></div>
+        <div class="form-group"><label>Tárgy *</label><input type="text" name="tárgy" value="<?= h((string) $form['tárgy']) ?>" required placeholder="pl. Számla: {{szamla_szam}}"></div>
         <div class="form-group">
             <label>Alapértelmezett CC</label>
-            <input type="text" name="cc_emails" value="<?= h((string) ($_POST['cc_emails'] ?? '')) ?>" placeholder="masolat@pelda.hu, masik@pelda.hu">
+            <input type="text" name="cc_emails" value="<?= h((string) $form['cc_emails']) ?>" placeholder="masolat@pelda.hu, masik@pelda.hu">
             <p class="help">Opcionális. Az esemény levélküldőben a sablon CC mezőjeként jelenik meg.</p>
         </div>
-        <div class="form-group"><label>Megjegyzés</label><input type="text" name="megjegyzés" value="<?= h($_POST['megjegyzés'] ?? '') ?>"></div>
+        <div class="form-group"><label>Megjegyzés</label><input type="text" name="megjegyzés" value="<?= h((string) $form['megjegyzés']) ?>"></div>
         <div class="form-group">
             <label>HTML szerkesztő *</label>
-            <textarea name="html_tartalom" class="js-html-editor-source" rows="14" required placeholder="<h1>Példa</h1>"><?= h($_POST['html_tartalom'] ?? '') ?></textarea>
+            <textarea name="html_tartalom" class="js-html-editor-source" rows="14" required placeholder="<h1>Példa</h1>"><?= h((string) $form['html_tartalom']) ?></textarea>
         </div>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Mentés</button>
+            <button type="submit" class="btn btn-primary"><?= $isCopy ? 'Másolat mentése' : 'Mentés' ?></button>
             <a href="<?= h(nextgen_url('config/levelsablonok/')) ?>" class="btn btn-secondary">Mégse</a>
         </div>
     </form>
