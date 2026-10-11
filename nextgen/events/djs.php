@@ -7,6 +7,8 @@ require_once __DIR__ . '/lib/event_public_djs.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
 require_once __DIR__ . '/lib/public_djs_content.php';
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+require_once dirname(__DIR__) . '/user/includes/auth.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 $D = events_public_djs_strings($lang);
@@ -34,6 +36,32 @@ $publishedStatus = events_public_post_status();
 $djRowsAll = events_public_dj_catalog($db, $publishedStatus, null);
 $hubStats = events_public_dj_hub_stats($db, $publishedStatus, $djRowsAll);
 $djRows = $list_limit === null ? $djRowsAll : array_slice($djRowsAll, 0, $list_limit);
+
+$publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteDialogLang = $lang;
+$favoriteLang = $lang;
+$favoriteEventPicker = null;
+$catalogFavActive = [];
+$catalogFavCounts = [];
+if ($publicFavoritesEnabled && $djRows !== []) {
+    $djIds = [];
+    $favPairs = [];
+    foreach ($djRows as $djRow) {
+        $did = (int) ($djRow['id'] ?? 0);
+        if ($did <= 0) {
+            continue;
+        }
+        $djIds[] = $did;
+        $favPairs[] = ['type' => LATINFO_FAVORITE_TYPE_DJ, 'id' => $did];
+    }
+    $catalogFavActive = latinfo_favorites_active_set_for_actor(
+        $db,
+        latinfo_favorites_current_actor_key(),
+        $favPairs
+    );
+    $catalogFavCounts = latinfo_favorites_counts_for_type($db, LATINFO_FAVORITE_TYPE_DJ, $djIds);
+}
+
 $hubCms = events_public_djs_hub_load($db);
 $contentBefore = trim((string) ($hubCms['content_before'] ?? ''));
 $contentAfter = trim((string) ($hubCms['content_after'] ?? ''));
@@ -119,7 +147,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page event-public-page--catalog">
+<body class="event-public-page event-public-page--catalog"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <?php require __DIR__ . '/partials/admin_float_tools.php'; ?>
 <div class="event-shell">
 <article class="event-public organizer-public djs-public">
@@ -205,44 +233,59 @@ header('Content-Type: text/html; charset=UTF-8');
                     $cardMod = $upcoming > 0 ? ' djs-public__card--live' : '';
                     ?>
                     <li
-                        class="djs-public__cell"
+                        class="djs-public__cell<?= $publicFavoritesEnabled ? ' djs-public__cell--with-fav' : '' ?>"
                         data-name="<?= h($nameSort) ?>"
                         data-events="<?= $total ?>"
                         data-upcoming="<?= $upcoming ?>"
                     >
-                        <a class="djs-public__card djs-public__card--person<?= h($cardMod) ?>" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
-                            <span class="djs-public__card-media<?= $djMediaIsLogo ? ' djs-public__card-media--logo' : '' ?>" aria-hidden="true">
-                                <?php if ($djPhotoAbs !== ''): ?>
-                                    <img class="djs-public__card-photo<?= $djMediaIsLogo ? ' djs-public__card-photo--logo' : '' ?>" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async"<?= $djMediaStyle !== '' ? ' style="' . h($djMediaStyle) . '"' : '' ?>>
-                                <?php else: ?>
-                                    <span class="djs-public__card-initials"><?= h($initials) ?></span>
-                                <?php endif; ?>
-                            </span>
-                            <span class="djs-public__card-body">
-                                <span class="djs-public__card-heading">
-                                    <span class="djs-public__card-name"><?= h($djName) ?></span>
-                                    <?php if ($djBrandLogo !== ''): ?>
-                                        <span class="djs-public__card-logo" aria-hidden="true">
-                                            <img class="djs-public__card-logo-img" src="<?= h($djBrandLogo) ?>" alt="" loading="lazy" decoding="async"<?= $djBrandStyle !== '' ? ' style="' . h($djBrandStyle) . '"' : '' ?>>
+                        <div class="djs-public__card-wrap">
+                            <a class="djs-public__card djs-public__card--person<?= h($cardMod) ?>" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $djName) ?>">
+                                <span class="djs-public__card-media<?= $djMediaIsLogo ? ' djs-public__card-media--logo' : '' ?>" aria-hidden="true">
+                                    <?php if ($djPhotoAbs !== ''): ?>
+                                        <img class="djs-public__card-photo<?= $djMediaIsLogo ? ' djs-public__card-photo--logo' : '' ?>" src="<?= h($djPhotoAbs) ?>" alt="" loading="lazy" decoding="async"<?= $djMediaStyle !== '' ? ' style="' . h($djMediaStyle) . '"' : '' ?>>
+                                    <?php else: ?>
+                                        <span class="djs-public__card-initials"><?= h($initials) ?></span>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="djs-public__card-body">
+                                    <span class="djs-public__card-heading">
+                                        <span class="djs-public__card-name"><?= h($djName) ?></span>
+                                        <?php if ($djBrandLogo !== ''): ?>
+                                            <span class="djs-public__card-logo" aria-hidden="true">
+                                                <img class="djs-public__card-logo-img" src="<?= h($djBrandLogo) ?>" alt="" loading="lazy" decoding="async"<?= $djBrandStyle !== '' ? ' style="' . h($djBrandStyle) . '"' : '' ?>>
+                                            </span>
+                                        <?php endif; ?>
+                                    </span>
+                                    <span class="djs-public__card-stats">
+                                        <span class="djs-public__card-stat djs-public__card-stat--upcoming">
+                                            <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
+                                        </span>
+                                        <span class="djs-public__card-stat djs-public__card-stat--muted">
+                                            <?= h((string) ($D['events_total_lead'] ?? '')) ?>
+                                            <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
+                                        </span>
+                                    </span>
+                                    <?php if ($nextDisplay !== ''): ?>
+                                        <span class="djs-public__card-next">
+                                            <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
                                         </span>
                                     <?php endif; ?>
                                 </span>
-                                <span class="djs-public__card-stats">
-                                    <span class="djs-public__card-stat djs-public__card-stat--upcoming">
-                                        <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
-                                    </span>
-                                    <span class="djs-public__card-stat djs-public__card-stat--muted">
-                                        <?= h((string) ($D['events_total_lead'] ?? '')) ?>
-                                        <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
-                                    </span>
-                                </span>
-                                <?php if ($nextDisplay !== ''): ?>
-                                    <span class="djs-public__card-next">
-                                        <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
-                                    </span>
-                                <?php endif; ?>
-                            </span>
-                        </a>
+                            </a>
+                            <?php if ($publicFavoritesEnabled && $djId > 0): ?>
+                                <?php
+                                $favoriteEntityType = LATINFO_FAVORITE_TYPE_DJ;
+                                $favoriteEntityId = $djId;
+                                $favoriteState = [
+                                    'active' => isset($catalogFavActive[LATINFO_FAVORITE_TYPE_DJ . ':' . $djId]),
+                                    'count' => (int) ($catalogFavCounts[$djId] ?? 0),
+                                ];
+                                $favoriteExtraClass = 'djs-public__card-fav';
+                                require __DIR__ . '/partials/public_favorite_heart.php';
+                                unset($favoriteState, $favoriteExtraClass);
+                                ?>
+                            <?php endif; ?>
+                        </div>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -416,5 +459,6 @@ require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
 <?php require __DIR__ . '/partials/public_dj_spotlight_script.php'; ?>
+<?php require __DIR__ . '/partials/public_favorite_footer.php'; ?>
 </body>
 </html>
