@@ -3652,6 +3652,28 @@ a.event-hero-chip--category-link:hover {
     display: none !important;
 }
 
+.djs-public__card-wrap {
+    position: relative;
+    height: 100%;
+}
+
+.djs-public__cell--with-fav .djs-public__card {
+    padding-right: 3.35rem;
+}
+
+.djs-public__card-fav {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.5rem;
+    z-index: 2;
+}
+
+.djs-public__card-fav .public-favorite__btn {
+    padding: 0.3rem 0.55rem;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1px 3px rgba(45, 58, 40, 0.08);
+}
+
 .djs-public__card {
     display: flex;
     flex-direction: column;

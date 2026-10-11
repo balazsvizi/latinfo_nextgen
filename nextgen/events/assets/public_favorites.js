@@ -410,6 +410,7 @@ function updateWidget(root, active, count) {
             return;
         }
         ev.preventDefault();
+        ev.stopPropagation();
         if (btn.disabled) {
             return;
         }

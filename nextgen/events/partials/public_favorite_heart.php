@@ -2,25 +2,24 @@
 declare(strict_types=1);
 
 /**
- * Szívecske gomb egy entitás nyilvános oldalán.
+ * Szívecske gomb egy entitás nyilvános oldalán / listán.
  *
  * @var string $favoriteEntityType  event|organizer|venue|dj
  * @var int $favoriteEntityId
  * @var string $favoriteLang
  * @var array<string,mixed>|null $favoriteEventPicker  esemény oldal: kapcsolódó választék
+ * @var array{active?:bool,count?:int}|null $favoriteState  előre betöltött állapot (lista batch)
+ * @var string $favoriteExtraClass  opcionális CSS osztály a wrapperen
  */
 
 $favoriteEntityType = latinfo_favorites_normalize_type((string) ($favoriteEntityType ?? '')) ?? '';
 $favoriteEntityId = (int) ($favoriteEntityId ?? 0);
 $favoriteLang = ($favoriteLang ?? 'hu') === 'en' ? 'en' : 'hu';
 $favoriteEventPicker = is_array($favoriteEventPicker ?? null) ? $favoriteEventPicker : null;
+$favoriteState = is_array($favoriteState ?? null) ? $favoriteState : null;
+$favoriteExtraClass = trim((string) ($favoriteExtraClass ?? ''));
 
 if ($favoriteEntityType === '' || $favoriteEntityId <= 0) {
-    return;
-}
-
-$dbFav = getDb();
-if (!latinfo_favorites_ensure_schema($dbFav) || !latinfo_favorites_public_enabled($dbFav)) {
     return;
 }
 
@@ -28,7 +27,19 @@ if (!function_exists('user_is_logged_in')) {
     require_once dirname(__DIR__, 2) . '/user/includes/auth.php';
 }
 
-$state = latinfo_favorites_state($dbFav, $favoriteEntityType, $favoriteEntityId);
+if ($favoriteState !== null) {
+    $state = [
+        'active' => !empty($favoriteState['active']),
+        'count' => max(0, (int) ($favoriteState['count'] ?? 0)),
+    ];
+} else {
+    $dbFav = getDb();
+    if (!latinfo_favorites_ensure_schema($dbFav) || !latinfo_favorites_public_enabled($dbFav)) {
+        return;
+    }
+    $state = latinfo_favorites_state($dbFav, $favoriteEntityType, $favoriteEntityId);
+}
+
 $isLoggedIn = user_is_logged_in();
 $isEventPicker = $favoriteEntityType === LATINFO_FAVORITE_TYPE_EVENT && $favoriteEventPicker !== null;
 if ($isEventPicker && !empty($favoriteEventPicker['items']) && is_array($favoriteEventPicker['items'])) {
@@ -46,9 +57,10 @@ $pickerJson = $isEventPicker
 $labelAdd = $favoriteLang === 'en' ? 'Add to favorites' : 'Kedvencnek jelölés';
 $labelRemove = $favoriteLang === 'en' ? 'Remove from favorites' : 'Kedvenc törlése';
 $ariaLabel = $state['active'] ? $labelRemove : $labelAdd;
+$wrapperClass = 'public-favorite' . ($favoriteExtraClass !== '' ? ' ' . $favoriteExtraClass : '');
 ?>
 <div
-    class="public-favorite"
+    class="<?= h($wrapperClass) ?>"
     data-public-favorite
     data-mode="<?= h($mode) ?>"
     data-entity-type="<?= h($favoriteEntityType) ?>"

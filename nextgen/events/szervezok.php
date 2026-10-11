@@ -6,6 +6,8 @@ require_once __DIR__ . '/lib/event_public_lang.php';
 require_once __DIR__ . '/lib/event_public_organizers.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/public_event_filters.php';
+require_once dirname(__DIR__) . '/lib/user/favorites.php';
+require_once dirname(__DIR__) . '/user/includes/auth.php';
 
 $lang = events_public_resolve_megjelenit_lang();
 events_public_send_noindex_follow_header();
@@ -18,6 +20,31 @@ $listLimitValue = $listLimitParsed['value'];
 $listTotalInDb = events_public_organizer_total_count($db);
 $limitParams = events_public_catalog_get_params($listLimitValue);
 $orgRows = events_public_organizer_catalog($db, events_public_post_status(), $list_limit);
+
+$publicFavoritesEnabled = latinfo_favorites_ensure_schema($db) && latinfo_favorites_public_enabled($db);
+$favoriteDialogLang = $lang;
+$favoriteLang = $lang;
+$favoriteEventPicker = null;
+$catalogFavActive = [];
+$catalogFavCounts = [];
+if ($publicFavoritesEnabled && $orgRows !== []) {
+    $orgIds = [];
+    $favPairs = [];
+    foreach ($orgRows as $orgRow) {
+        $oid = (int) ($orgRow['id'] ?? 0);
+        if ($oid <= 0) {
+            continue;
+        }
+        $orgIds[] = $oid;
+        $favPairs[] = ['type' => LATINFO_FAVORITE_TYPE_ORGANIZER, 'id' => $oid];
+    }
+    $catalogFavActive = latinfo_favorites_active_set_for_actor(
+        $db,
+        latinfo_favorites_current_actor_key(),
+        $favPairs
+    );
+    $catalogFavCounts = latinfo_favorites_counts_for_type($db, LATINFO_FAVORITE_TYPE_ORGANIZER, $orgIds);
+}
 
 require_once __DIR__ . '/lib/public_traffic.php';
 $eventsPublicTrafficPageKey = 'organizers';
@@ -56,7 +83,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?= events_public_favicon_head_markup() ?>
     <link rel="stylesheet" href="<?= h($cssUrl) ?>">
 </head>
-<body class="event-public-page event-public-page--catalog">
+<body class="event-public-page event-public-page--catalog"<?php if ($publicFavoritesEnabled): ?> data-favorites-ajax="<?= h(events_url('ajax_favorite.php')) ?>"<?php endif; ?>>
 <div class="event-shell">
 <article class="event-public organizer-public djs-public organizers-public">
     <header class="event-public__hero">
@@ -111,28 +138,43 @@ header('Content-Type: text/html; charset=UTF-8');
                     $nameSort = mb_strtolower($orgName, 'UTF-8');
                     ?>
                     <li
-                        class="djs-public__cell"
+                        class="djs-public__cell<?= $publicFavoritesEnabled ? ' djs-public__cell--with-fav' : '' ?>"
                         data-name="<?= h($nameSort) ?>"
                         data-events="<?= $total ?>"
                         data-upcoming="<?= $upcoming ?>"
                     >
-                        <a class="djs-public__card" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $orgName) ?>">
-                            <span class="djs-public__card-icon" aria-hidden="true">🎪</span>
-                            <span class="djs-public__card-name"><?= h($orgName) ?></span>
-                            <span class="djs-public__card-stats">
-                                <span class="djs-public__card-stat djs-public__card-stat--muted">
-                                    <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
+                        <div class="djs-public__card-wrap">
+                            <a class="djs-public__card" href="<?= h($href) ?>" aria-label="<?= h($D['card_aria'] . ': ' . $orgName) ?>">
+                                <span class="djs-public__card-icon" aria-hidden="true">🎪</span>
+                                <span class="djs-public__card-name"><?= h($orgName) ?></span>
+                                <span class="djs-public__card-stats">
+                                    <span class="djs-public__card-stat djs-public__card-stat--muted">
+                                        <strong><?= $total ?></strong> <?= h($D['events_total']) ?>
+                                    </span>
+                                    <span class="djs-public__card-stat djs-public__card-stat--upcoming">
+                                        <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
+                                    </span>
                                 </span>
-                                <span class="djs-public__card-stat djs-public__card-stat--upcoming">
-                                    <strong><?= $upcoming ?></strong> <?= h($D['events_upcoming']) ?>
-                                </span>
-                            </span>
-                            <?php if ($nextDisplay !== ''): ?>
-                                <span class="djs-public__card-next">
-                                    <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
-                                </span>
+                                <?php if ($nextDisplay !== ''): ?>
+                                    <span class="djs-public__card-next">
+                                        <?= h($D['next_event']) ?>: <?= h($nextDisplay) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </a>
+                            <?php if ($publicFavoritesEnabled && $orgId > 0): ?>
+                                <?php
+                                $favoriteEntityType = LATINFO_FAVORITE_TYPE_ORGANIZER;
+                                $favoriteEntityId = $orgId;
+                                $favoriteState = [
+                                    'active' => isset($catalogFavActive[LATINFO_FAVORITE_TYPE_ORGANIZER . ':' . $orgId]),
+                                    'count' => (int) ($catalogFavCounts[$orgId] ?? 0),
+                                ];
+                                $favoriteExtraClass = 'djs-public__card-fav';
+                                require __DIR__ . '/partials/public_favorite_heart.php';
+                                unset($favoriteState, $favoriteExtraClass);
+                                ?>
                             <?php endif; ?>
-                        </a>
+                        </div>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -199,5 +241,6 @@ $listLimitDefault = EVENTS_ADMIN_LIST_DEFAULT_LIMIT;
 require __DIR__ . '/partials/admin_list_display_limit_script.php';
 ?>
 <?php endif; ?>
+<?php require __DIR__ . '/partials/public_favorite_footer.php'; ?>
 </body>
 </html>
