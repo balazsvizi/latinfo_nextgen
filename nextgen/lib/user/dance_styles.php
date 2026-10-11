@@ -113,21 +113,13 @@ function latinfo_dance_style_liking_label(int $liking): string
 }
 
 /**
- * Stílus megjelenítési név: nagybetűvel kezdődik; Társastánc → Zouk.
+ * Stílus megjelenítési név: nagybetűvel kezdődik.
  */
 function latinfo_dance_style_format_name(string $name): string
 {
     $name = trim($name);
     if ($name === '') {
         return '';
-    }
-
-    $folded = function_exists('mb_strtolower')
-        ? mb_strtolower($name, 'UTF-8')
-        : strtolower($name);
-
-    if ($folded === 'társastánc' || $folded === 'tarsastanc') {
-        return 'Zouk';
     }
 
     if (function_exists('mb_substr') && function_exists('mb_strtoupper')) {
@@ -138,6 +130,15 @@ function latinfo_dance_style_format_name(string $name): string
     }
 
     return ucfirst($name);
+}
+
+function latinfo_dance_style_is_excluded_from_account(string $name): bool
+{
+    $folded = function_exists('mb_strtolower')
+        ? mb_strtolower(trim($name), 'UTF-8')
+        : strtolower(trim($name));
+
+    return $folded === 'társastánc' || $folded === 'tarsastanc';
 }
 
 /**
@@ -181,35 +182,16 @@ function latinfo_dance_style_catalog(PDO $db): array
     }
 
     $out = [];
-    $zoukId = 0;
-    $tarsaIds = [];
-
     foreach ($rows as $row) {
         $id = (int) ($row['id'] ?? 0);
         $rawName = trim((string) ($row['name'] ?? ''));
         if ($id <= 0 || $rawName === '') {
             continue;
         }
-
-        $folded = function_exists('mb_strtolower')
-            ? mb_strtolower($rawName, 'UTF-8')
-            : strtolower($rawName);
-
-        if ($folded === 'zouk') {
-            $zoukId = $id;
+        if (latinfo_dance_style_is_excluded_from_account($rawName)) {
+            continue;
         }
-        if ($folded === 'társastánc' || $folded === 'tarsastanc') {
-            $tarsaIds[] = $id;
-        }
-
         $out[$id] = latinfo_dance_style_format_name($rawName);
-    }
-
-    // Társastánc helyett Zouk: ha már van Zouk, a Társastánc sort kihagyjuk.
-    if ($zoukId > 0) {
-        foreach ($tarsaIds as $tarsaId) {
-            unset($out[$tarsaId]);
-        }
     }
 
     asort($out, SORT_FLAG_CASE | SORT_NATURAL);
