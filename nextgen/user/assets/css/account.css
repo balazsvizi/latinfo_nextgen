@@ -436,7 +436,26 @@ body.event-public-page .user-account-shell {
 }
 
 .user-favorites__lead {
-    margin-bottom: 0;
+    margin-bottom: 0.55rem;
+}
+
+.user-favorites__browse {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.85rem;
+    margin: 0;
+}
+
+.user-favorites__browse-link {
+    font-size: 0.86rem;
+    font-weight: 650;
+    color: var(--ua-accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+
+.user-favorites__browse-link:hover {
+    border-bottom-color: currentColor;
 }
 
 .user-favorites__total {
@@ -494,9 +513,17 @@ body.event-public-page .user-account-shell {
 .user-favorites-empty-state__text {
     margin: 0 0 1.1rem;
     max-width: 26rem;
-    font-size: 0.9rem;
-    color: var(--ua-muted);
+    font-size: 0.95rem;
+    font-weight: 650;
+    color: var(--ua-brand);
     line-height: 1.45;
+}
+
+.user-favorites-empty-state__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.55rem;
 }
 
 .user-favorites-empty-state__cta {
@@ -547,6 +574,11 @@ body.event-public-page .user-account-shell {
     color: var(--ua-brand);
     background: var(--ua-accent-soft);
     border: 1px solid transparent;
+    text-decoration: none;
+}
+
+a.user-favorites-group__badge:hover {
+    border-color: currentColor;
 }
 
 .user-favorites-group__badge--event {

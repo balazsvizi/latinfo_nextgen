@@ -482,6 +482,18 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php endif; ?>
         </section>
 
+        <?php
+        $favoritesBrowseUrls = [
+            LATINFO_FAVORITE_TYPE_DJ => events_public_djs_page_url('hu'),
+            LATINFO_FAVORITE_TYPE_ZENEKAR => events_public_zenekarok_page_url('hu'),
+            LATINFO_FAVORITE_TYPE_ORGANIZER => events_public_organizers_catalog_page_url('hu'),
+        ];
+        $favoritesBrowseLabels = [
+            LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
+            LATINFO_FAVORITE_TYPE_ZENEKAR => 'Előadók',
+            LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervezők',
+        ];
+        ?>
         <section
             class="user-account-section user-favorites"
             aria-labelledby="user-favorites-heading"
@@ -491,6 +503,11 @@ header('Content-Type: text/html; charset=UTF-8');
                 <div class="user-favorites__titles">
                     <h2 id="user-favorites-heading">Kedvenceim</h2>
                     <p class="user-account-help user-favorites__lead">A szívecskéid egy helyen. A szám minden látogató összesített kedvelését mutatja.</p>
+                    <nav class="user-favorites__browse" aria-label="Kedvencek böngészése">
+                        <?php foreach ($favoritesBrowseLabels as $browseType => $browseLabel): ?>
+                            <a class="user-favorites__browse-link" href="<?= h($favoritesBrowseUrls[$browseType]) ?>"><?= h($browseLabel) ?></a>
+                        <?php endforeach; ?>
+                    </nav>
                 </div>
                 <div class="user-favorites__total" title="Kedvenceid száma">
                     <span class="user-favorites__total-heart" aria-hidden="true">♥</span>
@@ -501,9 +518,13 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php if ($favoritesTotal === 0): ?>
                 <div class="user-favorites-empty-state">
                     <span class="user-favorites-empty-state__heart" aria-hidden="true">♡</span>
-                    <p class="user-favorites-empty-state__title">Még nincs kedvenced</p>
-                    <p class="user-favorites-empty-state__text">Eseményeken, szervezőknél, helyszíneken, DJ-knél és előadóknál a ♥ gombbal mentheted ide a kedvenceidet.</p>
-                    <a class="user-favorites-empty-state__cta" href="<?= h(events_public_home_page_url('hu')) ?>">Naptár böngészése</a>
+                    <p class="user-favorites-empty-state__title">Még nem vettél fel kedvenceket.</p>
+                    <p class="user-favorites-empty-state__text">Vedd fel a kedvenceid most!</p>
+                    <div class="user-favorites-empty-state__links">
+                        <?php foreach ($favoritesBrowseLabels as $browseType => $browseLabel): ?>
+                            <a class="user-favorites-empty-state__cta" href="<?= h($favoritesBrowseUrls[$browseType]) ?>"><?= h($browseLabel) ?></a>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             <?php else: ?>
                 <?php foreach ($favoritesByType as $typeKey => $items): ?>
@@ -513,7 +534,14 @@ header('Content-Type: text/html; charset=UTF-8');
                     <div class="user-favorites-group" data-fav-group="<?= h((string) $typeKey) ?>">
                         <div class="user-favorites-group__head">
                             <h3 class="user-favorites-group__title">
-                                <span class="user-favorites-group__badge user-favorites-group__badge--<?= h((string) $typeKey) ?>"><?= h($typeLabels[$typeKey] ?? $typeKey) ?></span>
+                                <?php if (isset($favoritesBrowseUrls[$typeKey])): ?>
+                                    <a
+                                        class="user-favorites-group__badge user-favorites-group__badge--<?= h((string) $typeKey) ?>"
+                                        href="<?= h($favoritesBrowseUrls[$typeKey]) ?>"
+                                    ><?= h($typeLabels[$typeKey] ?? $typeKey) ?></a>
+                                <?php else: ?>
+                                    <span class="user-favorites-group__badge user-favorites-group__badge--<?= h((string) $typeKey) ?>"><?= h($typeLabels[$typeKey] ?? $typeKey) ?></span>
+                                <?php endif; ?>
                             </h3>
                             <span class="user-favorites-group__count" data-fav-group-count><?= count($items) ?></span>
                         </div>
