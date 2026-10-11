@@ -176,6 +176,9 @@ $maxDots = 3;
                 <?php foreach ($selectedEvents as $item): ?>
                     <?php
                     $barClass = 'mcal__event-bar';
+                    if (!empty($item['preliminary'])) {
+                        $barClass .= ' mcal__event-bar--preliminary';
+                    }
                     if (($item['changeType'] ?? '') === 'cancelled') {
                         $barClass .= ' mcal__event-bar--cancelled';
                     } elseif (($item['changeType'] ?? '') === 'modified') {
@@ -194,6 +197,9 @@ $maxDots = 3;
                     >
                         <span class="mcal__event-meta"><?= h((string) $item['meta']) ?></span>
                         <span class="<?= h($barClass) ?>" style="--mcal-event-accent: <?= h((string) $item['accent']) ?>">
+                            <?php if (($item['preliminaryBadge'] ?? '') !== ''): ?>
+                                <span class="mcal__event-preliminary"><?= h((string) $item['preliminaryBadge']) ?></span>
+                            <?php endif; ?>
                             <?php if (($item['changeBadge'] ?? '') !== ''): ?>
                                 <span class="mcal__event-change<?= ($item['changeType'] ?? '') === 'cancelled' ? ' mcal__event-change--cancelled' : (($item['changeType'] ?? '') === 'modified' ? ' mcal__event-change--modified' : '') ?>"><?= h((string) $item['changeBadge']) ?></span>
                             <?php endif; ?>
@@ -309,16 +315,20 @@ echo json_encode($headings, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
 
     function renderEventHtml(it) {
         var barClass = 'mcal__event-bar';
+        if (it.preliminary) barClass += ' mcal__event-bar--preliminary';
         if (it.changeType === 'cancelled') barClass += ' mcal__event-bar--cancelled';
         else if (it.changeType === 'modified') barClass += ' mcal__event-bar--modified';
         var nameClass = 'mcal__event-name';
         if (it.nameStruck) nameClass += ' mcal__event-name--struck';
         var badge = '';
+        if (it.preliminaryBadge) {
+            badge += '<span class="mcal__event-preliminary">' + esc(it.preliminaryBadge) + '</span>';
+        }
         if (it.changeBadge) {
             var bClass = 'mcal__event-change';
             if (it.changeType === 'cancelled') bClass += ' mcal__event-change--cancelled';
             else if (it.changeType === 'modified') bClass += ' mcal__event-change--modified';
-            badge = '<span class="' + bClass + '">' + esc(it.changeBadge) + '</span>';
+            badge += '<span class="' + bClass + '">' + esc(it.changeBadge) + '</span>';
         }
         var city = it.city ? '<span class="mcal__event-city">' + esc(it.city) + '</span>' : '';
         return '<a class="mcal__event js-cal-event-preview" href="' + esc(it.url) + '" data-preview-id="' + esc(String(it.id)) + '" aria-haspopup="dialog">'

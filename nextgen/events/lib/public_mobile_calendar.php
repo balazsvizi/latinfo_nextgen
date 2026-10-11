@@ -167,7 +167,9 @@ function events_public_mobile_calendar_outside_budapest_city(array $ev): string
  *   city: string,
  *   changeBadge: string,
  *   changeType: string,
- *   nameStruck: bool
+ *   nameStruck: bool,
+ *   preliminary: bool,
+ *   preliminaryBadge: string
  * }>
  */
 function events_public_mobile_calendar_day_event_payload(
@@ -176,6 +178,7 @@ function events_public_mobile_calendar_day_event_payload(
     string $lang
 ): array {
     require_once __DIR__ . '/event_change.php';
+    require_once __DIR__ . '/event_status.php';
     $out = [];
     foreach ($dayEvents as $ev) {
         $eid = (int) ($ev['id'] ?? 0);
@@ -190,6 +193,7 @@ function events_public_mobile_calendar_day_event_payload(
             $changeBadge = events_event_change_calendar_badge_label($ev, $lang);
             $nameStruck = $changeType === events_event_change_type_cancelled();
         }
+        $isPreliminary = events_admin_calendar_event_is_preliminary($ev);
         $out[] = [
             'id' => $eid,
             'name' => (string) ($ev['event_name'] ?? ''),
@@ -200,6 +204,10 @@ function events_public_mobile_calendar_day_event_payload(
             'changeBadge' => $changeBadge,
             'changeType' => $changeType,
             'nameStruck' => $nameStruck,
+            'preliminary' => $isPreliminary,
+            'preliminaryBadge' => $isPreliminary
+                ? ($lang === 'en' ? 'Preliminary' : events_post_status_label(events_preliminary_post_status()))
+                : '',
         ];
     }
 

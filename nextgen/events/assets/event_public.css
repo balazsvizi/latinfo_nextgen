@@ -7616,6 +7616,27 @@ body.event-public-page--mcal .home-public__filters-panel--mcal[open] .home-publi
     opacity: 0.92;
 }
 
+.mcal__event-bar--preliminary {
+    opacity: 0.72;
+    filter: saturate(0.7);
+}
+
+.mcal__event-preliminary {
+    display: inline-block;
+    order: 0;
+    flex-shrink: 0;
+    padding: 0.08rem 0.32rem;
+    border-radius: 0.25rem;
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: #075985;
+    background: #e0f2fe;
+    border: 1px solid rgba(125, 211, 252, 0.85);
+}
+
 .mcal__event-name {
     order: 1;
     flex: 1 1 auto;

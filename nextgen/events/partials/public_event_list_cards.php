@@ -74,7 +74,7 @@ if (!defined('EVENTS_VIEW_SOURCE_LIST')) {
                     <div class="home-public__list-body">
                         <?php require __DIR__ . '/public_event_list_change.php'; ?>
                         <?php if ($isPreliminaryCard): ?>
-                            <span class="home-public__list-preliminary-badge">Előzetes</span>
+                            <span class="home-public__list-preliminary-badge"><?= h(($listLang ?? 'hu') === 'en' ? 'Preliminary' : 'Előzetes') ?></span>
                         <?php endif; ?>
                         <span class="home-public__list-date"><?= h($dateLabel) ?></span>
                         <span class="<?= h($listNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
