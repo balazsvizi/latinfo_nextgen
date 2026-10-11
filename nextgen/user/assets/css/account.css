@@ -1143,10 +1143,12 @@ body.event-public-page .user-account-shell {
         linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(232, 241, 229, 0.55));
 }
 
-.user-dance-style.is-ignored {
+.user-dance-style.is-ignored,
+.user-dance-style.is-collapsed {
     border-color: #d5d8d2;
     background: rgba(244, 246, 242, 0.55);
     box-shadow: none;
+    padding-bottom: 0.85rem;
 }
 
 .user-dance-style__top {
@@ -1155,6 +1157,10 @@ body.event-public-page .user-account-shell {
     justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 0.7rem;
+}
+
+.user-dance-style.is-collapsed .user-dance-style__top {
+    margin-bottom: 0;
 }
 
 .user-dance-style__name {
@@ -1171,7 +1177,7 @@ body.event-public-page .user-account-shell {
 .user-dance-style__ignore {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.55rem;
     margin: 0;
     cursor: pointer;
     flex-shrink: 0;
@@ -1190,6 +1196,32 @@ body.event-public-page .user-account-shell {
 }
 
 .user-dance-style__ignore-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    flex: 0 0 auto;
+}
+
+.user-dance-style__ignore-state {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #a0a89a;
+    min-width: 1.5rem;
+    text-align: center;
+    transition: color 0.18s ease;
+}
+
+.user-dance-style__ignore:not(.is-on) .user-dance-style__ignore-state--off {
+    color: #5f6b58;
+}
+
+.user-dance-style__ignore.is-on .user-dance-style__ignore-state--on {
+    color: #6a5540;
+}
+
+.user-dance-style__ignore-switch {
     position: relative;
     width: 40px;
     height: 24px;
@@ -1244,16 +1276,28 @@ body.event-public-page .user-account-shell {
     outline-offset: 2px;
 }
 
+.user-dance-style__collapse {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 0.28s ease, opacity 0.2s ease;
+}
+
+.user-dance-style.is-collapsed .user-dance-style__collapse {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.user-dance-style__collapse > .user-dance-style__fields {
+    overflow: hidden;
+    min-height: 0;
+}
+
 .user-dance-style__fields {
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
-    transition: opacity 0.18s ease;
-}
-
-.user-dance-style.is-ignored .user-dance-style__fields {
-    opacity: 0.42;
-    pointer-events: none;
 }
 
 .user-dance-style__metric-head {
@@ -1265,10 +1309,14 @@ body.event-public-page .user-account-shell {
 }
 
 .user-dance-style__metric-name {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
     color: #4f6648;
     letter-spacing: 0.01em;
+}
+
+.user-dance-style__metric[data-dance-style-metric="liking"] .user-dance-style__metric-name {
+    color: #6a5540;
 }
 
 .user-dance-style__meta {
@@ -1308,7 +1356,7 @@ body.event-public-page .user-account-shell {
     font-weight: 600;
     color: var(--ua-muted);
     letter-spacing: 0.01em;
-    min-width: 6.5rem;
+    min-width: 7.5rem;
     text-align: right;
 }
 

@@ -22,16 +22,16 @@
 
     var likingLabels = {
         0: 'Nem adom meg',
-        1: 'Kevéssé',
-        2: 'Kevéssé',
-        3: 'Kevéssé',
+        1: 'Egyáltalán nem',
+        2: 'Alig',
+        3: 'Kicsit',
         4: 'Közepesen',
-        5: 'Közepesen',
-        6: 'Közepesen',
+        5: 'Eléggé',
+        6: 'Szeretem',
         7: 'Nagyon',
-        8: 'Nagyon',
+        8: 'Nagyon szeretem',
         9: 'Imádom',
-        10: 'Imádom'
+        10: 'A kedvencem'
     };
 
     function clampScore(raw) {
@@ -82,6 +82,16 @@
         input.setAttribute('aria-valuetext', score > 0 ? label + ' (' + score + ')' : label);
     }
 
+    function setCollapsed(row, collapsed) {
+        var panel = row.querySelector('[data-dance-style-collapse]');
+        row.classList.toggle('is-collapsed', collapsed);
+        row.dataset.collapsed = collapsed ? '1' : '0';
+
+        if (panel) {
+            panel.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
+        }
+    }
+
     function syncRow(row) {
         var ignore = row.querySelector('[data-dance-style-ignore]');
         var ignored = !!(ignore && ignore.checked);
@@ -92,6 +102,9 @@
 
         if (ignoreLabel) {
             ignoreLabel.classList.toggle('is-on', ignored);
+        }
+        if (ignore) {
+            ignore.setAttribute('aria-expanded', ignored ? 'false' : 'true');
         }
 
         ranges.forEach(function (input) {
@@ -106,6 +119,7 @@
             fields.setAttribute('aria-disabled', ignored ? 'true' : 'false');
         }
 
+        setCollapsed(row, ignored);
         row.classList.toggle('is-ignored', ignored);
         row.classList.toggle('is-set', !ignored && anySet);
     }

@@ -97,13 +97,47 @@ function latinfo_dance_style_level_label(int $level): string
 
 function latinfo_dance_style_liking_label(int $liking): string
 {
-    return match (true) {
-        $liking <= 0 => 'Nem adom meg',
-        $liking <= 3 => 'Kevéssé',
-        $liking <= 6 => 'Közepesen',
-        $liking <= 8 => 'Nagyon',
-        default => 'Imádom',
+    return match ($liking) {
+        1 => 'Egyáltalán nem',
+        2 => 'Alig',
+        3 => 'Kicsit',
+        4 => 'Közepesen',
+        5 => 'Eléggé',
+        6 => 'Szeretem',
+        7 => 'Nagyon',
+        8 => 'Nagyon szeretem',
+        9 => 'Imádom',
+        10 => 'A kedvencem',
+        default => 'Nem adom meg',
     };
+}
+
+/**
+ * Stílus megjelenítési név: nagybetűvel kezdődik; Társastánc → Zouk.
+ */
+function latinfo_dance_style_format_name(string $name): string
+{
+    $name = trim($name);
+    if ($name === '') {
+        return '';
+    }
+
+    $folded = function_exists('mb_strtolower')
+        ? mb_strtolower($name, 'UTF-8')
+        : strtolower($name);
+
+    if ($folded === 'társastánc' || $folded === 'tarsastanc') {
+        return 'Zouk';
+    }
+
+    if (function_exists('mb_substr') && function_exists('mb_strtoupper')) {
+        $first = mb_strtoupper(mb_substr($name, 0, 1, 'UTF-8'), 'UTF-8');
+        $rest = mb_substr($name, 1, null, 'UTF-8');
+
+        return $first . $rest;
+    }
+
+    return ucfirst($name);
 }
 
 /**
@@ -147,13 +181,38 @@ function latinfo_dance_style_catalog(PDO $db): array
     }
 
     $out = [];
+    $zoukId = 0;
+    $tarsaIds = [];
+
     foreach ($rows as $row) {
         $id = (int) ($row['id'] ?? 0);
-        $name = trim((string) ($row['name'] ?? ''));
-        if ($id > 0 && $name !== '') {
-            $out[$id] = $name;
+        $rawName = trim((string) ($row['name'] ?? ''));
+        if ($id <= 0 || $rawName === '') {
+            continue;
+        }
+
+        $folded = function_exists('mb_strtolower')
+            ? mb_strtolower($rawName, 'UTF-8')
+            : strtolower($rawName);
+
+        if ($folded === 'zouk') {
+            $zoukId = $id;
+        }
+        if ($folded === 'társastánc' || $folded === 'tarsastanc') {
+            $tarsaIds[] = $id;
+        }
+
+        $out[$id] = latinfo_dance_style_format_name($rawName);
+    }
+
+    // Társastánc helyett Zouk: ha már van Zouk, a Társastánc sort kihagyjuk.
+    if ($zoukId > 0) {
+        foreach ($tarsaIds as $tarsaId) {
+            unset($out[$tarsaId]);
         }
     }
+
+    asort($out, SORT_FLAG_CASE | SORT_NATURAL);
 
     return $out;
 }
