@@ -1143,15 +1143,12 @@ body.event-public-page .user-account-shell {
         linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(232, 241, 229, 0.55));
 }
 
-.user-dance-style.is-ignored {
+.user-dance-style.is-ignored,
+.user-dance-style.is-collapsed {
     border-color: #d5d8d2;
     background: rgba(244, 246, 242, 0.55);
     box-shadow: none;
     padding-bottom: 0.85rem;
-}
-
-.user-dance-style.is-ignored .user-dance-style__collapse {
-    display: none;
 }
 
 .user-dance-style__top {
@@ -1162,7 +1159,7 @@ body.event-public-page .user-account-shell {
     margin-bottom: 0.7rem;
 }
 
-.user-dance-style.is-ignored .user-dance-style__top {
+.user-dance-style.is-collapsed .user-dance-style__top {
     margin-bottom: 0;
 }
 
@@ -1175,35 +1172,6 @@ body.event-public-page .user-account-shell {
 
 .user-dance-style.is-ignored .user-dance-style__name {
     color: var(--ua-muted);
-}
-
-.user-dance-styles__hidden {
-    margin: 0 0 1.15rem;
-    border: 1px dashed #c9d0c4;
-    border-radius: 12px;
-    padding: 0.35rem 0.75rem 0.55rem;
-    background: rgba(244, 246, 242, 0.45);
-}
-
-.user-dance-styles__hidden[hidden] {
-    display: none;
-}
-
-.user-dance-styles__hidden-summary {
-    cursor: pointer;
-    font-size: 0.84rem;
-    font-weight: 650;
-    color: var(--ua-muted);
-    padding: 0.35rem 0;
-    list-style: none;
-}
-
-.user-dance-styles__hidden-summary::-webkit-details-marker {
-    display: none;
-}
-
-.user-dance-styles__list--hidden {
-    margin: 0.55rem 0 0.15rem;
 }
 
 .user-dance-style__ignore {
@@ -1309,7 +1277,21 @@ body.event-public-page .user-account-shell {
 }
 
 .user-dance-style__collapse {
-    display: block;
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 0.28s ease, opacity 0.2s ease;
+}
+
+.user-dance-style.is-collapsed .user-dance-style__collapse {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.user-dance-style__collapse > .user-dance-style__fields {
+    overflow: hidden;
+    min-height: 0;
 }
 
 .user-dance-style__fields {

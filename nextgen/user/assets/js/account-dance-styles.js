@@ -6,11 +6,6 @@
         return;
     }
 
-    var activeList = form.querySelector('[data-dance-styles-active]');
-    var hiddenWrap = form.querySelector('[data-dance-styles-hidden-wrap]');
-    var hiddenList = form.querySelector('[data-dance-styles-hidden]');
-    var hiddenCount = form.querySelector('[data-dance-styles-hidden-count]');
-
     var levelLabels = {
         0: 'Nem adom meg',
         1: 'Kezdő',
@@ -87,29 +82,14 @@
         input.setAttribute('aria-valuetext', score > 0 ? label + ' (' + score + ')' : label);
     }
 
-    function syncHiddenPanel() {
-        if (!hiddenWrap || !hiddenList || !hiddenCount) {
-            return;
-        }
-        var count = hiddenList.querySelectorAll('[data-dance-style-row]').length;
-        hiddenCount.textContent = String(count);
-        hiddenWrap.hidden = count === 0;
-        if (count === 0) {
-            hiddenWrap.open = false;
-        }
+    function clearRowValues(row) {
+        row.querySelectorAll('[data-dance-style-range]').forEach(function (input) {
+            input.value = '0';
+            syncMetric(input);
+        });
     }
 
-    function placeRow(row, ignored) {
-        if (!activeList || !hiddenList) {
-            return;
-        }
-        var target = ignored ? hiddenList : activeList;
-        if (row.parentElement !== target) {
-            target.appendChild(row);
-        }
-    }
-
-    function syncRow(row) {
+    function syncRow(row, didToggleIgnore) {
         var ignore = row.querySelector('[data-dance-style-ignore]');
         var ignored = !!(ignore && ignore.checked);
         var fields = row.querySelector('[data-dance-style-fields]');
@@ -123,6 +103,10 @@
         }
         if (ignore) {
             ignore.setAttribute('aria-expanded', ignored ? 'false' : 'true');
+        }
+
+        if (ignored && didToggleIgnore) {
+            clearRowValues(row);
         }
 
         ranges.forEach(function (input) {
@@ -141,32 +125,29 @@
         }
 
         row.classList.toggle('is-ignored', ignored);
+        row.classList.toggle('is-collapsed', ignored);
         row.classList.toggle('is-set', !ignored && anySet);
-        placeRow(row, ignored);
-        syncHiddenPanel();
     }
 
     form.querySelectorAll('[data-dance-style-row]').forEach(function (row) {
-        syncRow(row);
+        syncRow(row, false);
 
         var ignore = row.querySelector('[data-dance-style-ignore]');
         if (ignore) {
             ignore.addEventListener('change', function () {
-                syncRow(row);
+                syncRow(row, true);
             });
         }
 
         row.querySelectorAll('[data-dance-style-range]').forEach(function (input) {
             input.addEventListener('input', function () {
                 syncMetric(input);
-                syncRow(row);
+                syncRow(row, false);
             });
             input.addEventListener('change', function () {
                 syncMetric(input);
-                syncRow(row);
+                syncRow(row, false);
             });
         });
     });
-
-    syncHiddenPanel();
 })();
