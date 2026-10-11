@@ -47,10 +47,21 @@
         }
 
         document.querySelectorAll('[data-fav-group]').forEach(function (group) {
+            var cards = group.querySelectorAll('[data-user-fav-card]');
             var count = group.querySelectorAll('[data-user-fav-card][data-active="1"]').length;
             var countEl = qs('[data-fav-group-count]', group);
+            var emptyEl = qs('[data-fav-group-empty]', group);
+            var listEl = qs('[data-fav-group-list]', group);
             if (countEl) {
                 countEl.textContent = String(count);
+            }
+            group.classList.toggle('is-empty', count === 0);
+            if (emptyEl) {
+                emptyEl.hidden = count !== 0;
+            }
+            if (listEl) {
+                // Üres üzenet mellett a már betöltött (inaktív) kártyák maradhatnak visszarakáshoz.
+                listEl.hidden = cards.length === 0;
             }
         });
     }

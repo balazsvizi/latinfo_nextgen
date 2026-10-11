@@ -44,6 +44,58 @@ function latinfo_favorites_entity_group_label(string $type, string $lang = 'hu')
 }
 
 /**
+ * Fiókoldal kedvenc-szekciók (bővíthető: pl. tánciskola).
+ *
+ * @return list<array{
+ *   type:string,
+ *   title:string,
+ *   empty_message:string,
+ *   catalog_label:string,
+ *   catalog_url:string
+ * }>
+ */
+function latinfo_account_favorite_sections(string $lang = 'hu'): array
+{
+    $lang = $lang === 'en' ? 'en' : 'hu';
+
+    $sections = [
+        [
+            'type' => LATINFO_FAVORITE_TYPE_DJ,
+            'title' => 'DJ-k',
+            'empty_message' => 'Még nem állítottad be a kedvenc DJ-det.',
+            'catalog_label' => 'Összes DJ',
+            'catalog_url' => function_exists('events_public_djs_page_url')
+                ? events_public_djs_page_url($lang)
+                : '',
+        ],
+        [
+            'type' => LATINFO_FAVORITE_TYPE_ZENEKAR,
+            'title' => 'Előadók',
+            'empty_message' => 'Még nem állítottad be a kedvenc Előadódat.',
+            'catalog_label' => 'Összes előadó',
+            'catalog_url' => function_exists('events_public_zenekarok_page_url')
+                ? events_public_zenekarok_page_url($lang)
+                : '',
+        ],
+        [
+            'type' => LATINFO_FAVORITE_TYPE_ORGANIZER,
+            'title' => 'Szervezők',
+            'empty_message' => 'Még nem állítottad be a kedvenc Szerveződet.',
+            'catalog_label' => 'Összes szervező',
+            'catalog_url' => function_exists('events_public_organizers_catalog_page_url')
+                ? events_public_organizers_catalog_page_url($lang)
+                : '',
+        ],
+        // Ide jöhet később: tánciskola, helyszín, stb.
+    ];
+
+    return array_values(array_filter(
+        $sections,
+        static fn(array $section): bool => ($section['catalog_url'] ?? '') !== ''
+    ));
+}
+
+/**
  * Eseményhez kapcsolódó kedvenc-választó sorok.
  *
  * @param list<array{id?:int,name?:string}> $organizers

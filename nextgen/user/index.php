@@ -122,17 +122,6 @@ foreach ($favorites as $fav) {
     $fav['count'] = (int) ($state['count'] ?? 0);
     $favoritesByType[$t][] = $fav;
 }
-$typeLabels = [
-    LATINFO_FAVORITE_TYPE_EVENT => 'Események',
-    LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervezők',
-    LATINFO_FAVORITE_TYPE_VENUE => 'Helyszínek',
-    LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
-    LATINFO_FAVORITE_TYPE_ZENEKAR => 'Előadók',
-];
-$favoritesTotal = 0;
-foreach ($favoritesByType as $items) {
-    $favoritesTotal += count($items);
-}
 $notificationEmail = trim((string) ($user['notification_email'] ?? ''));
 $accountEmail = trim((string) ($user['email'] ?? ''));
 $privacyConsent = latinfo_user_consent_latest($db, $userId, LATINFO_CONSENT_PRIVACY);
@@ -483,16 +472,11 @@ header('Content-Type: text/html; charset=UTF-8');
         </section>
 
         <?php
-        $favoritesBrowseUrls = [
-            LATINFO_FAVORITE_TYPE_DJ => events_public_djs_page_url('hu'),
-            LATINFO_FAVORITE_TYPE_ZENEKAR => events_public_zenekarok_page_url('hu'),
-            LATINFO_FAVORITE_TYPE_ORGANIZER => events_public_organizers_catalog_page_url('hu'),
-        ];
-        $favoritesBrowseLabels = [
-            LATINFO_FAVORITE_TYPE_DJ => 'DJ-k',
-            LATINFO_FAVORITE_TYPE_ZENEKAR => 'Előadók',
-            LATINFO_FAVORITE_TYPE_ORGANIZER => 'Szervezők',
-        ];
+        $favoriteSections = latinfo_account_favorite_sections('hu');
+        $favoritesSectionTotal = 0;
+        foreach ($favoriteSections as $sectionMeta) {
+            $favoritesSectionTotal += count($favoritesByType[$sectionMeta['type']] ?? []);
+        }
         ?>
         <section
             class="user-account-section user-favorites"
@@ -503,88 +487,84 @@ header('Content-Type: text/html; charset=UTF-8');
                 <div class="user-favorites__titles">
                     <h2 id="user-favorites-heading">Kedvenceim</h2>
                     <p class="user-account-help user-favorites__lead">A szívecskéid egy helyen. A szám minden látogató összesített kedvelését mutatja.</p>
-                    <nav class="user-favorites__browse" aria-label="Kedvencek böngészése">
-                        <?php foreach ($favoritesBrowseLabels as $browseType => $browseLabel): ?>
-                            <a class="user-favorites__browse-link" href="<?= h($favoritesBrowseUrls[$browseType]) ?>"><?= h($browseLabel) ?></a>
-                        <?php endforeach; ?>
-                    </nav>
                 </div>
                 <div class="user-favorites__total" title="Kedvenceid száma">
                     <span class="user-favorites__total-heart" aria-hidden="true">♥</span>
-                    <span class="user-favorites__total-num" data-user-favorites-total><?= (int) $favoritesTotal ?></span>
+                    <span class="user-favorites__total-num" data-user-favorites-total><?= (int) $favoritesSectionTotal ?></span>
                 </div>
             </div>
 
-            <?php if ($favoritesTotal === 0): ?>
-                <div class="user-favorites-empty-state">
-                    <span class="user-favorites-empty-state__heart" aria-hidden="true">♡</span>
-                    <p class="user-favorites-empty-state__title">Még nem vettél fel kedvenceket.</p>
-                    <p class="user-favorites-empty-state__text">Vedd fel a kedvenceid most!</p>
-                    <div class="user-favorites-empty-state__links">
-                        <?php foreach ($favoritesBrowseLabels as $browseType => $browseLabel): ?>
-                            <a class="user-favorites-empty-state__cta" href="<?= h($favoritesBrowseUrls[$browseType]) ?>"><?= h($browseLabel) ?></a>
-                        <?php endforeach; ?>
+            <?php foreach ($favoriteSections as $section): ?>
+                <?php
+                $typeKey = (string) $section['type'];
+                $items = $favoritesByType[$typeKey] ?? [];
+                $itemCount = count($items);
+                $isEmpty = $itemCount === 0;
+                $catalogUrl = (string) ($section['catalog_url'] ?? '');
+                $catalogLabel = (string) ($section['catalog_label'] ?? '');
+                $emptyMessage = (string) ($section['empty_message'] ?? '');
+                $sectionTitle = (string) ($section['title'] ?? $typeKey);
+                ?>
+                <div
+                    class="user-favorites-group<?= $isEmpty ? ' is-empty' : '' ?>"
+                    data-fav-group="<?= h($typeKey) ?>"
+                >
+                    <div class="user-favorites-group__head">
+                        <h3 class="user-favorites-group__title">
+                            <span class="user-favorites-group__badge user-favorites-group__badge--<?= h($typeKey) ?>"><?= h($sectionTitle) ?></span>
+                        </h3>
+                        <span class="user-favorites-group__count" data-fav-group-count><?= $itemCount ?></span>
                     </div>
-                </div>
-            <?php else: ?>
-                <?php foreach ($favoritesByType as $typeKey => $items): ?>
-                    <?php if ($items === []) {
-                        continue;
-                    } ?>
-                    <div class="user-favorites-group" data-fav-group="<?= h((string) $typeKey) ?>">
-                        <div class="user-favorites-group__head">
-                            <h3 class="user-favorites-group__title">
-                                <?php if (isset($favoritesBrowseUrls[$typeKey])): ?>
-                                    <a
-                                        class="user-favorites-group__badge user-favorites-group__badge--<?= h((string) $typeKey) ?>"
-                                        href="<?= h($favoritesBrowseUrls[$typeKey]) ?>"
-                                    ><?= h($typeLabels[$typeKey] ?? $typeKey) ?></a>
-                                <?php else: ?>
-                                    <span class="user-favorites-group__badge user-favorites-group__badge--<?= h((string) $typeKey) ?>"><?= h($typeLabels[$typeKey] ?? $typeKey) ?></span>
-                                <?php endif; ?>
-                            </h3>
-                            <span class="user-favorites-group__count" data-fav-group-count><?= count($items) ?></span>
-                        </div>
-                        <ul class="user-favorites-cards">
-                            <?php foreach ($items as $item): ?>
-                                <?php
-                                $itemType = (string) ($item['type'] ?? '');
-                                $itemId = (int) ($item['id'] ?? 0);
-                                $itemLabel = (string) ($item['label'] ?? '');
-                                $itemUrl = (string) ($item['url'] ?? '#');
-                                $itemCount = (int) ($item['count'] ?? 0);
-                                ?>
-                                <li
-                                    class="user-fav-card"
-                                    data-user-fav-card
-                                    data-active="1"
-                                    data-entity-type="<?= h($itemType) ?>"
-                                    data-entity-id="<?= $itemId ?>"
-                                    data-item-label="<?= h($itemLabel) ?>"
+
+                    <p
+                        class="user-favorites-group__empty"
+                        data-fav-group-empty
+                        <?= $isEmpty ? '' : 'hidden' ?>
+                    ><?= h($emptyMessage) ?></p>
+
+                    <ul class="user-favorites-cards" data-fav-group-list <?= $isEmpty ? 'hidden' : '' ?>>
+                        <?php foreach ($items as $item): ?>
+                            <?php
+                            $itemType = (string) ($item['type'] ?? '');
+                            $itemId = (int) ($item['id'] ?? 0);
+                            $itemLabel = (string) ($item['label'] ?? '');
+                            $itemUrl = (string) ($item['url'] ?? '#');
+                            $publicCount = (int) ($item['count'] ?? 0);
+                            ?>
+                            <li
+                                class="user-fav-card"
+                                data-user-fav-card
+                                data-active="1"
+                                data-entity-type="<?= h($itemType) ?>"
+                                data-entity-id="<?= $itemId ?>"
+                                data-item-label="<?= h($itemLabel) ?>"
+                            >
+                                <a class="user-fav-card__body" href="<?= h($itemUrl) ?>">
+                                    <span class="user-fav-card__title"><?= h($itemLabel) ?></span>
+                                    <span class="user-fav-card__public-count" title="Összes szívecske">
+                                        <span aria-hidden="true">♥</span>
+                                        <span data-user-fav-count><?= $publicCount ?></span>
+                                    </span>
+                                </a>
+                                <button
+                                    type="button"
+                                    class="user-fav-card__heart is-active"
+                                    data-user-fav-heart
+                                    aria-pressed="true"
+                                    aria-label="<?= h('Kedvenc törlése: ' . $itemLabel) ?>"
+                                    title="Levétel a kedvencekből"
                                 >
-                                    <a class="user-fav-card__body" href="<?= h($itemUrl) ?>">
-                                        <span class="user-fav-card__title"><?= h($itemLabel) ?></span>
-                                        <span class="user-fav-card__public-count" title="Összes szívecske">
-                                            <span aria-hidden="true">♥</span>
-                                            <span data-user-fav-count><?= $itemCount ?></span>
-                                        </span>
-                                    </a>
-                                    <button
-                                        type="button"
-                                        class="user-fav-card__heart is-active"
-                                        data-user-fav-heart
-                                        aria-pressed="true"
-                                        aria-label="<?= h('Kedvenc törlése: ' . $itemLabel) ?>"
-                                        title="Levétel a kedvencekből"
-                                    >
-                                        <span class="user-fav-card__heart-icon" aria-hidden="true">♥</span>
-                                    </button>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                                    <span class="user-fav-card__heart-icon" aria-hidden="true">♥</span>
+                                </button>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+
+                    <?php if ($catalogUrl !== '' && $catalogLabel !== ''): ?>
+                        <a class="user-favorites-group__all" href="<?= h($catalogUrl) ?>"><?= h($catalogLabel) ?></a>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
         </section>
     </div>
 
