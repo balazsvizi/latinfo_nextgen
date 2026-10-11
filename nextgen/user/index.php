@@ -337,7 +337,7 @@ header('Content-Type: text/html; charset=UTF-8');
                     <h2 id="user-dance-styles-heading">Táncstílusaid</h2>
                     <p class="user-account-help user-dance-styles__lead">
                         Stílusonként megadhatod, mennyire kedveled és milyen szinten vagy (1–10).
-                        A „Nem érdekel” kapcsolóval kikapcsolhatod az adott stílust.
+                        A „Nem érdekel” kapcsolóval elrejtheted az adott stílust a listából.
                     </p>
                 </div>
             </div>
@@ -345,142 +345,174 @@ header('Content-Type: text/html; charset=UTF-8');
             <?php if ($danceStyleCatalog === []): ?>
                 <p class="user-account-help">A stílusok még nincsenek beállítva.</p>
             <?php else: ?>
+                <?php
+                $danceStylesActive = [];
+                $danceStylesHidden = [];
+                foreach ($danceStyleCatalog as $styleId => $styleName) {
+                    $prefs = $danceStyleLevels[$styleId] ?? latinfo_dance_style_empty_prefs();
+                    if (!empty($prefs['not_interested'])) {
+                        $danceStylesHidden[$styleId] = $styleName;
+                    } else {
+                        $danceStylesActive[$styleId] = $styleName;
+                    }
+                }
+                $renderDanceStyleRow = static function (int $styleId, string $styleName, array $prefs) : void {
+                    $notInterested = !empty($prefs['not_interested']);
+                    $level = $notInterested ? 0 : (int) ($prefs['level'] ?? 0);
+                    $liking = $notInterested ? 0 : (int) ($prefs['liking'] ?? 0);
+                    $levelLabel = latinfo_dance_style_level_label($level);
+                    $likingLabel = latinfo_dance_style_liking_label($liking);
+                    $likingId = 'dance-style-liking-' . $styleId;
+                    $levelId = 'dance-style-level-' . $styleId;
+                    $ignoreId = 'dance-style-ignore-' . $styleId;
+                    $likingPct = $liking <= 0 ? 0 : (int) round(($liking / 10) * 100);
+                    $levelPct = $level <= 0 ? 0 : (int) round(($level / 10) * 100);
+                    $rowClass = 'user-dance-style';
+                    if ($notInterested) {
+                        $rowClass .= ' is-ignored';
+                    } elseif ($level > 0 || $liking > 0) {
+                        $rowClass .= ' is-set';
+                    }
+                    ?>
+                    <li class="<?= h($rowClass) ?>" data-dance-style-row>
+                        <div class="user-dance-style__top">
+                            <span class="user-dance-style__name"><?= h($styleName) ?></span>
+                            <label class="user-dance-style__ignore<?= $notInterested ? ' is-on' : '' ?>" for="<?= h($ignoreId) ?>">
+                                <span class="user-dance-style__ignore-text">Nem érdekel</span>
+                                <span class="user-dance-style__ignore-control">
+                                    <span class="user-dance-style__ignore-state user-dance-style__ignore-state--off" aria-hidden="true">Off</span>
+                                    <span class="user-dance-style__ignore-switch">
+                                        <input
+                                            type="checkbox"
+                                            class="user-dance-style__ignore-input"
+                                            id="<?= h($ignoreId) ?>"
+                                            name="styles[<?= $styleId ?>][not_interested]"
+                                            value="1"
+                                            <?= $notInterested ? 'checked' : '' ?>
+                                            data-dance-style-ignore
+                                            aria-controls="dance-style-fields-<?= $styleId ?>"
+                                            aria-expanded="<?= $notInterested ? 'false' : 'true' ?>"
+                                        >
+                                        <span class="user-dance-style__ignore-track" aria-hidden="true">
+                                            <span class="user-dance-style__ignore-thumb"></span>
+                                        </span>
+                                    </span>
+                                    <span class="user-dance-style__ignore-state user-dance-style__ignore-state--on" aria-hidden="true">On</span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div
+                            class="user-dance-style__collapse"
+                            id="dance-style-fields-<?= $styleId ?>"
+                            data-dance-style-collapse
+                            <?= $notInterested ? 'aria-hidden="true"' : '' ?>
+                        >
+                            <div class="user-dance-style__fields" data-dance-style-fields>
+                                <div class="user-dance-style__metric" data-dance-style-metric="liking">
+                                    <div class="user-dance-style__metric-head">
+                                        <label class="user-dance-style__metric-name" for="<?= h($likingId) ?>">Mennyire kedveled?</label>
+                                        <div class="user-dance-style__meta">
+                                            <span class="user-dance-style__value" data-dance-style-value aria-hidden="true">
+                                                <?= $liking > 0 ? (string) $liking : '—' ?>
+                                            </span>
+                                            <span class="user-dance-style__label" data-dance-style-label><?= h($likingLabel) ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="user-dance-style__track user-dance-style__track--liking" style="--level-pct: <?= $likingPct ?>%;">
+                                        <input
+                                            type="range"
+                                            class="user-dance-style__range"
+                                            id="<?= h($likingId) ?>"
+                                            name="styles[<?= $styleId ?>][liking]"
+                                            min="0"
+                                            max="10"
+                                            step="1"
+                                            value="<?= $liking ?>"
+                                            data-dance-style-range
+                                            data-dance-style-kind="liking"
+                                            <?= $notInterested ? 'disabled' : '' ?>
+                                            aria-valuemin="0"
+                                            aria-valuemax="10"
+                                            aria-valuenow="<?= $liking ?>"
+                                            aria-valuetext="<?= h($likingLabel . ($liking > 0 ? ' (' . $liking . ')' : '')) ?>"
+                                        >
+                                        <div class="user-dance-style__ticks" aria-hidden="true">
+                                            <span>Nem</span>
+                                            <?php for ($tick = 1; $tick <= 10; $tick++): ?>
+                                                <span><?= $tick ?></span>
+                                            <?php endfor; ?>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="user-dance-style__metric" data-dance-style-metric="level">
+                                    <div class="user-dance-style__metric-head">
+                                        <label class="user-dance-style__metric-name" for="<?= h($levelId) ?>">Szint</label>
+                                        <div class="user-dance-style__meta">
+                                            <span class="user-dance-style__value" data-dance-style-value aria-hidden="true">
+                                                <?= $level > 0 ? (string) $level : '—' ?>
+                                            </span>
+                                            <span class="user-dance-style__label" data-dance-style-label><?= h($levelLabel) ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="user-dance-style__track user-dance-style__track--level" style="--level-pct: <?= $levelPct ?>%;">
+                                        <input
+                                            type="range"
+                                            class="user-dance-style__range"
+                                            id="<?= h($levelId) ?>"
+                                            name="styles[<?= $styleId ?>][level]"
+                                            min="0"
+                                            max="10"
+                                            step="1"
+                                            value="<?= $level ?>"
+                                            data-dance-style-range
+                                            data-dance-style-kind="level"
+                                            <?= $notInterested ? 'disabled' : '' ?>
+                                            aria-valuemin="0"
+                                            aria-valuemax="10"
+                                            aria-valuenow="<?= $level ?>"
+                                            aria-valuetext="<?= h($levelLabel . ($level > 0 ? ' (' . $level . ')' : '')) ?>"
+                                        >
+                                        <div class="user-dance-style__ticks" aria-hidden="true">
+                                            <span>Nem</span>
+                                            <?php for ($tick = 1; $tick <= 10; $tick++): ?>
+                                                <span><?= $tick ?></span>
+                                            <?php endfor; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <?php
+                };
+                ?>
                 <form method="post" class="user-account-form user-dance-styles-form" data-dance-styles>
                     <?= csrf_input('user_account') ?>
                     <input type="hidden" name="action" value="save_dance_styles">
-                    <ul class="user-dance-styles__list">
-                        <?php foreach ($danceStyleCatalog as $styleId => $styleName): ?>
-                            <?php
-                            $prefs = $danceStyleLevels[$styleId] ?? latinfo_dance_style_empty_prefs();
-                            $notInterested = !empty($prefs['not_interested']);
-                            $level = $notInterested ? 0 : (int) ($prefs['level'] ?? 0);
-                            $liking = $notInterested ? 0 : (int) ($prefs['liking'] ?? 0);
-                            $levelLabel = latinfo_dance_style_level_label($level);
-                            $likingLabel = latinfo_dance_style_liking_label($liking);
-                            $likingId = 'dance-style-liking-' . $styleId;
-                            $levelId = 'dance-style-level-' . $styleId;
-                            $ignoreId = 'dance-style-ignore-' . $styleId;
-                            $likingPct = $liking <= 0 ? 0 : (int) round(($liking / 10) * 100);
-                            $levelPct = $level <= 0 ? 0 : (int) round(($level / 10) * 100);
-                            $rowClass = 'user-dance-style';
-                            if ($notInterested) {
-                                $rowClass .= ' is-ignored is-collapsed';
-                            } elseif ($level > 0 || $liking > 0) {
-                                $rowClass .= ' is-set';
-                            }
-                            ?>
-                            <li class="<?= h($rowClass) ?>" data-dance-style-row<?= $notInterested ? ' data-collapsed="1"' : '' ?>>
-                                <div class="user-dance-style__top">
-                                    <span class="user-dance-style__name"><?= h($styleName) ?></span>
-                                    <label class="user-dance-style__ignore<?= $notInterested ? ' is-on' : '' ?>" for="<?= h($ignoreId) ?>">
-                                        <span class="user-dance-style__ignore-text">Nem érdekel</span>
-                                        <span class="user-dance-style__ignore-control">
-                                            <span class="user-dance-style__ignore-state user-dance-style__ignore-state--off" aria-hidden="true">Off</span>
-                                            <span class="user-dance-style__ignore-switch">
-                                                <input
-                                                    type="checkbox"
-                                                    class="user-dance-style__ignore-input"
-                                                    id="<?= h($ignoreId) ?>"
-                                                    name="styles[<?= (int) $styleId ?>][not_interested]"
-                                                    value="1"
-                                                    <?= $notInterested ? 'checked' : '' ?>
-                                                    data-dance-style-ignore
-                                                    aria-controls="dance-style-fields-<?= (int) $styleId ?>"
-                                                    aria-expanded="<?= $notInterested ? 'false' : 'true' ?>"
-                                                >
-                                                <span class="user-dance-style__ignore-track" aria-hidden="true">
-                                                    <span class="user-dance-style__ignore-thumb"></span>
-                                                </span>
-                                            </span>
-                                            <span class="user-dance-style__ignore-state user-dance-style__ignore-state--on" aria-hidden="true">On</span>
-                                        </span>
-                                    </label>
-                                </div>
-
-                                <div
-                                    class="user-dance-style__collapse"
-                                    id="dance-style-fields-<?= (int) $styleId ?>"
-                                    data-dance-style-collapse
-                                >
-                                <div class="user-dance-style__fields" data-dance-style-fields>
-                                    <div class="user-dance-style__metric" data-dance-style-metric="liking">
-                                        <div class="user-dance-style__metric-head">
-                                            <label class="user-dance-style__metric-name" for="<?= h($likingId) ?>">Mennyire kedveled?</label>
-                                            <div class="user-dance-style__meta">
-                                                <span class="user-dance-style__value" data-dance-style-value aria-hidden="true">
-                                                    <?= $liking > 0 ? (string) $liking : '—' ?>
-                                                </span>
-                                                <span class="user-dance-style__label" data-dance-style-label><?= h($likingLabel) ?></span>
-                                            </div>
-                                        </div>
-                                        <div class="user-dance-style__track user-dance-style__track--liking" style="--level-pct: <?= $likingPct ?>%;">
-                                            <input
-                                                type="range"
-                                                class="user-dance-style__range"
-                                                id="<?= h($likingId) ?>"
-                                                name="styles[<?= (int) $styleId ?>][liking]"
-                                                min="0"
-                                                max="10"
-                                                step="1"
-                                                value="<?= $liking ?>"
-                                                data-dance-style-range
-                                                data-dance-style-kind="liking"
-                                                <?= $notInterested ? 'disabled' : '' ?>
-                                                aria-valuemin="0"
-                                                aria-valuemax="10"
-                                                aria-valuenow="<?= $liking ?>"
-                                                aria-valuetext="<?= h($likingLabel . ($liking > 0 ? ' (' . $liking . ')' : '')) ?>"
-                                            >
-                                            <div class="user-dance-style__ticks" aria-hidden="true">
-                                                <span>Nem</span>
-                                                <?php for ($tick = 1; $tick <= 10; $tick++): ?>
-                                                    <span><?= $tick ?></span>
-                                                <?php endfor; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="user-dance-style__metric" data-dance-style-metric="level">
-                                        <div class="user-dance-style__metric-head">
-                                            <label class="user-dance-style__metric-name" for="<?= h($levelId) ?>">Szint</label>
-                                            <div class="user-dance-style__meta">
-                                                <span class="user-dance-style__value" data-dance-style-value aria-hidden="true">
-                                                    <?= $level > 0 ? (string) $level : '—' ?>
-                                                </span>
-                                                <span class="user-dance-style__label" data-dance-style-label><?= h($levelLabel) ?></span>
-                                            </div>
-                                        </div>
-                                        <div class="user-dance-style__track user-dance-style__track--level" style="--level-pct: <?= $levelPct ?>%;">
-                                            <input
-                                                type="range"
-                                                class="user-dance-style__range"
-                                                id="<?= h($levelId) ?>"
-                                                name="styles[<?= (int) $styleId ?>][level]"
-                                                min="0"
-                                                max="10"
-                                                step="1"
-                                                value="<?= $level ?>"
-                                                data-dance-style-range
-                                                data-dance-style-kind="level"
-                                                <?= $notInterested ? 'disabled' : '' ?>
-                                                aria-valuemin="0"
-                                                aria-valuemax="10"
-                                                aria-valuenow="<?= $level ?>"
-                                                aria-valuetext="<?= h($levelLabel . ($level > 0 ? ' (' . $level . ')' : '')) ?>"
-                                            >
-                                            <div class="user-dance-style__ticks" aria-hidden="true">
-                                                <span>Nem</span>
-                                                <?php for ($tick = 1; $tick <= 10; $tick++): ?>
-                                                    <span><?= $tick ?></span>
-                                                <?php endfor; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                </div>
-                            </li>
+                    <ul class="user-dance-styles__list" data-dance-styles-active>
+                        <?php foreach ($danceStylesActive as $styleId => $styleName): ?>
+                            <?php $renderDanceStyleRow((int) $styleId, (string) $styleName, $danceStyleLevels[$styleId] ?? latinfo_dance_style_empty_prefs()); ?>
                         <?php endforeach; ?>
                     </ul>
+
+                    <details
+                        class="user-dance-styles__hidden"
+                        data-dance-styles-hidden-wrap
+                        <?= $danceStylesHidden === [] ? 'hidden' : '' ?>
+                    >
+                        <summary class="user-dance-styles__hidden-summary">
+                            Elrejtett stílusok
+                            (<span data-dance-styles-hidden-count><?= count($danceStylesHidden) ?></span>)
+                        </summary>
+                        <ul class="user-dance-styles__list user-dance-styles__list--hidden" data-dance-styles-hidden>
+                            <?php foreach ($danceStylesHidden as $styleId => $styleName): ?>
+                                <?php $renderDanceStyleRow((int) $styleId, (string) $styleName, $danceStyleLevels[$styleId] ?? latinfo_dance_style_empty_prefs()); ?>
+                            <?php endforeach; ?>
+                        </ul>
+                    </details>
+
                     <button type="submit" class="btn btn-primary">Stílusok mentése</button>
                 </form>
             <?php endif; ?>

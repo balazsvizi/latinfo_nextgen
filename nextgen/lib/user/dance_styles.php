@@ -138,7 +138,20 @@ function latinfo_dance_style_is_excluded_from_account(string $name): bool
         ? mb_strtolower(trim($name), 'UTF-8')
         : strtolower(trim($name));
 
-    return $folded === 'társastánc' || $folded === 'tarsastanc';
+    $ascii = strtr($folded, [
+        'á' => 'a',
+        'é' => 'e',
+        'í' => 'i',
+        'ó' => 'o',
+        'ö' => 'o',
+        'ő' => 'o',
+        'ú' => 'u',
+        'ü' => 'u',
+        'ű' => 'u',
+    ]);
+
+    // A fiók listáján a társastánc / ballroom ne jelenjen meg (semmilyen névváltozatban).
+    return str_contains($ascii, 'tarsastanc') || str_contains($ascii, 'ballroom');
 }
 
 /**

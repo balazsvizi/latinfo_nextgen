@@ -6,6 +6,11 @@
         return;
     }
 
+    var activeList = form.querySelector('[data-dance-styles-active]');
+    var hiddenWrap = form.querySelector('[data-dance-styles-hidden-wrap]');
+    var hiddenList = form.querySelector('[data-dance-styles-hidden]');
+    var hiddenCount = form.querySelector('[data-dance-styles-hidden-count]');
+
     var levelLabels = {
         0: 'Nem adom meg',
         1: 'Kezdő',
@@ -82,13 +87,25 @@
         input.setAttribute('aria-valuetext', score > 0 ? label + ' (' + score + ')' : label);
     }
 
-    function setCollapsed(row, collapsed) {
-        var panel = row.querySelector('[data-dance-style-collapse]');
-        row.classList.toggle('is-collapsed', collapsed);
-        row.dataset.collapsed = collapsed ? '1' : '0';
+    function syncHiddenPanel() {
+        if (!hiddenWrap || !hiddenList || !hiddenCount) {
+            return;
+        }
+        var count = hiddenList.querySelectorAll('[data-dance-style-row]').length;
+        hiddenCount.textContent = String(count);
+        hiddenWrap.hidden = count === 0;
+        if (count === 0) {
+            hiddenWrap.open = false;
+        }
+    }
 
-        if (panel) {
-            panel.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
+    function placeRow(row, ignored) {
+        if (!activeList || !hiddenList) {
+            return;
+        }
+        var target = ignored ? hiddenList : activeList;
+        if (row.parentElement !== target) {
+            target.appendChild(row);
         }
     }
 
@@ -98,6 +115,7 @@
         var fields = row.querySelector('[data-dance-style-fields]');
         var ranges = row.querySelectorAll('[data-dance-style-range]');
         var ignoreLabel = row.querySelector('.user-dance-style__ignore');
+        var panel = row.querySelector('[data-dance-style-collapse]');
         var anySet = false;
 
         if (ignoreLabel) {
@@ -118,10 +136,14 @@
         if (fields) {
             fields.setAttribute('aria-disabled', ignored ? 'true' : 'false');
         }
+        if (panel) {
+            panel.setAttribute('aria-hidden', ignored ? 'true' : 'false');
+        }
 
-        setCollapsed(row, ignored);
         row.classList.toggle('is-ignored', ignored);
         row.classList.toggle('is-set', !ignored && anySet);
+        placeRow(row, ignored);
+        syncHiddenPanel();
     }
 
     form.querySelectorAll('[data-dance-style-row]').forEach(function (row) {
@@ -145,4 +167,6 @@
             });
         });
     });
+
+    syncHiddenPanel();
 })();
