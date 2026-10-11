@@ -374,25 +374,21 @@ header('Content-Type: text/html; charset=UTF-8');
                                     <span class="user-dance-style__name"><?= h($styleName) ?></span>
                                     <label class="user-dance-style__ignore<?= $notInterested ? ' is-on' : '' ?>" for="<?= h($ignoreId) ?>">
                                         <span class="user-dance-style__ignore-text">Nem érdekel</span>
-                                        <span class="user-dance-style__ignore-control">
-                                            <span class="user-dance-style__ignore-state user-dance-style__ignore-state--off" aria-hidden="true">Off</span>
-                                            <span class="user-dance-style__ignore-switch">
-                                                <input
-                                                    type="checkbox"
-                                                    class="user-dance-style__ignore-input"
-                                                    id="<?= h($ignoreId) ?>"
-                                                    name="styles[<?= (int) $styleId ?>][not_interested]"
-                                                    value="1"
-                                                    <?= $notInterested ? 'checked' : '' ?>
-                                                    data-dance-style-ignore
-                                                    aria-controls="dance-style-fields-<?= (int) $styleId ?>"
-                                                    aria-expanded="<?= $notInterested ? 'false' : 'true' ?>"
-                                                >
-                                                <span class="user-dance-style__ignore-track" aria-hidden="true">
-                                                    <span class="user-dance-style__ignore-thumb"></span>
-                                                </span>
+                                        <span class="user-dance-style__ignore-switch">
+                                            <input
+                                                type="checkbox"
+                                                class="user-dance-style__ignore-input"
+                                                id="<?= h($ignoreId) ?>"
+                                                name="styles[<?= (int) $styleId ?>][not_interested]"
+                                                value="1"
+                                                <?= $notInterested ? 'checked' : '' ?>
+                                                data-dance-style-ignore
+                                                aria-controls="dance-style-fields-<?= (int) $styleId ?>"
+                                                aria-expanded="<?= $notInterested ? 'false' : 'true' ?>"
+                                            >
+                                            <span class="user-dance-style__ignore-track" aria-hidden="true">
+                                                <span class="user-dance-style__ignore-thumb"></span>
                                             </span>
-                                            <span class="user-dance-style__ignore-state user-dance-style__ignore-state--on" aria-hidden="true">On</span>
                                         </span>
                                     </label>
                                 </div>

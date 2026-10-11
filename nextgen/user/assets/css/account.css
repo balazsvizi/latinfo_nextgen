@@ -1195,32 +1195,6 @@ body.event-public-page .user-account-shell {
     color: #6a5540;
 }
 
-.user-dance-style__ignore-control {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.28rem;
-    flex: 0 0 auto;
-}
-
-.user-dance-style__ignore-state {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #a0a89a;
-    min-width: 1.5rem;
-    text-align: center;
-    transition: color 0.18s ease;
-}
-
-.user-dance-style__ignore:not(.is-on) .user-dance-style__ignore-state--off {
-    color: #5f6b58;
-}
-
-.user-dance-style__ignore.is-on .user-dance-style__ignore-state--on {
-    color: #6a5540;
-}
-
 .user-dance-style__ignore-switch {
     position: relative;
     width: 40px;
