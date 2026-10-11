@@ -6,7 +6,7 @@
         return;
     }
 
-    var labels = {
+    var levelLabels = {
         0: 'Nem adom meg',
         1: 'Kezdő',
         2: 'Kezdő',
@@ -20,46 +20,115 @@
         10: 'Profi'
     };
 
-    function syncRow(input) {
-        var row = input.closest('[data-dance-style-row]');
-        if (!row) {
+    var likingLabels = {
+        0: 'Nem adom meg',
+        1: 'Kevéssé',
+        2: 'Kevéssé',
+        3: 'Kevéssé',
+        4: 'Közepesen',
+        5: 'Közepesen',
+        6: 'Közepesen',
+        7: 'Nagyon',
+        8: 'Nagyon',
+        9: 'Imádom',
+        10: 'Imádom'
+    };
+
+    function clampScore(raw) {
+        var score = parseInt(raw, 10);
+        if (isNaN(score) || score < 0) {
+            return 0;
+        }
+        if (score > 10) {
+            return 10;
+        }
+        return score;
+    }
+
+    function labelFor(kind, score) {
+        if (kind === 'liking') {
+            return likingLabels[score] || 'Nem adom meg';
+        }
+        return levelLabels[score] || 'Nem adom meg';
+    }
+
+    function syncMetric(input) {
+        var metric = input.closest('[data-dance-style-metric]');
+        if (!metric) {
             return;
         }
-        var level = parseInt(input.value, 10);
-        if (isNaN(level) || level < 0) {
-            level = 0;
-        }
-        if (level > 10) {
-            level = 10;
-        }
-
-        var label = labels[level] || 'Nem adom meg';
-        var valueEl = row.querySelector('[data-dance-style-value]');
-        var labelEl = row.querySelector('[data-dance-style-label]');
-        var track = row.querySelector('.user-dance-style__track');
+        var kind = input.getAttribute('data-dance-style-kind') || 'level';
+        var score = clampScore(input.value);
+        var label = labelFor(kind, score);
+        var valueEl = metric.querySelector('[data-dance-style-value]');
+        var labelEl = metric.querySelector('[data-dance-style-label]');
+        var track = metric.querySelector('.user-dance-style__track');
 
         if (valueEl) {
-            valueEl.textContent = level > 0 ? String(level) : '—';
+            valueEl.textContent = score > 0 ? String(score) : '—';
         }
         if (labelEl) {
             labelEl.textContent = label;
         }
         if (track) {
-            track.style.setProperty('--level-pct', level <= 0 ? '0%' : String(Math.round((level / 10) * 100)) + '%');
+            track.style.setProperty(
+                '--level-pct',
+                score <= 0 ? '0%' : String(Math.round((score / 10) * 100)) + '%'
+            );
         }
 
-        row.classList.toggle('is-set', level > 0);
-        input.setAttribute('aria-valuenow', String(level));
-        input.setAttribute('aria-valuetext', level > 0 ? label + ' (' + level + ')' : label);
+        metric.classList.toggle('is-set', score > 0 && !input.disabled);
+        input.setAttribute('aria-valuenow', String(score));
+        input.setAttribute('aria-valuetext', score > 0 ? label + ' (' + score + ')' : label);
     }
 
-    form.querySelectorAll('[data-dance-style-range]').forEach(function (input) {
-        syncRow(input);
-        input.addEventListener('input', function () {
-            syncRow(input);
+    function syncRow(row) {
+        var ignore = row.querySelector('[data-dance-style-ignore]');
+        var ignored = !!(ignore && ignore.checked);
+        var fields = row.querySelector('[data-dance-style-fields]');
+        var ranges = row.querySelectorAll('[data-dance-style-range]');
+        var ignoreLabel = row.querySelector('.user-dance-style__ignore');
+        var anySet = false;
+
+        if (ignoreLabel) {
+            ignoreLabel.classList.toggle('is-on', ignored);
+        }
+
+        ranges.forEach(function (input) {
+            input.disabled = ignored;
+            syncMetric(input);
+            if (!ignored && clampScore(input.value) > 0) {
+                anySet = true;
+            }
         });
-        input.addEventListener('change', function () {
-            syncRow(input);
+
+        if (fields) {
+            fields.setAttribute('aria-disabled', ignored ? 'true' : 'false');
+        }
+
+        row.classList.toggle('is-ignored', ignored);
+        row.classList.toggle('is-set', !ignored && anySet);
+    }
+
+    form.querySelectorAll('[data-dance-style-row]').forEach(function (row) {
+        syncRow(row);
+
+        var ignore = row.querySelector('[data-dance-style-ignore]');
+        if (ignore) {
+            ignore.addEventListener('change', function () {
+                syncRow(row);
+            });
+        }
+
+        row.querySelectorAll('[data-dance-style-range]').forEach(function (input) {
+            input.addEventListener('input', function () {
+                syncMetric(input);
+                syncRow(row);
+            });
+            input.addEventListener('change', function () {
+                syncMetric(input);
+                syncRow(row);
+            });
         });
     });
 })();

@@ -2,7 +2,10 @@
 declare(strict_types=1);
 
 /**
- * Felhasználói táncstílus-szintek (1–10; hiányzó / 0 = nem adom meg).
+ * Felhasználói táncstílus-preferenciák.
+ * - level: tudásszint 1–10 (0 = nem adom meg)
+ * - liking: mennyire kedveli 1–10 (0 = nem adom meg)
+ * - not_interested: nem érdekel → értékek figyelmen kívül
  * A stílusok törzse: events_styles.
  */
 
@@ -22,6 +25,17 @@ function latinfo_user_dance_styles_table_ready(PDO $db, bool $force = false): bo
     return $cached;
 }
 
+function latinfo_user_dance_styles_column_exists(PDO $db, string $column): bool
+{
+    try {
+        $stmt = $db->query('SHOW COLUMNS FROM `latinfo_user_dance_styles` LIKE ' . $db->quote($column));
+
+        return $stmt !== false && $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+    } catch (Throwable) {
+        return false;
+    }
+}
+
 function latinfo_user_dance_styles_ensure_schema(PDO $db): bool
 {
     static $done = false;
@@ -35,7 +49,9 @@ function latinfo_user_dance_styles_ensure_schema(PDO $db): bool
                 `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
                 `user_id` INT UNSIGNED NOT NULL,
                 `style_id` INT UNSIGNED NOT NULL,
-                `level` TINYINT UNSIGNED NOT NULL,
+                `level` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                `liking` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                `not_interested` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (`id`),
                 UNIQUE KEY `uq_latinfo_user_dance_style` (`user_id`, `style_id`),
@@ -43,6 +59,20 @@ function latinfo_user_dance_styles_ensure_schema(PDO $db): bool
                 KEY `idx_latinfo_user_dance_styles_style` (`style_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+
+        if (!latinfo_user_dance_styles_column_exists($db, 'liking')) {
+            $db->exec('
+                ALTER TABLE `latinfo_user_dance_styles`
+                ADD COLUMN `liking` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `level`
+            ');
+        }
+        if (!latinfo_user_dance_styles_column_exists($db, 'not_interested')) {
+            $db->exec('
+                ALTER TABLE `latinfo_user_dance_styles`
+                ADD COLUMN `not_interested` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0 AFTER `liking`
+            ');
+        }
+
         latinfo_user_dance_styles_table_ready($db, true);
         $done = true;
 
@@ -65,23 +95,43 @@ function latinfo_dance_style_level_label(int $level): string
     };
 }
 
+function latinfo_dance_style_liking_label(int $liking): string
+{
+    return match (true) {
+        $liking <= 0 => 'Nem adom meg',
+        $liking <= 3 => 'Kevéssé',
+        $liking <= 6 => 'Közepesen',
+        $liking <= 8 => 'Nagyon',
+        default => 'Imádom',
+    };
+}
+
 /**
  * @return int 0–10
  */
-function latinfo_dance_style_normalize_level(mixed $raw): int
+function latinfo_dance_style_normalize_score(mixed $raw): int
 {
     if ($raw === null || $raw === '' || $raw === false) {
         return 0;
     }
-    $level = (int) $raw;
-    if ($level < 0) {
+    $score = (int) $raw;
+    if ($score < 0) {
         return 0;
     }
-    if ($level > 10) {
+    if ($score > 10) {
         return 10;
     }
 
-    return $level;
+    return $score;
+}
+
+/**
+ * @deprecated Use latinfo_dance_style_normalize_score()
+ * @return int 0–10
+ */
+function latinfo_dance_style_normalize_level(mixed $raw): int
+{
+    return latinfo_dance_style_normalize_score($raw);
 }
 
 /**
@@ -109,7 +159,19 @@ function latinfo_dance_style_catalog(PDO $db): array
 }
 
 /**
- * @return array<int, int> style_id => level (1–10)
+ * @return array{level:int,liking:int,not_interested:bool}
+ */
+function latinfo_dance_style_empty_prefs(): array
+{
+    return [
+        'level' => 0,
+        'liking' => 0,
+        'not_interested' => false,
+    ];
+}
+
+/**
+ * @return array<int, array{level:int,liking:int,not_interested:bool}>
  */
 function latinfo_user_dance_styles_map(PDO $db, int $userId): array
 {
@@ -118,7 +180,7 @@ function latinfo_user_dance_styles_map(PDO $db, int $userId): array
     }
     try {
         $stmt = $db->prepare('
-            SELECT `style_id`, `level`
+            SELECT `style_id`, `level`, `liking`, `not_interested`
             FROM `latinfo_user_dance_styles`
             WHERE `user_id` = ?
         ');
@@ -126,10 +188,20 @@ function latinfo_user_dance_styles_map(PDO $db, int $userId): array
         $out = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $styleId = (int) ($row['style_id'] ?? 0);
-            $level = latinfo_dance_style_normalize_level($row['level'] ?? 0);
-            if ($styleId > 0 && $level >= 1) {
-                $out[$styleId] = $level;
+            if ($styleId <= 0) {
+                continue;
             }
+            $notInterested = (int) ($row['not_interested'] ?? 0) === 1;
+            $level = $notInterested ? 0 : latinfo_dance_style_normalize_score($row['level'] ?? 0);
+            $liking = $notInterested ? 0 : latinfo_dance_style_normalize_score($row['liking'] ?? 0);
+            if (!$notInterested && $level < 1 && $liking < 1) {
+                continue;
+            }
+            $out[$styleId] = [
+                'level' => $level,
+                'liking' => $liking,
+                'not_interested' => $notInterested,
+            ];
         }
 
         return $out;
@@ -141,10 +213,10 @@ function latinfo_user_dance_styles_map(PDO $db, int $userId): array
 }
 
 /**
- * @param array<int|string, mixed> $levelsByStyleId style_id => level (0–10)
+ * @param array<int|string, mixed> $prefsByStyleId style_id => level|array prefs
  * @return array{ok:bool,error:string,changed:int}
  */
-function latinfo_user_dance_styles_save(PDO $db, int $userId, array $levelsByStyleId): array
+function latinfo_user_dance_styles_save(PDO $db, int $userId, array $prefsByStyleId): array
 {
     if ($userId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen felhasználó.', 'changed' => 0];
@@ -159,14 +231,43 @@ function latinfo_user_dance_styles_save(PDO $db, int $userId, array $levelsBySty
     }
 
     $wanted = [];
-    foreach ($levelsByStyleId as $styleKey => $rawLevel) {
+    foreach ($prefsByStyleId as $styleKey => $rawPrefs) {
         $styleId = (int) $styleKey;
         if ($styleId <= 0 || !isset($catalog[$styleId])) {
             continue;
         }
-        $level = latinfo_dance_style_normalize_level($rawLevel);
-        if ($level >= 1) {
-            $wanted[$styleId] = $level;
+
+        $notInterested = false;
+        $level = 0;
+        $liking = 0;
+
+        if (is_array($rawPrefs)) {
+            $notInterested = !empty($rawPrefs['not_interested'])
+                && (string) $rawPrefs['not_interested'] !== '0';
+            if (!$notInterested) {
+                $level = latinfo_dance_style_normalize_score($rawPrefs['level'] ?? 0);
+                $liking = latinfo_dance_style_normalize_score($rawPrefs['liking'] ?? 0);
+            }
+        } else {
+            // Régi forma: styles[id] = level
+            $level = latinfo_dance_style_normalize_score($rawPrefs);
+        }
+
+        if ($notInterested) {
+            $wanted[$styleId] = [
+                'level' => 0,
+                'liking' => 0,
+                'not_interested' => true,
+            ];
+            continue;
+        }
+
+        if ($level >= 1 || $liking >= 1) {
+            $wanted[$styleId] = [
+                'level' => $level,
+                'liking' => $liking,
+                'not_interested' => false,
+            ];
         }
     }
 
@@ -177,24 +278,40 @@ function latinfo_user_dance_styles_save(PDO $db, int $userId, array $levelsBySty
         $db->beginTransaction();
 
         $upsert = $db->prepare('
-            INSERT INTO `latinfo_user_dance_styles` (`user_id`, `style_id`, `level`)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE `level` = VALUES(`level`)
+            INSERT INTO `latinfo_user_dance_styles`
+                (`user_id`, `style_id`, `level`, `liking`, `not_interested`)
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                `level` = VALUES(`level`),
+                `liking` = VALUES(`liking`),
+                `not_interested` = VALUES(`not_interested`)
         ');
         $delete = $db->prepare('
             DELETE FROM `latinfo_user_dance_styles`
             WHERE `user_id` = ? AND `style_id` = ?
         ');
 
-        foreach ($wanted as $styleId => $level) {
-            if (($current[$styleId] ?? null) === $level) {
+        foreach ($wanted as $styleId => $prefs) {
+            $prev = $current[$styleId] ?? null;
+            if (
+                $prev !== null
+                && (int) $prev['level'] === (int) $prefs['level']
+                && (int) $prev['liking'] === (int) $prefs['liking']
+                && (bool) $prev['not_interested'] === (bool) $prefs['not_interested']
+            ) {
                 continue;
             }
-            $upsert->execute([$userId, $styleId, $level]);
+            $upsert->execute([
+                $userId,
+                $styleId,
+                (int) $prefs['level'],
+                (int) $prefs['liking'],
+                $prefs['not_interested'] ? 1 : 0,
+            ]);
             $changed++;
         }
 
-        foreach ($current as $styleId => $_level) {
+        foreach ($current as $styleId => $_prefs) {
             if (isset($wanted[$styleId])) {
                 continue;
             }
