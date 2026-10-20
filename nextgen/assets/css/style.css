@@ -5462,6 +5462,22 @@ body.event-edit-cover-lightbox-open {
     border-left-color: #78716c;
     background: linear-gradient(135deg, #fafaf9 0%, #fff 60%);
 }
+.events-edit-panel--tone-url .form-group {
+    margin-bottom: 0;
+}
+.events-edit-panel--tone-url .events-url-open-row {
+    flex-wrap: nowrap;
+    width: 100%;
+}
+.events-edit-panel--tone-url .events-url-open-row > input[type="url"] {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+}
+.events-edit-panel--tone-url .events-url-open-row > .events-url-open-icon {
+    flex-shrink: 0;
+    align-self: center;
+}
 .events-edit-panel--tone-publish {
     border-left-color: #16a34a;
     background: linear-gradient(135deg, #f0fdf4 0%, #fff 60%);

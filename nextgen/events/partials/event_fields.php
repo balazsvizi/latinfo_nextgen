@@ -154,20 +154,21 @@ if ($organizerFinanceJson === false) {
     </div>
 </div>
 <div class="events-edit-panel events-edit-panel--tone-url">
-    <h3 class="events-edit-panel__title">
-        További információ<?= events_url_open_button((string) ($e['event_url'] ?? '')) ?>
-    </h3>
+    <h3 class="events-edit-panel__title">További információ</h3>
     <div class="form-group">
-        <input
-            type="url"
-            id="event_url"
-            name="event_url"
-            value="<?= h($e['event_url']) ?>"
-            maxlength="2000"
-            placeholder="https://"
-            aria-label="További információ URL"
-            data-required-for-publish="1"
-        >
+        <div class="events-url-open-row">
+            <input
+                type="url"
+                id="event_url"
+                name="event_url"
+                value="<?= h($e['event_url']) ?>"
+                maxlength="2000"
+                placeholder="https://"
+                aria-label="További információ URL"
+                data-required-for-publish="1"
+            >
+            <?= events_url_open_button((string) ($e['event_url'] ?? '')) ?>
+        </div>
     </div>
 </div>
 <div class="events-edit-org-venue-grid">
