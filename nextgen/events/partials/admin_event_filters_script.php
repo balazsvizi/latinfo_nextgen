@@ -48,11 +48,12 @@
     var axisMin = shell.getAttribute('data-axis-min');
     var days = parseInt(shell.getAttribute('data-axis-days'), 10) || 0;
 
-    var debounceTimer = null;
     var rangeTimer = null;
+    var submitting = false;
 
     function submitForm() {
-        if (!form) return;
+        if (!form || submitting) return;
+        submitting = true;
         if (typeof form.requestSubmit === 'function') {
             form.requestSubmit();
         } else {
@@ -60,23 +61,55 @@
         }
     }
 
-    function debouncedSubmit(delay) {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(submitForm, delay);
+    function syncNameMirrors(source) {
+        if (!source) return;
+        if (source.id === 'ev-f-name-quick' && panelName) {
+            panelName.value = source.value;
+            source.classList.toggle('is-active', (source.value || '').trim() !== '');
+        }
+        if (source.id === 'ev-f-name' && quickName) {
+            quickName.value = source.value;
+            quickName.classList.toggle('is-active', (source.value || '').trim() !== '');
+        }
     }
 
-    if (quickName && panelName && form) {
-        quickName.addEventListener('input', function () {
-            panelName.value = quickName.value;
-            quickName.classList.toggle('is-active', (quickName.value || '').trim() !== '');
+    function shouldSkipCommit(relatedTarget) {
+        if (!relatedTarget) return false;
+        if (relatedTarget.id === 'events-cal-filters-toggle') return true;
+        return typeof relatedTarget.closest === 'function' && relatedTarget.closest('a') !== null;
+    }
+
+    function bindTextCommit(el) {
+        var skipNextChange = false;
+        el.addEventListener('input', function () {
+            syncNameMirrors(el);
         });
-        quickName.addEventListener('keydown', function (e) {
+        el.addEventListener('keydown', function (e) {
             if (e.key !== 'Enter') return;
             e.preventDefault();
-            panelName.value = quickName.value;
-            quickName.classList.toggle('is-active', (quickName.value || '').trim() !== '');
+            syncNameMirrors(el);
             submitForm();
         });
+        el.addEventListener('blur', function (e) {
+            if (shouldSkipCommit(e.relatedTarget)) {
+                skipNextChange = true;
+            }
+        });
+        el.addEventListener('change', function () {
+            if (skipNextChange) {
+                skipNextChange = false;
+                return;
+            }
+            syncNameMirrors(el);
+            submitForm();
+        });
+        if ((el.type || '') === 'search') {
+            el.addEventListener('search', function () {
+                if ((el.value || '') !== '') return;
+                syncNameMirrors(el);
+                submitForm();
+            });
+        }
     }
 
     if (form) {
@@ -85,19 +118,15 @@
         });
 
         form.querySelectorAll('input.events-filter-input[type="text"], input.events-filter-input[type="search"]').forEach(function (el) {
-            if (el.id === 'ev-f-name-quick') return;
-            el.addEventListener('input', function () {
-                if (el.id === 'ev-f-name' && quickName) {
-                    quickName.value = el.value;
-                    quickName.classList.toggle('is-active', (el.value || '').trim() !== '');
-                }
-                debouncedSubmit(450);
-            });
+            if (el.readOnly) return;
+            bindTextCommit(el);
         });
 
         form.querySelectorAll('input.events-filter-input[type="number"]').forEach(function (el) {
-            el.addEventListener('input', function () {
-                debouncedSubmit(450);
+            el.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                submitForm();
             });
             el.addEventListener('change', submitForm);
         });
