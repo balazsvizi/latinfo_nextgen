@@ -35,7 +35,7 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
 </head>
 <body class="partner-portal-body">
 <?php if (partner_is_admin_impersonating()): ?>
-    <p class="partner-impersonation-bar">Admin nézet: <?= h($partnerUserName !== '' ? $partnerUserName : 'a partner') ?> portálját látod. A kijelentkezés csak ezt a nézetet zárja be.</p>
+    <p class="partner-impersonation-bar">Admin nézet: <?= h($partnerUserName !== '' ? $partnerUserName : 'a partner') ?> portálját látod.<?php if ($partnerRow !== null && empty($partnerRow['aktív'])): ?> A fiók inaktív.<?php endif; ?> A kijelentkezés csak ezt a nézetet zárja be.</p>
 <?php endif; ?>
 <header class="partner-header">
     <div class="partner-header__inner">

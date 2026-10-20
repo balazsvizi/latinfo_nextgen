@@ -26,14 +26,14 @@ function partner_is_admin_impersonating(): bool
 }
 
 /**
- * Admin belépés egy aktív partner portáljára, jelszó nélkül.
- * A kötelező jelszócsere ennél a nézetnél nem akadályoz.
+ * Admin belépés a partner portáljára, jelszó nélkül.
+ * Inaktív fióknál és kötelező jelszócsere esetén is megnyitja a nézetet.
  */
 function partner_begin_admin_impersonation(array $partner): bool
 {
     $partnerId = (int) ($partner['id'] ?? 0);
     $adminId = (int) ($_SESSION['admin_id'] ?? 0);
-    if ($partnerId <= 0 || $adminId <= 0 || empty($partner['aktív'])) {
+    if ($partnerId <= 0 || $adminId <= 0) {
         return false;
     }
 
@@ -130,7 +130,7 @@ function partner_current(PDO $db): ?array
         return null;
     }
     $row = nextgen_partner_by_id($db, $id);
-    if ($row === null || empty($row['aktív'])) {
+    if ($row === null || (empty($row['aktív']) && !partner_is_admin_impersonating())) {
         partner_logout();
 
         return null;
