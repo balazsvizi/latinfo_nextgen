@@ -92,6 +92,17 @@
     color: var(--pp-accent);
 }
 
+.partner-impersonation-bar {
+    margin: 0;
+    padding: 0.55rem 1.25rem;
+    background: #fff7ed;
+    color: #9a3412;
+    border-bottom: 1px solid #fdba74;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+}
+
 .partner-header {
     background: rgba(255, 255, 255, 0.92);
     color: var(--pp-ink);

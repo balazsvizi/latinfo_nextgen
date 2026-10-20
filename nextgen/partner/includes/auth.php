@@ -20,9 +20,35 @@ function partner_require_login(): void
     partner_require_password_change_if_needed();
 }
 
+function partner_is_admin_impersonating(): bool
+{
+    return (int) ($_SESSION['partner_impersonator_admin_id'] ?? 0) > 0;
+}
+
+/**
+ * Admin belépés egy aktív partner portáljára, jelszó nélkül.
+ * A kötelező jelszócsere ennél a nézetnél nem akadályoz.
+ */
+function partner_begin_admin_impersonation(array $partner): bool
+{
+    $partnerId = (int) ($partner['id'] ?? 0);
+    $adminId = (int) ($_SESSION['admin_id'] ?? 0);
+    if ($partnerId <= 0 || $adminId <= 0 || empty($partner['aktív'])) {
+        return false;
+    }
+
+    $_SESSION['partner_id'] = $partnerId;
+    $_SESSION['partner_nev'] = (string) ($partner['név'] ?? '');
+    $_SESSION['partner_email'] = (string) ($partner['email'] ?? '');
+    $_SESSION['partner_must_change_password'] = false;
+    $_SESSION['partner_impersonator_admin_id'] = $adminId;
+
+    return true;
+}
+
 function partner_require_password_change_if_needed(): void
 {
-    if (empty($_SESSION['partner_id'])) {
+    if (empty($_SESSION['partner_id']) || partner_is_admin_impersonating()) {
         return;
     }
 
@@ -66,6 +92,7 @@ function partner_login(string $email, string $password): bool
     $_SESSION['partner_nev'] = (string) ($partner['név'] ?? '');
     $_SESSION['partner_email'] = (string) ($partner['email'] ?? '');
     $_SESSION['partner_must_change_password'] = nextgen_partner_must_change_password($partner);
+    unset($_SESSION['partner_impersonator_admin_id']);
     session_regenerate_id(true);
 
     nextgen_partner_log(getDb(), (int) $partner['id'], 'Bejelentkezés');
@@ -76,14 +103,20 @@ function partner_login(string $email, string $password): bool
 function partner_logout(): void
 {
     $partnerId = (int) ($_SESSION['partner_id'] ?? 0);
+    $impersonatorId = (int) ($_SESSION['partner_impersonator_admin_id'] ?? 0);
     if ($partnerId > 0 && function_exists('nextgen_partner_log')) {
-        nextgen_partner_log(getDb(), $partnerId, 'Kijelentkezés');
+        if ($impersonatorId > 0) {
+            nextgen_partner_log(getDb(), $partnerId, 'Admin kilépett a partner nézetből', null, 'admin', $impersonatorId);
+        } else {
+            nextgen_partner_log(getDb(), $partnerId, 'Kijelentkezés');
+        }
     }
     unset(
         $_SESSION['partner_id'],
         $_SESSION['partner_nev'],
         $_SESSION['partner_email'],
-        $_SESSION['partner_must_change_password']
+        $_SESSION['partner_must_change_password'],
+        $_SESSION['partner_impersonator_admin_id']
     );
 }
 

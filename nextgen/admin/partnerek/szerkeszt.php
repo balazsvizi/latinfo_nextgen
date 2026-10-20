@@ -7,6 +7,7 @@ require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/login_invite.php';
+require_once dirname(__DIR__, 2) . '/partner/includes/auth.php';
 require_once dirname(__DIR__, 2) . '/events/lib/dance_schools.php';
 require_once dirname(__DIR__, 2) . '/events/lib/dance_teachers.php';
 requireLogin();
@@ -113,6 +114,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $hiba = (string) ($result['error'] ?? 'Login létrehozása sikertelen.');
                 $partner = nextgen_partner_by_id($db, $id) ?? $partner;
+            }
+        } elseif ($action === 'impersonate') {
+            if (!partner_begin_admin_impersonation($partner)) {
+                $hiba = empty($partner['aktív'])
+                    ? 'Inaktív partner portálja nem nyitható meg.'
+                    : 'A partner portálja most nem nyitható meg.';
+            } else {
+                nextgen_partner_log(
+                    $db,
+                    $id,
+                    'Admin belépés a partner nevében',
+                    null,
+                    'admin',
+                    (int) ($_SESSION['admin_id'] ?? 0)
+                );
+                redirect(partner_url('index.php'));
             }
         } elseif ($action === 'toggle') {
             $active = empty($partner['aktív']);
@@ -318,11 +335,21 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 
 <div class="card">
     <h2>Partner szerkesztése</h2>
-    <p class="toolbar">
+    <div class="toolbar">
         <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary btn-sm">← Lista</a>
         <a href="<?= h(nextgen_url('admin/partnerek/uzenetek.php?partner_id=') . $id) ?>" class="btn btn-secondary btn-sm">Üzenetek</a>
         <a href="<?= h(partner_url('')) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Partner portál</a>
-    </p>
+        <?php if (!empty($partner['aktív'])): ?>
+            <form method="post" target="_blank" class="partner-impersonate-form">
+                <?= csrf_input('partner_admin_edit') ?>
+                <input type="hidden" name="id" value="<?= $id ?>">
+                <input type="hidden" name="_action" value="impersonate">
+                <button type="submit" class="btn btn-primary btn-sm">Belépek a nevében</button>
+            </form>
+        <?php else: ?>
+            <button type="button" class="btn btn-secondary btn-sm" disabled title="Inaktív partner portálja nem nyitható meg">Belépek a nevében</button>
+        <?php endif; ?>
+    </div>
 
     <form method="post" class="venue-form" id="partner-admin-edit-form">
         <?= csrf_input('partner_admin_edit') ?>

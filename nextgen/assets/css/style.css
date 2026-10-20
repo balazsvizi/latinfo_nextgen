@@ -7872,6 +7872,10 @@ a.events-rt-person:hover .events-rt-person__name {
     gap: 0.5rem;
     margin-bottom: 1rem;
 }
+.partner-impersonate-form {
+    display: inline-flex;
+    margin: 0;
+}
 .toolbar input[type="search"],
 .toolbar select { max-width: 200px; }
 
