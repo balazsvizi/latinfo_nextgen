@@ -306,6 +306,11 @@ function pm_tools_register_footer_output_buffer(): void
             return $buffer;
         }
 
-        return (string) preg_replace('/<\/body>/i', $widget . '</body>', $buffer, 1);
+        $pos = strripos($buffer, '</body>');
+        if ($pos === false) {
+            return $buffer;
+        }
+
+        return substr($buffer, 0, $pos) . $widget . substr($buffer, $pos);
     });
 }

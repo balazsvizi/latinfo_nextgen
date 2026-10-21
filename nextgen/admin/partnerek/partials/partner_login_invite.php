@@ -340,8 +340,8 @@ if ($loginInvitePlaceholdersJson === false) {
         confirmBtn.disabled = errors.length > 0;
 
         frame.srcdoc = '<!DOCTYPE html><html><head><meta charset="utf-8">'
-            + '<style>body{margin:16px;font:15px/1.5 system-ui,Segoe UI,sans-serif;color:#1c1c1c;}a{color:#0b57d0;}img{max-width:100%;height:auto;}</style>'
-            + '</head><body>' + html + '</body></html>';
+            + '<style>body{margin:16px;font:15px/1.5 system-ui,Segoe UI,sans-serif;color:#1c1c1c;}a{color:#0b57d0;}img{max-width:100%;height:auto;}'
+            + '<' + '/style><' + '/head><body>' + html + '<' + '/body><' + '/html>';
 
         if (typeof dialog.showModal === 'function' && !dialog.open) {
             dialog.showModal();
