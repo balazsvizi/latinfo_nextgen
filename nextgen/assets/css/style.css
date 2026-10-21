@@ -9912,3 +9912,88 @@ table select:focus {
         white-space: normal;
     }
 }
+
+dialog.partner-login-preview-dialog {
+    max-width: min(52rem, 96vw);
+    width: 100%;
+    margin: auto;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+    color: var(--text);
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+}
+dialog.partner-login-preview-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.52);
+}
+.partner-login-preview-dialog__inner {
+    display: flex;
+    flex-direction: column;
+    max-height: min(92vh, 56rem);
+}
+.partner-login-preview-dialog__header,
+.partner-login-preview-dialog__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    flex-shrink: 0;
+}
+.partner-login-preview-dialog__header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+}
+.partner-login-preview-dialog__header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.partner-login-preview-dialog__x {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-muted, #6b7280);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.15rem 0.4rem;
+}
+.partner-login-preview-dialog__x:hover {
+    color: var(--text);
+}
+.partner-login-preview-dialog__body {
+    padding: 0.85rem 1rem 1rem;
+    overflow: auto;
+    min-height: 0;
+}
+.partner-login-preview-dialog__body .help {
+    margin-top: 0;
+}
+.partner-login-preview-dialog__meta {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.28rem 0.75rem;
+    margin: 0 0 0.85rem;
+    font-size: 0.92rem;
+}
+.partner-login-preview-dialog__meta dt {
+    margin: 0;
+    color: var(--text-muted, #6b7280);
+}
+.partner-login-preview-dialog__meta dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.partner-login-preview-dialog__frame {
+    display: block;
+    width: 100%;
+    height: min(52vh, 28rem);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 0.4rem);
+    background: #fff;
+}
+.partner-login-preview-dialog__toolbar {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+}

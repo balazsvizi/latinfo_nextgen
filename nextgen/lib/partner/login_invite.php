@@ -178,8 +178,37 @@ function nextgen_partner_login_invite_apply_placeholders(string $text, array $pl
 }
 
 /**
+ * BCC címlista: érvényes címek és a hibás darabok külön.
+ *
+ * @return array{emails: list<string>, invalid: list<string>}
+ */
+function nextgen_partner_login_invite_parse_address_list(string $raw): array
+{
+    $emails = [];
+    $invalid = [];
+    foreach (preg_split('/[\s,;]+/u', $raw) ?: [] as $part) {
+        $part = trim($part);
+        if ($part === '') {
+            continue;
+        }
+        $normalized = mb_strtolower($part, 'UTF-8');
+        if (filter_var($normalized, FILTER_VALIDATE_EMAIL)) {
+            $emails[$normalized] = $normalized;
+        } else {
+            $invalid[] = $part;
+        }
+    }
+
+    return [
+        'emails' => array_values($emails),
+        'invalid' => $invalid,
+    ];
+}
+
+/**
  * Ideiglenes jelszó beállítása + kiértesítő e-mail.
  *
+ * @param list<string> $bccEmails
  * @return array{ok: true, password: string}|array{ok: false, error: string}
  */
 function nextgen_partner_login_invite_create_and_notify(
@@ -189,7 +218,8 @@ function nextgen_partner_login_invite_create_and_notify(
     string $subjectTemplate,
     string $htmlTemplate,
     bool $activateIfInactive = true,
-    ?int $smtpConfigId = null
+    ?int $smtpConfigId = null,
+    array $bccEmails = []
 ): array {
     $partner = nextgen_partner_by_id($db, $partnerId);
     if ($partner === null) {
@@ -210,6 +240,22 @@ function nextgen_partner_login_invite_create_and_notify(
     $htmlTemplate = trim($htmlTemplate);
     if ($subjectTemplate === '' || $htmlTemplate === '') {
         return ['ok' => false, 'error' => 'A levél tárgya és tartalma kötelező.'];
+    }
+
+    $bccClean = [];
+    foreach ($bccEmails as $addr) {
+        $addr = trim(mb_strtolower((string) $addr, 'UTF-8'));
+        if ($addr === '' || $addr === $email) {
+            continue;
+        }
+        if (!filter_var($addr, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Érvénytelen BCC cím: ' . $addr];
+        }
+        $bccClean[$addr] = $addr;
+    }
+    $bccClean = array_values($bccClean);
+    if (count($bccClean) > 20) {
+        return ['ok' => false, 'error' => 'Legfeljebb 20 BCC cím adható meg.'];
     }
 
     if ($activateIfInactive && empty($partner['aktív'])) {
@@ -234,6 +280,9 @@ function nextgen_partner_login_invite_create_and_notify(
     if ($smtpConfigId !== null && $smtpConfigId > 0) {
         $mailOpts['config_id'] = $smtpConfigId;
     }
+    if ($bccClean !== []) {
+        $mailOpts['bcc'] = $bccClean;
+    }
 
     $mailResult = email_kuld($email, $subject, $body, $mailOpts);
     if (!$mailResult['ok']) {
@@ -246,7 +295,11 @@ function nextgen_partner_login_invite_create_and_notify(
         ];
     }
 
-    nextgen_partner_log($db, $partnerId, 'Partner login létrehozva és kiküldve', 'Címzett: ' . $email);
+    $logDetail = 'Címzett: ' . $email;
+    if ($bccClean !== []) {
+        $logDetail .= '; BCC: ' . implode(', ', $bccClean);
+    }
+    nextgen_partner_log($db, $partnerId, 'Partner login létrehozva és kiküldve', $logDetail);
 
     return ['ok' => true, 'password' => $temporaryPassword];
 }

@@ -88,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $loginInviteHtml = trim((string) ($_POST['login_invite_html'] ?? ''));
             $loginInviteTemplateId = (int) ($_POST['login_invite_template_id'] ?? 0);
             $loginInviteSmtpId = (int) ($_POST['login_invite_smtp'] ?? 0);
+            $loginInviteBcc = trim((string) ($_POST['login_invite_bcc'] ?? ''));
 
             if (!empty($_POST['login_invite_regen'])) {
                 $loginInviteTempPassword = nextgen_partner_generate_temporary_password();
@@ -99,21 +100,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $loginInviteHtml = (string) $selected['html_tartalom'];
                 }
             } else {
-                $result = nextgen_partner_login_invite_create_and_notify(
-                    $db,
-                    $id,
-                    $loginInviteTempPassword,
-                    $loginInviteSubject,
-                    $loginInviteHtml,
-                    !empty($_POST['login_invite_activate']),
-                    $loginInviteSmtpId > 0 ? $loginInviteSmtpId : null
-                );
-                if ($result['ok']) {
-                    flash('success', 'Partner login létrehozva, kiértesítő elküldve.');
-                    redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                $loginInviteBccParsed = nextgen_partner_login_invite_parse_address_list($loginInviteBcc);
+                if ($loginInviteBccParsed['invalid'] !== []) {
+                    $hiba = 'Érvénytelen BCC cím: ' . implode(', ', $loginInviteBccParsed['invalid']);
+                } elseif (count($loginInviteBccParsed['emails']) > 20) {
+                    $hiba = 'Legfeljebb 20 BCC cím adható meg.';
+                } else {
+                    $result = nextgen_partner_login_invite_create_and_notify(
+                        $db,
+                        $id,
+                        $loginInviteTempPassword,
+                        $loginInviteSubject,
+                        $loginInviteHtml,
+                        !empty($_POST['login_invite_activate']),
+                        $loginInviteSmtpId > 0 ? $loginInviteSmtpId : null,
+                        $loginInviteBccParsed['emails']
+                    );
+                    if ($result['ok']) {
+                        $success = 'Partner login létrehozva, kiértesítő elküldve.';
+                        if ($loginInviteBccParsed['emails'] !== []) {
+                            $success .= ' BCC: ' . count($loginInviteBccParsed['emails']) . ' cím.';
+                        }
+                        flash('success', $success);
+                        redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                    }
                 }
-                $hiba = (string) ($result['error'] ?? 'Login létrehozása sikertelen.');
-                $partner = nextgen_partner_by_id($db, $id) ?? $partner;
+                if ($hiba === '' && isset($result) && empty($result['ok'])) {
+                    $hiba = (string) ($result['error'] ?? 'Login létrehozása sikertelen.');
+                    $partner = nextgen_partner_by_id($db, $id) ?? $partner;
+                }
             }
         } elseif ($action === 'impersonate') {
             if (!partner_begin_admin_impersonation($partner)) {
@@ -318,6 +333,9 @@ if ($loginInviteSmtpId <= 0) {
     }
 }
 $loginInviteCanEmail = nextgen_partner_email_is_deliverable((string) ($partner['email'] ?? ''));
+if (!isset($loginInviteBcc)) {
+    $loginInviteBcc = '';
+}
 
 $pageTitle = 'Partner: ' . (string) ($partner['név'] ?? '');
 require_once dirname(__DIR__, 2) . '/partials/header.php';
