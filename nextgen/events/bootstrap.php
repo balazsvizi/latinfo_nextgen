@@ -360,6 +360,74 @@ if (!function_exists('events_public_favicon_head_markup')) {
     }
 }
 
+if (!function_exists('events_public_brand_og_image')) {
+    /**
+     * Facebook megosztókép (1200×630), ugyanaz, mint a kezdőoldalé.
+     *
+     * @return array{url:string,width:int,height:int,type:string}
+     */
+    function events_public_brand_og_image(): array {
+        $empty = ['url' => '', 'width' => 0, 'height' => 0, 'type' => ''];
+        $rel = 'site/assets/images/og/latinfo-home-share-swirl.jpg';
+        $fs = dirname(__DIR__) . '/' . $rel;
+        if (!is_file($fs) || !is_readable($fs)) {
+            return $empty;
+        }
+        $url = events_absolute_url(nextgen_url($rel));
+        $ver = (string) filemtime($fs);
+        if ($ver !== '') {
+            $url .= (str_contains($url, '?') ? '&' : '?') . 'v=' . rawurlencode($ver);
+        }
+        $width = 0;
+        $height = 0;
+        $type = '';
+        $dims = @getimagesize($fs);
+        if (is_array($dims)) {
+            $width = (int) ($dims[0] ?? 0);
+            $height = (int) ($dims[1] ?? 0);
+            $type = (string) ($dims['mime'] ?? '');
+        }
+
+        return [
+            'url' => $url,
+            'width' => $width,
+            'height' => $height,
+            'type' => $type,
+        ];
+    }
+}
+
+if (!function_exists('events_public_og_image_head_markup')) {
+    /**
+     * Open Graph + Twitter kép meta. Üres string, ha a fájl hiányzik.
+     */
+    function events_public_og_image_head_markup(string $alt): string {
+        $image = events_public_brand_og_image();
+        if ($image['url'] === '') {
+            return '';
+        }
+        $lines = [
+            '<meta property="og:image" content="' . h($image['url']) . '">',
+        ];
+        if (str_starts_with($image['url'], 'https://')) {
+            $lines[] = '<meta property="og:image:secure_url" content="' . h($image['url']) . '">';
+        }
+        if ($image['type'] !== '') {
+            $lines[] = '<meta property="og:image:type" content="' . h($image['type']) . '">';
+        }
+        if ($image['width'] > 0 && $image['height'] > 0) {
+            $lines[] = '<meta property="og:image:width" content="' . (int) $image['width'] . '">';
+            $lines[] = '<meta property="og:image:height" content="' . (int) $image['height'] . '">';
+        }
+        $lines[] = '<meta property="og:image:alt" content="' . h($alt) . '">';
+        $lines[] = '<meta name="twitter:card" content="summary_large_image">';
+        $lines[] = '<meta name="twitter:image" content="' . h($image['url']) . '">';
+        $lines[] = '<meta name="twitter:image:alt" content="' . h($alt) . '">';
+
+        return implode("\n    ", $lines) . "\n";
+    }
+}
+
 if (!function_exists('events_public_visitor_metrics_allowed')) {
     /**
      * Nyilvános metrikák (belső számláló + GA4) csak vendég látogatónál.

@@ -308,6 +308,14 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta property="og:title" content="<?= h($title) ?>">
     <meta property="og:description" content="<?= h($desc) ?>">
     <meta property="og:url" content="<?= h($ogPageUrl) ?>">
+    <?php
+    $ogImageAlt = $lang === 'en'
+        ? 'Latinfo.hu – where the dance community gets informed'
+        : 'Latinfo.hu – ahol a táncos közösség informálódik';
+    ?>
+    <?= events_public_og_image_head_markup($ogImageAlt) ?>
+    <meta name="twitter:title" content="<?= h($title) ?>">
+    <meta name="twitter:description" content="<?= h($desc) ?>">
     <link rel="canonical" href="<?= h($canonical) ?>">
     <link rel="alternate" hreflang="hu" href="<?= h(events_absolute_url(events_public_home_page_url('hu'))) ?>">
     <link rel="alternate" hreflang="en" href="<?= h(events_absolute_url(events_public_home_page_url('en'))) ?>">
