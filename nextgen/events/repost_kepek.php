@@ -18,6 +18,7 @@ $to = $range['to'];
 $presets = events_repost_images_presets();
 $rows = events_repost_images_fetch($db, $from, $to);
 $selfUrl = events_url('repost_kepek.php');
+$logoSrc = events_public_logo_src();
 
 $rangeLabel = $from === $to
     ? $from
@@ -93,10 +94,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <p class="help events-repost-kepek__empty">Nincs megjeleníthető kép ebben az intervallumban.</p>
         <?php else: ?>
             <?php
-            $brandOg = events_public_brand_og_image();
-            $brandUrl = (string) ($brandOg['url'] ?? '');
+            $n = count($visible);
+            $mod3 = $n % 3;
+            $mod2 = $n % 2;
+            $span3 = $mod3 === 0 ? 0 : (3 - $mod3);
+            $span2 = $mod2 === 0 ? 0 : 1;
+            $showLogo = $span3 > 0 || $span2 > 0;
             ?>
-            <div class="events-repost-kepek__montage" aria-label="Eseményképek montázs">
+            <div
+                class="events-repost-kepek__montage"
+                aria-label="Eseményképek montázs"
+                style="--repost-logo-span-3: <?= (int) max(1, $span3) ?>; --repost-logo-span-2: <?= (int) max(1, $span2) ?>;"
+            >
                 <?php foreach ($visible as $item): ?>
                     <figure class="events-repost-kepek__shot">
                         <img
@@ -108,11 +117,14 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         >
                     </figure>
                 <?php endforeach; ?>
-                <?php if ($brandUrl !== ''): ?>
-                    <figure class="events-repost-kepek__shot">
+                <?php if ($showLogo && $logoSrc !== ''): ?>
+                    <figure class="events-repost-kepek__shot events-repost-kepek__shot--logo<?= $span3 === 0 ? ' events-repost-kepek__shot--logo-hide-3' : '' ?><?= $span2 === 0 ? ' events-repost-kepek__shot--logo-hide-2' : '' ?>">
                         <img
-                            src="<?= h($brandUrl) ?>"
+                            class="events-repost-kepek__logo"
+                            src="<?= h($logoSrc) ?>"
                             alt="Latinfo.hu"
+                            width="240"
+                            height="80"
                             loading="lazy"
                             decoding="async"
                         >
