@@ -9997,3 +9997,128 @@ dialog.partner-login-preview-dialog::backdrop {
     flex-wrap: wrap;
     border-top: 1px solid var(--border);
 }
+
+/* Event admin ? repost képek (kivágás / FB megosztás) */
+.events-repost-kepek .events-list-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+.events-repost-kepek__count {
+    color: var(--text-muted);
+}
+.events-repost-kepek__intro {
+    margin: 0 0 1.25rem;
+    max-width: 42rem;
+}
+.events-repost-kepek__filters {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+}
+.events-repost-kepek__filter-grid {
+    margin-bottom: 0.85rem;
+}
+.events-repost-kepek__filter-actions .btn {
+    align-self: flex-end;
+}
+.events-repost-kepek__presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.events-repost-kepek__presets .btn.is-active,
+.events-repost-kepek__presets .btn[aria-current="page"] {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+.events-repost-kepek__empty {
+    margin: 1.5rem 0 0.5rem;
+}
+.events-repost-kepek__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: 1.75rem 1.25rem;
+}
+.events-repost-kepek__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-width: 0;
+}
+.events-repost-kepek__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-height: 3.25rem;
+}
+.events-repost-kepek__title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.35;
+}
+.events-repost-kepek__title:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+.events-repost-kepek__when,
+.events-repost-kepek__venue {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+.events-repost-kepek__card {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: #141414;
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    user-select: none;
+}
+.events-repost-kepek__media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #0a0a0a;
+}
+.events-repost-kepek__media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+.events-repost-kepek__brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 1rem 0.95rem;
+    background: #1a1a1a;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.events-repost-kepek__brand-text {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #f3e6c8;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+@media (max-width: 640px) {
+    .events-repost-kepek__grid {
+        grid-template-columns: 1fr;
+    }
+}

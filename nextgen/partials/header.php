@@ -76,6 +76,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-events-app" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('events/events_admin.php')) ?>" role="menuitem">Lista</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_naptar.php')) ?>" role="menuitem">Naptár</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/repost_kepek.php')) ?>" role="menuitem">Repost képek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/letrehoz.php')) ?>" role="menuitem">Új esemény</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/venues.php')) ?>" role="menuitem">Helyszínek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/organizers.php')) ?>" role="menuitem">Szervezők</a></li>
