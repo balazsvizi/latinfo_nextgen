@@ -9999,9 +9999,6 @@ dialog.partner-login-preview-dialog::backdrop {
 }
 
 /* Event admin ? repost képek montázs */
-.events-repost-kepek {
-    --repost-bg: #1c1612;
-}
 .events-repost-kepek .events-list-head {
     display: flex;
     flex-wrap: wrap;
@@ -10045,15 +10042,7 @@ dialog.partner-login-preview-dialog::backdrop {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.65rem;
     max-width: 72rem;
-    padding: 0.85rem;
     align-items: stretch;
-    background-color: var(--repost-bg);
-    background-image:
-        linear-gradient(180deg, rgba(28, 22, 18, 0.12) 0%, rgba(20, 17, 15, 0.18) 100%),
-        var(--repost-bg-image, none);
-    background-size: cover, cover;
-    background-position: center, center;
-    background-repeat: no-repeat, no-repeat;
 }
 .events-repost-kepek__shot {
     margin: 0;
@@ -10080,8 +10069,6 @@ dialog.partner-login-preview-dialog::backdrop {
     max-height: 4.5rem;
     height: auto !important;
     object-fit: contain;
-    filter: brightness(0) invert(1) sepia(0.25) saturate(1.2) hue-rotate(5deg);
-    opacity: 0.92;
 }
 @media (max-width: 960px) {
     .events-repost-kepek__montage {
