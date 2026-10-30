@@ -10000,7 +10000,7 @@ dialog.partner-login-preview-dialog::backdrop {
 
 /* Event admin ? repost képek montázs */
 .events-repost-kepek {
-    --repost-bg: #14110f;
+    --repost-bg: #1c1612;
 }
 .events-repost-kepek .events-list-head {
     display: flex;
@@ -10047,9 +10047,13 @@ dialog.partner-login-preview-dialog::backdrop {
     max-width: 72rem;
     padding: 0.85rem;
     align-items: stretch;
-    background:
-        radial-gradient(90% 55% at 50% 0%, rgba(232, 213, 168, 0.08), transparent 55%),
-        var(--repost-bg);
+    background-color: var(--repost-bg);
+    background-image:
+        linear-gradient(180deg, rgba(28, 22, 18, 0.12) 0%, rgba(20, 17, 15, 0.18) 100%),
+        var(--repost-bg-image, none);
+    background-size: cover, cover;
+    background-position: center, center;
+    background-repeat: no-repeat, no-repeat;
 }
 .events-repost-kepek__shot {
     margin: 0;

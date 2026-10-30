@@ -100,11 +100,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
             $span3 = $mod3 === 0 ? 0 : (3 - $mod3);
             $span2 = $mod2 === 0 ? 0 : 1;
             $showLogo = $span3 > 0 || $span2 > 0;
+            $brandOg = events_public_brand_og_image();
+            $bgUrl = (string) ($brandOg['url'] ?? '');
+            $montageStyle = '--repost-logo-span-3: ' . (int) max(1, $span3)
+                . '; --repost-logo-span-2: ' . (int) max(1, $span2) . ';';
+            if ($bgUrl !== '') {
+                $montageStyle .= ' --repost-bg-image: url(' . json_encode($bgUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . ');';
+            }
             ?>
             <div
                 class="events-repost-kepek__montage"
                 aria-label="Eseményképek montázs"
-                style="--repost-logo-span-3: <?= (int) max(1, $span3) ?>; --repost-logo-span-2: <?= (int) max(1, $span2) ?>;"
+                style="<?= h($montageStyle) ?>"
             >
                 <?php foreach ($visible as $item): ?>
                     <figure class="events-repost-kepek__shot">
