@@ -18,7 +18,6 @@ $to = $range['to'];
 $presets = events_repost_images_presets();
 $rows = events_repost_images_fetch($db, $from, $to);
 $brandLabel = defined('SITE_NAME') ? (string) SITE_NAME : 'Latinfo.hu';
-$editBase = events_url('szerkeszt.php?id=');
 $selfUrl = events_url('repost_kepek.php');
 
 $rangeLabel = $from === $to
@@ -44,11 +43,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <a href="<?= h($selfUrl) ?>" class="btn btn-secondary">Holnap (alap)</a>
         </div>
     </div>
-
-    <p class="help events-repost-kepek__intro">
-        A kivágható blokk a kép + alatta a <strong><?= h($brandLabel) ?></strong> sáv.
-        A cím és a dátum csak navigációhoz van — ne kerüljön a kivágásba.
-    </p>
 
     <form method="get" action="<?= h($selfUrl) ?>" class="events-repost-kepek__filters" id="events-repost-filter-form">
         <div class="events-filters-grid events-repost-kepek__filter-grid">
@@ -91,38 +85,22 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     continue;
                 }
                 $name = (string) ($row['event_name'] ?? '');
-                $when = events_repost_images_when_label($row);
-                $venueBits = array_filter([
-                    trim((string) ($row['venue_city'] ?? '')),
-                    trim((string) ($row['venue_name'] ?? '')),
-                ], static fn (string $p): bool => $p !== '');
-                $venueLine = implode(' · ', $venueBits);
-                $eventId = (int) ($row['id'] ?? 0);
                 ?>
                 <li class="events-repost-kepek__item">
-                    <div class="events-repost-kepek__meta">
-                        <a class="events-repost-kepek__title" href="<?= h($editBase . $eventId) ?>" title="Szerkesztés">
-                            <?= h($name) ?>
-                        </a>
-                        <?php if ($when !== ''): ?>
-                            <span class="events-repost-kepek__when"><?= h($when) ?></span>
-                        <?php endif; ?>
-                        <?php if ($venueLine !== ''): ?>
-                            <span class="events-repost-kepek__venue"><?= h($venueLine) ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <figure class="events-repost-kepek__card" aria-label="<?= h($name) ?> – kivágható megosztókép">
+                    <figure class="events-repost-kepek__frame" aria-label="<?= h($name !== '' ? $name : 'Eseményképe') ?>">
                         <div class="events-repost-kepek__media">
                             <img
                                 src="<?= h($imgUrl) ?>"
-                                alt=""
+                                alt="<?= h($name) ?>"
                                 loading="lazy"
                                 decoding="async"
                                 referrerpolicy="no-referrer"
                             >
                         </div>
                         <figcaption class="events-repost-kepek__brand">
+                            <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
                             <span class="events-repost-kepek__brand-text"><?= h($brandLabel) ?></span>
+                            <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
                         </figcaption>
                     </figure>
                 </li>
