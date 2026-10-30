@@ -77,35 +77,45 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <?php if ($rows === []): ?>
         <p class="help events-repost-kepek__empty">Nincs kiemelt képes, közzétett / előzetes buli ebben az intervallumban.</p>
     <?php else: ?>
-        <ul class="events-repost-kepek__grid" role="list">
-            <?php foreach ($rows as $row): ?>
-                <?php
-                $imgUrl = events_repost_images_featured_url((string) ($row['event_featured_image_url'] ?? ''));
-                if ($imgUrl === '') {
-                    continue;
-                }
-                $name = (string) ($row['event_name'] ?? '');
-                ?>
-                <li class="events-repost-kepek__item">
-                    <figure class="events-repost-kepek__frame" aria-label="<?= h($name !== '' ? $name : 'Eseményképe') ?>">
-                        <div class="events-repost-kepek__media">
+        <?php
+        $visible = [];
+        foreach ($rows as $row) {
+            $imgUrl = events_repost_images_featured_url((string) ($row['event_featured_image_url'] ?? ''));
+            if ($imgUrl === '') {
+                continue;
+            }
+            $visible[] = [
+                'url' => $imgUrl,
+                'name' => (string) ($row['event_name'] ?? ''),
+            ];
+        }
+        ?>
+        <?php if ($visible === []): ?>
+            <p class="help events-repost-kepek__empty">Nincs megjeleníthető kép ebben az intervallumban.</p>
+        <?php else: ?>
+            <figure class="events-repost-kepek__frame" aria-label="Repost képek – <?= h($brandLabel) ?>">
+                <div class="events-repost-kepek__ornament events-repost-kepek__ornament--top" aria-hidden="true"></div>
+                <ul class="events-repost-kepek__grid" role="list">
+                    <?php foreach ($visible as $item): ?>
+                        <li class="events-repost-kepek__item">
                             <img
-                                src="<?= h($imgUrl) ?>"
-                                alt="<?= h($name) ?>"
+                                src="<?= h($item['url']) ?>"
+                                alt="<?= h($item['name']) ?>"
                                 loading="lazy"
                                 decoding="async"
                                 referrerpolicy="no-referrer"
                             >
-                        </div>
-                        <figcaption class="events-repost-kepek__brand">
-                            <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
-                            <span class="events-repost-kepek__brand-text"><?= h($brandLabel) ?></span>
-                            <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
-                        </figcaption>
-                    </figure>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <figcaption class="events-repost-kepek__brand">
+                    <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
+                    <span class="events-repost-kepek__brand-text"><?= h($brandLabel) ?></span>
+                    <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
+                </figcaption>
+                <div class="events-repost-kepek__ornament events-repost-kepek__ornament--bottom" aria-hidden="true"></div>
+            </figure>
+        <?php endif; ?>
     <?php endif; ?>
 </div>
 
