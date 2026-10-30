@@ -17,7 +17,6 @@ $from = $range['from'];
 $to = $range['to'];
 $presets = events_repost_images_presets();
 $rows = events_repost_images_fetch($db, $from, $to);
-$brandLabel = defined('SITE_NAME') ? (string) SITE_NAME : 'Latinfo.hu';
 $selfUrl = events_url('repost_kepek.php');
 
 $rangeLabel = $from === $to
@@ -93,28 +92,19 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php if ($visible === []): ?>
             <p class="help events-repost-kepek__empty">Nincs megjeleníthető kép ebben az intervallumban.</p>
         <?php else: ?>
-            <figure class="events-repost-kepek__frame" aria-label="Repost képek – <?= h($brandLabel) ?>">
-                <div class="events-repost-kepek__ornament events-repost-kepek__ornament--top" aria-hidden="true"></div>
-                <ul class="events-repost-kepek__grid" role="list">
-                    <?php foreach ($visible as $item): ?>
-                        <li class="events-repost-kepek__item">
-                            <img
-                                src="<?= h($item['url']) ?>"
-                                alt="<?= h($item['name']) ?>"
-                                loading="lazy"
-                                decoding="async"
-                                referrerpolicy="no-referrer"
-                            >
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-                <figcaption class="events-repost-kepek__brand">
-                    <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
-                    <span class="events-repost-kepek__brand-text"><?= h($brandLabel) ?></span>
-                    <span class="events-repost-kepek__brand-mark" aria-hidden="true"></span>
-                </figcaption>
-                <div class="events-repost-kepek__ornament events-repost-kepek__ornament--bottom" aria-hidden="true"></div>
-            </figure>
+            <div class="events-repost-kepek__montage" aria-label="Eseményképek montázs">
+                <?php foreach ($visible as $item): ?>
+                    <figure class="events-repost-kepek__shot">
+                        <img
+                            src="<?= h($item['url']) ?>"
+                            alt="<?= h($item['name']) ?>"
+                            loading="lazy"
+                            decoding="async"
+                            referrerpolicy="no-referrer"
+                        >
+                    </figure>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
     <?php endif; ?>
 </div>
