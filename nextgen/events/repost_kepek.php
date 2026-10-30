@@ -92,7 +92,18 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <?php if ($visible === []): ?>
             <p class="help events-repost-kepek__empty">Nincs megjeleníthető kép ebben az intervallumban.</p>
         <?php else: ?>
-            <div class="events-repost-kepek__montage" aria-label="Eseményképek montázs">
+            <?php
+            $brandOg = events_public_brand_og_image();
+            $brandUrl = (string) ($brandOg['url'] ?? '');
+            $n = count($visible);
+            $span3 = $n % 3 === 0 ? 3 : (3 - ($n % 3));
+            $span2 = $n % 2 === 0 ? 2 : 1;
+            ?>
+            <div
+                class="events-repost-kepek__montage"
+                aria-label="Eseményképek montázs"
+                style="--repost-span-3: <?= (int) $span3 ?>; --repost-span-2: <?= (int) $span2 ?>;"
+            >
                 <?php foreach ($visible as $item): ?>
                     <figure class="events-repost-kepek__shot">
                         <img
@@ -104,6 +115,16 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         >
                     </figure>
                 <?php endforeach; ?>
+                <?php if ($brandUrl !== ''): ?>
+                    <figure class="events-repost-kepek__shot events-repost-kepek__shot--brand">
+                        <img
+                            src="<?= h($brandUrl) ?>"
+                            alt="Latinfo.hu"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </figure>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     <?php endif; ?>
