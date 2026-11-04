@@ -363,7 +363,10 @@
         });
 
         if (innerEl) {
-            innerEl.addEventListener('click', function () {
+            innerEl.addEventListener('click', function (ev) {
+                if (ev.target.closest('a')) {
+                    return;
+                }
                 searchEl.focus();
             });
         }

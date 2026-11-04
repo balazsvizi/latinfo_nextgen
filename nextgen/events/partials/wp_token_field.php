@@ -53,7 +53,7 @@ $showInput = $wpTokenAll !== [] || $wpTokenAllowCreate;
         <p class="help wp-token-field__help"><?= h($wpTokenHelp) ?></p>
     <?php endif; ?>
     <?php if (!$showInput): ?>
-        <p class="help">Még nincs elem felvéve.<?php if ($wpTokenManageUrl !== null): ?> <a href="<?= h($wpTokenManageUrl) ?>"><?= h($wpTokenManageLabel) ?></a><?php endif; ?></p>
+        <p class="help">Még nincs elem felvéve.<?php if ($wpTokenManageUrl !== null): ?> <a href="<?= h($wpTokenManageUrl) ?>"<?= $wpTokenManageNewTab ? ' target="_blank" rel="noopener noreferrer"' : '' ?>><?= h($wpTokenManageLabel) ?></a><?php endif; ?></p>
     <?php else: ?>
         <div
             class="wp-token-input"
