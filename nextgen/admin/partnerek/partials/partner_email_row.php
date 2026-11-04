@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Partner – egy e-mail sor (cím + értesítési kapcsolók).
  *
  * @var int|string $partnerEmailRowIndex
- * @var array{email?: string, email_event_bekerult?: bool, email_szervezo_stat?: bool, is_login?: bool} $partnerEmailRow
+ * @var array{email?: string, email_event_bekerult?: bool, email_szervezo_stat?: bool, email_szamla_ertesito?: bool, is_login?: bool} $partnerEmailRow
  * @var bool $partnerEmailIsFirst
  */
 $partnerEmailRowIndex = $partnerEmailRowIndex ?? 0;
@@ -18,9 +18,13 @@ $eventOn = array_key_exists('email_event_bekerult', $partnerEmailRow)
 $statOn = array_key_exists('email_szervezo_stat', $partnerEmailRow)
     ? !empty($partnerEmailRow['email_szervezo_stat'])
     : true;
+$szamlaOn = array_key_exists('email_szamla_ertesito', $partnerEmailRow)
+    ? !empty($partnerEmailRow['email_szamla_ertesito'])
+    : true;
 $inputId = 'partner-email-' . $partnerEmailRowIndex;
 $eventId = 'partner-email-event-' . $partnerEmailRowIndex;
 $statId = 'partner-email-stat-' . $partnerEmailRowIndex;
+$szamlaId = 'partner-email-szamla-' . $partnerEmailRowIndex;
 ?>
 <div class="partner-email-row" data-partner-email-row>
     <div class="partner-email-row__main">
@@ -60,6 +64,18 @@ $statId = 'partner-email-stat-' . $partnerEmailRowIndex;
                     <?= $statOn ? 'checked' : '' ?>
                 >
                 <span class="partner-email-switch__text">Szervező stat</span>
+            </label>
+            <label class="partner-email-switch" for="<?= h($szamlaId) ?>">
+                <input type="hidden" name="email_rows[<?= h((string) $partnerEmailRowIndex) ?>][email_szamla_ertesito]" value="0">
+                <input
+                    type="checkbox"
+                    name="email_rows[<?= h((string) $partnerEmailRowIndex) ?>][email_szamla_ertesito]"
+                    value="1"
+                    id="<?= h($szamlaId) ?>"
+                    class="partner-email-switch__input"
+                    <?= $szamlaOn ? 'checked' : '' ?>
+                >
+                <span class="partner-email-switch__text">Számla értesítő</span>
             </label>
         </div>
     </div>

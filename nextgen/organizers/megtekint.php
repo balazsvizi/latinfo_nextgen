@@ -38,9 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') =
     csrf_require('organizer_partner_szamlazas', '_csrf', $partnerRedirect);
     $partnerId = (int) ($_POST['partner_id'] ?? 0);
     $email = trim((string) ($_POST['partner_email'] ?? ''));
-    $szamlazas = (string) ($_POST['szamlazas'] ?? '0') === '1';
-    $saved = nextgen_partner_save_organizer_billing($db, $id, $partnerId, $email, $szamlazas);
-    flash($saved['ok'] ? 'success' : 'error', $saved['ok'] ? 'Partner számlázása mentve.' : (string) $saved['error']);
+    $financeRole = (string) ($_POST['finance'] ?? '0') === '1';
+    $szamlaErtesito = (string) ($_POST['email_szamla_ertesito'] ?? '1') === '1';
+    $saved = nextgen_partner_save_organizer_billing($db, $id, $partnerId, $email, $financeRole, $szamlaErtesito);
+    flash($saved['ok'] ? 'success' : 'error', $saved['ok'] ? 'Partner mentve.' : (string) $saved['error']);
     redirect($partnerRedirect);
 }
 
@@ -242,7 +243,7 @@ $show_limit = 3;
 
 <div class="card" id="kontaktok">
     <h2>Partnerek</h2>
-    <p class="help">Itt adható meg a számla e-mailje és a számlázás jelölő. A bepipált partner kapja a számla levelét.</p>
+    <p class="help">A Finance jellegű partner számla értesítő e-mailjére megy a számla.</p>
     <?php if ($partnerek === []): ?><p>Nincs hozzárendelt partner.</p><?php endif; ?>
     <?php foreach ($partnerek as $k): ?>
         <form method="post" class="toolbar" style="align-items:flex-end;margin-bottom:0.75rem;">
@@ -258,10 +259,17 @@ $show_limit = 3;
                 <input type="email" id="partner-email-<?= (int) $k['id'] ?>" name="partner_email" value="<?= h($k['email']) ?>" maxlength="255">
             </div>
             <div class="form-group" style="margin:0;">
-                <input type="hidden" name="szamlazas" value="0">
+                <input type="hidden" name="finance" value="0">
                 <label>
-                    <input type="checkbox" name="szamlazas" value="1"<?= !empty($k['szamlazas']) ? ' checked' : '' ?>>
-                    Számlázás
+                    <input type="checkbox" name="finance" value="1"<?= !empty($k['finance']) ? ' checked' : '' ?>>
+                    Finance
+                </label>
+            </div>
+            <div class="form-group" style="margin:0;">
+                <input type="hidden" name="email_szamla_ertesito" value="0">
+                <label>
+                    <input type="checkbox" name="email_szamla_ertesito" value="1"<?= !empty($k['email_szamla_ertesito']) ? ' checked' : '' ?>>
+                    Számla értesítő
                 </label>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Mentés</button>
@@ -285,10 +293,17 @@ $show_limit = 3;
                 <input type="email" id="uj-partner-email" name="partner_email" maxlength="255">
             </div>
             <div class="form-group" style="margin:0;">
-                <input type="hidden" name="szamlazas" value="0">
+                <input type="hidden" name="finance" value="0">
                 <label>
-                    <input type="checkbox" name="szamlazas" value="1" checked>
-                    Számlázás
+                    <input type="checkbox" name="finance" value="1" checked>
+                    Finance
+                </label>
+            </div>
+            <div class="form-group" style="margin:0;">
+                <input type="hidden" name="email_szamla_ertesito" value="0">
+                <label>
+                    <input type="checkbox" name="email_szamla_ertesito" value="1" checked>
+                    Számla értesítő
                 </label>
             </div>
             <button type="submit" class="btn btn-secondary btn-sm">Hozzáadás</button>

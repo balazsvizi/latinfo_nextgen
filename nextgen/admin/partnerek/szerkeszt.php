@@ -233,7 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
             'organizer_id' => (int) ($row['organizer_id'] ?? 0),
             'role_types' => $roleTypes,
             'role_note' => (string) ($row['role_note'] ?? ''),
-            'szamlazas' => (string) ($row['szamlazas'] ?? '0') === '1',
         ];
     }
     foreach ((array) ($_POST['dj_rows'] ?? []) as $row) {
@@ -291,31 +290,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
     $schoolRowsForForm = nextgen_partner_group_dance_school_assignments_for_form($assignedDanceSchools);
     $teacherRowsForForm = nextgen_partner_group_teacher_assignments_for_form($assignedTeachers);
     $financeRowsForForm = [];
-    $billingEventIds = nextgen_partner_billing_event_organizer_id_set($db, $id);
-    foreach ($organizerRowsForForm as $organizerFormIndex => $organizerFormRow) {
-        $organizerRowsForForm[$organizerFormIndex]['szamlazas'] = isset($billingEventIds[(int) ($organizerFormRow['organizer_id'] ?? 0)]);
-    }
-}
-
-if (isset($billingEventIds)) {
-    $presentOrganizerIds = [];
-    foreach ($organizerRowsForForm as $organizerFormRow) {
-        $presentOrganizerIds[(int) ($organizerFormRow['organizer_id'] ?? 0)] = true;
-    }
-    foreach (array_keys($billingEventIds) as $billingEventId) {
-        if ($billingEventId > 0 && !isset($presentOrganizerIds[$billingEventId])) {
-            $organizerRowsForForm[] = [
-                'organizer_id' => $billingEventId,
-                'role_types' => [],
-                'role_note' => '',
-                'szamlazas' => true,
-            ];
-        }
-    }
 }
 
 if ($organizerRowsForForm === []) {
-    $organizerRowsForForm[] = ['organizer_id' => 0, 'role_types' => ['event'], 'role_note' => '', 'szamlazas' => false];
+    $organizerRowsForForm[] = ['organizer_id' => 0, 'role_types' => ['event'], 'role_note' => ''];
 }
 if ($djRowsForForm === []) {
     $djRowsForForm[] = ['tag_id' => 0, 'role_types' => ['dj'], 'role_note' => ''];
@@ -425,6 +403,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
                 'email' => (string) ($partner['email'] ?? ''),
                 'email_event_bekerult' => ((int) ($partner['email_event_bekerult'] ?? 1) === 1),
                 'email_szervezo_stat' => ((int) ($partner['email_szervezo_stat'] ?? 1) === 1),
+                'email_szamla_ertesito' => ((int) ($partner['email_szamla_ertesito'] ?? 1) === 1),
                 'is_login' => true,
             ];
         }
@@ -473,7 +452,7 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
         <section class="partner-admin-assign-section">
             <div class="partner-admin-assign-section__head">
                 <h4>Szervezők</h4>
-                <p class="help">Az eseményszervező egyben a finance szervező is, ha össze vannak kötve. A Számlázás jelölő dönti el, hogy a számla e-mailje erre a partnerre menjen.</p>
+                <p class="help">Az eseményszervező egyben a finance szervező is, ha össze vannak kötve. A Finance jellegű partner kapja a számlát, a Számla értesítővel jelölt e-mail címekre.</p>
             </div>
             <div id="partner-organizer-rows" class="partner-admin-assign-rows">
                 <?php foreach ($organizerRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
@@ -568,6 +547,7 @@ $partnerEmailRow = [
     'email' => '',
     'email_event_bekerult' => true,
     'email_szervezo_stat' => true,
+    'email_szamla_ertesito' => true,
 ];
 $partnerEmailIsFirst = false;
 require __DIR__ . '/partials/partner_email_row.php';

@@ -112,7 +112,7 @@ require_once __DIR__ . '/../../partials/header.php';
         <tr><th>Belső megjegyzés</th><td><?= nl2br(h($szamla['belső_megjegyzés'] ?? '')) ?></td></tr>
         <tr><th>Partner</th><td>
             <?php if ($szamlazasi_partnerek === []): ?>
-                <span class="text-danger">Nincs számlázás típusú partner.</span>
+                <span class="text-danger">Nincs Finance jellegű partner.</span>
                 <a href="<?= h(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id . '#kontaktok') ?>" target="_blank" rel="noopener noreferrer">Szervező megnyitása</a>
             <?php else: ?>
                 <?php foreach ($szamlazasi_partnerek as $partnerIndex => $szamlazasiPartner): ?>

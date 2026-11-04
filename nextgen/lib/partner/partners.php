@@ -100,6 +100,11 @@ function nextgen_partner_ensure_extended_schema(PDO $db): bool
             $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `email_szervezo_stat` TINYINT(1) NOT NULL DEFAULT 1 AFTER `email_event_bekerult`');
         }
 
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'email_szamla_ertesito'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `email_szamla_ertesito` TINYINT(1) NOT NULL DEFAULT 1 AFTER `email_szervezo_stat`');
+        }
+
         $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partner_events_organizers` LIKE 'role_type'");
         if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
             $db->exec("
@@ -185,6 +190,7 @@ function nextgen_partner_ensure_emails_schema(PDO $db): bool
                     `email` VARCHAR(255) NOT NULL,
                     `email_event_bekerult` TINYINT(1) NOT NULL DEFAULT 1,
                     `email_szervezo_stat` TINYINT(1) NOT NULL DEFAULT 1,
+                    `email_szamla_ertesito` TINYINT(1) NOT NULL DEFAULT 1,
                     `is_login` TINYINT(1) NOT NULL DEFAULT 0,
                     `sort_order` INT NOT NULL DEFAULT 0,
                     `létrehozva` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -201,15 +207,28 @@ function nextgen_partner_ensure_emails_schema(PDO $db): bool
             return false;
         }
 
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'email_szamla_ertesito'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $afterStat = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'email_szervezo_stat'")->fetch(PDO::FETCH_ASSOC);
+            $placement = $afterStat ? ' AFTER `email_szervezo_stat`' : '';
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `email_szamla_ertesito` TINYINT(1) NOT NULL DEFAULT 1' . $placement);
+        }
+
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partner_emails` LIKE 'email_szamla_ertesito'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partner_emails` ADD COLUMN `email_szamla_ertesito` TINYINT(1) NOT NULL DEFAULT 1 AFTER `email_szervezo_stat`');
+        }
+
         // Meglévő partnerek login e-mailjének migrálása, ha még nincs sor.
         $db->exec("
             INSERT INTO `nextgen_partner_emails`
-                (`partner_id`, `email`, `email_event_bekerult`, `email_szervezo_stat`, `is_login`, `sort_order`)
+                (`partner_id`, `email`, `email_event_bekerult`, `email_szervezo_stat`, `email_szamla_ertesito`, `is_login`, `sort_order`)
             SELECT
                 p.`id`,
                 LOWER(TRIM(p.`email`)),
                 CAST(COALESCE(p.`email_event_bekerult`, 1) AS UNSIGNED),
                 CAST(COALESCE(p.`email_szervezo_stat`, 1) AS UNSIGNED),
+                CAST(COALESCE(p.`email_szamla_ertesito`, 1) AS UNSIGNED),
                 1,
                 0
             FROM `nextgen_partners` p
@@ -229,7 +248,7 @@ function nextgen_partner_ensure_emails_schema(PDO $db): bool
 }
 
 /**
- * @return list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool, is_login: bool}>
+ * @return list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool, email_szamla_ertesito: bool, is_login: bool}>
  */
 function nextgen_partner_emails_for_partner(PDO $db, int $partnerId): array
 {
@@ -242,7 +261,7 @@ function nextgen_partner_emails_for_partner(PDO $db, int $partnerId): array
     }
     try {
         $stmt = $db->prepare('
-            SELECT `email`, `email_event_bekerult`, `email_szervezo_stat`, `is_login`, `sort_order`
+            SELECT `email`, `email_event_bekerult`, `email_szervezo_stat`, `email_szamla_ertesito`, `is_login`, `sort_order`
             FROM `nextgen_partner_emails`
             WHERE `partner_id` = ?
             ORDER BY `is_login` DESC, `sort_order` ASC, `id` ASC
@@ -258,6 +277,7 @@ function nextgen_partner_emails_for_partner(PDO $db, int $partnerId): array
                 'email' => $email,
                 'email_event_bekerult' => ((int) ($row['email_event_bekerult'] ?? 1) === 1),
                 'email_szervezo_stat' => ((int) ($row['email_szervezo_stat'] ?? 1) === 1),
+                'email_szamla_ertesito' => ((int) ($row['email_szamla_ertesito'] ?? 1) === 1),
                 'is_login' => ((int) ($row['is_login'] ?? 0) === 1),
             ];
         }
@@ -272,7 +292,7 @@ function nextgen_partner_emails_for_partner(PDO $db, int $partnerId): array
 
 /**
  * @param mixed $raw
- * @return list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool}>
+ * @return list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool, email_szamla_ertesito: bool}>
  */
 function nextgen_partner_email_rows_from_post(mixed $raw): array
 {
@@ -297,6 +317,7 @@ function nextgen_partner_email_rows_from_post(mixed $raw): array
             'email' => $email,
             'email_event_bekerult' => ((string) ($row['email_event_bekerult'] ?? '0') === '1'),
             'email_szervezo_stat' => ((string) ($row['email_szervezo_stat'] ?? '0') === '1'),
+            'email_szamla_ertesito' => ((string) ($row['email_szamla_ertesito'] ?? '1') === '1'),
         ];
     }
 
@@ -304,8 +325,8 @@ function nextgen_partner_email_rows_from_post(mixed $raw): array
 }
 
 /**
- * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool}> $emailRows
- * @return array{ok: true, login_email: string, email_event_bekerult: bool, email_szervezo_stat: bool, rows: list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool}>}|array{ok: false, error: string}
+ * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool, email_szamla_ertesito?: bool}> $emailRows
+ * @return array{ok: true, login_email: string, email_event_bekerult: bool, email_szervezo_stat: bool, email_szamla_ertesito: bool, rows: list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool, email_szamla_ertesito: bool}>}|array{ok: false, error: string}
  */
 function nextgen_partner_normalize_email_rows(array $emailRows): array
 {
@@ -330,6 +351,7 @@ function nextgen_partner_normalize_email_rows(array $emailRows): array
             'email' => $email,
             'email_event_bekerult' => !empty($row['email_event_bekerult']),
             'email_szervezo_stat' => !empty($row['email_szervezo_stat']),
+            'email_szamla_ertesito' => !array_key_exists('email_szamla_ertesito', $row) || !empty($row['email_szamla_ertesito']),
         ];
     }
     if ($normalized === []) {
@@ -341,12 +363,13 @@ function nextgen_partner_normalize_email_rows(array $emailRows): array
         'login_email' => (string) $normalized[0]['email'],
         'email_event_bekerult' => (bool) $normalized[0]['email_event_bekerult'],
         'email_szervezo_stat' => (bool) $normalized[0]['email_szervezo_stat'],
+        'email_szamla_ertesito' => (bool) $normalized[0]['email_szamla_ertesito'],
         'rows' => $normalized,
     ];
 }
 
 /**
- * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool}> $emailRows
+ * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool, email_szamla_ertesito?: bool}> $emailRows
  * @return array{ok: true}|array{ok: false, error: string}
  */
 function nextgen_partner_sync_emails(PDO $db, int $partnerId, array $emailRows): array
@@ -358,7 +381,7 @@ function nextgen_partner_sync_emails(PDO $db, int $partnerId, array $emailRows):
     if (!$normalized['ok']) {
         return ['ok' => false, 'error' => (string) ($normalized['error'] ?? 'Érvénytelen e-mail címek.')];
     }
-    /** @var list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool}> $rows */
+    /** @var list<array{email: string, email_event_bekerult: bool, email_szervezo_stat: bool, email_szamla_ertesito: bool}> $rows */
     $rows = $normalized['rows'];
 
     nextgen_partner_ensure_emails_schema($db);
@@ -371,8 +394,8 @@ function nextgen_partner_sync_emails(PDO $db, int $partnerId, array $emailRows):
         $db->prepare('DELETE FROM `nextgen_partner_emails` WHERE `partner_id` = ?')->execute([$partnerId]);
         $ins = $db->prepare('
             INSERT INTO `nextgen_partner_emails`
-                (`partner_id`, `email`, `email_event_bekerult`, `email_szervezo_stat`, `is_login`, `sort_order`)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (`partner_id`, `email`, `email_event_bekerult`, `email_szervezo_stat`, `email_szamla_ertesito`, `is_login`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ');
         foreach ($rows as $i => $row) {
             $ins->execute([
@@ -380,6 +403,7 @@ function nextgen_partner_sync_emails(PDO $db, int $partnerId, array $emailRows):
                 $row['email'],
                 !empty($row['email_event_bekerult']) ? 1 : 0,
                 !empty($row['email_szervezo_stat']) ? 1 : 0,
+                !array_key_exists('email_szamla_ertesito', $row) || !empty($row['email_szamla_ertesito']) ? 1 : 0,
                 $i === 0 ? 1 : 0,
                 $i,
             ]);
@@ -1006,9 +1030,6 @@ function nextgen_partner_organizer_rows_from_post(mixed $raw): array
             }
         }
         if ($roleTypes === []) {
-            if ((string) ($row['szamlazas'] ?? '0') === '1') {
-                continue;
-            }
             $roleTypes = ['event'];
         }
 
@@ -1322,6 +1343,7 @@ function nextgen_partner_create(
             'email' => $emailNorm,
             'email_event_bekerult' => true,
             'email_szervezo_stat' => true,
+            'email_szamla_ertesito' => true,
         ]]);
         $logDetail = $emailNorm . ($requireChangeOnLogin ? ' (kötelező jelszócsere)' : '');
         if ($password === '') {
@@ -1338,7 +1360,7 @@ function nextgen_partner_create(
 }
 
 /**
- * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool}>|null $emailRows
+ * @param list<array{email: string, email_event_bekerult?: bool, email_szervezo_stat?: bool, email_szamla_ertesito?: bool}>|null $emailRows
  * @return array{ok: true}|array{ok: false, error: string}
  */
 function nextgen_partner_update_profile(
@@ -1353,7 +1375,8 @@ function nextgen_partner_update_profile(
     ?string $telepules = null,
     ?bool $emailEventBekerult = null,
     ?bool $emailSzervezoStat = null,
-    ?array $emailRows = null
+    ?array $emailRows = null,
+    ?bool $emailSzamlaErtesito = null
 ): array {
     if ($partnerId <= 0) {
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
@@ -1373,6 +1396,7 @@ function nextgen_partner_update_profile(
         $email = (string) $normalized['login_email'];
         $emailEventBekerult = (bool) $normalized['email_event_bekerult'];
         $emailSzervezoStat = (bool) $normalized['email_szervezo_stat'];
+        $emailSzamlaErtesito = (bool) $normalized['email_szamla_ertesito'];
         $syncEmailRows = $normalized['rows'];
     } else {
         $email = trim(mb_strtolower($email, 'UTF-8'));
@@ -1426,6 +1450,10 @@ function nextgen_partner_update_profile(
             $setParts[] = '`email_szervezo_stat` = ?';
             $params[] = $emailSzervezoStat ? 1 : 0;
         }
+        if ($emailSzamlaErtesito !== null) {
+            $setParts[] = '`email_szamla_ertesito` = ?';
+            $params[] = $emailSzamlaErtesito ? 1 : 0;
+        }
         $params[] = $partnerId;
 
         $stmt = $db->prepare(
@@ -1449,6 +1477,7 @@ function nextgen_partner_update_profile(
                 $existing = nextgen_partner_emails_for_partner($db, $partnerId);
                 $loginEvent = $emailEventBekerult;
                 $loginStat = $emailSzervezoStat;
+                $loginSzamla = $emailSzamlaErtesito;
                 $merged = [];
                 foreach ($existing as $row) {
                     if (!empty($row['is_login'])) {
@@ -1457,6 +1486,9 @@ function nextgen_partner_update_profile(
                         }
                         if ($loginStat === null) {
                             $loginStat = (bool) $row['email_szervezo_stat'];
+                        }
+                        if ($loginSzamla === null) {
+                            $loginSzamla = (bool) ($row['email_szamla_ertesito'] ?? true);
                         }
                         continue;
                     }
@@ -1469,6 +1501,7 @@ function nextgen_partner_update_profile(
                     'email' => $email,
                     'email_event_bekerult' => $loginEvent ?? true,
                     'email_szervezo_stat' => $loginStat ?? true,
+                    'email_szamla_ertesito' => $loginSzamla ?? true,
                 ]);
                 $sync = nextgen_partner_sync_emails($db, $partnerId, $merged);
                 if (!$sync['ok']) {

@@ -381,6 +381,39 @@ function organizer_unify_finance_summary(PDO $db, int $eventsOrganizerId): array
 }
 
 /**
+ * A régi számlázás jelölőt Finance szerepre írja, ha a finance szervező már eseményszervezőhöz van kötve.
+ */
+function nextgen_partner_migrate_szamlazas_to_finance_role(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!nextgen_partner_ensure_extended_schema($db) || !organizer_unify_ensure_schema($db)) {
+        return;
+    }
+    try {
+        $db->exec("
+            INSERT INTO `nextgen_partner_events_organizers`
+                (`partner_id`, `organizer_id`, `role_type`, `sort_order`)
+            SELECT pf.`partner_id`, f.`events_organizer_id`, 'finance', 0
+            FROM `nextgen_partner_finance_organizers` pf
+            INNER JOIN `finance_organizers` f ON f.`id` = pf.`finance_organizer_id`
+            LEFT JOIN `nextgen_partner_events_organizers` po
+                ON po.`partner_id` = pf.`partner_id`
+               AND po.`organizer_id` = f.`events_organizer_id`
+               AND po.`role_type` = 'finance'
+            WHERE pf.`szamlazas` = 1
+              AND f.`events_organizer_id` IS NOT NULL
+              AND po.`partner_id` IS NULL
+        ");
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_migrate_szamlazas_to_finance_role: ' . $ex->getMessage());
+    }
+}
+
+/**
  * @return array<int, true>
  */
 function nextgen_partner_billing_event_organizer_id_set(PDO $db, int $partnerId): array
@@ -427,7 +460,14 @@ function nextgen_partner_billing_event_ids_from_post(mixed $raw): array
         if (!is_array($row)) {
             continue;
         }
-        if ((string) ($row['szamlazas'] ?? '0') !== '1') {
+        $roles = [];
+        if (isset($row['role_types']) && is_array($row['role_types'])) {
+            foreach ($row['role_types'] as $roleType) {
+                $roles[] = strtolower(trim((string) $roleType));
+            }
+        }
+        $financeRole = in_array('finance', $roles, true) || (string) ($row['szamlazas'] ?? '0') === '1';
+        if (!$financeRole) {
             continue;
         }
         $organizerId = (int) ($row['organizer_id'] ?? 0);
@@ -440,7 +480,7 @@ function nextgen_partner_billing_event_ids_from_post(mixed $raw): array
 }
 
 /**
- * A számlázás jelölő az eseményszervezőn él. A számla továbbra is a hozzákötött finance szervezőhöz tartozik.
+ * A Finance jelleg köti a partnert a finance szervezőhöz. A számla a Számla értesítő e-mail címekre megy.
  *
  * @param list<int> $eventsOrganizerIds
  * @return array{ok: true}|array{ok: false, error: string}
@@ -451,7 +491,7 @@ function nextgen_partner_sync_billing_on_event_organizers(PDO $db, int $partnerI
         return ['ok' => false, 'error' => 'Érvénytelen partner.'];
     }
     if (!organizer_unify_ensure_schema($db)) {
-        return ['ok' => false, 'error' => 'A számlázás hozzárendelés nem menthető.'];
+        return ['ok' => false, 'error' => 'A finance hozzárendelés nem menthető.'];
     }
 
     $wanted = [];
@@ -505,7 +545,7 @@ function nextgen_partner_sync_billing_on_event_organizers(PDO $db, int $partnerI
             $ins->execute([$partnerId, $financeId]);
         }
         $db->commit();
-        nextgen_partner_log($db, $partnerId, 'Számlázás szervezők módosítva', count($keep) . ' finance szervező');
+        nextgen_partner_log($db, $partnerId, 'Finance szervezők módosítva', count($keep) . ' finance szervező');
 
         return ['ok' => true];
     } catch (Throwable $ex) {
@@ -514,6 +554,6 @@ function nextgen_partner_sync_billing_on_event_organizers(PDO $db, int $partnerI
         }
         error_log('nextgen_partner_sync_billing_on_event_organizers: ' . $ex->getMessage());
 
-        return ['ok' => false, 'error' => 'Számlázás mentése sikertelen.'];
+        return ['ok' => false, 'error' => 'Finance hozzárendelés mentése sikertelen.'];
     }
 }

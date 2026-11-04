@@ -26,7 +26,8 @@ declare(strict_types=1);
                 el.id = el.id
                     .replace(/partner-email-\d+$/, 'partner-email-' + index)
                     .replace(/partner-email-event-\d+$/, 'partner-email-event-' + index)
-                    .replace(/partner-email-stat-\d+$/, 'partner-email-stat-' + index);
+                    .replace(/partner-email-stat-\d+$/, 'partner-email-stat-' + index)
+                    .replace(/partner-email-szamla-\d+$/, 'partner-email-szamla-' + index);
             });
             row.querySelectorAll('[for]').forEach(function (el) {
                 if (!el.htmlFor) {
@@ -35,7 +36,8 @@ declare(strict_types=1);
                 el.htmlFor = el.htmlFor
                     .replace(/partner-email-\d+$/, 'partner-email-' + index)
                     .replace(/partner-email-event-\d+$/, 'partner-email-event-' + index)
-                    .replace(/partner-email-stat-\d+$/, 'partner-email-stat-' + index);
+                    .replace(/partner-email-stat-\d+$/, 'partner-email-stat-' + index)
+                    .replace(/partner-email-szamla-\d+$/, 'partner-email-szamla-' + index);
             });
             var input = row.querySelector('.partner-email-row__input');
             if (input) {

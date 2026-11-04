@@ -140,7 +140,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
 <div class="card" id="szamlak">
     <h2>Számlázás</h2>
     <?php if ($financeSummary === []): ?>
-        <p class="help">Ehhez az eseményszervezőhöz még nincs finance szervező kötve. A párosítás a finance szervezők egyesítésénél történik. Számlázás jelölésekor a partner szerkesztő létrehozza a finance rekordot.</p>
+        <p class="help">Ehhez az eseményszervezőhöz még nincs finance szervező kötve. A párosítás a finance szervezők egyesítésénél történik. Finance jelleg bejelölésekor a partner szerkesztő létrehozza a finance rekordot.</p>
         <p><a href="<?= h(nextgen_url('organizers/egyesites.php')) ?>" class="btn btn-secondary btn-sm">Egyesítés</a></p>
     <?php else: ?>
         <table>
