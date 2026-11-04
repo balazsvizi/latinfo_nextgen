@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../nextgen/core/database.php';
 require_once __DIR__ . '/../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../nextgen/includes/functions.php';
+require_once __DIR__ . '/../../nextgen/lib/partner/finance_billing.php';
 requireLogin();
 
 $id = (int)($_GET['id'] ?? 0);
@@ -18,8 +19,6 @@ $organizerLogTable = db_resolve_table($db, ['finance_organizer_activity_log', 'n
 $organizerTagsTable = db_resolve_table($db, ['finance_organizer_tags', 'nextgen_organizer_tags', 'szervező_címkék'], 'finance_organizer_tags');
 $tagsTable = db_resolve_table($db, ['finance_tags', 'nextgen_tags', 'címkék'], 'finance_tags');
 $adminsTable = db_resolve_table($db, ['nextgen_admins', 'adminok'], 'nextgen_admins');
-$organizerContactsTable = db_resolve_table($db, ['finance_organizer_contacts', 'nextgen_organizer_contacts', 'szervező_kontakt'], 'finance_organizer_contacts');
-$contactsTable = db_resolve_table($db, ['finance_contacts', 'nextgen_contacts', 'kontaktok'], 'finance_contacts');
 $billingAddressesTable = db_resolve_table($db, ['finance_billing_addresses', 'nextgen_billing_addresses', 'számlázási_címek'], 'finance_billing_addresses');
 $invoicesTable = db_resolve_table($db, ['finance_invoices', 'számlák'], 'finance_invoices');
 $billingItemsTable = db_resolve_table($db, ['finance_billing_items', 'számlázandó'], 'finance_billing_items');
@@ -73,9 +72,7 @@ $szervezo_log = $db->prepare("SELECT l.*, a.név AS admin_név FROM {$organizerL
 $szervezo_log->execute([$id]);
 $szervezo_log = $szervezo_log->fetchAll();
 
-$kontaktok = $db->prepare("SELECT k.* FROM {$organizerContactsTable} sk JOIN {$contactsTable} k ON k.id = sk.kontakt_id WHERE sk.szervező_id = ? ORDER BY k.név");
-$kontaktok->execute([$id]);
-$kontaktok = $kontaktok->fetchAll();
+$partnerek = nextgen_partner_finance_organizer_partners($db, $id);
 
 $cimek = $db->prepare("SELECT * FROM {$billingAddressesTable} WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név");
 $cimek->execute([$id]);
@@ -203,30 +200,24 @@ $show_limit = 3;
 </div>
 
 <div class="card" id="kontaktok">
-    <h2>Kontaktok</h2>
-    <p><a href="<?= h(nextgen_url('organizers/kontakt_hozzaad.php?szervezo_id=')) ?><?= $id ?>" class="btn btn-primary btn-sm">Kontakt hozzáadása</a></p>
+    <h2>Partnerek</h2>
+    <p class="help">A partnert a partner szerkesztőjén lehet hozzárendelni. A számlázás jelölésű partner kapja a számla e-mailjét.</p>
+    <p><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary btn-sm">Partnerek</a></p>
     <table>
-        <thead><tr><th>ID</th><th>Név</th><th>E-mail</th><th>Telefon</th><th></th></tr></thead>
+        <thead><tr><th>ID</th><th>Név</th><th>E-mail</th><th>Telefon</th><th>Számlázás</th></tr></thead>
         <tbody>
-            <?php foreach ($kontaktok as $k): ?>
+            <?php foreach ($partnerek as $k): ?>
             <tr>
-                <td><?= (int)$k['id'] ?></td>
-                <td><a href="<?= h(nextgen_url('contacts/megtekint.php?id=')) ?><?= (int)$k['id'] ?>"><?= h($k['név']) ?></a></td>
-                <td><?= h($k['email'] ?? '') ?></td>
-                <td><?= h($k['telefon'] ?? '') ?></td>
-                <td>
-                    <form method="post" action="<?= h(nextgen_url('organizers/kontakt_levetel.php')) ?>" class="inline-form" onsubmit="return confirm('Lecsatolja ezt a kontaktot?');">
-                        <?= csrf_input('organizer_kontakt_levetel') ?>
-                        <input type="hidden" name="szervezo_id" value="<?= (int) $id ?>">
-                        <input type="hidden" name="kontakt_id" value="<?= (int) $k['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-secondary">Lecsatolás</button>
-                    </form>
-                </td>
+                <td><?= (int) $k['id'] ?></td>
+                <td><a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $k['id']) ?>"><?= h($k['név']) ?></a></td>
+                <td><?= h($k['email']) ?></td>
+                <td><?= h($k['telefon']) ?></td>
+                <td><?= !empty($k['szamlazas']) ? 'Igen' : '' ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
     </table>
-    <?php if (empty($kontaktok)): ?><p>Nincs hozzárendelt kontakt.</p><?php endif; ?>
+    <?php if ($partnerek === []): ?><p>Nincs hozzárendelt partner.</p><?php endif; ?>
 </div>
 
 <div class="card">

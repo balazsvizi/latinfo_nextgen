@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../nextgen/core/config.php';
 require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
+require_once __DIR__ . '/../../../nextgen/lib/partner/finance_billing.php';
 requireLogin();
 
 $id = (int)($_GET['id'] ?? 0);
@@ -19,6 +20,8 @@ if (!$szamla) {
     redirect(nextgen_url('finance/szamlak/'));
 }
 $szervezo_id = (int) $szamla['szervező_id'];
+nextgen_partner_ensure_finance_contacts_migrated($db);
+$szamlazasi_partnerek = nextgen_finance_invoice_bind_billing_partners($db, $id, $szervezo_id);
 
 $megtekint_url = nextgen_url('finance/szamlak/megtekint.php?id=') . $id;
 
@@ -107,6 +110,16 @@ require_once __DIR__ . '/../../partials/header.php';
         <tr><th>Dátum</th><td><?= h($szamla['dátum']) ?></td></tr>
         <tr><th>Összeg</th><td><?= number_format((float)$szamla['összeg'], 0, ',', ' ') ?></td></tr>
         <tr><th>Belső megjegyzés</th><td><?= nl2br(h($szamla['belső_megjegyzés'] ?? '')) ?></td></tr>
+        <tr><th>Partner</th><td>
+            <?php if ($szamlazasi_partnerek === []): ?>
+                <span class="text-danger">Nincs számlázás típusú partner.</span>
+            <?php else: ?>
+                <?php foreach ($szamlazasi_partnerek as $partnerIndex => $szamlazasiPartner): ?>
+                    <?php if ($partnerIndex > 0): ?>, <?php endif; ?>
+                    <a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $szamlazasiPartner['id']) ?>"><?= h((string) $szamlazasiPartner['név']) ?></a>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </td></tr>
         <tr><th>Státusz</th><td>
             <form method="post" style="display:inline;">
                 <?= csrf_input('finance_szamla_megtekint') ?>

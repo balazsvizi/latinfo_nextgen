@@ -1837,6 +1837,12 @@ function nextgen_partner_delete(PDO $db, int $partnerId): array
         (string) ($partner['email'] ?? '')
     );
 
+    $billingSchemaReady = false;
+    if (is_file(__DIR__ . '/migrate_finance_contacts.php')) {
+        require_once __DIR__ . '/migrate_finance_contacts.php';
+        $billingSchemaReady = nextgen_partner_ensure_finance_billing_schema($db);
+    }
+
     try {
         $db->beginTransaction();
 
@@ -1850,6 +1856,10 @@ function nextgen_partner_delete(PDO $db, int $partnerId): array
             // új táblák opcionálisak
         }
         $db->prepare('DELETE FROM `nextgen_partner_finance_organizers` WHERE `partner_id` = ?')->execute([$partnerId]);
+        if ($billingSchemaReady) {
+            $db->prepare('DELETE FROM `finance_invoice_partners` WHERE `partner_id` = ?')->execute([$partnerId]);
+            $db->prepare('UPDATE `finance_invoices` SET `partner_id` = NULL WHERE `partner_id` = ?')->execute([$partnerId]);
+        }
         if (nextgen_partner_emails_table_ready($db)) {
             $db->prepare('DELETE FROM `nextgen_partner_emails` WHERE `partner_id` = ?')->execute([$partnerId]);
         }

@@ -66,6 +66,11 @@ function nextgen_partner_migrate_from_finance_contacts(PDO $db): array
 
         return $result;
     }
+    if (!nextgen_partner_ensure_finance_billing_schema($db)) {
+        $result['errors'][] = 'A finance–partner séma nem hozható létre.';
+
+        return $result;
+    }
     if (!nextgen_partner_ensure_finance_contact_id_column($db)) {
         $result['errors'][] = 'A finance_contact_id oszlop nem hozható létre.';
 
@@ -293,16 +298,17 @@ function nextgen_partner_migrate_link_finance_organizers(PDO $db, int $partnerId
             SELECT `szervező_id` FROM `finance_organizer_contacts` WHERE `kontakt_id` = ?
         ');
         $stmt->execute([$contactId]);
+        $billing = nextgen_partner_finance_contact_is_billing($db, $contactId) ? 1 : 0;
         $ins = $db->prepare('
-            INSERT IGNORE INTO `nextgen_partner_finance_organizers` (`partner_id`, `finance_organizer_id`)
-            VALUES (?, ?)
+            INSERT IGNORE INTO `nextgen_partner_finance_organizers` (`partner_id`, `finance_organizer_id`, `szamlazas`)
+            VALUES (?, ?, ?)
         ');
         foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $financeOrgId) {
             $fid = (int) $financeOrgId;
             if ($fid <= 0) {
                 continue;
             }
-            $ins->execute([$partnerId, $fid]);
+            $ins->execute([$partnerId, $fid, $billing]);
             if ($ins->rowCount() > 0) {
                 $linked++;
             }
@@ -336,4 +342,164 @@ function nextgen_partner_finance_contacts_migration_status(PDO $db): array
     }
 
     return $status;
+}
+
+function nextgen_partner_ensure_finance_billing_schema(PDO $db): bool
+{
+    static $done = null;
+    if ($done !== null) {
+        return $done;
+    }
+    if (!nextgen_partners_table_ready($db)) {
+        $done = false;
+
+        return false;
+    }
+    try {
+        nextgen_partner_ensure_finance_contact_id_column($db);
+
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partner_finance_organizers` LIKE 'szamlazas'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partner_finance_organizers` ADD COLUMN `szamlazas` TINYINT(1) NOT NULL DEFAULT 0');
+        }
+
+        $addedFlag = false;
+        $stmt = $db->query("SHOW COLUMNS FROM `nextgen_partners` LIKE 'finance_reszletek_atvezetve'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `nextgen_partners` ADD COLUMN `finance_reszletek_atvezetve` TINYINT(1) NOT NULL DEFAULT 0');
+            $addedFlag = true;
+        }
+        if ($addedFlag) {
+            $db->exec('UPDATE `nextgen_partners` SET `finance_reszletek_atvezetve` = 1 WHERE `finance_contact_id` IS NULL');
+        }
+
+        $stmt = $db->query("SHOW COLUMNS FROM `finance_invoices` LIKE 'partner_id'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `finance_invoices` ADD COLUMN `partner_id` INT UNSIGNED NULL DEFAULT NULL');
+        }
+        $stmt = $db->query("SHOW COLUMNS FROM `finance_invoices` LIKE 'partnerek_szinkron'");
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $db->exec('ALTER TABLE `finance_invoices` ADD COLUMN `partnerek_szinkron` TINYINT(1) NOT NULL DEFAULT 0');
+        }
+
+        $db->exec('
+            CREATE TABLE IF NOT EXISTS `finance_invoice_partners` (
+                `invoice_id` INT UNSIGNED NOT NULL,
+                `partner_id` INT UNSIGNED NOT NULL,
+                PRIMARY KEY (`invoice_id`, `partner_id`),
+                KEY `idx_finance_invoice_partners_partner` (`partner_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ');
+
+        $done = true;
+
+        return true;
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_ensure_finance_billing_schema: ' . $ex->getMessage());
+        $done = false;
+
+        return false;
+    }
+}
+
+function nextgen_partner_finance_contact_is_billing(PDO $db, int $contactId): bool
+{
+    if ($contactId <= 0) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('
+            SELECT 1
+            FROM `finance_contact_type_links` kt
+            INNER JOIN `finance_contact_types` t ON t.`id` = kt.`típus_id`
+            WHERE kt.`kontakt_id` = ?
+              AND LOWER(t.`név`) IN (\'számlázás\', \'szamlazas\')
+            LIMIT 1
+        ');
+        $stmt->execute([$contactId]);
+
+        return (bool) $stmt->fetchColumn();
+    } catch (Throwable) {
+        return false;
+    }
+}
+
+/**
+ * Megjegyzés és Facebook átmásolása, számlázás jelölés egyszeri átvezetése.
+ */
+function nextgen_partner_import_pending_finance_contact_extras(PDO $db): void
+{
+    if (!nextgen_partner_ensure_finance_billing_schema($db)) {
+        return;
+    }
+    try {
+        $rows = $db->query('
+            SELECT `id`, `finance_contact_id`, `egyéb_kontakt`
+            FROM `nextgen_partners`
+            WHERE `finance_contact_id` IS NOT NULL
+              AND COALESCE(`finance_reszletek_atvezetve`, 0) = 0
+        ')->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_import_pending_finance_contact_extras: ' . $ex->getMessage());
+
+        return;
+    }
+
+    $noteStmt = $db->prepare('
+        SELECT `megjegyzés`, `létrehozva`
+        FROM `finance_contact_notes`
+        WHERE `kontakt_id` = ?
+        ORDER BY `létrehozva` ASC
+    ');
+    $fbStmt = $db->prepare('SELECT `fb` FROM `finance_contacts` WHERE `id` = ? LIMIT 1');
+    $update = $db->prepare('
+        UPDATE `nextgen_partners`
+        SET `egyéb_kontakt` = ?, `finance_reszletek_atvezetve` = 1
+        WHERE `id` = ?
+    ');
+    $markBilling = $db->prepare('
+        UPDATE `nextgen_partner_finance_organizers`
+        SET `szamlazas` = 1
+        WHERE `partner_id` = ?
+    ');
+
+    foreach ($rows as $row) {
+        $partnerId = (int) ($row['id'] ?? 0);
+        $contactId = (int) ($row['finance_contact_id'] ?? 0);
+        if ($partnerId <= 0 || $contactId <= 0) {
+            continue;
+        }
+        $extra = trim((string) ($row['egyéb_kontakt'] ?? ''));
+        try {
+            $fbStmt->execute([$contactId]);
+            $fb = trim((string) ($fbStmt->fetchColumn() ?: ''));
+            if ($fb !== '' && !str_contains($extra, $fb)) {
+                $extra = trim($extra . "\nFacebook: " . $fb);
+            }
+
+            $noteStmt->execute([$contactId]);
+            $notes = $noteStmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($notes !== [] && !str_contains($extra, '--- Kontakt megjegyzések ---')) {
+                $lines = ['--- Kontakt megjegyzések ---'];
+                foreach ($notes as $note) {
+                    $text = trim((string) ($note['megjegyzés'] ?? ''));
+                    if ($text === '') {
+                        continue;
+                    }
+                    $when = trim((string) ($note['létrehozva'] ?? ''));
+                    $lines[] = ($when !== '' ? $when . ': ' : '') . $text;
+                }
+                if (count($lines) > 1) {
+                    $extra = trim($extra . "\n" . implode("\n", $lines));
+                }
+            }
+
+            if (nextgen_partner_finance_contact_is_billing($db, $contactId)) {
+                $markBilling->execute([$partnerId]);
+            }
+            $update->execute([$extra !== '' ? $extra : null, $partnerId]);
+        } catch (Throwable $ex) {
+            error_log('nextgen_partner_import_pending_finance_contact_extras partner #' . $partnerId . ': ' . $ex->getMessage());
+        }
+    }
 }

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../nextgen/core/config.php';
 require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
+require_once __DIR__ . '/../../../nextgen/lib/partner/finance_billing.php';
 requireLogin();
 
 $szervezo_id = (int)($_GET['szervezo_id'] ?? ($_POST['szervezo_id'] ?? 0));
@@ -93,6 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             finance_store_invoice_uploads($db, $szamla_id, $_FILES['fajlok'] ?? []);
             $db->commit();
+            nextgen_partner_ensure_finance_contacts_migrated($db);
+            nextgen_finance_invoice_bind_billing_partners($db, $szamla_id, $szervezo_id);
             flash('success', 'Számla mentve.');
             redirect(nextgen_url('finance/szamlak/szerkeszt.php?id=') . $szamla_id);
         } catch (Exception $e) {

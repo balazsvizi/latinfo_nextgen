@@ -5,11 +5,13 @@ require_once dirname(__DIR__, 2) . '/init.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/migrate_finance_contacts.php';
+require_once dirname(__DIR__, 2) . '/lib/partner/finance_billing.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 requireLogin();
 
 $db = getDb();
 nextgen_partner_ensure_extended_schema($db);
+nextgen_partner_ensure_finance_contacts_migrated($db);
 $migrateFlash = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'migrate_finance_contacts') {

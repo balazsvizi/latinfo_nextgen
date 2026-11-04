@@ -193,6 +193,6 @@ $get_params = array_filter(['kereso' => $kereso]);
         <?php endif; ?>
     </section>
 </div>
-<p><a href="<?= h(nextgen_url('contacts/')) ?>">← Vissza a finance_contactshoz</a></p>
+<p><a href="<?= h(nextgen_url('admin/partnerek/')) ?>">← Vissza a partnerekhez</a></p>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
 

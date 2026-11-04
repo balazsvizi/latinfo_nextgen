@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../../nextgen/core/database.php';
 require_once __DIR__ . '/../../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../../nextgen/includes/functions.php';
 require_once __DIR__ . '/../../../nextgen/includes/email.php';
+require_once __DIR__ . '/../../../nextgen/lib/partner/finance_billing.php';
 requireLogin();
 
 $id = (int)($_GET['id'] ?? 0);
@@ -20,6 +21,8 @@ if (!$szamla) {
     redirect(nextgen_url('finance/szamlak/'));
 }
 $szervezo_id = (int) $szamla['szervező_id'];
+nextgen_partner_ensure_finance_contacts_migrated($db);
+$szamlazasi_partnerek = nextgen_finance_invoice_bind_billing_partners($db, $id, $szervezo_id);
 
 // SMTP feladók (email_config), alapértelmezett: naptar@latinfo.hu
 $smtp_feladok = $db->query('SELECT id, név, from_email, from_name, alapértelmezett FROM finance_email_accounts ORDER BY alapértelmezett DESC, név ASC')->fetchAll(PDO::FETCH_ASSOC);
@@ -49,29 +52,7 @@ try {
     $default_sablon_html = '';
 }
 
-// Címzettek: szervező kontaktjai közül, akiknél be van állítva a számlázás típus
-$cimzettek_stmt = $db->prepare("
-    SELECT DISTINCT k.id, k.név, k.email
-    FROM finance_organizer_contacts sk
-    JOIN finance_contacts k ON k.id = sk.kontakt_id
-    JOIN finance_contact_type_links kt ON kt.kontakt_id = k.id
-    JOIN finance_contact_types t ON t.id = kt.típus_id
-    WHERE sk.szervező_id = ?
-      AND k.email IS NOT NULL
-      AND k.email <> ''
-      AND LOWER(t.név) IN ('számlázás', 'szamlazas')
-    ORDER BY k.név
-");
-$cimzettek_stmt->execute([$szervezo_id]);
-$szamlazasi_cimzettek = $cimzettek_stmt->fetchAll(PDO::FETCH_ASSOC);
-$default_cimzettek_lista = [];
-foreach ($szamlazasi_cimzettek as $c) {
-    $em = trim((string)($c['email'] ?? ''));
-    if ($em !== '' && filter_var($em, FILTER_VALIDATE_EMAIL)) {
-        $default_cimzettek_lista[] = $em;
-    }
-}
-$default_cimzettek_lista = array_values(array_unique($default_cimzettek_lista));
+$default_cimzettek_lista = nextgen_partner_billing_recipient_emails($szamlazasi_partnerek);
 $default_cimzettek_text = implode("\n", $default_cimzettek_lista);
 
 // Teszt cím default: bejelentkezett admin e-mailje
@@ -560,9 +541,19 @@ require_once __DIR__ . '/../../partials/header.php';
         </div>
 
         <div class="form-group">
-            <label>Címzettek (számlázás kontakt típus)</label>
-            <?php if (empty($szamlazasi_cimzettek)): ?>
-                <p class="text-danger">Figyelmeztetés: nincs számlázás típusú kontakt e-mail címmel.</p>
+            <label>Címzettek (számlázás típusú partnerek)</label>
+            <?php if ($szamlazasi_partnerek === []): ?>
+                <p class="text-danger">Figyelmeztetés: nincs számlázás típusú partner ehhez a szervezőhöz. A jelölést a partner szerkesztőjén, a Finance szervezők részen lehet beállítani.</p>
+            <?php elseif ($default_cimzettek_lista === []): ?>
+                <p class="text-danger">Figyelmeztetés: a számlázás típusú partnernek nincs használható e-mail címe.</p>
+            <?php endif; ?>
+            <?php if ($szamlazasi_partnerek !== []): ?>
+                <p class="help">
+                    <?php foreach ($szamlazasi_partnerek as $partnerIndex => $szamlazasiPartner): ?>
+                        <?php if ($partnerIndex > 0): ?> · <?php endif; ?>
+                        <a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $szamlazasiPartner['id']) ?>"><?= h((string) $szamlazasiPartner['név']) ?></a>
+                    <?php endforeach; ?>
+                </p>
             <?php endif; ?>
             <textarea name="cimzettek_text" rows="4" placeholder="email1@pelda.hu&#10;email2@pelda.hu"><?= h($default_cimzettek_text) ?></textarea>
             <p class="help">Több címzett megadható új sorral, vesszővel vagy pontosvesszővel elválasztva.</p>

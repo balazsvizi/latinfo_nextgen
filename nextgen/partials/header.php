@@ -61,7 +61,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('index.php')) ?>" role="menuitem">Finance főoldal</a></li>
                         <li class="nav-submenu-heading" role="presentation"><span>Szervezők</span></li>
                         <li role="none"><a href="<?= h(nextgen_url('organizers/')) ?>" role="menuitem">Szervezők</a></li>
-                        <li role="none"><a href="<?= h(nextgen_url('contacts/')) ?>" role="menuitem">Kontaktok</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" role="menuitem">Partnerek</a></li>
                         <li class="nav-submenu-heading" role="presentation"><span>Pénzügy</span></li>
                         <li role="none"><a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" role="menuitem">Számlázandó</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('finance/szamlak/')) ?>" role="menuitem">Számlák</a></li>

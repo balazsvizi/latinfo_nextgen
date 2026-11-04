@@ -90,7 +90,7 @@ foreach (array_keys($szamla_statuszok) as $st) {
     <p>
         <a href="<?= h(nextgen_url('organizers/')) ?>" class="btn btn-primary">Szervezők</a>
         <a href="<?= h(nextgen_url('organizers/letrehoz.php')) ?>" class="btn btn-secondary">Új szervező</a>
-        <a href="<?= h(nextgen_url('contacts/')) ?>" class="btn btn-secondary">Kontaktok</a>
+        <a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary">Partnerek</a>
         <a href="<?= h(nextgen_url('finance/szamlak/')) ?>" class="btn btn-secondary">Számlák</a>
         <a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" class="btn btn-secondary">Számlázandó</a>
         <a href="<?= h(nextgen_url('admin/log.php')) ?>" class="btn btn-secondary">Rendszer log</a>

@@ -7,6 +7,7 @@ require_once dirname(__DIR__, 2) . '/lib/partner/partners.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/login_invite.php';
+require_once dirname(__DIR__, 2) . '/lib/partner/finance_billing.php';
 require_once dirname(__DIR__, 2) . '/partner/includes/auth.php';
 require_once dirname(__DIR__, 2) . '/events/lib/dance_schools.php';
 require_once dirname(__DIR__, 2) . '/events/lib/dance_teachers.php';
@@ -14,6 +15,7 @@ requireLogin();
 
 $db = getDb();
 nextgen_partner_ensure_extended_schema($db);
+nextgen_partner_ensure_finance_contacts_migrated($db);
 dance_schools_ensure_schema($db);
 nextgen_partner_ensure_assignment_unique_indexes($db);
 nextgen_partner_drop_legacy_assignment_uniques($db, 'nextgen_partner_events_organizers', 'organizer_id');
@@ -44,6 +46,8 @@ $partnerOrganizerManageUrl = events_url('organizer_letrehoz.php');
 $partnerDjChipLinkPattern = events_url('tags.php?open_tag={id}#open-tag-{id}');
 $partnerDanceSchoolChipLinkPattern = events_url('tanciskola_szerkeszt.php?id={id}');
 $partnerTeacherChipLinkPattern = events_url('tanar_szerkeszt.php?id={id}');
+$partnerFinanceChipLinkPattern = nextgen_url('organizers/megtekint.php?id={id}');
+$partnerFinanceManageUrl = nextgen_url('organizers/letrehoz.php');
 $partnerDanceSchoolManageUrl = events_url('tanciskola_letrehoz.php');
 $partnerTeacherManageUrl = events_url('tanar_letrehoz.php');
 
@@ -184,11 +188,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $schoolRows = nextgen_partner_dance_school_rows_from_post($_POST['school_rows'] ?? []);
                     $teacherRows = nextgen_partner_teacher_rows_from_post($_POST['teacher_rows'] ?? []);
                     $assignResult = nextgen_partner_sync_assignments($db, $id, $organizerRows, $djRows, $schoolRows, $teacherRows);
-                    if ($assignResult['ok']) {
-                        flash('success', 'Mentve.');
-                        redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                    if (!$assignResult['ok']) {
+                        $hiba = (string) ($assignResult['error'] ?? 'Hozzárendelések mentése sikertelen.');
+                    } else {
+                        $financeRows = nextgen_partner_finance_rows_from_post($_POST['finance_rows'] ?? []);
+                        $financeResult = nextgen_partner_sync_finance_organizers($db, $id, $financeRows);
+                        if ($financeResult['ok']) {
+                            flash('success', 'Mentve.');
+                            redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
+                        }
+                        $hiba = (string) ($financeResult['error'] ?? 'Finance szervezők mentése sikertelen.');
                     }
-                    $hiba = (string) ($assignResult['error'] ?? 'Hozzárendelések mentése sikertelen.');
                 }
             }
         }
@@ -205,6 +215,7 @@ $organizerRowsForForm = [];
 $djRowsForForm = [];
 $schoolRowsForForm = [];
 $teacherRowsForForm = [];
+$financeRowsForForm = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'save') === 'save' && $hiba !== '') {
     foreach ((array) ($_POST['organizer_rows'] ?? []) as $row) {
@@ -271,11 +282,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
             'role_note' => (string) ($row['role_note'] ?? ''),
         ];
     }
+    $financeRowsForForm = nextgen_partner_finance_rows_from_post($_POST['finance_rows'] ?? []);
 } else {
     $organizerRowsForForm = nextgen_partner_group_organizer_assignments_for_form($assignedOrganizers);
     $djRowsForForm = nextgen_partner_group_dj_assignments_for_form($assignedDjs);
     $schoolRowsForForm = nextgen_partner_group_dance_school_assignments_for_form($assignedDanceSchools);
     $teacherRowsForForm = nextgen_partner_group_teacher_assignments_for_form($assignedTeachers);
+    $financeRowsForForm = nextgen_partner_finance_organizer_assignments($db, $id);
 }
 
 if ($organizerRowsForForm === []) {
@@ -290,11 +303,15 @@ if ($schoolRowsForForm === []) {
 if ($teacherRowsForForm === []) {
     $teacherRowsForForm[] = ['tag_id' => 0, 'role_types' => ['teacher'], 'role_note' => ''];
 }
+if ($financeRowsForForm === []) {
+    $financeRowsForForm[] = ['finance_organizer_id' => 0, 'szamlazas' => false];
+}
 
 $allOrganizers = nextgen_partner_selectable_events_organizers($db);
 $allDjs = nextgen_partner_selectable_djs($db);
 $allDanceSchools = dance_schools_selectable_list($db);
 $allTeachers = dance_teachers_selectable_list($db);
+$allFinanceOrganizers = nextgen_partner_selectable_finance_organizers($db);
 $partnerActivityLog = nextgen_partner_activity_log_for_partner($db, $id);
 
 $loginInviteTemplates = nextgen_partner_login_invite_list_templates($db);
@@ -435,6 +452,25 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 
         <section class="partner-admin-assign-section">
             <div class="partner-admin-assign-section__head">
+                <h4>Finance szervezők</h4>
+                <p class="help">A számla ehhez a partnerhez kötődik, ha a Számlázás jelölő be van pipálva. Több ilyen partner esetén mindegyik e-mail címe bekerül a számla címzettjei közé.</p>
+            </div>
+            <div id="partner-finance-rows" class="partner-admin-assign-rows">
+                <?php foreach ($financeRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
+                    <?php
+                    $partnerAssignAllFinanceOrganizers = $allFinanceOrganizers;
+                    require __DIR__ . '/partials/partner_finance_assign_row.php';
+                    ?>
+                <?php endforeach; ?>
+            </div>
+            <p class="toolbar partner-admin-assign-section__actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="partner-finance-add">+ Finance szervező</button>
+                <a href="<?= h($partnerFinanceManageUrl) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">Új finance szervező</a>
+            </p>
+        </section>
+
+        <section class="partner-admin-assign-section">
+            <div class="partner-admin-assign-section__head">
                 <h4>Esemény szervezők</h4>
                 <p class="help">Válaszd ki a szervezőt, majd add meg a partner jellegét. Több sorban több szervező is hozzárendelhető.</p>
             </div>
@@ -534,6 +570,15 @@ $partnerEmailRow = [
 ];
 $partnerEmailIsFirst = false;
 require __DIR__ . '/partials/partner_email_row.php';
+?>
+</template>
+
+<template id="partner-finance-row-template">
+<?php
+$partnerAssignRowIndex = '__INDEX__';
+$partnerAssignRow = ['finance_organizer_id' => 0, 'szamlazas' => false];
+$partnerAssignAllFinanceOrganizers = $allFinanceOrganizers;
+require __DIR__ . '/partials/partner_finance_assign_row.php';
 ?>
 </template>
 

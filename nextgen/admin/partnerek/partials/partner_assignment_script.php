@@ -32,9 +32,17 @@ declare(strict_types=1);
                 el.htmlFor = el.htmlFor.replace(/-\d+$/, '-' + index);
             });
             row.querySelectorAll('[data-wp-token]').forEach(function (tokenRoot) {
-                var baseId = namePrefix === 'organizer_rows' ? 'partner-org-token-' : 'partner-dj-token-';
+                var tokenMeta = {
+                    organizer_rows: { base: 'partner-org-token-', suffix: '[organizer_id]' },
+                    dj_rows: { base: 'partner-dj-token-', suffix: '[tag_id]' },
+                    school_rows: { base: 'partner-school-token-', suffix: '[school_id]' },
+                    teacher_rows: { base: 'partner-teacher-token-', suffix: '[tag_id]' },
+                    finance_rows: { base: 'partner-fin-token-', suffix: '[finance_organizer_id]' }
+                };
+                var meta = tokenMeta[namePrefix] || tokenMeta.organizer_rows;
+                var baseId = meta.base;
                 tokenRoot.id = baseId + index;
-                var fieldSuffix = namePrefix === 'organizer_rows' ? '[organizer_id]' : '[tag_id]';
+                var fieldSuffix = meta.suffix;
                 tokenRoot.setAttribute('data-field-name', namePrefix + '[' + index + ']' + fieldSuffix);
                 var input = tokenRoot.querySelector('.wp-token-input__search');
                 if (input) {
@@ -211,6 +219,15 @@ declare(strict_types=1);
         rowSelector: '[data-partner-assign-row="teacher"]',
         namePrefix: 'teacher_rows',
         defaultRole: 'teacher'
+    });
+
+    setupSection({
+        containerId: 'partner-finance-rows',
+        addButtonId: 'partner-finance-add',
+        templateId: 'partner-finance-row-template',
+        rowSelector: '[data-partner-assign-row="finance"]',
+        namePrefix: 'finance_rows',
+        defaultRole: ''
     });
 })();
 </script>
