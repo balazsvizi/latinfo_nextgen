@@ -325,6 +325,83 @@ function nextgen_partner_finance_organizer_partners(PDO $db, int $financeOrganiz
     }
 }
 
+/**
+ * Szervező adatlap: partner e-mail és számlázás jelölő mentése.
+ *
+ * @return array{ok: true}|array{ok: false, error: string}
+ */
+function nextgen_partner_save_organizer_billing(
+    PDO $db,
+    int $financeOrganizerId,
+    int $partnerId,
+    string $email,
+    bool $szamlazas
+): array {
+    if ($financeOrganizerId <= 0 || $partnerId <= 0) {
+        return ['ok' => false, 'error' => 'Érvénytelen partner vagy szervező.'];
+    }
+    if (!nextgen_partner_ensure_finance_billing_schema($db)) {
+        return ['ok' => false, 'error' => 'A számlázás mentése most nem elérhető.'];
+    }
+
+    $partner = nextgen_partner_by_id($db, $partnerId);
+    if ($partner === null) {
+        return ['ok' => false, 'error' => 'A partner nem található.'];
+    }
+
+    $email = mb_strtolower(trim($email), 'UTF-8');
+    if ($email !== '') {
+        $emailRows = nextgen_partner_emails_for_partner($db, $partnerId);
+        if ($emailRows === []) {
+            $emailRows = [[
+                'email' => $email,
+                'email_event_bekerult' => true,
+                'email_szervezo_stat' => true,
+            ]];
+        } else {
+            $emailRows[0]['email'] = $email;
+        }
+        $saved = nextgen_partner_update_profile(
+            $db,
+            $partnerId,
+            (string) ($partner['név'] ?? ''),
+            $email,
+            (string) ($partner['telefon'] ?? ''),
+            (string) ($partner['egyéb_kontakt'] ?? ''),
+            (string) ($partner['egyéb_info'] ?? ''),
+            (string) ($partner['kieg_info'] ?? ''),
+            (string) ($partner['település'] ?? ''),
+            null,
+            null,
+            $emailRows
+        );
+        if (!$saved['ok']) {
+            return ['ok' => false, 'error' => (string) ($saved['error'] ?? 'E-mail mentése sikertelen.')];
+        }
+    }
+
+    try {
+        $stmt = $db->prepare('
+            INSERT INTO `nextgen_partner_finance_organizers` (`partner_id`, `finance_organizer_id`, `szamlazas`)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE `szamlazas` = VALUES(`szamlazas`)
+        ');
+        $stmt->execute([$partnerId, $financeOrganizerId, $szamlazas ? 1 : 0]);
+        nextgen_partner_log(
+            $db,
+            $partnerId,
+            'Számlázás jelölő mentve',
+            'finance szervező #' . $financeOrganizerId . ($szamlazas ? ', számlázás' : '')
+        );
+
+        return ['ok' => true];
+    } catch (Throwable $ex) {
+        error_log('nextgen_partner_save_organizer_billing: ' . $ex->getMessage());
+
+        return ['ok' => false, 'error' => 'Számlázás jelölő mentése sikertelen.'];
+    }
+}
+
 function nextgen_partner_id_by_finance_contact(PDO $db, int $contactId): int
 {
     if ($contactId <= 0) {

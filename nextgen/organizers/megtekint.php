@@ -33,6 +33,17 @@ if (!$szervezo) {
     redirect(nextgen_url('organizers/'));
 }
 
+$partnerRedirect = nextgen_url('organizers/megtekint.php?id=') . $id . '#kontaktok';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') === 'partner_szamlazas') {
+    csrf_require('organizer_partner_szamlazas', '_csrf', $partnerRedirect);
+    $partnerId = (int) ($_POST['partner_id'] ?? 0);
+    $email = trim((string) ($_POST['partner_email'] ?? ''));
+    $szamlazas = (string) ($_POST['szamlazas'] ?? '0') === '1';
+    $saved = nextgen_partner_save_organizer_billing($db, $id, $partnerId, $email, $szamlazas);
+    flash($saved['ok'] ? 'success' : 'error', $saved['ok'] ? 'Partner számlázása mentve.' : (string) $saved['error']);
+    redirect($partnerRedirect);
+}
+
 // Megjegyzés hozzáadása
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['megjegyzes_szoveg'])) {
     $szoveg = trim($_POST['megjegyzes_szoveg']);
@@ -74,6 +85,19 @@ $szervezo_log->execute([$id]);
 $szervezo_log = $szervezo_log->fetchAll();
 
 $partnerek = nextgen_partner_finance_organizer_partners($db, $id);
+$hozzaadhatoPartnerek = [];
+if (function_exists('nextgen_partners_list')) {
+    $marBenne = [];
+    foreach ($partnerek as $meglevoPartner) {
+        $marBenne[(int) $meglevoPartner['id']] = true;
+    }
+    foreach (nextgen_partners_list($db, null, 'nev', 'asc') as $listaPartner) {
+        $listaId = (int) ($listaPartner['id'] ?? 0);
+        if ($listaId > 0 && !isset($marBenne[$listaId])) {
+            $hozzaadhatoPartnerek[] = $listaPartner;
+        }
+    }
+}
 
 $cimek = $db->prepare("SELECT * FROM {$billingAddressesTable} WHERE szervező_id = ? ORDER BY alapértelmezett DESC, név");
 $cimek->execute([$id]);
@@ -218,23 +242,58 @@ $show_limit = 3;
 
 <div class="card" id="kontaktok">
     <h2>Partnerek</h2>
-    <p class="help">A partnert a partner szerkesztőjén lehet hozzárendelni. A számlázás jelölésű partner kapja a számla e-mailjét.</p>
-    <p><a href="<?= h(nextgen_url('admin/partnerek/')) ?>" class="btn btn-secondary btn-sm">Partnerek</a></p>
-    <table>
-        <thead><tr><th>ID</th><th>Név</th><th>E-mail</th><th>Telefon</th><th>Számlázás</th></tr></thead>
-        <tbody>
-            <?php foreach ($partnerek as $k): ?>
-            <tr>
-                <td><?= (int) $k['id'] ?></td>
-                <td><a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $k['id']) ?>"><?= h($k['név']) ?></a></td>
-                <td><?= h($k['email']) ?></td>
-                <td><?= h($k['telefon']) ?></td>
-                <td><?= !empty($k['szamlazas']) ? 'Igen' : '' ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+    <p class="help">Itt adható meg a számla e-mailje és a számlázás jelölő. A bepipált partner kapja a számla levelét.</p>
     <?php if ($partnerek === []): ?><p>Nincs hozzárendelt partner.</p><?php endif; ?>
+    <?php foreach ($partnerek as $k): ?>
+        <form method="post" class="toolbar" style="align-items:flex-end;margin-bottom:0.75rem;">
+            <?= csrf_input('organizer_partner_szamlazas') ?>
+            <input type="hidden" name="action" value="partner_szamlazas">
+            <input type="hidden" name="partner_id" value="<?= (int) $k['id'] ?>">
+            <div class="form-group" style="margin:0;">
+                <label>Partner</label>
+                <div><a href="<?= h(nextgen_url('admin/partnerek/szerkeszt.php?id=') . (int) $k['id']) ?>" target="_blank" rel="noopener noreferrer"><?= h($k['név']) ?></a></div>
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label for="partner-email-<?= (int) $k['id'] ?>">E-mail</label>
+                <input type="email" id="partner-email-<?= (int) $k['id'] ?>" name="partner_email" value="<?= h($k['email']) ?>" maxlength="255">
+            </div>
+            <div class="form-group" style="margin:0;">
+                <input type="hidden" name="szamlazas" value="0">
+                <label>
+                    <input type="checkbox" name="szamlazas" value="1"<?= !empty($k['szamlazas']) ? ' checked' : '' ?>>
+                    Számlázás
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Mentés</button>
+        </form>
+    <?php endforeach; ?>
+    <?php if ($hozzaadhatoPartnerek !== []): ?>
+        <form method="post" class="toolbar" style="align-items:flex-end;">
+            <?= csrf_input('organizer_partner_szamlazas') ?>
+            <input type="hidden" name="action" value="partner_szamlazas">
+            <div class="form-group" style="margin:0;">
+                <label for="uj-partner-id">Partner hozzáadása</label>
+                <select id="uj-partner-id" name="partner_id" required>
+                    <option value="">Válassz…</option>
+                    <?php foreach ($hozzaadhatoPartnerek as $ujPartner): ?>
+                        <option value="<?= (int) $ujPartner['id'] ?>"><?= h((string) ($ujPartner['név'] ?? '')) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label for="uj-partner-email">E-mail</label>
+                <input type="email" id="uj-partner-email" name="partner_email" maxlength="255">
+            </div>
+            <div class="form-group" style="margin:0;">
+                <input type="hidden" name="szamlazas" value="0">
+                <label>
+                    <input type="checkbox" name="szamlazas" value="1" checked>
+                    Számlázás
+                </label>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">Hozzáadás</button>
+        </form>
+    <?php endif; ?>
 </div>
 
 <div class="card">

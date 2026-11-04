@@ -542,10 +542,19 @@ require_once __DIR__ . '/../../partials/header.php';
 
         <div class="form-group">
             <label>Címzettek (számlázás típusú partnerek)</label>
+            <?php
+            $szervezoPartnerUrl = nextgen_url('organizers/megtekint.php?id=') . $szervezo_id . '#kontaktok';
+            ?>
             <?php if ($szamlazasi_partnerek === []): ?>
-                <p class="text-danger">Figyelmeztetés: nincs számlázás típusú partner ehhez a szervezőhöz. A jelölést a partner szerkesztőjén, a Finance szervezők részen lehet beállítani.</p>
+                <p class="text-danger">
+                    Figyelmeztetés: nincs számlázás típusú partner ehhez a szervezőhöz.
+                    <a href="<?= h($szervezoPartnerUrl) ?>" target="_blank" rel="noopener noreferrer">Szervező megnyitása</a>
+                </p>
             <?php elseif ($default_cimzettek_lista === []): ?>
-                <p class="text-danger">Figyelmeztetés: a számlázás típusú partnernek nincs használható e-mail címe.</p>
+                <p class="text-danger">
+                    Figyelmeztetés: a számlázás típusú partnernek nincs használható e-mail címe.
+                    <a href="<?= h($szervezoPartnerUrl) ?>" target="_blank" rel="noopener noreferrer">Szervező megnyitása</a>
+                </p>
             <?php endif; ?>
             <?php if ($szamlazasi_partnerek !== []): ?>
                 <p class="help">

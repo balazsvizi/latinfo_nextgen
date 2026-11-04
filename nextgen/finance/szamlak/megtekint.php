@@ -113,6 +113,7 @@ require_once __DIR__ . '/../../partials/header.php';
         <tr><th>Partner</th><td>
             <?php if ($szamlazasi_partnerek === []): ?>
                 <span class="text-danger">Nincs számlázás típusú partner.</span>
+                <a href="<?= h(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id . '#kontaktok') ?>" target="_blank" rel="noopener noreferrer">Szervező megnyitása</a>
             <?php else: ?>
                 <?php foreach ($szamlazasi_partnerek as $partnerIndex => $szamlazasiPartner): ?>
                     <?php if ($partnerIndex > 0): ?>, <?php endif; ?>
