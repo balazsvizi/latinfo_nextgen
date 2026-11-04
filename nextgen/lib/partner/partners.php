@@ -1006,6 +1006,9 @@ function nextgen_partner_organizer_rows_from_post(mixed $raw): array
             }
         }
         if ($roleTypes === []) {
+            if ((string) ($row['szamlazas'] ?? '0') === '1') {
+                continue;
+            }
             $roleTypes = ['event'];
         }
 

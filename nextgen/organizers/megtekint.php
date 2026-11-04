@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../nextgen/core/database.php';
 require_once __DIR__ . '/../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../nextgen/includes/functions.php';
 require_once __DIR__ . '/../../nextgen/lib/partner/finance_billing.php';
+require_once __DIR__ . '/../../nextgen/lib/organizer/unify.php';
 requireLogin();
 
 $id = (int)($_GET['id'] ?? 0);
@@ -90,10 +91,26 @@ require_once __DIR__ . '/../partials/header.php';
 ?>
 <?php if ($s = flash('success')): ?><p class="alert alert-success"><?= h($s) ?></p><?php endif; ?>
 
+<?php
+$eventsOrganizerId = 0;
+$eventsOrganizerName = '';
+if (organizer_unify_ensure_schema($db)) {
+    $eventsLink = $db->prepare('SELECT f.events_organizer_id, e.name AS events_name FROM finance_organizers f LEFT JOIN events_organizers e ON e.id = f.events_organizer_id WHERE f.id = ?');
+    $eventsLink->execute([$id]);
+    $eventsLinkRow = $eventsLink->fetch(PDO::FETCH_ASSOC) ?: [];
+    $eventsOrganizerId = (int) ($eventsLinkRow['events_organizer_id'] ?? 0);
+    $eventsOrganizerName = (string) ($eventsLinkRow['events_name'] ?? '');
+}
+?>
 <div class="card card-szervezo-fejlec" id="megjegyzesek">
     <div class="szervezo-fejlec-sor">
         <div class="szervezo-nev-blokk">
             <h2><?= h($szervezo['név']) ?> <span class="muted" style="font-size:0.75em; font-weight:normal;">(ID: <?= (int)$szervezo['id'] ?>)</span></h2>
+            <?php if ($eventsOrganizerId > 0): ?>
+                <p class="help">Eseményszervező: <a href="<?= h(nextgen_url('events/organizer_szerkeszt.php?id=') . $eventsOrganizerId) ?>"><?= h($eventsOrganizerName) ?></a></p>
+            <?php else: ?>
+                <p class="help"><a href="<?= h(nextgen_url('organizers/egyesites.php#fin-') . (int) $id) ?>">Még nincs összekötve eseményszervezővel.</a></p>
+            <?php endif; ?>
             <p>
                 <a href="<?= h(nextgen_url('organizers/szerkeszt.php?id=')) ?><?= $id ?>" class="btn btn-primary">Szerkesztés</a>
                 <a href="<?= h(nextgen_url('organizers/')) ?>" class="btn btn-secondary">← Lista</a>

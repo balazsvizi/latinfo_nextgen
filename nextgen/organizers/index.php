@@ -1,8 +1,12 @@
 <?php
+require_once __DIR__ . '/../../nextgen/lib/organizer/unify.php';
+
 $pageTitle = 'Szervezők';
 require_once __DIR__ . '/../partials/header.php';
 
 $db = getDb();
+organizer_unify_ensure_schema($db);
+organizer_unify_auto_match($db);
 $hasCimkeSzin = cimkek_has_szin($db);
 
 $kereso = trim($_GET['kereso'] ?? '');
@@ -30,11 +34,12 @@ $cimkeConcatExpr = $hasCimkeSzin
     ? "GROUP_CONCAT(CONCAT(c.név, '|', COALESCE(c.szín, '#6366F1')) ORDER BY c.név SEPARATOR '||')"
     : "GROUP_CONCAT(CONCAT(c.név, '|', '#6366F1') ORDER BY c.név SEPARATOR '||')";
 $stmt = $db->prepare("
-    SELECT s.id, s.név,
+    SELECT s.id, s.név, COALESCE(s.events_organizer_id, 0) AS events_organizer_id, COALESCE(e.name, '') AS events_name,
            (SELECT $cimkeConcatExpr FROM finance_organizer_tags sc JOIN finance_tags c ON c.id = sc.címke_id WHERE sc.szervező_id = s.id) AS címkék,
            (SELECT COUNT(*) FROM finance_billing_items sz WHERE sz.szervező_id = s.id AND sz.számla_id IS NULL AND (COALESCE(sz.törölve,0) = 0)) AS szamlazando_nem,
            (SELECT COUNT(*) FROM finance_invoices szl WHERE szl.szervező_id = s.id AND szl.státusz NOT IN ('kiegyenlítve','sztornó') AND (COALESCE(szl.törölve,0) = 0)) AS szamla_nem
     FROM finance_organizers s
+    LEFT JOIN events_organizers e ON e.id = s.events_organizer_id
     $where_sql
     ORDER BY $order_sql $dir
 ");
@@ -63,6 +68,7 @@ $get_params = array_filter(['kereso' => $kereso, 'cimke_id' => $cimke_id ?: null
         </span>
         <button type="submit" class="btn btn-primary">Keresés</button>
         <a href="<?= h(nextgen_url('organizers/letrehoz.php')) ?>" class="btn btn-primary">Új szervező</a>
+        <a href="<?= h(nextgen_url('organizers/egyesites.php')) ?>" class="btn btn-secondary">Egyesítés az eseményszervezőkkel</a>
     </form>
 
     <div class="table-wrap">
@@ -71,6 +77,7 @@ $get_params = array_filter(['kereso' => $kereso, 'cimke_id' => $cimke_id ?: null
                 <tr>
                     <th><?= sort_th('ID', 'id', $order, $dir_param, $get_params) ?></th>
                     <th><?= sort_th('Név', 'név', $order, $dir_param, $get_params) ?></th>
+                    <th>Eseményszervező</th>
                     <th><?= sort_th('Címkék', 'címkék', $order, $dir_param, $get_params) ?></th>
                     <th class="th-center"><?= sort_th('Le nem számlázott', 'szamlazando_nem', $order, $dir_param, $get_params) ?></th>
                     <th class="th-center"><?= sort_th('Nem kiegyenlített', 'szamla_nem', $order, $dir_param, $get_params) ?></th>
@@ -82,6 +89,13 @@ $get_params = array_filter(['kereso' => $kereso, 'cimke_id' => $cimke_id ?: null
                 <tr>
                     <td><?= (int)$s['id'] ?></td>
                     <td><a href="<?= h(nextgen_url('organizers/megtekint.php?id=')) ?><?= (int)$s['id'] ?>"><?= h($s['név']) ?></a></td>
+                    <td>
+                        <?php if ((int) ($s['events_organizer_id'] ?? 0) > 0): ?>
+                            <a href="<?= h(nextgen_url('events/organizer_szerkeszt.php?id=') . (int) $s['events_organizer_id']) ?>"><?= h((string) ($s['events_name'] ?? '')) ?></a>
+                        <?php else: ?>
+                            <a href="<?= h(nextgen_url('organizers/egyesites.php#fin-') . (int) $s['id']) ?>">Nincs összekötve</a>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <?php if (!empty($s['címkék'])): ?>
                             <span class="cimke-badge-list">

@@ -8,6 +8,7 @@ require_once dirname(__DIR__, 2) . '/lib/partner/messages.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/activity_log.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/login_invite.php';
 require_once dirname(__DIR__, 2) . '/lib/partner/finance_billing.php';
+require_once dirname(__DIR__, 2) . '/lib/organizer/unify.php';
 require_once dirname(__DIR__, 2) . '/partner/includes/auth.php';
 require_once dirname(__DIR__, 2) . '/events/lib/dance_schools.php';
 require_once dirname(__DIR__, 2) . '/events/lib/dance_teachers.php';
@@ -191,8 +192,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!$assignResult['ok']) {
                         $hiba = (string) ($assignResult['error'] ?? 'Hozzárendelések mentése sikertelen.');
                     } else {
-                        $financeRows = nextgen_partner_finance_rows_from_post($_POST['finance_rows'] ?? []);
-                        $financeResult = nextgen_partner_sync_finance_organizers($db, $id, $financeRows);
+                        $billingEventIds = nextgen_partner_billing_event_ids_from_post($_POST['organizer_rows'] ?? []);
+                        $financeResult = nextgen_partner_sync_billing_on_event_organizers($db, $id, $billingEventIds);
                         if ($financeResult['ok']) {
                             flash('success', 'Mentve.');
                             redirect(nextgen_url('admin/partnerek/szerkeszt.php?id=') . $id);
@@ -232,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
             'organizer_id' => (int) ($row['organizer_id'] ?? 0),
             'role_types' => $roleTypes,
             'role_note' => (string) ($row['role_note'] ?? ''),
+            'szamlazas' => (string) ($row['szamlazas'] ?? '0') === '1',
         ];
     }
     foreach ((array) ($_POST['dj_rows'] ?? []) as $row) {
@@ -288,11 +290,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['_action'] ?? 'sav
     $djRowsForForm = nextgen_partner_group_dj_assignments_for_form($assignedDjs);
     $schoolRowsForForm = nextgen_partner_group_dance_school_assignments_for_form($assignedDanceSchools);
     $teacherRowsForForm = nextgen_partner_group_teacher_assignments_for_form($assignedTeachers);
-    $financeRowsForForm = nextgen_partner_finance_organizer_assignments($db, $id);
+    $financeRowsForForm = [];
+    $billingEventIds = nextgen_partner_billing_event_organizer_id_set($db, $id);
+    foreach ($organizerRowsForForm as $organizerFormIndex => $organizerFormRow) {
+        $organizerRowsForForm[$organizerFormIndex]['szamlazas'] = isset($billingEventIds[(int) ($organizerFormRow['organizer_id'] ?? 0)]);
+    }
+}
+
+if (isset($billingEventIds)) {
+    $presentOrganizerIds = [];
+    foreach ($organizerRowsForForm as $organizerFormRow) {
+        $presentOrganizerIds[(int) ($organizerFormRow['organizer_id'] ?? 0)] = true;
+    }
+    foreach (array_keys($billingEventIds) as $billingEventId) {
+        if ($billingEventId > 0 && !isset($presentOrganizerIds[$billingEventId])) {
+            $organizerRowsForForm[] = [
+                'organizer_id' => $billingEventId,
+                'role_types' => [],
+                'role_note' => '',
+                'szamlazas' => true,
+            ];
+        }
+    }
 }
 
 if ($organizerRowsForForm === []) {
-    $organizerRowsForForm[] = ['organizer_id' => 0, 'role_types' => ['event'], 'role_note' => ''];
+    $organizerRowsForForm[] = ['organizer_id' => 0, 'role_types' => ['event'], 'role_note' => '', 'szamlazas' => false];
 }
 if ($djRowsForForm === []) {
     $djRowsForForm[] = ['tag_id' => 0, 'role_types' => ['dj'], 'role_note' => ''];
@@ -302,9 +325,6 @@ if ($schoolRowsForForm === []) {
 }
 if ($teacherRowsForForm === []) {
     $teacherRowsForForm[] = ['tag_id' => 0, 'role_types' => ['teacher'], 'role_note' => ''];
-}
-if ($financeRowsForForm === []) {
-    $financeRowsForForm[] = ['finance_organizer_id' => 0, 'szamlazas' => false];
 }
 
 $allOrganizers = nextgen_partner_selectable_events_organizers($db);
@@ -452,27 +472,8 @@ require_once dirname(__DIR__, 2) . '/partials/header.php';
 
         <section class="partner-admin-assign-section">
             <div class="partner-admin-assign-section__head">
-                <h4>Finance szervezők</h4>
-                <p class="help">A számla ehhez a partnerhez kötődik, ha a Számlázás jelölő be van pipálva. Több ilyen partner esetén mindegyik e-mail címe bekerül a számla címzettjei közé.</p>
-            </div>
-            <div id="partner-finance-rows" class="partner-admin-assign-rows">
-                <?php foreach ($financeRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
-                    <?php
-                    $partnerAssignAllFinanceOrganizers = $allFinanceOrganizers;
-                    require __DIR__ . '/partials/partner_finance_assign_row.php';
-                    ?>
-                <?php endforeach; ?>
-            </div>
-            <p class="toolbar partner-admin-assign-section__actions">
-                <button type="button" class="btn btn-secondary btn-sm" id="partner-finance-add">+ Finance szervező</button>
-                <a href="<?= h($partnerFinanceManageUrl) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">Új finance szervező</a>
-            </p>
-        </section>
-
-        <section class="partner-admin-assign-section">
-            <div class="partner-admin-assign-section__head">
-                <h4>Esemény szervezők</h4>
-                <p class="help">Válaszd ki a szervezőt, majd add meg a partner jellegét. Több sorban több szervező is hozzárendelhető.</p>
+                <h4>Szervezők</h4>
+                <p class="help">Az eseményszervező egyben a finance szervező is, ha össze vannak kötve. A Számlázás jelölő dönti el, hogy a számla e-mailje erre a partnerre menjen.</p>
             </div>
             <div id="partner-organizer-rows" class="partner-admin-assign-rows">
                 <?php foreach ($organizerRowsForForm as $partnerAssignRowIndex => $partnerAssignRow): ?>
@@ -570,15 +571,6 @@ $partnerEmailRow = [
 ];
 $partnerEmailIsFirst = false;
 require __DIR__ . '/partials/partner_email_row.php';
-?>
-</template>
-
-<template id="partner-finance-row-template">
-<?php
-$partnerAssignRowIndex = '__INDEX__';
-$partnerAssignRow = ['finance_organizer_id' => 0, 'szamlazas' => false];
-$partnerAssignAllFinanceOrganizers = $allFinanceOrganizers;
-require __DIR__ . '/partials/partner_finance_assign_row.php';
 ?>
 </template>
 

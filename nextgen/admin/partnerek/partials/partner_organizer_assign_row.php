@@ -23,7 +23,7 @@ if (!is_array($selectedRoles)) {
 if ($selectedRoles === [] && isset($partnerAssignRow['role_type'])) {
     $selectedRoles = [(string) $partnerAssignRow['role_type']];
 }
-if ($selectedRoles === []) {
+if ($selectedRoles === [] && empty($partnerAssignRow['szamlazas'])) {
     $selectedRoles = ['event'];
 }
 $roleNote = (string) ($partnerAssignRow['role_note'] ?? '');
@@ -44,6 +44,8 @@ $wpTokenShowPopular = false;
 $wpTokenChipLinkPattern = $partnerOrganizerChipLinkPattern ?? '';
 $wpTokenChipLinkNewTab = true;
 $showOtherNote = in_array('other', $selectedRoles, true);
+$szamlazasOn = !empty($partnerAssignRow['szamlazas']);
+$szamlazasId = 'partner-org-szamlazas-' . $partnerAssignRowIndex;
 ?>
 <div class="partner-assign-row" data-partner-assign-row="organizer">
     <div class="partner-assign-row__main">
@@ -64,6 +66,20 @@ $showOtherNote = in_array('other', $selectedRoles, true);
                     <span><?= h($roleLabel) ?></span>
                 </label>
             <?php endforeach; ?>
+        </fieldset>
+        <fieldset class="partner-assign-row__roles">
+            <legend class="partner-assign-row__roles-label">Számla</legend>
+            <label class="partner-assign-row__role-check" for="<?= h($szamlazasId) ?>">
+                <input type="hidden" name="organizer_rows[<?= $partnerAssignRowIndex ?>][szamlazas]" value="0">
+                <input
+                    type="checkbox"
+                    id="<?= h($szamlazasId) ?>"
+                    name="organizer_rows[<?= $partnerAssignRowIndex ?>][szamlazas]"
+                    value="1"
+                    <?= $szamlazasOn ? ' checked' : '' ?>
+                >
+                <span>Számlázás</span>
+            </label>
         </fieldset>
         <div class="partner-assign-row__note" data-partner-role-note-wrap<?= $showOtherNote ? '' : ' hidden' ?>>
             <label class="visually-hidden" for="partner-org-note-<?= $partnerAssignRowIndex ?>">Megjegyzés</label>

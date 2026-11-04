@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once __DIR__ . '/lib/admin_event_filters.php';
 require_once __DIR__ . '/lib/event_edit_stats.php';
 require_once __DIR__ . '/lib/organizer_finance.php';
+require_once dirname(__DIR__) . '/lib/organizer/unify.php';
 requireLogin();
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -59,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         WHERE `id` = ?
                     ');
                     $upd->execute([$name, $financePercent, $financeFix, $id]);
+                    $linkedFinance = organizer_unify_finance_ids_for_event($db, $id);
+                    if (count($linkedFinance) === 1) {
+                        $db->prepare('UPDATE `finance_organizers` SET `név` = ? WHERE `id` = ?')->execute([$name, $linkedFinance[0]]);
+                    }
                     rendszer_log('szervező', $id, 'Módosítva', $name);
                     flash('success', 'Mentve.');
                     redirect(events_url('organizer_szerkeszt.php?id=') . $id);
@@ -76,6 +81,7 @@ $statsParams = events_edit_stats_params_from_request($_GET);
 $statsData = events_edit_stats_for_organizer($db, $id, $statsParams);
 $statsEventRows = $statsData['event_rows'] ?? [];
 $draftRows = $statsData['draft_rows'] ?? [];
+$financeSummary = organizer_unify_finance_summary($db, $id);
 $pageTitle = 'Szervező szerkesztése: ' . $name;
 require_once dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -129,6 +135,28 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <a href="<?= h(events_url('organizers.php')) ?>" class="btn btn-secondary">Vissza a listához</a>
         </p>
     </form>
+</div>
+
+<div class="card" id="szamlak">
+    <h2>Számlázás</h2>
+    <?php if ($financeSummary === []): ?>
+        <p class="help">Ehhez az eseményszervezőhöz még nincs finance szervező kötve. A párosítás a finance szervezők egyesítésénél történik. Számlázás jelölésekor a partner szerkesztő létrehozza a finance rekordot.</p>
+        <p><a href="<?= h(nextgen_url('organizers/egyesites.php')) ?>" class="btn btn-secondary btn-sm">Egyesítés</a></p>
+    <?php else: ?>
+        <table>
+            <thead><tr><th>Finance szervező</th><th>Számlák</th><th>Nyitott</th><th></th></tr></thead>
+            <tbody>
+                <?php foreach ($financeSummary as $financeRow): ?>
+                    <tr>
+                        <td><?= h($financeRow['név']) ?></td>
+                        <td><?= (int) $financeRow['invoice_count'] ?></td>
+                        <td><?= (int) $financeRow['open_invoice_count'] ?></td>
+                        <td><a class="btn btn-sm btn-secondary" href="<?= h(nextgen_url('organizers/megtekint.php?id=') . (int) $financeRow['id']) ?>">Számlák és címek</a></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
 </div>
 
 <?php require __DIR__ . '/partials/admin_organizer_portal_account.php'; ?>

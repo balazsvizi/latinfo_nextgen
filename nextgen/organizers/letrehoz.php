@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../nextgen/core/database.php';
 require_once __DIR__ . '/../../nextgen/includes/auth.php';
 require_once __DIR__ . '/../../nextgen/includes/functions.php';
+require_once __DIR__ . '/../../nextgen/lib/organizer/unify.php';
 requireLogin();
 
 $db = getDb();
@@ -34,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$szervezo_id, 'Szervező létrehozva', null, $_SESSION['admin_id'] ?? null]);
 
             $db->commit();
-            flash('success', 'Szervező sikeresen létrehozva.');
+            organizer_unify_attach_new_finance($db, $szervezo_id, $név);
+            flash('success', 'Szervező létrehozva és eseményszervezőhöz kötve.');
             redirect(nextgen_url('organizers/megtekint.php?id=') . $szervezo_id);
         } catch (Exception $e) {
             $db->rollBack();
