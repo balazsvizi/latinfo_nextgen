@@ -182,6 +182,26 @@ function events_slug_published_at_for_save(?string $existingPublishedAt, string 
 }
 
 /**
+ * Közzétett vagy előzetes eseménynél a slugcsere azonnal átirányítást kap.
+ * Piszkozat slugja még nem volt nyilvános URL.
+ *
+ * @param array<string, mixed> $event DB sor mentés előtt
+ */
+function events_slug_should_record_redirect(array $event, string $oldSlug, string $newSlug): bool
+{
+    $oldSlug = trim($oldSlug);
+    $newSlug = trim($newSlug);
+    if ($oldSlug === '' || $newSlug === '') {
+        return false;
+    }
+    if (!events_is_publicly_visible_post_status((string) ($event['event_status'] ?? ''))) {
+        return false;
+    }
+
+    return events_slugify($oldSlug) !== events_slugify($newSlug);
+}
+
+/**
  * A slug akkor rögzül, ha az esemény már publikálva volt, és a késleltetés letelt.
  *
  * @param array<string, mixed> $event DB sor (event_published_at)

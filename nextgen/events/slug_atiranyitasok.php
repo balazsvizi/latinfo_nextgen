@@ -18,20 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $action = (string) ($_POST['action'] ?? '');
         try {
-            if ($action === 'save_delay') {
-                $raw = trim((string) ($_POST['save_delay_minutes'] ?? ''));
-                if ($raw === '' || !preg_match('/^\d+$/', $raw)) {
-                    $hiba = 'A késleltetés csak egész perc lehet.';
-                } else {
-                    $minutes = events_slug_normalize_delay_minutes((int) $raw);
-                    events_slug_save_delay_minutes_save($db, $minutes);
-                    if (function_exists('rendszer_log')) {
-                        rendszer_log('slug_átirányítás', null, 'Késleltetés mentve', $minutes . ' perc');
-                    }
-                    flash('success', 'A slug rögzítési késleltetés mentve: ' . $minutes . ' perc.');
-                    redirect($selfUrl);
-                }
-            } elseif ($action === 'delete_redirect') {
+            if ($action === 'delete_redirect') {
                 $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
                 $id = ($id === false || $id <= 0) ? 0 : $id;
                 if ($id <= 0) {
@@ -63,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$delayMinutes = $schemaOk ? events_slug_save_delay_minutes($db) : EVENTS_SLUG_SAVE_DELAY_DEFAULT;
 $redirects = $schemaOk ? events_slug_redirects_list($db) : [];
 
 $mainContentClass = 'main-content main-content--fullwidth';
@@ -76,39 +62,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <div class="card events-admin-card">
     <div class="events-list-head">
-        <h2 class="events-list-title">Slug rögzítés</h2>
+        <h2 class="events-list-title">Slug csere</h2>
         <div class="events-list-actions">
             <a href="<?= h(events_url('events_admin.php')) ?>" class="btn btn-secondary">Események</a>
         </div>
     </div>
     <p class="help">
-        Új eseménynél a slug a közzététel után még nem rögzül. A megadott perc elteltével az aktuális slug mentődik:
-        későbbi slug-csere 301-es átirányítást hoz létre a régi URL-ről az újra.
+        Közzétett vagy előzetes eseménynél a slug cseréje elmenti a régi slugot.
+        A régi publikus URL 301-es átirányítással az aktuális slugra mutat. Piszkozat slugja nem kerül átirányításra.
     </p>
     <?php if (!$schemaOk): ?>
         <p class="alert alert-error">A slug táblák nem jöttek létre. Próbáld újra, vagy futtasd: <code>events/sql/migration_slug_redirects.sql</code></p>
-    <?php else: ?>
-        <form method="post" class="events-slug-delay-form">
-            <?= csrf_input('events_slug_redirects') ?>
-            <input type="hidden" name="action" value="save_delay">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="save_delay_minutes">Rögzítés a publikálás után (perc)</label>
-                    <input
-                        type="number"
-                        id="save_delay_minutes"
-                        name="save_delay_minutes"
-                        min="<?= EVENTS_SLUG_SAVE_DELAY_MIN ?>"
-                        max="<?= EVENTS_SLUG_SAVE_DELAY_MAX ?>"
-                        step="1"
-                        required
-                        value="<?= (int) $delayMinutes ?>"
-                    >
-                    <p class="help">Alapértelmezés: <?= EVENTS_SLUG_SAVE_DELAY_DEFAULT ?> perc. 0 = a slug a következő mentéstől rögzül.</p>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Késleltetés mentése</button>
-        </form>
     <?php endif; ?>
 </div>
 

@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string) $row['event_status']
         );
         $row['event_published_at'] = $publishedAt;
-        $recordSlugRedirect = $oldSlug !== '' && $newSlug !== '' && $oldSlug !== $newSlug && events_slug_is_locked($db, $event);
+        $recordSlugRedirect = events_slug_should_record_redirect($event, $oldSlug, $newSlug);
         try {
             $db->beginTransaction();
             $upd = $db->prepare('
@@ -129,8 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['venue_id'],
                 $id,
             ]);
+            $slugRedirectSaved = false;
             if ($recordSlugRedirect) {
-                events_slug_redirect_record($db, $id, $oldSlug, $newSlug);
+                $slugRedirectSaved = events_slug_redirect_record($db, $id, $oldSlug, $newSlug);
             }
             events_save_event_organizers($db, $id, $organizerIds);
             events_save_event_categories($db, $id, $categoryIds);
@@ -139,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             events_save_event_supplementary_styles($db, $id, $supplementaryStyleIds);
             $db->commit();
             $logDetails = events_build_log_details($db, $row, $organizerIds, $categoryIds);
-            if ($recordSlugRedirect) {
+            if ($slugRedirectSaved) {
                 $logDetails .= "\nÁtirányítás: " . $oldSlug . ' → ' . $newSlug;
             }
             rendszer_log(
@@ -148,9 +149,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'Módosítva',
                 $logDetails
             );
-            flash('success', $recordSlugRedirect
-                ? 'Mentve. A régi slug (' . $oldSlug . ') az újra irányít.'
-                : 'Mentve.');
+            if ($slugRedirectSaved) {
+                flash('success', 'Mentve. A régi slug (' . $oldSlug . ') az újra irányít.');
+            } elseif ($recordSlugRedirect) {
+                flash('warning', 'Mentve, de a régi slug nem került átirányításra (már foglalt).');
+            } else {
+                flash('success', 'Mentve.');
+            }
             redirect(events_url('szerkeszt.php?id=') . $id);
         } catch (Throwable $ex) {
             if ($db->inTransaction()) {
