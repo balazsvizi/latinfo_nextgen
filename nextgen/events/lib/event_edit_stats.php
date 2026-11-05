@@ -1253,11 +1253,30 @@ function events_edit_stats_event_overlaps_period(array $row, string $dateFrom, s
 }
 
 /**
- * Hány napig volt „kint” az oldal a választott időszakban (közzétett státusz + létrehozás napjától).
+ * Naptári nap éjfélre vágva, vagy null ha üres / érvénytelen.
+ */
+function events_edit_stats_calendar_day(?string $raw): ?DateTimeImmutable
+{
+    $raw = trim((string) $raw);
+    if ($raw === '' || $raw === '0000-00-00' || $raw === '0000-00-00 00:00:00') {
+        return null;
+    }
+
+    try {
+        return (new DateTimeImmutable($raw))->setTime(0, 0, 0);
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+/**
+ * Hány napig volt kint az oldal a felkerülés napjától (created), mindkét végponttal.
+ * Ha az esemény már lement: az esemény napjáig (többnaposnál az utolsó napig).
+ * Ha még nem ment le: a mai napig. A választott statisztikai időszak nem számít bele.
  *
  * @param array<string, mixed> $row
  */
-function events_edit_stats_live_days_in_period(array $row, string $dateFrom, string $dateTo): int
+function events_edit_stats_live_days(array $row, ?DateTimeImmutable $today = null): int
 {
     $publishedStatus = events_public_post_status();
     $status = (string) ($row['event_status'] ?? '');
@@ -1265,29 +1284,33 @@ function events_edit_stats_live_days_in_period(array $row, string $dateFrom, str
         return 0;
     }
 
-    $createdRaw = trim((string) ($row['created'] ?? ''));
-    if ($createdRaw === '') {
+    $listed = events_edit_stats_calendar_day((string) ($row['created'] ?? ''));
+    if ($listed === null) {
         return 0;
     }
 
     try {
-        $goLive = (new DateTimeImmutable($createdRaw))->setTime(0, 0, 0);
-        $from = new DateTimeImmutable($dateFrom);
-        $to = new DateTimeImmutable($dateTo);
+        $today = ($today ?? new DateTimeImmutable('today'))->setTime(0, 0, 0);
     } catch (Throwable) {
         return 0;
     }
 
-    if ($goLive > $to) {
+    $eventDay = events_edit_stats_calendar_day((string) ($row['event_start'] ?? ''));
+    $eventLast = events_edit_stats_calendar_day((string) ($row['event_end'] ?? ''));
+    if ($eventLast === null || ($eventDay !== null && $eventLast < $eventDay)) {
+        $eventLast = $eventDay;
+    }
+
+    $until = $today;
+    if ($eventLast !== null && $eventLast < $today) {
+        $until = $eventLast;
+    }
+
+    if ($until < $listed) {
         return 0;
     }
 
-    $liveFrom = $goLive > $from ? $goLive : $from;
-    if ($liveFrom > $to) {
-        return 0;
-    }
-
-    return $liveFrom->diff($to)->days + 1;
+    return $listed->diff($until)->days + 1;
 }
 
 function events_edit_stats_organizer_events_list(PDO $db, int $organizerId, array $params, ?bool $tableReady = null): array
@@ -1438,7 +1461,7 @@ function events_edit_stats_organizers_events_list(PDO $db, array $organizerIds, 
         if (events_edit_stats_event_overlaps_period($row, $dateFrom, $dateTo)) {
             $eventsInPeriod++;
         }
-        $nonDraftRows[$idx]['live_days'] = events_edit_stats_live_days_in_period($row, $dateFrom, $dateTo);
+        $nonDraftRows[$idx]['live_days'] = events_edit_stats_live_days($row);
         $nonDraftRows[$idx]['egyedi_latogatok'] = (int) ($row['egyedi_latogatok_human'] ?? $row['egyedi_latogatok'] ?? 0);
         $nonDraftRows[$idx]['egyedi_latogatok_bot'] = (int) ($row['egyedi_latogatok_bot'] ?? 0);
         if (!$tableReady) {
@@ -1833,7 +1856,7 @@ function events_edit_stats_all_events_list(
     }
 
     foreach ($rows as $idx => $row) {
-        $rows[$idx]['live_days'] = events_edit_stats_live_days_in_period($row, $dateFrom, $dateTo);
+        $rows[$idx]['live_days'] = events_edit_stats_live_days($row);
         $rows[$idx]['egyedi_latogatok'] = (int) ($row['egyedi_latogatok_human'] ?? 0);
         $rows[$idx]['egyedi_latogatok_bot'] = (int) ($row['egyedi_latogatok_bot'] ?? 0);
         if (!$tableReady) {

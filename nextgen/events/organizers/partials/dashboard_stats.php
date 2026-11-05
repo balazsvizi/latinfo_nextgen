@@ -30,8 +30,8 @@ $statsPageTitle = $statsPageTitle ?? 'Statisztika';
 $statsIntro = $statsIntro ?? 'Az eseményeid naptár előnézet, további információ kattintás és oldalmegtekintés adatai a választott időszakban.';
 $statsEmptyEventsMessage = $statsEmptyEventsMessage ?? 'Nincs közzétett eseményed.';
 $statsEventListHint = $statsEventListHint ?? ($statsPreferPartnerLinks
-    ? 'Kattints az eseményre a partner részletekhez. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).'
-    : 'Alapból az időszakban megtekintéssel rendelkező események. A „Napok kint” a közzétett oldal napjait mutatja a választott időszakban (ha később került fel, kevesebb nap).');
+    ? 'Kattints az eseményre a partner részletekhez. A „Napok kint” a felkerülés napjától számít: ha az esemény már lement, az esemény napjáig, ha még nem, a mai napig.'
+    : 'Alapból az időszakban megtekintéssel rendelkező események. A „Napok kint” a felkerülés napjától számít: ha az esemény már lement, az esemény napjáig, ha még nem, a mai napig.');
 $statsActivePreset = events_edit_stats_detect_preset($statsParams, $statsAllDateFrom);
 $statsMode = events_edit_stats_normalize_mode($statsParams['mode'] ?? 'smart');
 $statsCustomRates = !empty($statsParams['custom_rates']);
@@ -989,7 +989,7 @@ $renderSplit = static function (
                         <th scope="col" rowspan="2">
                             <button type="button" class="th-sort" data-sort="name" aria-pressed="false">Név</button>
                         </th>
-                        <th class="th-center" scope="col" rowspan="2" title="Hány napig volt közzétéve az oldal a választott időszakban">
+                        <th class="th-center" scope="col" rowspan="2" title="Felkerüléstől az esemény napjáig, ha már lement; ha még nem, a mai napig">
                             <button type="button" class="th-sort" data-sort="live_days" aria-pressed="false">Napok kint</button>
                         </th>
                         <th class="th-center events-stats-th-group events-stats-th-group--unique" colspan="2" scope="colgroup">Egyedi</th>
