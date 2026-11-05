@@ -10094,3 +10094,98 @@ dialog.partner-login-preview-dialog::backdrop {
         display: none;
     }
 }
+
+.org-media-invoice__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    margin: 0.25rem 0 0.85rem;
+}
+.org-media-invoice__count {
+    margin: 0;
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+}
+.org-media-invoice .events-edit-stats__card-value {
+    font-size: 1.35rem;
+}
+.org-media-invoice__table {
+    min-width: 92rem;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.org-media-invoice__table th,
+.org-media-invoice__table td {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.org-media-invoice__name {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 14rem;
+    max-width: 24rem;
+    text-align: left;
+    background: #fff;
+    box-shadow: 1px 0 0 var(--border, #e5e7eb);
+}
+.org-media-invoice__table thead .org-media-invoice__name {
+    z-index: 3;
+    background: #f7f6f2;
+}
+.org-media-invoice__table tfoot .org-media-invoice__name,
+.org-media-invoice__cell--total {
+    font-weight: 700;
+    background: #f6f3ea;
+}
+.org-media-invoice__month,
+.org-media-invoice__sub {
+    text-align: center;
+    border-left: 1px solid var(--border, #e5e7eb);
+}
+.org-media-invoice__month--year,
+.org-media-invoice__cell--year {
+    background: color-mix(in srgb, #c4a35a 16%, #fff);
+}
+.org-media-invoice__sub--media,
+.org-media-invoice__cell--media {
+    background: color-mix(in srgb, #c4a35a 8%, #fff);
+}
+.org-media-invoice__sub--invoice,
+.org-media-invoice__cell--invoice {
+    background: color-mix(in srgb, #3d6b4f 8%, #fff);
+}
+.org-media-invoice__cell--year.org-media-invoice__cell--media {
+    background: color-mix(in srgb, #c4a35a 18%, #fff);
+}
+.org-media-invoice__cell--year.org-media-invoice__cell--invoice {
+    background: color-mix(in srgb, #3d6b4f 14%, #fff);
+}
+.org-media-invoice__cell--zero {
+    color: #9ca3af;
+    font-weight: 400;
+    background: transparent;
+}
+.org-media-invoice__table tbody tr:hover td,
+.org-media-invoice__table tbody tr:hover th {
+    background-color: color-mix(in srgb, #6d8f63 7%, #fff);
+}
+.org-media-invoice__empty {
+    text-align: center;
+    color: var(--text-secondary, #6b7280);
+    padding: 1rem;
+}
+.org-media-invoice__badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    color: #3d5a36;
+    background: color-mix(in srgb, #6d8f63 16%, #fff);
+    vertical-align: middle;
+}

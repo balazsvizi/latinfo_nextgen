@@ -100,6 +100,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     </div>
     <div class="events-stat-page-actions">
         <a href="<?= h($szervezokStatUrl) ?>" class="btn btn-secondary btn-sm">Szervezők stat</a>
+        <a href="<?= h(events_url('events_media_szamla_stat.php')) ?>" class="btn btn-secondary btn-sm">Média és számla</a>
         <?php if ($selectedOrganizerIds !== []): ?>
             <a href="<?= h(events_url('events_statisztika.php?' . http_build_query([
                 'stat_date_from' => $statsParams['date_from'],

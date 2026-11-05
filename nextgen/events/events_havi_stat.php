@@ -31,6 +31,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
     <div class="events-stat-page-actions">
         <a href="<?= h(events_url('events_evi_stat.php')) ?>" class="btn btn-secondary btn-sm">Év/év stat</a>
         <a href="<?= h(events_url('events_elotti_stat.php')) ?>" class="btn btn-secondary btn-sm">30 nap</a>
+        <a href="<?= h(events_url('events_media_szamla_stat.php')) ?>" class="btn btn-secondary btn-sm">Média és számla</a>
         <a href="<?= h(events_url('events_statisztika.php')) ?>" class="btn btn-secondary btn-sm">Esemény stat</a>
         <a href="<?= h(events_url('events_lista_stat.php')) ?>" class="btn btn-secondary btn-sm">Lista stat</a>
         <a href="<?= h(events_url('events_public_stat.php')) ?>" class="btn btn-secondary btn-sm">Publikus oldalak</a>

@@ -170,6 +170,7 @@ if ($navZone === 'events') {
                         <li role="none"><a href="<?= h(nextgen_url('events/events_evi_stat.php')) ?>" role="menuitem">Év/év esemény stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_elotti_stat.php')) ?>" role="menuitem">30 nap</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_szervezok_statisztika.php')) ?>" role="menuitem">Szervezők stat</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_media_szamla_stat.php')) ?>" role="menuitem">Média és számla</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_lista_stat.php')) ?>" role="menuitem">Lista stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_public_stat.php')) ?>" role="menuitem">Publikus oldalak</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_kedvencek_stat.php')) ?>" role="menuitem">Kedvencek</a></li>
