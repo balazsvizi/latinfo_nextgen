@@ -41,8 +41,9 @@ function events_organizer_can_edit_from_row(array $event): bool
 }
 
 /**
- * Partnerportálos mentés: csak a nyilvános tartalom. Státusz, slug, szervezők,
- * kategóriák, pénzügy és a kapcsoló változatlan marad.
+ * Partnerportálos mentés. A slug, a szervezők, a pénzügy és a „szervező szerkesztheti”
+ * kapcsoló változatlan marad. A jobb oldali admin mezők (státusz, kategória, címke,
+ * stílus, borítókép, változás) menthetők.
  *
  * @param array<string, mixed> $current
  * @param array<string, mixed> $post
@@ -51,8 +52,18 @@ function events_organizer_can_edit_from_row(array $event): bool
 function events_organizer_edit_apply(PDO $db, array $current, array $post): array
 {
     $row = $current;
-    $row['organizer_cover_url'] = trim((string) ($post['organizer_cover_url'] ?? ''));
     $eventId = (int) ($current['id'] ?? 0);
+    $row['category_ids'] = events_category_ids_from_post();
+    $row['tag_ids'] = events_tags_tables_available($db) ? events_tag_ids_from_post() : [];
+    $row['main_style_ids'] = events_styles_tables_available($db) ? events_main_style_ids_from_post() : [];
+    $row['supplementary_style_ids'] = events_styles_tables_available($db) ? events_supplementary_style_ids_from_post() : [];
+    $postedImageUrl = trim((string) ($post['event_featured_image_url'] ?? ''));
+    $postedPick = trim((string) ($post['event_featured_image_pick'] ?? ''));
+    if ($postedImageUrl !== '') {
+        $row['event_featured_image_url'] = $postedImageUrl;
+    } elseif ($postedPick !== '' && events_eventpics_is_safe_filename($postedPick)) {
+        $row['event_featured_image_url'] = events_eventpics_build_web_path($postedPick);
+    }
     if ($eventId <= 0 || !events_organizer_can_edit_from_row($current)) {
         return ['ok' => false, 'error' => 'Ezt az eseményt nem szerkesztheted.', 'row' => $row];
     }
@@ -65,9 +76,17 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
     }
     $row['event_name'] = $name;
 
+    $postedStatus = trim((string) ($post['event_status'] ?? ''));
+    $currentStatus = (string) ($current['event_status'] ?? '');
+    $statusKept = $postedStatus === $currentStatus && $currentStatus !== '' && $currentStatus !== 'trash';
+    if (!$statusKept && !in_array($postedStatus, events_organizer_edit_statuses(), true)) {
+        return ['ok' => false, 'error' => 'Érvénytelen státusz.', 'row' => $row];
+    }
+    $row['event_status'] = $postedStatus;
+    $status = $postedStatus;
+
     $content = events_sanitize_html_fragment((string) ($post['event_content'] ?? ''));
     $row['event_content'] = $content;
-    $status = (string) ($current['event_status'] ?? '');
     $contentPlain = trim(strip_tags($content));
     if ($contentPlain === '' && !events_is_preliminary_post_status($status)) {
         return ['ok' => false, 'error' => 'A leírás kötelező.', 'row' => $row];
@@ -118,7 +137,6 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
         return ['ok' => false, 'error' => $eventUrlErr, 'row' => $row];
     }
     $row['event_url'] = $eventUrl;
-    $row['event_status'] = $status;
     $publishUrlErr = events_validate_publish_requires_event_url($row);
     if ($publishUrlErr !== null) {
         return ['ok' => false, 'error' => $publishUrlErr, 'row' => $row];
@@ -140,17 +158,46 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
         $row['venue_id'] = (int) $venueId;
     }
 
-    $coverPosted = trim((string) ($post['organizer_cover_url'] ?? ''));
-    if ($coverPosted !== '') {
-        [$coverUrl, $coverErr] = events_normalize_featured_image_url($coverPosted);
-        if ($coverErr !== null) {
-            $row['organizer_cover_url'] = $coverPosted;
-
-            return ['ok' => false, 'error' => $coverErr, 'row' => $row];
-        }
-        $row['event_featured_image_url'] = $coverUrl;
-        $row['organizer_cover_url'] = (string) ($coverUrl ?? '');
+    $taxonomyErr = events_organizer_edit_unknown_ids($db, 'events_categories', $row['category_ids']);
+    if ($taxonomyErr !== null) {
+        return ['ok' => false, 'error' => 'A kiválasztott kategóriák között érvénytelen elem van.', 'row' => $row];
     }
+    if (events_tags_tables_available($db)) {
+        $taxonomyErr = events_organizer_edit_unknown_ids($db, 'events_tags', $row['tag_ids']);
+        if ($taxonomyErr !== null) {
+            return ['ok' => false, 'error' => 'A kiválasztott címkék között érvénytelen elem van.', 'row' => $row];
+        }
+    }
+    if (events_styles_tables_available($db)) {
+        $taxonomyErr = events_organizer_edit_unknown_ids($db, 'events_styles', $row['main_style_ids']);
+        if ($taxonomyErr !== null) {
+            return ['ok' => false, 'error' => 'A kiválasztott fő stílusok között érvénytelen elem van.', 'row' => $row];
+        }
+        $taxonomyErr = events_organizer_edit_unknown_ids($db, 'events_styles', $row['supplementary_style_ids']);
+        if ($taxonomyErr !== null) {
+            return ['ok' => false, 'error' => 'A kiválasztott kiegészítő stílusok között érvénytelen elem van.', 'row' => $row];
+        }
+    }
+
+    [$featUrlInput, $featUrlErr] = events_normalize_featured_image_url((string) ($post['event_featured_image_url'] ?? ''));
+    if ($featUrlErr !== null) {
+        return ['ok' => false, 'error' => $featUrlErr, 'row' => $row];
+    }
+    [$featPickPath, $featPickErr] = events_eventpics_normalize_selected((string) ($post['event_featured_image_pick'] ?? ''));
+    if ($featPickErr !== null) {
+        return ['ok' => false, 'error' => $featPickErr, 'row' => $row];
+    }
+    $uploadFile = $_FILES['event_featured_image_upload'] ?? null;
+    [$featUploadPath, $featUploadErr] = events_eventpics_handle_upload(is_array($uploadFile) ? $uploadFile : null);
+    if ($featUploadErr !== null) {
+        return ['ok' => false, 'error' => $featUploadErr, 'row' => $row];
+    }
+    $featUrlExternal = events_featured_image_external_url($featUrlInput);
+    $row['event_featured_image_url'] = $featUrlExternal ?? $featUploadPath ?? $featPickPath;
+    $row['event_published_at'] = events_slug_published_at_for_save(
+        isset($current['event_published_at']) ? (string) $current['event_published_at'] : null,
+        (string) $row['event_status']
+    );
 
     $changeActive = isset($post['event_change_active']);
     if ($changeActive) {
@@ -174,6 +221,8 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
             UPDATE `events_calendar_events` SET
                 event_name = ?,
                 event_content = ?,
+                event_status = ?,
+                event_published_at = ?,
                 event_start = ?,
                 event_end = ?,
                 event_allday = ?,
@@ -192,6 +241,8 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
         $upd->execute([
             $row['event_name'],
             $row['event_content'],
+            $row['event_status'],
+            $row['event_published_at'],
             $row['event_start'],
             $row['event_end'],
             $row['event_allday'],
@@ -218,6 +269,14 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
                 return ['ok' => false, 'error' => 'Ezt az eseményt nem szerkesztheted.', 'row' => $row];
             }
         }
+        events_save_event_categories($db, $eventId, $row['category_ids']);
+        if (events_tags_tables_available($db)) {
+            events_save_event_tags($db, $eventId, $row['tag_ids']);
+        }
+        if (events_styles_tables_available($db)) {
+            events_save_event_main_styles($db, $eventId, $row['main_style_ids']);
+            events_save_event_supplementary_styles($db, $eventId, $row['supplementary_style_ids']);
+        }
         $db->commit();
 
         return ['ok' => true, 'row' => $row];
@@ -229,6 +288,39 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
 
         return ['ok' => false, 'error' => 'Mentési hiba történt. Kérlek próbáld újra.', 'row' => $row];
     }
+}
+
+/**
+ * @return list<string>
+ */
+function events_organizer_edit_statuses(): array
+{
+    return ['publish', 'preliminary', 'draft', 'pending', 'future', 'private'];
+}
+
+/**
+ * @param list<int> $ids
+ */
+function events_organizer_edit_unknown_ids(PDO $db, string $table, array $ids): ?string
+{
+    if ($ids === []) {
+        return null;
+    }
+    if (!in_array($table, ['events_categories', 'events_tags', 'events_styles'], true)) {
+        return 'Érvénytelen lista.';
+    }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $db->prepare('SELECT `id` FROM `' . $table . '` WHERE `id` IN (' . $placeholders . ')');
+    $stmt->execute($ids);
+    $existing = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN, 0));
+    sort($existing);
+    $check = $ids;
+    sort($check);
+    if ($existing !== $check) {
+        return 'Érvénytelen azonosító.';
+    }
+
+    return null;
 }
 
 /**
