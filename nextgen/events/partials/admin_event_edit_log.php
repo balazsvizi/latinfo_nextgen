@@ -7,11 +7,14 @@ declare(strict_types=1);
     <div class="log-list">
         <?php foreach ($sablonLogok as $l): ?>
         <div class="log-item">
-            <span class="log-date"><?= h((string) ($l['létrehozva'] ?? '')) ?><?= !empty($l['admin_név']) ? ' (' . h((string) $l['admin_név']) . ')' : '' ?></span>
+            <?php $logDetailLines = events_log_visible_detail_lines((string) ($l['részletek'] ?? '')); ?>
             <p class="log-item__text">
-                <strong><?= h((string) ($l['művelet'] ?? '')) ?></strong>
-                <?php if (!empty($l['részletek'])): ?>
-                    <span class="log-item__details"><?= nl2br(h((string) $l['részletek'])) ?></span>
+                <strong class="log-item__headline"><?= h(events_log_actor_headline($l)) ?></strong>
+                <?php if (trim((string) ($l['művelet'] ?? '')) !== ''): ?>
+                    <span class="log-item__action"><?= h((string) $l['művelet']) ?></span>
+                <?php endif; ?>
+                <?php if ($logDetailLines !== []): ?>
+                    <span class="log-item__details"><?= nl2br(h(implode("\n", $logDetailLines))) ?></span>
                 <?php endif; ?>
             </p>
         </div>

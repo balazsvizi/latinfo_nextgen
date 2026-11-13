@@ -253,3 +253,48 @@ function events_log_id_list(mixed $ids): array
 
     return $out;
 }
+
+/**
+ * Napló első sora: dátum | partner vagy admin neve.
+ *
+ * @param array<string, mixed> $row
+ */
+function events_log_actor_headline(array $row): string
+{
+    $date = trim((string) ($row['létrehozva'] ?? ''));
+    $name = '';
+    $details = (string) ($row['részletek'] ?? '');
+    if (preg_match('/^Partner:\s*(.+?)\s*\(#\d+\)\s*$/mu', $details, $match) === 1) {
+        $name = trim((string) ($match[1] ?? ''));
+    }
+    if ($name === '') {
+        $name = trim((string) ($row['admin_név'] ?? ''));
+    }
+    if ($date === '') {
+        return $name;
+    }
+    if ($name === '') {
+        return $date;
+    }
+
+    return $date . ' | ' . $name;
+}
+
+/**
+ * A partner/admin fejlécsorok nélkül, a tényleges naplószöveg.
+ *
+ * @return list<string>
+ */
+function events_log_visible_detail_lines(string $details): array
+{
+    $lines = [];
+    foreach (preg_split("/\r\n|\n|\r/", $details) ?: [] as $line) {
+        $line = trim((string) $line);
+        if ($line === '' || $line === 'Partnerportál' || $line === 'Admin nézet' || str_starts_with($line, 'Partner:')) {
+            continue;
+        }
+        $lines[] = $line;
+    }
+
+    return $lines;
+}

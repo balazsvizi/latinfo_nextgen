@@ -8739,6 +8739,16 @@ table select:focus {
     color: var(--text-muted);
     font-size: 0.8125rem;
 }
+.log-item__headline {
+    display: block;
+    font-weight: 700;
+    color: var(--text, inherit);
+}
+.log-item__action {
+    display: block;
+    margin-top: 0.2rem;
+    font-weight: 600;
+}
 
 /* ========== Dashboard ========== */
 .dash-cards {

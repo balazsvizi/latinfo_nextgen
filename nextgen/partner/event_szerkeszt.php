@@ -112,10 +112,11 @@ $organizers = partner_portal_event_organizer_names($db, $eventId);
 $ownLogs = [];
 try {
     $logStmt = $db->prepare('
-        SELECT `id`, `létrehozva`, `művelet`, `részletek`
-        FROM `nextgen_system_log`
-        WHERE `entitás` = ? AND `entitás_id` = ? AND `művelet` IN (?, ?)
-        ORDER BY `id` DESC
+        SELECT r.`id`, r.`létrehozva`, r.`művelet`, r.`részletek`, a.`név` AS admin_név
+        FROM `nextgen_system_log` r
+        LEFT JOIN `nextgen_admins` a ON a.`id` = r.`admin_id`
+        WHERE r.`entitás` = ? AND r.`entitás_id` = ? AND r.`művelet` IN (?, ?)
+        ORDER BY r.`id` DESC
         LIMIT 50
     ');
     $logStmt->execute(['esemény', $eventId, 'Partner módosította', 'Partner státuszt váltott']);
@@ -125,15 +126,7 @@ try {
         if (!str_contains($details, $partnerMarker)) {
             continue;
         }
-        $lines = [];
-        foreach (preg_split("/\r\n|\n|\r/", $details) ?: [] as $line) {
-            $line = trim((string) $line);
-            if ($line === '' || $line === 'Partnerportál' || $line === 'Admin nézet' || str_starts_with($line, 'Partner:')) {
-                continue;
-            }
-            $lines[] = $line;
-        }
-        $logRow['saját_sorok'] = $lines;
+        $logRow['saját_sorok'] = events_log_visible_detail_lines($details);
         $ownLogs[] = $logRow;
     }
 } catch (Throwable $ex) {
@@ -385,9 +378,11 @@ require_once __DIR__ . '/partials/header.php';
         <div class="log-list">
             <?php foreach ($ownLogs as $logRow): ?>
                 <div class="log-item">
-                    <span class="log-date"><?= h((string) ($logRow['létrehozva'] ?? '')) ?></span>
                     <p class="log-item__text">
-                        <strong><?= h((string) ($logRow['művelet'] ?? '')) ?></strong>
+                        <strong class="log-item__headline"><?= h(events_log_actor_headline($logRow)) ?></strong>
+                        <?php if (trim((string) ($logRow['művelet'] ?? '')) !== ''): ?>
+                            <span class="log-item__action"><?= h((string) $logRow['művelet']) ?></span>
+                        <?php endif; ?>
                         <?php if (($logRow['saját_sorok'] ?? []) !== []): ?>
                             <span class="log-item__details"><?= nl2br(h(implode("\n", $logRow['saját_sorok']))) ?></span>
                         <?php endif; ?>
