@@ -9,7 +9,7 @@ require_once __DIR__ . '/venue_request.php';
  * @return list<string>
  */
 function events_entity_quick_create_allowed_types(): array {
-    return ['organizer', 'venue', 'category', 'tag', 'style'];
+    return ['organizer', 'venue', 'category', 'tag', 'style', 'dance_school_tag'];
 }
 
 function events_entity_quick_create_by_name(PDO $db, string $type, string $name): int {
@@ -21,6 +21,9 @@ function events_entity_quick_create_by_name(PDO $db, string $type, string $name)
     if (!in_array($type, events_entity_quick_create_allowed_types(), true)) {
         throw new InvalidArgumentException('Ismeretlen entitás típus.');
     }
+    if ($type === 'dance_school_tag') {
+        require_once __DIR__ . '/dance_schools.php';
+    }
 
     return match ($type) {
         'organizer' => events_find_or_create_organizer_by_name($db, $name),
@@ -28,6 +31,7 @@ function events_entity_quick_create_by_name(PDO $db, string $type, string $name)
         'category' => events_find_or_create_category_by_name($db, $name),
         'tag' => events_find_or_create_tag_by_name($db, $name),
         'style' => events_find_or_create_style_by_name($db, $name),
+        'dance_school_tag' => dance_school_tag_find_or_create($db, $name),
         default => throw new InvalidArgumentException('Ismeretlen entitás típus.'),
     };
 }

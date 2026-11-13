@@ -39,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hiba = (string) ($save['error'] ?? 'Mentési hiba történt.');
                 } else {
                     $newId = (int) ($save['id'] ?? 0);
+                    $syncTags = dance_school_sync_tags($db, $newId, dance_school_tag_ids_from_post($_POST['tag_ids'] ?? null));
+                    if (!$syncTags['ok']) {
+                        flash('error', (string) ($syncTags['error'] ?? 'A címkék mentése sikertelen.'));
+                    }
                     if (function_exists('rendszer_log')) {
                         rendszer_log('dance_school', $newId, 'Tánciskola létrehozva', (string) $row['name']);
                     }
@@ -51,6 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $djLogoPick = trim((string) ($_POST['dj_logo_pick'] ?? ''));
     }
 }
+
+$schoolTagIds = dance_school_tag_ids_from_post($_POST['tag_ids'] ?? null);
+$schoolTagCatalog = dance_school_tags_catalog($db);
 
 $pageTitle = 'Új tánciskola';
 
@@ -85,7 +92,9 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </div>
     <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <form method="post" enctype="multipart/form-data" class="venue-form events-dj-edit-form" id="dance-school-edit-form">
+    <form method="post" enctype="multipart/form-data" class="venue-form events-dj-edit-form" id="dance-school-edit-form"
+          data-entity-create-url="<?= h(events_url('ajax_entity_quick_create.php')) ?>"
+          data-entity-create-csrf="<?= h(csrf_token('events_entity_create')) ?>">
         <?= csrf_input('tanciskola_letrehoz') ?>
         <div class="events-edit-layout">
             <div class="events-edit-main">
@@ -161,19 +170,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
                     </div>
                 </div>
                 <div class="events-edit-panel">
-                    <h3 class="events-edit-panel__title">Jelzők</h3>
-                    <div class="form-group">
-                        <label><input type="checkbox" name="accepts_beginners" value="1"<?= !empty($row['accepts_beginners']) ? ' checked' : '' ?>> Fogad kezdőket</label>
-                    </div>
-                    <div class="form-group">
-                        <label><input type="checkbox" name="has_kids_classes" value="1"<?= !empty($row['has_kids_classes']) ? ' checked' : '' ?>> Van gyerekóra</label>
-                    </div>
-                    <div class="form-group">
-                        <label><input type="checkbox" name="has_performance_team" value="1"<?= !empty($row['has_performance_team']) ? ' checked' : '' ?>> Van fellépő csoport</label>
-                    </div>
-                    <div class="form-group">
-                        <label><input type="checkbox" name="is_active" value="1"<?= !empty($row['is_active']) ? ' checked' : '' ?>> Aktív</label>
-                    </div>
+                    <h3 class="events-edit-panel__title">Címkék</h3>
+                    <?php require __DIR__ . '/partials/dance_school_tag_field.php'; ?>
                 </div>
             </div>
             <aside class="events-edit-sidebar">
@@ -224,4 +222,5 @@ require_once dirname(__DIR__) . '/partials/header.php';
 })();
 </script>
 <?php require __DIR__ . '/partials/html_editor_script.php'; ?>
+<?php require __DIR__ . '/partials/wp_token_input_script.php'; ?>
 <?php require_once dirname(__DIR__) . '/partials/footer.php'; ?>

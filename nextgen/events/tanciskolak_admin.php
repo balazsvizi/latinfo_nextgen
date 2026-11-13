@@ -159,7 +159,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <div class="events-filters-grid">
                 <div class="events-filter-field">
                     <label class="events-filter-label<?= $f_q !== '' ? ' events-filter-label--active' : '' ?>" for="school-f-q">Keresés</label>
-                    <input class="events-filter-input" type="search" name="f_q" id="school-f-q" value="<?= h($f_q) ?>" placeholder="Név, város, slug vagy ID…" autocomplete="off">
+                    <input class="events-filter-input" type="search" name="f_q" id="school-f-q" value="<?= h($f_q) ?>" placeholder="Név, város, slug, címke vagy ID…" autocomplete="off">
                 </div>
             </div>
         </section>
@@ -217,6 +217,10 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 <td>
                                     <a href="<?= h($editUrl) ?>"><strong><?= h($sname) ?></strong></a>
                                     <span class="event-status-badge<?= dance_school_status_is_publicly_visible($schoolStatus) ? '' : ' event-status-badge--draft' ?>"><?= h(dance_school_status_label($schoolStatus)) ?></span>
+                                    <?php $tagNames = trim((string) ($r['tag_names'] ?? '')); ?>
+                                    <?php if ($tagNames !== ''): ?>
+                                        <div class="text-muted"><?= h($tagNames) ?></div>
+                                    <?php endif; ?>
                                 </td>
                                 <td><?= h(trim((string) ($r['city'] ?? '')) !== '' ? (string) $r['city'] : '—') ?></td>
                                 <td class="td-num"><?= (int) ($r['location_count'] ?? 0) ?></td>

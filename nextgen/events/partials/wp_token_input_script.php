@@ -1,7 +1,7 @@
 <script>
 (function () {
     function getCreateConfig() {
-        var form = document.getElementById('events-edit-form');
+        var form = document.querySelector('form[data-entity-create-url]');
         if (!form) return { url: '', csrf: '' };
         return {
             url: form.getAttribute('data-entity-create-url') || '',

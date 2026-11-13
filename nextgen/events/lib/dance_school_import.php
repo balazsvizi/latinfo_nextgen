@@ -1442,7 +1442,6 @@ function dance_school_import_apply(PDO $db, array $records): array
             if ($action === 'create') {
                 $newId = dance_school_import_create($db, $decision);
                 $decision['school_id'] = $newId;
-                $index['next_temp'] = $newId;
                 dance_school_import_index_remember($index, $decision);
                 $created++;
             } else {

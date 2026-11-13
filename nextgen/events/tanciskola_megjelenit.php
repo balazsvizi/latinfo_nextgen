@@ -201,17 +201,14 @@ if ($isPreview) {
                     <?php if ($city !== ''): ?>
                         <p class="venue-address-line"><?= h($city) ?></p>
                     <?php endif; ?>
+                    <?php $schoolTags = dance_school_tags_for_school($db, $schoolId); ?>
+                    <?php if ($schoolTags !== []): ?>
                     <div class="event-public__badges" style="margin-top:0.5rem;">
-                        <?php if (!empty($school['accepts_beginners'])): ?>
-                            <span class="event-status-badge"><?= h($lang === 'en' ? 'Beginners welcome' : 'Fogad kezdőket') ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($school['has_kids_classes'])): ?>
-                            <span class="event-status-badge"><?= h($lang === 'en' ? 'Kids classes' : 'Gyerekóra') ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($school['has_performance_team'])): ?>
-                            <span class="event-status-badge"><?= h($lang === 'en' ? 'Performance team' : 'Fellépő csoport') ?></span>
-                        <?php endif; ?>
+                        <?php foreach ($schoolTags as $schoolTag): ?>
+                            <span class="event-status-badge"><?= h((string) $schoolTag['name']) ?></span>
+                        <?php endforeach; ?>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php

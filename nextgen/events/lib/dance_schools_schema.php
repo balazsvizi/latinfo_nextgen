@@ -116,6 +116,7 @@ function dance_schools_ensure_schema(PDO $db): bool
         }
 
         dance_schools_ensure_status_column($db);
+        dance_schools_ensure_tag_tables($db);
 
         $db->exec("
             CREATE TABLE IF NOT EXISTS `dance_school_venues` (
@@ -292,6 +293,33 @@ function dance_schools_ensure_status_column(PDO $db): void
     } catch (Throwable) {
         // index már létezik
     }
+}
+
+function dance_schools_ensure_tag_tables(PDO $db): void
+{
+    if (!dance_schools_tables_ready($db)) {
+        return;
+    }
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS `dance_school_tags` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `name` VARCHAR(120) NOT NULL,
+            `slug` VARCHAR(120) NOT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uq_dance_school_tag_slug` (`slug`),
+            KEY `idx_dance_school_tag_name` (`name`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS `dance_school_tag_links` (
+            `school_id` INT UNSIGNED NOT NULL,
+            `tag_id` INT UNSIGNED NOT NULL,
+            `sort_order` INT NOT NULL DEFAULT 0,
+            PRIMARY KEY (`school_id`, `tag_id`),
+            KEY `idx_dstl_tag` (`tag_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
 }
 
 function dance_schools_migrate_legacy_locations(PDO $db): void
