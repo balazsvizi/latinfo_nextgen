@@ -786,10 +786,50 @@
 }
 
 .partner-event-edit__dates,
+.partner-event-edit__times,
 .partner-event-edit__costs {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+
+.partner-event-edit__toggle--below {
+    margin: 0.15rem 0 0.85rem;
+}
+
+.partner-event-edit__styles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem 1.25rem;
+    margin-top: 0.35rem;
+}
+
+.partner-event-edit__styles > div {
+    padding: 0.15rem 0.9rem 0.85rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    background: #fafbfa;
+}
+
+.partner-event-edit__change {
+    margin-top: 1.75rem;
+    padding: 0.85rem 1rem 0.35rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    background: #f7f8f6;
+}
+
+.partner-event-edit__change .partner-event-edit__section {
+    margin-top: 0;
+}
+
+@media (max-width: 720px) {
+    .partner-event-edit__dates,
+    .partner-event-edit__times,
+    .partner-event-edit__costs,
+    .partner-event-edit__styles {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .partner-event-detail__eyebrow {

@@ -84,7 +84,7 @@ function events_build_log_details(
  * @param list<int> $ids
  */
 function events_log_names_for_ids(PDO $db, string $table, array $ids): string {
-    if ($table !== 'events_organizers' && $table !== 'events_categories') {
+    if (!in_array($table, ['events_organizers', 'events_categories', 'events_tags', 'events_styles'], true)) {
         return '';
     }
     $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $i): bool => $i > 0)));
@@ -126,4 +126,130 @@ function events_log_format_cost_line(array $row): string {
     }
 
     return 'Belépő: ' . $fmt($to) . ' Ft-ig';
+}
+
+/**
+ * Partner mentés naplója: csak a megváltozott mezők. A státusz külön bejegyzés.
+ *
+ * @param array<string, mixed> $before
+ * @param array<string, mixed> $after
+ * @return list<string>
+ */
+function events_partner_change_log_lines(PDO $db, array $before, array $after): array
+{
+    $lines = [];
+    $push = static function (string $label, string $old, string $new) use (&$lines): void {
+        if ($old === $new) {
+            return;
+        }
+        $lines[] = $label . ': ' . ($old !== '' ? $old : '—') . ' → ' . ($new !== '' ? $new : '—');
+    };
+
+    $push('Név', trim((string) ($before['event_name'] ?? '')), trim((string) ($after['event_name'] ?? '')));
+    $push('Slug', trim((string) ($before['event_slug'] ?? '')), trim((string) ($after['event_slug'] ?? '')));
+
+    $beforeContent = events_sanitize_html_fragment((string) ($before['event_content'] ?? ''));
+    $afterContent = trim((string) ($after['event_content'] ?? ''));
+    if ($beforeContent !== $afterContent) {
+        $lines[] = 'Leírás módosult';
+    }
+
+    $beforeWhen = events_log_norm_datetime($before['event_start'] ?? null) . '|'
+        . events_log_norm_datetime($before['event_end'] ?? null) . '|'
+        . (!empty($before['event_allday']) ? '1' : '0');
+    $afterWhen = events_log_norm_datetime($after['event_start'] ?? null) . '|'
+        . events_log_norm_datetime($after['event_end'] ?? null) . '|'
+        . (!empty($after['event_allday']) ? '1' : '0');
+    if ($beforeWhen !== $afterWhen) {
+        $push('Időpont', events_admin_format_datum_cell($before), events_admin_format_datum_cell($after));
+    }
+
+    $push('Helyszín', events_log_venue_name($db, $before['venue_id'] ?? null), events_log_venue_name($db, $after['venue_id'] ?? null));
+    $push('További információ', trim((string) ($before['event_url'] ?? '')), trim((string) ($after['event_url'] ?? '')));
+    $push(
+        'Borítókép',
+        events_log_short(trim((string) ($before['event_featured_image_url'] ?? ''))),
+        events_log_short(trim((string) ($after['event_featured_image_url'] ?? '')))
+    );
+    $push('Belépő', events_log_format_cost_line($before), events_log_format_cost_line($after));
+    $push('Változás / elmaradás', events_log_change_summary($before), events_log_change_summary($after));
+    $push('Kategóriák', events_log_names_for_ids($db, 'events_categories', events_log_id_list($before['category_ids'] ?? [])), events_log_names_for_ids($db, 'events_categories', events_log_id_list($after['category_ids'] ?? [])));
+    $push('DJ-k/Előadók/Címkék', events_log_names_for_ids($db, 'events_tags', events_log_id_list($before['tag_ids'] ?? [])), events_log_names_for_ids($db, 'events_tags', events_log_id_list($after['tag_ids'] ?? [])));
+    $push('Fő stílusok', events_log_names_for_ids($db, 'events_styles', events_log_id_list($before['main_style_ids'] ?? [])), events_log_names_for_ids($db, 'events_styles', events_log_id_list($after['main_style_ids'] ?? [])));
+    $push('Kiegészítő stílusok', events_log_names_for_ids($db, 'events_styles', events_log_id_list($before['supplementary_style_ids'] ?? [])), events_log_names_for_ids($db, 'events_styles', events_log_id_list($after['supplementary_style_ids'] ?? [])));
+
+    return $lines;
+}
+
+function events_log_norm_datetime(mixed $value): string
+{
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return '';
+    }
+    $ts = strtotime($raw);
+
+    return $ts === false ? $raw : date('Y-m-d H:i:s', $ts);
+}
+
+function events_log_venue_name(PDO $db, mixed $venueId): string
+{
+    $id = (int) $venueId;
+    if ($id <= 0) {
+        return '';
+    }
+    $stmt = $db->prepare('SELECT `name` FROM `events_venues` WHERE `id` = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $name = $stmt->fetchColumn();
+
+    return $name === false ? '' : trim((string) $name);
+}
+
+function events_log_short(string $value): string
+{
+    if ($value === '') {
+        return '';
+    }
+    if (mb_strlen($value, 'UTF-8') > 80) {
+        return mb_substr($value, 0, 77, 'UTF-8') . '…';
+    }
+
+    return $value;
+}
+
+/**
+ * @param array<string, mixed> $row
+ */
+function events_log_change_summary(array $row): string
+{
+    if (empty($row['event_change_active'])) {
+        return '';
+    }
+    $label = events_event_change_type_label(
+        isset($row['event_change_type']) ? (string) $row['event_change_type'] : null
+    );
+    $note = trim((string) ($row['event_change_note'] ?? ''));
+
+    return $note !== '' ? $label . ' (' . $note . ')' : $label;
+}
+
+/**
+ * @return list<int>
+ */
+function events_log_id_list(mixed $ids): array
+{
+    if (!is_array($ids)) {
+        return [];
+    }
+    $out = [];
+    foreach ($ids as $id) {
+        $value = (int) $id;
+        if ($value > 0) {
+            $out[] = $value;
+        }
+    }
+    $out = array_values(array_unique($out));
+    sort($out);
+
+    return $out;
 }

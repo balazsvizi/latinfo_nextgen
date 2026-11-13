@@ -21,24 +21,39 @@ if ($event === null || !partner_portal_event_organizer_can_edit($event)) {
 $ownedEventpics = partner_portal_owned_eventpic_files($db, $partnerId);
 
 $hiba = '';
+$slugRefreshPressed = isset($_POST['event_slug_refresh']) && (string) $_POST['event_slug_refresh'] === '1';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('partner_event_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
+        $before = $event;
+        $before['category_ids'] = events_load_event_category_ids($db, $eventId);
+        $before['tag_ids'] = events_load_event_tag_ids($db, $eventId);
+        $before['main_style_ids'] = events_load_event_main_style_ids($db, $eventId);
+        $before['supplementary_style_ids'] = events_load_event_supplementary_style_ids($db, $eventId);
         $result = events_organizer_edit_apply($db, $event, $_POST, $ownedEventpics);
         $event = $result['row'];
         if ($result['ok']) {
             $partner = partner_current($db);
             $partnerName = trim((string) ($partner['név'] ?? partner_session_display_name()));
-            $log = "Partnerportál\nPartner: " . ($partnerName !== '' ? $partnerName : 'Partner') . ' (#' . $partnerId . ')';
+            $logHead = "Partnerportál\nPartner: " . ($partnerName !== '' ? $partnerName : 'Partner') . ' (#' . $partnerId . ')';
             if (partner_is_admin_impersonating()) {
-                $log .= "\nAdmin nézet";
+                $logHead .= "\nAdmin nézet";
             }
-            $categoryIds = isset($event['category_ids']) && is_array($event['category_ids'])
-                ? array_map('intval', $event['category_ids'])
-                : [];
-            $log .= "\n" . events_build_log_details($db, $event, [], $categoryIds);
-            rendszer_log('esemény', $eventId, 'Partner módosította', $log);
+            $changeLines = events_partner_change_log_lines($db, $before, $event);
+            if ($changeLines !== []) {
+                rendszer_log('esemény', $eventId, 'Partner módosította', $logHead . "\n" . implode("\n", $changeLines));
+            }
+            $beforeStatus = (string) ($before['event_status'] ?? '');
+            $afterStatus = (string) ($event['event_status'] ?? '');
+            if ($beforeStatus !== $afterStatus) {
+                rendszer_log(
+                    'esemény',
+                    $eventId,
+                    'Partner státuszt váltott',
+                    $logHead . "\n" . events_post_status_label($beforeStatus) . ' → ' . events_post_status_label($afterStatus)
+                );
+            }
             $slugRedirect = (string) ($result['slug_redirect'] ?? '');
             if ($slugRedirect === 'saved') {
                 flash('success', 'Az esemény mentve. A régi webcím az újra irányít.');
@@ -47,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 flash('success', 'Az esemény mentve.');
             }
-            redirect(partner_url('event.php?id=') . $eventId);
+            $statusSwitched = isset($_POST['event_status']) && !isset($_POST['partner_save']);
+            redirect($statusSwitched ? partner_portal_event_edit_url($eventId) : partner_url('event.php?id=') . $eventId);
         }
         $hiba = $result['error'];
     }
@@ -99,11 +115,11 @@ try {
     $logStmt = $db->prepare('
         SELECT `id`, `létrehozva`, `művelet`, `részletek`
         FROM `nextgen_system_log`
-        WHERE `entitás` = ? AND `entitás_id` = ? AND `művelet` = ?
+        WHERE `entitás` = ? AND `entitás_id` = ? AND `művelet` IN (?, ?)
         ORDER BY `id` DESC
         LIMIT 50
     ');
-    $logStmt->execute(['esemény', $eventId, 'Partner módosította']);
+    $logStmt->execute(['esemény', $eventId, 'Partner módosította', 'Partner státuszt váltott']);
     $partnerMarker = '(#' . $partnerId . ')';
     foreach ($logStmt->fetchAll(PDO::FETCH_ASSOC) as $logRow) {
         $details = (string) ($logRow['részletek'] ?? '');
@@ -152,33 +168,34 @@ require_once __DIR__ . '/partials/header.php';
         <label for="event_slug">Webcím (slug)</label>
         <div class="partner-event-edit__url-row">
             <input type="text" id="event_slug" name="event_slug" class="partner-event-edit__slug" value="<?= h((string) ($e['event_slug'] ?? '')) ?>" maxlength="255" readonly tabindex="-1" spellcheck="false" autocomplete="off">
+            <input type="hidden" name="event_slug_refresh" id="event_slug_refresh" value="<?= $slugRefreshPressed ? '1' : '0' ?>">
             <button type="button" class="btn btn-secondary partner-event-edit__slug-refresh" id="event-slug-refresh">Frissítés</button>
         </div>
         <p class="help">Nem írható át. A frissítés a névből és a kezdő dátumból készíti újra.</p>
     </div>
 
-    <div class="partner-event-edit__datetime-head">
-        <h2 class="partner-event-edit__section">Időpont</h2>
-        <label class="events-toggle partner-event-edit__toggle" for="event_allday">
-            <input type="checkbox" name="event_allday" value="1" id="event_allday" class="events-toggle__input" <?= !empty($e['event_allday']) ? 'checked' : '' ?>>
-            <span class="events-toggle__ui" aria-hidden="true"></span>
-            <span class="events-toggle__label">Időpont nélkül</span>
-        </label>
-    </div>
+    <h2 class="partner-event-edit__section">Dátum</h2>
     <div class="partner-event-edit__dates">
         <div class="form-group">
             <label for="event_start_date">Kezdő dátum *</label>
             <input type="date" id="event_start_date" name="event_start_date" value="<?= h((string) ($e['event_start_date'] ?? '')) ?>" required>
         </div>
-        <div class="form-group" id="partner-event-start-time">
-            <label for="event_start_time">Kezdő idő</label>
-            <input type="time" id="event_start_time" name="event_start_time" value="<?= h((string) ($e['event_start_time'] ?? '')) ?>">
-        </div>
         <div class="form-group">
             <label for="event_end_date">Záró dátum</label>
             <input type="date" id="event_end_date" name="event_end_date" value="<?= h((string) ($e['event_end_date'] ?? '')) ?>">
         </div>
-        <div class="form-group" id="partner-event-end-time">
+    </div>
+    <label class="events-toggle partner-event-edit__toggle partner-event-edit__toggle--below" for="event_allday">
+        <input type="checkbox" name="event_allday" value="1" id="event_allday" class="events-toggle__input" <?= !empty($e['event_allday']) ? 'checked' : '' ?>>
+        <span class="events-toggle__ui" aria-hidden="true"></span>
+        <span class="events-toggle__label">Időpont nélkül</span>
+    </label>
+    <div class="partner-event-edit__times" id="partner-event-times"<?= !empty($e['event_allday']) ? ' hidden' : '' ?>>
+        <div class="form-group">
+            <label for="event_start_time">Kezdő idő</label>
+            <input type="time" id="event_start_time" name="event_start_time" value="<?= h((string) ($e['event_start_time'] ?? '')) ?>">
+        </div>
+        <div class="form-group">
             <label for="event_end_time">Záró idő</label>
             <input type="time" id="event_end_time" name="event_end_time" value="<?= h((string) ($e['event_end_time'] ?? '')) ?>">
         </div>
@@ -233,30 +250,6 @@ require_once __DIR__ . '/partials/header.php';
         <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="12"><?= h((string) ($e['event_content'] ?? '')) ?></textarea>
     </div>
 
-    <div class="partner-event-edit__datetime-head">
-        <h2 class="partner-event-edit__section">Változás / elmaradás</h2>
-        <label class="events-toggle partner-event-edit__toggle" for="event_change_active">
-            <input type="checkbox" name="event_change_active" value="1" id="event_change_active" class="events-toggle__input" <?= !empty($e['event_change_active']) ? 'checked' : '' ?>>
-            <span class="events-toggle__ui" aria-hidden="true"></span>
-            <span class="events-toggle__label">Jelzés</span>
-        </label>
-    </div>
-    <div id="partner-event-change-fields"<?= empty($e['event_change_active']) ? ' hidden' : '' ?>>
-        <div class="form-group">
-            <label for="event_change_type">Típus *</label>
-            <select id="event_change_type" name="event_change_type">
-                <option value="">— válassz —</option>
-                <?php foreach (events_event_change_types() as $typeKey => $typeLabel): ?>
-                    <option value="<?= h($typeKey) ?>"<?= (($e['event_change_type'] ?? '') === $typeKey) ? ' selected' : '' ?>><?= h($typeLabel) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="event_change_note">Publikus megjegyzés</label>
-            <textarea id="event_change_note" name="event_change_note" rows="3" maxlength="2000"><?= h((string) ($e['event_change_note'] ?? '')) ?></textarea>
-        </div>
-    </div>
-
     <h2 class="partner-event-edit__section">Kategóriák</h2>
     <?php
     $wpTokenId = 'partner-event-categories';
@@ -275,12 +268,12 @@ require_once __DIR__ . '/partials/header.php';
     require dirname(__DIR__) . '/events/partials/wp_token_field.php';
     ?>
 
-    <h2 class="partner-event-edit__section">Címkék</h2>
+    <h2 class="partner-event-edit__section">DJ-k/Előadók/Címkék</h2>
     <?php
     $wpTokenId = 'partner-event-tags';
     $wpTokenLabel = '';
     $wpTokenFieldName = 'tag_ids[]';
-    $wpTokenPlaceholder = 'Címke hozzáadása…';
+    $wpTokenPlaceholder = 'DJ, előadó vagy címke hozzáadása…';
     $wpTokenHelp = '';
     $wpTokenManageUrl = null;
     $wpTokenAll = $tagOptions;
@@ -292,6 +285,8 @@ require_once __DIR__ . '/partials/header.php';
     require dirname(__DIR__) . '/events/partials/wp_token_field.php';
     ?>
 
+    <div class="partner-event-edit__styles">
+    <div>
     <h2 class="partner-event-edit__section">Fő stílusok</h2>
     <?php
     $wpTokenId = 'partner-event-main-styles';
@@ -308,7 +303,8 @@ require_once __DIR__ . '/partials/header.php';
     $wpTokenChipLinkPattern = null;
     require dirname(__DIR__) . '/events/partials/wp_token_field.php';
     ?>
-
+    </div>
+    <div>
     <h2 class="partner-event-edit__section">Kiegészítő stílusok</h2>
     <?php
     $wpTokenId = 'partner-event-supplementary-styles';
@@ -325,6 +321,8 @@ require_once __DIR__ . '/partials/header.php';
     $wpTokenChipLinkPattern = null;
     require dirname(__DIR__) . '/events/partials/wp_token_field.php';
     ?>
+    </div>
+    </div>
 
     <h2 class="partner-event-edit__section">Esemény képe</h2>
     <div class="form-group">
@@ -350,6 +348,32 @@ require_once __DIR__ . '/partials/header.php';
         <input type="file" id="event_featured_image_upload" name="event_featured_image_upload" accept="image/jpeg,image/png,image/webp,image/gif">
         <p class="help">A feltöltés mentéskor kerül a galériába, és borító lesz, ha nincs kitöltött URL. A galériában csak a saját eseményeid képei vannak.</p>
     </div>
+
+    <section class="partner-event-edit__change">
+        <div class="partner-event-edit__datetime-head">
+            <h2 class="partner-event-edit__section">Változás / elmaradás</h2>
+            <label class="events-toggle partner-event-edit__toggle" for="event_change_active">
+                <input type="checkbox" name="event_change_active" value="1" id="event_change_active" class="events-toggle__input" <?= !empty($e['event_change_active']) ? 'checked' : '' ?>>
+                <span class="events-toggle__ui" aria-hidden="true"></span>
+                <span class="events-toggle__label">Jelzés</span>
+            </label>
+        </div>
+        <div id="partner-event-change-fields"<?= empty($e['event_change_active']) ? ' hidden' : '' ?>>
+            <div class="form-group">
+                <label for="event_change_type">Típus *</label>
+                <select id="event_change_type" name="event_change_type">
+                    <option value="">— válassz —</option>
+                    <?php foreach (events_event_change_types() as $typeKey => $typeLabel): ?>
+                        <option value="<?= h($typeKey) ?>"<?= (($e['event_change_type'] ?? '') === $typeKey) ? ' selected' : '' ?>><?= h($typeLabel) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="event_change_note">Publikus megjegyzés</label>
+                <textarea id="event_change_note" name="event_change_note" rows="3" maxlength="2000"><?= h((string) ($e['event_change_note'] ?? '')) ?></textarea>
+            </div>
+        </div>
+    </section>
 
     <?php $eventEditActionsBottom = true; require __DIR__ . '/partials/event_edit_actions.php'; ?>
 </form>
@@ -405,12 +429,9 @@ require_once __DIR__ . '/partials/header.php';
 <script>
 (function () {
     var allDay = document.getElementById('event_allday');
-    var startTime = document.getElementById('partner-event-start-time');
-    var endTime = document.getElementById('partner-event-end-time');
+    var times = document.getElementById('partner-event-times');
     function syncTimes() {
-        var hide = allDay && allDay.checked;
-        if (startTime) startTime.hidden = hide;
-        if (endTime) endTime.hidden = hide;
+        if (times) times.hidden = !!(allDay && allDay.checked);
     }
     if (allDay) {
         allDay.addEventListener('change', syncTimes);
@@ -435,6 +456,8 @@ require_once __DIR__ . '/partials/header.php';
     if (slugBtn && slugEl) {
         slugBtn.addEventListener('click', function () {
             slugEl.value = buildSlug();
+            var refreshFlag = document.getElementById('event_slug_refresh');
+            if (refreshFlag) refreshFlag.value = '1';
             var prev = slugBtn.textContent;
             slugBtn.textContent = 'Frissítve';
             window.setTimeout(function () { slugBtn.textContent = prev; }, 1200);
