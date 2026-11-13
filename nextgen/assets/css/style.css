@@ -4362,6 +4362,14 @@ body.event-notify-modal-open {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
 }
+.events-school-admin-table .events-inline-filter-row .events-filter-select {
+    padding: 0.35rem 1.5rem 0.35rem 0.4rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+.events-school-admin-table .events-inline-filter-row .events-filter-select-wrap::after {
+    right: 0.45rem;
+}
 .events-inline-summary {
     cursor: pointer;
 }

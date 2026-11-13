@@ -281,7 +281,20 @@ function dance_school_public_url(string $slug): string
 }
 
 /**
- * @param array{f_q?:string,f_city?:string,f_active?:string,order?:string,dir_param?:string} $filters
+ * @param array{
+ *     f_q?:string,
+ *     f_name?:string,
+ *     f_city?:string,
+ *     f_status?:string,
+ *     f_tag?:string,
+ *     f_locations?:string,
+ *     f_teachers?:string,
+ *     f_events?:string,
+ *     f_views?:string,
+ *     f_active?:string,
+ *     order?:string,
+ *     dir_param?:string
+ * } $filters
  * @return list<array<string, mixed>>
  */
 function dance_schools_admin_fetch(PDO $db, array $filters, ?int $listLimit = null): array
@@ -291,40 +304,48 @@ function dance_schools_admin_fetch(PDO $db, array $filters, ?int $listLimit = nu
     }
     $where = ['1=1'];
     $params = [];
-    $f_q = trim((string) ($filters['f_q'] ?? ''));
-    if ($f_q !== '') {
-        $tagMatch = dance_schools_table_exists($db, 'dance_school_tags')
-            ? ' OR EXISTS (
-                SELECT 1 FROM `dance_school_tag_links` stl
-                INNER JOIN `dance_school_tags` st ON st.`id` = stl.`tag_id`
-                WHERE stl.`school_id` = s.`id` AND st.`name` LIKE ?
-            )'
-            : '';
-        if (ctype_digit($f_q)) {
-            $where[] = '(s.`id` = ? OR s.`name` LIKE ? OR s.`slug` LIKE ? OR s.`city` LIKE ?' . $tagMatch . ')';
-            $params[] = (int) $f_q;
-            $like = '%' . $f_q . '%';
+    $f_name = trim((string) ($filters['f_name'] ?? $filters['f_q'] ?? ''));
+    if ($f_name !== '') {
+        $like = '%' . $f_name . '%';
+        if (ctype_digit($f_name)) {
+            $where[] = '(s.`id` = ? OR s.`name` LIKE ? OR s.`slug` LIKE ?)';
+            $params[] = (int) $f_name;
             $params[] = $like;
             $params[] = $like;
-            $params[] = $like;
-            if ($tagMatch !== '') {
-                $params[] = $like;
-            }
         } else {
-            $where[] = '(s.`name` LIKE ? OR s.`slug` LIKE ? OR s.`city` LIKE ?' . $tagMatch . ')';
-            $like = '%' . $f_q . '%';
+            $where[] = '(s.`name` LIKE ? OR s.`slug` LIKE ?)';
             $params[] = $like;
             $params[] = $like;
-            $params[] = $like;
-            if ($tagMatch !== '') {
-                $params[] = $like;
-            }
         }
     }
     $f_city = trim((string) ($filters['f_city'] ?? ''));
     if ($f_city !== '') {
         $where[] = 's.`city` LIKE ?';
         $params[] = '%' . $f_city . '%';
+    }
+    $rawStatus = trim((string) ($filters['f_status'] ?? ''));
+    if ($rawStatus !== '' && isset(dance_school_status_labels()[$rawStatus])) {
+        $where[] = 's.`status` = ?';
+        $params[] = $rawStatus;
+    }
+    $f_tag = trim((string) ($filters['f_tag'] ?? ''));
+    if ($f_tag !== '') {
+        $where[] = 'COALESCE(tags.`tag_names`, \'\') LIKE ?';
+        $params[] = '%' . $f_tag . '%';
+    }
+    foreach (
+        [
+            'f_locations' => 'COALESCE(loc.`location_count`, 0)',
+            'f_teachers' => 'COALESCE(tch.`teacher_count`, 0)',
+            'f_events' => 'COALESCE(ev.`upcoming_count`, 0)',
+            'f_views' => 'COALESCE(vw.`view_count`, 0)',
+        ] as $filterKey => $countSql
+    ) {
+        $rawCount = trim((string) ($filters[$filterKey] ?? ''));
+        if ($rawCount !== '' && ctype_digit($rawCount)) {
+            $where[] = $countSql . ' = ?';
+            $params[] = (int) $rawCount;
+        }
     }
     $f_active = (string) ($filters['f_active'] ?? '');
     if ($f_active === '1' || $f_active === '0') {
@@ -339,6 +360,15 @@ function dance_schools_admin_fetch(PDO $db, array $filters, ?int $listLimit = nu
         'city' => 's.`city` ' . $dir . ', s.`name` ASC',
         'slug' => 's.`slug` ' . $dir,
         'active' => 's.`is_active` ' . $dir . ', s.`name` ASC',
+        'status' => 'CASE s.`status`
+            WHEN \'draft\' THEN \'Piszkozat\'
+            WHEN \'import\' THEN \'Import\'
+            WHEN \'defunct\' THEN \'Nem működik\'
+            WHEN \'out_of_scope\' THEN \'Nem tartozik a gyűjtőkörünkbe\'
+            WHEN \'public\' THEN \'Publikus\'
+            WHEN \'other\' THEN \'Egyéb\'
+            ELSE s.`status` END ' . $dir . ', s.`name` ASC',
+        'tags' => 'COALESCE(tags.`tag_names`, \'\') ' . $dir . ', s.`name` ASC',
         'locations' => 'COALESCE(loc.`location_count`, 0) ' . $dir . ', s.`name` ASC',
         'teachers' => 'COALESCE(tch.`teacher_count`, 0) ' . $dir . ', s.`name` ASC',
         'events' => 'COALESCE(ev.`upcoming_count`, 0) ' . $dir . ', s.`name` ASC',

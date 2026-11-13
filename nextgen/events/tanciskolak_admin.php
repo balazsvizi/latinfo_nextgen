@@ -34,8 +34,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_dance_schools'])
     redirect($seedRedirect);
 }
 
-$f_q = trim((string) ($_GET['f_q'] ?? ''));
-$allowedOrder = ['name', 'city', 'locations', 'teachers', 'events', 'views', 'active', 'id', 'slug'];
+$f_name = trim((string) ($_GET['f_name'] ?? $_GET['f_q'] ?? ''));
+$f_city = trim((string) ($_GET['f_city'] ?? ''));
+$f_status = trim((string) ($_GET['f_status'] ?? ''));
+if (!isset(dance_school_status_labels()[$f_status])) {
+    $f_status = '';
+}
+$f_tag = trim((string) ($_GET['f_tag'] ?? ''));
+$countFilter = static function (string $key): string {
+    $raw = trim((string) ($_GET[$key] ?? ''));
+
+    return $raw !== '' && ctype_digit($raw) ? $raw : '';
+};
+$f_locations = $countFilter('f_locations');
+$f_teachers = $countFilter('f_teachers');
+$f_events = $countFilter('f_events');
+$f_views = $countFilter('f_views');
+$f_active = (string) ($_GET['f_active'] ?? '');
+if ($f_active !== '1' && $f_active !== '0') {
+    $f_active = '';
+}
+$allowedOrder = ['name', 'city', 'status', 'tags', 'locations', 'teachers', 'events', 'views', 'active', 'id', 'slug'];
 if (isset($_GET['order']) && in_array((string) $_GET['order'], $allowedOrder, true)) {
     $order = (string) $_GET['order'];
     $dir_param = isset($_GET['dir']) && strtolower((string) $_GET['dir']) === 'asc' ? 'asc' : 'desc';
@@ -49,26 +68,43 @@ $list_limit = $listLimitParsed['sql_limit'];
 $listLimitValue = $listLimitParsed['value'];
 $listTotalInDb = dance_schools_admin_total_count($db);
 
+$columnFilters = [
+    'f_name' => $f_name,
+    'f_city' => $f_city,
+    'f_status' => $f_status,
+    'f_tag' => $f_tag,
+    'f_locations' => $f_locations,
+    'f_teachers' => $f_teachers,
+    'f_events' => $f_events,
+    'f_views' => $f_views,
+    'f_active' => $f_active,
+];
 $get_params = [];
-if ($f_q !== '') {
-    $get_params['f_q'] = $f_q;
+foreach ($columnFilters as $paramKey => $paramValue) {
+    if ($paramValue !== '') {
+        $get_params[$paramKey] = $paramValue;
+    }
 }
 $get_params = events_admin_list_limit_merge_get_params($get_params, $listLimitValue);
 
-$filters = [
-    'f_q' => $f_q,
+$filters = $columnFilters + [
     'order' => $order,
     'dir_param' => $dir_param,
 ];
 $rows = dance_schools_admin_fetch($db, $filters, $list_limit);
 $listDisplayedCount = count($rows);
-$hasFilters = $f_q !== '';
-$colspan = 9;
+$hasFilters = $columnFilters !== array_fill_keys(array_keys($columnFilters), '');
+$colspan = 10;
 
 /** @param array<string, string> $params */
 $schoolSortTh = static function (string $label, string $orderCol, string $currentOrder, string $currentDir, array $params): string {
-    $rel = sort_url($params, $orderCol, $currentOrder, $currentDir);
-    $qs = ltrim($rel, '?');
+    $nextDir = ($currentOrder === $orderCol && $currentDir === 'asc') ? 'desc' : 'asc';
+    $params['order'] = $orderCol;
+    $params['dir'] = $nextDir;
+    $qs = http_build_query(array_filter(
+        $params,
+        static fn (mixed $value): bool => $value !== '' && $value !== null
+    ));
     $href = events_url('tanciskolak_admin.php' . ($qs !== '' ? '?' . $qs : ''));
     $arrow = '';
     if ($currentOrder === $orderCol) {
@@ -78,6 +114,17 @@ $schoolSortTh = static function (string $label, string $orderCol, string $curren
     }
 
     return '<a href="' . h($href) . '" class="th-sort">' . h($label) . $arrow . '</a>';
+};
+
+/** @param array{type?:string,placeholder?:string,extra?:string} $opts */
+$schoolFilterInput = static function (string $name, string $value, string $label, array $opts = []): string {
+    $type = $opts['type'] ?? 'search';
+    $placeholder = $opts['placeholder'] ?? 'Szűrés…';
+    $extra = $opts['extra'] ?? ($type === 'number' ? ' min="0" step="1" inputmode="numeric"' : ' autocomplete="off"');
+
+    return '<input class="events-filter-input events-inline-filter-input" type="' . h($type)
+        . '" name="' . h($name) . '" id="school-' . h($name) . '" value="' . h($value)
+        . '" placeholder="' . h($placeholder) . '" aria-label="' . h($label) . '"' . $extra . '>';
 };
 
 $pageTitle = 'Tánciskolák';
@@ -140,7 +187,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
         <div class="events-list-head">
             <div class="events-list-head__start">
                 <h1 class="events-list-title card-title" style="margin:0;">Tánciskolák</h1>
-                <p class="help" style="margin:0.35rem 0 0;">Tánciskolák; helyszínek a bulihelyszínek közül; tánctanárok (DJ-szerű címkék); workshopok.</p>
+                <p class="help" style="margin:0.35rem 0 0;">Minden oszlop szűrhető és rendezhető. Az eseményszám a közelgő eseményeket számolja.</p>
                 <?php
                 $listLimitInForm = true;
                 $listLimitStandalone = true;
@@ -155,27 +202,48 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
         </div>
 
-        <section class="events-filters-shell" aria-label="Szűrők">
-            <div class="events-filters-grid">
-                <div class="events-filter-field">
-                    <label class="events-filter-label<?= $f_q !== '' ? ' events-filter-label--active' : '' ?>" for="school-f-q">Keresés</label>
-                    <input class="events-filter-input" type="search" name="f_q" id="school-f-q" value="<?= h($f_q) ?>" placeholder="Név, város, slug, címke vagy ID…" autocomplete="off">
-                </div>
-            </div>
-        </section>
-
-        <div class="table-wrap events-admin-table-wrap">
-            <table class="sortable-table events-admin-table">
+        <div class="table-wrap events-admin-table-wrap events-filters-shell">
+            <table class="sortable-table events-admin-table events-school-admin-table">
                 <thead>
                     <tr>
-                        <th class="events-djs-admin__th-photo">Fotó</th>
                         <th><?= $schoolSortTh('Név', 'name', $order, $dir_param, $get_params) ?></th>
                         <th><?= $schoolSortTh('Város', 'city', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $schoolSortTh('Státusz', 'status', $order, $dir_param, $get_params) ?></th>
+                        <th><?= $schoolSortTh('Címkék', 'tags', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= $schoolSortTh('Helyszínek', 'locations', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= $schoolSortTh('Tanárok', 'teachers', $order, $dir_param, $get_params) ?></th>
-                        <th class="th-num"><?= $schoolSortTh('Események', 'events', $order, $dir_param, $get_params) ?></th>
+                        <th class="th-num" title="Közelgő események"><?= $schoolSortTh('Események', 'events', $order, $dir_param, $get_params) ?></th>
                         <th class="th-num"><?= $schoolSortTh('Megtekintések', 'views', $order, $dir_param, $get_params) ?></th>
                         <th><?= $schoolSortTh('Aktív', 'active', $order, $dir_param, $get_params) ?></th>
+                        <th></th>
+                    </tr>
+                    <tr class="events-inline-filter-row">
+                        <th><?= $schoolFilterInput('f_name', $f_name, 'Szűrés név, slug vagy ID szerint', ['placeholder' => 'Név, slug, ID']) ?></th>
+                        <th><?= $schoolFilterInput('f_city', $f_city, 'Szűrés város szerint', ['placeholder' => 'Város']) ?></th>
+                        <th>
+                            <div class="events-filter-select-wrap">
+                                <select class="events-filter-select" name="f_status" id="school-f_status" aria-label="Szűrés státusz szerint">
+                                    <option value="">Összes</option>
+                                    <?php foreach (dance_school_status_labels() as $statusCode => $statusLabel): ?>
+                                        <option value="<?= h($statusCode) ?>"<?= $f_status === $statusCode ? ' selected' : '' ?>><?= h($statusLabel) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </th>
+                        <th><?= $schoolFilterInput('f_tag', $f_tag, 'Szűrés címke szerint', ['placeholder' => 'Címke']) ?></th>
+                        <th><?= $schoolFilterInput('f_locations', $f_locations, 'Szűrés helyszínek pontos száma szerint', ['type' => 'number', 'placeholder' => '=']) ?></th>
+                        <th><?= $schoolFilterInput('f_teachers', $f_teachers, 'Szűrés tanárok pontos száma szerint', ['type' => 'number', 'placeholder' => '=']) ?></th>
+                        <th><?= $schoolFilterInput('f_events', $f_events, 'Szűrés közelgő események pontos száma szerint', ['type' => 'number', 'placeholder' => '=']) ?></th>
+                        <th><?= $schoolFilterInput('f_views', $f_views, 'Szűrés megtekintések pontos száma szerint', ['type' => 'number', 'placeholder' => '=']) ?></th>
+                        <th>
+                            <div class="events-filter-select-wrap">
+                                <select class="events-filter-select" name="f_active" id="school-f_active" aria-label="Szűrés aktív szerint">
+                                    <option value="">Összes</option>
+                                    <option value="1"<?= $f_active === '1' ? ' selected' : '' ?>>Igen</option>
+                                    <option value="0"<?= $f_active === '0' ? ' selected' : '' ?>>Nem</option>
+                                </select>
+                            </div>
+                        </th>
                         <th></th>
                     </tr>
                 </thead>
@@ -195,34 +263,17 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             <?php
                             $sid = (int) $r['id'];
                             $sname = (string) $r['name'];
-                            $photo = trim((string) ($r['photo_url'] ?? ''));
-                            $logo = trim((string) ($r['logo_url'] ?? ''));
-                            $thumb = $photo !== '' ? $photo : $logo;
-                            $photoAbs = $thumb !== '' ? events_absolute_url($thumb) : '';
-                            $thumbIsLogo = $photo === '' && $logo !== '';
                             $editUrl = events_url('tanciskola_szerkeszt.php?id=') . $sid;
                             $schoolStatus = dance_school_normalize_status($r['status'] ?? (!empty($r['is_published']) ? 'public' : 'draft'));
                             $isActive = !empty($r['is_active']);
+                            $tagNames = trim((string) ($r['tag_names'] ?? ''));
+                            $cityLabel = trim((string) ($r['city'] ?? ''));
                             ?>
                             <tr>
-                                <td class="events-djs-admin__td-photo">
-                                    <a href="<?= h($editUrl) ?>" class="events-djs-admin__thumb-link" title="Szerkesztés">
-                                        <?php if ($photoAbs !== ''): ?>
-                                            <img class="events-djs-admin__thumb<?= $thumbIsLogo ? ' events-djs-admin__thumb--logo' : '' ?>" src="<?= h($photoAbs) ?>" alt="" loading="lazy" width="40" height="40">
-                                        <?php else: ?>
-                                            <span class="events-djs-admin__thumb events-djs-admin__thumb--empty" aria-hidden="true">💃</span>
-                                        <?php endif; ?>
-                                    </a>
-                                </td>
-                                <td>
-                                    <a href="<?= h($editUrl) ?>"><strong><?= h($sname) ?></strong></a>
-                                    <span class="event-status-badge<?= dance_school_status_is_publicly_visible($schoolStatus) ? '' : ' event-status-badge--draft' ?>"><?= h(dance_school_status_label($schoolStatus)) ?></span>
-                                    <?php $tagNames = trim((string) ($r['tag_names'] ?? '')); ?>
-                                    <?php if ($tagNames !== ''): ?>
-                                        <div class="text-muted"><?= h($tagNames) ?></div>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= h(trim((string) ($r['city'] ?? '')) !== '' ? (string) $r['city'] : '—') ?></td>
+                                <td><a href="<?= h($editUrl) ?>"><strong><?= h($sname) ?></strong></a></td>
+                                <td><?= h($cityLabel !== '' ? $cityLabel : '—') ?></td>
+                                <td><span class="event-status-badge<?= dance_school_status_is_publicly_visible($schoolStatus) ? '' : ' event-status-badge--draft' ?>"><?= h(dance_school_status_label($schoolStatus)) ?></span></td>
+                                <td><?= $tagNames !== '' ? h($tagNames) : '<span class="text-muted">—</span>' ?></td>
                                 <td class="td-num"><?= (int) ($r['location_count'] ?? 0) ?></td>
                                 <td class="td-num"><?= (int) ($r['teacher_count'] ?? 0) ?></td>
                                 <td class="td-num"><?= (int) ($r['upcoming_count'] ?? 0) ?></td>
@@ -242,29 +293,30 @@ require __DIR__ . '/partials/admin_event_filters_script.php';
 ?>
 <script>
 (function () {
-    var key = 'tanciskolak-admin-search-focus';
-    var input = document.getElementById('school-f-q');
-    if (!input) return;
+    var key = 'tanciskolak-admin-filter-focus';
+    var form = document.getElementById('tanciskolak-admin-filter-form');
+    if (!form) return;
     try {
-        var raw = sessionStorage.getItem(key);
-        if (raw) {
+        var id = sessionStorage.getItem(key);
+        if (id) {
             sessionStorage.removeItem(key);
-            var data = JSON.parse(raw);
-            if (data && typeof data.pos === 'number') {
-                input.focus({ preventScroll: true });
-                var pos = Math.min(Math.max(0, data.pos), (input.value || '').length);
-                if (typeof input.setSelectionRange === 'function') {
-                    input.setSelectionRange(pos, pos);
+            var el = document.getElementById(id);
+            if (el && form.contains(el)) {
+                el.focus({ preventScroll: true });
+                if (el.type !== 'number' && typeof el.setSelectionRange === 'function') {
+                    var len = (el.value || '').length;
+                    el.setSelectionRange(len, len);
                 }
             }
         }
     } catch (e) {}
-    input.addEventListener('input', function () {
+    form.addEventListener('focusin', function (e) {
+        var target = e.target;
+        if (!target || !target.id || !target.classList) return;
+        if (!target.classList.contains('events-filter-input') && !target.classList.contains('events-filter-select')) return;
         try {
-            sessionStorage.setItem(key, JSON.stringify({
-                pos: typeof input.selectionStart === 'number' ? input.selectionStart : (input.value || '').length
-            }));
-        } catch (e) {}
+            sessionStorage.setItem(key, target.id);
+        } catch (err) {}
     });
 })();
 </script>
