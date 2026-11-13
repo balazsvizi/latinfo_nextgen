@@ -317,11 +317,7 @@ require_once __DIR__ . '/partials/header.php';
     </div>
 
     <h2 class="partner-event-edit__section">Esemény képe</h2>
-    <div class="form-group">
-        <label for="event_featured_image_url">Kiemelt kép URL</label>
-        <input type="text" id="event_featured_image_url" name="event_featured_image_url" value="<?= h((string) ($e['event_featured_image_url'] ?? '')) ?>" maxlength="2000" placeholder="https://… vagy /útvonal/kép.jpg" spellcheck="false" autocomplete="off">
-        <p class="help">Ha URL meg van adva, ez elsőbbséget élvez a galériaképpel szemben.</p>
-    </div>
+    <input type="hidden" id="event_featured_image_url" name="event_featured_image_url" value="<?= h((string) ($e['event_featured_image_url'] ?? '')) ?>">
     <div class="partner-event-edit__cover">
         <?php if ($coverPreview['src'] !== ''): ?>
             <img src="<?= h($coverPreview['src']) ?>" alt="Borító előnézet" id="partner-cover-preview" width="320" height="180">
@@ -338,7 +334,7 @@ require_once __DIR__ . '/partials/header.php';
     <div class="form-group">
         <label for="event_featured_image_upload">Új kép feltöltése</label>
         <input type="file" id="event_featured_image_upload" name="event_featured_image_upload" accept="image/jpeg,image/png,image/webp,image/gif">
-        <p class="help">A feltöltés mentéskor kerül a galériába, és borító lesz, ha nincs kitöltött URL. A galériában csak a saját eseményeid képei vannak.</p>
+        <p class="help">A feltöltés mentéskor kerül a galériába, és ez lesz a borító. A galériában csak a saját eseményeid képei vannak.</p>
     </div>
 
     <section class="partner-event-edit__change">

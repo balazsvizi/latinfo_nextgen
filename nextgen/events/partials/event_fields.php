@@ -482,18 +482,14 @@ require __DIR__ . '/wp_token_field.php';
 </div>
 <div class="events-edit-panel events-edit-panel--tone-image event-featured-card">
     <h3 class="events-edit-panel__title event-featured-card__title">Esemény képe</h3>
-    <div class="form-group">
-        <label for="event_featured_image_url">Kiemelt kép URL</label>
-        <input type="text" id="event_featured_image_url" name="event_featured_image_url" value="<?= h($e['event_featured_image_url'] ?? '') ?>" maxlength="2000" placeholder="https://… vagy /útvonal/kép.jpg" spellcheck="false" autocomplete="off">
-        <p class="help">Ha URL meg van adva, ez elsőbbséget élvez az eventpics képpel szemben.</p>
-    </div>
+    <input type="hidden" id="event_featured_image_url" name="event_featured_image_url" value="<?= h($e['event_featured_image_url'] ?? '') ?>">
     <div class="form-group eventpics-media-block">
         <label>Eventpics borítókép</label>
         <p class="help">A jobb oldali borítóképnél a <strong>Galéria</strong> megnyitja a választót, a <strong>Feltöltés</strong> közvetlenül feltölt és beállítja a képet.</p>
         <input type="hidden" name="event_featured_image_pick" id="event_featured_image_pick" value="<?= h($eventpicsPick) ?>">
         <div class="eventpics-form-summary" id="eventpics-form-summary" data-base="<?= h(events_url('eventpics/')) ?>">
             <div class="eventpics-form-summary__inner eventpics-form-summary__inner--toolbar">
-                <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép (adj meg URL-t vagy válassz eventpics képet).</p>
+                <p class="eventpics-form-summary__empty help" id="eventpics-summary-empty"<?= $coverPreview['source'] !== 'none' ? ' hidden' : '' ?>>Nincs borítókép.</p>
                 <div class="eventpics-form-summary__actions">
                     <button type="button" class="btn btn-secondary" id="eventpics-clear-main">Borítókép törlése</button>
                 </div>
@@ -954,7 +950,7 @@ require __DIR__ . '/wp_token_field.php';
         btnClearMain.addEventListener('click', function () {
             hidden.value = '';
             pendingPick = '';
-            if (urlInp && isEventpicsUrl(urlInp.value)) {
+            if (urlInp) {
                 urlInp.value = '';
             }
             syncModalSelection();
