@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_dance_schools'])
     } elseif ($errors > 0) {
         flash('error', "Seed kész hibákkal. Új: {$created}, frissítve: {$updated}, hiba: {$errors}, összesen: {$total}.");
     } else {
-        flash('success', "Seed kész. Új: {$created}, frissítve: {$updated}, összesen: {$total}. (Publikálatlanul mentve.)");
+        flash('success', "Seed kész. Új: {$created}, frissítve: {$updated}, összesen: {$total}. Az új iskolák Import státuszt kaptak.");
     }
     redirect($seedRedirect);
 }
@@ -108,17 +108,27 @@ require_once dirname(__DIR__) . '/partials/header.php';
 
 <?php if (isSuperadmin()): ?>
 <div class="card events-admin-card" style="margin-bottom:1rem;">
-    <form method="post" action="<?= h(events_url('tanciskolak_admin.php')) ?>" onsubmit="return confirm('Feltölti / frissíti a latin tánciskola katalógust (slug alapján)? Publikálatlanul ment.');">
+    <form method="post" action="<?= h(events_url('tanciskolak_admin.php')) ?>" onsubmit="return confirm('Feltölti / frissíti a latin tánciskola katalógust (slug alapján)? Új iskola Import státuszt kap, a meglévő státusz megmarad.');">
         <?= csrf_input('dance_schools_seed') ?>
         <div class="events-list-head">
             <div class="events-list-head__start">
-                <p class="help" style="margin:0;">Katalógus feltöltés a nyilvános weboldalak alapján (~28 iskola). Újrafuttatható; meglévő slug frissül. Mindig publikálatlan.</p>
+                <p class="help" style="margin:0;">Katalógus feltöltés a nyilvános weboldalak alapján (~28 iskola). Újrafuttatható; meglévő slug frissül. Új iskola Import státuszt kap, a már beállított státusz megmarad.</p>
             </div>
             <div class="events-list-actions">
                 <button type="submit" name="seed_dance_schools" value="1" class="btn btn-primary">Seed katalógus futtatása</button>
             </div>
         </div>
     </form>
+</div>
+<div class="card events-admin-card" style="margin-bottom:1rem;">
+    <div class="events-list-head">
+        <div class="events-list-head__start">
+            <p class="help" style="margin:0;">XLSX feltöltés a „Tánciskolák” lapról. Ha az iskola még nincs meg, Import státuszban jön létre (nem publikus). Ha megvan, csak az üres mezők töltődnek. Perjeles, összevont név nem jön létre automatikusan.</p>
+        </div>
+        <div class="events-list-actions">
+            <a href="<?= h(events_url('tanciskola_import.php')) ?>" class="btn btn-primary">XLSX import</a>
+        </div>
+    </div>
 </div>
 <?php endif; ?>
 
@@ -191,7 +201,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                             $photoAbs = $thumb !== '' ? events_absolute_url($thumb) : '';
                             $thumbIsLogo = $photo === '' && $logo !== '';
                             $editUrl = events_url('tanciskola_szerkeszt.php?id=') . $sid;
-                            $isPublished = !empty($r['is_published']);
+                            $schoolStatus = dance_school_normalize_status($r['status'] ?? (!empty($r['is_published']) ? 'public' : 'draft'));
                             $isActive = !empty($r['is_active']);
                             ?>
                             <tr>
@@ -206,9 +216,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                                 </td>
                                 <td>
                                     <a href="<?= h($editUrl) ?>"><strong><?= h($sname) ?></strong></a>
-                                    <?php if (!$isPublished): ?>
-                                        <span class="event-status-badge event-status-badge--draft" title="Alapértelmezés szerint még nem publikus">még nem publikus</span>
-                                    <?php endif; ?>
+                                    <span class="event-status-badge<?= dance_school_status_is_publicly_visible($schoolStatus) ? '' : ' event-status-badge--draft' ?>"><?= h(dance_school_status_label($schoolStatus)) ?></span>
                                 </td>
                                 <td><?= h(trim((string) ($r['city'] ?? '')) !== '' ? (string) $r['city'] : '—') ?></td>
                                 <td class="td-num"><?= (int) ($r['location_count'] ?? 0) ?></td>

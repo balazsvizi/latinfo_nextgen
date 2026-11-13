@@ -207,8 +207,8 @@ require_once dirname(__DIR__) . '/partials/header.php';
         </div>
     </div>
     <?php if ($hiba !== ''): ?><p class="alert alert-error"><?= h($hiba) ?></p><?php endif; ?>
-    <?php if (empty($row['is_published'])): ?>
-        <p class="alert alert-warning">Ez a tánciskola még nem publikus.</p>
+    <?php if (!dance_school_status_is_publicly_visible($row['status'] ?? 'draft')): ?>
+        <p class="alert alert-warning">Ez a tánciskola nyilvánosan nem látszik. Státusz: <?= h(dance_school_status_label($row['status'] ?? 'draft')) ?>.</p>
     <?php endif; ?>
 
     <form method="post" enctype="multipart/form-data" class="venue-form events-dj-edit-form" id="dance-school-edit-form">
@@ -333,9 +333,6 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <label><input type="checkbox" name="is_active" value="1"<?= !empty($row['is_active']) ? ' checked' : '' ?>> Aktív</label>
                     </div>
                     <div class="form-group">
-                        <label><input type="checkbox" name="is_published" value="1"<?= !empty($row['is_published']) ? ' checked' : '' ?>> Publikus (nyilvános listán)</label>
-                    </div>
-                    <div class="form-group">
                         <label for="admin_notes">Admin megjegyzés</label>
                         <textarea id="admin_notes" name="admin_notes" rows="3"><?= h((string) ($row['admin_notes'] ?? '')) ?></textarea>
                     </div>
@@ -387,6 +384,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             </div>
 
             <aside class="events-edit-sidebar">
+                <?php require __DIR__ . '/partials/dance_school_status_field.php'; ?>
                 <div class="toolbar events-dj-edit-toolbar--top">
                     <button type="submit" class="btn btn-primary events-dj-edit-save-wide" name="form_action" value="save">Mentés</button>
                 </div>

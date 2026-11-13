@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Web:  dance_schools_seed_run($db)  (Latinfo admin gomb)
  *
  * Újrafuttatható: meglévő slug esetén frissít (nem duplikál).
- * is_published mindig 0 marad.
+ * Új iskola státusza Import. Meglévő iskola státusza nem íródik felül.
  */
 
 require_once dirname(__DIR__) . '/events/lib/dance_schools.php';
@@ -1033,7 +1033,12 @@ function dance_schools_seed_run(PDO $db): array
         $row['has_kids_classes'] = !empty($pack['has_kids_classes']) ? 1 : 0;
         $row['has_performance_team'] = !empty($pack['has_performance_team']) ? 1 : 0;
         $row['is_active'] = 1;
-        $row['is_published'] = 0;
+        if ($existingId !== null) {
+            $current = dance_school_by_id($db, $existingId);
+            $row['status'] = dance_school_normalize_status($current['status'] ?? 'import');
+        } else {
+            $row['status'] = 'import';
+        }
         $row['admin_notes'] = (string) ($pack['admin_notes'] ?? $sourceNote);
 
         try {

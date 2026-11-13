@@ -95,6 +95,7 @@ function dance_schools_ensure_schema(PDO $db): bool
                     `has_performance_team` TINYINT(1) NOT NULL DEFAULT 0,
                     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
                     `is_published` TINYINT(1) NOT NULL DEFAULT 0,
+                    `status` VARCHAR(32) NOT NULL DEFAULT 'draft',
                     `admin_notes` TEXT NULL,
                     `sort_order` INT NOT NULL DEFAULT 0,
                     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -103,7 +104,8 @@ function dance_schools_ensure_schema(PDO $db): bool
                     UNIQUE KEY `uq_dance_school_slug` (`slug`),
                     KEY `idx_dance_school_name` (`name`),
                     KEY `idx_dance_school_city` (`city`),
-                    KEY `idx_dance_school_pub` (`is_published`, `is_active`)
+                    KEY `idx_dance_school_pub` (`is_published`, `is_active`),
+                    KEY `idx_dance_school_status` (`status`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ");
             dance_schools_tables_ready($db, true);
@@ -112,6 +114,8 @@ function dance_schools_ensure_schema(PDO $db): bool
         if (!dance_schools_tables_ready($db)) {
             return false;
         }
+
+        dance_schools_ensure_status_column($db);
 
         $db->exec("
             CREATE TABLE IF NOT EXISTS `dance_school_venues` (
@@ -275,6 +279,21 @@ function dance_schools_ensure_schema(PDO $db): bool
 /**
  * Régi dance_school_locations → events_venues + dance_school_venues migráció.
  */
+function dance_schools_ensure_status_column(PDO $db): void
+{
+    if (!dance_schools_tables_ready($db) || dance_schools_column_exists($db, 'dance_schools', 'status')) {
+        return;
+    }
+    $db->exec("ALTER TABLE `dance_schools` ADD COLUMN `status` VARCHAR(32) NOT NULL DEFAULT 'draft' AFTER `is_published`");
+    $db->exec("UPDATE `dance_schools` SET `status` = 'public' WHERE `is_published` = 1");
+    $db->exec("UPDATE `dance_schools` SET `status` = 'import' WHERE `status` = 'draft' AND `admin_notes` LIKE 'Forrás:%'");
+    try {
+        $db->exec('ALTER TABLE `dance_schools` ADD KEY `idx_dance_school_status` (`status`)');
+    } catch (Throwable) {
+        // index már létezik
+    }
+}
+
 function dance_schools_migrate_legacy_locations(PDO $db): void
 {
     $hasLegacyLoc = dance_schools_table_exists($db, 'dance_school_locations');

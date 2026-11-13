@@ -11,6 +11,48 @@ require_once __DIR__ . '/venue_request.php';
  * Tánciskola CRUD és kapcsolódó adatok.
  */
 
+function dance_school_status_labels(): array
+{
+    return [
+        'draft' => 'Piszkozat',
+        'import' => 'Import',
+        'defunct' => 'Nem működik',
+        'out_of_scope' => 'Nem tartozik a gyűjtőkörünkbe',
+        'public' => 'Publikus',
+        'other' => 'Egyéb',
+    ];
+}
+
+/**
+ * Nyilvános listán és oldalon ezek a státuszok látszanak.
+ *
+ * @return list<string>
+ */
+function dance_school_public_statuses(): array
+{
+    return ['public', 'defunct'];
+}
+
+function dance_school_normalize_status(mixed $raw): string
+{
+    $status = trim((string) $raw);
+    $labels = dance_school_status_labels();
+
+    return isset($labels[$status]) ? $status : 'draft';
+}
+
+function dance_school_status_label(mixed $raw): string
+{
+    $status = dance_school_normalize_status($raw);
+
+    return dance_school_status_labels()[$status];
+}
+
+function dance_school_status_is_publicly_visible(mixed $raw): bool
+{
+    return in_array(dance_school_normalize_status($raw), dance_school_public_statuses(), true);
+}
+
 function dance_school_slugify(string $name): string
 {
     return events_dj_slugify($name);
@@ -85,6 +127,7 @@ function dance_school_empty_row(): array
         'has_performance_team' => 0,
         'is_active' => 1,
         'is_published' => 0,
+        'status' => 'draft',
         'admin_notes' => '',
         'sort_order' => 0,
     ];
@@ -127,7 +170,12 @@ function dance_school_from_post(array $post): array
     $row['has_kids_classes'] = !empty($post['has_kids_classes']) ? 1 : 0;
     $row['has_performance_team'] = !empty($post['has_performance_team']) ? 1 : 0;
     $row['is_active'] = !empty($post['is_active']) ? 1 : 0;
-    $row['is_published'] = !empty($post['is_published']) ? 1 : 0;
+    $rawStatus = trim((string) ($post['status'] ?? ''));
+    if ($rawStatus !== '' && !isset(dance_school_status_labels()[$rawStatus])) {
+        return [$row, 'Érvénytelen státusz.'];
+    }
+    $row['status'] = $rawStatus === '' ? 'draft' : $rawStatus;
+    $row['is_published'] = dance_school_status_is_publicly_visible($row['status']) ? 1 : 0;
     $row['admin_notes'] = trim((string) ($post['admin_notes'] ?? ''));
     $row['sort_order'] = (int) ($post['sort_order'] ?? 0);
     $row['photo_url'] = trim((string) ($post['photo_url'] ?? ''));
@@ -361,7 +409,8 @@ function dance_school_save(PDO $db, array $row, ?int $id = null): array
         'has_kids_classes' => !empty($row['has_kids_classes']) ? 1 : 0,
         'has_performance_team' => !empty($row['has_performance_team']) ? 1 : 0,
         'is_active' => !empty($row['is_active']) ? 1 : 0,
-        'is_published' => !empty($row['is_published']) ? 1 : 0,
+        'status' => dance_school_normalize_status($row['status'] ?? 'draft'),
+        'is_published' => dance_school_status_is_publicly_visible($row['status'] ?? 'draft') ? 1 : 0,
         'admin_notes' => trim((string) ($row['admin_notes'] ?? '')) ?: null,
         'sort_order' => (int) ($row['sort_order'] ?? 0),
     ];

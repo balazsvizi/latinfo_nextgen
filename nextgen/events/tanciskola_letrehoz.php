@@ -34,7 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $row['photo_url'] = $photoUrl ?? '';
                 $row['logo_url'] = $logoUrl ?? '';
-                $row['is_published'] = 0;
                 $save = dance_school_save($db, $row, null);
                 if (!$save['ok']) {
                     $hiba = (string) ($save['error'] ?? 'Mentési hiba történt.');
@@ -107,7 +106,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                         <label for="school_city">Város</label>
                         <input type="text" id="school_city" name="city" value="<?= h((string) $row['city']) ?>" maxlength="128" placeholder="pl. Budapest">
                     </div>
-                    <p class="help">A nyilvános megjelenéshez később külön „publikus” jelölés kell. Új iskola alapból még nem publikus.</p>
+                    <p class="help">A nyilvános megjelenést a jobb felső státusz dönti el. Új iskola alapból piszkozat.</p>
                 </div>
                 <div class="events-edit-panel">
                     <h3 class="events-edit-panel__title">Bemutatkozás</h3>
@@ -178,6 +177,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
                 </div>
             </div>
             <aside class="events-edit-sidebar">
+                <?php require __DIR__ . '/partials/dance_school_status_field.php'; ?>
                 <div class="events-edit-panel">
                     <?php
                     $djPhotoUrl = (string) ($row['photo_url'] ?? '');

@@ -80,9 +80,9 @@ if ($school === null) {
 }
 
 $schoolId = (int) ($school['id'] ?? 0);
-$isActive = !empty($school['is_active']);
-$isPublished = !empty($school['is_published']);
-$isPubliclyVisible = $isActive && $isPublished;
+$schoolStatus = dance_school_normalize_status($school['status'] ?? (!empty($school['is_published']) ? 'public' : 'draft'));
+$isPubliclyVisible = dance_school_status_is_publicly_visible($schoolStatus);
+$isDefunct = $schoolStatus === 'defunct';
 $isAdmin = function_exists('isLoggedIn') && isLoggedIn();
 if (!$isPubliclyVisible && !$isAdmin) {
     $notFound();
@@ -178,9 +178,13 @@ if ($isPreview) {
         <div class="event-public__hero-inner dj-public__hero-inner">
             <?php if ($isPreview): ?>
                 <p style="margin:0 0 0.75rem;padding:0.55rem 0.75rem;border:1px solid #c9a227;background:#fff8e1;border-radius:6px;font-size:0.95rem;">
-                    <?= h(!$isActive
-                        ? ($lang === 'en' ? 'Admin preview — this school is inactive.' : 'Admin előnézet — ez a tánciskola inaktív.')
-                        : ($lang === 'en' ? 'Admin preview — not published yet.' : 'Admin előnézet — még nem publikus.')) ?>
+                    <?= h($lang === 'en'
+                        ? 'Admin preview — this school is not public. Status: ' . dance_school_status_label($schoolStatus)
+                        : 'Admin előnézet — ez a tánciskola nyilvánosan nem látszik. Státusz: ' . dance_school_status_label($schoolStatus)) ?>
+                </p>
+            <?php elseif ($isDefunct): ?>
+                <p style="margin:0 0 0.75rem;padding:0.55rem 0.75rem;border:1px solid #b45309;background:#fff7ed;border-radius:6px;font-size:0.95rem;">
+                    <?= h($lang === 'en' ? 'This dance school is not currently operating.' : 'Ez a tánciskola jelenleg nem működik.') ?>
                 </p>
             <?php endif; ?>
             <div class="dj-public__identity">
