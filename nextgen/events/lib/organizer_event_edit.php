@@ -127,6 +127,23 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post, ?arra
         return ['ok' => false, 'error' => 'A záró időpont nem lehet korábbi a kezdőnél.', 'row' => $row];
     }
 
+    $currentSlug = trim((string) ($current['event_slug'] ?? ''));
+    $postedSlug = events_slugify((string) ($post['event_slug'] ?? ''));
+    $slugBase = events_slugify($name);
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) === 1) {
+        $slugBase .= '-' . $startDate;
+    }
+    $generatedSlug = events_ensure_unique_slug($db, $slugBase, $eventId);
+    $currentNorm = $currentSlug !== '' ? events_slugify($currentSlug) : '';
+    $refreshRequested = $postedSlug !== ''
+        && $postedSlug !== $currentNorm
+        && ($postedSlug === events_slugify($slugBase) || $postedSlug === events_slugify($generatedSlug));
+    if ($currentSlug === '' || $refreshRequested) {
+        $row['event_slug'] = $generatedSlug;
+    } else {
+        $row['event_slug'] = $currentSlug;
+    }
+
     [$costFrom, $costFromErr] = events_organizer_edit_parse_cost((string) ($post['event_cost_from'] ?? ''));
     if ($costFromErr !== null) {
         return ['ok' => false, 'error' => $costFromErr, 'row' => $row];
@@ -230,6 +247,7 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post, ?arra
         $upd = $db->prepare('
             UPDATE `events_calendar_events` SET
                 event_name = ?,
+                event_slug = ?,
                 event_content = ?,
                 event_status = ?,
                 event_published_at = ?,
@@ -250,6 +268,7 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post, ?arra
         ');
         $upd->execute([
             $row['event_name'],
+            $row['event_slug'],
             $row['event_content'],
             $row['event_status'],
             $row['event_published_at'],
@@ -279,6 +298,12 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post, ?arra
                 return ['ok' => false, 'error' => 'Ezt az eseményt nem szerkesztheted.', 'row' => $row];
             }
         }
+        $slugRedirect = null;
+        $oldSlug = trim((string) ($current['event_slug'] ?? ''));
+        $newSlug = trim((string) ($row['event_slug'] ?? ''));
+        if (events_slug_should_record_redirect($current, $oldSlug, $newSlug)) {
+            $slugRedirect = events_slug_redirect_record($db, $eventId, $oldSlug, $newSlug) ? 'saved' : 'failed';
+        }
         events_save_event_categories($db, $eventId, $row['category_ids']);
         if (events_tags_tables_available($db)) {
             events_save_event_tags($db, $eventId, $row['tag_ids']);
@@ -289,7 +314,7 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post, ?arra
         }
         $db->commit();
 
-        return ['ok' => true, 'row' => $row];
+        return ['ok' => true, 'row' => $row, 'slug_redirect' => $slugRedirect];
     } catch (Throwable $ex) {
         if ($db->inTransaction()) {
             $db->rollBack();

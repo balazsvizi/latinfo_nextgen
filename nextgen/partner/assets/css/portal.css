@@ -731,6 +731,17 @@
     pointer-events: none;
 }
 
+.partner-event-edit__slug[readonly] {
+    background: #f4f6f3;
+    color: inherit;
+    cursor: default;
+}
+
+.partner-event-edit__slug-refresh {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 .partner-event-edit__cover img {
     display: block;
     width: 100%;

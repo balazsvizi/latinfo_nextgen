@@ -39,7 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 : [];
             $log .= "\n" . events_build_log_details($db, $event, [], $categoryIds);
             rendszer_log('esemény', $eventId, 'Partner módosította', $log);
-            flash('success', 'Az esemény mentve.');
+            $slugRedirect = (string) ($result['slug_redirect'] ?? '');
+            if ($slugRedirect === 'saved') {
+                flash('success', 'Az esemény mentve. A régi webcím az újra irányít.');
+            } elseif ($slugRedirect === 'failed') {
+                flash('success', 'Az esemény mentve. A régi webcím átirányítása nem sikerült, mert már foglalt.');
+            } else {
+                flash('success', 'Az esemény mentve.');
+            }
             redirect(partner_url('event.php?id=') . $eventId);
         }
         $hiba = $result['error'];
@@ -134,12 +141,20 @@ require_once __DIR__ . '/partials/header.php';
 <form method="post" enctype="multipart/form-data" class="card partner-event-edit" id="partner-event-edit-form">
     <?= csrf_input('partner_event_szerkeszt') ?>
     <h1 class="partner-page-title">Esemény szerkesztése</h1>
-    <p class="help">Jelenlegi státusz: <?= h(events_post_status_label($status)) ?>. A mentés ezt hagyja meg. A webcímet (slug) és a szervezőket az admin kezeli.<?php if ($organizers !== []): ?> Szervezők: <?php foreach ($organizers as $i => $org): ?><?php if ($i > 0): ?>, <?php endif; ?><?= h($org['name']) ?><?php endforeach; ?><?php endif; ?></p>
+    <p class="help">Jelenlegi státusz: <?= h(events_post_status_label($status)) ?>. A mentés ezt hagyja meg. A szervezőket az admin kezeli.<?php if ($organizers !== []): ?> Szervezők: <?php foreach ($organizers as $i => $org): ?><?php if ($i > 0): ?>, <?php endif; ?><?= h($org['name']) ?><?php endforeach; ?><?php endif; ?></p>
     <?php require __DIR__ . '/partials/event_edit_actions.php'; ?>
 
     <div class="form-group">
         <label for="event_name">Esemény neve *</label>
         <input type="text" id="event_name" name="event_name" value="<?= h((string) ($e['event_name'] ?? '')) ?>" required maxlength="500">
+    </div>
+    <div class="form-group">
+        <label for="event_slug">Webcím (slug)</label>
+        <div class="partner-event-edit__url-row">
+            <input type="text" id="event_slug" name="event_slug" class="partner-event-edit__slug" value="<?= h((string) ($e['event_slug'] ?? '')) ?>" maxlength="255" readonly tabindex="-1" spellcheck="false" autocomplete="off">
+            <button type="button" class="btn btn-secondary partner-event-edit__slug-refresh" id="event-slug-refresh">Frissítés</button>
+        </div>
+        <p class="help">Nem írható át. A frissítés a névből és a kezdő dátumból készíti újra.</p>
     </div>
 
     <div class="partner-event-edit__datetime-head">
@@ -400,6 +415,30 @@ require_once __DIR__ . '/partials/header.php';
     if (allDay) {
         allDay.addEventListener('change', syncTimes);
         syncTimes();
+    }
+
+    var nameEl = document.getElementById('event_name');
+    var slugEl = document.getElementById('event_slug');
+    var dateEl = document.getElementById('event_start_date');
+    var slugBtn = document.getElementById('event-slug-refresh');
+    function slugifyName(text) {
+        var map = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ö': 'o', 'ő': 'o', 'ú': 'u', 'ü': 'u', 'ű': 'u' };
+        var s = (text || '').trim().toLowerCase().replace(/[áéíóöőúüű]/g, function (ch) { return map[ch] || ch; });
+        s = s.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        return s || 'esemeny';
+    }
+    function buildSlug() {
+        var base = slugifyName(nameEl ? nameEl.value : '');
+        var date = dateEl && /^\d{4}-\d{2}-\d{2}$/.test(dateEl.value.trim()) ? dateEl.value.trim() : '';
+        return date !== '' ? base + '-' + date : base;
+    }
+    if (slugBtn && slugEl) {
+        slugBtn.addEventListener('click', function () {
+            slugEl.value = buildSlug();
+            var prev = slugBtn.textContent;
+            slugBtn.textContent = 'Frissítve';
+            window.setTimeout(function () { slugBtn.textContent = prev; }, 1200);
+        });
     }
     var changeToggle = document.getElementById('event_change_active');
     var changeFields = document.getElementById('partner-event-change-fields');
