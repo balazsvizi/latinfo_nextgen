@@ -30,5 +30,5 @@ You are an expert, security-conscious PHP and MySQL developer. Always follow the
 
 # 5. Versioning
 - Bump `APP_VERSION` in `nextgen/core/version.php` with each feature/fix delivery (semver).
-- In the Hungarian suggested commit summary, always include the version, e.g. `v1.0.0 – …`.
+- A magyar javasolt commit üzenet önálló kódblokk legyen, benne csak az üzenet (egy kattintással kimásolható), és a verzióval kezdődjön, pl. `v1.0.0 – …`.
 - Show the version only via the subtle markup (`nextgen_footer_version_markup()`): admin header, public footers.

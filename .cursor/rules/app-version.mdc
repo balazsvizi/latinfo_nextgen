@@ -7,7 +7,7 @@ alwaysApply: true
 
 - A verzió forrása: `nextgen/core/version.php` (`APP_VERSION`, semver).
 - Feature / fix átadáskor **növeld** a verziót a változás méretéhez igazítva (patch / minor / major).
-- Minden agent összefoglalóban a **javasolt commit üzenet** tartalmazza a verziót, pl.:
+- Minden agent összefoglaló végén a javasolt commit egy önálló kódblokk. A blokkban csak az üzenet van, semmi más szöveg, hogy egy kattintással kimásolható legyen. Az üzenet a verzióval kezdődik:
 
 ```
 v1.0.1 – Rövid leírás a változásról.

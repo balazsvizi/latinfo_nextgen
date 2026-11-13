@@ -359,23 +359,6 @@ require __DIR__ . '/event_form_actions.php';
         </select>
     </div>
 </div>
-<div class="events-edit-panel events-edit-panel--tone-org">
-    <div class="events-edit-panel__title-row">
-        <h3 class="events-edit-panel__title">Szervező szerkesztheti</h3>
-        <label class="events-toggle events-toggle--inline" for="organizer_can_edit" aria-label="Szervező szerkesztheti">
-            <input
-                type="checkbox"
-                name="organizer_can_edit"
-                value="1"
-                id="organizer_can_edit"
-                class="events-toggle__input"
-                <?= !empty($e['organizer_can_edit']) ? 'checked' : '' ?>
-            >
-            <span class="events-toggle__ui" aria-hidden="true"></span>
-        </label>
-    </div>
-    <p class="help">Bekapcsolva a szervező a partnerportál listáin szerkesztheti ezt az eseményt.</p>
-</div>
 <div class="events-edit-panel events-edit-panel--tone-change" id="events-edit-change-panel">
     <div class="events-edit-panel__title-row events-edit-panel__title-row--change">
         <h3 class="events-edit-panel__title">Változás / elmaradás</h3>
@@ -517,6 +500,23 @@ require __DIR__ . '/wp_token_field.php';
             </div>
         </div>
     </div>
+</div>
+<div class="events-edit-panel events-edit-panel--tone-org">
+    <div class="events-edit-panel__title-row">
+        <h3 class="events-edit-panel__title">Szervező szerkesztheti</h3>
+        <label class="events-toggle events-toggle--inline" for="organizer_can_edit" aria-label="Szervező szerkesztheti">
+            <input
+                type="checkbox"
+                name="organizer_can_edit"
+                value="1"
+                id="organizer_can_edit"
+                class="events-toggle__input"
+                <?= !empty($e['organizer_can_edit']) ? 'checked' : '' ?>
+            >
+            <span class="events-toggle__ui" aria-hidden="true"></span>
+        </label>
+    </div>
+    <p class="help">Bekapcsolva a szervező a partnerportál listáin szerkesztheti ezt az eseményt.</p>
 </div>
 </aside>
 </div>
