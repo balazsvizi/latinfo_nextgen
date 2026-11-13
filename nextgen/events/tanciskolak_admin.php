@@ -140,6 +140,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <div class="events-list-actions">
                 <a href="<?= h(events_url('tanciskolak_admin.php')) ?>" class="btn btn-secondary">Szűrők és rendezés törlése</a>
                 <a href="<?= h(events_url('tanciskola_letrehoz.php')) ?>" class="btn btn-primary">Új tánciskola</a>
+                <a href="<?= h(events_url('tanciskola_osszevonas.php')) ?>" class="btn btn-secondary">Összevonás</a>
                 <a href="<?= h(events_url('tanarok_admin.php')) ?>" class="btn btn-secondary">Tánctanárok</a>
             </div>
         </div>

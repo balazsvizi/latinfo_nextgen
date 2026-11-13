@@ -189,6 +189,7 @@ function ng_nav_latinfo_event_scripts(): array
         'tanciskolak_admin.php',
         'tanciskola_letrehoz.php',
         'tanciskola_szerkeszt.php',
+        'tanciskola_osszevonas.php',
         'tanarok_admin.php',
         'tanar_letrehoz.php',
         'tanar_szerkeszt.php',

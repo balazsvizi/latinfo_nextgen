@@ -165,6 +165,38 @@ function dance_school_by_slug(PDO $db, string $slug): ?array
     return $row !== false ? $row : null;
 }
 
+function dance_school_slug_alias_target_id(PDO $db, string $slug): int
+{
+    $slug = trim($slug);
+    if ($slug === '' || !dance_schools_table_exists($db, 'dance_school_slug_aliases')) {
+        return 0;
+    }
+    try {
+        $st = $db->prepare('SELECT `school_id` FROM `dance_school_slug_aliases` WHERE `old_slug` = ? LIMIT 1');
+        $st->execute([$slug]);
+        $id = $st->fetchColumn();
+
+        return $id !== false ? (int) $id : 0;
+    } catch (Throwable $ex) {
+        error_log('dance_school_slug_alias_target_id: ' . $ex->getMessage());
+
+        return 0;
+    }
+}
+
+function dance_school_release_slug_alias(PDO $db, string $slug): void
+{
+    $slug = trim($slug);
+    if ($slug === '' || !dance_schools_table_exists($db, 'dance_school_slug_aliases')) {
+        return;
+    }
+    try {
+        $db->prepare('DELETE FROM `dance_school_slug_aliases` WHERE `old_slug` = ?')->execute([$slug]);
+    } catch (Throwable $ex) {
+        error_log('dance_school_release_slug_alias: ' . $ex->getMessage());
+    }
+}
+
 /**
  * Nyilvános / előnézet URL slug alapján.
  */
@@ -344,15 +376,17 @@ function dance_school_save(PDO $db, array $row, ?int $id = null): array
             }
             $params[] = $id;
             $db->prepare('UPDATE `dance_schools` SET ' . implode(', ', $sets) . ' WHERE `id` = ?')->execute($params);
-
-            return ['ok' => true, 'id' => $id];
+            $savedId = $id;
+        } else {
+            $cols = array_keys($fields);
+            $placeholders = implode(',', array_fill(0, count($cols), '?'));
+            $colSql = '`' . implode('`,`', $cols) . '`';
+            $db->prepare("INSERT INTO `dance_schools` ({$colSql}) VALUES ({$placeholders})")->execute(array_values($fields));
+            $savedId = (int) $db->lastInsertId();
         }
-        $cols = array_keys($fields);
-        $placeholders = implode(',', array_fill(0, count($cols), '?'));
-        $colSql = '`' . implode('`,`', $cols) . '`';
-        $db->prepare("INSERT INTO `dance_schools` ({$colSql}) VALUES ({$placeholders})")->execute(array_values($fields));
+        dance_school_release_slug_alias($db, (string) ($fields['slug'] ?? ''));
 
-        return ['ok' => true, 'id' => (int) $db->lastInsertId()];
+        return ['ok' => true, 'id' => $savedId];
     } catch (Throwable $ex) {
         error_log('dance_school_save: ' . $ex->getMessage());
 
@@ -383,6 +417,11 @@ function dance_school_delete(PDO $db, int $id): array
             // partner tábla opcionális
         }
         $db->prepare("DELETE FROM `dance_entity_views` WHERE `entity_type` = 'school' AND `entity_id` = ?")->execute([$id]);
+        try {
+            $db->prepare('DELETE FROM `dance_school_slug_aliases` WHERE `school_id` = ?')->execute([$id]);
+        } catch (Throwable) {
+            // alias tábla opcionális
+        }
         $db->prepare('DELETE FROM `dance_schools` WHERE `id` = ?')->execute([$id]);
         $db->commit();
 
@@ -394,6 +433,624 @@ function dance_school_delete(PDO $db, int $id): array
         error_log('dance_school_delete: ' . $ex->getMessage());
 
         return ['ok' => false, 'error' => 'Törlés sikertelen.'];
+    }
+}
+
+function dance_school_merge_is_blank(mixed $value): bool
+{
+    if ($value === null) {
+        return true;
+    }
+    if (is_int($value) || is_float($value)) {
+        return (int) $value === 0;
+    }
+
+    return trim((string) $value) === '';
+}
+
+function dance_school_merge_join_notes(mixed $keep, mixed $extra, ?int $maxLength = null): ?string
+{
+    $keepText = trim((string) $keep);
+    $extraText = trim((string) $extra);
+    if ($extraText === '' || $extraText === $keepText) {
+        $joined = $keepText;
+    } elseif ($keepText === '' || str_contains($keepText, $extraText)) {
+        $joined = $keepText !== '' ? $keepText : $extraText;
+    } else {
+        $joined = $keepText . "\n" . $extraText;
+    }
+    if ($joined === '') {
+        return null;
+    }
+    if ($maxLength !== null && $maxLength > 0 && mb_strlen($joined, 'UTF-8') > $maxLength) {
+        $joined = mb_substr($joined, 0, $maxLength, 'UTF-8');
+    }
+
+    return $joined;
+}
+
+function dance_school_merge_scalar(PDO $db, string $sql, array $params): int
+{
+    $st = $db->prepare($sql);
+    $st->execute($params);
+
+    return (int) $st->fetchColumn();
+}
+
+function dance_school_merge_offering_key(array $row): string
+{
+    $styleId = $row['style_id'] ?? null;
+    $styleKey = ($styleId === null || $styleId === '') ? '' : (string) (int) $styleId;
+
+    return implode("\x1f", [
+        $styleKey,
+        mb_strtolower(trim((string) ($row['style_label'] ?? '')), 'UTF-8'),
+        trim((string) ($row['age_group'] ?? '')),
+        trim((string) ($row['level'] ?? '')),
+        trim((string) ($row['class_type'] ?? '')),
+        mb_strtolower(trim((string) ($row['schedule_note'] ?? '')), 'UTF-8'),
+    ]);
+}
+
+/**
+ * @param array<string, mixed> $keep
+ * @param array<string, mixed> $absorb
+ * @return array{assignments: list<array{column: string, value: mixed}>, labels: list<string>}
+ */
+function dance_school_merge_profile_assignments(array $keep, array $absorb): array
+{
+    $textFields = [
+        'description' => 'Leírás',
+        'founded_year' => 'Alapítás éve',
+        'city' => 'Város',
+        'website_url' => 'Weboldal',
+        'facebook_url' => 'Facebook',
+        'instagram_url' => 'Instagram',
+        'tiktok_url' => 'TikTok',
+        'youtube_url' => 'YouTube',
+        'email' => 'E-mail',
+        'phone' => 'Telefon',
+        'photo_url' => 'Fotó',
+        'logo_url' => 'Logó',
+        'trial_lesson_info' => 'Próbaóra infó',
+        'pricing_info' => 'Árazás infó',
+        'schedule_url' => 'Órarend URL',
+        'registration_url' => 'Jelentkezés URL',
+        'languages' => 'Nyelvek',
+    ];
+    $flags = [
+        'accepts_beginners' => 'Kezdőket fogad',
+        'has_kids_classes' => 'Gyerekórák',
+        'has_performance_team' => 'Fellépő csoport',
+    ];
+    $assignments = [];
+    $labels = [];
+    foreach ($textFields as $column => $label) {
+        if (!dance_school_merge_is_blank($keep[$column] ?? null) || dance_school_merge_is_blank($absorb[$column] ?? null)) {
+            continue;
+        }
+        $assignments[] = ['column' => $column, 'value' => $absorb[$column]];
+        $labels[] = $label;
+        if ($column === 'email') {
+            $assignments[] = [
+                'column' => 'email_is_private',
+                'value' => !empty($absorb['email_is_private']) ? 1 : 0,
+            ];
+        }
+        if ($column === 'phone') {
+            $assignments[] = [
+                'column' => 'phone_is_private',
+                'value' => !empty($absorb['phone_is_private']) ? 1 : 0,
+            ];
+        }
+    }
+    foreach ($flags as $column => $label) {
+        if (empty($keep[$column]) && !empty($absorb[$column])) {
+            $assignments[] = ['column' => $column, 'value' => 1];
+            $labels[] = $label;
+        }
+    }
+
+    $keepNotes = trim((string) ($keep['admin_notes'] ?? ''));
+    $absorbName = trim((string) ($absorb['name'] ?? ''));
+    $stamp = '[Összevonva: ' . ($absorbName !== '' ? $absorbName : 'Névtelen iskola')
+        . ' (#' . (int) ($absorb['id'] ?? 0)
+        . ', slug: ' . trim((string) ($absorb['slug'] ?? '')) . ')]';
+    $absorbNotes = trim((string) ($absorb['admin_notes'] ?? ''));
+    $extra = $stamp . ($absorbNotes !== '' ? "\n" . $absorbNotes : '');
+    $assignments[] = [
+        'column' => 'admin_notes',
+        'value' => $keepNotes === '' ? $extra : $keepNotes . "\n\n" . $extra,
+    ];
+
+    return ['assignments' => $assignments, 'labels' => $labels];
+}
+
+/**
+ * @return list<array{id:int,name:string,city:string,slug:string,is_active:int}>
+ */
+function dance_schools_merge_choices(PDO $db): array
+{
+    if (!dance_schools_tables_ready($db)) {
+        return [];
+    }
+    $rows = $db->query(
+        'SELECT `id`, `name`, `city`, `slug`, `is_active` FROM `dance_schools` ORDER BY `name` ASC, `id` ASC'
+    )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    $out = [];
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $name = trim((string) ($row['name'] ?? ''));
+        $out[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'name' => $name !== '' ? $name : 'Névtelen iskola',
+            'city' => trim((string) ($row['city'] ?? '')),
+            'slug' => trim((string) ($row['slug'] ?? '')),
+            'is_active' => !empty($row['is_active']) ? 1 : 0,
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * @return array{venues:int,offerings:int,events:int,teachers:int,partners:int,views:int}
+ */
+function dance_school_merge_relation_counts(PDO $db, int $schoolId): array
+{
+    $counts = [
+        'venues' => dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_venues` WHERE `school_id` = ?',
+            [$schoolId]
+        ),
+        'offerings' => dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_offerings` o
+             INNER JOIN `dance_school_venues` v ON v.`id` = o.`school_venue_id`
+             WHERE v.`school_id` = ?',
+            [$schoolId]
+        ),
+        'events' => dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_events` WHERE `school_id` = ?',
+            [$schoolId]
+        ),
+        'teachers' => dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_teachers` WHERE `school_id` = ?',
+            [$schoolId]
+        ),
+        'partners' => 0,
+        'views' => dance_school_merge_scalar(
+            $db,
+            "SELECT COUNT(*) FROM `dance_entity_views` WHERE `entity_type` = 'school' AND `entity_id` = ?",
+            [$schoolId]
+        ),
+    ];
+    if (dance_schools_table_exists($db, 'nextgen_partner_dance_schools')) {
+        try {
+            $counts['partners'] = dance_school_merge_scalar(
+                $db,
+                'SELECT COUNT(*) FROM `nextgen_partner_dance_schools` WHERE `school_id` = ?',
+                [$schoolId]
+            );
+        } catch (Throwable) {
+            $counts['partners'] = 0;
+        }
+    }
+
+    return $counts;
+}
+
+/**
+ * @return array{venues:int,teachers:int,partners:int}
+ */
+function dance_school_merge_overlap(PDO $db, int $keepId, int $absorbId): array
+{
+    $overlap = [
+        'venues' => dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_venues` a
+             INNER JOIN `dance_school_venues` k ON k.`venue_id` = a.`venue_id` AND k.`school_id` = ?
+             WHERE a.`school_id` = ?',
+            [$keepId, $absorbId]
+        ),
+        'teachers' => dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_teachers` a
+             INNER JOIN `dance_school_teachers` k
+                ON k.`tag_id` = a.`tag_id` AND k.`role_type` = a.`role_type` AND k.`school_id` = ?
+             WHERE a.`school_id` = ?',
+            [$keepId, $absorbId]
+        ),
+        'partners' => 0,
+    ];
+    if (dance_schools_table_exists($db, 'nextgen_partner_dance_schools')) {
+        try {
+            $overlap['partners'] = dance_school_merge_scalar(
+                $db,
+                'SELECT COUNT(*) FROM `nextgen_partner_dance_schools` a
+                 INNER JOIN `nextgen_partner_dance_schools` k
+                    ON k.`partner_id` = a.`partner_id` AND k.`role_type` = a.`role_type` AND k.`school_id` = ?
+                 WHERE a.`school_id` = ?',
+                [$keepId, $absorbId]
+            );
+        } catch (Throwable) {
+            $overlap['partners'] = 0;
+        }
+    }
+
+    return $overlap;
+}
+
+/**
+ * @return array{ok:bool,error?:string,keep?:array<string,mixed>,absorb?:array<string,mixed>,counts?:array{venues:int,offerings:int,events:int,teachers:int,partners:int,views:int},overlap?:array{venues:int,teachers:int,partners:int},filled?:list<string>}
+ */
+function dance_school_merge_preview(PDO $db, int $keepId, int $absorbId): array
+{
+    if ($keepId <= 0 || $absorbId <= 0) {
+        return ['ok' => false, 'error' => 'Válassz két tánciskolát.'];
+    }
+    if ($keepId === $absorbId) {
+        return ['ok' => false, 'error' => 'A két tánciskola nem lehet ugyanaz.'];
+    }
+    $keep = dance_school_by_id($db, $keepId);
+    $absorb = dance_school_by_id($db, $absorbId);
+    if ($keep === null || $absorb === null) {
+        return ['ok' => false, 'error' => 'A kiválasztott tánciskola nem található.'];
+    }
+    $plan = dance_school_merge_profile_assignments($keep, $absorb);
+
+    return [
+        'ok' => true,
+        'keep' => $keep,
+        'absorb' => $absorb,
+        'counts' => dance_school_merge_relation_counts($db, $absorbId),
+        'overlap' => dance_school_merge_overlap($db, $keepId, $absorbId),
+        'filled' => $plan['labels'],
+    ];
+}
+
+/**
+ * A beolvasztandó iskola kapcsolatait a megmaradóhoz teszi, majd törli a beolvasztott rekordot.
+ *
+ * @return array{ok:bool,error?:string,keep_id?:int,keep_name?:string,absorb_name?:string,venues_moved?:int,venues_merged?:int,events?:int,teachers_moved?:int,teachers_merged?:int,partners_moved?:int,partners_merged?:int,views?:int}
+ */
+function dance_school_merge(PDO $db, int $keepId, int $absorbId): array
+{
+    if ($keepId <= 0 || $absorbId <= 0) {
+        return ['ok' => false, 'error' => 'Válassz két tánciskolát.'];
+    }
+    if ($keepId === $absorbId) {
+        return ['ok' => false, 'error' => 'A két tánciskola nem lehet ugyanaz.'];
+    }
+    if (!dance_schools_tables_ready($db)) {
+        return ['ok' => false, 'error' => 'A tánciskola táblák nem érhetők el.'];
+    }
+
+    $ownTransaction = !$db->inTransaction();
+    try {
+        if ($ownTransaction) {
+            $db->beginTransaction();
+        }
+        $lock = $db->prepare('SELECT * FROM `dance_schools` WHERE `id` IN (?, ?) ORDER BY `id` ASC FOR UPDATE');
+        $lock->execute([$keepId, $absorbId]);
+        $locked = [];
+        foreach ($lock->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            if (is_array($row)) {
+                $locked[(int) ($row['id'] ?? 0)] = $row;
+            }
+        }
+        $keep = $locked[$keepId] ?? null;
+        $absorb = $locked[$absorbId] ?? null;
+        if ($keep === null || $absorb === null) {
+            throw new RuntimeException('A kiválasztott tánciskola nem található.');
+        }
+
+        $plan = dance_school_merge_profile_assignments($keep, $absorb);
+        $allowed = [
+            'description' => true,
+            'founded_year' => true,
+            'city' => true,
+            'website_url' => true,
+            'facebook_url' => true,
+            'instagram_url' => true,
+            'tiktok_url' => true,
+            'youtube_url' => true,
+            'email' => true,
+            'email_is_private' => true,
+            'phone' => true,
+            'phone_is_private' => true,
+            'photo_url' => true,
+            'logo_url' => true,
+            'trial_lesson_info' => true,
+            'pricing_info' => true,
+            'schedule_url' => true,
+            'registration_url' => true,
+            'languages' => true,
+            'accepts_beginners' => true,
+            'has_kids_classes' => true,
+            'has_performance_team' => true,
+            'admin_notes' => true,
+        ];
+        $sets = [];
+        $params = [];
+        foreach ($plan['assignments'] as $item) {
+            $column = (string) ($item['column'] ?? '');
+            if (!isset($allowed[$column])) {
+                continue;
+            }
+            $sets[] = '`' . $column . '` = ?';
+            $params[] = $item['value'];
+        }
+        if ($sets !== []) {
+            $params[] = $keepId;
+            $db->prepare('UPDATE `dance_schools` SET ' . implode(', ', $sets) . ' WHERE `id` = ?')->execute($params);
+        }
+
+        $venuesMoved = 0;
+        $venuesMerged = 0;
+        $nextVenueSort = dance_school_merge_scalar(
+            $db,
+            'SELECT COALESCE(MAX(`sort_order`), -1) FROM `dance_school_venues` WHERE `school_id` = ?',
+            [$keepId]
+        );
+        $absorbVenues = $db->prepare('SELECT * FROM `dance_school_venues` WHERE `school_id` = ? ORDER BY `sort_order` ASC, `id` ASC');
+        $absorbVenues->execute([$absorbId]);
+        $findVenue = $db->prepare('SELECT * FROM `dance_school_venues` WHERE `school_id` = ? AND `venue_id` = ? LIMIT 1');
+        $updateVenueMeta = $db->prepare('UPDATE `dance_school_venues` SET `notes` = ?, `is_active` = ? WHERE `id` = ?');
+        $moveVenue = $db->prepare('UPDATE `dance_school_venues` SET `school_id` = ?, `sort_order` = ? WHERE `id` = ?');
+        $deleteVenue = $db->prepare('DELETE FROM `dance_school_venues` WHERE `id` = ?');
+        $listOfferings = $db->prepare('SELECT * FROM `dance_school_offerings` WHERE `school_venue_id` = ? ORDER BY `sort_order` ASC, `id` ASC');
+        $moveOffering = $db->prepare('UPDATE `dance_school_offerings` SET `school_venue_id` = ?, `sort_order` = ? WHERE `id` = ?');
+        $deleteOffering = $db->prepare('DELETE FROM `dance_school_offerings` WHERE `id` = ?');
+
+        foreach ($absorbVenues->fetchAll(PDO::FETCH_ASSOC) ?: [] as $absorbVenue) {
+            if (!is_array($absorbVenue)) {
+                continue;
+            }
+            $venueId = (int) ($absorbVenue['venue_id'] ?? 0);
+            $absorbLinkId = (int) ($absorbVenue['id'] ?? 0);
+            if ($absorbLinkId <= 0) {
+                continue;
+            }
+            if ($venueId <= 0) {
+                $listOfferings->execute([$absorbLinkId]);
+                foreach ($listOfferings->fetchAll(PDO::FETCH_ASSOC) ?: [] as $offering) {
+                    $offeringId = (int) ($offering['id'] ?? 0);
+                    if ($offeringId > 0) {
+                        $deleteOffering->execute([$offeringId]);
+                    }
+                }
+                $deleteVenue->execute([$absorbLinkId]);
+                continue;
+            }
+            $findVenue->execute([$keepId, $venueId]);
+            $keepVenue = $findVenue->fetch(PDO::FETCH_ASSOC);
+            if ($keepVenue === false) {
+                $nextVenueSort++;
+                $moveVenue->execute([$keepId, $nextVenueSort, $absorbLinkId]);
+                $venuesMoved++;
+                continue;
+            }
+            $keepLinkId = (int) ($keepVenue['id'] ?? 0);
+            $updateVenueMeta->execute([
+                dance_school_merge_join_notes($keepVenue['notes'] ?? null, $absorbVenue['notes'] ?? null),
+                (!empty($keepVenue['is_active']) || !empty($absorbVenue['is_active'])) ? 1 : 0,
+                $keepLinkId,
+            ]);
+            $listOfferings->execute([$keepLinkId]);
+            $seenOfferings = [];
+            $maxOfferingSort = -1;
+            foreach ($listOfferings->fetchAll(PDO::FETCH_ASSOC) ?: [] as $offering) {
+                if (!is_array($offering)) {
+                    continue;
+                }
+                $seenOfferings[dance_school_merge_offering_key($offering)] = true;
+                $maxOfferingSort = max($maxOfferingSort, (int) ($offering['sort_order'] ?? 0));
+            }
+            $listOfferings->execute([$absorbLinkId]);
+            foreach ($listOfferings->fetchAll(PDO::FETCH_ASSOC) ?: [] as $offering) {
+                if (!is_array($offering)) {
+                    continue;
+                }
+                $offeringId = (int) ($offering['id'] ?? 0);
+                if ($offeringId <= 0) {
+                    continue;
+                }
+                $key = dance_school_merge_offering_key($offering);
+                if (isset($seenOfferings[$key])) {
+                    $deleteOffering->execute([$offeringId]);
+                    continue;
+                }
+                $maxOfferingSort++;
+                $moveOffering->execute([$keepLinkId, $maxOfferingSort, $offeringId]);
+                $seenOfferings[$key] = true;
+            }
+            $deleteVenue->execute([$absorbLinkId]);
+            $venuesMerged++;
+        }
+
+        $eventsMoved = dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_events` WHERE `school_id` = ?',
+            [$absorbId]
+        );
+        $db->prepare('UPDATE `dance_school_events` SET `school_id` = ? WHERE `school_id` = ?')->execute([$keepId, $absorbId]);
+
+        $teachersMoved = 0;
+        $teachersMerged = 0;
+        $nextTeacherSort = dance_school_merge_scalar(
+            $db,
+            'SELECT COALESCE(MAX(`sort_order`), -1) FROM `dance_school_teachers` WHERE `school_id` = ?',
+            [$keepId]
+        );
+        $absorbTeachers = $db->prepare('SELECT * FROM `dance_school_teachers` WHERE `school_id` = ? ORDER BY `sort_order` ASC, `id` ASC');
+        $absorbTeachers->execute([$absorbId]);
+        $findTeacher = $db->prepare(
+            'SELECT `id`, `role_note` FROM `dance_school_teachers` WHERE `school_id` = ? AND `tag_id` = ? AND `role_type` = ? LIMIT 1'
+        );
+        $moveTeacher = $db->prepare('UPDATE `dance_school_teachers` SET `school_id` = ?, `sort_order` = ? WHERE `id` = ?');
+        $updateTeacherNote = $db->prepare('UPDATE `dance_school_teachers` SET `role_note` = ? WHERE `id` = ?');
+        $deleteTeacher = $db->prepare('DELETE FROM `dance_school_teachers` WHERE `id` = ?');
+        foreach ($absorbTeachers->fetchAll(PDO::FETCH_ASSOC) ?: [] as $teacher) {
+            if (!is_array($teacher)) {
+                continue;
+            }
+            $teacherId = (int) ($teacher['id'] ?? 0);
+            $tagId = (int) ($teacher['tag_id'] ?? 0);
+            if ($teacherId <= 0) {
+                continue;
+            }
+            if ($tagId <= 0) {
+                $deleteTeacher->execute([$teacherId]);
+                continue;
+            }
+            $role = trim((string) ($teacher['role_type'] ?? 'teacher'));
+            $findTeacher->execute([$keepId, $tagId, $role]);
+            $existingTeacher = $findTeacher->fetch(PDO::FETCH_ASSOC);
+            if ($existingTeacher === false) {
+                $nextTeacherSort++;
+                $moveTeacher->execute([$keepId, $nextTeacherSort, $teacherId]);
+                $teachersMoved++;
+                continue;
+            }
+            $joinedNote = dance_school_merge_join_notes($existingTeacher['role_note'] ?? null, $teacher['role_note'] ?? null, 500);
+            $currentNote = trim((string) ($existingTeacher['role_note'] ?? ''));
+            if (($joinedNote ?? '') !== $currentNote) {
+                $updateTeacherNote->execute([$joinedNote, (int) $existingTeacher['id']]);
+            }
+            $deleteTeacher->execute([$teacherId]);
+            $teachersMerged++;
+        }
+
+        $partnersMoved = 0;
+        $partnersMerged = 0;
+        if (dance_schools_table_exists($db, 'nextgen_partner_dance_schools')) {
+            $nextPartnerSort = dance_school_merge_scalar(
+                $db,
+                'SELECT COALESCE(MAX(`sort_order`), -1) FROM `nextgen_partner_dance_schools` WHERE `school_id` = ?',
+                [$keepId]
+            );
+            $absorbPartners = $db->prepare('SELECT * FROM `nextgen_partner_dance_schools` WHERE `school_id` = ? ORDER BY `sort_order` ASC, `id` ASC');
+            $absorbPartners->execute([$absorbId]);
+            $findPartner = $db->prepare(
+                'SELECT `id`, `role_note` FROM `nextgen_partner_dance_schools` WHERE `school_id` = ? AND `partner_id` = ? AND `role_type` = ? LIMIT 1'
+            );
+            $movePartner = $db->prepare('UPDATE `nextgen_partner_dance_schools` SET `school_id` = ?, `sort_order` = ? WHERE `id` = ?');
+            $updatePartnerNote = $db->prepare('UPDATE `nextgen_partner_dance_schools` SET `role_note` = ? WHERE `id` = ?');
+            $deletePartner = $db->prepare('DELETE FROM `nextgen_partner_dance_schools` WHERE `id` = ?');
+            foreach ($absorbPartners->fetchAll(PDO::FETCH_ASSOC) ?: [] as $partner) {
+                if (!is_array($partner)) {
+                    continue;
+                }
+                $partnerRowId = (int) ($partner['id'] ?? 0);
+                $partnerId = (int) ($partner['partner_id'] ?? 0);
+                if ($partnerRowId <= 0) {
+                    continue;
+                }
+                if ($partnerId <= 0) {
+                    $deletePartner->execute([$partnerRowId]);
+                    continue;
+                }
+                $role = trim((string) ($partner['role_type'] ?? 'school'));
+                $findPartner->execute([$keepId, $partnerId, $role]);
+                $existingPartner = $findPartner->fetch(PDO::FETCH_ASSOC);
+                if ($existingPartner === false) {
+                    $nextPartnerSort++;
+                    $movePartner->execute([$keepId, $nextPartnerSort, $partnerRowId]);
+                    $partnersMoved++;
+                    continue;
+                }
+                $joinedNote = dance_school_merge_join_notes($existingPartner['role_note'] ?? null, $partner['role_note'] ?? null, 500);
+                $currentNote = trim((string) ($existingPartner['role_note'] ?? ''));
+                if (($joinedNote ?? '') !== $currentNote) {
+                    $updatePartnerNote->execute([$joinedNote, (int) $existingPartner['id']]);
+                }
+                $deletePartner->execute([$partnerRowId]);
+                $partnersMerged++;
+            }
+        }
+
+        $viewsMoved = dance_school_merge_scalar(
+            $db,
+            "SELECT COUNT(*) FROM `dance_entity_views` WHERE `entity_type` = 'school' AND `entity_id` = ?",
+            [$absorbId]
+        );
+        $db->prepare(
+            "UPDATE `dance_entity_views` SET `entity_id` = ? WHERE `entity_type` = 'school' AND `entity_id` = ?"
+        )->execute([$keepId, $absorbId]);
+
+        $keepSlug = trim((string) ($keep['slug'] ?? ''));
+        $absorbSlug = trim((string) ($absorb['slug'] ?? ''));
+        if ($keepSlug !== '') {
+            $db->prepare('DELETE FROM `dance_school_slug_aliases` WHERE `old_slug` = ?')->execute([$keepSlug]);
+        }
+        $db->prepare('UPDATE `dance_school_slug_aliases` SET `school_id` = ? WHERE `school_id` = ?')->execute([$keepId, $absorbId]);
+        if ($absorbSlug !== '' && $absorbSlug !== $keepSlug) {
+            $db->prepare(
+                'INSERT INTO `dance_school_slug_aliases` (`old_slug`, `school_id`) VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE `school_id` = ?'
+            )->execute([$absorbSlug, $keepId, $keepId]);
+        }
+
+        $leftoverVenue = dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_venues` WHERE `school_id` = ?',
+            [$absorbId]
+        );
+        $leftoverEvent = dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_events` WHERE `school_id` = ?',
+            [$absorbId]
+        );
+        $leftoverTeacher = dance_school_merge_scalar(
+            $db,
+            'SELECT COUNT(*) FROM `dance_school_teachers` WHERE `school_id` = ?',
+            [$absorbId]
+        );
+        $leftoverPartner = 0;
+        if (dance_schools_table_exists($db, 'nextgen_partner_dance_schools')) {
+            $leftoverPartner = dance_school_merge_scalar(
+                $db,
+                'SELECT COUNT(*) FROM `nextgen_partner_dance_schools` WHERE `school_id` = ?',
+                [$absorbId]
+            );
+        }
+        if ($leftoverVenue > 0 || $leftoverEvent > 0 || $leftoverTeacher > 0 || $leftoverPartner > 0) {
+            throw new RuntimeException('A beolvasztandó iskola kapcsolatai nem kerültek át.');
+        }
+
+        $db->prepare('DELETE FROM `dance_schools` WHERE `id` = ?')->execute([$absorbId]);
+        if ($ownTransaction && $db->inTransaction()) {
+            $db->commit();
+        }
+
+        return [
+            'ok' => true,
+            'keep_id' => $keepId,
+            'keep_name' => trim((string) ($keep['name'] ?? '')),
+            'absorb_name' => trim((string) ($absorb['name'] ?? '')),
+            'venues_moved' => $venuesMoved,
+            'venues_merged' => $venuesMerged,
+            'events' => $eventsMoved,
+            'teachers_moved' => $teachersMoved,
+            'teachers_merged' => $teachersMerged,
+            'partners_moved' => $partnersMoved,
+            'partners_merged' => $partnersMerged,
+            'views' => $viewsMoved,
+        ];
+    } catch (Throwable $ex) {
+        if ($ownTransaction && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('dance_school_merge: ' . $ex->getMessage());
+        $safeMessage = $ex instanceof RuntimeException && !$ex instanceof PDOException;
+
+        return ['ok' => false, 'error' => $safeMessage ? $ex->getMessage() : 'Az összevonás sikertelen.'];
     }
 }
 

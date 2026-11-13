@@ -202,6 +202,7 @@ require_once dirname(__DIR__) . '/partials/header.php';
             <?php if ($previewUrl !== ''): ?>
                 <a href="<?= h($previewUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">Előnézet</a>
             <?php endif; ?>
+            <a href="<?= h(events_url('tanciskola_osszevonas.php?keep=') . $id) ?>" class="btn btn-secondary">Összevonás</a>
             <a href="<?= h(events_url('tanciskolak_admin.php')) ?>" class="btn btn-secondary">← Tánciskolák listája</a>
         </div>
     </div>

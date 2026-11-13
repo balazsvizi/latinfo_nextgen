@@ -22,6 +22,22 @@ $slug = trim((string) ($_GET['slug'] ?? ''));
 $db = getDb();
 dance_schools_ensure_schema($db);
 $school = $slug !== '' ? dance_school_by_slug($db, $slug) : null;
+if ($school === null && $slug !== '') {
+    $aliasSchoolId = dance_school_slug_alias_target_id($db, $slug);
+    $aliasSchool = $aliasSchoolId > 0 ? dance_school_by_id($db, $aliasSchoolId) : null;
+    $aliasSlug = trim((string) ($aliasSchool['slug'] ?? ''));
+    if ($aliasSchool !== null && $aliasSlug !== '' && $aliasSlug !== $slug) {
+        $targetUrl = dance_school_public_url($aliasSlug);
+        $langParams = events_public_lang_nav_params($lang);
+        if ($langParams !== []) {
+            $targetUrl .= (str_contains($targetUrl, '?') ? '&' : '?') . http_build_query($langParams);
+        }
+        if (!headers_sent()) {
+            header('Location: ' . events_absolute_url($targetUrl), true, 301);
+            exit;
+        }
+    }
+}
 
 $notFound = static function () use ($lang, $htmlLang, $cssUrl, $S): void {
     http_response_code(404);

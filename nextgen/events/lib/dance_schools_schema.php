@@ -223,6 +223,16 @@ function dance_schools_ensure_schema(PDO $db): bool
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
 
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `dance_school_slug_aliases` (
+                `old_slug` VARCHAR(255) NOT NULL,
+                `school_id` INT UNSIGNED NOT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`old_slug`),
+                KEY `idx_dssa_school` (`school_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
         dance_schools_migrate_legacy_locations($db);
 
         if (function_exists('nextgen_partners_table_ready') && nextgen_partners_table_ready($db)) {
