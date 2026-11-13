@@ -377,7 +377,7 @@ require_once __DIR__ . '/partials/header.php';
     <?php else: ?>
         <div class="log-list">
             <?php foreach ($ownLogs as $logRow): ?>
-                <div class="log-item">
+                <div class="log-item<?= events_log_is_partner_entry($logRow) ? ' log-item--partner' : '' ?>">
                     <p class="log-item__text">
                         <span class="log-item__headline"><?= events_log_actor_headline_html($logRow) ?></span>
                         <?php if (($logRow['saját_sorok'] ?? []) !== []): ?>

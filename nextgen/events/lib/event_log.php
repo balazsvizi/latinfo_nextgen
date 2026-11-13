@@ -282,6 +282,19 @@ function events_log_actor_headline_html(array $row): string
 }
 
 /**
+ * @param array<string, mixed> $row
+ */
+function events_log_is_partner_entry(array $row): bool
+{
+    $details = (string) ($row['részletek'] ?? '');
+    if (preg_match('/^Partner:\s*.+\(#\d+\)\s*$/mu', $details) === 1) {
+        return true;
+    }
+
+    return str_starts_with(trim((string) ($row['művelet'] ?? '')), 'Partner ');
+}
+
+/**
  * A partner/admin fejlécsorok nélkül, a tényleges naplószöveg.
  *
  * @return list<string>

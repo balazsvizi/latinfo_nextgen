@@ -8747,6 +8747,17 @@ table select:focus {
 .log-item__who {
     font-weight: 700;
 }
+.log-item.log-item--partner {
+    margin: 0.45rem 0;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid #e3eee6;
+    border-left: 3px solid #7f9e8b;
+    border-radius: 12px;
+    background: #f4f8f5;
+}
+.log-item.log-item--partner:last-child {
+    border-bottom: 1px solid #e3eee6;
+}
 
 /* ========== Dashboard ========== */
 .dash-cards {
