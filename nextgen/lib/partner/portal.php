@@ -228,6 +228,56 @@ function partner_portal_owned_event_id_map(PDO $db, int $partnerId): array
     }
 }
 
+/**
+ * A partner saját eseményein használt eventpics borítók (újabb elöl).
+ *
+ * @return list<string>
+ */
+function partner_portal_owned_eventpic_files(PDO $db, int $partnerId): array
+{
+    $scope = partner_portal_all_owned_ids($db, $partnerId);
+    $orgIds = $scope['organizer_ids'];
+    if ($orgIds === []) {
+        return [];
+    }
+    require_once dirname(__DIR__, 2) . '/events/lib/eventpics.php';
+
+    try {
+        $stmt = $db->prepare(
+            'SELECT DISTINCT e.`event_featured_image_url`
+             FROM `events_calendar_events` e
+             WHERE e.`id` IN (
+                 SELECT eo.`event_id` FROM `events_calendar_event_organizers` eo
+                 WHERE eo.`organizer_id` IN (' . partner_portal_in_placeholders($orgIds) . ')
+             )
+               AND e.`event_status` <> \'trash\'
+               AND e.`event_featured_image_url` IS NOT NULL
+               AND TRIM(e.`event_featured_image_url`) <> \'\'
+               AND e.`event_featured_image_url` LIKE ?'
+        );
+        $stmt->execute(array_merge($orgIds, ['%/nextgen/events/eventpics/%']));
+        $files = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $url) {
+            $filename = events_eventpics_extract_selected_from_featured((string) $url);
+            if ($filename === '' || isset($files[$filename])) {
+                continue;
+            }
+            $path = events_eventpics_dir_path() . '/' . $filename;
+            if (!is_file($path)) {
+                continue;
+            }
+            $files[$filename] = (int) @filemtime($path);
+        }
+        arsort($files);
+
+        return array_keys($files);
+    } catch (Throwable $ex) {
+        error_log('partner_portal_owned_eventpic_files: ' . $ex->getMessage());
+
+        return [];
+    }
+}
+
 function partner_portal_can_access_event(PDO $db, int $partnerId, int $eventId): bool
 {
     if ($partnerId <= 0 || $eventId <= 0) {

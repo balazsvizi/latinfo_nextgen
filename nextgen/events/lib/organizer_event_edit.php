@@ -47,9 +47,10 @@ function events_organizer_can_edit_from_row(array $event): bool
  *
  * @param array<string, mixed> $current
  * @param array<string, mixed> $post
+ * @param list<string>|null $allowedEventpicFiles saját események borítófájljai; null = nincs szűrés
  * @return array{ok: true, row: array<string, mixed>}|array{ok: false, error: string, row: array<string, mixed>}
  */
-function events_organizer_edit_apply(PDO $db, array $current, array $post): array
+function events_organizer_edit_apply(PDO $db, array $current, array $post, ?array $allowedEventpicFiles = null): array
 {
     $row = $current;
     $eventId = (int) ($current['id'] ?? 0);
@@ -78,12 +79,17 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
 
     $postedStatus = trim((string) ($post['event_status'] ?? ''));
     $currentStatus = (string) ($current['event_status'] ?? '');
-    $statusKept = $postedStatus === $currentStatus && $currentStatus !== '' && $currentStatus !== 'trash';
-    if (!$statusKept && !in_array($postedStatus, events_organizer_edit_statuses(), true)) {
+    if ($postedStatus === '') {
+        if ($currentStatus === '' || $currentStatus === 'trash') {
+            return ['ok' => false, 'error' => 'Érvénytelen státusz.', 'row' => $row];
+        }
+        $row['event_status'] = $currentStatus;
+    } elseif (!in_array($postedStatus, events_organizer_edit_statuses(), true)) {
         return ['ok' => false, 'error' => 'Érvénytelen státusz.', 'row' => $row];
+    } else {
+        $row['event_status'] = $postedStatus;
     }
-    $row['event_status'] = $postedStatus;
-    $status = $postedStatus;
+    $status = (string) $row['event_status'];
 
     $content = events_sanitize_html_fragment((string) ($post['event_content'] ?? ''));
     $row['event_content'] = $content;
@@ -183,9 +189,13 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
     if ($featUrlErr !== null) {
         return ['ok' => false, 'error' => $featUrlErr, 'row' => $row];
     }
-    [$featPickPath, $featPickErr] = events_eventpics_normalize_selected((string) ($post['event_featured_image_pick'] ?? ''));
+    $postedPickName = trim((string) ($post['event_featured_image_pick'] ?? ''));
+    [$featPickPath, $featPickErr] = events_eventpics_normalize_selected($postedPickName);
     if ($featPickErr !== null) {
         return ['ok' => false, 'error' => $featPickErr, 'row' => $row];
+    }
+    if ($allowedEventpicFiles !== null && $postedPickName !== '' && !in_array($postedPickName, $allowedEventpicFiles, true)) {
+        return ['ok' => false, 'error' => 'Ez a borítókép nem a saját eseményeidhez tartozik.', 'row' => $row];
     }
     $uploadFile = $_FILES['event_featured_image_upload'] ?? null;
     [$featUploadPath, $featUploadErr] = events_eventpics_handle_upload(is_array($uploadFile) ? $uploadFile : null);
@@ -295,7 +305,7 @@ function events_organizer_edit_apply(PDO $db, array $current, array $post): arra
  */
 function events_organizer_edit_statuses(): array
 {
-    return ['publish', 'preliminary', 'draft', 'pending', 'future', 'private'];
+    return ['publish', 'draft', 'preliminary'];
 }
 
 /**

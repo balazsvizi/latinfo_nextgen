@@ -18,12 +18,14 @@ if ($event === null || !partner_portal_event_organizer_can_edit($event)) {
     redirect(partner_url('events.php'));
 }
 
+$ownedEventpics = partner_portal_owned_eventpic_files($db, $partnerId);
+
 $hiba = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validate('partner_event_szerkeszt')) {
         $hiba = 'Lejárt vagy érvénytelen munkamenet. Töltsd újra az oldalt.';
     } else {
-        $result = events_organizer_edit_apply($db, $event, $_POST);
+        $result = events_organizer_edit_apply($db, $event, $_POST, $ownedEventpics);
         $event = $result['row'];
         if ($result['ok']) {
             $partner = partner_current($db);
@@ -64,14 +66,15 @@ $toTokens = static function (array $map): array {
 $categoryOptions = $toTokens(events_load_category_options($db));
 $tagOptions = $toTokens(events_load_tag_options($db));
 $styleOptions = $toTokens(events_load_style_options($db));
-$partnerStatuses = events_organizer_edit_statuses();
 $status = (string) ($e['event_status'] ?? '');
-if (!in_array($status, $partnerStatuses, true) && $status !== '' && $status !== 'trash') {
-    $partnerStatuses[] = $status;
-}
+$statusActions = [
+    'publish' => 'Közzétéve',
+    'draft' => 'Piszkozat',
+    'preliminary' => 'Előzetes',
+];
 $eventpicsPick = (string) ($e['event_featured_image_pick'] ?? '');
 $coverPreview = events_featured_image_form_preview_meta((string) ($e['event_featured_image_url'] ?? ''), $eventpicsPick);
-$eventpicFiles = events_eventpics_list_files();
+$eventpicFiles = $ownedEventpics;
 $openUrl = trim((string) ($e['event_url'] ?? ''));
 $openHref = '';
 if (preg_match('#^https?://#i', $openUrl) === 1 || (str_starts_with($openUrl, '/') && !str_starts_with($openUrl, '//'))) {
@@ -83,6 +86,37 @@ $venueStmt->execute();
 $venues = $venueStmt->fetchAll(PDO::FETCH_ASSOC);
 $selectedVenue = (int) ($event['venue_id'] ?? 0);
 $organizers = partner_portal_event_organizer_names($db, $eventId);
+
+$ownLogs = [];
+try {
+    $logStmt = $db->prepare('
+        SELECT `id`, `létrehozva`, `művelet`, `részletek`
+        FROM `nextgen_system_log`
+        WHERE `entitás` = ? AND `entitás_id` = ? AND `művelet` = ?
+        ORDER BY `id` DESC
+        LIMIT 50
+    ');
+    $logStmt->execute(['esemény', $eventId, 'Partner módosította']);
+    $partnerMarker = '(#' . $partnerId . ')';
+    foreach ($logStmt->fetchAll(PDO::FETCH_ASSOC) as $logRow) {
+        $details = (string) ($logRow['részletek'] ?? '');
+        if (!str_contains($details, $partnerMarker)) {
+            continue;
+        }
+        $lines = [];
+        foreach (preg_split("/\r\n|\n|\r/", $details) ?: [] as $line) {
+            $line = trim((string) $line);
+            if ($line === '' || $line === 'Partnerportál' || $line === 'Admin nézet' || str_starts_with($line, 'Partner:')) {
+                continue;
+            }
+            $lines[] = $line;
+        }
+        $logRow['saját_sorok'] = $lines;
+        $ownLogs[] = $logRow;
+    }
+} catch (Throwable $ex) {
+    error_log('partner event saját napló: ' . $ex->getMessage());
+}
 
 $pageTitle = 'Szerkesztés: ' . (string) ($e['event_name'] ?? '');
 $activeNav = 'events';
@@ -100,10 +134,9 @@ require_once __DIR__ . '/partials/header.php';
 <form method="post" enctype="multipart/form-data" class="card partner-event-edit" id="partner-event-edit-form">
     <?= csrf_input('partner_event_szerkeszt') ?>
     <h1 class="partner-page-title">Esemény szerkesztése</h1>
-    <p class="help">A webcímet (slug) és a szervezőket az admin kezeli.<?php if ($organizers !== []): ?> Szervezők: <?php foreach ($organizers as $i => $org): ?><?php if ($i > 0): ?>, <?php endif; ?><?= h($org['name']) ?><?php endforeach; ?><?php endif; ?></p>
+    <p class="help">Jelenlegi státusz: <?= h(events_post_status_label($status)) ?>. A mentés ezt hagyja meg. A webcímet (slug) és a szervezőket az admin kezeli.<?php if ($organizers !== []): ?> Szervezők: <?php foreach ($organizers as $i => $org): ?><?php if ($i > 0): ?>, <?php endif; ?><?= h($org['name']) ?><?php endforeach; ?><?php endif; ?></p>
+    <?php require __DIR__ . '/partials/event_edit_actions.php'; ?>
 
-    <div class="partner-event-edit__layout">
-    <div class="partner-event-edit__main">
     <div class="form-group">
         <label for="event_name">Esemény neve *</label>
         <input type="text" id="event_name" name="event_name" value="<?= h((string) ($e['event_name'] ?? '')) ?>" required maxlength="500">
@@ -183,17 +216,6 @@ require_once __DIR__ . '/partials/header.php';
     <div class="form-group">
         <label for="event_content">Leírás<?= events_is_preliminary_post_status($status) ? '' : ' *' ?></label>
         <textarea id="event_content" name="event_content" class="js-html-editor-source" rows="12"><?= h((string) ($e['event_content'] ?? '')) ?></textarea>
-    </div>
-    </div>
-
-    <aside class="partner-event-edit__side">
-    <div class="form-group">
-        <label for="event_status">Státusz</label>
-        <select id="event_status" name="event_status" required>
-            <?php foreach ($partnerStatuses as $statusValue): ?>
-                <option value="<?= h($statusValue) ?>"<?= $status === $statusValue ? ' selected' : '' ?>><?= h(events_post_status_label($statusValue)) ?></option>
-            <?php endforeach; ?>
-        </select>
     </div>
 
     <div class="partner-event-edit__datetime-head">
@@ -311,22 +333,41 @@ require_once __DIR__ . '/partials/header.php';
     <div class="form-group">
         <label for="event_featured_image_upload">Új kép feltöltése</label>
         <input type="file" id="event_featured_image_upload" name="event_featured_image_upload" accept="image/jpeg,image/png,image/webp,image/gif">
-        <p class="help">A feltöltés mentéskor kerül a galériába, és borító lesz, ha nincs kitöltött URL.</p>
-    </div>
-    </aside>
+        <p class="help">A feltöltés mentéskor kerül a galériába, és borító lesz, ha nincs kitöltött URL. A galériában csak a saját eseményeid képei vannak.</p>
     </div>
 
-    <p class="toolbar">
-        <button type="submit" class="btn btn-primary">Mentés</button>
-        <a href="<?= h(partner_url('event.php?id=') . $eventId) ?>" class="btn btn-secondary">Mégse</a>
-    </p>
+    <?php $eventEditActionsBottom = true; require __DIR__ . '/partials/event_edit_actions.php'; ?>
 </form>
+
+<section class="card partner-event-edit-log">
+    <h2 class="partner-event-edit__section">Saját módosítások</h2>
+    <?php if ($ownLogs === []): ?>
+        <p class="help">Még nincs saját módosítás ehhez az eseményhez.</p>
+    <?php else: ?>
+        <div class="log-list">
+            <?php foreach ($ownLogs as $logRow): ?>
+                <div class="log-item">
+                    <span class="log-date"><?= h((string) ($logRow['létrehozva'] ?? '')) ?></span>
+                    <p class="log-item__text">
+                        <strong><?= h((string) ($logRow['művelet'] ?? '')) ?></strong>
+                        <?php if (($logRow['saját_sorok'] ?? []) !== []): ?>
+                            <span class="log-item__details"><?= nl2br(h(implode("\n", $logRow['saját_sorok']))) ?></span>
+                        <?php endif; ?>
+                    </p>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</section>
 
 <dialog class="partner-cover-dialog" id="partner-cover-dialog">
     <div class="partner-cover-dialog__inner">
         <h2 class="partner-event-edit__section">Borítókép a galériából</h2>
         <input type="search" id="partner-cover-filter" placeholder="Szűrés fájlnév szerint…" autocomplete="off">
         <div class="partner-cover-dialog__grid">
+            <?php if ($eventpicFiles === []): ?>
+                <p class="help">Még nincs borítókép a saját eseményeiden.</p>
+            <?php endif; ?>
             <?php foreach ($eventpicFiles as $picFile): ?>
                 <button
                     type="button"

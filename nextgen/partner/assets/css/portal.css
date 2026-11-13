@@ -630,11 +630,47 @@
     max-width: none;
 }
 
-.partner-event-edit__layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.9fr);
-    gap: 1.25rem 1.75rem;
-    align-items: start;
+.partner-event-edit__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+    margin: 0 0 1.25rem;
+}
+
+.partner-event-edit__actions--bottom {
+    margin: 1.25rem 0 0;
+}
+
+.partner-event-edit__status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-left: auto;
+}
+
+.partner-event-edit__status-actions .is-current {
+    background: var(--pp-brand-2, #3d6b4f);
+    border-color: var(--pp-brand-2, #3d6b4f);
+    color: #fff;
+}
+
+.partner-event-edit-log {
+    margin-top: 1rem;
+}
+
+.partner-event-edit-log .log-item__text {
+    margin: 0.25rem 0 0;
+}
+
+.partner-event-edit-log .log-item__details {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--text-muted, #4b5563);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    font-weight: normal;
 }
 
 .partner-event-edit__datetime-head {
@@ -741,16 +777,8 @@
 .partner-event-edit__dates,
 .partner-event-edit__costs {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem 1rem;
-}
-
-@media (max-width: 900px) {
-    .partner-event-edit__layout,
-    .partner-event-edit__dates,
-    .partner-event-edit__costs {
-        grid-template-columns: 1fr;
-    }
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
 }
 
 .partner-event-detail__eyebrow {
