@@ -523,6 +523,63 @@ function partner_portal_event_organizer_can_edit(array $event): bool
 }
 
 /**
+ * Szerkeszthető események: először a közelgők kezdés szerint, utána a múltbeliek.
+ *
+ * @param list<array<string, mixed>> $events
+ * @return list<array<string, mixed>>
+ */
+function partner_portal_editable_events(array $events): array
+{
+    $editable = [];
+    foreach ($events as $event) {
+        if (partner_portal_event_organizer_can_edit($event)) {
+            $editable[] = $event;
+        }
+    }
+
+    $nowTs = events_admin_calendar_effective_today()->getTimestamp();
+    usort(
+        $editable,
+        static function (array $a, array $b) use ($nowTs): int {
+            $rank = static function (array $event) use ($nowTs): array {
+                $startRaw = trim((string) ($event['event_start'] ?? ''));
+                $startTs = null;
+                $isCurrent = false;
+                if ($startRaw !== '') {
+                    try {
+                        $startTs = (new DateTimeImmutable($startRaw))->getTimestamp();
+                        $endRaw = trim((string) ($event['event_end'] ?? $startRaw));
+                        $endTs = (new DateTimeImmutable($endRaw !== '' ? $endRaw : $startRaw))->getTimestamp();
+                        $isCurrent = $endTs >= $nowTs;
+                    } catch (Throwable) {
+                        $startTs = null;
+                    }
+                }
+
+                return [
+                    $isCurrent ? 0 : 1,
+                    $startTs ?? PHP_INT_MAX,
+                    (int) ($event['id'] ?? 0),
+                ];
+            };
+
+            return $rank($a) <=> $rank($b);
+        }
+    );
+
+    return $editable;
+}
+
+function partner_portal_edit_icon_html(string $url, string $label): string
+{
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+        . '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
+        . '</svg>';
+
+    return '<a class="partner-event-edit-icon" href="' . h($url) . '" title="' . h($label) . '" aria-label="' . h($label) . '">' . $svg . '</a>';
+}
+
+/**
  * Nyilvános esemény URL, ha közzétett és van slug.
  *
  * @param array<string, mixed> $event

@@ -22,6 +22,7 @@ $events = [];
 $stats = ['total' => 0, 'published' => 0, 'draft' => 0, 'upcoming' => 0, 'next' => null];
 $pageViews30 = ['human' => 0];
 $upcomingEvents = [];
+$editableEvents = [];
 $msgCount = 0;
 $msgPending = false;
 
@@ -53,6 +54,7 @@ if ($canStat) {
             break;
         }
     }
+    $editableEvents = array_slice(partner_portal_editable_events($events), 0, 5);
 }
 
 if ($canMessages) {
@@ -123,6 +125,7 @@ require_once __DIR__ . '/partials/header.php';
 <?php if ($canStat || $canMessages): ?>
 <div class="partner-split">
     <?php if ($canStat): ?>
+    <div class="partner-split__stack">
     <section class="card partner-panel">
         <div class="partner-panel__head">
             <h2 class="card-title">Közelgő események</h2>
@@ -138,11 +141,12 @@ require_once __DIR__ . '/partials/header.php';
                     $isPublic = partner_portal_event_public_url($ev) !== null;
                     $canEdit = partner_portal_event_organizer_can_edit($ev);
                     $editUrl = $canEdit ? partner_portal_event_edit_url((int) ($ev['id'] ?? 0)) : '';
+                    $eventName = (string) ($ev['event_name'] ?? '');
                     ?>
                     <li class="partner-event-row-wrap">
                         <a class="partner-event-row" href="<?= h($clickUrl) ?>"<?= $isPublic ? ' target="_blank" rel="noopener"' : '' ?>>
                             <span class="partner-event-row__date"><?= h(events_admin_format_datum_cell($ev)) ?></span>
-                            <span class="partner-event-row__name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
+                            <span class="partner-event-row__name"><?= h($eventName) ?></span>
                             <span class="partner-event-row__meta">
                                 <?= h(events_post_status_label((string) ($ev['event_status'] ?? ''))) ?>
                                 <?php if (trim((string) ($ev['venue_city'] ?? '')) !== ''): ?>
@@ -151,13 +155,46 @@ require_once __DIR__ . '/partials/header.php';
                             </span>
                         </a>
                         <?php if ($editUrl !== ''): ?>
-                            <a class="btn btn-secondary btn-sm partner-event-row-wrap__edit" href="<?= h($editUrl) ?>">Szerkesztés</a>
+                            <?= partner_portal_edit_icon_html($editUrl, 'Szerkesztés: ' . $eventName) ?>
                         <?php endif; ?>
                     </li>
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
     </section>
+
+    <section class="card partner-panel">
+        <div class="partner-panel__head">
+            <h2 class="card-title">Szerkeszthető események</h2>
+            <a href="<?= h(partner_url('szerkesztes.php')) ?>" class="partner-panel__link">Szerkesztés menü →</a>
+        </div>
+        <?php if ($editableEvents === []): ?>
+            <p class="help">Nincs szerkeszthető esemény a kiválasztott profilhoz.</p>
+        <?php else: ?>
+            <ul class="partner-event-list">
+                <?php foreach ($editableEvents as $ev): ?>
+                    <?php
+                    $editUrl = partner_portal_event_edit_url((int) ($ev['id'] ?? 0));
+                    $eventName = (string) ($ev['event_name'] ?? '');
+                    ?>
+                    <li class="partner-event-row-wrap">
+                        <a class="partner-event-row" href="<?= h($editUrl) ?>">
+                            <span class="partner-event-row__date"><?= h(events_admin_format_datum_cell($ev)) ?></span>
+                            <span class="partner-event-row__name"><?= h($eventName) ?></span>
+                            <span class="partner-event-row__meta">
+                                <?= h(events_post_status_label((string) ($ev['event_status'] ?? ''))) ?>
+                                <?php if (trim((string) ($ev['venue_city'] ?? '')) !== ''): ?>
+                                    · <?= h((string) $ev['venue_city']) ?>
+                                <?php endif; ?>
+                            </span>
+                        </a>
+                        <?= partner_portal_edit_icon_html($editUrl, 'Szerkesztés: ' . $eventName) ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </section>
+    </div>
     <?php endif; ?>
 
     <section class="card partner-panel">

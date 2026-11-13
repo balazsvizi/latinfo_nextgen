@@ -89,6 +89,7 @@ $orgOpts = array_values(array_filter($partnerContexts, static fn (array $c): boo
             <a href="<?= h(partner_url('index.php')) ?>" class="partner-header__link<?= $nav === 'home' ? ' is-active' : '' ?>">Kezdőlap</a>
             <?php if ($canStat): ?>
                 <a href="<?= h(partner_url('events.php')) ?>" class="partner-header__link<?= $nav === 'events' ? ' is-active' : '' ?>">Események</a>
+                <a href="<?= h(partner_url('szerkesztes.php')) ?>" class="partner-header__link<?= $nav === 'edit' ? ' is-active' : '' ?>">Szerkesztés</a>
                 <a href="<?= h(partner_url('calendar.php')) ?>" class="partner-header__link<?= $nav === 'calendar' ? ' is-active' : '' ?>">Naptár</a>
                 <a href="<?= h(partner_url('statistics.php')) ?>" class="partner-header__link<?= $nav === 'stats' ? ' is-active' : '' ?>">Statisztikák</a>
             <?php endif; ?>
