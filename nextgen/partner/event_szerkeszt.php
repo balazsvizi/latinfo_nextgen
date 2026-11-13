@@ -62,8 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 flash('success', 'Az esemény mentve.');
             }
-            $statusSwitched = isset($_POST['event_status']) && !isset($_POST['partner_save']);
-            redirect($statusSwitched ? partner_portal_event_edit_url($eventId) : partner_url('event.php?id=') . $eventId);
+            redirect(partner_portal_event_edit_url($eventId));
         }
         $hiba = $result['error'];
     }
