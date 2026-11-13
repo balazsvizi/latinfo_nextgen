@@ -2209,6 +2209,18 @@ tr:hover td { background: var(--bg); }
     margin: 0;
     min-width: 0;
 }
+.events-cal__event-edit {
+    display: inline-block;
+    margin-top: 0.12rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1d4e89;
+    text-decoration: none;
+}
+.events-cal__event-edit:hover {
+    text-decoration: underline;
+}
 .events-cal__event-link {
     display: block;
     width: 100%;

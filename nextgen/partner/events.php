@@ -133,11 +133,16 @@ $baseListUrl = partner_url('events.php');
                             trim((string) ($ev['venue_name'] ?? '')),
                             trim((string) ($ev['venue_city'] ?? '')),
                         ]);
+                        $canEdit = partner_portal_event_organizer_can_edit($ev);
+                        $editUrl = $canEdit ? partner_portal_event_edit_url((int) ($ev['id'] ?? 0)) : '';
                         ?>
                         <tr>
                             <td data-label="Dátum"><?= h(events_admin_format_datum_cell($ev)) ?></td>
                             <td data-label="Név">
                                 <a href="<?= h($clickUrl) ?>"<?= $isPublic ? ' target="_blank" rel="noopener"' : '' ?>><?= h((string) ($ev['event_name'] ?? '')) ?></a>
+                                <?php if ($editUrl !== ''): ?>
+                                    <a class="btn btn-secondary btn-sm partner-event-edit-link" href="<?= h($editUrl) ?>">Szerkesztés</a>
+                                <?php endif; ?>
                             </td>
                             <td data-label="Helyszín"><?= h($venueBits !== [] ? implode(', ', $venueBits) : '—') ?></td>
                             <td data-label="Státusz">

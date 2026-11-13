@@ -29,6 +29,8 @@ function events_build_log_details(
         $lines[] = 'Státusz: ' . events_post_status_label($status);
     }
 
+    $lines[] = 'Szervező szerkesztheti: ' . (!empty($row['organizer_can_edit']) ? 'igen' : 'nem');
+
     $when = events_admin_format_datum_cell($row);
     if ($when !== '–') {
         $lines[] = 'Időpont: ' . $when;

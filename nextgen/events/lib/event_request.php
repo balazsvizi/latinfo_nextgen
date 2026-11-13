@@ -418,6 +418,7 @@ function events_load_event_category_ids(PDO $db, int $eventId): array {
  */
 function events_row_from_request(PDO $db, array $defaults, ?int $excludeIdForSlug): array {
     $row = $defaults;
+    $row['organizer_can_edit'] = isset($_POST['organizer_can_edit']) ? 1 : 0;
     $row['event_name'] = trim((string) ($_POST['event_name'] ?? ''));
     $slugInput = trim((string) ($_POST['event_slug'] ?? ''));
     $row['event_slug'] = $slugInput !== '' ? events_slugify($slugInput) : '';
@@ -758,6 +759,7 @@ function events_row_for_form(array $row): array {
         $e['event_end_time'] = '';
     }
     $e['event_latinfohu_partner'] = !empty($e['event_latinfohu_partner']);
+    $e['organizer_can_edit'] = !empty($e['organizer_can_edit']);
     $e['event_change_active'] = !empty($e['event_change_active']);
     $changeType = isset($e['event_change_type']) ? trim((string) $e['event_change_type']) : '';
     $e['event_change_type'] = events_event_change_is_valid_type($changeType) ? $changeType : '';

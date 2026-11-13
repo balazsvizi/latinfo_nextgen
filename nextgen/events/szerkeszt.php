@@ -19,6 +19,8 @@ if ($id <= 0) {
 }
 
 $db = getDb();
+require_once __DIR__ . '/lib/organizer_event_edit.php';
+events_organizer_edit_ensure_schema($db);
 events_organizer_finance_ensure_schema($db);
 events_slug_redirects_ensure_schema($db);
 $stmt = $db->prepare('SELECT * FROM `events_calendar_events` WHERE id = ?');
@@ -102,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     event_change_active = ?, event_change_type = ?, event_change_note = ?,
                     event_cost_from = ?, event_cost_to = ?, finance_payer_organizer_id = ?, finance_note = ?, finance_organizer_fee = ?, finance_amount_paid = ?,
                     event_url = ?, event_featured_image_url = ?, event_latinfohu_partner = ?,
+                    organizer_can_edit = ?,
                     venue_id = ?
                 WHERE id = ?
             ');
@@ -126,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_url'],
                 $row['event_featured_image_url'],
                 $row['event_latinfohu_partner'],
+                !empty($row['organizer_can_edit']) ? 1 : 0,
                 $row['venue_id'],
                 $id,
             ]);

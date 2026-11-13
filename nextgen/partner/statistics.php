@@ -19,6 +19,14 @@ $statsPreferPartnerLinks = false;
 $statsEventDetailUrl = static function (array $row): ?string {
     return partner_portal_event_public_url($row);
 };
+$statsEventEditUrl = static function (array $row): string {
+    if (!partner_portal_event_organizer_can_edit($row)) {
+        return '';
+    }
+    $id = (int) ($row['id'] ?? 0);
+
+    return $id > 0 ? partner_portal_event_edit_url($id) : '';
+};
 
 if (
     $organizerIds !== []

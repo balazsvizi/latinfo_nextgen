@@ -26,6 +26,9 @@ require_once $nextgenRoot . '/events/lib/admin_event_filters.php';
 require_once $nextgenRoot . '/events/lib/organizers_admin.php';
 require_once $nextgenRoot . '/events/lib/event_public_tags.php';
 require_once $nextgenRoot . '/events/lib/admin_event_calendar.php';
+require_once $nextgenRoot . '/events/lib/organizer_event_edit.php';
+
+events_organizer_edit_ensure_schema(getDb());
 
 if (!function_exists('events_url')) {
     function events_url(string $path = ''): string

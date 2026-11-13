@@ -43,6 +43,9 @@ $venueBits = array_filter([
     <?php if ($publicUrl !== null): ?>
         <a href="<?= h($publicUrl) ?>" class="btn btn-secondary" target="_blank" rel="noopener">Nyilvános oldal ↗</a>
     <?php endif; ?>
+    <?php if (partner_portal_event_organizer_can_edit($event)): ?>
+        <a href="<?= h(partner_portal_event_edit_url($eventId)) ?>" class="btn btn-primary">Szerkesztés</a>
+    <?php endif; ?>
     <a href="<?= h(partner_url('calendar.php')) ?>" class="btn btn-secondary">Naptár</a>
 </p>
 

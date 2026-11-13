@@ -26,6 +26,8 @@ $calendarPublicPreview = $calendarPublicPreview ?? false;
 $calendarLang = $calendarLang ?? 'hu';
 /** @var (callable(array<string,mixed>): string)|null $calendarEventUrlBuilder */
 $calendarEventUrlBuilder = $calendarEventUrlBuilder ?? null;
+/** @var (callable(array<string,mixed>): string)|null $calendarEventEditUrlBuilder */
+$calendarEventEditUrlBuilder = $calendarEventEditUrlBuilder ?? null;
 /** @var array<int, true> $calendarOwnEventIds */
 $calendarOwnEventIds = $calendarOwnEventIds ?? [];
 $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
@@ -130,6 +132,15 @@ $gridAria = (string) ($D['calendar_grid_aria'] ?? $monthLabel);
                                             <?php endif; ?>
                                             <span class="<?= h($eventNameClass) ?>"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
                                         </a>
+                                        <?php
+                                        $calEditUrl = '';
+                                        if ($isOwnEvent && is_callable($calendarEventEditUrlBuilder)) {
+                                            $calEditUrl = trim((string) $calendarEventEditUrlBuilder($ev));
+                                        }
+                                        if ($calEditUrl !== ''):
+                                        ?>
+                                            <a class="events-cal__event-edit" href="<?= h($calEditUrl) ?>">Szerkesztés</a>
+                                        <?php endif; ?>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>

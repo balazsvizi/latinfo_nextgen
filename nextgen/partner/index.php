@@ -136,8 +136,10 @@ require_once __DIR__ . '/partials/header.php';
                     <?php
                     $clickUrl = partner_portal_event_click_url($ev);
                     $isPublic = partner_portal_event_public_url($ev) !== null;
+                    $canEdit = partner_portal_event_organizer_can_edit($ev);
+                    $editUrl = $canEdit ? partner_portal_event_edit_url((int) ($ev['id'] ?? 0)) : '';
                     ?>
-                    <li>
+                    <li class="partner-event-row-wrap">
                         <a class="partner-event-row" href="<?= h($clickUrl) ?>"<?= $isPublic ? ' target="_blank" rel="noopener"' : '' ?>>
                             <span class="partner-event-row__date"><?= h(events_admin_format_datum_cell($ev)) ?></span>
                             <span class="partner-event-row__name"><?= h((string) ($ev['event_name'] ?? '')) ?></span>
@@ -148,6 +150,9 @@ require_once __DIR__ . '/partials/header.php';
                                 <?php endif; ?>
                             </span>
                         </a>
+                        <?php if ($editUrl !== ''): ?>
+                            <a class="btn btn-secondary btn-sm partner-event-row-wrap__edit" href="<?= h($editUrl) ?>">Szerkesztés</a>
+                        <?php endif; ?>
                     </li>
                 <?php endforeach; ?>
             </ul>

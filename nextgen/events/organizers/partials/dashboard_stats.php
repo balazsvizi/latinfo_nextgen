@@ -12,6 +12,7 @@ $statsAllDateFrom = $statsAllDateFrom ?? null;
 $statsFilterExtraQuery = $statsFilterExtraQuery ?? [];
 $statsPreferPartnerLinks = !empty($statsPreferPartnerLinks);
 $statsShowEventRowActions = !empty($statsShowEventRowActions);
+$statsEventEditUrl = $statsEventEditUrl ?? null;
 $statsHideEventsList = !empty($statsHideEventsList);
 $statsFormExtraHtml = is_string($statsFormExtraHtml ?? null) ? (string) $statsFormExtraHtml : '';
 /** @var array{enabled?: bool, event_id?: int, ajax_url?: string, ymd_labels?: list<string>}|null $statsDayDrilldown */
@@ -1144,6 +1145,12 @@ $renderSplit = static function (
                                     <a href="<?= h($primaryUrl) ?>"<?= (!$statsPreferPartnerLinks && $publicUrl !== null) ? ' target="_blank" rel="noopener"' : '' ?>><?= h($eventName) ?></a>
                                 <?php else: ?>
                                     <?= h($eventName) ?>
+                                <?php endif; ?>
+                                <?php
+                                $organizerEditUrl = is_callable($statsEventEditUrl) ? trim((string) $statsEventEditUrl($row)) : '';
+                                if ($organizerEditUrl !== ''):
+                                ?>
+                                    <a class="events-org-event-edit" href="<?= h($organizerEditUrl) ?>">Szerkesztés</a>
                                 <?php endif; ?>
                             </td>
                             <td class="text-center"><?= $liveDays ?></td>

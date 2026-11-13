@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS `events_calendar_events` (
     `event_url` VARCHAR(2000) NULL,
     `event_featured_image_url` VARCHAR(2000) NULL DEFAULT NULL,
     `event_latinfohu_partner` TINYINT(1) NOT NULL DEFAULT 0,
+    `organizer_can_edit` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = a szervező a partnerportálon szerkesztheti',
     `venue_id` INT UNSIGNED NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_event_slug` (`event_slug`),

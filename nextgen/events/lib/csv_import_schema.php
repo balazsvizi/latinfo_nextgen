@@ -31,6 +31,7 @@ function events_csv_import_schema(): array {
                 'event_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true],
                 'event_featured_image_url' => ['type' => 'string', 'max' => 2000, 'nullable' => true, 'note' => 'Kiemelt kép (https vagy /útvonal)'],
                 'event_latinfohu_partner' => ['type' => 'bool', 'nullable' => false],
+                'organizer_can_edit' => ['type' => 'bool', 'nullable' => false, 'note' => '1 = a szervező szerkesztheti a partnerportálon'],
                 'venue_id' => ['type' => 'uint', 'nullable' => true],
                 // Virtuális: nem oszlop a táblában; az importmotor az events_calendar_event_categories táblát szinkronizálja.
                 'category_ids' => ['type' => 'string', 'max' => 2000, 'nullable' => true, 'virtual' => true, 'note' => 'Opcionális: vessző, pontosvessző vagy | elválasztott kategória ID-k (events_categories.id). Üres + mapolt oszlop: minden kapcsolat törlődik. Nem mapolt: változatlan marad a kapcsoló.'],

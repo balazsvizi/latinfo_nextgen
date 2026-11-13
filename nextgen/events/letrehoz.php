@@ -9,6 +9,8 @@ require_once __DIR__ . '/lib/organizer_finance.php';
 requireLogin();
 
 $db = getDb();
+require_once __DIR__ . '/lib/organizer_event_edit.php';
+events_organizer_edit_ensure_schema($db);
 events_organizer_finance_ensure_schema($db);
 events_slug_redirects_ensure_schema($db);
 $organizers = events_load_organizer_options($db);
@@ -31,6 +33,7 @@ $defaults = [
     'event_url' => null,
     'event_featured_image_url' => null,
     'event_latinfohu_partner' => 0,
+    'organizer_can_edit' => 0,
     'organizer_ids' => [],
     'category_ids' => [],
     'tag_ids' => [],
@@ -109,9 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     event_start, event_end, event_allday,
                     event_change_active, event_change_type, event_change_note,
                     event_cost_from, event_cost_to, finance_payer_organizer_id, finance_note, finance_organizer_fee, finance_amount_paid,
-                    event_url, event_featured_image_url, event_latinfohu_partner,
+                    event_url, event_featured_image_url, event_latinfohu_partner, organizer_can_edit,
                     venue_id
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ');
             $stmt->execute([
                 $row['event_name'],
@@ -134,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $row['event_url'],
                 $row['event_featured_image_url'],
                 $row['event_latinfohu_partner'],
+                !empty($row['organizer_can_edit']) ? 1 : 0,
                 $row['venue_id'],
             ]);
             $newId = (int) $db->lastInsertId();

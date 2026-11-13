@@ -5,6 +5,7 @@ require_once __DIR__ . '/csv_import_schema.php';
 require_once __DIR__ . '/slug.php';
 require_once __DIR__ . '/venue_request.php';
 require_once __DIR__ . '/event_request.php';
+require_once __DIR__ . '/organizer_event_edit.php';
 require_once __DIR__ . '/style_request.php';
 require_once __DIR__ . '/tag_type.php';
 require_once __DIR__ . '/import_presets.php';
@@ -431,6 +432,9 @@ function events_csv_build_row_values(
             }
             if (!array_key_exists('event_latinfohu_partner', $values)) {
                 $values['event_latinfohu_partner'] = 0;
+            }
+            if (events_organizer_edit_ensure_schema($db) && !array_key_exists('organizer_can_edit', $values)) {
+                $values['organizer_can_edit'] = 0;
             }
         }
     }

@@ -50,6 +50,14 @@ $prevMonthKey = events_admin_calendar_step_month_key($monthKey, $monthsWithEvent
 $nextMonthKey = events_admin_calendar_step_month_key($monthKey, $monthsWithEvents, 1);
 
 $calendarOwnEventIds = $ownMap;
+$calendarEventEditUrlBuilder = static function (array $ev): string {
+    if (!partner_portal_event_organizer_can_edit($ev)) {
+        return '';
+    }
+    $id = (int) ($ev['id'] ?? 0);
+
+    return $id > 0 ? partner_portal_event_edit_url($id) : '';
+};
 $calendarEventUrlBuilder = static function (array $ev) use ($ownMap): string {
     $id = (int) ($ev['id'] ?? 0);
     $public = partner_portal_event_public_url($ev);

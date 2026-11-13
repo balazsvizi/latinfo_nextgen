@@ -458,6 +458,20 @@ function partner_portal_event_detail_url(int $eventId): string
     return partner_url('event.php?id=' . $eventId);
 }
 
+function partner_portal_event_edit_url(int $eventId): string
+{
+    return partner_url('event_szerkeszt.php?id=' . $eventId);
+}
+
+/**
+ * @param array<string, mixed> $event
+ */
+function partner_portal_event_organizer_can_edit(array $event): bool
+{
+    return (int) ($event['organizer_can_edit'] ?? 0) === 1
+        && (string) ($event['event_status'] ?? '') !== 'trash';
+}
+
 /**
  * Nyilvános esemény URL, ha közzétett és van slug.
  *
