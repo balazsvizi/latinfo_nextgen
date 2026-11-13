@@ -379,10 +379,7 @@ require_once __DIR__ . '/partials/header.php';
             <?php foreach ($ownLogs as $logRow): ?>
                 <div class="log-item">
                     <p class="log-item__text">
-                        <strong class="log-item__headline"><?= h(events_log_actor_headline($logRow)) ?></strong>
-                        <?php if (trim((string) ($logRow['művelet'] ?? '')) !== ''): ?>
-                            <span class="log-item__action"><?= h((string) $logRow['művelet']) ?></span>
-                        <?php endif; ?>
+                        <span class="log-item__headline"><?= events_log_actor_headline_html($logRow) ?></span>
                         <?php if (($logRow['saját_sorok'] ?? []) !== []): ?>
                             <span class="log-item__details"><?= nl2br(h(implode("\n", $logRow['saját_sorok']))) ?></span>
                         <?php endif; ?>

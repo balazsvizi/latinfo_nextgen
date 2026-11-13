@@ -8741,13 +8741,11 @@ table select:focus {
 }
 .log-item__headline {
     display: block;
-    font-weight: 700;
+    font-weight: 400;
     color: var(--text, inherit);
 }
-.log-item__action {
-    display: block;
-    margin-top: 0.2rem;
-    font-weight: 600;
+.log-item__who {
+    font-weight: 700;
 }
 
 /* ========== Dashboard ========== */

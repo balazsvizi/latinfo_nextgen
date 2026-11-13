@@ -255,29 +255,30 @@ function events_log_id_list(mixed $ids): array
 }
 
 /**
- * Napló első sora: dátum | partner vagy admin neve.
+ * Napló első sora: a dátum és a | nem félkövér, a „Partner: név” vagy „Admin: név” igen.
  *
  * @param array<string, mixed> $row
  */
-function events_log_actor_headline(array $row): string
+function events_log_actor_headline_html(array $row): string
 {
     $date = trim((string) ($row['létrehozva'] ?? ''));
     $name = '';
+    $role = '';
     $details = (string) ($row['részletek'] ?? '');
     if (preg_match('/^Partner:\s*(.+?)\s*\(#\d+\)\s*$/mu', $details, $match) === 1) {
         $name = trim((string) ($match[1] ?? ''));
+        $role = 'Partner';
     }
     if ($name === '') {
         $name = trim((string) ($row['admin_név'] ?? ''));
+        $role = $name !== '' ? 'Admin' : '';
     }
-    if ($date === '') {
-        return $name;
-    }
-    if ($name === '') {
-        return $date;
+    $html = '<span class="log-item__when">' . h($date) . '</span>';
+    if ($role !== '' && $name !== '') {
+        $html .= ' <span class="log-item__sep">|</span> <strong class="log-item__who">' . h($role . ': ' . $name) . '</strong>';
     }
 
-    return $date . ' | ' . $name;
+    return $html;
 }
 
 /**

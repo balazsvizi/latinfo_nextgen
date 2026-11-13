@@ -9,10 +9,7 @@ declare(strict_types=1);
         <div class="log-item">
             <?php $logDetailLines = events_log_visible_detail_lines((string) ($l['részletek'] ?? '')); ?>
             <p class="log-item__text">
-                <strong class="log-item__headline"><?= h(events_log_actor_headline($l)) ?></strong>
-                <?php if (trim((string) ($l['művelet'] ?? '')) !== ''): ?>
-                    <span class="log-item__action"><?= h((string) $l['művelet']) ?></span>
-                <?php endif; ?>
+                <span class="log-item__headline"><?= events_log_actor_headline_html($l) ?></span>
                 <?php if ($logDetailLines !== []): ?>
                     <span class="log-item__details"><?= nl2br(h(implode("\n", $logDetailLines))) ?></span>
                 <?php endif; ?>
