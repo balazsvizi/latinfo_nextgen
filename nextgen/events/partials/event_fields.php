@@ -116,7 +116,7 @@ $eventNameSnippetsEditUrl = events_url('esemenynev_gyorsszovegek.php');
                     data-snippet="<?= h((string) $eventNameSnippet['label']) ?>"
                 ><?= h((string) $eventNameSnippet['label']) ?></button>
             <?php endforeach; ?>
-            <a class="events-name-snippets__edit" href="<?= h($eventNameSnippetsEditUrl) ?>">Szerkesztés</a>
+            <a class="events-name-snippets__edit" href="<?= h($eventNameSnippetsEditUrl) ?>" title="Gyorsszövegek szerkesztése">Szerk</a>
         </div>
     </div>
     <div class="events-edit-title-row">

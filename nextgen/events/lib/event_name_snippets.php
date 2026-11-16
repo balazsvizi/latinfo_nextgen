@@ -121,9 +121,71 @@ function events_name_snippet_normalize_label(string $label): string
 }
 
 /**
+ * A megadott azonosítók sorrendje lesz a megjelenési sorrend.
+ *
+ * @param list<int> $ids
+ */
+function events_name_snippets_reorder(PDO $db, array $ids): bool
+{
+    $ordered = [];
+    foreach ($ids as $id) {
+        $id = (int) $id;
+        if ($id <= 0 || isset($ordered[$id])) {
+            continue;
+        }
+        $ordered[$id] = $id;
+    }
+    $ordered = array_values($ordered);
+    if ($ordered === []) {
+        return false;
+    }
+
+    $existing = [];
+    foreach (events_name_snippets_list($db) as $row) {
+        $existing[] = (int) $row['id'];
+    }
+    $expected = $existing;
+    $posted = $ordered;
+    sort($expected);
+    sort($posted);
+    if ($expected === [] || $expected !== $posted) {
+        return false;
+    }
+
+    $ownsTransaction = !$db->inTransaction();
+    try {
+        if ($ownsTransaction) {
+            $db->beginTransaction();
+        }
+        $upd = $db->prepare('UPDATE `events_name_snippets` SET `sort_order` = ? WHERE `id` = ?');
+        $count = count($ordered);
+        $step = $count > 999 ? 1 : 10;
+        foreach ($ordered as $index => $id) {
+            $sort = ($index + 1) * $step;
+            if ($sort > 9999) {
+                $sort = 9999;
+            }
+            $upd->execute([$sort, $id]);
+        }
+        if ($ownsTransaction) {
+            $db->commit();
+        }
+    } catch (Throwable $e) {
+        if ($ownsTransaction && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('events_name_snippets_reorder: ' . $e->getMessage());
+
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * @return array{ok: bool, error: ?string, id: int, label: string}
  */
-function events_name_snippet_save(PDO $db, int $id, string $label, int $sortOrder): array
+function events_name_snippet_save(PDO $db, int $id, string $label, ?int $sortOrder = null): array
 {
     $label = events_name_snippet_normalize_label($label);
     $fail = static function (string $error) use ($id, $label): array {
@@ -137,6 +199,16 @@ function events_name_snippet_save(PDO $db, int $id, string $label, int $sortOrde
         return $fail('A gyorsszöveg legfeljebb ' . EVENTS_NAME_SNIPPET_LABEL_MAX . ' karakter lehet.');
     }
 
+    if ($sortOrder === null) {
+        if ($id > 0) {
+            $current = $db->prepare('SELECT `sort_order` FROM `events_name_snippets` WHERE `id` = ? LIMIT 1');
+            $current->execute([$id]);
+            $currentSort = $current->fetchColumn();
+            $sortOrder = $currentSort === false ? 0 : (int) $currentSort;
+        } else {
+            $sortOrder = events_name_snippets_next_sort($db);
+        }
+    }
     $sortOrder = max(0, min(9999, $sortOrder));
 
     $dup = $db->prepare('SELECT `id` FROM `events_name_snippets` WHERE `label` = ? AND `id` <> ? LIMIT 1');
