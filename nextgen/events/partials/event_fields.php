@@ -94,11 +94,31 @@ $organizerFinanceJson = json_encode($organizerFinanceForJs, JSON_UNESCAPED_UNICO
 if ($organizerFinanceJson === false) {
     $organizerFinanceJson = '{}';
 }
+if (!function_exists('events_name_snippets_list')) {
+    require_once __DIR__ . '/../lib/event_name_snippets.php';
+}
+$eventNameSnippets = [];
+if ($db instanceof PDO && events_name_snippets_ensure_schema($db)) {
+    $eventNameSnippets = events_name_snippets_list($db);
+}
+$eventNameSnippetsEditUrl = events_url('esemenynev_gyorsszovegek.php');
 ?>
 <div class="events-edit-layout">
 <div class="events-edit-main">
 <div class="events-edit-panel events-edit-panel--tone-title">
-    <h3 class="events-edit-panel__title">Esemény neve</h3>
+    <div class="events-edit-panel__title-row events-edit-panel__title-row--name">
+        <h3 class="events-edit-panel__title">Esemény neve</h3>
+        <div class="events-name-snippets" id="events-name-snippets" role="group" aria-label="Gyorsszövegek">
+            <?php foreach ($eventNameSnippets as $eventNameSnippet): ?>
+                <button
+                    type="button"
+                    class="events-name-snippet"
+                    data-snippet="<?= h((string) $eventNameSnippet['label']) ?>"
+                ><?= h((string) $eventNameSnippet['label']) ?></button>
+            <?php endforeach; ?>
+            <a class="events-name-snippets__edit" href="<?= h($eventNameSnippetsEditUrl) ?>">Szerkesztés</a>
+        </div>
+    </div>
     <div class="events-edit-title-row">
         <label class="visually-hidden" for="event_name">Esemény neve *</label>
         <input type="text" id="event_name" name="event_name" class="events-edit-name-input" value="<?= h($e['event_name']) ?>" required maxlength="500" placeholder="Esemény címe…">
@@ -976,6 +996,7 @@ require __DIR__ . '/wp_token_field.php';
 </script>
 <?php require __DIR__ . '/wp_token_input_script.php'; ?>
 <?php require __DIR__ . '/event_slug_script.php'; ?>
+<?php require __DIR__ . '/event_name_snippets_script.php'; ?>
 <?php require __DIR__ . '/event_allday_script.php'; ?>
 <?php require __DIR__ . '/event_change_script.php'; ?>
 <?php require __DIR__ . '/event_date_copy_script.php'; ?>

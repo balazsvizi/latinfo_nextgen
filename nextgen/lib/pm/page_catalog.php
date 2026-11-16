@@ -78,6 +78,10 @@ function pm_tools_page_catalog(): array
             'display_name' => 'Új esemény',
             'purpose' => 'Új esemény létrehozása.',
         ],
+        '/nextgen/events/esemenynev_gyorsszovegek.php' => [
+            'display_name' => 'Eseménynév gyorsszövegek',
+            'purpose' => 'Az eseménynév mező fölé kattintható gyorsszövegek szerkesztése.',
+        ],
         '/nextgen/events/venues.php' => [
             'display_name' => 'Helyszínek',
             'purpose' => 'Esemény helyszínek kezelése.',

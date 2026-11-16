@@ -109,6 +109,7 @@ if ($navZone === 'events') {
                         <button type="button" class="nav-parent-arrow" aria-expanded="false" aria-haspopup="true" data-submenu="events-egyeb" aria-label="Egyéb almenü">▾</button>
                     </span>
                     <ul class="nav-submenu" id="submenu-events-egyeb" role="menu">
+                        <li role="none"><a href="<?= h(nextgen_url('events/esemenynev_gyorsszovegek.php')) ?>" role="menuitem">Eseménynév szövegek</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/styles.php')) ?>" role="menuitem">Stílusok</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/categories.php')) ?>" role="menuitem">Kategóriák</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/tags.php')) ?>" role="menuitem">Címkék</a></li>
