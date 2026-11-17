@@ -550,10 +550,9 @@ function finance_payment_test_barion_start(string $requestId, int $amount, array
     }
     if ($buyer['zip'] !== '' && $buyer['city'] !== '' && $buyer['address'] !== '') {
         $city = mb_substr($buyer['city'], 0, 100);
-        $region = mb_strlen($city) >= 2 ? $city : 'HU';
         $payload['BillingAddress'] = [
             'Country' => 'HU',
-            'Region' => $region,
+            'Region' => 'HU',
             'City' => $city,
             'Zip' => $buyer['zip'],
             'Street' => mb_substr($buyer['address'], 0, 100),
