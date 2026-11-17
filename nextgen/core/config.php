@@ -259,6 +259,33 @@ if (!defined('CARTO_BASEMAPS_API_KEY')) {
     define('CARTO_BASEMAPS_API_KEY', (string) cfg_get('CARTO_BASEMAPS_API_KEY', '', $localConfig));
 }
 
+/**
+ * Barion sandbox (secure.test.barion.com). A Finance tesztoldal csak az api.test.barion.com címet hívja.
+ */
+if (!defined('BARION_POS_KEY')) {
+    define('BARION_POS_KEY', (string) cfg_get('BARION_POS_KEY', '', $localConfig));
+}
+if (!defined('BARION_PAYEE_EMAIL')) {
+    define('BARION_PAYEE_EMAIL', (string) cfg_get('BARION_PAYEE_EMAIL', '', $localConfig));
+}
+
+/**
+ * Szamlazz.hu Agent. A tesztoldal alapból előnézeti PDF-et kér; valódi bizonylat csak külön jelöléssel készül.
+ * Az áfakód AAM (alanyi adómentes) vagy 27.
+ */
+if (!defined('SZAMLAZZ_AGENT_KEY')) {
+    define('SZAMLAZZ_AGENT_KEY', (string) cfg_get('SZAMLAZZ_AGENT_KEY', '', $localConfig));
+}
+if (!defined('SZAMLAZZ_VAT_CODE')) {
+    define('SZAMLAZZ_VAT_CODE', (string) cfg_get('SZAMLAZZ_VAT_CODE', 'AAM', $localConfig));
+}
+if (!defined('SZAMLAZZ_SELLER_BANK')) {
+    define('SZAMLAZZ_SELLER_BANK', (string) cfg_get('SZAMLAZZ_SELLER_BANK', '', $localConfig));
+}
+if (!defined('SZAMLAZZ_SELLER_ACCOUNT')) {
+    define('SZAMLAZZ_SELLER_ACCOUNT', (string) cfg_get('SZAMLAZZ_SELLER_ACCOUNT', '', $localConfig));
+}
+
 // Session
 define('SESSION_LIFETIME', (int) cfg_get('SESSION_LIFETIME', 3600 * 8, $localConfig)); // 8 óra
 

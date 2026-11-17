@@ -65,6 +65,7 @@ if ($navZone === 'events') {
                         <li class="nav-submenu-heading" role="presentation"><span>Pénzügy</span></li>
                         <li role="none"><a href="<?= h(nextgen_url('finance/szamlazando/')) ?>" role="menuitem">Számlázandó</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('finance/szamlak/')) ?>" role="menuitem">Számlák</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('finance/fizetes_teszt/')) ?>" role="menuitem">Online fizetés teszt</a></li>
                     </ul>
                 </li>
                 <?php elseif ($navZone === 'events'): ?>

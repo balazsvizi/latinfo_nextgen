@@ -89,4 +89,15 @@ return [
     // 'CRON_TOKEN' => 'állíts-be-erős-véletlen-token-min-32-karakter',
     // 'CRON_ENABLED' => true,
     // 'CRON_LOG_PATH' => '', // alap: nextgen/data/cron/cron.log
+
+    // Barion sandbox (https://secure.test.barion.com) – a Finance tesztoldal éles API-t nem hív.
+    // 'BARION_POS_KEY' => '',
+    // 'BARION_PAYEE_EMAIL' => '',
+
+    // Szamlazz.hu Agent kulcs. Teszteléshez külön tesztfiók kulcsa ajánlott.
+    // Áfakód: AAM (alanyi adómentes) vagy 27.
+    // 'SZAMLAZZ_AGENT_KEY' => '',
+    // 'SZAMLAZZ_VAT_CODE' => 'AAM',
+    // 'SZAMLAZZ_SELLER_BANK' => '',
+    // 'SZAMLAZZ_SELLER_ACCOUNT' => '',
 ];
