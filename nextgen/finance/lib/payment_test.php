@@ -549,14 +549,14 @@ function finance_payment_test_barion_start(string $requestId, int $amount, array
         $payload['CardHolderNameHint'] = $hint;
     }
     if ($buyer['zip'] !== '' && $buyer['city'] !== '' && $buyer['address'] !== '') {
+        $city = mb_substr($buyer['city'], 0, 100);
+        $region = mb_strlen($city) >= 2 ? $city : 'HU';
         $payload['BillingAddress'] = [
             'Country' => 'HU',
-            'Region' => '',
-            'City' => mb_substr($buyer['city'], 0, 100),
+            'Region' => $region,
+            'City' => $city,
             'Zip' => $buyer['zip'],
             'Street' => mb_substr($buyer['address'], 0, 100),
-            'Street2' => '',
-            'Street3' => '',
             'FullName' => mb_substr($buyer['name'], 0, 45),
         ];
     }
