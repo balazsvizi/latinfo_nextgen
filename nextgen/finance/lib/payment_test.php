@@ -348,7 +348,8 @@ function finance_payment_test_issue(PDO $db, int $id, bool $live): array
  */
 function finance_payment_test_sync_barion(PDO $db, string $paymentId, bool $issueInvoice): ?array
 {
-    if (!finance_payment_test_is_guid($paymentId)) {
+    $paymentId = finance_payment_test_normalize_payment_id($paymentId) ?? '';
+    if ($paymentId === '') {
         return null;
     }
 
@@ -568,12 +569,12 @@ function finance_payment_test_barion_start(string $requestId, int $amount, array
     $body = $response['json'];
     $error = finance_payment_test_barion_error_text($body, $response['error']);
     $gateway = is_array($body) ? trim((string) ($body['GatewayUrl'] ?? '')) : '';
-    $paymentId = is_array($body) ? trim((string) ($body['PaymentId'] ?? '')) : '';
+    $paymentId = finance_payment_test_payment_id_from_response(is_array($body) ? $body : [], $gateway) ?? '';
     if ($error === null && !finance_payment_test_is_test_gateway($gateway)) {
         $error = 'A Barion nem a sandbox fizetőoldal címét adta vissza.';
         $gateway = '';
     }
-    if ($error === null && !finance_payment_test_is_guid($paymentId)) {
+    if ($error === null && $paymentId === '') {
         $error = 'A Barion nem adott fizetési azonosítót.';
     }
 
@@ -958,6 +959,44 @@ function finance_payment_test_map_status(string $barionStatus): string
 function finance_payment_test_is_guid(string $value): bool
 {
     return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+}
+
+/**
+ * A Barion fizetési azonosítója 32 hex karakter, kötőjel nélkül.
+ */
+function finance_payment_test_normalize_payment_id(string $value): ?string
+{
+    $hex = strtolower(str_replace(['-', '{', '}'], '', trim($value)));
+    if (preg_match('/^[0-9a-f]{32}$/', $hex) !== 1) {
+        return null;
+    }
+
+    return $hex;
+}
+
+/**
+ * @param array<string, mixed> $body
+ */
+function finance_payment_test_payment_id_from_response(array $body, string $gatewayUrl): ?string
+{
+    $fromBody = finance_payment_test_normalize_payment_id((string) ($body['PaymentId'] ?? ''));
+    if ($fromBody !== null) {
+        return $fromBody;
+    }
+
+    $query = [];
+    parse_str((string) (parse_url($gatewayUrl, PHP_URL_QUERY) ?? ''), $query);
+    foreach (['id', 'Id', 'paymentId', 'PaymentId'] as $key) {
+        if (!isset($query[$key]) || !is_string($query[$key])) {
+            continue;
+        }
+        $fromUrl = finance_payment_test_normalize_payment_id($query[$key]);
+        if ($fromUrl !== null) {
+            return $fromUrl;
+        }
+    }
+
+    return null;
 }
 
 function finance_payment_test_is_test_gateway(string $url): bool
