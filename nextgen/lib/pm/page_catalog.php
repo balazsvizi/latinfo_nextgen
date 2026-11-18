@@ -136,7 +136,7 @@ function pm_tools_page_catalog(): array
         ],
         '/nextgen/finance/fizetes_teszt/index.php' => [
             'display_name' => 'Online fizetés teszt',
-            'purpose' => 'Barion sandbox fizetés és szamlazz.hu teszt számla a Finance modulban.',
+            'purpose' => 'Barion sandbox fizetés, szamlazz.hu kapcsolat és teszt számla a Finance modulban.',
         ],
     ];
 }

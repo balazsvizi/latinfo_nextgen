@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 const FINANCE_PAYMENT_TEST_BARION_API = 'https://api.test.barion.com';
 const FINANCE_PAYMENT_TEST_BARION_GATEWAY_HOST = 'secure.test.barion.com';
-const FINANCE_PAYMENT_TEST_SZAMLAZZ_URL = 'https://www.szamlazz.hu/szamla/';
+
+require_once __DIR__ . '/szamlazz.php';
 
 function finance_payment_test_ensure_schema(PDO $db): void
 {
@@ -54,6 +55,8 @@ function finance_payment_test_ensure_schema(PDO $db): void
  *   barion_key_valid: bool,
  *   payee: string,
  *   szamlazz_ready: bool,
+ *   szamlazz_source: string,
+ *   szamlazz_hint: string,
  *   vat_code: string,
  *   seller_bank: bool,
  *   callback_url: string,
@@ -64,8 +67,7 @@ function finance_payment_test_status(): array
 {
     $payee = trim((string) (defined('BARION_PAYEE_EMAIL') ? BARION_PAYEE_EMAIL : ''));
     $posKey = trim((string) (defined('BARION_POS_KEY') ? BARION_POS_KEY : ''));
-    $agentKey = trim((string) (defined('SZAMLAZZ_AGENT_KEY') ? SZAMLAZZ_AGENT_KEY : ''));
-    $vat = finance_payment_test_vat_code();
+    $szamlazz = szamlazz_settings(getDb());
     $keyValid = finance_payment_test_is_guid($posKey);
     $payeeValid = filter_var($payee, FILTER_VALIDATE_EMAIL) !== false;
 
@@ -73,20 +75,14 @@ function finance_payment_test_status(): array
         'barion_ready' => $keyValid && $payeeValid,
         'barion_key_valid' => $posKey === '' || $keyValid,
         'payee' => $payee,
-        'szamlazz_ready' => $agentKey !== '',
-        'vat_code' => $vat,
-        'seller_bank' => trim((string) (defined('SZAMLAZZ_SELLER_BANK') ? SZAMLAZZ_SELLER_BANK : '')) !== ''
-            && trim((string) (defined('SZAMLAZZ_SELLER_ACCOUNT') ? SZAMLAZZ_SELLER_ACCOUNT : '')) !== '',
+        'szamlazz_ready' => $szamlazz['key_set'],
+        'szamlazz_source' => $szamlazz['key_source'],
+        'szamlazz_hint' => $szamlazz['key_hint'],
+        'vat_code' => $szamlazz['vat_code'],
+        'seller_bank' => $szamlazz['seller_bank'] !== '' && $szamlazz['seller_account'] !== '',
         'callback_url' => finance_payment_test_absolute_url('finance/fizetes_teszt/callback.php'),
         'return_url' => finance_payment_test_absolute_url('finance/fizetes_teszt/vissza.php'),
     ];
-}
-
-function finance_payment_test_vat_code(): string
-{
-    $code = strtoupper(trim((string) (defined('SZAMLAZZ_VAT_CODE') ? SZAMLAZZ_VAT_CODE : 'AAM')));
-
-    return $code === '27' ? '27' : 'AAM';
 }
 
 /**
@@ -220,7 +216,7 @@ function finance_payment_test_start(PDO $db, array $buyer, int $amount, bool $in
 function finance_payment_test_invoice_only(PDO $db, array $buyer, int $amount, bool $live): array
 {
     if (!finance_payment_test_status()['szamlazz_ready']) {
-        throw new InvalidArgumentException('A szamlazz.hu Agent kulcs hiányzik a config.local.php fájlból.');
+        throw new InvalidArgumentException('A szamlazz.hu Agent kulcs nincs beállítva.');
     }
 
     $requestId = 'LT' . date('ymdHis') . bin2hex(random_bytes(3));
@@ -338,7 +334,7 @@ function finance_payment_test_issue(PDO $db, int $id, bool $live): array
         SET invoice_state = ?, invoice_number = ?, invoice_error = NULL, invoice_pdf = ?
         WHERE id = ?
     ');
-    $save->execute([$state, $number !== '' ? $number : null, $pdfName, $id]);
+    $save->execute([$state, $live && $number !== '' ? $number : null, $pdfName, $id]);
 
     return ['ok' => true, 'error' => null];
 }
@@ -645,215 +641,23 @@ function finance_payment_test_barion_error_text(?array $body, ?string $transport
  */
 function finance_payment_test_szamlazz_create(array $row, bool $live): array
 {
-    $gross = (int) $row['amount_ft'];
-    $parts = finance_payment_test_vat_parts($gross, finance_payment_test_vat_code());
     $paid = (string) $row['status'] === 'succeeded';
-    $xml = finance_payment_test_invoice_xml($row, $parts, $paid, $live);
-
-    $tmp = tempnam(sys_get_temp_dir(), 'szla');
-    if ($tmp === false) {
-        return ['invoice_number' => '', 'pdf' => '', 'error' => 'Az átmeneti számlafájl nem készült el.'];
-    }
-    $xmlFile = $tmp . '.xml';
-    rename($tmp, $xmlFile);
-    file_put_contents($xmlFile, $xml);
-
-    try {
-        $response = finance_payment_test_post_xml($xmlFile);
-    } finally {
-        @unlink($xmlFile);
-    }
-
-    return $response;
-}
-
-/**
- * @param array<string, mixed> $row
- * @param array{net: int, vat: int, gross: int, code: string} $parts
- */
-function finance_payment_test_invoice_xml(array $row, array $parts, bool $paid, bool $live): string
-{
-    $ns = 'http://www.szamlazz.hu/xmlszamla';
-    $doc = new DOMDocument('1.0', 'UTF-8');
-    $doc->formatOutput = false;
-    $root = $doc->createElementNS($ns, 'xmlszamla');
-    $doc->appendChild($root);
-
-    $add = static function (DOMNode $parent, string $name, string $value = '') use ($doc, $ns): DOMElement {
-        $el = $doc->createElementNS($ns, $name);
-        if ($value !== '') {
-            $el->appendChild($doc->createTextNode($value));
-        }
-        $parent->appendChild($el);
-
-        return $el;
-    };
-
-    $settings = $add($root, 'beallitasok');
-    $add($settings, 'szamlaagentkulcs', trim((string) SZAMLAZZ_AGENT_KEY));
-    $add($settings, 'eszamla', 'true');
-    $add($settings, 'szamlaLetoltes', 'true');
-    $add($settings, 'valaszVerzio', '2');
-
-    $today = date('Y-m-d');
-    $header = $add($root, 'fejlec');
-    $add($header, 'keltDatum', $today);
-    $add($header, 'teljesitesDatum', $today);
-    $add($header, 'fizetesiHataridoDatum', $today);
-    $add($header, 'fizmod', $paid ? 'Bankkártya' : 'Átutalás');
-    $add($header, 'penznem', 'HUF');
-    $add($header, 'szamlaNyelve', 'hu');
-    $note = 'Latinfo.hu online fizetés teszt. Kérés: ' . (string) $row['payment_request_id'];
-    if ($parts['gross'] !== (int) $row['amount_ft']) {
-        $note .= ' Áfa-kerekítés miatt a bizonylat végösszege ' . $parts['gross'] . ' Ft.';
-    }
-    $add($header, 'megjegyzes', $note);
-    $add($header, 'rendelesSzam', (string) $row['payment_request_id']);
-    $add($header, 'fizetve', $paid ? 'true' : 'false');
-    if (!$live) {
-        $add($header, 'elonezetpdf', 'true');
-    }
-
-    $seller = $add($root, 'elado');
-    $bank = trim((string) (defined('SZAMLAZZ_SELLER_BANK') ? SZAMLAZZ_SELLER_BANK : ''));
-    $account = trim((string) (defined('SZAMLAZZ_SELLER_ACCOUNT') ? SZAMLAZZ_SELLER_ACCOUNT : ''));
-    if ($bank !== '' && $account !== '') {
-        $add($seller, 'bank', $bank);
-        $add($seller, 'bankszamlaszam', $account);
-    }
-
-    $buyer = $add($root, 'vevo');
-    $add($buyer, 'nev', (string) $row['buyer_name']);
-    $add($buyer, 'orszag', 'Magyarország');
-    $add($buyer, 'irsz', (string) $row['buyer_zip']);
-    $add($buyer, 'telepules', (string) $row['buyer_city']);
-    $add($buyer, 'cim', (string) $row['buyer_address']);
-    $add($buyer, 'email', (string) $row['buyer_email']);
-    $add($buyer, 'sendEmail', 'false');
     $tax = trim((string) ($row['buyer_tax_number'] ?? ''));
-    $add($buyer, 'adoalany', $tax !== '' ? '1' : '-1');
-    if ($tax !== '') {
-        $add($buyer, 'adoszam', $tax);
-    }
 
-    $items = $add($root, 'tetelek');
-    $item = $add($items, 'tetel');
-    $add($item, 'megnevezes', 'Latinfo.hu önkéntes támogatás (teszt)');
-    $add($item, 'mennyiseg', '1.0');
-    $add($item, 'mennyisegiEgyseg', 'db');
-    $add($item, 'nettoEgysegar', finance_payment_test_money($parts['net']));
-    $add($item, 'afakulcs', $parts['code']);
-    $add($item, 'nettoErtek', finance_payment_test_money($parts['net']));
-    $add($item, 'afaErtek', finance_payment_test_money($parts['vat']));
-    $add($item, 'bruttoErtek', finance_payment_test_money($parts['gross']));
-
-    return (string) $doc->saveXML();
-}
-
-/**
- * @return array{net: int, vat: int, gross: int, code: string}
- */
-function finance_payment_test_vat_parts(int $grossFt, string $vatCode): array
-{
-    if ($vatCode !== '27') {
-        return ['net' => $grossFt, 'vat' => 0, 'gross' => $grossFt, 'code' => 'AAM'];
-    }
-    $net = (int) round($grossFt / 1.27);
-    $vat = (int) round($net * 0.27);
-
-    return ['net' => $net, 'vat' => $vat, 'gross' => $net + $vat, 'code' => '27'];
-}
-
-/**
- * @return array{invoice_number: string, pdf: string, error: ?string}
- */
-function finance_payment_test_post_xml(string $xmlFile): array
-{
-    if (!function_exists('curl_init')) {
-        return ['invoice_number' => '', 'pdf' => '', 'error' => 'A PHP cURL bővítmény hiányzik.'];
-    }
-
-    $headers = [];
-    $ch = curl_init(FINANCE_PAYMENT_TEST_SZAMLAZZ_URL);
-    if ($ch === false) {
-        return ['invoice_number' => '', 'pdf' => '', 'error' => 'A szamlazz.hu hívás nem indult el.'];
-    }
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => [
-            'action-xmlagentxmlfile' => new CURLFile($xmlFile, 'text/xml', 'invoice.xml'),
-        ],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 45,
-        CURLOPT_HEADERFUNCTION => static function ($curl, string $header) use (&$headers): int {
-            $parts = explode(':', $header, 2);
-            if (count($parts) === 2) {
-                $headers[strtolower(trim($parts[0]))] = trim($parts[1]);
-            }
-
-            return strlen($header);
-        },
-    ]);
-    $raw = curl_exec($ch);
-    $errno = curl_errno($ch);
-    curl_close($ch);
-    if ($errno !== 0 || !is_string($raw)) {
-        return ['invoice_number' => '', 'pdf' => '', 'error' => 'A szamlazz.hu nem válaszolt.'];
-    }
-
-    $headerError = trim((string) ($headers['szlahu_error'] ?? ''));
-    $headerCode = trim((string) ($headers['szlahu_error_code'] ?? ''));
-    if ($headerError !== '' || ($headerCode !== '' && $headerCode !== '0')) {
-        $message = $headerError !== '' ? $headerError : ('Szamlazz.hu hiba: ' . $headerCode);
-
-        return ['invoice_number' => '', 'pdf' => '', 'error' => finance_payment_test_redact($message)];
-    }
-
-    if (str_starts_with($raw, '%PDF')) {
-        $number = trim((string) ($headers['szlahu_szamlaszam'] ?? ''));
-
-        return ['invoice_number' => $number, 'pdf' => $raw, 'error' => null];
-    }
-
-    $doc = new DOMDocument();
-    if (@$doc->loadXML($raw) === false) {
-        error_log('finance_payment_test_post_xml: nem XML és nem PDF válasz');
-
-        return ['invoice_number' => '', 'pdf' => '', 'error' => 'A szamlazz.hu válasza nem értelmezhető.'];
-    }
-
-    $success = strtolower(finance_payment_test_xml_text($doc, 'sikeres'));
-    $message = finance_payment_test_xml_text($doc, 'hibauzenet');
-    $code = finance_payment_test_xml_text($doc, 'hibakod');
-    if ($success !== 'true') {
-        $text = $message !== '' ? $message : ($code !== '' ? ('Szamlazz.hu hiba: ' . $code) : 'A szamlazz.hu elutasította a bizonylatot.');
-
-        return ['invoice_number' => '', 'pdf' => '', 'error' => finance_payment_test_redact($text)];
-    }
-
-    $pdf = base64_decode(finance_payment_test_xml_text($doc, 'pdf'), true);
-    if ($pdf === false) {
-        $pdf = base64_decode(finance_payment_test_xml_text($doc, 'szamlaPdf'), true);
-    }
-    if ($pdf === false) {
-        $pdf = '';
-    }
-
-    return [
-        'invoice_number' => finance_payment_test_xml_text($doc, 'szamlaszam'),
-        'pdf' => $pdf,
-        'error' => null,
-    ];
-}
-
-function finance_payment_test_xml_text(DOMDocument $doc, string $local): string
-{
-    $nodes = $doc->getElementsByTagName($local);
-    if ($nodes->length === 0) {
-        return '';
-    }
-
-    return trim((string) $nodes->item(0)?->textContent);
+    return szamlazz_issue(getDb(), [
+        'order_id' => (string) $row['payment_request_id'],
+        'buyer_name' => (string) $row['buyer_name'],
+        'buyer_email' => (string) $row['buyer_email'],
+        'buyer_zip' => (string) $row['buyer_zip'],
+        'buyer_city' => (string) $row['buyer_city'],
+        'buyer_address' => (string) $row['buyer_address'],
+        'buyer_tax_number' => $tax !== '' ? $tax : null,
+        'item_name' => 'Latinfo.hu önkéntes támogatás (teszt)',
+        'gross_ft' => (int) $row['amount_ft'],
+        'paid' => $paid,
+        'payment_method' => $paid ? 'Bankkártya' : 'Átutalás',
+        'note' => 'Latinfo.hu online fizetés teszt. Kérés: ' . (string) $row['payment_request_id'],
+    ], !$live);
 }
 
 /**
@@ -1044,11 +848,6 @@ function finance_payment_test_redact(string $text): string
     }
 
     return $text;
-}
-
-function finance_payment_test_money(int $amount): string
-{
-    return number_format($amount, 1, '.', '');
 }
 
 function finance_payment_test_has_address(array $row): bool

@@ -20,6 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string) ($posted['action'] ?? '');
 
     try {
+        if ($action === 'szamlazz_save' || $action === 'szamlazz_test') {
+            szamlazz_save_from_post($db, $posted);
+            if ($action === 'szamlazz_test') {
+                $check = szamlazz_connection_test($db);
+                flash($check['ok'] ? 'success' : 'error', $check['message']);
+            } else {
+                flash('success', 'A szamlazz.hu beállítások mentve.');
+            }
+            redirect($pageUrl);
+        }
+
         if ($action === 'start') {
             $buyer = finance_payment_test_buyer_from_post($posted, !empty($posted['invoice_after']));
             $amount = finance_payment_test_amount_from_post($posted);
@@ -81,6 +92,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $setup = finance_payment_test_status();
+$szamlazzForm = szamlazz_settings($db);
+unset($szamlazzForm['agent_key']);
+$szamlazzVat = (string) ($posted['szamlazz_vat'] ?? $szamlazzForm['vat_code']);
+$szamlazzBank = (string) ($posted['szamlazz_bank'] ?? $szamlazzForm['seller_bank']);
+$szamlazzAccount = (string) ($posted['szamlazz_account'] ?? $szamlazzForm['seller_account']);
+$szamlazzSourceLabel = match ($setup['szamlazz_source']) {
+    'database' => 'Agent kulcs mentve',
+    'config' => 'Agent kulcs a config.local.php fájlból',
+    default => 'hiányzik az Agent kulcs',
+};
 $focusId = (int) ($_GET['id'] ?? 0);
 $focus = $focusId > 0 ? finance_payment_test_find($db, $focusId) : null;
 $rows = finance_payment_test_list($db);
@@ -101,13 +122,48 @@ require_once __DIR__ . '/../../partials/header.php';
     <ul>
         <li>Barion: <?= $setup['barion_ready'] ? 'sandbox kulcs beállítva' : 'hiányzik a POSKey vagy a tárca e-mailje' ?><?php if ($setup['payee'] !== ''): ?> (<?= h($setup['payee']) ?>)<?php endif; ?></li>
         <?php if (!$setup['barion_key_valid']): ?><li>A POSKey nem GUID. A tesztbolt kulcsa a secure.test.barion.com oldalon van, nem az éles fiókban.</li><?php endif; ?>
-        <li>Szamlazz.hu: <?= $setup['szamlazz_ready'] ? 'Agent kulcs beállítva' : 'hiányzik az Agent kulcs' ?>, áfakód <?= h($setup['vat_code']) ?><?= $setup['seller_bank'] ? ', eladói bankszámla megadva' : '' ?>.</li>
+        <li>Szamlazz.hu: <?= h($szamlazzSourceLabel) ?><?php if ($setup['szamlazz_hint'] !== ''): ?> (vége <?= h($setup['szamlazz_hint']) ?>)<?php endif; ?>, áfakód <?= h($setup['vat_code']) ?><?= $setup['seller_bank'] ? ', eladói bankszámla megadva' : '' ?>.</li>
     </ul>
     <p>Sikeres tesztkártya: 4444 8888 8888 5559, bármilyen jövőbeli lejárat, bármilyen háromjegyű CVC. Elutasításhoz: 4444 8888 8888 3331.</p>
     <?php if ($localhostCallback): ?>
         <p>A visszatérő oldal frissíti a fizetés állapotát. A Barion szervere a helyi címet (<?= h($setup['callback_url']) ?>) nem éri el, ezért a háttérértesítés csak nyilvános HTTPS címen működik.</p>
     <?php endif; ?>
     <p>A számla alapból előnézet: a szamlazz.hu nem rögzít bizonylatot. A valódi számla jelölő a kulcshoz tartozó fiókban valós bizonylatot hoz létre, ezért tesztfiók kulcsát használd.</p>
+</div>
+
+<div class="card">
+    <h2>Szamlazz.hu kapcsolat</h2>
+    <p>Az Agent kulcs a Szamlazz.hu fiókban, a Beállítások / Számla Agent oldalon van. A mentett kulcs felülírja a config.local.php értékét. Üresen hagyva a már mentett kulcs megmarad.</p>
+    <?php if ($szamlazzForm['last_check_at'] !== null): ?>
+        <p>Utolsó ellenőrzés <?= h((string) $szamlazzForm['last_check_at']) ?>: <?= $szamlazzForm['last_check_ok'] ? 'sikeres' : 'sikertelen' ?>. <?= h($szamlazzForm['last_check_message']) ?></p>
+    <?php endif; ?>
+    <form method="post" action="<?= h($pageUrl) ?>">
+        <?= csrf_input('finance_payment_test') ?>
+        <div class="form-group">
+            <label for="szamlazz_agent_key">Agent kulcs</label>
+            <input type="password" id="szamlazz_agent_key" name="szamlazz_agent_key" maxlength="200" autocomplete="new-password" value="">
+        </div>
+        <div class="form-group">
+            <label for="szamlazz_vat">Áfakód</label>
+            <select id="szamlazz_vat" name="szamlazz_vat">
+                <option value="AAM" <?= $szamlazzVat === 'AAM' ? 'selected' : '' ?>>AAM (alanyi adómentes)</option>
+                <option value="27" <?= $szamlazzVat === '27' ? 'selected' : '' ?>>27%</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="szamlazz_bank">Eladó bankja</label>
+            <input type="text" id="szamlazz_bank" name="szamlazz_bank" maxlength="80" value="<?= h($szamlazzBank) ?>">
+        </div>
+        <div class="form-group">
+            <label for="szamlazz_account">Eladó bankszámlaszáma</label>
+            <input type="text" id="szamlazz_account" name="szamlazz_account" maxlength="32" inputmode="numeric" placeholder="12345678-12345678" value="<?= h($szamlazzAccount) ?>">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-secondary" name="action" value="szamlazz_save">Mentés</button>
+            <button type="submit" class="btn btn-primary" name="action" value="szamlazz_test">Mentés és kapcsolat ellenőrzése</button>
+        </div>
+    </form>
+    <p>Az ellenőrzés előnézeti PDF-et kér. A szamlazz.hu nem rögzít bizonylatot, és nem küld e-mailt.</p>
 </div>
 
 <div class="card">

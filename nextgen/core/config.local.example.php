@@ -94,8 +94,8 @@ return [
     // 'BARION_POS_KEY' => '',
     // 'BARION_PAYEE_EMAIL' => '',
 
-    // Szamlazz.hu Agent kulcs. Teszteléshez külön tesztfiók kulcsa ajánlott.
-    // Áfakód: AAM (alanyi adómentes) vagy 27.
+    // Szamlazz.hu Agent kulcs. A Finance tesztoldal űrlapja felülírja, ha ott mentesz kulcsot.
+    // Teszteléshez külön tesztfiók kulcsa ajánlott. Áfakód: AAM (alanyi adómentes) vagy 27.
     // 'SZAMLAZZ_AGENT_KEY' => '',
     // 'SZAMLAZZ_VAT_CODE' => 'AAM',
     // 'SZAMLAZZ_SELLER_BANK' => '',
