@@ -357,14 +357,24 @@ function events_style_monthly_stats_unstyled_events(PDO $db, array $params): arr
     }
 }
 
-function events_style_monthly_stats_excel_cell(string $value, string $styleId = ''): string
+function events_style_monthly_stats_xlsx_col(int $index): string
+{
+    $n = $index + 1;
+    $letters = '';
+    while ($n > 0) {
+        $n--;
+        $letters = chr(65 + ($n % 26)) . $letters;
+        $n = intdiv($n, 26);
+    }
+
+    return $letters;
+}
+
+function events_style_monthly_stats_xlsx_text(string $value): string
 {
     $value = str_replace(["\r\n", "\r"], "\n", $value);
-    $style = $styleId !== '' ? ' ss:StyleID="' . $styleId . '"' : '';
 
-    return '<Cell' . $style . '><Data ss:Type="String">'
-        . htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8')
-        . '</Data></Cell>';
+    return htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8');
 }
 
 /**
@@ -564,34 +574,28 @@ function events_style_monthly_stats_all_months(PDO $db, array $params): array
     ];
 }
 
-function events_style_monthly_stats_excel_number(float $value, string $styleId): string
-{
-    $number = number_format(round($value, 2), 2, '.', '');
-
-    return '<Cell ss:StyleID="' . $styleId . '"><Data ss:Type="Number">' . $number . '</Data></Cell>';
-}
-
 /**
- * Excel (SpreadsheetML): minden hónap sorban, stílusok oszlopban.
+ * Valódi .xlsx (Office Open XML), hogy az Excel ne jelezzen formátum–kiterjesztés eltérést.
  *
  * @param array<string, mixed> $matrix
  * @param array{bucket_by?:string,status?:string} $params
  */
 function events_style_monthly_stats_send_excel(array $matrix, array $params): void
 {
+    if (!class_exists(ZipArchive::class)) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Az Excel export nem érhető el: hiányzik a PHP zip bővítmény.';
+
+        return;
+    }
+
     $styles = is_array($matrix['styles'] ?? null) ? $matrix['styles'] : [];
     $months = is_array($matrix['months'] ?? null) ? $matrix['months'] : [];
     $monthTotals = is_array($matrix['month_totals'] ?? null) ? $matrix['month_totals'] : [];
     $grandTotal = (float) ($matrix['grand_total'] ?? 0);
     $bucketBy = (string) ($params['bucket_by'] ?? 'event_start');
     $status = (string) ($params['status'] ?? 'public');
-
-    $filename = 'fostilus-havi-osszes.xls';
-    header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('X-Content-Type-Options: nosniff');
-    header('Cache-Control: no-store');
-
     $bucketLabel = $bucketBy === 'published_at' ? 'Publikálás dátuma' : 'Esemény dátuma';
     $statusLabel = match ($status) {
         'publish' => 'Csak közzétéve',
@@ -599,70 +603,165 @@ function events_style_monthly_stats_send_excel(array $matrix, array $params): vo
         default => 'Közzétéve + előzetes',
     };
 
-    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-    echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
-    echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"'
-        . ' xmlns:o="urn:schemas-microsoft-com:office:office"'
-        . ' xmlns:x="urn:schemas-microsoft-com:office:excel"'
-        . ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"'
-        . ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
-    echo '<Styles>'
-        . '<Style ss:ID="hdr"><Font ss:Bold="1"/><Interior ss:Color="#E7EFE4" ss:Pattern="Solid"/></Style>'
-        . '<Style ss:ID="month"><Font ss:Bold="1"/></Style>'
-        . '<Style ss:ID="num"><NumberFormat ss:Format="0.##"/></Style>'
-        . '<Style ss:ID="total"><Font ss:Bold="1"/><NumberFormat ss:Format="0.##"/></Style>'
-        . '<Style ss:ID="note"><Font ss:Italic="1" ss:Color="#64748B"/></Style>'
-        . '</Styles>' . "\n";
+    $colCount = count($styles) + 2;
+    $lastCol = events_style_monthly_stats_xlsx_col($colCount - 1);
+    $note = 'Szűrő: ' . $bucketLabel . ' · ' . $statusLabel
+        . '. Több fő stílusnál az esemény 1/n súllyal szerepel.';
 
-    echo '<Worksheet ss:Name="Főstílus"><Table>' . "\n";
-    echo '<Column ss:Width="130"/>';
-    for ($col = 0, $colCount = count($styles) + 1; $col < $colCount; $col++) {
-        echo '<Column ss:Width="96"/>';
-    }
-    echo "\n";
-
-    echo '<Row>';
-    echo events_style_monthly_stats_excel_cell('Hónap', 'hdr');
+    $rowsXml = '';
+    $rowNum = 1;
+    $headerCells = '<c r="A1" t="inlineStr" s="1"><is><t>Hónap</t></is></c>';
+    $colIndex = 1;
     foreach ($styles as $style) {
-        echo events_style_monthly_stats_excel_cell((string) ($style['name'] ?? ''), 'hdr');
+        $ref = events_style_monthly_stats_xlsx_col($colIndex) . '1';
+        $headerCells .= '<c r="' . $ref . '" t="inlineStr" s="1"><is><t>'
+            . events_style_monthly_stats_xlsx_text((string) ($style['name'] ?? ''))
+            . '</t></is></c>';
+        $colIndex++;
     }
-    echo events_style_monthly_stats_excel_cell('Összesen', 'hdr');
-    echo "</Row>\n";
+    $headerCells .= '<c r="' . $lastCol . '1" t="inlineStr" s="1"><is><t>Összesen</t></is></c>';
+    $rowsXml .= '<row r="1">' . $headerCells . '</row>';
 
     foreach ($months as $monthKey) {
+        $rowNum++;
         $yearNum = (int) substr((string) $monthKey, 0, 4);
         $monthNum = (int) substr((string) $monthKey, 5, 2);
         $label = $yearNum . ' ' . mb_strtolower(events_monthly_stats_month_label_full($monthNum), 'UTF-8');
-        echo '<Row>';
-        echo events_style_monthly_stats_excel_cell($label, 'month');
+        $cells = '<c r="A' . $rowNum . '" t="inlineStr" s="2"><is><t>'
+            . events_style_monthly_stats_xlsx_text($label)
+            . '</t></is></c>';
+        $colIndex = 1;
         foreach ($styles as $style) {
             $byMonth = is_array($style['by_month'] ?? null) ? $style['by_month'] : [];
-            echo events_style_monthly_stats_excel_number((float) ($byMonth[$monthKey] ?? 0), 'num');
+            $ref = events_style_monthly_stats_xlsx_col($colIndex) . $rowNum;
+            $number = number_format(round((float) ($byMonth[$monthKey] ?? 0), 2), 2, '.', '');
+            $cells .= '<c r="' . $ref . '" s="3"><v>' . $number . '</v></c>';
+            $colIndex++;
         }
-        echo events_style_monthly_stats_excel_number((float) ($monthTotals[$monthKey] ?? 0), 'total');
-        echo "</Row>\n";
+        $rowTotal = number_format(round((float) ($monthTotals[$monthKey] ?? 0), 2), 2, '.', '');
+        $cells .= '<c r="' . $lastCol . $rowNum . '" s="4"><v>' . $rowTotal . '</v></c>';
+        $rowsXml .= '<row r="' . $rowNum . '">' . $cells . '</row>';
     }
 
-    echo '<Row>';
-    echo events_style_monthly_stats_excel_cell('Összesen', 'hdr');
+    $rowNum++;
+    $totalCells = '<c r="A' . $rowNum . '" t="inlineStr" s="1"><is><t>Összesen</t></is></c>';
+    $colIndex = 1;
     foreach ($styles as $style) {
-        echo events_style_monthly_stats_excel_number((float) ($style['total'] ?? 0), 'total');
+        $ref = events_style_monthly_stats_xlsx_col($colIndex) . $rowNum;
+        $number = number_format(round((float) ($style['total'] ?? 0), 2), 2, '.', '');
+        $totalCells .= '<c r="' . $ref . '" s="4"><v>' . $number . '</v></c>';
+        $colIndex++;
     }
-    echo events_style_monthly_stats_excel_number($grandTotal, 'total');
-    echo "</Row>\n";
+    $totalCells .= '<c r="' . $lastCol . $rowNum . '" s="4"><v>'
+        . number_format(round($grandTotal, 2), 2, '.', '')
+        . '</v></c>';
+    $rowsXml .= '<row r="' . $rowNum . '">' . $totalCells . '</row>';
 
-    echo '<Row></Row>';
-    echo '<Row>';
-    echo events_style_monthly_stats_excel_cell(
-        'Szűrő: ' . $bucketLabel . ' · ' . $statusLabel . '. Több fő stílusnál az esemény 1/n súllyal szerepel.',
-        'note'
-    );
-    echo "</Row>\n";
+    $rowNum += 2;
+    $rowsXml .= '<row r="' . $rowNum . '"><c r="A' . $rowNum . '" t="inlineStr" s="5"><is><t>'
+        . events_style_monthly_stats_xlsx_text($note)
+        . '</t></is></c></row>';
 
-    echo '</Table>';
-    echo '<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">';
-    echo '<FreezePanes/><FrozenNoSplit/>';
-    echo '<SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane>';
-    echo '</WorksheetOptions>';
-    echo '</Worksheet></Workbook>';
+    $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+        . ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        . '<dimension ref="A1:' . $lastCol . $rowNum . '"/>'
+        . '<sheetViews><sheetView workbookViewId="0">'
+        . '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+        . '<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>'
+        . '</sheetView></sheetViews>'
+        . '<sheetFormatPr defaultRowHeight="15"/>'
+        . '<cols><col min="1" max="1" width="22" customWidth="1"/>'
+        . '<col min="2" max="' . $colCount . '" width="18" customWidth="1"/></cols>'
+        . '<sheetData>' . $rowsXml . '</sheetData>'
+        . '</worksheet>';
+
+    $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        . '<numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts>'
+        . '<fonts count="3">'
+        . '<font><sz val="11"/><name val="Calibri"/></font>'
+        . '<font><b/><sz val="11"/><name val="Calibri"/></font>'
+        . '<font><i/><sz val="11"/><color rgb="FF64748B"/><name val="Calibri"/></font>'
+        . '</fonts>'
+        . '<fills count="3">'
+        . '<fill><patternFill patternType="none"/></fill>'
+        . '<fill><patternFill patternType="gray125"/></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFE7EFE4"/><bgColor indexed="64"/></patternFill></fill>'
+        . '</fills>'
+        . '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        . '<cellXfs count="6">'
+        . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+        . '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>'
+        . '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+        . '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+        . '<xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/>'
+        . '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+        . '</cellXfs>'
+        . '</styleSheet>';
+
+    $workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+        . ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        . '<sheets><sheet name="Főstílus" sheetId="1" r:id="rId1"/></sheets>'
+        . '</workbook>';
+
+    $workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+        . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        . '</Relationships>';
+
+    $rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+        . '</Relationships>';
+
+    $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        . '<Default Extension="xml" ContentType="application/xml"/>'
+        . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        . '</Types>';
+
+    $tmp = tempnam(sys_get_temp_dir(), 'fostilus');
+    if ($tmp === false) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Az Excel fájl létrehozása nem sikerült.';
+
+        return;
+    }
+    $xlsxPath = $tmp . '.xlsx';
+    @unlink($tmp);
+
+    $zip = new ZipArchive();
+    if ($zip->open($xlsxPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Az Excel fájl létrehozása nem sikerült.';
+
+        return;
+    }
+    $zip->addFromString('[Content_Types].xml', $contentTypes);
+    $zip->addFromString('_rels/.rels', $rootRels);
+    $zip->addFromString('xl/workbook.xml', $workbook);
+    $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRels);
+    $zip->addFromString('xl/styles.xml', $stylesXml);
+    $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
+    $zip->close();
+
+    $size = filesize($xlsxPath);
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="fostilus-havi-osszes.xlsx"');
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: no-store');
+    if ($size !== false) {
+        header('Content-Length: ' . $size);
+    }
+    readfile($xlsxPath);
+    @unlink($xlsxPath);
 }
