@@ -170,6 +170,7 @@ if ($navZone === 'events') {
                     <ul class="nav-submenu" id="submenu-latinfo-stat" role="menu">
                         <li role="none"><a href="<?= h(nextgen_url('events/events_statisztika.php')) ?>" role="menuitem">Statisztikák</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_havi_stat.php')) ?>" role="menuitem">Havi esemény stat</a></li>
+                        <li role="none"><a href="<?= h(nextgen_url('events/events_stilus_havi_stat.php')) ?>" role="menuitem">Főstílus havi stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_evi_stat.php')) ?>" role="menuitem">Év/év esemény stat</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_elotti_stat.php')) ?>" role="menuitem">30 nap</a></li>
                         <li role="none"><a href="<?= h(nextgen_url('events/events_szervezok_statisztika.php')) ?>" role="menuitem">Szervezők stat</a></li>
