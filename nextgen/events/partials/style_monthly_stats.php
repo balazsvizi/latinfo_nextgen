@@ -31,7 +31,6 @@ $eventsWithoutStyles = (int) ($statsData['events_without_styles'] ?? 0);
 $yearTotal = (float) ($statsData['year_total'] ?? 0);
 $unstyledEvents = is_array($statsData['unstyled_events'] ?? null) ? $statsData['unstyled_events'] : [];
 $exportUrl = events_url('events_stilus_havi_export.php') . '?' . http_build_query([
-    'stat_year' => (int) ($statsParams['year'] ?? $year),
     'stat_bucket' => (string) ($statsParams['bucket_by'] ?? 'event_start'),
     'stat_status' => (string) ($statsParams['status'] ?? 'public'),
 ]);
@@ -112,11 +111,12 @@ $hasChart = $styles !== [] && $yearTotal > 0;
             <div class="form-group events-edit-stats__filter-actions">
                 <button type="submit" class="btn btn-primary btn-sm">Szűrés</button>
                 <a class="btn btn-secondary btn-sm" href="<?= h($statsFormAction) ?>">Alapértelmezés</a>
-                <a class="btn btn-secondary btn-sm" href="<?= h($exportUrl) ?>">Excel export</a>
+                <a class="btn btn-secondary btn-sm" href="<?= h($exportUrl) ?>">Excel – összes hónap</a>
             </div>
         </div>
         <p class="events-edit-stats__filter-hint">
             Aktív nézet: <strong><?= $year ?></strong> · <?= h($bucketLabel) ?> · <?= h($statusLabel) ?>.
+            Az Excel a szűrő státuszával és hónap-szabályával az összes hónapot tartalmazza: sor = hónap, oszlop = stílus.
         </p>
     </form>
 

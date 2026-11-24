@@ -11,6 +11,6 @@ requireLogin();
 
 $db = getDb();
 $statsParams = events_style_monthly_stats_params_from_request($_GET);
-$statsData = events_style_monthly_stats($db, $statsParams);
-events_style_monthly_stats_send_excel($statsData, $statsParams);
+$matrix = events_style_monthly_stats_all_months($db, $statsParams);
+events_style_monthly_stats_send_excel($matrix, $statsParams);
 exit;

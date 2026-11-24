@@ -368,23 +368,236 @@ function events_style_monthly_stats_excel_cell(string $value, string $styleId = 
 }
 
 /**
- * Excel (SpreadsheetML): hónapok sorokban, stílusok oszlopokban, a választott év mind a 12 hónapja.
+ * Dátumszűrő év nélkül: minden hónap, amelyhez van eseménydátum.
  *
- * @param array<string, mixed> $statsData
- * @param array{year:int,bucket_by:string,status:string} $params
+ * @return array{sql:string,bind:list<mixed>}
  */
-function events_style_monthly_stats_send_excel(array $statsData, array $params): void
+function events_style_monthly_stats_bucket_where_all(string $bucketBy, string $alias = 'e'): array
 {
-    $year = (int) ($statsData['year'] ?? $params['year']);
-    $styles = is_array($statsData['styles'] ?? null) ? $statsData['styles'] : [];
-    $monthTotals = is_array($statsData['month_totals'] ?? null) ? $statsData['month_totals'] : [];
-    $yearTotal = (float) ($statsData['year_total'] ?? 0);
+    if ($bucketBy === 'published_at') {
+        return [
+            'sql' => $alias . '.`event_published_at` IS NOT NULL'
+                . ' AND ' . $alias . '.`event_published_at` NOT IN (\'\', \'0000-00-00 00:00:00\')',
+            'bind' => [],
+        ];
+    }
 
-    $filename = 'fostilus-havi-' . $year . '.xls';
+    return [
+        'sql' => $alias . '.`event_start` IS NOT NULL',
+        'bind' => [],
+    ];
+}
+
+/**
+ * Teljes idősor: hónapok (Y-m) sorban, stílusok oszlopban. Üres hónapok is benne vannak.
+ *
+ * @param array{bucket_by?:string,status?:string} $params
+ * @return array{
+ *   styles_ready:bool,
+ *   months:list<string>,
+ *   styles:list<array{id:int,name:string,by_month:array<string,float>,total:float}>,
+ *   month_totals:array<string,float>,
+ *   grand_total:float
+ * }
+ */
+function events_style_monthly_stats_all_months(PDO $db, array $params): array
+{
+    $bucketBy = (string) ($params['bucket_by'] ?? 'event_start');
+    $status = (string) ($params['status'] ?? 'public');
+    $empty = [
+        'styles_ready' => false,
+        'months' => [],
+        'styles' => [],
+        'month_totals' => [],
+        'grand_total' => 0.0,
+    ];
+    if (!events_styles_tables_available($db)) {
+        return $empty;
+    }
+
+    $statusClause = events_monthly_stats_status_clause($status, 'e');
+    $bucketWhere = events_style_monthly_stats_bucket_where_all($bucketBy, 'e');
+    $bucketExpr = events_monthly_stats_bucket_expr($bucketBy, 'e');
+
+    /** @var array<int, array{id:int,name:string,by_month:array<string,float>,total:float}> $stylesById */
+    $stylesById = [];
+    /** @var array<string, float> $monthTotals */
+    $monthTotals = [];
+
+    try {
+        $sql = '
+            SELECT
+                e.`id` AS event_id,
+                ' . $bucketExpr . ' AS month_key,
+                GROUP_CONCAT(ms.`style_id` ORDER BY ms.`style_id` SEPARATOR ",") AS style_ids
+            FROM `events_calendar_events` e
+            LEFT JOIN `events_calendar_event_main_styles` ms ON ms.`event_id` = e.`id`
+            WHERE ' . $bucketWhere['sql'] . '
+              AND ' . $statusClause['sql'] . '
+            GROUP BY e.`id`, month_key
+        ';
+        $stmt = $db->prepare($sql);
+        $stmt->execute(array_merge($bucketWhere['bind'], $statusClause['bind']));
+        $styleNames = events_load_style_options($db);
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $monthKey = (string) ($row['month_key'] ?? '');
+            if (!preg_match('/^(\d{4})-(\d{2})-01$/', $monthKey, $match)) {
+                continue;
+            }
+            $yearNum = (int) $match[1];
+            $monthNum = (int) $match[2];
+            if ($yearNum < 2000 || $yearNum > 2100 || $monthNum < 1 || $monthNum > 12) {
+                continue;
+            }
+            $key = sprintf('%04d-%02d', $yearNum, $monthNum);
+            $monthTotals[$key] = ($monthTotals[$key] ?? 0.0) + 1.0;
+
+            $rawIds = trim((string) ($row['style_ids'] ?? ''));
+            $ids = [];
+            if ($rawIds !== '') {
+                foreach (explode(',', $rawIds) as $rawId) {
+                    $sid = (int) $rawId;
+                    if ($sid > 0 && isset($styleNames[$sid])) {
+                        $ids[$sid] = $sid;
+                    }
+                }
+            }
+            if ($ids === []) {
+                if (!isset($stylesById[0])) {
+                    $stylesById[0] = [
+                        'id' => 0,
+                        'name' => 'Nincs fő stílus',
+                        'by_month' => [],
+                        'total' => 0.0,
+                    ];
+                }
+                $stylesById[0]['by_month'][$key] = ($stylesById[0]['by_month'][$key] ?? 0.0) + 1.0;
+                $stylesById[0]['total'] += 1.0;
+                continue;
+            }
+
+            $share = 1.0 / count($ids);
+            foreach ($ids as $styleId) {
+                if (!isset($stylesById[$styleId])) {
+                    $stylesById[$styleId] = [
+                        'id' => $styleId,
+                        'name' => (string) $styleNames[$styleId],
+                        'by_month' => [],
+                        'total' => 0.0,
+                    ];
+                }
+                $stylesById[$styleId]['by_month'][$key] = ($stylesById[$styleId]['by_month'][$key] ?? 0.0) + $share;
+                $stylesById[$styleId]['total'] += $share;
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('events_style_monthly_stats_all_months: ' . $e->getMessage());
+
+        return $empty;
+    }
+
+    if ($monthTotals === []) {
+        $empty['styles_ready'] = true;
+
+        return $empty;
+    }
+
+    $keys = array_keys($monthTotals);
+    sort($keys, SORT_STRING);
+    $cursor = DateTimeImmutable::createFromFormat('!Y-m', $keys[0]);
+    $end = DateTimeImmutable::createFromFormat('!Y-m', $keys[count($keys) - 1]);
+    $months = [];
+    if ($cursor instanceof DateTimeImmutable && $end instanceof DateTimeImmutable) {
+        while ($cursor <= $end) {
+            $months[] = $cursor->format('Y-m');
+            $cursor = $cursor->modify('+1 month');
+        }
+    } else {
+        $months = $keys;
+    }
+
+    uasort(
+        $stylesById,
+        static function (array $a, array $b): int {
+            if ($a['id'] === 0) {
+                return 1;
+            }
+            if ($b['id'] === 0) {
+                return -1;
+            }
+            $byTotal = $b['total'] <=> $a['total'];
+            if ($byTotal !== 0) {
+                return $byTotal;
+            }
+
+            return strcasecmp((string) $a['name'], (string) $b['name']);
+        }
+    );
+
+    $styles = [];
+    $grand = 0.0;
+    $roundedTotals = [];
+    foreach ($months as $key) {
+        $roundedTotals[$key] = round((float) ($monthTotals[$key] ?? 0), 2);
+        $grand += $roundedTotals[$key];
+    }
+    foreach ($stylesById as $style) {
+        $byMonth = [];
+        foreach ($months as $key) {
+            $byMonth[$key] = round((float) ($style['by_month'][$key] ?? 0), 2);
+        }
+        $styles[] = [
+            'id' => (int) $style['id'],
+            'name' => (string) $style['name'],
+            'by_month' => $byMonth,
+            'total' => round((float) $style['total'], 2),
+        ];
+    }
+
+    return [
+        'styles_ready' => true,
+        'months' => $months,
+        'styles' => $styles,
+        'month_totals' => $roundedTotals,
+        'grand_total' => round($grand, 2),
+    ];
+}
+
+function events_style_monthly_stats_excel_number(float $value, string $styleId): string
+{
+    $number = number_format(round($value, 2), 2, '.', '');
+
+    return '<Cell ss:StyleID="' . $styleId . '"><Data ss:Type="Number">' . $number . '</Data></Cell>';
+}
+
+/**
+ * Excel (SpreadsheetML): minden hónap sorban, stílusok oszlopban.
+ *
+ * @param array<string, mixed> $matrix
+ * @param array{bucket_by?:string,status?:string} $params
+ */
+function events_style_monthly_stats_send_excel(array $matrix, array $params): void
+{
+    $styles = is_array($matrix['styles'] ?? null) ? $matrix['styles'] : [];
+    $months = is_array($matrix['months'] ?? null) ? $matrix['months'] : [];
+    $monthTotals = is_array($matrix['month_totals'] ?? null) ? $matrix['month_totals'] : [];
+    $grandTotal = (float) ($matrix['grand_total'] ?? 0);
+    $bucketBy = (string) ($params['bucket_by'] ?? 'event_start');
+    $status = (string) ($params['status'] ?? 'public');
+
+    $filename = 'fostilus-havi-osszes.xls';
     header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('X-Content-Type-Options: nosniff');
     header('Cache-Control: no-store');
+
+    $bucketLabel = $bucketBy === 'published_at' ? 'Publikálás dátuma' : 'Esemény dátuma';
+    $statusLabel = match ($status) {
+        'publish' => 'Csak közzétéve',
+        'all' => 'Összes (lomtár nélkül)',
+        default => 'Közzétéve + előzetes',
+    };
 
     echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
     echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
@@ -395,10 +608,18 @@ function events_style_monthly_stats_send_excel(array $statsData, array $params):
         . ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
     echo '<Styles>'
         . '<Style ss:ID="hdr"><Font ss:Bold="1"/><Interior ss:Color="#E7EFE4" ss:Pattern="Solid"/></Style>'
+        . '<Style ss:ID="month"><Font ss:Bold="1"/></Style>'
         . '<Style ss:ID="num"><NumberFormat ss:Format="0.##"/></Style>'
         . '<Style ss:ID="total"><Font ss:Bold="1"/><NumberFormat ss:Format="0.##"/></Style>'
+        . '<Style ss:ID="note"><Font ss:Italic="1" ss:Color="#64748B"/></Style>'
         . '</Styles>' . "\n";
-    echo '<Worksheet ss:Name="' . htmlspecialchars($year . ' főstílus', ENT_XML1 | ENT_COMPAT, 'UTF-8') . '"><Table>' . "\n";
+
+    echo '<Worksheet ss:Name="Főstílus"><Table>' . "\n";
+    echo '<Column ss:Width="130"/>';
+    for ($col = 0, $colCount = count($styles) + 1; $col < $colCount; $col++) {
+        echo '<Column ss:Width="96"/>';
+    }
+    echo "\n";
 
     echo '<Row>';
     echo events_style_monthly_stats_excel_cell('Hónap', 'hdr');
@@ -408,27 +629,40 @@ function events_style_monthly_stats_send_excel(array $statsData, array $params):
     echo events_style_monthly_stats_excel_cell('Összesen', 'hdr');
     echo "</Row>\n";
 
-    for ($m = 1; $m <= 12; $m++) {
-        $label = $year . ' ' . events_monthly_stats_month_label_full($m);
+    foreach ($months as $monthKey) {
+        $yearNum = (int) substr((string) $monthKey, 0, 4);
+        $monthNum = (int) substr((string) $monthKey, 5, 2);
+        $label = $yearNum . ' ' . mb_strtolower(events_monthly_stats_month_label_full($monthNum), 'UTF-8');
         echo '<Row>';
-        echo events_style_monthly_stats_excel_cell($label, 'hdr');
+        echo events_style_monthly_stats_excel_cell($label, 'month');
         foreach ($styles as $style) {
-            $months = is_array($style['months'] ?? null) ? $style['months'] : [];
-            $value = round((float) ($months[$m] ?? 0), 2);
-            echo '<Cell ss:StyleID="num"><Data ss:Type="Number">' . $value . '</Data></Cell>';
+            $byMonth = is_array($style['by_month'] ?? null) ? $style['by_month'] : [];
+            echo events_style_monthly_stats_excel_number((float) ($byMonth[$monthKey] ?? 0), 'num');
         }
-        $rowTotal = round((float) ($monthTotals[$m] ?? 0), 2);
-        echo '<Cell ss:StyleID="total"><Data ss:Type="Number">' . $rowTotal . '</Data></Cell>';
+        echo events_style_monthly_stats_excel_number((float) ($monthTotals[$monthKey] ?? 0), 'total');
         echo "</Row>\n";
     }
 
     echo '<Row>';
     echo events_style_monthly_stats_excel_cell('Összesen', 'hdr');
     foreach ($styles as $style) {
-        echo '<Cell ss:StyleID="total"><Data ss:Type="Number">' . round((float) ($style['total'] ?? 0), 2) . '</Data></Cell>';
+        echo events_style_monthly_stats_excel_number((float) ($style['total'] ?? 0), 'total');
     }
-    echo '<Cell ss:StyleID="total"><Data ss:Type="Number">' . round($yearTotal, 2) . '</Data></Cell>';
+    echo events_style_monthly_stats_excel_number($grandTotal, 'total');
     echo "</Row>\n";
 
-    echo '</Table></Worksheet></Workbook>';
+    echo '<Row></Row>';
+    echo '<Row>';
+    echo events_style_monthly_stats_excel_cell(
+        'Szűrő: ' . $bucketLabel . ' · ' . $statusLabel . '. Több fő stílusnál az esemény 1/n súllyal szerepel.',
+        'note'
+    );
+    echo "</Row>\n";
+
+    echo '</Table>';
+    echo '<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">';
+    echo '<FreezePanes/><FrozenNoSplit/>';
+    echo '<SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane>';
+    echo '</WorksheetOptions>';
+    echo '</Worksheet></Workbook>';
 }
