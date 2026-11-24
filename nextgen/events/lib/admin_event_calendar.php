@@ -563,8 +563,9 @@ function events_admin_calendar_month_label(DateTimeImmutable $monthFirst): strin
     ];
     $y = (int) $monthFirst->format('Y');
     $m = (int) $monthFirst->format('n');
+    $monthName = $huMonths[$m] ?? $monthFirst->format('F');
 
-    return ($huMonths[$m] ?? $monthFirst->format('F')) . ' ' . $y;
+    return $y . ' ' . $monthName;
 }
 
 /**

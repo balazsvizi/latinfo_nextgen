@@ -14,9 +14,11 @@ if (!in_array($view, ['all', 'own'], true)) {
 
 [$monthFirst, $monthLast, $monthKey] = events_admin_calendar_resolve_month((string) ($_GET['month'] ?? ''));
 $monthLabel = events_admin_calendar_month_label($monthFirst);
-$monthLabelParts = explode(' ', $monthLabel);
-$monthYear = (int) (array_pop($monthLabelParts) ?: $monthFirst->format('Y'));
-$monthName = $monthLabelParts !== [] ? implode(' ', $monthLabelParts) : $monthFirst->format('F');
+$monthYear = (int) $monthFirst->format('Y');
+$monthName = trim(str_replace((string) $monthYear, '', $monthLabel));
+if ($monthName === '') {
+    $monthName = $monthFirst->format('F');
+}
 
 $rows = partner_portal_calendar_events($db, $monthFirst, $monthLast);
 $ownMap = partner_portal_owned_event_id_map($db, $partnerId);
