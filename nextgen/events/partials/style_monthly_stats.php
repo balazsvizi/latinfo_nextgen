@@ -29,6 +29,12 @@ $eventsCount = (int) ($statsData['events_count'] ?? 0);
 $eventsWithStyles = (int) ($statsData['events_with_styles'] ?? 0);
 $eventsWithoutStyles = (int) ($statsData['events_without_styles'] ?? 0);
 $yearTotal = (float) ($statsData['year_total'] ?? 0);
+$unstyledEvents = is_array($statsData['unstyled_events'] ?? null) ? $statsData['unstyled_events'] : [];
+$exportUrl = events_url('events_stilus_havi_export.php') . '?' . http_build_query([
+    'stat_year' => (int) ($statsParams['year'] ?? $year),
+    'stat_bucket' => (string) ($statsParams['bucket_by'] ?? 'event_start'),
+    'stat_status' => (string) ($statsParams['status'] ?? 'public'),
+]);
 
 $bucketLabel = $bucketBy === 'published_at' ? 'publikálás dátuma' : 'esemény dátuma';
 $statusLabel = match ($status) {
@@ -106,6 +112,7 @@ $hasChart = $styles !== [] && $yearTotal > 0;
             <div class="form-group events-edit-stats__filter-actions">
                 <button type="submit" class="btn btn-primary btn-sm">Szűrés</button>
                 <a class="btn btn-secondary btn-sm" href="<?= h($statsFormAction) ?>">Alapértelmezés</a>
+                <a class="btn btn-secondary btn-sm" href="<?= h($exportUrl) ?>">Excel export</a>
             </div>
         </div>
         <p class="events-edit-stats__filter-hint">
@@ -213,6 +220,59 @@ $hasChart = $styles !== [] && $yearTotal > 0;
                 </table>
             </div>
         <?php endif; ?>
+
+        <h3 class="events-edit-stats__events-title" id="stilus-nelkuli-esemenyek">Fő stílus nélküli események</h3>
+        <p class="events-edit-stats__events-hint">
+            <?= count($unstyledEvents) ?> esemény a választott évben és szűrőkkel, amelyhez nincs érvényes fő stílus.
+        </p>
+        <?php if ($unstyledEvents === []): ?>
+            <p class="help events-edit-stats__empty">Nincs ilyen esemény.</p>
+        <?php else: ?>
+            <div class="table-wrap events-admin-table-wrap">
+                <table class="events-admin-table events-style-monthly-stats__missing">
+                    <thead>
+                        <tr>
+                            <th scope="col">Dátum</th>
+                            <th scope="col">Esemény</th>
+                            <th scope="col">Szervező</th>
+                            <th scope="col">Státusz</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($unstyledEvents as $ev): ?>
+                            <?php
+                            $eventId = (int) ($ev['id'] ?? 0);
+                            $editUrl = events_url('szerkeszt.php?id=') . $eventId;
+                            $eventName = (string) ($ev['name'] ?? '');
+                            $startRaw = (string) ($ev['start'] ?? '');
+                            $startTs = $startRaw !== '' ? strtotime($startRaw) : false;
+                            $dateLabel = $startTs !== false
+                                ? date(!empty($ev['allday']) ? 'Y.m.d.' : 'Y.m.d. H:i', $startTs)
+                                : '–';
+                            $statusCode = (string) ($ev['status'] ?? '');
+                            $publicUrl = '';
+                            $slug = (string) ($ev['slug'] ?? '');
+                            if ($slug !== '' && events_is_publicly_visible_post_status($statusCode)) {
+                                $publicUrl = events_megjelenit_url($slug);
+                            }
+                            ?>
+                            <tr>
+                                <td><?= h($dateLabel) ?></td>
+                                <td>
+                                    <a class="events-cell-edit" href="<?= h($editUrl) ?>"><?= h($eventName !== '' ? $eventName : ('#' . $eventId)) ?></a>
+                                    <?php if ($publicUrl !== ''): ?>
+                                        <a class="events-style-monthly-stats__public" href="<?= h($publicUrl) ?>" target="_blank" rel="noopener">nyilvános</a>
+                                    <?php endif; ?>
+                                </td>
+                                <?php $organizers = trim((string) ($ev['organizers'] ?? '')); ?>
+                                <td><?= $organizers !== '' ? h($organizers) : '–' ?></td>
+                                <td><?= h(events_post_status_label($statusCode)) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 </div>
 
@@ -303,6 +363,11 @@ $hasChart = $styles !== [] && $yearTotal > 0;
 }
 .events-style-monthly-stats__row--none .events-style-monthly-stats__style {
     font-weight: 500;
+    color: var(--li-text-soft, #64748b);
+}
+.events-style-monthly-stats__public {
+    margin-left: 0.55rem;
+    font-size: 0.78rem;
     color: var(--li-text-soft, #64748b);
 }
 </style>
