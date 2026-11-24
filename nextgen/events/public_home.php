@@ -150,7 +150,6 @@ if ($view === 'mcal') {
 }
 $prevMonthUrl = events_public_calendar_month_url($prevMonthKey, $navBaseParams);
 $nextMonthUrl = events_public_calendar_month_url($nextMonthKey, $navBaseParams);
-$todayMonthUrl = events_public_calendar_month_url(events_admin_calendar_effective_today()->format('Y-m'), $navBaseParams);
 
 $listViewParams = array_merge($filters['get_params'], $langNav, ['view' => 'list']);
 unset($listViewParams['mcal_mode'], $listViewParams['day']);
@@ -361,12 +360,19 @@ header('Content-Type: text/html; charset=UTF-8');
                 <div class="events-cal-toolbar events-cal-toolbar--with-filters" aria-label="<?= h((string) $D['cal_controls_aria']) ?>">
                     <div class="events-cal-toolbar__left">
                         <?php require __DIR__ . '/partials/public_home_filters_panel.php'; ?>
-                        <div class="events-cal-toolbar__nav" aria-label="<?= h((string) $D['month_nav_aria']) ?>">
-                            <a class="events-cal-toolbar__arrow" href="<?= h($prevMonthUrl) ?>" rel="prev" aria-label="<?= h((string) $D['prev_month']) ?>">‹</a>
-                            <a class="events-cal-toolbar__today" href="<?= h($todayMonthUrl) ?>"><?= h((string) $D['this_month']) ?></a>
-                            <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="<?= h((string) $D['next_month']) ?>">›</a>
+                        <div class="events-cal-toolbar__pager" aria-label="<?= h((string) $D['month_nav_aria']) ?>">
+                            <a class="events-cal-toolbar__arrow" href="<?= h($prevMonthUrl) ?>" rel="prev" aria-label="<?= h((string) $D['prev_month']) ?>">
+                                <svg class="events-cal-toolbar__arrow-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                                    <path d="M10.2 3.2 5.4 8l4.8 4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </a>
+                            <h2 class="events-cal-toolbar__month"><?= h($monthLabel) ?></h2>
+                            <a class="events-cal-toolbar__arrow" href="<?= h($nextMonthUrl) ?>" rel="next" aria-label="<?= h((string) $D['next_month']) ?>">
+                                <svg class="events-cal-toolbar__arrow-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                                    <path d="M5.8 3.2 10.6 8 5.8 12.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </a>
                         </div>
-                        <h2 class="events-cal-toolbar__month"><?= h($monthLabel) ?></h2>
                     </div>
                     <div class="events-cal-toolbar__end">
                         <?php require __DIR__ . '/partials/public_calendar_color_help.php'; ?>
